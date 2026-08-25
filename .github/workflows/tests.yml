@@ -1,0 +1,78 @@
+# The two golden suites and the version floor, run by something other than a
+# person remembering to. Everything here is stdlib Python and a POSIX shell,
+# so there is nothing to install and no lockfile to drift.
+#
+# What is deliberately NOT here, and why:
+#
+#   * --selftest and probe-advance.sh need a controlling tty, and more than
+#     that they need the TERMINAL whose widths are in question. A runner's
+#     pty would report a runner's answers about a layout tuned for JediTerm,
+#     which is worse than not asking: it would go green while the thing the
+#     check exists to catch stayed uncaught.
+#   * compaction-once.py reads real transcripts under ~/.claude/projects/.
+#     A runner has none, so it has nothing to replay.
+#
+# Both stay manual, and tests/README.md says so beside the commands.
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  golden:
+    # The goldens pin a LAYOUT, not an interpreter, so one runner is the whole
+    # job. macOS is the platform this is used on and the one whose python3 is
+    # the version floor, so the matrix is by Python and the host is ubuntu —
+    # except the floor job below, which wants the real /usr/bin/python3.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.13"]
+    name: goldens (py${{ matrix.python }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      # The suites shell out to `python3`. setup-python puts the selected one
+      # first on PATH, so this is what they get.
+      - run: python3 -VV
+      - name: status mode
+        run: bash tests/golden.sh
+      - name: cost mode
+        run: bash tests/golden-cost.sh
+
+  floor:
+    # The 3.9 claim in README.md, checked against a real 3.9. Separate from
+    # the matrix because it is asserting something ABOUT 3.9 rather than
+    # merely running under it, and because it points PY39 at the interpreter
+    # explicitly rather than trusting PATH order.
+    runs-on: ubuntu-latest
+    name: python 3.9 floor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        id: py39
+        with:
+          python-version: "3.9"
+      - name: floor check
+        run: PY39="${{ steps.py39.outputs.python-path }}" bash tests/py39-floor.sh
+
+  shellcheck:
+    # The suites ARE the shell scripts, so a syntax error in one is a suite
+    # that cannot fail. `bash -n` is the floor of that; shellcheck is the rest.
+    runs-on: ubuntu-latest
+    name: shell
+    steps:
+      - uses: actions/checkout@v4
+      - name: parse
+        run: for f in tests/*.sh; do bash -n "$f" || exit 1; done
+      - name: shellcheck
+        run: shellcheck -S warning tests/*.sh

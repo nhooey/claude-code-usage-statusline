@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Failure dumps written by the golden suites: the two sides of every
+# disagreement, so diff shows it directly.  Rewritten on every run.
+tests/out/
+tests/out-cost/
