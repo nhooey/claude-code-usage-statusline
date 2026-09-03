@@ -67,7 +67,7 @@ move it:
 | `--color` | emit colour; the hook needs plain, so plain is the default |
 | `--no-totals` | drop the session-totals row |
 | `--no-right-align` | print flush left |
-| `--no-account-totals` | drop the `💳 99٪` half of the 🔋 and 🪫 cells (`💳 💯` at a full window), leaving this session's own share of each window |
+| `--no-account-totals` | drop the second half of the 🔋 and 🪫 cells — `💳 99٪` on the totals row (`💳 💯` at a full window), `📖`/`📝` on the per-prompt row — leaving each window's own share alone. The two halves go together because they stack; see *Where one prompt's money went* |
 | `--no-datetime` | drop the 📅 date and 🕐 clock cells |
 | `--no-usage-text` | drop the `Usage: ...` words from every row label, keeping each row's marker glyph |
 | `--force-newline` | always open the message with a blank line |
@@ -90,6 +90,34 @@ at an unknown width, and under `--no-mark-spacing`; the flag turns them off at
 the widths that would otherwise carry them. See
 [Rules between the columns](#rules-between-the-columns).
 
+`--subscript-decimals` works in both modes and is **off by default**. It writes
+a fraction in `U+2080`–`U+2089` instead of after a point, so the point costs
+nothing:
+
+```
+off   🧩 ▴6.6M ▾389k  🎯 96٪  🔋 🎤 .79٪ 🎮 4.1٪ 💳 11٪ 🔜 4.5h   💰 35.5
+on    🧩 ▴ 6₆M ▾389k  🎯 96٪  🔋 🎤 0₇₉٪ 🎮  4₁٪ 💳 11٪ 🔜  4₅h   💰  35₅
+```
+
+The leading zero the status line normally drops **comes back**: `.38` is
+unambiguous because the point marks the figure as a fraction, and `₃₈` is not
+— it is the glyph sequence a reader takes for 38, one point size down. So a
+reading under 1٪ is the same width either way and the switch buys nothing
+there. That branch has a golden of its own, because it is the one somebody
+tidies away later on the grounds that the zero is redundant.
+
+**No field is narrowed for it yet, deliberately.** Every reservation keeps the
+width it had, so a shorter figure gets one more column of leading pad and the
+grid cannot tear on the switch — verified across both modes at six widths: not
+one row changes width. The saving is real (`LIM_FIG_W` could go 4 → 3, three
+columns back on the 🔋 row) but it is only bankable once a probe has measured
+these glyphs on the terminal in use. East Asian Width calls the block Neutral,
+so `vis_width` already returns 1 — and there is a known trap one block along
+where the standard and the terminal disagree, which is why the standard is not
+taken as the answer. Holding the widths still means that if the terminal draws
+these two columns wide, the damage shows up as a figure overrunning its own
+cell rather than as a whole row shifted: a diagnosis instead of a mystery.
+
 `--cols N` works in both modes and overrides the terminal-width walk; `0` means
 "pretend the width is unknown", which is the only way to exercise the fallback
 layout deterministically.
@@ -106,6 +134,16 @@ therefore a constant width regardless of session, and right-aligning that
 constant puts each metric on a fixed screen column.
 
 That is the whole point: **switching tabs must not move the numbers.**
+
+A fixed width only holds if every figure has somewhere to go when it grows, so
+each one carries a **unit** rather than more digits: `1.2k`, `4.5M`, `1.5h`,
+`1.4M` months. 💰 was the exception until 2026-09-03 — it wrote $1235 as
+`1235`, four characters jammed against the emoji on the status line and one
+column too many on the cost line, where only the totals row ever carries the
+big figure, so the two rows came out different widths and stopped stacking. It
+now climbs the same ladder as everything else: `29.8`, `123`, `1.2k`, `12k`,
+`1.2M`. The cost line is one column wider for the unit, which `place` takes
+out of the label and never out of the numbers.
 
 The cost line's two rows share one grid, and `place_stacked` — not `place` —
 is what keeps them sharing it. It takes the layout decision ONCE, against the
@@ -403,6 +441,51 @@ The ⌛ row's other two scope fields stay positional rather than scoped. 👤 an
 🤖 split the age that Σ states, and there is no account-wide time to put under
 💳. That was the compromise before this change too, one field narrower.
 
+## Where one prompt's money went
+
+A per-prompt 🔋 or 🪫 cell reserves the same width as the totals-row cell it
+stacks on, so that the two emoji land in one column. The back half of that
+reservation — the seven columns the row below spends on `💳 99٪` — was seven
+blanks until 2026-09-03. It now carries where the prompt's money actually
+went:
+
+```
+🔋+ 0.61٪ 📖 61٪          📖  re-reading the conversation so far   (cache_read, 0.1x)
+🪫+ 0.04٪ 📝 15٪          📝  caching what this turn added         (cache_creation, 2x)
+🔋  1.27٪ 💳 78٪          the totals row underneath, unchanged
+🪫  0.18٪ 💳 16٪
+```
+
+**These are shares of the turn, not of the window**, even though the glyph
+that opens the cell is a window's. That is the only form the field can hold:
+the largest re-read on record cost \$1.46, which is 0.25٪ of a 5-hour window
+and 0.08٪ of a weekly one, and this field is 💳's three *whole* columns —
+both would draw `0٪`. Two decimals need eight columns where `C_LIM_TOT` has
+seven, and widening it would unstack the two rows, which is the one alignment
+this readout exists to hold.
+
+**What the pair is for.** `/compact` and `/clear` reclaim 📖 and nothing else.
+📝 is this turn's own new material — tool results, files read, the prefix the
+next request will re-read — and shrinking the context does not touch it; what
+neither accounts for is output, which cannot be reclaimed at all. So a turn
+reading `📖 61٪` is one where compacting would pay, and `📝 55٪` is one where
+it would save almost nothing however large 🧠 looks. Measured across this
+program's own sessions the read share swings from 8٪ to 57٪, and the two most
+expensive turns of one session sat at opposite ends of that spread — which is
+the case for spending the columns.
+
+It does **not** choose between `/compact` and `/clear`. Both shrink the
+prefix; the difference is what is left (a summary, or the system prompt and
+tool schemas) and what you are willing to lose. Nor does it carry the one-time
+price of compacting — but the cost line already prints a compaction on its own
+row, so both halves of the break-even are on screen.
+
+A compaction issues no request of its own, so there is no cost to take a share
+of and both cells go blank — the full seven columns, not an empty string. See
+`share_half` for why that distinction matters: `seg` pads the cost row on the
+**left**, so a short cell is not a gap at the end of a row but a whole cell
+pushed right, off the column it has to stack on.
+
 ## The column after a cost-line mark
 
 Every cell on the cost row is emoji, one column, then the value. What sits in
@@ -628,14 +711,50 @@ Two rules now:
 
 The calibration cache is the third way a unit could disagree with the figure
 beside it, so it stores the **scan** rather than the ratio: the two window
-costs, keyed by the boundaries they were measured over. The division against
-the current snapshot happens on every call. The cache is then invalidated by
-the only event that invalidates it — a reset, which moves a boundary.
+costs, keyed by the boundaries they were measured over, and — since
+2026-09-03 — the two plan readings they were measured *with*. The division
+happens on every call, against that stored pair. The cache is then invalidated
+by the only event that invalidates it — a reset, which moves a boundary.
+
+Storing the reading beside the scan is what stops the unit being estimated
+across two moments. It used to divide a cached numerator by a live
+denominator, which is harmless while nothing moves between them and wrong by
+any factor you like at a **reset**, where everything does: the scan is written
+seconds into the new window holding seconds of spending, the reading climbs
+while it sits there, and the unit comes out far too small. Every share divided
+by it is then far too large. Observed on 2026-09-03: `🎤 18٪` under an account
+total of `💳 1٪`, a part eighteen times the whole it belongs to. Measured at
+one instant this cannot happen — a session's transcripts are *in* the scan, so
+its cost is at most the scan's and its share at most the reading's.
+
+Below `CALIB_MIN_PCT` no unit is derived at all and the shares print `?`.
+`used_percentage` arrives quantised to whole percent, so a reading of 1 is a
+band half a point wide either side — the unit is uncertain by a factor of
+three, and so is anything divided by it. Two is where a figure stops being
+wrong by more than itself. It costs the 🔋 shares for the first few minutes of
+each 5-hour window; the weekly row sits above the floor for all but the first
+hours of a week.
 
 ### The session's share of a window
 
 Both readouts derive it the same way, through `session_shares`: sum this
 session's own turn costs since the window opened, divide by dollars-per-point.
+
+A turn is **split** at the boundary rather than tested against it, through
+`turn_cost_since`. A turn is not an instant — it can run dozens of calls over
+many minutes — and until 2026-09-03 it went whole to whichever window its
+*prompt* was typed in, which after a reset is the window that has closed.
+Measured on the turn that exposed it: prompt at 14:57:32, window open at
+15:00:00, `$1.02` billed across 13 calls before the reset and `$3.85` across
+43 calls after it. All `$4.87` went to the closed window, and the row reported
+this session's share of the live one as `0٪` — under a 🎤 cell reporting the
+same turn at `18٪`, because that cell had no window bound on it at all. The
+machine-wide scan had always split per record; the per-session tally was the
+only place a turn was still atomic.
+
+Both figures now go through the split, so the ordering column 4 asserts merely
+by existing — 🎤 ≤ 🎮 ≤ 💳, one window read at three scopes — holds by
+construction rather than by no window happening to reset mid-answer.
 
 The status line did not, until 2026-08-25. It subtracted the plan-wide reading
 this session first saw from the plan-wide reading now, storing the baseline
@@ -881,10 +1000,10 @@ One file, sectioned by banner comment, in dependency order:
 | Tunables | widths, thresholds, billing weights, prices, cost-line geometry |
 | Width tables | `EAW_WIDE` and the per-terminal overrides |
 | Measurement | `vis_width`, `trunc`, `term_profile` |
-| Formatting | `humanize`, `dec_align`, `pad_val`, `pct`, `money_fmt` |
+| Formatting | `humanize`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `SI_UNITS`, `sub_dec` |
 | Colour tiers, Terminal geometry, Records | small |
 | Reading the payload / the transcript | `Turn`, `read_turns`, `read_turns_settled` |
-| Git, Plan limits | `detect_git`, `load_limits`, `calibration` |
+| Git, Plan limits | `detect_git`, `load_limits`, `calibration`, `turn_cost_since`, `window_shares`, `session_shares` |
 | Status-line segment renderers, Status-line layout | `--mode status` |
 | Cost line | `cost_group`, `cost_totals_group`, `stack_metrics`, `place_stacked`, `render_cost_line` |
 | Alignment self-test | `--selftest` |

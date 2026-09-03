@@ -6,8 +6,9 @@
 #
 # 8 synthetic transcripts x 5 widths, plus the status line's plan cache
 # planted (at ordinary figures and at a full window), plus four cases under
-# --no-mark-spacing, plus the display switches.  Byte-identical stdout is the
-# gate.
+# --no-mark-spacing, plus the display switches, plus two window-boundary
+# cases at two widths each -- a reset inside the last turn, and a reading too
+# coarse to divide by.  Byte-identical stdout is the gate.
 #
 # The differential test this replaces took real transcripts on its command
 # line and had no corpus at all, which is why it could never be a golden: its
@@ -169,6 +170,98 @@ check "all-off-01@92" "$CORPUS/01-plain.jsonl" 92 \
       --no-account-totals --no-datetime --no-usage-text --force-newline
 check "all-off-02@92" "$CORPUS/02-compaction.jsonl" 92 \
       --no-account-totals --no-datetime --no-usage-text --force-newline
+
+# ── a window that opens INSIDE the last turn ────────────────────────────────
+#
+# The cost row's 🔋 and 🪫 are this prompt's share of each window and the row
+# below them is the session's, so the first has to be a part of the second --
+# and until 2026-09-03 a reset could make it larger.  The per-prompt cell
+# divided the WHOLE turn's cost by the unit while the totals row dropped that
+# same turn whole for being older than the boundary, so the delta printed a
+# figure the total beneath it did not contain.  See turn_cost_since.
+#
+# 01-plain's last turn is prompted at 01:30:00 and bills its one call at
+# 01:31:00.  The boundary is planted at 01:31, between the two: under the old
+# rule the totals row says this session put 0 into the 5-hour window while the
+# row above it reports a non-zero share of that same window, and under the new
+# one they are equal, the last turn being the only turn inside.  The weekly
+# figures are untouched by the plant and are what says so.
+echo "--- a window that opens inside the last turn ---"
+cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
+{
+  "session_pct": 15.0,
+  "session_resets_at": "2026-08-16 06:31",
+  "weekly_pct": 87.0,
+  "weekly_resets_at": "2026-08-18 01:00"
+}
+JSON
+for c in 196 120; do
+  check "straddle-01@$c" "$CORPUS/01-plain.jsonl" "$c"
+done
+
+# ── a reading too coarse to divide by ───────────────────────────────────────
+#
+# Below CALIB_MIN_PCT no unit is derived, so both 🔋 cells go -- the delta
+# above and the share below -- while 💳 keeps the reading itself, which is
+# what was never in doubt.  Checked at two widths because the cells vanish
+# rather than blank, and a group that changes width is exactly what seg()
+# pads on the left: the 🪫 row beneath keeps its figures, so this is also the
+# case where one row of the stacked pair loses a cell the other keeps.
+#
+# The calib fixture has to go for this one -- pin-env.sh plants the short
+# shape, two UNITS stated, which calibration() returns before it looks at a
+# reading at all, so a floor on the reading is unreachable through it.  See
+# the twin case in golden.sh; the key here is the pair of starts THIS plan
+# cache implies, which is a different pair.
+echo "--- a reading too coarse to calibrate from ---"
+cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
+{
+  "session_pct": 1.0,
+  "session_resets_at": "2026-08-16 06:31",
+  "weekly_pct": 87.0,
+  "weekly_resets_at": "2026-08-18 01:00"
+}
+JSON
+cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+{
+  "windows": "2026-08-16 01:31:00|2026-08-11 01:00:00",
+  "sess_cost": 5.50, "sess_pct": 1.0,
+  "week_cost": 356.70, "week_pct": 87.0
+}
+JSON
+for c in 196 120; do
+  check "uncalibrated-01@$c" "$CORPUS/01-plain.jsonl" "$c"
+done
+
+# Put the fixture back, for the reason golden.sh's twin gives.
+cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+{"sess": 5.50, "week": 4.10}
+JSON
+
+# ── --subscript-decimals ────────────────────────────────────────────────────
+#
+# The cost row is where the switch is most likely to break something, because
+# this is the readout whose two rows STACK: dec_align holds a point in a fixed
+# column and the flag takes the point away, so what has to still be true is
+# that the two rows move identically and the fraction reservation is unchanged
+# -- seg() pads on the left, so a cell that came out one column narrower would
+# be shoved right, off the field beneath it.  The plan cache is planted so the
+# 🔋 and 🪫 cells carry figures at all; without it they are blank and the case
+# would exercise nothing.
+echo "--- --subscript-decimals ---"
+cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
+{
+  "session_pct": 15.0,
+  "session_resets_at": "2026-08-16 02:30",
+  "weekly_pct": 87.0,
+  "weekly_resets_at": "2026-08-18 01:00"
+}
+JSON
+for c in 196 120; do
+  check "subdec-01@$c" "$CORPUS/01-plain.jsonl" "$c" --subscript-decimals
+done
+check "subdec-tight-01@196" "$CORPUS/01-plain.jsonl" 196 \
+      --subscript-decimals --no-mark-spacing
 
 echo
 if [ "$regen" -eq 1 ]; then

@@ -6,9 +6,11 @@
 #
 # 16 payloads x 6 widths in a clean repo, plus two source-freshness cases,
 # plus one payload x 6 widths in a dirty one, plus two payloads x 3 widths
-# under --no-mark-spacing and two under --no-column-rules, against files under
-# golden/.  Byte-identical stdout is the gate, as it was for the differential
-# test this replaces.
+# under --no-mark-spacing and two under --no-column-rules, plus two cases
+# about a window boundary -- one that falls inside a turn and one whose
+# reading is too coarse to divide by -- against files under golden/.
+# Byte-identical stdout is the gate, as it was for the differential test this
+# replaces.
 #
 # The corpus is WRITTEN BY mkcorpus-status.py on every run, into the scratch
 # directory, and read from there.  It used to be fourteen payload files kept
@@ -171,6 +173,130 @@ check "norules-01@196" "$CORPUS/01-baseline.json" 196 "$SCRATCH/repo" \
       --no-column-rules
 check "norules-04@196" "$CORPUS/04-pr-and-style.json" 196 "$SCRATCH/repo" \
       --no-column-rules
+
+# ── a window that opens INSIDE the last turn ────────────────────────────────
+#
+# The three fields of column 4 are one window read at three scopes, so
+# 🎤 <= 🎮 <= 💳 is an ordering the column asserts merely by existing.  Until
+# 2026-09-03 a single reset could break it, because the two figures this
+# session derives were bounded by different rules: 🎮 dropped or kept a turn
+# WHOLE on the stamp of its prompt, and 🎤 had no window bound on it at all.
+# A turn that began before a reset and was still running after it therefore
+# went entirely to 🎤 and not at all to 🎮, and the row printed a part larger
+# than the whole it belongs to -- observed live as `🎤 18٪  🎮 0٪  💳 1٪`.
+#
+# The boundary here is planted at 02:18, which falls between the last turn's
+# prompt (02:15:20) and its calls (02:15:32 onward), so the last turn is the
+# straddling one and both cells move.  Under the old rule this case renders
+# 🎮 as 0٪ under a non-zero 🎤; under turn_cost_since they are equal, because
+# the last turn is the only one inside the window and 🎮 sums exactly it.
+#
+# 02-no-limits is the payload because it carries no rate_limits of its own --
+# every other payload would overwrite this cache with the figures it brought
+# -- and because a payload without them is the only kind whose window this
+# file can choose.  15٪ keeps the reading clear of CALIB_MIN_PCT; the case
+# below is the one that goes under it.
+echo "--- a window that opens inside the last turn ---"
+cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
+{
+  "session_pct": 15.0,
+  "session_resets_at": "2026-08-16 07:18",
+  "weekly_pct": 87.0,
+  "weekly_resets_at": "2026-08-18 01:00",
+  "as_of": "2026-08-16 02:23"
+}
+JSON
+check "straddle-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo"
+
+# ── a reading too coarse to divide by ───────────────────────────────────────
+#
+# used_percentage is quantised to whole percent, so a reading of 1 is a band
+# half a point wide either side -- the unit derived from it is uncertain by a
+# factor of three, and so is every share divided into it.  Below
+# CALIB_MIN_PCT nothing is derived at all and the two scopes this session owns
+# print "?", which render_limit's fig() has always drawn for a figure it does
+# not have.  💳 is unaffected: it is the reading itself, not something divided
+# by it.  The weekly row keeps its figures, which is the point of checking
+# both windows in one case -- the floor is per window, not per readout.
+#
+# THE CALIB FIXTURE HAS TO GO for this one, and it is the only case here that
+# touches it.  pin-env.sh plants the short shape -- two UNITS, stated -- which
+# calibration() returns before it ever looks at a reading, so a floor on the
+# reading is unreachable through it.  What replaces it is the LIVE shape:
+# window costs keyed by the boundaries they were measured over, plus the two
+# readings they were measured WITH, which is the pairing added the same day.
+# The key must be the two starts the plan cache above implies, formatted as
+# calibration() formats them -- "%s|%s" over two datetimes -- or the entry
+# misses and the suite goes off to scan this machine's transcripts.
+echo "--- a reading too coarse to calibrate from ---"
+cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
+{
+  "session_pct": 1.0,
+  "session_resets_at": "2026-08-16 07:18",
+  "weekly_pct": 87.0,
+  "weekly_resets_at": "2026-08-18 01:00",
+  "as_of": "2026-08-16 02:23"
+}
+JSON
+cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+{
+  "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00",
+  "sess_cost": 5.50, "sess_pct": 1.0,
+  "week_cost": 356.70, "week_pct": 87.0
+}
+JSON
+check "uncalibrated-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo"
+
+# Put the fixture back.  Nothing runs after this today, and that is exactly
+# why: the next case added below would otherwise inherit a live-shape cache
+# keyed to one particular pair of boundaries, miss on it, and scan the
+# machine -- which is slow, and answers with whoever ran it.
+cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+{"sess": 5.50, "week": 4.10}
+JSON
+
+# ── --subscript-decimals ────────────────────────────────────────────────────
+#
+# The switch reaches five formatters at once, so what has to be pinned is not
+# one cell but the WIDTH of every row it touches: no field is narrowed for it
+# yet, so a row that changes width under the flag is a bug and a golden is
+# what says so.  Three widths for the three regimes -- 196 where column 4 is
+# whole, 92 where the left half is already competing for room, and "" where
+# the pwd budget decides.  Two payloads: 01 for the ordinary readings and 08,
+# whose limit figures are the ones that carry decimals at every scope.
+#
+echo "--- --subscript-decimals ---"
+for c in 196 92 ""; do
+  check "subdec-01@${c:-none}" "$CORPUS/01-baseline.json" \
+        "$c" "$SCRATCH/repo" --subscript-decimals
+  check "subdec-08@${c:-none}" "$CORPUS/08-limits-critical.json" \
+        "$c" "$SCRATCH/repo" --subscript-decimals
+done
+
+# THE LEADING ZERO COMING BACK, which neither payload above reaches: both
+# carry limit figures over 1٪ at every scope, so neither exercises the one
+# case where this form differs from the point form by more than a glyph.
+# Under 1٪ the status line writes ".38" and this has to write "0₃₈" -- "₃₈"
+# and 38 being the same glyph sequence one point size apart -- so the field is
+# the SAME WIDTH either way and the switch buys nothing there.  That is
+# exactly why it wants a golden: it is the branch somebody tidies away later
+# on the grounds that the zero is redundant, and the row it breaks is a
+# fraction of a percent misread as tens of them.
+#
+# The straddle plant is reused to get there.  It puts the 5-hour boundary
+# inside the last turn, which leaves this session holding 0.63٪ of the window
+# -- the only sub-1 limit reading this corpus produces.
+cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
+{
+  "session_pct": 15.0,
+  "session_resets_at": "2026-08-16 07:18",
+  "weekly_pct": 87.0,
+  "weekly_resets_at": "2026-08-18 01:00",
+  "as_of": "2026-08-16 02:23"
+}
+JSON
+check "subdec-sub1-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo" \
+      --subscript-decimals
 
 echo
 if [ "$regen" -eq 1 ]; then

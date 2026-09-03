@@ -45,6 +45,7 @@ in any project, not only one whose devshell supplies newer packages.
 """
 
 import fcntl
+import functools
 import glob
 import json
 import os
@@ -261,6 +262,60 @@ E_ACCT = "💳"          # the whole account.  A card because the figure is
                        # file trusts, the second puts a second picture of a
                        # tally one row under 🎮, which is the misread that
                        # retired 📆.
+
+E_READ = "📖"          # of ONE prompt's cost, the share that went on
+                       # re-reading the conversation so far -- cache_read, at
+                       # 0.1x a fresh token.  It is what the transcript
+                       # charges simply for still being there, and it is the
+                       # only component /compact can remove.  Measured over
+                       # this file's own sessions it swings from 8٪ to 57٪ of
+                       # a turn, and the two most expensive turns in one
+                       # session sat at opposite ends of that spread -- which
+                       # is the whole case for the cell.  It says whether
+                       # shrinking the context would buy anything BEFORE you
+                       # spend a compaction finding out.
+                       #
+                       # A SHARE OF THE TURN, not of the plan window, even
+                       # though the cell it sits in is a window cell.  The
+                       # window form was tried first and cannot be drawn: the
+                       # largest such turn on record spent $1.46 re-reading,
+                       # which is 0.25٪ of a 5-hour window and 0.08٪ of a
+                       # weekly one, and this field is the three WHOLE columns
+                       # 💳 uses.  Both would render "0٪" -- blank in effect
+                       # at every magnitude that matters.  Two decimals would
+                       # fit neither: they need eight columns where C_LIM_TOT
+                       # has seven, and widening it would unstack the cost
+                       # row from the totals row under it.  The share is a
+                       # whole number in the same three columns, and it is
+                       # the figure the decision turns on anyway -- what you
+                       # would reclaim, as a fraction of what you just paid.
+                       #
+                       # An open book because the quantity is the
+                       # conversation being read AGAIN, and because 🔁 means
+                       # re-send: one glyph per direction.  U+1F4D6, Unicode
+                       # 6.0, single codepoint, Emoji_Presentation=Yes, EAW W,
+                       # inside EAW_WIDE.
+
+E_WRITE = "📝"         # same denominator, the other component:
+                       # cache_creation, at 2x.  This is the turn's OWN new
+                       # material being cached -- tool results, files read,
+                       # the prefix the next request will re-read -- which is
+                       # why it belongs UNDER 📖 rather than beside it.
+                       # /compact does not touch it, so a turn reading 📝 55٪
+                       # is one where compacting would save almost nothing
+                       # however large the context looks.  What the pair does
+                       # not account for is output, which is neither and
+                       # cannot be reclaimed at all.
+                       #
+                       # It takes the 🪫 row because a share of a turn does
+                       # not vary by window: the read share printed on both
+                       # rows would spend the second slot restating the
+                       # first.  The two rows carry the two halves instead,
+                       # which is the only arrangement in which both slots
+                       # say something.
+                       #
+                       # U+1F4DD, Unicode 6.0, single codepoint,
+                       # Emoji_Presentation=Yes, EAW W, inside EAW_WIDE.
 
 E_COSTLINE = "📊"      # prefix of the prompt-cost row
 
@@ -599,7 +654,21 @@ CACHE_WARN, CACHE_CRIT = 80, 50    # cache hit %: ≤ WARN amber, ≤ CRIT red
 LIMIT_TTL = 60                     # seconds to cache usage-limits.sh output
 LIMIT_CACHE = os.path.join(os.environ.get("TMPDIR", "/tmp"),
                            "claude-usage-cache.json")
-K, M = 1000, 1000000               # humanize boundaries
+K, M, G = 1000, 1000000, 1000000000   # humanize boundaries
+
+# The ladder humanize() and money_fmt() both climb, largest first.  One tuple
+# rather than one per function because the two are read in the same glance —
+# 🧩 and 💰 sit four columns apart on the cost row — and a "k" that meant a
+# thousand in one field and nothing in the other would be worse than no unit
+# at all.
+#
+# G is here for the reason the top step of any such ladder is: a figure that
+# runs off the end of its units does not degrade, it overruns.  humanize
+# without it writes 1.2e9 as "1234M", five columns in a field that reserves
+# four, and the cell it pushes into is the one that has to stack.  Neither
+# field reaches a billion today; the step costs one tuple entry, and the
+# alternative costs a layout.
+SI_UNITS = ((G, "G"), (M, "M"), (K, "k"))
 
 # Billing weights relative to a fresh input token.  Raw ▴ traffic is ~99% cache
 # reads in a typical session, so an unweighted sum says nothing about either
@@ -666,13 +735,22 @@ C_CACHE = C_CACHE_TIGHT + len(MARK_SP)
                # never four columns.  The clamp is the status line's too -- 💯
                # stands in for a full reading on the LIMIT cells, where 99 and
                # 100 are the same news, and a cache rate is not one of those.
-C_COST = 8     # 💰 + a sign column + dec_align(money_fmt, 3, 1): three
-               # integer columns, one fractional, so the two rows' points land
-               # in one column.  Three integer columns caps the row at $999 —
-               # past that the cell overruns and, because only ONE of the two
-               # rows carries the big figure, the groups end up different
-               # widths and the 📊 stop stacking.  Widen this before that day,
-               # not the fraction.
+C_COST = 9     # 💰 + a sign column + money_cell: three integer columns, one
+               # fractional so the two rows' points land in one column, and
+               # one for the unit.  Nine, not the eight it was until
+               # 2026-09-03, and the column bought is the unit's: three
+               # integer columns used to cap the row at $999, past which the
+               # cell overran and — because only ONE of the two rows carries
+               # the big figure — the groups came out different widths and the
+               # 📊 stopped stacking.  The old note here said to widen this
+               # before that day and not to touch the fraction.  Half of that
+               # was right.  What the field wanted was not a fourth integer
+               # column, which buys one decade and then faces the same cliff
+               # at $9999; it wanted the k and M every other magnitude on this
+               # row already carries, and a unit costs exactly one column
+               # whatever the figure.  The fraction is untouched, as the note
+               # asked.  The line is one column wider, which place() takes out
+               # of the label, never out of the group.
                # The sign column carries "+" on the per-prompt row and a space
                # on the totals row, as 🧠 🔋 and 📆 do either side of it: every
                # figure on that row is what ONE prompt added to the reading
@@ -813,6 +891,24 @@ PLAN_CACHE = os.environ.get("CLAUDE_PLAN_CACHE",
 CALIB_CACHE = os.environ.get("CLAUDE_CALIB_CACHE",
                              "/tmp/claude-calib-cache.json")
 CALIB_TTL = 300        # the scan walks transcripts; five minutes is plenty
+
+# The smallest plan reading that can serve as the DIVISOR of a calibration.
+#
+# used_percentage arrives quantised to whole percent, so a reading of n means
+# the truth is somewhere in a band half a point wide either side of it: at
+# n=1 that is ±50٪ — a factor of three across the band — and every share
+# divided by a unit derived from it inherits the whole of that.  At 2 the band
+# is ±25٪, at 5 it is ±10٪.  Two is where a figure stops being wrong by more
+# than itself, which is the only threshold this reading can actually support;
+# it is not where the figure becomes precise, and nothing here can make it so,
+# because the payload does not publish a finer one.
+#
+# What this costs is the 🔋 shares for the first few minutes of every 5-hour
+# window, which then read "?" — see render_limit's fig(), which draws exactly
+# that for a figure it does not have.  What it buys is that they never again
+# read 18٪ under an account total of 1٪.  The weekly window sits above this
+# for all but the first hours of a week, so it pays almost nothing.
+CALIB_MIN_PCT = 2.0
 
 
 def frozen_now() -> Optional[float]:
@@ -1490,6 +1586,90 @@ def trunc(s: str, want: int) -> str:
 # field's width and lets the rows stack.
 # ════════════════════════════════════════════════════════════════════════════
 
+# ── subscript decimals, off by default ──────────────────────────────────────
+#
+# U+2080..U+2089 in place of the fraction, so "1.2٪" is written "1₂٪" and the
+# decimal point costs nothing.  Off unless --subscript-decimals says otherwise.
+#
+# WHY IT IS A SWITCH AND NOT THE FORMAT.  Two things about it are unproven
+# here and only a terminal can settle them.  East Asian Width calls the block
+# Neutral, so vis_width already returns 1 and every reservation in this file
+# assumes as much -- but the probe has never MEASURED it, and there is a known
+# trap in the other direction one block along (see the Supplemental Arrows-C
+# note beside EAW_WIDE) where the standard and the terminal disagree.  And the
+# glyphs are small: these are the figures on the row a reader acts on, and
+# whether a subscript 6 reads as a 6 at a terminal's point size is a question
+# about a font, not about a program.  Both answers are Neil's to give after
+# looking at it, which is what the flag is for.
+#
+# NOTHING IS RECLAIMED YET.  Every field keeps the width it had, so a shorter
+# figure gets one more column of leading pad and the grid cannot tear on the
+# switch.  That is deliberate: if the terminal turns out to draw these two
+# columns wide, the damage shows up as a figure overrunning its own cell
+# rather than as a whole row shifted, which is the difference between a
+# diagnosis and a mystery.  Narrowing LIM_FIG_W from 4 to 3 is the payoff and
+# it comes after the probe, not before.
+#
+# THE LEADING ZERO STAYS, where limit_pct drops it.  ".38" is unambiguous
+# because the point marks the figure as a fraction; "₃₈" is not -- it is the
+# same glyph sequence a reader would take for 38 in a smaller font.  So the
+# zero comes back for this form, which means a sub-1 reading saves nothing.
+# Neil's call, and the right one: a column is worth less than the difference
+# between a third of a point and thirty-eight of them.
+SUB_DIGITS = "₀₁₂₃₄₅₆₇₈₉"
+SUB_DEC = False
+
+
+def set_subscript_decimals(on: bool) -> None:
+    """Turn the subscript fraction form on for this process.
+
+    A global, set once in main() before anything renders, for the reason
+    set_mark_spacing is one: the alternative is threading a formatting flag
+    through every renderer down to the five functions that actually emit a
+    decimal.
+    """
+    global SUB_DEC
+    SUB_DEC = on
+
+
+def sub_dec(v: str) -> str:
+    """A formatted number with its fraction in subscript digits, or unchanged.
+
+    Operates on the RENDERED string rather than on a float, so one function
+    covers every magnitude rule in this file — humanize's unit ladder,
+    limit_pct's dropped zero, dur_fmt's trailing "h" — without knowing any of
+    them.  The point and the digits after it are replaced; anything else the
+    string carries, a unit or a sign, is left where it was.
+
+    Only the FIRST run of digits after a point is touched, and there is only
+    ever one: nothing here formats two decimal groups into one field.
+    """
+    if not SUB_DEC or "." not in v:
+        return v
+    # The zero that limit_pct drops comes back — see the block note.  Done
+    # before the substitution rather than after, so the head is a real digit
+    # by the time anything measures it.
+    if v.startswith("."):
+        v = "0" + v
+    return re.sub(r"\.(\d+)",
+                  lambda m: "".join(SUB_DIGITS[int(d)] for d in m.group(1)), v)
+
+
+def _subscriptable(fn):
+    """Route a numeric formatter's result through sub_dec.
+
+    Five functions in this file emit a decimal and each has several returns,
+    so wrapping the function is one line where wrapping the returns would be
+    fourteen.  wraps() is here because the docstrings on those five are the
+    documentation for the formats themselves.
+    """
+    @functools.wraps(fn)
+    def inner(*a, **kw):
+        return sub_dec(fn(*a, **kw))
+    return inner
+
+
+@_subscriptable
 def humanize(n: float) -> str:
     """A token count in at most four columns: 1234 → "1.2k", 632 → "632 ".
 
@@ -1499,7 +1679,7 @@ def humanize(n: float) -> str:
     it costs two columns and a moving decimal point to say so.  Three
     significant digits is what caps the result at four characters.
     """
-    for lim, unit in ((M, "M"), (K, "k")):
+    for lim, unit in SI_UNITS:
         if n >= lim:
             v = n / lim
             s = "%.0f" % v if v >= 10 else re.sub(r"\.0$", "", "%.1f" % v)
@@ -1526,6 +1706,7 @@ def pct2(v: int) -> str:
     return "99" if v > 99 else "%s" % v
 
 
+@_subscriptable
 def plan_pct(v: float) -> str:
     """A plan-window percentage for the COST row: two decimals at most.
 
@@ -1558,6 +1739,7 @@ def plan_pct(v: float) -> str:
     return s.rstrip("0").rstrip(".") or "0"
 
 
+@_subscriptable
 def limit_pct(v: float, digits: int = 3) -> str:
     """A plan-window percentage in the characters its segment budgets.
 
@@ -1654,8 +1836,9 @@ def limit_pct(v: float, digits: int = 3) -> str:
     return ("%.2f" % v)[1:]
 
 
+@_subscriptable
 def money_fmt(c: float) -> str:
-    """A dollar figure in four characters: 0.4, 1.9, 12.3, 123, 1234.
+    """A dollar figure in four characters: 0.4, 1.9, 12.3, 123, 1.2k, 12k.
 
     One decimal at most, and none once the figure reaches three digits.  A
     second decimal is a cent on a running total, which changes no decision
@@ -1663,10 +1846,31 @@ def money_fmt(c: float) -> str:
     over: once for the digit and once more in the fraction reservation that
     holds the two rows' decimal points in the same column.
 
+    Past $999 it climbs SI_UNITS, the same ladder humanize() climbs, and for
+    the same reason: a field that stops having units at the top of its range
+    does not lose precision there, it loses its WIDTH.  This one used to write
+    $1234 as "1234" — four characters where the status line reserves four and
+    the cost row reserves three-and-a-point, so on the cost row the cell ran a
+    column long, and because only the totals row ever carries the big figure,
+    the two groups came out different widths and the 📊 stopped stacking.  The
+    old note here said "widen this before that day"; a unit is the cheaper
+    answer, and it is the one every other magnitude on the row already uses.
+
     No "$" — the emoji ahead of it already says what the number is, and the
     sign costs a column the path can use.
     """
-    return "%.0f" % c if c >= 100 else "%.1f" % c
+    for lim, unit in SI_UNITS:
+        # The cut is where the format BELOW would round up into a fifth
+        # character, not at the round number under it: $999.5 belongs with
+        # "1.0k" because "%.0f" would write it "1000".  humanize needs no such
+        # adjustment — its sub-unit branch truncates with %d and cannot round
+        # up — which is the one place these two ladders are climbed
+        # differently.
+        if c >= lim - lim / 2000.0:
+            v = c / lim
+            return ("%.0f" % v if v >= 10
+                    else re.sub(r"\.0$", "", "%.1f" % v)) + unit
+    return "%.0f" % c if c >= 99.95 else "%.1f" % c
 
 
 # A mean Gregorian month, 365.25/12 days.  Months are the one unit here with
@@ -1677,6 +1881,7 @@ def money_fmt(c: float) -> str:
 MONTH_S = 2629800.0
 
 
+@_subscriptable
 def dur_fmt(d: float, digits: int = 3) -> str:
     """Seconds → "45s" / "1.5m" / "58m" / "2.5h" / "3d" / "1.4M".
 
@@ -1805,10 +2010,55 @@ def dec_align(v: str, ip: int, fp: int, suffix: str = "") -> str:
     `suffix` is emitted immediately after the last digit and the padding goes
     after IT, not before.  Padding first would align the suffixes into a column
     of their own and strand each one from the number it qualifies — "0.13  ٪".
+
+    UNDER --subscript-decimals there is no point to align, and the column it
+    used to occupy is not reclaimed: the reservation stays `fp + 1`, so the
+    cell keeps its width and the fraction sits one column left of where it was
+    with a blank behind it.  Every row in a stacked pair moves identically, so
+    units still stack over units and tenths over tenths — which is the whole
+    job, the point having only ever been the marker for it.
+
+    It arrives here two ways.  Most callers hand over a string a decorated
+    formatter has already converted, so the "." is gone before this sees it.
+    signed_pct and the cost row's 🧠 cell format their own "%.1f" inline and
+    are not routed through one, which is why the conversion is repeated on the
+    way in: sub_dec is idempotent on a string that has already had it, and
+    both of those always carry a leading digit, so its leading-zero rule
+    cannot fire on a head this function is about to right-align separately.
     """
+    v = sub_dec(v)
     head, _, tail = v.partition(".")
-    frac = ".%s%s" % (tail, suffix) if tail else suffix
+    if tail:
+        frac = ".%s%s" % (tail, suffix)
+    else:
+        cut = next((i for i, ch in enumerate(v) if ch in SUB_DIGITS), None)
+        if cut is None:
+            head, frac = v, suffix
+        else:
+            head, frac = v[:cut], v[cut:] + suffix
     return "%*s" % (ip, head) + "%-*s" % (fp + 1 + len(suffix), frac)
+
+
+def money_cell(c: float) -> str:
+    """money_fmt decimal-aligned in the six columns both cost rows reserve.
+
+    The unit is dec_align's SUFFIX rather than a column of its own, so that it
+    rides the digits it qualifies: reserved separately it would line every
+    unit up in a column of its own and strand each from its number — " 12  k"
+    — which is the failure dec_align's own note describes for "0.13  ٪".
+
+    It is one character ALWAYS, a space where there is no unit, and that is
+    the whole reason this is a function and not two dec_align calls.  The
+    suffix widens the field, so a "k" on the totals row and nothing on the
+    per-prompt row above it would make the two cells six and five columns
+    wide.  seg() pads the cost row on the LEFT, so the narrower one would not
+    end a column short — it would be shoved a column right, off the field it
+    has to stack on, and the misalignment would appear the first time a
+    session crossed $1000 and nowhere in any test that had not.
+    """
+    s = money_fmt(c)
+    unit = s[-1] if s[-1] in "kMG" else " "
+    return dec_align(s[:-1] if unit != " " else s, 3, 1, unit)
 
 
 def signed(n: int) -> str:
@@ -2068,6 +2318,17 @@ class Turn(NamedTuple):
     reported: bool = False  # a Stop hook has already run at a point AFTER this
                             # turn, so whatever this line owed for it has been
                             # printed once already.  See read_turns.
+    parts: Tuple[Tuple[Optional[float], float], ...] = ()
+                            # (epoch, dollars) for each billed call, in the
+                            # order the transcript wrote them.  The fields
+                            # above are SUMS, and a sum cannot be split at a
+                            # window boundary that falls inside the turn — see
+                            # turn_cost_since, which is the only reader.  The
+                            # epoch is None where the stamp would not parse;
+                            # the cost is still carried, so these always total
+                            # turn_cost() whatever the stamps did.
+                            # Empty for a compaction, which bills through no
+                            # usage record at all.
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -2594,7 +2855,8 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
                 continue
             cur = {"ts": r.get("timestamp") or "", "text": text,
                    "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0, "n": 0,
-                   "t0": ts_epoch(r.get("timestamp") or ""), "t1": None}
+                   "t0": ts_epoch(r.get("timestamp") or ""), "t1": None,
+                   "parts": []}
             turns.append(cur)
         elif r.get("subtype") == "compact_boundary":
             # A compaction is the one expensive operation that leaves NO usage
@@ -2633,7 +2895,7 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
                        "text": "/compact (%s)" % (md.get("trigger") or "auto"),
                        "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0,
                        "n": 0, "t0": ts_epoch(r.get("timestamp") or ""),
-                       "t1": None}
+                       "t1": None, "parts": []}
                 turns.append(cur)
             cur["cr"] = md.get("preTokens") or 0
             cur["n"] = 1
@@ -2677,6 +2939,18 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
             cur["cr"] += u.get("cache_read_input_tokens", 0)
             cur["out"] += u.get("output_tokens", 0)
             cur["n"] += 1
+            # The same four products turn_cost takes over the sums, taken here
+            # over the one record, so the parts total the whole EXACTLY and a
+            # window-bounded share and an unbounded one stay on one scale.
+            # Sidechain records are included for that reason and no other:
+            # they are in the sums four lines up, so leaving them out here
+            # would make the parts total something turn_cost never says.
+            cur["parts"].append((
+                ts_epoch(r.get("timestamp") or ""),
+                u.get("input_tokens", 0) * P_IN
+                + u.get("output_tokens", 0) * P_OUT
+                + u.get("cache_read_input_tokens", 0) * P_CR
+                + u.get("cache_creation_input_tokens", 0) * P_CW))
             if not r.get("isSidechain"):
                 # LAST-WRITE-WINS, but only over readings that exist.  An
                 # interrupted request is written with every usage field zero,
@@ -2729,6 +3003,7 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
                         ctx=t["ctx"], calls=t["n"], dctx=dctx,
                         compact=bool(t.get("compact")),
                         reported=len(out) < settled,
+                        parts=tuple(t["parts"]),
                         dur_s=(t["dur"] if t.get("dur") else
                                (t["t1"] - t["t0"]
                                 if t["t0"] and t["t1"] and t["t1"] > t["t0"]
@@ -3275,6 +3550,16 @@ def _with_shares(lim: Limits, transcript: str) -> Tuple[Limits, float]:
     Left as "" when there is no transcript to sum or no calibration to divide
     by, which render_limit draws as "?" rather than as a zero.
 
+    BOUNDED BY THE WINDOW, both figures.  The 🎤 cell was `turn_cost(last)`
+    over the unit, with no boundary on it at all, while 🎮 beside it was
+    bounded — so a turn that straddled a reset was charged in full to a cell
+    whose two neighbours had already dropped it, and column 4 printed
+    `🎤 18٪  🎮 0٪  💳 1٪`: a part larger than the whole it belongs to, twice
+    over.  Both now go through the split; see turn_cost_since.  What the
+    reader gets is the one thing the column claims — turn ≤ session ≤ account
+    — as an identity rather than as a coincidence that holds while no window
+    happens to reset mid-answer.
+
     WHICH TURN the 🎤 figure is about is not turns[-1].  It is the last turn
     that made calls and was not a compaction — `prompts[-1]`, character for
     character the selection render_cost_line makes — so the 🎤 on this row and
@@ -3294,10 +3579,7 @@ def _with_shares(lim: Limits, transcript: str) -> Tuple[Limits, float]:
         last = prompts[-1] if prompts else None
         tn = {"sess": None, "week": None}
         if last is not None:
-            c = turn_cost(last)
-            for k in tn:
-                if calib.get(k):
-                    tn[k] = c / calib[k]
+            tn = window_shares(last, calib)
     except Exception:
         return lim, 0.0
     return (lim._replace(session_share=_pct_str(sh["sess"]),
@@ -4000,6 +4282,97 @@ def turn_cost(t: Turn) -> float:
             + t.cache_read * P_CR + t.cache_write * P_CW)
 
 
+def turn_cost_since(t: Turn, start: Optional[datetime]) -> float:
+    """The part of one turn's cost that was billed at or after `start`.
+
+    A turn is not an instant.  This one ran 56 calls over five minutes and a
+    plan window opened in the middle of it, and until 2026-09-03 every reader
+    here charged the whole turn to whichever window its PROMPT was typed in —
+    `Turn.ts`, which is when the user pressed return and not when any of the
+    money was spent.  Measured on the turn that exposed it: prompt at
+    14:57:32, window open at 15:00:00, $1.02 billed across 13 calls before the
+    reset and $3.85 across 43 calls after it.  All $4.87 went to the window
+    that had closed, and the status row reported this session's share of the
+    live one as 0٪ — under a 🎤 cell reporting the same turn at 18٪, because
+    that cell had no window bound on it at all.  A column whose three fields
+    are the same window read at three scopes printed turn > session > account,
+    which is not a rounding error but an ordering that cannot happen.
+
+    The machine-wide scan had it right the whole time and is worth reading
+    beside this: _window_costs filters INDIVIDUAL assistant records by their
+    own stamps.  The per-session tally was the only place a turn was still
+    atomic, so calibration's denominator was split at the boundary and the
+    numerator divided into it was not.
+
+    A stamp that will not parse counts IN, which is _window_costs' rule and
+    session_shares' before it: both windows end at now, so the likelier of the
+    two errors is to drop a call that belongs.
+
+    Falls back to the old whole-turn test when there are no parts to split.
+    That is a COMPACTION and only a compaction — it bills through no usage
+    record, so its cost comes off the boundary metadata and there is nothing
+    stamped to divide.  `t.compact` is tested rather than `not t.parts` alone
+    because a /compact prompt can carry both its own calls and the boundary,
+    and splitting on the calls would then charge the window a fraction of a
+    figure the calls never accounted for.
+    """
+    if start is None:
+        return turn_cost(t)
+    edge = start.timestamp()
+    if t.compact or not t.parts:
+        ts = _local_naive(t.ts)
+        return turn_cost(t) if ts is None or ts >= start else 0.0
+    return sum(c for e, c in t.parts if e is None or e >= edge)
+
+
+def window_shares(t: Turn, calib: Dict[str, Optional[float]]
+                  ) -> Dict[str, Optional[float]]:
+    """One turn's share of each live window, counting only what it billed in.
+
+    The per-prompt half of what session_shares does for the whole session, on
+    the same boundaries and the same split, so the 🎤 figure is a part of the
+    🎮 figure beneath it by construction rather than by coincidence.  Both
+    read _window_starts, which reads limits_snapshot, which is memoised for
+    the life of the render — so the two cells cannot end up bounded by
+    different moments, which is the failure limits_snapshot exists to stop.
+    """
+    starts = dict(zip(("sess", "week"), _window_starts()))
+    out = {"sess": None, "week": None}
+    for key, start in starts.items():
+        unit = calib.get(key)
+        if unit:
+            out[key] = turn_cost_since(t, start) / unit
+    return out
+
+
+def turn_shares(t: Turn) -> Tuple[Optional[int], Optional[int]]:
+    """What fraction of one prompt's cost went on re-reading, and on caching.
+
+    The two components of a turn's bill that are ABOUT THE CONTEXT rather than
+    about the answer: cache_read, which is the conversation so far being sent
+    again, and cache_creation, which is this turn's own new material being
+    put where the next request can read it.  Output is the remainder and is
+    deliberately not reported -- it is the one part of the bill no amount of
+    /compact or /clear can reclaim, so a reading of it would not inform the
+    decision these two are here for.
+
+    WHOLE PERCENT, because the field is 💳's three columns and because these
+    are ratios to act on rather than figures to add up.  Rounded, not floored:
+    nothing sums to them, so the truncation cost_totals_group's note argues
+    against has no equivalent here, and half a point of bias in a number read
+    as "roughly a third" is worse than the rounding.
+
+    (None, None) for a turn with no cost to take a share OF.  That is a
+    compaction, which issues no request of its own -- the same case ctx
+    handles by walking back to the last turn that HAS a reading.  Here there
+    is nothing to walk back to that would be true of this turn, so the cell
+    goes blank rather than borrowing its neighbour's answer.
+    """
+    c = turn_cost(t)
+    if c <= 0:
+        return None, None
+    return (int(round(100 * t.cache_read * P_CR / c)),
+            int(round(100 * t.cache_write * P_CW / c)))
 def window_for(turns: Sequence[Turn], session_id: str = "") -> int:
     """The context window in force: what the status line published, else a guess.
 
@@ -4145,22 +4518,35 @@ def calibration() -> Dict[str, Optional[float]]:
         $/1%          = (cost of everything in the window) / (percent consumed)
         prompt share  = prompt cost / $/1%
 
-    The percentage comes from limits_snapshot, the same reading plan_totals
-    prints after the "/" and _window_starts bounds the sum with, so all three
-    describe one moment.  Letting them differ would put the two 🔋 cells of
-    one readout on different scales, which is the same disagreement as
-    plan_totals', one row apart — and it happened, by way of the DISK cache
-    below: the ratio was stored, so a unit another session had derived from a
-    live reading was divided into a share bounded by a stale one.
+    The percentage is the one limits_snapshot publishes — the same reading
+    plan_totals prints after the "/" and _window_starts bounds the sum with,
+    so all three describe one moment.  Letting them differ would put the two
+    🔋 cells of one readout on different scales, which is the same
+    disagreement as plan_totals', one row apart — and it happened, by way of
+    the DISK cache below: the ratio was stored, so a unit another session had
+    derived from a live reading was divided into a share bounded by a stale
+    one.
 
-    WHAT IS CACHED IS THE SCAN, NOT THE RATIO.  The expensive half is
-    _window_costs, which walks transcripts; the percentages are free.  So the
-    two window costs go to disk keyed by the WINDOWS they were measured over,
-    and the division happens fresh on every call against this process's own
-    snapshot.  The unit can no longer disagree with the figure beside it, the
-    scan is still paid for at most once per CALIB_TTL, and the cache is
+    WHAT IS CACHED IS THE SCAN, NOT THE RATIO, and since 2026-09-03 the
+    READING THE SCAN WAS TAKEN WITH goes to disk beside it.  The expensive
+    half is _window_costs, which walks transcripts — 1.3 s here, far too slow
+    for a status line that redraws as you type; the percentages are free.  So
+    the costs go to disk keyed by the WINDOWS they were measured over, the
+    reading of that same instant goes with them, and the division happens
+    fresh on every call — against that pair, not against a live reading.  A
+    rate cannot be estimated from a numerator and a denominator taken minutes
+    apart, and at a reset the minutes between them are the whole window: see
+    the note at the cache read below for what that printed.
+
+    The unit still cannot disagree with the figure beside it, the scan is
+    still paid for at most once per CALIB_TTL, and the cache is still
     invalidated by the only event that actually invalidates it — a reset,
     which moves a boundary.
+
+    NOT DERIVED AT ALL below CALIB_MIN_PCT.  A percentage quantised to whole
+    numbers is not a divisor at 1; the shares that would come out of it are
+    uncertain by half of themselves, and "?" is what the row has always
+    printed for a figure it does not have.
 
     Self-calibrating — it re-derives from live data each time rather than
     carrying a constant that silently goes stale.  Two honest caveats: it
@@ -4180,6 +4566,7 @@ def calibration() -> Dict[str, Optional[float]]:
     snap = limits_snapshot()
     ss, ws = _window_starts()
     out = {"sess": None, "week": None}
+    sp, wp = snap.get("session_pct"), snap.get("weekly_pct")
     cached = _read_calib_cache("%s|%s" % (ss, ws))
     if cached is not None and "windows" not in cached:
         # A planted fixture, which states the two UNITS directly and holds
@@ -4189,16 +4576,39 @@ def calibration() -> Dict[str, Optional[float]]:
         # scan this machine's transcripts.  See tests/pin-env.sh.
         return {"sess": cached.get("sess"), "week": cached.get("week")}
     if cached is not None:
+        # BOTH HALVES OFF THE CACHE, which is the 2026-09-03 change and the
+        # whole of it.  The scan was cached and the reading was taken live, so
+        # a numerator measured five minutes ago was divided by a denominator
+        # measured now — and a rate estimated across two moments is only as
+        # good as the assumption that nothing moved between them.  At a
+        # RESET everything moves: the scan is written seconds into the new
+        # window holding seconds of spending, the reading climbs while it
+        # sits there, and the unit comes out far too small.  Every share
+        # divided by it is then far too large, which is how 🎤 came to print
+        # 18٪ of a window whose own account total read 1٪ — a part three
+        # times the whole it belongs to.  Same instant on both sides and that
+        # cannot happen: this session's transcripts are IN the scan, so its
+        # cost is at most sc, so its share is at most sp.
+        #
+        # This does not contradict the note above about caching the scan and
+        # not the ratio.  What must not be cached is the ratio's ANSWER,
+        # because a share bounded by one window divided by a unit derived
+        # under another is the failure the window key exists to stop.  The
+        # two measurements that go INTO it have to be simultaneous, and the
+        # window key still holds them to this window.
         sc, wc = cached.get("sess_cost"), cached.get("week_cost")
+        sp, wp = cached.get("sess_pct"), cached.get("week_pct")
     elif ss is None and ws is None:
         return out
     else:
         sc, wc = _window_costs(ss, ws)
-        _write_calib_cache("%s|%s" % (ss, ws), sc, wc)
-    sp, wp = snap.get("session_pct"), snap.get("weekly_pct")
-    if sp and sc is not None:
+        _write_calib_cache("%s|%s" % (ss, ws), sc, wc, sp, wp)
+    # See CALIB_MIN_PCT: below it the reading's own quantisation is worth
+    # more than the figure, and "?" is the honest reading of a scale that
+    # cannot be drawn yet.
+    if sp and sp >= CALIB_MIN_PCT and sc is not None:
         out["sess"] = sc / sp
-    if wp and wc is not None:
+    if wp and wp >= CALIB_MIN_PCT and wc is not None:
         out["week"] = wc / wp
     return out
 
@@ -4221,15 +4631,28 @@ def _read_calib_cache(windows: str) -> Optional[dict]:
         return None
     if "windows" not in d:
         return d
-    return d if d.get("windows") == windows else None
+    if d.get("windows") != windows:
+        return None
+    # An entry written before 2026-09-03 carries no reading to pair the scan
+    # with, and pairing it with a live one is the bug this key was added to
+    # fix.  Treated as a miss, which costs one rescan on the first render
+    # after an upgrade and nothing after that.
+    return d if "sess_pct" in d else None
 
 
-def _write_calib_cache(windows: str, sc: float, wc: float) -> None:
+def _write_calib_cache(windows: str, sc: float, wc: float,
+                       sp: Optional[float], wp: Optional[float]) -> None:
+    """The scan, and the two readings it was SIMULTANEOUS with.
+
+    The readings are stored because the division happens later — possibly in
+    another process, up to CALIB_TTL after this — and a rate is only estimable
+    from a cost and a percentage measured at one moment.  See calibration.
+    """
     try:
         tmp = "%s.%d" % (CALIB_CACHE, os.getpid())
         with open(tmp, "w") as fh:
-            json.dump({"windows": windows, "sess_cost": sc, "week_cost": wc},
-                      fh)
+            json.dump({"windows": windows, "sess_cost": sc, "week_cost": wc,
+                       "sess_pct": sp, "week_pct": wp}, fh)
         os.replace(tmp, CALIB_CACHE)
     except Exception:
         pass
@@ -4306,6 +4729,28 @@ COLOUR_INK = Ink(R, F_GRN, F_AMB, F_RED, F_TUP, F_TDN, F_YEL, F_PNK, F_PNK2,
 PLAIN_INK = Ink("", "", "", "", "", "", "", "", "", "")
 
 
+def share_half(emoji: str, share: Optional[int], ink: Ink) -> str:
+    """The C_LIM_TOT half of a PER-PROMPT limit cell, under limit_cell's.
+
+    Same shape as the half it stacks on -- a leading blank, the mark, MARK_SP,
+    and one whole-percent reading in three columns -- so the two figures land
+    in one column and the row can be read downward.  It is the blank the
+    per-prompt row used to pad with, now spent on a reading; the width is
+    unchanged, which is the point.  MARK_SP is read HERE and not captured,
+    because --no-mark-spacing rebinds it after import and this cell has to
+    close with the rest of them.
+
+    A missing share still returns the full seven columns.  seg() pads the cost
+    row on the LEFT, so a short cell does not leave a gap at its end: it
+    shoves the whole cell right, off the column it has to stack on.  That is
+    the same miscount C_LIM_TOT's note warns about, one row up.
+    """
+    if share is None:
+        return " " * C_LIM_TOT
+    return " %s%s%s%s%s" % (emoji, MARK_SP, ink.amb, pad_val(3, pct(share)),
+                            ink.r)
+
+
 def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
                now: Optional[float] = None, acct: bool = True,
                stamps: bool = True) -> str:
@@ -4323,6 +4768,15 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
     in_all = t.fresh + t.cache_write + t.cache_read
     cpct = int(100 * t.cache_read / in_all) if in_all else -1
     c = turn_cost(t)
+    rd, wr = turn_shares(t)
+    # 🔋 and 🪫 below report this prompt's share of each PLAN WINDOW, so what
+    # they divide is the part of it billed inside that window — not `c`, which
+    # is the whole turn and is what 💰 to their left is for.  The two differ
+    # only for a turn that straddles a reset, and for that turn the difference
+    # is the whole figure: see turn_cost_since.  The totals row underneath
+    # sums the same split over every turn, which is what lets these deltas
+    # total the figure beneath them across a reset as well as within one.
+    tsh = window_shares(t, calib)
     stamp = time.localtime(now) if now is not None else time.localtime()
     lim_w = C_SESS if acct else C_SESS - C_LIM_TOT
     cells = [
@@ -4346,25 +4800,33 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
         # cells after it.  Every figure on this row is what ONE prompt put on
         # the reading directly beneath it.
         seg(C_COST, "%s%s+%s%s" % (E_COST, ink.yel,
-                                   dec_align(money_fmt(c), 3, 1), ink.r),
+                                   money_cell(c), ink.r),
             left=False),
-        # The trailing blank is where the row below prints "/" and the
-        # window's own reading.  It is spent here rather than left to seg(),
-        # which pads the cost row on the LEFT and would otherwise shove this
-        # cell four columns right of the one it has to stack on.  With
-        # --no-account-totals there is no such reading to leave room for, so
-        # the blank and the reservation go together — narrowing one without
-        # the other is the miscount C_SESS's note warns about.
+        # The second half of each cell is the C_LIM_TOT the row below spends
+        # on 💳 and the window's own reading.  It was seven blanks until
+        # 2026-09-03 — reserved so the emoji above lands over the emoji below,
+        # and otherwise wasted.  It now carries where THIS prompt's money
+        # went: 📖 the part spent re-reading the conversation, 📝 the part
+        # spent caching what this turn added.  See turn_shares for why those
+        # two and not a third, and E_READ for why they are shares of the turn
+        # rather than of the window whose glyph opens the cell.
+        #
+        # The reservation is unchanged either way, and it must be: seg() pads
+        # the cost row on the LEFT, so a cell narrower than the one below it
+        # is not a gap at the end of a row but a whole cell pushed right, off
+        # the column it has to stack on.  With --no-account-totals there is no
+        # 💳 half below to stack ON, so the halves go together — which is why
+        # share_half is reached through the same `acct` test the blank was.
         seg(lim_w, "%s%s+%s%s%s" % (
             E_SESS, ink.amb,
-            dec_align(plan_pct(c / calib["sess"]), 2, 2, E_PCT), ink.r,
-            " " * C_LIM_TOT if acct else "")
-            if calib.get("sess") else "", left=False),
+            dec_align(plan_pct(tsh["sess"]), 2, 2, E_PCT), ink.r,
+            share_half(E_READ, rd, ink) if acct else "")
+            if tsh.get("sess") is not None else "", left=False),
         seg(lim_w, "%s%s+%s%s%s" % (
             E_WEEK, ink.amb,
-            dec_align(plan_pct(c / calib["week"]), 2, 2, E_PCT), ink.r,
-            " " * C_LIM_TOT if acct else "")
-            if calib.get("week") else "", left=False),
+            dec_align(plan_pct(tsh["week"]), 2, 2, E_PCT), ink.r,
+            share_half(E_WRITE, wr, ink) if acct else "")
+            if tsh.get("week") is not None else "", left=False),
         # "+" as on 💰, 🔋 and 📆 beside it: every figure on this row is what
         # ONE prompt added to the reading directly beneath it, and this one is
         # the time it took.  The totals row prints a space in the column.
@@ -4427,9 +4889,15 @@ def session_shares(turns: Sequence[Turn],
     per one percent — so the deltas on that row now sum to the figure beneath
     them, which is what the column claims and could not previously deliver.
 
-    A turn whose stamp will not parse is counted IN.  Both windows end at
-    now, so the overwhelmingly likelier of the two errors is to drop a turn
-    that belongs, and dropping it understates the share.
+    Each turn is SPLIT at the boundary rather than tested against it.  It used
+    to be tested — `_local_naive(t.ts) >= start`, on the stamp of the prompt —
+    and a turn that straddles a reset then went wholly to the window it was
+    typed in, which by then was the window that had closed.  See
+    turn_cost_since for the measurement; the short version is that a five
+    minute turn put $3.85 into the live 5-hour window and this function
+    reported 0.  A turn whose stamp will not parse is still counted IN, for
+    the reason it always was: both windows end at now, so the likelier of the
+    two errors is to drop spending that belongs.
     """
     out = {"sess": None, "week": None}
     if not calib:
@@ -4439,8 +4907,7 @@ def session_shares(turns: Sequence[Turn],
         unit = calib.get(key)
         if not unit or start is None:
             continue
-        out[key] = sum(turn_cost(t) for t in turns
-                       if (_local_naive(t.ts) or start) >= start) / unit
+        out[key] = sum(turn_cost_since(t, start) for t in turns) / unit
     return out
 
 
@@ -4596,7 +5063,7 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
             ink.pnk, pad_val(4, humanize(ctx)), ink.r)
             if ctx else "", left=False),
         seg(C_COST, "%s%s %s%s" % (E_COST, ink.yel,
-                                   dec_align(money_fmt(c), 3, 1), ink.r),
+                                   money_cell(c), ink.r),
             left=False),
         seg(lim_w, limit_cell(E_SESS, mine.get("sess"),
                               totals.get("sess") if totals else None, ink,
@@ -4916,9 +5383,17 @@ def selftest() -> int:
             Turn("", "", 40000, 8000, 900000, 3000, 640000, 3, 142000, None),
             {"sess": 0.5, "week": 2.0}, CTX_1M, COLOUR_INK)),
         # The TOTALS row, which the per-prompt specimen above cannot stand in
-        # for: it is the wider of the two now that 🔋 and 🪫 carry a second
-        # figure each, and C_SESS is the width whose failure shows up as the
-        # two 📊 refusing to stack rather than as anything near this cell.
+        # for.  It used to be the WIDER of the two — 🔋 and 🪫 carried a
+        # second figure each where the row above them carried blanks — and
+        # since 2026-09-03 it is not: 📖 and 📝 fill that half on the
+        # per-prompt row, so both rows now spend C_SESS on content.  Which is
+        # why this specimen still has to be measured separately rather than
+        # dropped as the narrower case: what differs now is the CONTENT of
+        # those seven columns, not their width, and it is content with its own
+        # ways to miscount — dec_align's fixed point, the "?" fallback, and 💯
+        # standing in for a full window.  C_SESS is still the width whose
+        # failure shows up as the two 📊 refusing to stack rather than as
+        # anything near this cell.
         #
         # Whether session_shares finds a live plan cache does not matter to
         # what is being measured — dec_align returns exactly six columns for
@@ -5125,6 +5600,15 @@ modes:
   --selftest         draw specimen rows and measure them against the terminal
 
 options (both modes):
+  --subscript-decimals
+                     write a fraction in U+2080..U+2089 instead of after a
+                     point: 🎤 1.2٪ becomes 🎤 1₂٪, 💰 29.8 becomes 💰 29₈.
+                     Off by default.  The leading zero the status line drops
+                     comes back — "₃₈" would read as 38 where ".38" cannot —
+                     so a reading under 1٪ is the same width either way.
+                     No field is narrowed yet: the saving is real but it is
+                     only banked once a probe has measured these glyphs on
+                     the terminal in use.
   --no-mark-spacing  close the blank between a mark and its value (🎤 .98٪
                      becomes 🎤.98٪).  Status: all four column-4 fields, so
                      the column narrows from 33 to 29.  Cost: 🧩, 🎯 and the
@@ -5181,6 +5665,9 @@ def main(argv: Sequence[str]) -> int:
         return 0
     # Before anything renders: it moves the grid every renderer lays onto.
     set_mark_spacing("--no-mark-spacing" not in argv)
+    # Same reason, one layer in: it changes what the five numeric formatters
+    # emit, and every field on both readouts is measured from that.
+    set_subscript_decimals("--subscript-decimals" in argv)
     mode = _flag(argv, "--mode", "status")
     if mode == "cost":
         try:
