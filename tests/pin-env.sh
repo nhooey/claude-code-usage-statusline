@@ -61,6 +61,15 @@ pin_env() {               # $1 = scratch dir; wiped and rebuilt on every call
   # figures to the real cost line and leaves them there for five minutes.
   export CLAUDE_PLAN_CACHE="$scratch/tmp/plan-limits.json"
   export CLAUDE_CALIB_CACHE="$scratch/tmp/calib.json"
+  export CLAUDE_LIMIT_CACHE="$scratch/tmp/claude-usage-cache.json"
+
+  # And nobody is asked for a fresh reading.  The cache below is planted with
+  # a fresh mtime, so LIMIT_TTL is satisfied and no source would be consulted
+  # anyway — but "would not be" is a property of the fixture's mtime, and this
+  # is a property of the run.  On the machine this is developed on, "auto"
+  # resolves to the menu-bar app and one slow run past the TTL would put this
+  # account's real plan consumption into a golden file.
+  export CLAUDE_USAGE_SOURCE=none
 
   # The terminal profile, which selects the per-terminal width overrides.
   # Pinned to jediterm — Neil's terminal, and the profile the override tables
@@ -73,12 +82,12 @@ pin_env() {               # $1 = scratch dir; wiped and rebuilt on every call
   unset TERM_PROGRAM
   export TERMINAL_EMULATOR=JetBrains-JediTerm
 
-  # The menu-bar app's snapshot, planted.  Two payloads carry no rate_limits
-  # and fall through to this file; unplanted, the program finds it stale and
-  # shells out to usage-limits.sh, which reports this machine's real plan
-  # consumption — a number that is different every hour and belongs to nobody
-  # but Neil.  Fresh mtime, so the 60-second TTL is satisfied and the shell-out
-  # never happens.
+  # A usage source's reading, planted.  Two payloads carry no rate_limits and
+  # fall through to this file; unplanted, the program finds it stale and asks
+  # the selected source, which on a developer's Mac reports that machine's
+  # real plan consumption — a number that is different every hour and belongs
+  # to one person.  Fresh mtime, so the 60-second TTL is satisfied, and
+  # CLAUDE_USAGE_SOURCE=none above so that even an expired one asks nobody.
   #
   # `as_of` is the field that decides which source a render quotes, so it is
   # pinned rather than left to the file's mtime — 200 seconds before PIN_NOW,
@@ -89,8 +98,8 @@ pin_env() {               # $1 = scratch dir; wiped and rebuilt on every call
   # real minute happened to tick during the run, which is how the app and the
   # plan cache traded places between two adjacent cases of one suite.
   #
-  # The reset times are LOCAL "%Y-%m-%d %H:%M" strings because that is what
-  # usage-limits.sh actually emits.  They were bare epochs, which short_dur
+  # The reset times are LOCAL "%Y-%m-%d %H:%M" strings because that is the
+  # STAMP_FMT every channel in the program carries.  They were bare epochs, which short_dur
   # also accepts — so the countdown rendered and the fixture looked right —
   # but _window_starts parses with one strptime and an epoch is not a date,
   # so the two fallback payloads reached _with_shares with no window boundary
@@ -98,7 +107,7 @@ pin_env() {               # $1 = scratch dir; wiped and rebuilt on every call
   # merely accepted is not the same as a fixture that is faithful.  These two
   # are the same instants as the epochs they replace, under TZ=UTC: 1786852800
   # is 1.6h after PIN_NOW and 1787014800 is 1.9d after it.
-  cat > "$scratch/tmp/claude-usage-cache.json" <<'JSON'
+  cat > "$CLAUDE_LIMIT_CACHE" <<'JSON'
 {
   "session_pct": 41,
   "session_resets_at": "2026-08-16 04:00",

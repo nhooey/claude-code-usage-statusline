@@ -7,16 +7,17 @@ conversation and was never going into a repository. Both corpora are now
 generated, so there is nothing left in here that belongs to anyone.
 
 ```sh
-bash tests/golden.sh              # status mode, 112 comparisons — seconds
-bash tests/golden-cost.sh         # cost mode, 65 comparisons — seconds
+bash tests/golden.sh              # status mode, 129 comparisons — seconds
+bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
+python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
 ./claude-code-usage-statusline.py --selftest    # needs a real tty, see below
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```
 
-The first three must end `fail 0   missing 0` — `py39-floor.sh` prints the
-same trailer so a run of all three reads the same way. Any golden failure
+The first four must end `fail 0   missing 0` — they all print the same
+trailer, so a run of all four reads the same way. Any golden failure
 writes the two outputs side by side under `out/` or `out-cost/`, so `diff`
 shows the disagreement directly.
 
@@ -214,6 +215,39 @@ run: one case took the plan cache, the next took the app, from the same two
 files, and `--regen` immediately followed by a check failed six comparisons.
 `_reading_age` now measures against `frozen_now()` like every other duration
 on the readout.
+
+## The usage sources, and why they are not goldens
+
+`usage-source.py` covers the one part of the program that reads somebody
+else's store: `tracker_reading()` on the Claude Usage Tracker app's
+UserDefaults, `normalise_reading()` on whatever any source hands back, the
+`cmd:` escape hatch, and the 60-second cache in front of all of it.
+
+It is assertions rather than golden files because these cases pin **values**,
+not a layout — `session_pct` is 98, a reset in the past is dropped, a
+credential never reaches `/tmp` — and the last of those cannot be expressed as
+a rendered row at all. The fixture store is built in-process with `plistlib`,
+so the whole file runs on Linux with no app installed and CI runs it.
+
+**The fixture is the schema.** It is the shape of a live store read on
+2026-09-08, and it is the only record of that shape anywhere in the
+repository. This matters because the previous implementation had no such
+record and failed exactly that way: it lived in two shell scripts outside the
+repo, the app moved its snapshot history out of UserDefaults into a file, the
+`usageHistory_<uuid>` key both scripts keyed off stopped existing, and the
+wrapper printed `{}` and exited 0 for days. Nothing on the readout said so —
+the limit rows have a legitimate blank state and that is what a reader saw.
+One case (`pre-migration store`) pins that old shape now, so the two are told
+apart deliberately rather than by accident.
+
+To check the fixture against reality after an app update:
+
+```sh
+defaults export HamedElfayome.Claude-Usage - > /tmp/store.plist
+CLAUDE_USAGE_TRACKER_PLIST=/tmp/store.plist python3 tests/usage-source.py
+```
+
+A field that moved fails with its name in the diff.
 
 ## Column 4 carries three scopes
 

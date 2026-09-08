@@ -49,6 +49,7 @@ import functools
 import glob
 import json
 import os
+import plistlib
 import re
 import struct
 import subprocess
@@ -651,9 +652,21 @@ RULE_MIN = 160         # narrowest row that still gets the rules.  Set against
 CTX_DEF = 200000       # context window for ordinary models
 CTX_1M = 1000000       # context window for the *-1M-context variants
 CACHE_WARN, CACHE_CRIT = 80, 50    # cache hit %: ≤ WARN amber, ≤ CRIT red
-LIMIT_TTL = 60                     # seconds to cache usage-limits.sh output
-LIMIT_CACHE = os.path.join(os.environ.get("TMPDIR", "/tmp"),
-                           "claude-usage-cache.json")
+LIMIT_TTL = 60                     # seconds to cache a usage source's reading
+LIMIT_CACHE = os.environ.get(
+    "CLAUDE_LIMIT_CACHE",
+    os.path.join(os.environ.get("TMPDIR", "/tmp"), "claude-usage-cache.json"))
+
+# The one stamp format crossing every boundary in this program: the plan cache
+# the two modes trade readings through, the reset times a usage source reports,
+# and `as_of`, which decides which of two readings is quoted.  LOCAL time and
+# minute resolution, because that is what the readout formats in and what the
+# menu-bar app's own JSON emitted -- a channel that changed format would be a
+# channel silently read wrong, and _window_starts parses with one strptime.
+#
+# Named once because it was written out five times, in four functions that
+# have to agree about it, and nothing said they had to.
+STAMP_FMT = "%Y-%m-%d %H:%M"
 K, M, G = 1000, 1000000, 1000000000   # humanize boundaries
 
 # The ladder humanize() and money_fmt() both climb, largest first.  One tuple
@@ -1939,7 +1952,7 @@ def short_dur(target: str, now: Optional[float] = None) -> Optional[str]:
 
     `target` is either a bare Unix epoch — the form the status-line payload
     carries, being the rate-limit reset header verbatim — or a local
-    "YYYY-MM-DD HH:MM" from the menu-bar app's snapshot.
+    "YYYY-MM-DD HH:MM" from a usage source's reading.
 
     Returns None for empty or unparseable input, which is the NORMAL case for
     the 5-hour window under the fallback source: it is a rolling window the app
@@ -1961,7 +1974,7 @@ def short_dur(target: str, now: Optional[float] = None) -> Optional[str]:
         delta = int(target) - t
         return "now" if delta <= 0 else dur_fmt(delta)
     try:
-        target_s = int(datetime.strptime(target, "%Y-%m-%d %H:%M").timestamp())
+        target_s = int(datetime.strptime(target, STAMP_FMT).timestamp())
     except ValueError:
         return None
     delta = target_s - t
@@ -3249,44 +3262,477 @@ def _pct_str(v: Optional[float]) -> str:
     return "" if v is None else "%g" % v
 
 
+# ════════════════════════════════════════════════════════════════════════════
+# Usage sources: where a plan reading comes from when the payload has none.
+#
+# Claude Code's own payload is always preferred and never comes through here.
+# Its `rate_limits` block is the API's own accounting, arriving with the render
+# — see load_limits, which is all-or-nothing about it.  But two of the sixteen
+# payload shapes in the corpus carry no such block, and the Stop hook's payload
+# never does, so there has to be a second channel, and something has to fill
+# it.
+#
+# WHAT THIS REPLACES.  The channel used to be a shell script outside this
+# repository: ~/.claude/usage-limits.sh, wrapping ~/.claude/usage-now.sh,
+# wrapping `defaults export`, wrapping a python3 of its own.  Three processes
+# and two files that were never installed with the program and were named
+# nowhere in its README, so a clone of this repository could not read a plan
+# figure at all and nothing on the readout said why.
+#
+# It also broke without saying so.  The menu-bar app moved its snapshot
+# history out of UserDefaults into a file at some point before 2026-09-05 —
+# the store still carries the `usageHistoryMigratedToFiles_v1` marker of it —
+# and the `usageHistory_<uuid>` key both scripts keyed off simply stopped
+# existing.  The wrapper caught the failure, printed "{}", exited 0, and the
+# fallback answered "no reading" for days.  That is the shape of failure a
+# three-layer shell-out has: every layer swallows, and the last one is not
+# even in the repository whose tests would have caught it.
+#
+# THE INTERFACE.  A source is an object with a name, an `available()` and a
+# `read()`; `read()` returns a plain dict and may return {}.  Everything else
+# — coercion, the future guard on a reset time, dropping fields nobody asked
+# for — happens once in normalise_reading, so a new source is a class with one
+# method that returns whatever shape it has and no obligation to know how the
+# readout uses it.
+#
+# Three ways to plug one in, in increasing order of effort:
+#
+#   1. --usage-source cmd:/path/to/script — any executable that prints a
+#      reading as JSON on stdout.  This is the old usage-limits.sh contract
+#      exactly, so anybody with a working script keeps it, and anybody on a
+#      platform this file has no built-in for can write twenty lines of
+#      anything and be done.
+#   2. A subclass of UsageSource added to USAGE_SOURCES, for a source worth
+#      shipping.  `auto` walks that tuple in order and takes the first that
+#      says it is available.
+#   3. --usage-source none, which is not a plug-in but belongs on the list:
+#      it is what a test wants, and what a machine with no such app wants.
+#
+# The reading is a flat dict of at most seven keys, and the same seven the
+# plan cache has always carried, so limits_snapshot can weigh one against the
+# other and load_limits can read either without knowing which it got:
+#
+#   session_pct           whole-plan 5-hour utilisation, a number
+#   session_resets_at     when that window resets, STAMP_FMT, local
+#   weekly_pct            whole-plan 7-day utilisation
+#   weekly_opus_pct       the Opus sub-limit, carried but not yet drawn
+#   weekly_resets_at      when the 7-day window resets, STAMP_FMT, local
+#   as_of                 when the SOURCE took the reading, STAMP_FMT, local.
+#                         Not when this program read it: _reading_age spends a
+#                         docstring on that distinction and limits_snapshot
+#                         picks a source with it.
+#   session_reset_source  "app" | "unknown" — provenance of the 5-hour reset,
+#                         for a human reading the cache file by hand
+# ════════════════════════════════════════════════════════════════════════════
+
+# Seconds a reset time must be ahead of now before it is believed.
+#
+# Inherited from usage-limits.sh, and earned there: the app used to store the
+# 5-hour reset as a copy of its own snapshot timestamp, so the field was
+# present, parseable, and meant "now" — which renders as a countdown of zero
+# rather than as the blank that says "not known".  The current schema reports
+# it properly (measured 2026-09-08: 77 minutes ahead of the reading that
+# carried it), so this guard fires on nothing today.  It stays because the
+# failure it catches is a stale reading rendered as a live one, which is the
+# failure this whole section is careful about, and five minutes of resolution
+# is nothing to a five-hour window.
+RESET_MIN_AHEAD = 300
+
+APPLE_EPOCH = 978307200         # 2001-01-01 UTC, in Unix seconds.  Every
+                                # timestamp in a macOS app's own store is in
+                                # this epoch; every one in this program is in
+                                # Unix.  Converted at the boundary, once.
+
+
+def _stamp(t: float) -> str:
+    """A Unix epoch as the stamp every channel here carries."""
+    return time.strftime(STAMP_FMT, time.localtime(t))
+
+
+def _as_epoch(v) -> Optional[float]:
+    """A carried time back as a Unix epoch, whichever way it was carried.
+
+    Sources differ and are allowed to: the menu-bar app stores Apple-epoch
+    floats, Claude Code's payload sends Unix epochs, a hand-written script is
+    likeliest to print the stamp it already had.  All three arrive here and
+    only one shape leaves.
+
+    An epoch is distinguished from a stamp by being a number, not by its
+    magnitude — no threshold, because a threshold is a rule that works until
+    the day it does not and then fails silently in the direction of a
+    plausible wrong answer.
+    """
+    if isinstance(v, bool) or v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return None
+        try:
+            return float(s)
+        except ValueError:
+            pass
+        try:
+            return time.mktime(time.strptime(s, STAMP_FMT))
+        except (ValueError, OverflowError):
+            return None
+    return None
+
+
+def normalise_reading(d: dict, now: Optional[float] = None) -> dict:
+    """A source's answer, coerced into the one shape everything downstream reads.
+
+    Every source goes through this, including the built-in one, so there is a
+    single place where "what a reading is" is decided and a single place to
+    read to find out.
+
+    Three things happen, and the third is the one worth naming:
+
+      * times become STAMP_FMT strings, from epochs or stamps either way;
+      * percentages become numbers, or vanish;
+      * ANY OTHER KEY IS DROPPED.  Not tidiness: this dict is written to a
+        world-readable file under /tmp, and a source is an arbitrary program
+        reading an arbitrary store.  The built-in one reads a record that also
+        holds an OAuth account blob and an API session key, three keys along
+        from the figures it wants.  A pass-through would put whatever a source
+        happened to hand back into that file forever; a whitelist puts seven
+        fields there and cannot be talked into an eighth.
+
+    A reset time that is not meaningfully in the future is dropped rather than
+    carried — see RESET_MIN_AHEAD.  `as_of` is exempt, obviously: it is a
+    reading's age, and an age is behind you.
+    """
+    if not isinstance(d, dict):
+        return {}
+    now = now if now is not None else (frozen_now() or time.time())
+    out = {}                    # type: Dict[str, object]
+
+    for k in ("session_pct", "weekly_pct", "weekly_opus_pct"):
+        v = _pct_num(d.get(k))
+        if v is not None:
+            out[k] = v
+
+    for k in ("session_resets_at", "weekly_resets_at"):
+        t = _as_epoch(d.get(k))
+        if t is not None and t - now > RESET_MIN_AHEAD:
+            out[k] = _stamp(t)
+
+    t = _as_epoch(d.get("as_of"))
+    out["as_of"] = _stamp(t if t is not None else now)
+
+    src = d.get("session_reset_source")
+    out["session_reset_source"] = (src if src in ("app", "derived", "unknown")
+                                   else ("app" if out.get("session_resets_at")
+                                         else "unknown"))
+    # A reading with neither percentage is not a reading.  Both windows or
+    # neither is load_limits' rule about SOURCES; this is the weaker one about
+    # a single source having said anything at all, and it exists so that a
+    # source which returns a bare timestamp cannot overwrite a good cache with
+    # a dict that renders as two empty rows.
+    if "session_pct" not in out and "weekly_pct" not in out:
+        return {}
+    return out
+
+
+class UsageSource:
+    """One place a plan reading can come from.
+
+    Subclass, set `name`, answer `available()` honestly and return whatever
+    `read()` can find.  Neither method may raise: a source that cannot answer
+    returns {} and the readout draws the row it draws when nobody knows.
+    """
+
+    name = "?"
+
+    def available(self) -> bool:
+        """Whether this machine has the thing this source reads.
+
+        Cheap, and it is allowed to be approximate — `auto` uses it to pick,
+        and a source that says yes and then returns {} costs one render's
+        worth of nothing.  What it must not do is be expensive, because it is
+        asked before every refresh.
+        """
+        return True
+
+    def read(self) -> dict:
+        """A raw reading, in whatever shape the source has.  {} if none."""
+        return {}
+
+
+class ClaudeUsageTrackerSource(UsageSource):
+    """Claude Usage Tracker, the macOS menu-bar app.
+
+        https://github.com/hamed-elfayome/Claude-Usage-Tracker
+
+    It polls Anthropic on its own schedule and keeps the answer in its
+    UserDefaults store, which is why this is worth reading at all: no OAuth
+    handling here, no network call, no token to keep — the figures are already
+    on disk and somebody else's program is responsible for refreshing them.
+
+    Read through `defaults export` rather than by opening the .plist, because
+    a running app's preferences live in cfprefsd and reach the file when
+    cfprefsd feels like it.  The app writes a reading every 30 seconds and the
+    file lagged it by minutes in testing.  One subprocess, and it replaces the
+    three the shell wrapper spawned.
+
+    CLAUDE_USAGE_TRACKER_PLIST overrides that with a path to an exported plist
+    file.  It is the seam tests/usage-source.sh drives — a fixture store, on
+    any platform, with no app installed — and it doubles as the escape hatch
+    for reading a store copied off another machine.
+    """
+
+    name = "claude-usage-tracker"
+    DOMAIN = "HamedElfayome.Claude-Usage"
+    PLIST = "~/Library/Preferences/HamedElfayome.Claude-Usage.plist"
+    ENV = "CLAUDE_USAGE_TRACKER_PLIST"
+
+    def available(self) -> bool:
+        if os.environ.get(self.ENV):
+            return True
+        # The file is the CHEAP test — `defaults export` on an unknown domain
+        # succeeds and prints an empty dict, so asking it costs a process to
+        # learn nothing.  The file lags the live store, which makes it a bad
+        # source and a perfectly good existence check.
+        return (sys.platform == "darwin"
+                and os.path.isfile(os.path.expanduser(self.PLIST)))
+
+    def _store(self) -> dict:
+        path = os.environ.get(self.ENV)
+        if path:
+            with open(os.path.expanduser(path), "rb") as fh:
+                return plistlib.load(fh)
+        p = subprocess.run(["defaults", "export", self.DOMAIN, "-"],
+                           capture_output=True, timeout=15)
+        return plistlib.loads(p.stdout) if p.stdout else {}
+
+    def read(self) -> dict:
+        try:
+            return tracker_reading(self._store())
+        except Exception:
+            return {}
+
+
+def tracker_reading(store: dict) -> dict:
+    """The tracker's UserDefaults, read down to the figures this program uses.
+
+    Separated from the source that fetches the store so it can be tested
+    without a Mac, an app, or a subprocess: hand it a dict and read the answer.
+    Every part of this that is worth getting wrong is in here.
+
+    WHERE THE FIGURES LIVE.  `profiles_v3` is a JSON array stored as bytes —
+    one record per configured account — and each record carries a
+    `claudeUsage` object with the current reading in it:
+
+        sessionPercentage       5-hour window, whole plan
+        sessionResetTime        Apple epoch
+        weeklyPercentage        7-day window
+        weeklyResetTime         Apple epoch
+        opusWeeklyPercentage    the Opus sub-limit
+        lastUpdated             when the app took this reading
+
+    `activeProfileId` at the top level of the store names the record to read;
+    `isSelectedForDisplay` is the fallback, and the first record is the
+    fallback's fallback, because a store with one account has nothing to
+    choose between and should not need to be configured to say so.
+
+    NOTHING ELSE IS TOUCHED, and the reason is two keys along from the one
+    that is: the same profile record holds `oauthAccountJSON` and an API
+    session key.  This function names the six fields it wants and
+    normalise_reading drops anything else that arrives anyway.  A reading is
+    written to a file under /tmp; a credential must not be able to get into
+    it by accident.
+
+    THE OLD SHAPE IS GONE.  Until 2026-09 the store held `usageHistory_<uuid>`
+    — a rolling array of {sessionReset, weeklyReset} snapshots — and the 5-hour
+    reset was NOT in it: on a sessionReset snapshot `triggeringResetTime` was
+    a copy of the snapshot's own timestamp, so the wrapper script derived the
+    window instead, from the most recent 0٪ → non-zero transition in the
+    history.  That history now lives in a file
+    (~/Library/Application Support/Claude Usage/history/) and the reset is
+    published directly and correctly, so the derivation is not ported.  It is
+    written down here rather than carried as code because carrying it means
+    parsing nine megabytes of JSON on the off-chance, and because the thing it
+    worked around is fixed: reviving it is a matter of reading that file, not
+    of remembering what it did.
+    """
+    profs = store.get("profiles_v3")
+    if isinstance(profs, (bytes, bytearray)):
+        profs = profs.decode("utf-8", "replace")
+    if isinstance(profs, str):
+        try:
+            profs = json.loads(profs)
+        except ValueError:
+            return {}
+    if not isinstance(profs, list) or not profs:
+        return {}
+
+    want = store.get("activeProfileId")
+    prof = (next((p for p in profs
+                  if isinstance(p, dict) and p.get("id") == want), None)
+            or next((p for p in profs
+                     if isinstance(p, dict) and p.get("isSelectedForDisplay")),
+                    None)
+            or (profs[0] if isinstance(profs[0], dict) else None))
+    if not prof:
+        return {}
+    u = prof.get("claudeUsage")
+    if not isinstance(u, dict):
+        return {}
+
+    def unix(v):
+        t = _as_epoch(v)
+        return None if t is None else t + APPLE_EPOCH
+
+    return {
+        "session_pct": u.get("sessionPercentage"),
+        "session_resets_at": unix(u.get("sessionResetTime")),
+        "weekly_pct": u.get("weeklyPercentage"),
+        "weekly_opus_pct": u.get("opusWeeklyPercentage"),
+        "weekly_resets_at": unix(u.get("weeklyResetTime")),
+        "as_of": unix(u.get("lastUpdated")),
+    }
+
+
+class CommandSource(UsageSource):
+    """An external program that prints a reading as JSON on stdout.
+
+    The extension point for everything this file has no built-in for: another
+    tracker, another platform, a company's own quota endpoint, or the
+    usage-limits.sh somebody already has working.  The contract is the whole
+    of the interface — print a JSON object, exit 0 — and normalise_reading
+    takes it from there, so epochs or stamps and any subset of the fields are
+    all acceptable.
+
+    Run directly if it is executable and through bash if it is not, which is
+    the difference between `cmd:~/bin/usage` and `cmd:~/.claude/usage.sh`
+    after a checkout has dropped the execute bit.
+    """
+
+    name = "command"
+
+    def __init__(self, path: str):
+        self.path = os.path.expanduser(path)
+        self.name = "cmd:" + path
+
+    def available(self) -> bool:
+        return os.path.isfile(self.path)
+
+    def read(self) -> dict:
+        try:
+            argv = ([self.path] if os.access(self.path, os.X_OK)
+                    else ["bash", self.path])
+            p = subprocess.run(argv, capture_output=True, text=True,
+                               timeout=20)
+            if p.returncode != 0 or not p.stdout.strip():
+                return {}
+            d = json.loads(p.stdout)
+            return d if isinstance(d, dict) else {}
+        except Exception:
+            return {}
+
+
+# The built-in sources, in the order `auto` tries them.  One today; the tuple
+# is the registry rather than an if-statement so that adding a second is an
+# entry here and a class above, and so that --usage-source can name one
+# without this file growing a table of names beside the classes that have
+# them.
+USAGE_SOURCES = (ClaudeUsageTrackerSource,)
+
+# Which source to use, as a spec string.  Set from --usage-source, defaulting
+# to the environment, defaulting to "auto".
+#
+# Module state, which this file otherwise does not have, for the reason
+# set_mark_spacing is: the flag is parsed in main and consumed four calls deep
+# inside a cache refresh that has no argv and should not grow one.  Read once
+# per process, and a process is one render.
+_USAGE_SPEC = os.environ.get("CLAUDE_USAGE_SOURCE", "auto")
+
+
+def set_usage_source(spec: str) -> None:
+    global _USAGE_SPEC
+    _USAGE_SPEC = (spec or "auto").strip()
+
+
+def usage_source(spec: Optional[str] = None) -> Optional[UsageSource]:
+    """The source named by a spec, or None for "do not ask anybody".
+
+        auto              first built-in that says it is available (default)
+        none | off        no source; the cache file is still read
+        <name>            a built-in by name, e.g. claude-usage-tracker
+        cmd:PATH          an external program, see CommandSource
+
+    A NAMED source is returned whether or not it is available, deliberately:
+    naming one is an instruction, and an instruction that silently degrades to
+    a different source is how a readout comes to be quoting something nobody
+    chose.  It will return {} and the rows will be blank, which is a question
+    with an answer.  `auto` is the mode that is allowed to shrug.
+    """
+    spec = (spec if spec is not None else _USAGE_SPEC) or "auto"
+    spec = spec.strip()
+    if spec in ("none", "off", ""):
+        return None
+    if spec.startswith("cmd:") or spec.startswith("command:"):
+        return CommandSource(spec.split(":", 1)[1])
+    if spec == "auto":
+        for cls in USAGE_SOURCES:
+            src = cls()
+            if src.available():
+                return src
+        return None
+    for cls in USAGE_SOURCES:
+        if cls.name == spec:
+            return cls()
+    return None
+
+
 def _read_limit_cache() -> dict:
-    """The menu-bar app's snapshot, refreshed at most once per LIMIT_TTL.
+    """The selected usage source's reading, refreshed at most once per LIMIT_TTL.
 
-    usage-limits.sh shells out to `defaults export` and a python3 of its own,
-    which is far too slow to run on every render — and the app only polls
-    periodically anyway, so a fresher read would not be a truer one.
+    A source costs a subprocess at least — the built-in one runs `defaults
+    export`, an external one is a whole program — which is far too slow to pay
+    on every keystroke of a status line.  Nor would it buy anything: the app
+    polls Anthropic every thirty seconds, so a read per render would return
+    the same figures many times over.
 
-    Written via a temp file and os.replace so a concurrent render never reads a
-    half-written cache and a failed refresh leaves the previous good copy in
+    Written via a temp file and os.replace so a concurrent render never reads
+    a half-written cache and a failed refresh leaves the previous good copy in
     place.
 
-    A missing script suppresses the REFRESH and nothing else.  It used to
-    return {} outright, which conflated two questions — can this machine take
-    a new reading, and is there a reading already on disk — and answered the
-    second with the first.  On a machine with the app the two coincide, since
-    the only writer of this file is the branch below, so the conflation was
-    invisible; anywhere else it discards a perfectly good cache unread.  The
-    golden suite is the "anywhere else": it plants this file as a fixture and
-    has no ~/.claude at all under CI, so both stale-plan cases fell back to
-    the plan cache they exist to see beaten.
+    NO SOURCE SUPPRESSES THE REFRESH AND NOTHING ELSE.  It used to return {}
+    outright when the shell script was missing, which conflated two questions
+    — can this machine take a new reading, and is there a reading already on
+    disk — and answered the second with the first.  On the machine that had
+    the script the two coincided, since the only writer of this file is the
+    branch below, so the conflation was invisible; anywhere else it discards a
+    perfectly good cache unread.  The golden suite is the "anywhere else": it
+    plants this file as a fixture, pins --usage-source to none, and has no
+    ~/.claude at all under CI.
+
+    An EMPTY reading is not written.  normalise_reading returns {} for a
+    source that answered nothing intelligible, and overwriting a cache with
+    that would turn a momentary failure — the app quit, the store locked, a
+    schema changed — into a blank readout that outlives it.  The old cache
+    ages instead, and _reading_age lets limits_snapshot prefer the other
+    channel while it does.
     """
     age = 999999
     try:
         age = time.time() - os.path.getmtime(LIMIT_CACHE)
     except OSError:
         pass
-    script = os.path.expanduser("~/.claude/usage-limits.sh")
-    if age > LIMIT_TTL and os.path.isfile(script):
-        try:
-            p = subprocess.run(["bash", script], capture_output=True,
-                               text=True, timeout=20)
-            if p.returncode == 0 and p.stdout.strip():
+    if age > LIMIT_TTL:
+        src = usage_source()
+        d = normalise_reading(src.read()) if src else {}
+        if d:
+            try:
                 tmp = "%s.%d" % (LIMIT_CACHE, os.getpid())
                 with open(tmp, "w") as fh:
-                    fh.write(p.stdout)
+                    json.dump(d, fh)
                 os.replace(tmp, LIMIT_CACHE)
-        except Exception:
-            pass
+            except Exception:
+                pass
     try:
         with open(LIMIT_CACHE) as fh:
             d = json.load(fh)
@@ -3300,11 +3746,12 @@ def _reading_age(d: dict, path: str) -> float:
 
     The distinction is the whole point.  Both sources are files on disk, and
     the mtime of either says when a process last copied a reading into it —
-    which for the menu-bar app is when the 60-second wrapper cache refreshed,
-    not when the app last polled Claude.  `as_of` is the app's own answer to
-    "how old is this reading" (usage-now.sh takes it from the newest snapshot
-    in the plist) and it was being thrown away; the program never mentioned
-    the field.  Prefer it, and fall back to mtime only where it is absent.
+    which for a usage source is when LIMIT_TTL last expired, not when the
+    source last heard from Claude.  `as_of` is the source's own answer to "how
+    old is this reading" — the tracker app takes it from the `lastUpdated`
+    beside the figures — and it was being thrown away; the program never
+    mentioned the field.  Prefer it, and fall back to mtime only where it is
+    absent.
 
     Against frozen_now where one is pinned, like every other duration on the
     readout.  Freshness IS a duration, and measuring it on a different clock
@@ -3323,7 +3770,7 @@ def _reading_age(d: dict, path: str) -> float:
     if v:
         try:
             return max(0.0, now
-                       - time.mktime(time.strptime(v, "%Y-%m-%d %H:%M")))
+                       - time.mktime(time.strptime(v, STAMP_FMT)))
         except (ValueError, OverflowError):
             pass
     try:
@@ -3430,13 +3877,13 @@ def _write_plan_cache(spct: str, sreset: str,
 
     def local(v: str) -> str:
         try:
-            return time.strftime("%Y-%m-%d %H:%M", time.localtime(float(v)))
+            return time.strftime(STAMP_FMT, time.localtime(float(v)))
         except (TypeError, ValueError):
             return ""
 
     d = {"session_pct": sp, "session_resets_at": local(sreset),
          "weekly_pct": wp, "weekly_resets_at": local(wreset),
-         "as_of": time.strftime("%Y-%m-%d %H:%M",
+         "as_of": time.strftime(STAMP_FMT,
                                 time.localtime(frozen_now()))}
     try:
         tmp = "%s.%d" % (PLAN_CACHE, os.getpid())
@@ -4490,7 +4937,7 @@ def _window_starts() -> Tuple[Optional[datetime], Optional[datetime]]:
         if not v:
             return None
         try:
-            return datetime.strptime(v, "%Y-%m-%d %H:%M") - delta
+            return datetime.strptime(v, STAMP_FMT) - delta
         except Exception:
             return None
 
@@ -4709,7 +5156,7 @@ def plan_totals() -> Dict[str, Optional[float]]:
 
     NOTE, and it is a deliberate change from the program this replaces: the
     figures come from the SAME source the status line used, rather than from a
-    fresh shell-out to usage-limits.sh per turn.  Three reasons, in order:
+    fresh reading of a usage source per turn.  Three reasons, in order:
 
       * The two readouts now agree.  Previously the cost row could print 18٪
         while the status row directly above it printed 17٪, because they asked
@@ -5664,6 +6111,19 @@ options (both modes):
   --cols N           terminal width, overriding the ancestry walk.  Chiefly
                      for the golden test, which must be deterministic.  "0"
                      means "pretend the width is unknown".
+  --usage-source SPEC
+                     where to read the plan figures when Claude Code's own
+                     payload carries none.  Claude Code's figures are always
+                     preferred and this is never consulted while they are
+                     there.  Default "auto"; also settable as
+                     CLAUDE_USAGE_SOURCE.
+                       auto      the first built-in source that is available
+                       none      ask nobody; the cached reading is still read
+                       claude-usage-tracker
+                                 the Claude Usage Tracker menu-bar app
+                                 (macOS), read from its UserDefaults store
+                       cmd:PATH  any program that prints a reading as JSON on
+                                 stdout -- see CommandSource for the contract
 
 options (--mode status):
   --no-column-rules  drop the faint "|" borders between the five right-hand
@@ -5711,6 +6171,11 @@ def main(argv: Sequence[str]) -> int:
     # Same reason, one layer in: it changes what the five numeric formatters
     # emit, and every field on both readouts is measured from that.
     set_subscript_decimals("--subscript-decimals" in argv)
+    # Where a plan reading comes from when the payload carries none.  Set
+    # before either mode runs, because the first thing that asks for one is
+    # four calls inside a render.
+    set_usage_source(_flag(argv, "--usage-source",
+                           os.environ.get("CLAUDE_USAGE_SOURCE", "auto")))
     mode = _flag(argv, "--mode", "status")
     if mode == "cost":
         try:

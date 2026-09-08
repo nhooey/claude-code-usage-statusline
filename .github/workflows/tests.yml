@@ -12,6 +12,12 @@
 #   * compaction-once.py reads real transcripts under ~/.claude/projects/.
 #     A runner has none, so it has nothing to replay.
 #
+# What IS here and might look like it should not be: usage-source.py reads a
+# macOS app's preference store.  It builds its own fixture store with plistlib
+# and drives the source through CLAUDE_USAGE_TRACKER_PLIST, so it needs
+# neither macOS nor the app, and it is the only check that would have caught
+# that app changing its schema.
+#
 # Both stay manual, and tests/README.md says so beside the commands.
 name: tests
 
@@ -48,6 +54,8 @@ jobs:
         run: bash tests/golden.sh
       - name: cost mode
         run: bash tests/golden-cost.sh
+      - name: usage sources
+        run: python3 tests/usage-source.py
 
   floor:
     # The 3.9 claim in README.md, checked against a real 3.9. Separate from
