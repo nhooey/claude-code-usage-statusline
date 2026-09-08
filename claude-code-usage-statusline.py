@@ -17,24 +17,28 @@ and a whole width-measurement layer by copy.  The copies drifted, and the
 drift could only be repaired by hand because nothing could be imported across
 the language boundary.  This file exists so those facts are stated once.
 
-── BEFORE YOU EDIT: READ README.md ─────────────────────────────────────────
+── BEFORE YOU EDIT: READ docs/ ─────────────────────────────────────────────
 
-It carries what is worth knowing BEFORE opening this file, rather than while
-standing at one line of it.  Four things in particular, each of which has
-cost time to relearn and each of which is short there:
+README.md is the short pitch; docs/ carries what is worth knowing BEFORE
+opening this file, rather than while standing at one line of it.  Four
+things in particular, each of which has cost time to relearn and each of
+which is short there:
 
-  * "Glyphs, terminals, and the naughty ones" — JediTerm disagrees with every
+  * docs/glyphs-and-terminals.md — JediTerm disagrees with every
     published width table AND with itself, so widths are MEASURED, never
     inferred from which row looks wrong.  Also how to tell a layout bug from
     a paint bug, which is the first question to settle, not the last.
-  * "Why vis_width is not a correct Unicode implementation" — it counts per
+  * The same file, "Why vis_width is not a correct Unicode implementation" —
+    it counts per
     codepoint with a hand-maintained table.  Both look like bugs and both are
     deliberate.  Swapping in wcwidth or unicodedata.east_asian_width breaks
     the alignment of every row; it is tempting and has been attempted before.
-  * "The layout rule" — fixed field widths, fixed segment reservations, one
-    right-aligned constant.  Switching tabs must not move the numbers.
-  * '"Stop says: ", and the eleven columns' — the chrome the cost line is
-    laid out against, and why its rows ship as ONE systemMessage.
+  * docs/layout.md, "The layout rule" — fixed field widths, fixed segment
+    reservations, one right-aligned constant.  Switching tabs must not move
+    the numbers.
+  * The same file, '"Stop says: ", and the eleven columns' — the chrome the
+    cost line is laid out against, and why its rows ship as ONE
+    systemMessage.
 
 Style: pure functions over frozen NamedTuple records.  Nothing here reads
 mutable module state; the module-level names are constants, and the few that
@@ -69,8 +73,8 @@ from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 #
 # The invariant, restated because it is the thing that keeps the override
 # tables empty: every glyph here is ONE codepoint, none newer than Unicode 9,
-# and none carries a variation selector.  README, "Glyphs, terminals, and the
-# naughty ones", for the rule and the one-line test for a new glyph.
+# and none carries a variation selector.  docs/glyphs-and-terminals.md for the
+# rule and the one-line test for a new glyph.
 # ════════════════════════════════════════════════════════════════════════════
 E_HUMAN = "👤💬"       # chat row prefix — user.  U+1F464, Unicode 6.0, single
                        # codepoint, two columns — same width as the 👨 it
@@ -111,7 +115,7 @@ E_DOWN = "▾"           # output tokens, likewise.  U+25BE BLACK DOWN-POINTING
                        # and the down mark can resolve to DIFFERENT widths and
                        # break the field against itself.
                        #
-                       # Still naughty by README rule 2's literal test, which
+                       # Still naughty by glyph rule 2's literal test, which
                        # calls everything but W naughty.  That test cannot
                        # approve any one-column mark, because W means two
                        # columns, so it does not decide this field.  Neither
@@ -347,7 +351,7 @@ E_HUNDRED = "💯"       # stands in for the "100" of "100٪" on a limit row.
                        # is East_Asian_Width Neutral and needs U+FE0F to draw as
                        # an emoji at all, which is the two-codepoint,
                        # measures-one-draws-two shape that left 🪟 a phantom
-                       # cell.  README rule 2 rules it out, the same rule that
+                       # cell.  Glyph rule 2 rules it out, the same rule that
                        # ruled out 🗨.
                        #
                        # It narrows exactly one field, and did not at first.
@@ -819,8 +823,8 @@ C_SEG_GAP = 2  # between adjacent cost-row segments; matches the status line's
 
 # Columns the CLI spends before the cost row's first character: the box's
 # five-column indent ("  ⎿  ") plus "Stop says: ", which appear nowhere in the
-# hook payload and cannot be measured from here.  README, '"Stop says: ", and
-# the eleven columns', for what these two figures buy — why the rows ship as
+# hook payload and cannot be measured from here.  docs/layout.md, '"Stop
+# says: ", and the eleven columns', for what these two figures buy — why the rows ship as
 # ONE systemMessage, and why an unsubtracted chrome shows up as a WRAPPED
 # second line rather than a trailing ellipsis.
 #
@@ -971,8 +975,8 @@ def frozen_now() -> Optional[float]:
 # THIS IS NOT unicodedata, AND MUST NOT BE REPLACED BY IT.  It began as a
 # generated East_Asian_Width table and was then corrected against
 # probe-advance.sh; the three corrections, and why unicodedata gets each of
-# them wrong, are in README under "Why vis_width is not a correct Unicode
-# implementation".  Short version: the regional indicators are folded in at
+# them wrong, are in docs/glyphs-and-terminals.md under "Why vis_width is not
+# a correct Unicode implementation".  Short version: the regional indicators are folded in at
 # two columns EACH, U+1F300–U+1FAFF is ONE range rather than a dozen with
 # gaps, and U+1FA70–U+1FAF8 is left out so it measures one column.
 #
@@ -5722,7 +5726,7 @@ def place_stacked(rows: Sequence[Tuple[str, str, int]],
     so equal left edges give equal columns throughout.
 
     Placing each row with place() independently is what broke the stacking, and
-    README's "The layout rule" says why in full: the rows do not get the same
+    docs/layout.md's "The layout rule" says why in full: the rows do not get the same
     room, so as a window narrows the FIRST row crosses into place()'s
     truncation path while the second is still comfortably right-aligning.  A
     row that has to truncate now takes the others with it — all short together
@@ -5774,8 +5778,8 @@ def render_cost_line(turns: Sequence[Turn], opts: CostOpts,
     # own, and reporting it would print a row of zeros for a prompt the user
     # just watched being answered.  Falls back to the true last turn, so a
     # transcript with no usage at all still renders rather than vanishing.
-    # EXACTLY ONCE per compaction is the requirement here; README's
-    # "Compaction is reported exactly once" says why it falls to this line at
+    # EXACTLY ONCE per compaction is the requirement here; docs/accounting.md,
+    # "Compaction is reported exactly once", says why it falls to this line at
     # all and why Turn.reported, not the pairing below, is what buys it.
     #
     # The pairing is the FALLBACK.  This line fires once per ANSWERED PROMPT,
@@ -5827,7 +5831,7 @@ def render_cost_line(turns: Sequence[Turn], opts: CostOpts,
     # One blank line buys eleven columns: "Stop says: " is printed against the
     # FIRST line only, so opening the message with a newline spends that line
     # on the prefix alone and lays every row out against C_CHROME_CONT.  See
-    # README, '"Stop says: ", and the eleven columns'.
+    # docs/layout.md, '"Stop says: ", and the eleven columns'.
     #
     # Taken automatically only where it decides something — the block has to
     # cut its labels with the prefix and does not have to without it.  A window
@@ -6146,7 +6150,7 @@ usage: claude-code-usage-statusline.py --mode {status|cost} [options]
        claude-code-usage-statusline.py --selftest
 
 Renders the Claude Code status line and the per-prompt cost line from one set
-of glyphs, widths and formatters.  README.md, beside this file, carries the
+of glyphs, widths and formatters.  docs/, beside this file, carries the
 design notes: the layout rule, the terminal width tables, and the chrome the
 cost rows are laid out against.
 
