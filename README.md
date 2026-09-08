@@ -53,6 +53,14 @@ the settings file says which layout it wants rather than inheriting one. Add
 `--no-column-rules` to the status command for plain gaps between the columns
 instead of the faint borders.
 
+Nothing else is installed and nothing else is needed: one file, the standard
+library, and the JSON Claude Code already sends. The plan-limit rows read
+Claude Code's own `rate_limits` when it sends them and fall back to a **usage
+source** when it does not — optional, off nobody's critical path, and
+described under [Plan figures when the payload carries
+none](#plan-figures-when-the-payload-carries-none). Without one, those two
+rows show what Claude Code said and blank where it said nothing.
+
 ## Options
 
 `--mode cost` takes these, most of which only ever REMOVE something or
@@ -121,6 +129,24 @@ cell rather than as a whole row shifted: a diagnosis instead of a mystery.
 `--cols N` works in both modes and overrides the terminal-width walk; `0` means
 "pretend the width is unknown", which is the only way to exercise the fallback
 layout deterministically.
+
+`--usage-source SPEC` works in both modes and says where the plan figures come
+from **when Claude Code's payload carries none**. Claude Code's own figures
+are always preferred and this is never consulted while they are there.
+`auto` is the default and `CLAUDE_USAGE_SOURCE` sets it from the environment.
+
+| spec | source |
+|---|---|
+| `auto` | the first built-in that finds what it reads. One built-in today, so: the tracker app on macOS, nothing anywhere else |
+| `none`, `off` | ask nobody. The cached reading is still read, so this is "do not take a NEW reading", not "forget" |
+| `claude-usage-tracker` | the [Claude Usage Tracker](https://github.com/hamed-elfayome/Claude-Usage-Tracker) menu-bar app, read from its UserDefaults store |
+| `cmd:PATH` | any program that prints a reading as JSON on stdout |
+
+A named source is used whether or not it is available, and that is deliberate:
+naming one is an instruction, and an instruction that silently degrades to a
+different source is how a readout comes to be quoting something nobody chose.
+It will return nothing and the rows will be blank, which is a question with an
+answer. `auto` is the mode that is allowed to shrug.
 
 The four removing switches all default to ON — i.e. everything is drawn unless
 asked otherwise — so a bare invocation is the full readout.
@@ -654,6 +680,115 @@ Characters are referenced everywhere by `E_*` name, never by literal, because
 this file. A glyph left inline in a renderer is a glyph nobody measures — which is
 how the probe's list drifted from the layout three times in two hours.
 
+## Plan figures when the payload carries none
+
+The two limit rows — 🔋 the 5-hour window, 🪫 the 7-day one — want a
+whole-plan percentage and a reset time. Claude Code's status-line payload
+carries both in `rate_limits`, and when it does, that is what is used, whole:
+it is the API's own accounting, arriving with the render rather than through a
+file. `load_limits` is all-or-nothing about it, so a payload that supplies
+either figure supplies both rows or neither.
+
+Two of the sixteen payload shapes in the corpus carry no such block, and the
+`Stop` hook's payload never does. So there is a second channel, and something
+has to fill it. That something is a **usage source**.
+
+### The interface
+
+A source is an object with a `name`, an `available()` and a `read()`.
+`read()` returns a plain dict, may return `{}`, and is not required to know
+anything about the readout. Everything else happens once, in
+`normalise_reading()`:
+
+* times become local `%Y-%m-%d %H:%M` stamps, from Unix epochs, Apple epochs
+  or stamps, whichever the source had;
+* percentages become numbers, or vanish;
+* **any other key is dropped.**
+
+The third is not tidiness. The reading is written to a file under `/tmp`, and
+a source is an arbitrary program reading an arbitrary store — the built-in one
+reads a record that also holds an OAuth account blob and an API session key,
+three keys along from the figures it wants. A pass-through would put whatever
+a source handed back into that file forever. A whitelist puts seven fields
+there and cannot be talked into an eighth. `tests/usage-source.py` plants a
+credential-shaped canary in its fixture and fails if it reaches either the
+reading or the disk.
+
+A reset time that is not at least five minutes in the future is dropped rather
+than carried, because a countdown of zero reads as a window about to turn over
+rather than as a reading nobody should trust. A reading with neither
+percentage in it is not a reading and cannot overwrite a good one.
+
+### The built-in source
+
+[**Claude Usage Tracker**](https://github.com/hamed-elfayome/Claude-Usage-Tracker),
+a macOS menu-bar app, is the one source shipped. It polls Anthropic on its own
+schedule and keeps the answer in its UserDefaults store, which is the whole
+appeal: no OAuth handling here, no network call, no token to keep. The figures
+are already on disk and somebody else's program is responsible for them.
+
+It is read through `defaults export` rather than by opening the `.plist`,
+because a running app's preferences live in `cfprefsd` and reach the file when
+`cfprefsd` feels like it — the app writes every 30 seconds and the file lagged
+it by minutes in testing. `CLAUDE_USAGE_TRACKER_PLIST` overrides that with a
+path to an exported store, which is how the tests drive it on a machine with
+no app, and how a store copied off another machine can be read.
+
+`activeProfileId` names the account record to read; `isSelectedForDisplay` is
+the fallback and the first record is the fallback's fallback. Six fields are
+taken from the `claudeUsage` object inside it and nothing else is touched.
+
+### Anything else, in twenty lines
+
+`--usage-source cmd:PATH` runs a program and reads JSON off its stdout. That
+is the whole contract — print an object, exit 0 — and since
+`normalise_reading()` accepts epochs or stamps and any subset of the fields, a
+working source is about this long:
+
+```sh
+#!/bin/sh
+printf '{"session_pct": %s, "weekly_pct": %s, "session_resets_at": %s}\n' \
+    "$(your_thing --session)" "$(your_thing --week)" "$(your_thing --reset)"
+```
+
+It is run directly if it is executable and through `bash` if it is not, which
+is the difference a fresh checkout of somebody's dotfiles makes. A source
+worth shipping is a subclass of `UsageSource` added to `USAGE_SOURCES`, which
+is what `auto` walks.
+
+### What this replaced, and how it failed
+
+Until 2026-09-08 this channel was a shell script **outside this repository**:
+`~/.claude/usage-limits.sh`, wrapping `~/.claude/usage-now.sh`, wrapping
+`defaults export`, wrapping a `python3` of its own. Three processes and two
+files that were never installed with the program and were named nowhere in
+this README, so a clone of this repository could not read a plan figure at all
+and nothing on the readout said why.
+
+It also broke without saying so. The app moved its snapshot history out of
+UserDefaults into a file — the store still carries the
+`usageHistoryMigratedToFiles_v1` marker of it — and the `usageHistory_<uuid>`
+key both scripts keyed off stopped existing. The wrapper caught the failure,
+printed `{}`, exited 0, and the fallback answered "no reading" for days. The
+limit rows have a legitimate blank state, so what a reader saw was a plausible
+readout.
+
+That is the failure mode of a three-layer shell-out: every layer swallows, and
+the last layer is not in the repository whose tests would have caught it. The
+reading is now taken in-process, the schema it expects is a fixture in
+`tests/usage-source.py`, and CI runs it.
+
+One thing was lost with the scripts and is not coming back. The old store did
+not publish the 5-hour reset at all — on a `sessionReset` snapshot,
+`triggeringResetTime` was a copy of the snapshot's own timestamp — so the
+wrapper derived the window from the most recent 0٪ → non-zero transition in
+the snapshot history. The current schema publishes that reset directly and
+correctly (measured 2026-09-08: 77 minutes ahead of the reading carrying it),
+so the derivation is documented in `tracker_reading()` rather than ported.
+Reviving it means reading the history file the app now keeps under
+`~/Library/Application Support/Claude Usage/history/`; it does not mean
+remembering what it did.
+
 ## What the two modes tell each other
 
 They run in different processes under different launchers, so everything
@@ -662,7 +797,7 @@ test cannot write to the thing it is testing.
 
 | channel | why |
 |---|---|
-| `PLAN_CACHE` (`/tmp/claude-plan-limits.json`) | the status line publishes the plan figures it took from Claude Code's payload, so the cost rows quote the SAME ones. Two sources exist — the payload's `rate_limits` and the menu-bar app's snapshot — and `load_limits` is all-or-nothing between them |
+| `PLAN_CACHE` (`/tmp/claude-plan-limits.json`) | the status line publishes the plan figures it took from Claude Code's payload, so the cost rows quote the SAME ones. Two sources exist — the payload's `rate_limits` and whatever [usage source](#plan-figures-when-the-payload-carries-none) is configured — and `load_limits` is all-or-nothing between them |
 | `CALIB_CACHE` (`/tmp/claude-calib-cache.json`) | the cost of everything on this machine inside each plan window, keyed by the windows it was measured over. Scanning transcripts is too slow to redo per turn; dividing by a percentage is free, so the division is NOT cached |
 | `$TMPDIR/claude-statusline-ctxwin-<session id>` | the Stop payload carries no model, and the transcript records both Opus variants as plain `claude-opus-5`, so the cost line cannot tell a 200k window from a 1M one. Guessing from the largest reading seen fails exactly where it matters — it is *compacting* that keeps a 1M session under the 200k line, so a well-kept session never proves its window and every 🧠 figure runs 5× high |
 
@@ -703,10 +838,10 @@ Two rules now:
   takes what it chose. A render is one process, so there is nothing to keep in
   sync.
 * **"Fresher" is measured, not assumed.** Each source says when its reading was
-  taken — the app in its own `as_of` field, which the program used to throw
-  away, and the plan cache in one written beside the figures — and
+  taken — a usage source in its own `as_of` field, which the program used to
+  throw away, and the plan cache in one written beside the figures — and
   `_reading_age` compares them. An expired cache is not evidence that the
-  other source is newer; the menu-bar app polls on its own schedule and can be
+  other source is newer; the tracker app polls on its own schedule and can be
   hours behind.
 
 The calibration cache is the third way a unit could disagree with the figure
@@ -865,25 +1000,28 @@ of every run — so nothing in here belongs to anyone, and a fixture cannot
 drift away from the generator that describes it.
 
 ```sh
-bash tests/golden.sh              # status mode, 112 comparisons — seconds
-bash tests/golden-cost.sh         # cost mode, 65 comparisons — seconds
+bash tests/golden.sh              # status mode, 129 comparisons — seconds
+bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
+python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
 ./claude-code-usage-statusline.py --selftest    # needs a real tty
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```
 
-The first three must end `fail 0   missing 0`. A deliberate layout change is
+The first four must end `fail 0   missing 0`. A deliberate layout change is
 accepted with `--regen` **after reading the diff** — that is the step where a
 regression gets blessed as the new expected output.
 
-The first three are also what CI runs, on every push, over Python 3.9 and
+The first four are also what CI runs, on every push, over Python 3.9 and
 3.13, plus `shellcheck` over `tests/*.sh` — see
-`.github/workflows/tests.yml`. The last three are NOT in CI and cannot be: two
-of them need a controlling tty and, more than that, the specific terminal
-whose widths are in question, and a runner's answers about a JediTerm layout
-would be worse than no answer. The third has no real transcripts to replay on
-a runner.
+`.github/workflows/tests.yml`. `usage-source.py` reads a macOS app's
+preference store and is in CI anyway: it builds its own fixture store with
+`plistlib`, so it needs neither macOS nor the app. The last three are NOT in
+CI and cannot be: two of them need a controlling tty and, more than that, the
+specific terminal whose widths are in question, and a runner's answers about a
+JediTerm layout would be worse than no answer. The third has no real
+transcripts to replay on a runner.
 
 **Run the suites from a directory macOS does not guard.** Under `Documents`,
 `Downloads` or `Desktop`, TCC can make Python's import machinery raise
@@ -911,39 +1049,16 @@ minutes. Give it no timeout, or a generous one.
 Known and deliberate, rather than discovered by a reader. Entries leave this
 list when they are done; git history is the record of what was.
 
-**Before the repository is public**
-
-1. There is no remote yet — this is a local repository — so nothing about it
-   is set. Three things at creation time, the first of which cannot be fixed
-   afterwards without dragging the CI badge, every link and anyone's clone
-   along with it: the default branch is `master`, not the `main` GitHub will
-   offer. Then the description and the topics. The name deliberately does not
-   name the `Stop` hook, so the description is where that has to happen.
-   Drafted:
-
-   > **Description** — A Claude Code status line and per-turn cost readout in
-   > one program: token spend, plan limits, and answering time, drawn as a
-   > fixed grid that stays aligned in JediTerm.
-   >
-   > **Topics** — `claude-code`, `statusline`, `status-line`, `cli`, `python`,
-   > `terminal`, `tui`, `unicode`, `east-asian-width`, `jediterm`,
-   > `token-usage`, `cost-tracking`, `developer-tools`, `macos`
-
-   The badge and the *Install* line now name
-   `github.com/nhooey/claude-code-usage-statusline`, so that owner and that
-   name are no longer free choices — both are dead links until the
-   repository exists at exactly that path.
-
 **Unverified — each needs a real terminal tab, so no runner and no agent can
 close it**
 
-2. `--selftest` has never been run against a real terminal for four of the
+1. `--selftest` has never been run against a real terminal for four of the
    glyphs it now draws — 🎤 💯 💳 🎮 — nor for the `|` column rule at the
    width the grid assumes for it. Everything else in the layout is measured;
    these are inferred from the width tables, which is exactly the situation
    `--selftest` exists to end. The command is in the run block in
    `tests/README.md`.
-3. Three width assumptions have never been measured, all the same shape — a
+2. Three width assumptions have never been measured, all the same shape — a
    character taking its width from a range rather than from a probe:
    * 🤏 `E_ROW_COMPACT` is U+1F90F, **Unicode 12**, which breaks the version
      half of rule 2 under *Glyphs, terminals, and the naughty ones*. Kept
@@ -965,7 +1080,7 @@ close it**
 
 **Cleanup**
 
-4. Column 1 of the status line renders empty on a default-style session with
+3. Column 1 of the status line renders empty on a default-style session with
    no open PR, which is the common case. It is reserved width showing
    nothing. Left as-is deliberately: reclaiming it is a layout change that
    moves `render_status` and re-blesses both golden suites, and the width is
@@ -1003,6 +1118,7 @@ One file, sectioned by banner comment, in dependency order:
 | Formatting | `humanize`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `short_model`, `SI_UNITS`, `sub_dec` |
 | Colour tiers, Terminal geometry, Records | small |
 | Reading the payload / the transcript | `Turn`, `read_turns`, `read_turns_settled` |
+| Usage sources | `UsageSource`, `ClaudeUsageTrackerSource`, `tracker_reading`, `CommandSource`, `normalise_reading`, `usage_source` |
 | Git, Plan limits | `detect_git`, `load_limits`, `calibration`, `turn_cost_since`, `window_shares`, `session_shares` |
 | Status-line segment renderers, Status-line layout | `--mode status` |
 | Cost line | `cost_group`, `cost_totals_group`, `stack_metrics`, `place_stacked`, `render_cost_line` |
@@ -1017,10 +1133,16 @@ and this file does not repeat it.
 
 ## Style
 
-Pure functions over frozen `NamedTuple` records. Nothing reads mutable module
-state; the module-level names are constants, and the few that depend on the
-terminal are computed once at import and passed as default arguments so a test
-can substitute them.
+Pure functions over frozen `NamedTuple` records. Module-level names are
+constants, and the few that depend on the terminal are computed once at import
+and passed as default arguments so a test can substitute them.
+
+Three names are mutable and all three are set once, in `main()`, before
+anything renders: mark spacing, subscript decimals, and the selected usage
+source. Each is a command-line flag consumed several calls deep — inside a
+formatter, or inside a cache refresh — and threading a display switch through
+every renderer that does not care about it buys nothing. They are set before
+the first render and never again, and a process is one render.
 
 ## License
 
