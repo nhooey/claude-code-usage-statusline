@@ -1000,7 +1000,7 @@ One file, sectioned by banner comment, in dependency order:
 | Tunables | widths, thresholds, billing weights, prices, cost-line geometry |
 | Width tables | `EAW_WIDE` and the per-terminal overrides |
 | Measurement | `vis_width`, `trunc`, `term_profile` |
-| Formatting | `humanize`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `SI_UNITS`, `sub_dec` |
+| Formatting | `humanize`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `short_model`, `SI_UNITS`, `sub_dec` |
 | Colour tiers, Terminal geometry, Records | small |
 | Reading the payload / the transcript | `Turn`, `read_turns`, `read_turns_settled` |
 | Git, Plan limits | `detect_git`, `load_limits`, `calibration`, `turn_cost_since`, `window_shares`, `session_shares` |

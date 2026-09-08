@@ -1981,21 +1981,51 @@ def elapsed_short(ts: str, now: Optional[float] = None) -> Optional[str]:
 _UTC = timezone.utc
 
 
-def short_model(m: str, field: int = VAL_W) -> str:
-    """Shorten a model display name: "Opus 5" → "Opus5", "Haiku 4.5" → "Ha4.5".
+MODEL_FAMILIES = ("Opus", "Sonnet", "Haiku", "Fable", "Mythos")
+                       # Longest first is NOT required -- no name here is a
+                       # prefix of another -- but the list is: every family in
+                       # the CLI's own model catalogue as of 2.1.261.  Mythos
+                       # was missing until 2026-09-07 and fell through to the
+                       # five-character passthrough below, which drew it as
+                       # "Mytho" -- a family name with its last letter eaten,
+                       # which reads as a bug in the status line rather than
+                       # as a model.
 
-    The version is kept whole and the family gets whatever is left of the
-    field.  The version is the part that distinguishes two models you might
-    actually confuse; the family survives as however many letters still fit.
-    Anything that is not one of the four known families is passed through at
-    five characters.
+
+def short_model(m: str, field: int = VAL_W) -> str:
+    """Shorten a model display name: "Opus 5" → "Opus5", "Fable 5" → "Fable".
+
+    THE FAMILY IS THE LABEL.  It is what you actually read off the row -- the
+    one word that says which model is answering -- and a version only earns
+    its columns where it separates two models you might be running.  So the
+    order is: family AND version if both fit, family alone if only it fits,
+    and a cut family with its version only where the family cannot fit at all.
+
+    That last case is the one this used to do unconditionally, and it is why
+    "Fable 5" drew as "Fabl5": a name squeezed for a digit that distinguished
+    it from nothing.  "Haiku 4.5" drew as "Ha4.5" for the same reason.  Both
+    now give their whole name, and lose a version that was disambiguating
+    them against models nobody is running.
+
+    What it costs, stated plainly: a family with several live versions and a
+    name too long to carry one -- Opus at 4.x, whose "Opus 4.8" no longer
+    fits with its version -- draws as the bare family.  The field is the knob
+    for that, not the name: widen VAL_W and the version comes back on its
+    own.  Sonnet and Mythos are six characters and cannot fit the field at
+    all, so they keep the old squeeze ("So4.6"), which is ugly and unambiguous
+    and beats a mangled family that says nothing.
+
+    Anything outside the catalogue is passed through at the field width.
     """
-    if not m.startswith(("Opus", "Sonnet", "Haiku", "Fable")):
-        return m[:5]
-    rest = m.split(" ", 1)[1] if " " in m else m
-    ver = rest.split(" ", 1)[0]
-    fam = m[:max(0, field - len(ver))]
-    return fam + ver
+    fam = next((f for f in MODEL_FAMILIES if m.startswith(f)), "")
+    if not fam:
+        return m[:field]
+    ver = m[len(fam):].strip().split(" ", 1)[0]
+    if ver and len(fam) + len(ver) <= field:
+        return fam + ver                      # "Opus5"
+    if len(fam) <= field:
+        return fam                            # "Fable", "Haiku"
+    return m[:max(0, field - len(ver))] + ver  # "So4.6" -- family too long
 
 
 def dec_align(v: str, ip: int, fp: int, suffix: str = "") -> str:

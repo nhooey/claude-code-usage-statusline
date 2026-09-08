@@ -298,6 +298,40 @@ JSON
 check "subdec-sub1-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo" \
       --subscript-decimals
 
+# ── the model label, one case per branch of short_model ─────────────────────
+#
+# 05-haiku-max and 11-sonnet-200k already carry two of the three branches
+# across the main loop: Haiku 4.5 as the family that fits whole, Sonnet 4.6 as
+# the family that does not and keeps the squeeze.  The two below are the ones
+# no payload in the corpus reaches, and they are the reason the rule was
+# rewritten on 2026-09-07.
+#
+# Fable is the case that prompted it: a five-letter family with one version
+# anybody is running, drawn as "Fabl5" for a digit that separated it from
+# nothing.  Mythos is the case nobody would have noticed -- it was not in the
+# family list at all, so it fell through the passthrough and drew as "Mytho",
+# a family name with its last letter eaten.  Both are one width apiece: the
+# cell is five columns wherever it lands and the label does not interact with
+# the layout around it, so the six-width sweep the main loop does would buy
+# six copies of one answer.
+echo "--- the model label ---"
+"$PY" - "$CORPUS/01-baseline.json" "$SCRATCH/fable.json" "Fable 5" \
+        claude-fable-5 <<'PYE'
+import json, sys
+d = json.load(open(sys.argv[1]))
+d["model"] = {"id": sys.argv[4], "display_name": sys.argv[3]}
+json.dump(d, open(sys.argv[2], "w"))
+PYE
+"$PY" - "$CORPUS/01-baseline.json" "$SCRATCH/mythos.json" "Mythos 5" \
+        claude-mythos-5 <<'PYE'
+import json, sys
+d = json.load(open(sys.argv[1]))
+d["model"] = {"id": sys.argv[4], "display_name": sys.argv[3]}
+json.dump(d, open(sys.argv[2], "w"))
+PYE
+check "model-fable@196"  "$SCRATCH/fable.json"  196 "$SCRATCH/repo"
+check "model-mythos@196" "$SCRATCH/mythos.json" 196 "$SCRATCH/repo"
+
 echo
 if [ "$regen" -eq 1 ]; then
   echo "wrote $wrote goldens under $GOLD"
