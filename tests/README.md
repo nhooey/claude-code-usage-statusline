@@ -43,11 +43,10 @@ terminal you actually read the row in, and LOOK at the drawn rows as well as
 the numbers.
 
 Last run 2026-09-08, in Rider/JediTerm and in Ghostty under tmux: every
-specimen row delta 0 in both, which closed the four glyphs that had never met
-a terminal — 🎤 💯 💳 🎮 — along with the `|` column rule, ▴/▾ and 🤏. The
-subscript digits `U+2080`–`U+2089` are what is left; they reach the probe now
-that the constant is named `E_SUB_DIGITS`, and `README.md` under **TODO** says
-what turns on them.
+specimen row delta 0 in both. That closed the four glyphs that had never met a
+terminal — 🎤 💯 💳 🎮 — along with the `|` column rule, ▴/▾, 🤏, and, on a
+second run after the constant was renamed `E_SUB_DIGITS`, the ten subscript
+digits. Nothing the layout draws is inferred from a width table now.
 
 **`probe-advance.sh` asserts nothing** — it measures. It prints this
 terminal's real cursor advance for every glyph the program uses, by asking the

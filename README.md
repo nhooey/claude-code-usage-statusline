@@ -114,15 +114,34 @@ reading under 1٪ is the same width either way and the switch buys nothing
 there. That branch has a golden of its own, because it is the one somebody
 tidies away later on the grounds that the zero is redundant.
 
-**No field is narrowed for it yet, deliberately.** Every reservation keeps the
-width it had, so a shorter figure gets one more column of leading pad and the
-grid cannot tear on the switch — verified across both modes at six widths: not
-one row changes width. The saving is real (`LIM_FIG_W` could go 4 → 3, three
-columns back on the 🔋 row) but it is only bankable once a probe has measured
-these glyphs on the terminal in use. East Asian Width calls the block Neutral,
-so `vis_width` already returns 1 — and the 2026-09-08 probe found a Neutral
-codepoint one plane up, U+1F900, that Ghostty advances one and JediTerm
-advances two. That is why the standard is not taken as the answer here. Holding the widths still means that if the terminal draws
+**No field is narrowed for it, and none ever will be by this switch.** Every
+reservation keeps the width it had, so a shorter figure gets one more column of
+leading pad and no row changes width — verified across both modes at six
+widths.
+
+This README used to call that a deferral: the saving was "real (`LIM_FIG_W`
+could go 4 → 3, three columns back on the 🔋 row)" and merely waiting on a
+probe. **The probe ran on 2026-09-08 and the saving was never there.** What
+sets that field is the widest thing that can land in it, and swept across every
+hundredth of a percent the widest is four columns in both forms, for the same
+reason:
+
+```
+off   .01٪        three characters of figure, then the unit
+on    0₀₁٪        the leading zero comes back, so three again
+```
+
+Subscripts narrow the readings at or above 1٪ — `4.1٪` to `4₁٪` — and those
+were never the widest. The sub-1 reading is, in both forms, and the leading
+zero that makes it so is a deliberate choice explained above. `LIM_FIG_W` 4 → 3
+is still available; it costs a digit of precision below 1٪, equally in both
+forms, and it has nothing to do with subscripts.
+
+The width question the probe was actually needed for is settled: all ten digits
+advance **one column** in JediTerm and in Ghostty, which is what East Asian
+Width says of the block and what `vis_width` has always returned. It was worth
+asking — U+1F900 one plane up is a Neutral codepoint that Ghostty advances one
+and JediTerm advances two. Holding the widths still means that if the terminal draws
 these two columns wide, the damage shows up as a figure overrunning its own
 cell rather than as a whole row shifted: a diagnosis instead of a mystery.
 
@@ -1061,44 +1080,32 @@ Known and deliberate, rather than discovered by a reader. Entries leave this
 list when they are done; git history is the record of what was.
 
 **Measured 2026-09-08, and closed.** `--selftest` and
-`tests/probe-advance.sh` were run in Rider/JediTerm and in Ghostty under tmux.
-Every specimen row came back delta 0 in both — the first check of this layout
-against a terminal that is not the one it was tuned for — and both probes
-emitted empty override tables. 🎤 💯 💳 🎮 📖 📝 all advance two, ▴ U+25B4 and
-▾ U+25BE both advance one, and 🤏 U+1F90F advances two. The `|` column rule
-draws in the gap the grid already spends. What the run found instead is
-recorded under *Glyphs, terminals, and the naughty ones*: a stale claim about
-U+1FA70, and a real Ghostty/JediTerm disagreement at U+1F900.
+`tests/probe-advance.sh` were run in Rider/JediTerm and in Ghostty under tmux,
+twice — the second time after `SUB_DIGITS` was renamed `E_SUB_DIGITS`, which is
+what put the subscript digits in front of the probe at all. Every specimen row
+came back delta 0 in both terminals, and both probes emitted empty override
+tables. 🎤 💯 💳 🎮 📖 📝 advance two, ▴ U+25B4 and ▾ U+25BE advance one, 🤏
+U+1F90F advances two, `U+2080`–`U+2089` advance one, and the `|` column rule
+draws in a gap the grid already spends.
+
+Nothing in the layout is inferred from a width table any more. What the runs
+found instead is recorded where it belongs: a stale claim about U+1FA70 and a
+real Ghostty/JediTerm disagreement at U+1F900, both under *Glyphs, terminals,
+and the naughty ones*; and a saving that never existed, under
+`--subscript-decimals` in *Options*.
 
 **Unverified — needs a real terminal tab, so no runner and no agent can close
 it**
 
-1. The subscript digits `U+2080`–`U+2089` have never been measured. East Asian
-   Width calls the block Neutral and `vis_width` returns 1, which is what every
-   reservation assumes, but nothing has asked a terminal — and U+1F900 one
-   plane up is exactly a Neutral codepoint that JediTerm draws two columns
-   wide. Until they are measured, `LIM_FIG_W` stays at 4 and
-   `--subscript-decimals` reclaims nothing.
-
-   They were invisible to the probe until 2026-09-08 because the constant was
-   named `SUB_DIGITS`: `probe-advance.sh` derives what to measure by parsing
-   the `E_*` assignments out of the program, so a glyph named anything else is
-   a glyph nobody measures. It is `E_SUB_DIGITS` now, and the next run of the
-   probe measures all ten without being asked.
-
-   There is a second question the probe cannot answer, and it is why this is a
-   flag rather than the format: whether a subscript 6 still reads as a 6 at a
-   terminal's point size. That one is settled by looking at the row.
-
-2. Bare Ghostty — outside tmux — is unmeasured and falls to the `unknown`
-   profile. `term_profile` checks `TMUX` first, so the 2026-09-08 Ghostty run
-   measured the `tmux` profile and says nothing about Ghostty on its own. The
-   width tables would be empty either way; what is untested is the paint room
-   `_PAD` gives the icons under `iterm`/`tmux` and withholds under JediTerm.
+1. Bare Ghostty — outside tmux — is unmeasured and falls to the `unknown`
+   profile. `term_profile` checks `TMUX` first, so both Ghostty runs measured
+   the `tmux` profile and say nothing about Ghostty on its own. The width
+   tables would be empty either way; what is untested is the paint room `_PAD`
+   gives the icons under `iterm`/`tmux` and withholds under JediTerm.
 
 **Cleanup**
 
-3. Column 1 of the status line renders empty on a default-style session with
+2. Column 1 of the status line renders empty on a default-style session with
    no open PR, which is the common case. It is reserved width showing
    nothing. Left as-is deliberately: reclaiming it is a layout change that
    moves `render_status` and re-blesses both golden suites, and the width is

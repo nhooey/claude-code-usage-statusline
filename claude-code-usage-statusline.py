@@ -561,6 +561,17 @@ LIM_FIG_W = 4          # the field each of the three marks right-aligns its
                        # a full-width value touches its mark and nothing is
                        # spent holding it off.
                        #
+                       # FOUR IS SET BY THE SUB-1 READING and by nothing
+                       # else: ".01٪" and "100" are the only shapes that
+                       # reach it, and the first is three characters of
+                       # figure at a magnitude where two would do.  It is the
+                       # same four under --subscript-decimals, where the
+                       # leading zero comes back and ".01٪" is drawn "0₀₁٪";
+                       # the block note there has the sweep.  Three costs a
+                       # digit of precision below 1٪, in both forms equally,
+                       # and that is the trade — not a glyph, and not a
+                       # probe.
+                       #
                        # It was five until 2026-08-27, one wider than any
                        # reading, which put a blank column between every mark
                        # and every figure on every row.  That column was
@@ -1637,31 +1648,46 @@ def trunc(s: str, want: int) -> str:
 # U+2080..U+2089 in place of the fraction, so "1.2٪" is written "1₂٪" and the
 # decimal point costs nothing.  Off unless --subscript-decimals says otherwise.
 #
-# WHY IT IS A SWITCH AND NOT THE FORMAT.  Two things about it are unproven
-# here and only a terminal can settle them.  East Asian Width calls the block
-# Neutral, so vis_width already returns 1 and every reservation in this file
-# assumes as much -- but the probe had never MEASURED it, and there is a known
-# trap of exactly that shape one plane up (see the U+1F900 note beside
-# EAW_WIDE), where the standard says Neutral, one terminal agrees and another
-# draws two columns.  And the glyphs are small: these are the figures on the
-# row a reader acts on, and whether a subscript 6 reads as a 6 at a terminal's
-# point size is a question about a font, not about a program.  The second
-# answer is the reader's to give after looking at it, which is what the flag
-# is for.
+# WHY IT IS A SWITCH AND NOT THE FORMAT.  Not the width, which is settled.
+# MEASURED 2026-09-08, all ten digits, JediTerm and Ghostty: one column each,
+# which is what East Asian Width says of the block and what vis_width has
+# always returned.  Worth measuring anyway -- there is a known trap of exactly
+# that shape one plane up (see the U+1F900 note beside EAW_WIDE), where the
+# standard says Neutral, one terminal agrees and another draws two columns.
 #
-# THE NAME CARRIES THE E_ PREFIX for the first of those.  probe-advance.sh
-# derives what to measure by parsing the E_* assignments out of this file, so
-# a glyph named anything else is a glyph nobody measures -- which is what
-# these ten were until 2026-09-08, sitting one rename away from the probe that
-# was blocking them.
+# What is left is a question no probe can answer: the glyphs are SMALL, these
+# are the figures on the row a reader acts on, and whether a subscript 6 still
+# reads as a 6 at a terminal's point size is about a font and an eye.  That is
+# the reader's to answer by looking, which is what a flag is for.
 #
-# NOTHING IS RECLAIMED YET.  Every field keeps the width it had, so a shorter
-# figure gets one more column of leading pad and the grid cannot tear on the
-# switch.  That is deliberate: if the terminal turns out to draw these two
-# columns wide, the damage shows up as a figure overrunning its own cell
-# rather than as a whole row shifted, which is the difference between a
-# diagnosis and a mystery.  Narrowing LIM_FIG_W from 4 to 3 is the payoff and
-# it comes after the probe, not before.
+# THE NAME CARRIES THE E_ PREFIX because probe-advance.sh derives what to
+# measure by parsing the E_* assignments out of this file, so a glyph named
+# anything else is a glyph nobody measures -- which is what these ten were
+# until 2026-09-08, sitting one rename away from the probe.
+#
+# NOTHING IS RECLAIMED, AND NOTHING WAS EVER GOING TO BE.  This block used to
+# promise that narrowing LIM_FIG_W from 4 to 3 was "the payoff, and it comes
+# after the probe".  The probe came; the payoff was never there.  What sets
+# that field is the widest thing that can land in it, and swept across every
+# hundredth of a percent the widest is FOUR columns in both forms and for the
+# same reason:
+#
+#     off  ".01٪"      three characters of figure, then the unit
+#     on   "0₀₁٪"      the leading zero comes back, so three again
+#
+# Subscripts narrow the readings at or above 1٪ -- "4.1٪" to "4₁٪" -- and
+# those were never the widest.  The sub-1 reading is, in both forms, and the
+# leading zero that makes it so is deliberate and stays (below).  So the
+# switch buys leading pad on the middle magnitudes and no column anywhere,
+# which is exactly what the six widths of golden files already showed and
+# what this comment talked past.
+#
+# EVERY FIELD KEEPS THE WIDTH IT HAD, so a shorter figure gets one more column
+# of leading pad and the grid cannot tear on the switch.  That was insurance
+# against the terminal drawing these two columns wide -- the damage would show
+# as a figure overrunning its own cell rather than as a whole row shifted,
+# which is the difference between a diagnosis and a mystery.  The probe says
+# one column, so the insurance was never claimed.
 #
 # THE LEADING ZERO STAYS, where limit_pct drops it.  ".38" is unambiguous
 # because the point marks the figure as a fraction; "₃₈" is not -- it is the
