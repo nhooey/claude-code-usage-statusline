@@ -40,11 +40,14 @@ bound it.
 **`--selftest` needs a real terminal tab**, and it is the only check that
 catches a glyph which measures correctly and paints wrong. Run it in each
 terminal you actually read the row in, and LOOK at the drawn rows as well as
-the numbers. Four glyphs have never been run against a real terminal — 🎤 💯
-💳 🎮 — nor has the `|` column rule at the width the grid assumes for it.
-Everything else in the layout is measured; those five are inferred from the
-width tables, which is exactly the situation `--selftest` exists to end. Until
-someone runs it, that is an open item and not a passing test.
+the numbers.
+
+Last run 2026-09-08, in Rider/JediTerm and in Ghostty under tmux: every
+specimen row delta 0 in both, which closed the four glyphs that had never met
+a terminal — 🎤 💯 💳 🎮 — along with the `|` column rule, ▴/▾ and 🤏. The
+subscript digits `U+2080`–`U+2089` are what is left; they reach the probe now
+that the constant is named `E_SUB_DIGITS`, and `README.md` under **TODO** says
+what turns on them.
 
 **`probe-advance.sh` asserts nothing** — it measures. It prints this
 terminal's real cursor advance for every glyph the program uses, by asking the
@@ -104,7 +107,7 @@ to both and cancelled. A golden file has nothing to cancel against.
 | `TZ=UTC` | 🕐 and 📅 differ by the offset and it reads as a layout fault |
 | `TMPDIR` | the published context window survives between runs, so a case can read a figure a previous case wrote |
 | `CLAUDE_PLAN_CACHE`, `CLAUDE_CALIB_CACHE` | the test writes to the live readout, and the calibration walks every transcript on the machine |
-| the menu-bar snapshot, planted, **including its `as_of`** | two payloads have no `rate_limits` of their own. Unplanted, they shell out to `usage-limits.sh` and render Neil's real plan consumption; planted without an `as_of`, they pick whichever source the wall clock made look fresher at that instant — see below |
+| a usage source's reading, planted, **including its `as_of`** | two payloads have no `rate_limits` of their own. Unplanted, they ask the selected source and render this machine's real plan consumption — which is also why `CLAUDE_USAGE_SOURCE=none` is pinned beside it; planted without an `as_of`, they pick whichever source the wall clock made look fresher at that instant — see below |
 | the calibration, planted, **in the short shape** | it is now the units the session shares divide by, so its values reach the rows |
 | the terminal profile (`jediterm`) | the answer depends on which terminal ran the suite |
 | the working directory (a fixture repo) | the goldens encode today's branch name and today's uncommitted work |

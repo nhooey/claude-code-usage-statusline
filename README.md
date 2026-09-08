@@ -120,9 +120,9 @@ grid cannot tear on the switch — verified across both modes at six widths: not
 one row changes width. The saving is real (`LIM_FIG_W` could go 4 → 3, three
 columns back on the 🔋 row) but it is only bankable once a probe has measured
 these glyphs on the terminal in use. East Asian Width calls the block Neutral,
-so `vis_width` already returns 1 — and there is a known trap one block along
-where the standard and the terminal disagree, which is why the standard is not
-taken as the answer. Holding the widths still means that if the terminal draws
+so `vis_width` already returns 1 — and the 2026-09-08 probe found a Neutral
+codepoint one plane up, U+1F900, that Ghostty advances one and JediTerm
+advances two. That is why the standard is not taken as the answer here. Holding the widths still means that if the terminal draws
 these two columns wide, the damage shows up as a figure overrunning its own
 cell rather than as a whole row shifted: a diagnosis instead of a mystery.
 
@@ -613,12 +613,11 @@ Three rules, all learned expensively:
    **One glyph does not hold to it: 🤏 `E_ROW_COMPACT`, U+1F90F, is Unicode
    12.** It is kept, and it has caused no observed trouble, but it is an
    exception rather than the rule and this file used to claim there were none.
-   It matters because the third `EAW_WIDE` correction below rests on this
-   terminal's table predating Unicode 12; 🤏 sits just under the U+1FA70 block
-   that correction covers, so it takes its two columns from the broad
-   `0x1F300–0x1FBFF` range without anything having measured it. Before
-   trusting it further, measure it — that is one `tests/probe-advance.sh` run
-   in a Rider tab.
+   It takes its two columns from the broad `0x1F300–0x1FBFF` range rather than
+   from anything specific to it. **Measured 2026-09-08: two columns in
+   JediTerm and two under Ghostty**, so the range is right about it in both —
+   which is a measurement, and no longer the inference this paragraph used to
+   ask someone to replace.
 
    Choosing a replacement, if one is ever wanted: single codepoint, `W` under
    the test below, at or under Unicode 9, no variation selector. 📉 U+1F4C9
@@ -662,9 +661,21 @@ against the probe. The corrections are the point:
   presentation (🗑 🛢 🗓 🎟 🌡). The gaps mattered: those appear in
   conversation, and each one measured as a single column dragged its row out of
   line.
-* U+1FA70–U+1FAF8 (Unicode 12 and later) is treated as one column, against what
-  EAW says, because this terminal's table predates the block. That is what made
-  🪟 leave a phantom character beside it.
+* U+1FA70–U+1FAF8 (Unicode 12 and later) was left OUT of the table for a
+  while, so it measured one column, on the reasoning that this terminal's font
+  predated the block — that is what made 🪟 leave a phantom character beside
+  it. **That exclusion is gone**: the range now runs to U+1FBFF, 🪫 U+1FAAB is
+  in the layout on the strength of it, and the 2026-09-08 probe measured
+  U+1FA70 U+1FA90 U+1FAA3 U+1FAE0 at two columns each in **both** JediTerm and
+  Ghostty. The bullet is kept because the reasoning was sound and the
+  conclusion was not, which is the argument for measuring rather than
+  reasoning, made against this README itself.
+* U+1F300–U+1FBFF being one range makes U+1F900 wide, and the standard calls
+  that codepoint Neutral. Measured 2026-09-08: **Ghostty advances one, JediTerm
+  advances two.** No entry is right for both, this one is right for the
+  terminal the layout is tuned to, and it costs nothing because no glyph here
+  sits in U+1F900–U+1F90B. It is the reason to keep choosing glyphs from
+  outside that band.
 
 `unicodedata` would get all three wrong. It ships UCD 13 on Python 3.9 and
 answers what the standard says, which is a different question from what this
@@ -1049,34 +1060,41 @@ minutes. Give it no timeout, or a generous one.
 Known and deliberate, rather than discovered by a reader. Entries leave this
 list when they are done; git history is the record of what was.
 
-**Unverified — each needs a real terminal tab, so no runner and no agent can
-close it**
+**Measured 2026-09-08, and closed.** `--selftest` and
+`tests/probe-advance.sh` were run in Rider/JediTerm and in Ghostty under tmux.
+Every specimen row came back delta 0 in both — the first check of this layout
+against a terminal that is not the one it was tuned for — and both probes
+emitted empty override tables. 🎤 💯 💳 🎮 📖 📝 all advance two, ▴ U+25B4 and
+▾ U+25BE both advance one, and 🤏 U+1F90F advances two. The `|` column rule
+draws in the gap the grid already spends. What the run found instead is
+recorded under *Glyphs, terminals, and the naughty ones*: a stale claim about
+U+1FA70, and a real Ghostty/JediTerm disagreement at U+1F900.
 
-1. `--selftest` has never been run against a real terminal for four of the
-   glyphs it now draws — 🎤 💯 💳 🎮 — nor for the `|` column rule at the
-   width the grid assumes for it. Everything else in the layout is measured;
-   these are inferred from the width tables, which is exactly the situation
-   `--selftest` exists to end. The command is in the run block in
-   `tests/README.md`.
-2. Three width assumptions have never been measured, all the same shape — a
-   character taking its width from a range rather than from a probe:
-   * 🤏 `E_ROW_COMPACT` is U+1F90F, **Unicode 12**, which breaks the version
-     half of rule 2 under *Glyphs, terminals, and the naughty ones*. Kept
-     deliberately: it has caused no observed trouble. But the third
-     `EAW_WIDE` correction rests on this terminal's table predating Unicode
-     12, and 🤏 sits just under the U+1FA70 block that correction covers.
-   * ▴ `E_UP` and ▾ `E_DOWN` are U+25B4 and U+25BE, both **East_Asian_Width
-     Neutral**, so they pass the naughty test and `vis_width` calls them one.
-     Neutral is where the table puts them, not where a probe found them:
-     neither has been measured. They replaced ↑ U+2191 and ↓ U+2193, which
-     were Ambiguous — one column or two depending on terminal and locale —
-     and they sit on every row of the token field, so a wrong inference will
-     not be subtle.
-   * If either ever has to move at equal width, the other Neutral pair is
-     ⌃ U+2303 / ⌄ U+2304. Note ▲ U+25B2 and ▼ U+25BC are Ambiguous while
-     their *small* counterparts are not — same shape, different width class.
+**Unverified — needs a real terminal tab, so no runner and no agent can close
+it**
 
-   `tests/probe-advance.sh` in a Rider tab settles all three at once.
+1. The subscript digits `U+2080`–`U+2089` have never been measured. East Asian
+   Width calls the block Neutral and `vis_width` returns 1, which is what every
+   reservation assumes, but nothing has asked a terminal — and U+1F900 one
+   plane up is exactly a Neutral codepoint that JediTerm draws two columns
+   wide. Until they are measured, `LIM_FIG_W` stays at 4 and
+   `--subscript-decimals` reclaims nothing.
+
+   They were invisible to the probe until 2026-09-08 because the constant was
+   named `SUB_DIGITS`: `probe-advance.sh` derives what to measure by parsing
+   the `E_*` assignments out of the program, so a glyph named anything else is
+   a glyph nobody measures. It is `E_SUB_DIGITS` now, and the next run of the
+   probe measures all ten without being asked.
+
+   There is a second question the probe cannot answer, and it is why this is a
+   flag rather than the format: whether a subscript 6 still reads as a 6 at a
+   terminal's point size. That one is settled by looking at the row.
+
+2. Bare Ghostty — outside tmux — is unmeasured and falls to the `unknown`
+   profile. `term_profile` checks `TMUX` first, so the 2026-09-08 Ghostty run
+   measured the `tmux` profile and says nothing about Ghostty on its own. The
+   width tables would be empty either way; what is untested is the paint room
+   `_PAD` gives the icons under `iterm`/`tmux` and withholds under JediTerm.
 
 **Cleanup**
 

@@ -972,6 +972,22 @@ def frozen_now() -> Optional[float]:
 # (✀ measures one) and wide emoji (✅), and no range can be right for both.  It
 # costs nothing because chat text — the only place those appear — has the whole
 # U+2190-U+2BFF block replaced before measurement.
+#
+# Second known imprecision, and the one that shows what "corrected against the
+# probe" is worth.  U+1F300-U+1FBFF is one range, so this table calls U+1F900
+# wide.  MEASURED 2026-09-08, the same codepoint, two terminals:
+#
+#     Ghostty under tmux    advance 1        (agrees with the standard: the
+#     Rider / JediTerm      advance 2         block is Neutral to U+1F90B and
+#                                             Wide from U+1F90C)
+#
+# So there is no table entry that is right for both, and this one is right for
+# the terminal the layout is tuned to.  It costs nothing TODAY because no
+# glyph here lives in U+1F900-U+1F90B — 🤏 U+1F90F is above the split and
+# measured two in both — and it is written down so that the next glyph chosen
+# out of that band is chosen knowing it would be a column wrong under Ghostty.
+# The band is unremarkable ornaments (⯑-ish crosses and circles), so avoiding
+# it costs nothing either.
 EAW_WIDE = (
     (4352, 4447), (8986, 8987), (9001, 9002), (9193, 9203), (9725, 9726),
     (9748, 9749), (9800, 9811), (9855, 9855), (9875, 9875), (9889, 9889),
@@ -1034,10 +1050,13 @@ def term_profile(env: Optional[Dict[str, str]] = None) -> str:
 def widths_for(profile: str) -> Widths:
     """The measurement rules for one terminal profile.
 
-    MEASURED 2026-08-16: every override below now corrects nothing.  Both
-    glyphs that needed one have left the layout — ⏱ for ⌛, and 🕰 for 🕐 over
-    the font-run fault described at E_TIME — so a probe run against the current
-    glyph set emits empty tables in all three profiles.  Deleting them would
+    MEASURED 2026-08-16, and again 2026-09-08 in two terminals: every override
+    below now corrects nothing.  Both glyphs that needed one have left the
+    layout — ⏱ for ⌛, and 🕰 for 🕐 over the font-run fault described at
+    E_TIME — so a probe run against the current glyph set emits empty tables in
+    all three profiles.  The 2026-09-08 run also measured every specimen row
+    in --selftest at delta 0 in both, which is the first time the layout itself
+    has been checked against a terminal that is not JediTerm.  Deleting them would
     change no output.
 
     They stay because they record measured behaviour of the TERMINALS rather
@@ -1070,7 +1089,16 @@ def widths_for(profile: str) -> Widths:
                                                #  no folding at all
             wide=EAW_WIDE,
         )
-    if profile in ("tmux", "iterm"):           # probed 2026-08-16, iTerm2 + tmux
+    if profile in ("tmux", "iterm"):           # probed 2026-08-16, iTerm2 +
+                                               #  tmux; again 2026-09-08,
+                                               #  Ghostty + tmux, which agreed
+                                               #  on all four sequences and
+                                               #  needed no entry of its own.
+                                               #  Note term_profile checks TMUX
+                                               #  first, so Ghostty reaches
+                                               #  this branch only inside tmux;
+                                               #  bare Ghostty is "unknown" and
+                                               #  unmeasured.
         return Widths(
             narrow=frozenset({128368, 9201}),  # 🕰 and ⏱ both advance one
             icons=frozenset({9851}),           # ♻ U+267B advances two.  Correct
@@ -1326,6 +1354,11 @@ def vis_width(s: str, w: Widths = WIDTHS) -> int:
     What it predicts is the cursor ADVANCE, not the ink.  The two differ often
     enough that several glyphs carry a trailing space purely so their overspill
     lands somewhere harmless.
+
+    Confirmed 2026-09-08 on both sides of the switch: JediTerm still measures
+    4/5/4/3 for those four, and Ghostty under tmux measures 2 for every one of
+    them.  The parenthesised column above is no longer an inference about what
+    a clustering terminal would do.
 
     Rerun probe-advance.sh after a Rider update: these numbers describe one
     build of JediTerm, not a standard.
@@ -1607,13 +1640,20 @@ def trunc(s: str, want: int) -> str:
 # WHY IT IS A SWITCH AND NOT THE FORMAT.  Two things about it are unproven
 # here and only a terminal can settle them.  East Asian Width calls the block
 # Neutral, so vis_width already returns 1 and every reservation in this file
-# assumes as much -- but the probe has never MEASURED it, and there is a known
-# trap in the other direction one block along (see the Supplemental Arrows-C
-# note beside EAW_WIDE) where the standard and the terminal disagree.  And the
-# glyphs are small: these are the figures on the row a reader acts on, and
-# whether a subscript 6 reads as a 6 at a terminal's point size is a question
-# about a font, not about a program.  Both answers are Neil's to give after
-# looking at it, which is what the flag is for.
+# assumes as much -- but the probe had never MEASURED it, and there is a known
+# trap of exactly that shape one plane up (see the U+1F900 note beside
+# EAW_WIDE), where the standard says Neutral, one terminal agrees and another
+# draws two columns.  And the glyphs are small: these are the figures on the
+# row a reader acts on, and whether a subscript 6 reads as a 6 at a terminal's
+# point size is a question about a font, not about a program.  The second
+# answer is the reader's to give after looking at it, which is what the flag
+# is for.
+#
+# THE NAME CARRIES THE E_ PREFIX for the first of those.  probe-advance.sh
+# derives what to measure by parsing the E_* assignments out of this file, so
+# a glyph named anything else is a glyph nobody measures -- which is what
+# these ten were until 2026-09-08, sitting one rename away from the probe that
+# was blocking them.
 #
 # NOTHING IS RECLAIMED YET.  Every field keeps the width it had, so a shorter
 # figure gets one more column of leading pad and the grid cannot tear on the
@@ -1629,7 +1669,7 @@ def trunc(s: str, want: int) -> str:
 # zero comes back for this form, which means a sub-1 reading saves nothing.
 # Neil's call, and the right one: a column is worth less than the difference
 # between a third of a point and thirty-eight of them.
-SUB_DIGITS = "₀₁₂₃₄₅₆₇₈₉"
+E_SUB_DIGITS = "₀₁₂₃₄₅₆₇₈₉"
 SUB_DEC = False
 
 
@@ -1665,7 +1705,7 @@ def sub_dec(v: str) -> str:
     if v.startswith("."):
         v = "0" + v
     return re.sub(r"\.(\d+)",
-                  lambda m: "".join(SUB_DIGITS[int(d)] for d in m.group(1)), v)
+                  lambda m: "".join(E_SUB_DIGITS[int(d)] for d in m.group(1)), v)
 
 
 def _subscriptable(fn):
@@ -2087,7 +2127,7 @@ def dec_align(v: str, ip: int, fp: int, suffix: str = "") -> str:
     if tail:
         frac = ".%s%s" % (tail, suffix)
     else:
-        cut = next((i for i, ch in enumerate(v) if ch in SUB_DIGITS), None)
+        cut = next((i for i, ch in enumerate(v) if ch in E_SUB_DIGITS), None)
         if cut is None:
             head, frac = v, suffix
         else:
