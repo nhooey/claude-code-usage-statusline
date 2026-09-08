@@ -30,13 +30,32 @@ exec 3<>/dev/tty || { echo "no controlling terminal"; exit 1; }
 
 old=$(stty -g <&3)
 trap 'stty "$old" <&3' EXIT
-stty raw -echo min 0 time 2 <&3
+
+# Raw mode is held only around the DSR handshake in advance(), and that is not
+# fastidiousness — the terminal settings belong to the DEVICE, not to this fd,
+# so `stty raw` on /dev/tty turns off ONLCR for stdout as well whenever stdout
+# is that same terminal. Every "\n" this script printed then moved down without returning
+# the carriage, and the report came out as a staircase running off the right of
+# the screen. It was invisible in the measurement lines only because advance()
+# ends each one with a "\r" of its own; every multi-line block — the two
+# headers and the whole paste-ready block at the end — stepped.
+#
+# Reported from a run in Ghostty and in Rider on 2026-09-08, identically, which
+# is what said it was this script and not a terminal.
+#
+# Two stty calls per glyph rather than two per run, deliberately: the alternative
+# is remembering to leave and re-enter raw around every line this script prints,
+# and the staircase is what forgetting looks like.
+raw()   { stty raw -echo min 0 time 2 <&3; }
+cooked() { stty "$old" <&3; }
 
 advance() {                       # $1 = glyph -> columns advanced
   local col
+  raw
   printf '\r%s\033[6n' "$1" >&3
   IFS='[;' read -r -s -d R -t 2 _ _ col <&3
   printf '\r\033[K' >&3
+  cooked
   printf '%s' "$(( ${col:-1} - 1 ))"
 }
 
@@ -116,7 +135,7 @@ for node in ast.parse(src).body:
 PYEOF
 }
 
-printf '\r\033[K' >&3; printf -- '--- glyphs this status line uses ---\n'
+printf -- '--- glyphs this status line uses ---\n'
 printf -- '(derived from the E_* constants in claude-code-usage-statusline.py,\n'
 printf -- ' not a list kept here: a list kept here drifts the moment a glyph\n'
 printf -- ' changes)\n'
