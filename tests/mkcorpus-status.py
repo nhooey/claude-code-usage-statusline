@@ -173,8 +173,27 @@ def cache_session(read, write):
             answer(2400, "req-c2", 400, write, read, 900)]
 
 
+def rounding_boundary_session():
+    """A session whose ▾ total lands one step below a round million.
+
+    999,600 output tokens, which humanize wrote as "1000k" until 2026-09-08 --
+    five characters in a four-character field, and a thousand thousands where
+    the eye expects a million.  The band is only 500 wide out of a million, so
+    no corpus built from plausible round numbers was ever going to land in it;
+    it took a live readout to find, and it takes a fixture aimed at it to keep.
+
+    The figures either side are deliberately unremarkable.  This exists for one
+    cell and should not also be a second opinion on the ones around it.
+    """
+    return [prompt(3600, "Something long."),
+            answer(3000, "req-b1", 1000, 20000, 300000, 500000, "Done."),
+            answer(2400, "req-b2", 1000, 20000, 300000, 499600)]
+
+
 TRANSCRIPTS = {
     "main": main_session(),
+    # The ▾ field one step under a round million; see the builder.
+    "rounding-boundary": rounding_boundary_session(),
     # ~70٪ read: the amber tier.
     "cache-warn": cache_session(46000, 19000),
     # ~40٪ read: the red one.
@@ -289,6 +308,9 @@ def payloads(corpus):
             transcript_path=os.path.join(corpus, "cache-warn.jsonl")),
         "16-cache-crit": case(
             transcript_path=os.path.join(corpus, "cache-crit.jsonl")),
+        # The unit ladder's rounding cut, which no other payload reaches.
+        "17-rounding-boundary": case(
+            transcript_path=os.path.join(corpus, "rounding-boundary.jsonl")),
     }
     # The cost fields of 06 are dropped, not set to None; case() cannot spell
     # that inside a nested dict, so it is done here.

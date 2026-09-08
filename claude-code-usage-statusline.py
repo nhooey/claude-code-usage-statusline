@@ -1680,7 +1680,15 @@ def humanize(n: float) -> str:
     significant digits is what caps the result at four characters.
     """
     for lim, unit in SI_UNITS:
-        if n >= lim:
+        # The cut is where the mantissa below would ROUND UP into a fourth
+        # digit, not at the round number under it, and money_fmt makes the
+        # same cut for the same reason -- see the note there.  999,600 belongs
+        # with "1.0M" because "%.0f" of 999.6 writes "1000": five characters
+        # in a field that reserves four, and a figure that has to be read
+        # twice to be told a thousand thousands from a million.  Reported from
+        # a live readout on 2026-09-08 as "▾1000k", which is what the whole
+        # band 999,500 to 999,999 drew.
+        if n >= lim - lim / 2000.0:
             v = n / lim
             s = "%.0f" % v if v >= 10 else re.sub(r"\.0$", "", "%.1f" % v)
             return s + unit
@@ -1862,10 +1870,15 @@ def money_fmt(c: float) -> str:
     for lim, unit in SI_UNITS:
         # The cut is where the format BELOW would round up into a fifth
         # character, not at the round number under it: $999.5 belongs with
-        # "1.0k" because "%.0f" would write it "1000".  humanize needs no such
-        # adjustment — its sub-unit branch truncates with %d and cannot round
-        # up — which is the one place these two ladders are climbed
-        # differently.
+        # "1.0k" because "%.0f" would write it "1000".
+        #
+        # This note used to end "humanize needs no such adjustment — its
+        # sub-unit branch truncates with %d and cannot round up".  That was
+        # true of the branch it looked at and false of the function: the
+        # BOTTOM step cannot round up, and every step above it can, because
+        # they format with %.0f exactly as this one does.  humanize drew
+        # 999,600 tokens as "1000k" until 2026-09-08.  The two ladders are
+        # climbed the same way after all.
         if c >= lim - lim / 2000.0:
             v = c / lim
             return ("%.0f" % v if v >= 10
