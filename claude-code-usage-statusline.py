@@ -707,11 +707,24 @@ W_CACHE_WRITE, W_CACHE_READ = 2.0, 0.1
 # Opus 5 list price, USD per token, for the cost line's per-prompt figure.
 P_IN, P_OUT, P_CR, P_CW = 5e-6, 25e-6, 0.5e-6, 10e-6
 
-# Per-model prices for the calibration scan, which sees other sessions' turns
-# and so cannot assume one model.  $/token: fresh, output, cache-read,
-# cache-write at the 2x TTL.
+# Per-model prices.  For the calibration scan, which sees other sessions'
+# turns and so cannot assume one model; and since 2026-09-11 for every
+# record read_turns prices, because an agent can run a model its session
+# does not.  $/token: fresh, output, cache-read, cache-write at the 2x TTL.
+#
+# FIRST MATCH WINS, so the specific rows sit above the family they refine.
+# Figures are Claude Code's own: its binary bakes in a model catalog
+# (`pricing_tiers` / `models[].pricing`), read out of 2.1.268 on 2026-09-11.
+# Fable 5.1 differs from Fable 5 in one field, cache-read, and Sonnet 5 is
+# not Sonnet 4.x — the old "sonnet" row was 3/15/6/0.3, which is the 4.x
+# tier and priced every Sonnet 5 fork half again too high.  The bare
+# "opus" row stays as _price's fallback for a model it has never heard of:
+# the deliberate ceiling rather than a guess in the other direction.
 MODEL_PRICE = (
     ("opus", (5e-6, 25e-6, 0.5e-6, 10e-6)),
+    ("fable-5-1", (10e-6, 50e-6, 0.25e-6, 20e-6)),
+    ("fable", (10e-6, 50e-6, 1e-6, 20e-6)),
+    ("sonnet-5", (2e-6, 10e-6, 0.2e-6, 4e-6)),
     ("sonnet", (3e-6, 15e-6, 0.3e-6, 6e-6)),
     ("haiku", (1e-6, 5e-6, 0.1e-6, 2e-6)),
 )
@@ -860,7 +873,7 @@ C_MIN_GAP = 4          # floor between the label and the metrics — the four
 # length, so the compaction label has to be measured with the others rather
 # than written to match by eye.
 _LABELS = ("Usage: Prompt (last)", "Usage: Session (total)",
-           "Usage: Compact (last)")
+           "Usage: Compact (last)", "Usage: Agents (other)")
 _LABEL_W = max(len(x) for x in _LABELS)
 # One glyph per row type, riding immediately right of the 📊 that marks the
 # block.  📊 says "this is the cost line"; these say WHICH cost line, so the
@@ -878,6 +891,12 @@ _LABEL_W = max(len(x) for x in _LABELS)
 E_ROW_PROMPT = E_TURN         # 🎤  the prompt just answered
 E_ROW_TOTAL = E_SESSION       # 🎮  the session tally
 E_ROW_COMPACT = "\U0001F90F"  # 🤏  the compaction
+E_ROW_AGENTS = "\U0001F465"   # 👥  agent spend the 🎤 row cannot carry.
+                              # Emoji_Presentation=Yes and a single code
+                              # point, chosen for that; NOT yet measured by
+                              # --selftest in JediTerm or Ghostty.  Until it
+                              # is, a row carrying it is the one row whose
+                              # width is a claim rather than a reading.
 # The emoji is padded ahead of the text, never inside it: ljust counts
 # CHARACTERS and the glyph is two columns, so padding the joined string would
 # make the three labels agree on length and disagree on width.
@@ -888,6 +907,12 @@ C_TOTALS_LABEL = _lab(E_ROW_TOTAL, 1)
 # then reporting an operation the user did not type and cannot see the cost of
 # anywhere else, and calling it a prompt would bury exactly that.
 C_COMPACT_LABEL = _lab(E_ROW_COMPACT, 2)
+# And for agent spend the 🎤 row cannot carry: it landed after the turn that
+# spawned it had printed — a background agent, a fork left running, a
+# workflow — or on a turn that shares its Stop with a later one and never
+# prints a row of its own.  The same late-report case as the compaction,
+# from a different direction: see _fold_agents.
+C_AGENTS_LABEL = _lab(E_ROW_AGENTS, 3)
 # Both labels are twenty columns, deliberately, so the two right-aligned rows
 # start and end on the same columns and read as a heading over a heading rather
 # than two ragged captions.  Keep them equal if either is reworded.
@@ -919,6 +944,12 @@ PLAN_CACHE = os.environ.get("CLAUDE_PLAN_CACHE",
 CALIB_CACHE = os.environ.get("CLAUDE_CALIB_CACHE",
                              "/tmp/claude-calib-cache.json")
 CALIB_TTL = 300        # the scan walks transcripts; five minutes is plenty
+
+# Where that scan walks.  Overridable so a test can point it at a scratch
+# tree of its own: the goldens plant CALIB_CACHE and never reach the scan,
+# which is exactly why nothing else exercised it.
+PROJECTS_DIR = os.environ.get("CLAUDE_PROJECTS_DIR",
+                              os.path.expanduser("~/.claude/projects"))
 
 # The smallest plan reading that can serve as the DIVISOR of a calibration.
 #
@@ -2427,7 +2458,15 @@ NO_LIMITS = Limits("", "", "", "", "", "")
 
 
 class Turn(NamedTuple):
-    """One prompt the user typed, and everything billed while answering it."""
+    """One prompt the user typed, and everything billed while answering it.
+
+    "Everything" includes what the turn's AGENTS billed — subagents, forks,
+    workflow agents — which Claude Code writes to files of their own beside
+    the transcript; see agent_records.  The token sums and the dollar sums
+    carry both; `calls` is the main thread alone and `agent_calls` the rest,
+    because read_turns_settled waits on the main thread's tail and an agent's
+    first request landing early must not end that wait.
+    """
     ts: str
     text: str
     fresh: int
@@ -2439,6 +2478,16 @@ class Turn(NamedTuple):
     dur_s: float            # wall-clock seconds this turn took to answer
     dctx: Optional[int]     # growth over the previous turn; None where there
                             # is no previous reading to subtract
+    usd_in: float           # the four components of the bill, each priced
+    usd_out: float          # PER RECORD at that record's model and summed.
+    usd_cr: float           # turn_cost is their total and turn_shares their
+    usd_cw: float           # ratios, so a Sonnet fork inside an Opus turn is
+                            # billed at Sonnet rates in both — pricing the
+                            # token sums above at one model's rates cannot say
+                            # that.  A compaction puts its preTokens here at
+                            # the cache-read rate, which is what lets
+                            # turn_cost drop the "unless compact" clause it
+                            # used to need.
     compact: bool = False   # a compaction rather than a prompt.  Its figures
                             # come from the boundary record, not from usage
     reported: bool = False  # a Stop hook has already run at a point AFTER this
@@ -2453,8 +2502,37 @@ class Turn(NamedTuple):
                             # epoch is None where the stamp would not parse;
                             # the cost is still carried, so these always total
                             # turn_cost() whatever the stamps did.
-                            # Empty for a compaction, which bills through no
-                            # usage record at all.
+                            # A compaction's own cost is NOT in here — it
+                            # bills through no usage record — though records
+                            # of the answer an auto compaction landed inside
+                            # are; turn_cost_since tests `compact` for that.
+    agent_calls: int = 0    # agent requests folded into the sums above
+    agent_ids: Tuple[str, ...] = ()
+                            # their requestIds, in the order folded.  Read
+                            # by tests/agents-once.py, which replays a
+                            # session's Stops and needs to say WHICH request
+                            # printed where; rows print money, not ids.
+    agent: bool = False     # a synthetic turn holding agent spend that
+                            # arrived after its own turn was reported.  Its
+                            # `calls` is 0, which keeps it out of every
+                            # selection of "the prompt to report" and out of
+                            # the settle wait.  See late_agent_turn.
+
+
+class AgentRec(NamedTuple):
+    """One billed request from an agent's transcript, with what is needed to
+    file it under a turn of the main transcript.  See agent_records."""
+    epoch: Optional[float]
+    prompt_id: str          # the main-transcript turn that spawned or resumed
+                            # the agent; "" where the agent file never said
+    model: Optional[str]
+    fresh: int
+    cache_write: int
+    cache_read: int
+    out: int
+    request_id: str
+    path: str               # the agent file, for the offsets the Stop hook
+    offset: int             # keeps — see agent_offsets
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -2579,6 +2657,124 @@ def _dedupe_usage(records: Sequence[dict]) -> List[dict]:
     return out
 
 
+def _agent_dir(transcript: str) -> str:
+    """Where Claude Code keeps this session's agent transcripts.
+
+    `<project>/<sid>.jsonl` is the session; `<project>/<sid>/subagents/` is
+    everything it spawned.  "" for a path that is not a transcript at all.
+    """
+    if not transcript.endswith(".jsonl"):
+        return ""
+    return os.path.join(transcript[:-len(".jsonl")], "subagents")
+
+
+def agent_files(transcript: str) -> List[str]:
+    """Every agent transcript of this session, sorted so the walk is stable.
+
+    Two depths and no others, measured over 2,134 files on 2026-09-11:
+    `subagents/agent-<id>.jsonl` for the Agent tool, forks, and agents that
+    agents spawned (those carry parentAgentId in their sidecar and sit in
+    the same directory); `subagents/workflows/wf_<id>/agent-<id>.jsonl` for
+    a workflow's agents.  The workflow's `journal.jsonl` beside them carries
+    no usage and is not matched.
+    """
+    d = _agent_dir(transcript)
+    if not d or not os.path.isdir(d):
+        return []
+    return sorted(glob.glob(os.path.join(d, "**", "agent-*.jsonl"),
+                            recursive=True))
+
+
+def agent_records(transcript: str, seen: Optional[set] = None
+                  ) -> Tuple[AgentRec, ...]:
+    """Every billed request an agent of this session made, in stamp order.
+
+    Nothing an agent bills is in the session's own transcript.  The main file
+    carried `isSidechain: true` records once; across 231 transcripts on this
+    machine it now carries none, and the agent work — 8% of all spend here,
+    and most of it in the sessions that use agents at all — is in the files
+    agent_files lists.  Every reader that adds up a transcript reads these
+    through here as well, or it is reading the main thread and calling it
+    the session.
+
+    WHICH TURN each record belongs to is the `promptId` of the main-transcript
+    turn that spawned the agent, and it is on the agent's USER records, not
+    its assistant ones (0 of 19,408 assistant records carry it).  An agent
+    that a later turn resumed with SendMessage gets a second user record
+    with that later turn's id — 384 files here carry more than one — so the
+    id is carried forward record by record, never taken once per file.
+    read_turns resolves it against the id on every main record it read,
+    tool results included; where no main record carries it — a workflow
+    prompts its agents under ids of its own — the stamp decides instead.
+
+    Skipped: records whose usage is all zero.  804 here are
+    `model: "<synthetic>"` API-error placeholders, each with its own
+    requestId, and counting them would inflate the call counts by 4% for
+    nothing billed.
+
+    Deduped first-wins on requestId across every file together, and against
+    the main transcript when the caller passes its `seen` set: a retried
+    request is the same request wherever it was retried.
+
+    `offset` is the byte position after the record's own line.  It is what
+    the Stop hook stores to say "I have reported everything up to here" —
+    see agent_offsets — and it is bytes rather than a stamp because files
+    that flush on their own schedules share no clock.
+    """
+    seen = set() if seen is None else seen
+    out = []
+    for path in agent_files(transcript):
+        pid = ""
+        try:
+            fh = open(path, "rb")
+        except OSError:
+            continue
+        with fh:
+            pos = 0
+            for line in fh:
+                pos += len(line)
+                try:
+                    r = json.loads(line)
+                except Exception:
+                    continue
+                if not isinstance(r, dict):
+                    continue
+                if r.get("type") == "user":
+                    pid = r.get("promptId") or pid
+                    continue
+                if r.get("type") != "assistant":
+                    continue
+                m = r.get("message") or {}
+                u = m.get("usage")
+                if not u:
+                    continue
+                k = r.get("requestId") or m.get("id") or "?"
+                if k in seen:
+                    continue
+                seen.add(k)
+                fresh = u.get("input_tokens") or 0
+                cw = u.get("cache_creation_input_tokens") or 0
+                cr = u.get("cache_read_input_tokens") or 0
+                o = u.get("output_tokens") or 0
+                if not (fresh or cw or cr or o):
+                    continue
+                out.append(AgentRec(ts_epoch(r.get("timestamp") or ""), pid,
+                                    m.get("model"), fresh, cw, cr, o, k,
+                                    path, pos))
+    # Stamp order across files, unparseable stamps last: the fold-in walks
+    # turns forward and a record that cannot be placed in time is handed to
+    # the last turn rather than the first.
+    out.sort(key=lambda a: (a.epoch is None, a.epoch or 0.0))
+    return tuple(out)
+
+
+def _usd(model: Optional[str], fresh: int, cw: int, cr: int, out: int
+         ) -> Tuple[float, float, float, float]:
+    """One record's bill, split four ways, at its own model's rates."""
+    pi, po, pr, pw = _price(model)
+    return fresh * pi, out * po, cr * pr, cw * pw
+
+
 # Pictographs whose DEFAULT PRESENTATION IS TEXT, as sorted ranges.
 #
 # EAW_WIDE above blankets 1F300-1FBFF as two columns, and that blanket is
@@ -2701,14 +2897,83 @@ def ts_epoch(ts: str) -> Optional[float]:
         return None
 
 
-def read_transcript(path: str) -> Transcript:
+def _stamp_utc(epoch: Optional[float]) -> str:
+    """ts_epoch's inverse: a transcript-shaped UTC stamp, "" for None."""
+    if epoch is None:
+        return ""
+    return datetime.fromtimestamp(epoch, _UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def _agent_state_path(transcript: str) -> str:
+    """Where the Stop hook records how far into each agent file it reported.
+
+    Per session, under TMPDIR beside the published context window, and for
+    the same reason that one is there: it is a channel between one run of
+    the hook and the next, and the transcript itself has no record of what
+    a Stop saw in files other than itself.
+    """
+    sid = os.path.basename(transcript)
+    if sid.endswith(".jsonl"):
+        sid = sid[:-len(".jsonl")]
+    return os.path.join(os.environ.get("TMPDIR", "/tmp"),
+                        "claude-statusline-agents-%s.json" % sid)
+
+
+def agent_offsets(transcript: str) -> Optional[Dict[str, int]]:
+    """The byte offset the last Stop reported each agent file up to, or None
+    when no Stop has written one for this session.  See _fold_agents for
+    what the distinction buys."""
+    try:
+        with open(_agent_state_path(transcript), "r") as fh:
+            d = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(d, dict):
+        return None
+    return {k: v for k, v in d.items()
+            if isinstance(k, str) and isinstance(v, int)}
+
+
+def publish_agent_offsets(transcript: str,
+                          agents: Sequence[AgentRec]) -> None:
+    """Record, after a Stop has rendered, how far into each agent file the
+    records it folded in reached.
+
+    Written from the records themselves rather than from the files' sizes,
+    so that what is stored is exactly what was reported: the hook reads the
+    agent files once, renders from that reading, and stores that reading's
+    extent.  A file that grew between the read and this write is reported
+    next time from where this reading stopped, which is the whole point.
+    Files with no billed record yet are absent, and absent reads as 0.
+    """
+    ext = {}
+    for a in agents:
+        if a.offset > ext.get(a.path, 0):
+            ext[a.path] = a.offset
+    try:
+        with open(_agent_state_path(transcript), "w") as fh:
+            json.dump(ext, fh)
+    except OSError:
+        pass
+
+
+def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None
+                    ) -> Transcript:
     """One pass for the status line: totals, cache rate, context, last texts.
 
-    Context size comes from the last NON-SIDECHAIN request only.  A subagent
-    runs its own context, and letting its usage land here would make the main
-    thread's occupancy jump around as subagents come and go.  The filter
-    applies to that one field: a subagent's tokens still count toward the
-    totals and the cost, because they were still billed.
+    The token totals and the cache rate count what the session's AGENTS
+    billed as well — `agents` is agent_records' reading of the files beside
+    the transcript, or None to read them here — because it was billed, and
+    a 🧩 that reports the main thread alone is short by whatever the forks
+    and workflows spent, which in the sessions that use them is most of it.
+
+    Context size does NOT.  It is a reading of THIS window — the one 🧠 is
+    watched to decide when to compact — and every agent runs a window of its
+    own that compacts, or does not, by itself.  Folding those in would make
+    the main thread's occupancy jump as agents come and go and say nothing
+    about when this session needs a /compact.  The `isSidechain` guard on
+    the reading below is belt-and-braces: agent records carry the flag, but
+    they never reach this loop, which reads the main file alone.
     """
     records = list(_records(path))
     reqs = _dedupe_usage(records)
@@ -2719,6 +2984,11 @@ def read_transcript(path: str) -> Transcript:
         cwrite += u.get("cache_creation_input_tokens") or 0
         cread += u.get("cache_read_input_tokens") or 0
         down += u.get("output_tokens") or 0
+    for a in (agent_records(path) if agents is None else agents):
+        fresh += a.fresh
+        cwrite += a.cache_write
+        cread += a.cache_read
+        down += a.out
     in_all = fresh + cwrite + cread
 
     ctx = 0
@@ -2950,13 +3220,145 @@ def is_work(r: dict) -> bool:
 SUMMARY_CPT = 4.0
 
 
-def read_turns(path: str) -> Tuple[Turn, ...]:
+def _new_turn(ts: str, text: str) -> dict:
+    """The mutable turn read_turns builds up, before it is frozen."""
+    return {"ts": ts, "text": text,
+            "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0, "n": 0,
+            "usd": [0.0, 0.0, 0.0, 0.0], "an": 0, "aids": [],
+            "t0": ts_epoch(ts), "t1": None, "parts": []}
+
+
+def _add_usd(cur: dict, epoch: Optional[float], model: Optional[str],
+             fresh: int, cw: int, cr: int, out: int) -> None:
+    """Bill one record to a turn: the four dollar sums, and one part."""
+    d = _usd(model, fresh, cw, cr, out)
+    for i in range(4):
+        cur["usd"][i] += d[i]
+    cur["parts"].append((epoch, sum(d)))
+
+
+def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
+                 agents: Sequence[AgentRec],
+                 last_stop: Optional[float] = None,
+                 offsets: Optional[Dict[str, int]] = None) -> Optional[dict]:
+    """File every agent record under a turn of the main transcript.
+
+    By promptId where a main record carried it — the turn that spawned the
+    agent, or resumed it, whenever it finished.  That is the rule rather
+    than the stamp because 14% of agent records here are stamped after the
+    NEXT turn opened: a background agent, a fork left running, a workflow.
+    By stamp those would land on the next prompt's row and that row would
+    lie by that much.
+
+    By stamp only where no main record carries the id: transcripts that
+    predate promptId, and workflow agents, which are prompted under ids of
+    the workflow's own.  The stamp picks the last NON-COMPACTION turn open
+    at that moment.  An auto compaction leaves the compaction turn open for
+    the rest of the answer, and everything main-thread that follows lands
+    on it already; agent spend must not join it there, because the 🤏 row
+    is the compaction's and prompts exclude it.
+
+    Dropped, as main records are, where no turn precedes the record.
+
+    Into the turn: the token sums, the dollar sums, a part, and agent_calls
+    — not `n`, which is the main thread's and is what the settle wait
+    watches; not `ctx`; not `t1`.
+
+    EXCEPT when the record is NEW and its turn is not the one the next
+    Stop will report.  A Stop prints one 🎤 row, for the last turn with
+    main-thread calls; a record filed anywhere else prints on no row.  Two
+    ways that happens.  The turn was REPORTED already — one of the first
+    `settled`, a Stop has run past it — and the record arrived after: a
+    background agent, a fork left running, a workflow, each of which can
+    finish after the turn that spawned it printed.  Or the turn shares its
+    Stop with a later one — a queued prompt delivered inside the run
+    already in flight opens a turn of its own, and the one Stop reports
+    the last of them — so it never gets a 🎤 row at all; 43% of billed
+    turns on this machine are that, and in a session that runs workflows
+    under a stream of task notifications it is nearly all of them.  Filing
+    the spend on such a turn counts it in the totals and prints it on no
+    row, which is what happened to compactions before they got a row of
+    their own.  Those records go into one turn of their own instead,
+    returned here for read_turns to freeze, and print on the 👥 row at the
+    next Stop.  The spawning turn does NOT get them — the totals sum every
+    turn, and a record in two of them is billed twice.
+
+    WHAT "not in the file when that happened" means is the delicate part.
+    With `offsets` — the byte counts the last Stop hook stored for each
+    agent file, see agent_offsets — it is exact: a record whose line ends
+    beyond its file's stored offset was not there.  Without them, the only
+    boundary is the last Stop record's stamp, and a record stamped after
+    it is taken as late.  That is at-most-once, not exactly-once: an agent
+    file flushes on its own schedule, and a record stamped before the Stop
+    but written after it looks reported and prints nowhere.  Measured on
+    this machine, about 1% of late-eligible records sit inside that window.
+    The offsets exist to close it; the stamp is the fallback for the first
+    Stop of a session and for a fixture.
+    """
+    if not agents or not turns:
+        return None
+    stamped = [(t["t0"], t) for t in turns
+               if t["t0"] is not None and not t.get("compact")]
+    # The turn the 🎤 row will be about: the same selection render_cost_line
+    # and _with_shares make.  `n` is main-thread calls, so folding agents in
+    # cannot move it.  With no such turn there is no 🎤 row to be "not on",
+    # and everything is filed where it belongs.
+    prompt = None
+    for t in turns:
+        if t["n"] and not t.get("compact"):
+            prompt = t
+    late = None
+    for a in agents:
+        cur = by_pid.get(a.prompt_id) if a.prompt_id else None
+        if cur is None:
+            for t0, t in reversed(stamped):
+                if a.epoch is None or t0 <= a.epoch:
+                    cur = t
+                    break
+            if cur is None:
+                continue
+        if prompt is not None and cur is not prompt:
+            if offsets is not None:
+                new = a.offset > offsets.get(a.path, 0)
+            else:
+                new = (last_stop is None
+                       or (a.epoch is not None and a.epoch > last_stop))
+            if new:
+                if late is None:
+                    late = _new_turn(_stamp_utc(a.epoch), "agents (other)")
+                cur = late
+        cur["fresh"] += a.fresh
+        cur["cw"] += a.cache_write
+        cur["cr"] += a.cache_read
+        cur["out"] += a.out
+        cur["an"] += 1
+        cur["aids"].append(a.request_id)
+        _add_usd(cur, a.epoch, a.model, a.fresh, a.cache_write, a.cache_read,
+                 a.out)
+    return late
+
+
+def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
+               ) -> Tuple[Turn, ...]:
     """Segment the transcript into prompts, with each turn's billed usage.
 
-    `ctx` is LAST-WRITE-WINS within a turn and skips sidechains — it is an
-    instantaneous reading of how big the window is, not a sum of anything.  A
-    port that accumulates it produces a figure that looks like cumulative
-    tokens and is not a context size at all.
+    `ctx` is LAST-WRITE-WINS within a turn and is the MAIN THREAD's — it is
+    an instantaneous reading of how big the window is, not a sum of anything.
+    A port that accumulates it produces a figure that looks like cumulative
+    tokens and is not a context size at all.  Agent usage never touches it:
+    an agent runs a window of its own, and 🧠 is read to decide when THIS
+    one needs compacting.
+
+    `agents` is what agent_records returns for this transcript; None reads
+    it here.  A caller that also calls read_transcript passes the one it
+    read, so a status-line redraw walks the agent files once.  Every agent
+    record is folded into the turn whose promptId it carries, or — where no
+    main record carries that id — into the turn open at its stamp, skipping
+    compactions so that agent spend never prints on the 🤏 row.  Its tokens
+    and dollars go into the same sums and its cost into `parts`, which is
+    what lets a window boundary split it; its stamp does NOT move the turn's
+    end, because agents run in parallel with the turn and a background one
+    finishing an hour later is not an hour of answering.
 
     Assistant records appearing before the first recognised prompt are dropped:
     there is no turn to attribute them to.
@@ -2965,7 +3367,10 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
     settled = 0     # turns that a Stop hook has already run past
     cur = None
     seen = set()
+    by_pid = {}     # promptId → the turn open when a record carrying it was read
+    last_stop = None    # epoch of the last Stop record, for late_agent_turn
     for r in _records(path):
+        pid = r.get("promptId")
         text = turn_start_text(r)
         if text is not None:
             # A queued message can be recorded BOTH ways — once typed, once
@@ -2978,13 +3383,20 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
                     and cur["text"] == text):
                 cur["ts"] = r.get("timestamp") or cur["ts"]
                 cur["t0"] = ts_epoch(r.get("timestamp") or "")
-                continue
-            cur = {"ts": r.get("timestamp") or "", "text": text,
-                   "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0, "n": 0,
-                   "t0": ts_epoch(r.get("timestamp") or ""), "t1": None,
-                   "parts": []}
-            turns.append(cur)
-        elif r.get("subtype") == "compact_boundary":
+            else:
+                cur = _new_turn(r.get("timestamp") or "", text)
+                turns.append(cur)
+            if pid:
+                by_pid[pid] = cur
+            continue
+        # Every user record of a turn carries the turn's promptId — the
+        # opener, a queued delivery, a wake, and every tool result — so the
+        # index is built from all of them, not from the opener alone.  A
+        # turn opened by a queue-operation record has no id on its opener
+        # and is indexed through its tool results instead.
+        if pid and cur is not None and not cur.get("compact"):
+            by_pid.setdefault(pid, cur)
+        if r.get("subtype") == "compact_boundary":
             # A compaction is the one expensive operation that leaves NO usage
             # record anywhere — the request that summarises the conversation
             # is never written to the transcript.  What IS written is this
@@ -3017,18 +3429,17 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
             # the one open is the /compact that asked for it.
             md = r.get("compactMetadata") or {}
             if cur is None or cur["n"] or cur["text"].strip() != "/compact":
-                cur = {"ts": r.get("timestamp") or "",
-                       "text": "/compact (%s)" % (md.get("trigger") or "auto"),
-                       "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0,
-                       "n": 0, "t0": ts_epoch(r.get("timestamp") or ""),
-                       "t1": None, "parts": []}
+                cur = _new_turn(r.get("timestamp") or "",
+                                "/compact (%s)" % (md.get("trigger") or "auto"))
                 turns.append(cur)
             cur["cr"] = md.get("preTokens") or 0
+            cur["usd"][2] = cur["cr"] * P_CR
             cur["n"] = 1
             cur["dur"] = (md.get("durationMs") or 0) / 1000.0
             cur["compact"] = True
         elif (r.get("subtype") == "stop_hook_summary"
               and not r.get("isSidechain")):
+            last_stop = ts_epoch(r.get("timestamp") or "") or last_stop
             # The transcript's own record that a Stop hook RAN, written after
             # the hook returns.  It is the only mark in the file of where a
             # previous cost line drew its window, and it is what makes
@@ -3054,6 +3465,7 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
             _c = (r.get("message") or {}).get("content")
             if isinstance(_c, str):
                 cur["out"] = int(len(_c) / SUMMARY_CPT)
+                cur["usd"][1] = cur["out"] * P_OUT
         elif r.get("type") == "assistant" and (r.get("message") or {}).get("usage"):
             k = r.get("requestId") or (r.get("message") or {}).get("id")
             if k in seen or cur is None:
@@ -3065,18 +3477,16 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
             cur["cr"] += u.get("cache_read_input_tokens", 0)
             cur["out"] += u.get("output_tokens", 0)
             cur["n"] += 1
-            # The same four products turn_cost takes over the sums, taken here
-            # over the one record, so the parts total the whole EXACTLY and a
-            # window-bounded share and an unbounded one stay on one scale.
-            # Sidechain records are included for that reason and no other:
-            # they are in the sums four lines up, so leaving them out here
-            # would make the parts total something turn_cost never says.
-            cur["parts"].append((
-                ts_epoch(r.get("timestamp") or ""),
-                u.get("input_tokens", 0) * P_IN
-                + u.get("output_tokens", 0) * P_OUT
-                + u.get("cache_read_input_tokens", 0) * P_CR
-                + u.get("cache_creation_input_tokens", 0) * P_CW))
+            # Priced here, per record, at the record's own model: the four
+            # dollar sums are what turn_cost totals, and `parts` carries the
+            # same figure so that a window-bounded share and an unbounded one
+            # stay on one scale — the parts total the whole EXACTLY.
+            _add_usd(cur, ts_epoch(r.get("timestamp") or ""),
+                     r["message"].get("model"),
+                     u.get("input_tokens", 0),
+                     u.get("cache_creation_input_tokens", 0),
+                     u.get("cache_read_input_tokens", 0),
+                     u.get("output_tokens", 0))
             if not r.get("isSidechain"):
                 # LAST-WRITE-WINS, but only over readings that exist.  An
                 # interrupted request is written with every usage field zero,
@@ -3099,6 +3509,10 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
             _t = ts_epoch(r.get("timestamp") or "")
             if _t is not None:
                 cur["t1"] = _t
+
+    late = _fold_agents(turns, by_pid,
+                        agent_records(path, seen) if agents is None else agents,
+                        last_stop, agent_offsets(path))
 
     # Context growth per turn: how much bigger the window got while this prompt
     # was answered.  The first turn of a transcript gets None rather than its
@@ -3127,16 +3541,41 @@ def read_turns(path: str) -> Tuple[Turn, ...]:
         out.append(Turn(ts=t["ts"], text=t["text"], fresh=t["fresh"],
                         cache_write=t["cw"], cache_read=t["cr"], out=t["out"],
                         ctx=t["ctx"], calls=t["n"], dctx=dctx,
+                        usd_in=t["usd"][0], usd_out=t["usd"][1],
+                        usd_cr=t["usd"][2], usd_cw=t["usd"][3],
                         compact=bool(t.get("compact")),
                         reported=len(out) < settled,
                         parts=tuple(t["parts"]),
+                        agent_calls=t["an"], agent_ids=tuple(t["aids"]),
                         dur_s=(t["dur"] if t.get("dur") else
                                (t["t1"] - t["t0"]
                                 if t["t0"] and t["t1"] and t["t1"] > t["t0"]
                                 else 0.0))))
         if t["ctx"]:
             prev = t
+    if late is not None:
+        out.append(late_agent_turn(late))
+        out.sort(key=lambda t: t.ts)
     return tuple(out)
+
+
+def late_agent_turn(t: dict) -> Turn:
+    """Freeze the synthetic turn _fold_agents built for late agent records.
+
+    `calls` is 0 and `agent` is set, which between them keep it out of every
+    "the prompt to report" selection and out of the settle wait; `ctx` is 0
+    so the Δctx walk steps over it; `reported` is False because the records
+    in it are, by construction, ones no Stop has seen.  Its stamp is the
+    earliest late record's, which is where render_cost_line orders it among
+    the compactions.
+    """
+    return Turn(ts=t["ts"], text=t["text"], fresh=t["fresh"],
+                cache_write=t["cw"], cache_read=t["cr"], out=t["out"],
+                ctx=0, calls=0, dur_s=0.0, dctx=None,
+                usd_in=t["usd"][0], usd_out=t["usd"][1],
+                usd_cr=t["usd"][2], usd_cw=t["usd"][3],
+                parts=tuple(t["parts"]), agent_calls=t["an"],
+                agent_ids=tuple(t["aids"]), agent=True)
 
 
 # How long the Stop hook waits for the turn it is about to report to appear in
@@ -3148,7 +3587,9 @@ SETTLE_POLL_S = 0.025
 
 
 def read_turns_settled(path: str, budget: float = SETTLE_S,
-                       poll: float = SETTLE_POLL_S) -> Tuple[Turn, ...]:
+                       poll: float = SETTLE_POLL_S,
+                       agents: Optional[Sequence[AgentRec]] = None
+                       ) -> Tuple[Turn, ...]:
     """`read_turns`, having waited for the turn being reported to be written.
 
     The transcript is NOT flushed in step with the Stop hook.  The records the
@@ -3178,8 +3619,8 @@ def read_turns_settled(path: str, budget: float = SETTLE_S,
     `st_size` gates the re-read so a wait that spans the whole budget parses
     the transcript once, not sixty times.
     """
-    turns = read_turns(path)
-    if not budget or (turns and turns[-1].calls):
+    turns = read_turns(path, agents)
+    if not budget or _settled(turns):
         return turns
     deadline = time.monotonic() + budget
     try:
@@ -3195,10 +3636,24 @@ def read_turns_settled(path: str, budget: float = SETTLE_S,
         if grown == size:
             continue
         size = grown
-        turns = read_turns(path)
-        if turns and turns[-1].calls:
+        turns = read_turns(path, agents)
+        if _settled(turns):
             break
     return turns
+
+
+def _settled(turns: Sequence[Turn]) -> bool:
+    """Has the turn being reported billed anything yet?
+
+    The last turn that is not the synthetic agents turn: that one is sorted
+    in by stamp and can land after the live turn's opener — a background
+    agent's record arriving mid-answer — and its `calls` is 0 by design, so
+    testing turns[-1] would wait the whole budget on every such Stop.
+    """
+    for t in reversed(turns):
+        if not t.agent:
+            return bool(t.calls)
+    return False
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -4072,7 +4527,9 @@ def stored_ctx_window(session_id: str) -> int:
         return 0
 
 
-def _with_shares(lim: Limits, transcript: str) -> Tuple[Limits, float]:
+def _with_shares(lim: Limits, transcript: str,
+                 agents: Optional[Sequence[AgentRec]] = None
+                 ) -> Tuple[Limits, float]:
     """Attach how much of each window this session, and its last turn, used.
 
     Returns the turn's wall-clock seconds alongside, because ⌛'s new 🎤
@@ -4132,10 +4589,11 @@ def _with_shares(lim: Limits, transcript: str) -> Tuple[Limits, float]:
     if not lim.session_pct and not lim.weekly_pct:
         return lim, 0.0
     try:
-        turns = read_turns(transcript)
+        turns = read_turns(transcript, agents)
         calib = calibration()
         sh = session_shares(turns, calib)
-        prompts = [t for t in turns if t.calls and not t.compact]
+        prompts = [t for t in turns if t.calls and not t.compact
+                   and not t.agent]
         last = prompts[-1] if prompts else None
         tn = {"sess": None, "week": None}
         if last is not None:
@@ -4824,6 +5282,7 @@ class CostOpts(NamedTuple):
     # The third label, kept here rather than read off the module constant, so
     # that --no-usage-text can strip all three from one place.  See main_cost.
     compact_label: str = C_COMPACT_LABEL
+    agents_label: str = C_AGENTS_LABEL
     # Draw the "💳 99٪" half of the two limit cells: what the whole plan
     # consumed, beside what this session did.  Off narrows both cells by
     # C_LIM_TOT on BOTH rows, which is what keeps them stacked.
@@ -4837,9 +5296,11 @@ class CostOpts(NamedTuple):
 
 
 def turn_cost(t: Turn) -> float:
-    """List-price cost of one turn, at Opus 5 rates."""
-    return (t.fresh * P_IN + t.out * P_OUT
-            + t.cache_read * P_CR + t.cache_write * P_CW)
+    """List-price cost of one turn: the four sums read_turns priced per
+    record, at each record's own model.  Not the token sums times one
+    model's rates — a Sonnet fork inside an Opus turn is billed at Sonnet
+    rates, and pricing the sums could not say so."""
+    return t.usd_in + t.usd_out + t.usd_cr + t.usd_cw
 
 
 def turn_cost_since(t: Turn, start: Optional[datetime]) -> float:
@@ -4931,8 +5392,8 @@ def turn_shares(t: Turn) -> Tuple[Optional[int], Optional[int]]:
     c = turn_cost(t)
     if c <= 0:
         return None, None
-    return (int(round(100 * t.cache_read * P_CR / c)),
-            int(round(100 * t.cache_write * P_CW / c)))
+    return (int(round(100 * t.usd_cr / c)),
+            int(round(100 * t.usd_cw / c)))
 def window_for(turns: Sequence[Turn], session_id: str = "") -> int:
     """The context window in force: what the status line published, else a guess.
 
@@ -5030,13 +5491,26 @@ def _window_costs(sess_start: Optional[datetime],
     A slack day is allowed either side of the boundary because mtime is when
     the file was last appended to, not when its earliest qualifying record was
     written.
+
+    The agent files are in the scan — `<sid>/subagents/**/agent-*.jsonl`
+    beside each transcript, see agent_records — and the reason is the
+    division this feeds.  The unit is machine spend over the plan reading,
+    and the reading is Anthropic's count, which includes every agent.  A
+    numerator without them was short by the agent share of the window, so
+    the unit was small and every share divided by it was high, by a factor
+    that changed with which sessions had been running forks.  Measured
+    2026-09-11 with the eight-day cutoff: 42 agent files admitted of 2,134,
+    0.49 s on top of the main files' 2.34 s.
     """
     sess = week = 0.0
     seen = set()
     cutoff = None
     if week_start is not None:
         cutoff = (week_start - timedelta(days=1)).timestamp()
-    for fp in glob.glob(os.path.expanduser("~/.claude/projects/*/*.jsonl")):
+    files = (glob.glob(os.path.join(PROJECTS_DIR, "*", "*.jsonl"))
+             + glob.glob(os.path.join(PROJECTS_DIR, "*", "*", "subagents",
+                                      "**", "agent-*.jsonl"), recursive=True))
+    for fp in files:
         if cutoff is not None:
             try:
                 if os.path.getmtime(fp) < cutoff:
@@ -5390,20 +5864,24 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
         # "+" as on 💰, 🔋 and 📆 beside it: every figure on this row is what
         # ONE prompt added to the reading directly beneath it, and this one is
         # the time it took.  The totals row prints a space in the column.
+        # Blank on the agents row: that row is not an answer, and the
+        # agents ran in parallel with answers already timed on their own
+        # rows, so "+0s" would be wrong and any other figure double-counted.
         seg(C_ELAPSED, "%s%s+%s%s" % (S_WORK, ink.crm,
-                                      pad_val(4, dur_fmt(t.dur_s)), ink.r),
-            left=False),
+                                      pad_val(4, dur_fmt(t.dur_s)), ink.r)
+            if not t.agent else "", left=False),
         # Blank on a compaction, and the CELL is kept so the columns to its
         # left still stack.  The stamp is `now` — when this line is being
         # drawn — which is honest for the prompt just answered and a lie for
         # a compaction, which happened at some earlier point in the session
         # and is only being reported now because `/compact` fires no Stop of
         # its own.  Printing the moment of the REPORT beside the cost of the
-        # EVENT invites reading one as the other.
+        # EVENT invites reading one as the other.  The agents row is the
+        # same case, word for word.
         seg(C_STAMP, "%s%s%s%s" % (
             S_DATE, ink.crm,
             pad_val(10, time.strftime("%Y-%m-%d", stamp)), ink.r)
-            if not t.compact else "", left=False),
+            if not (t.compact or t.agent) else "", left=False),
     ]
     # Dropped, not blanked.  An empty seg() is still exactly its reservation,
     # so blanking would leave thirteen columns of nothing at the right edge
@@ -5800,7 +6278,8 @@ def render_cost_line(turns: Sequence[Turn], opts: CostOpts,
     # Every compaction in the window prints, not just the newest, because the
     # window belongs to no other line — whatever is dropped here is never
     # reported anywhere.
-    prompts = [i for i, t in enumerate(turns) if t.calls and not t.compact]
+    prompts = [i for i, t in enumerate(turns)
+               if t.calls and not t.compact and not t.agent]
     li = prompts[-1] if prompts else len(turns) - 1
     prev = prompts[-2] if len(prompts) > 1 else -1
     last = turns[li]
@@ -5812,13 +6291,20 @@ def render_cost_line(turns: Sequence[Turn], opts: CostOpts,
     # with no such record — every corpus payload, and any session whose first
     # Stop has not run — where "no Stop has run past this" is true of every
     # turn and would reprint the same compaction on every line.
+    # The agents row rides the same list.  read_turns builds it only from
+    # records no Stop has yet seen, so it is pending by construction and
+    # needs no `reported` test; it is ordered with the compactions by
+    # position in `turns`, which is by stamp.
     if any(t.reported for t in turns):
-        pending = [t for t in turns if t.compact and not t.reported]
+        pending = [t for t in turns
+                   if (t.compact and not t.reported) or t.agent]
     else:
-        pending = [t for t in turns[prev + 1:li] if t.compact]
+        pending = [t for t in turns[prev + 1:li] if t.compact] \
+            + [t for t in turns if t.agent]
+        pending.sort(key=lambda t: t.ts)
     acct, stamps = opts.account_totals, opts.stamps
     spec = [(cost_group(t, calib, win, ink, now, acct, stamps),
-             opts.compact_label,
+             opts.agents_label if t.agent else opts.compact_label,
              C_CHROME_LEFT if i == 0 else C_CHROME_CONT)
             for i, t in enumerate(pending)]
     spec.append((cost_group(last, calib, win, ink, now, acct, stamps),
@@ -5940,7 +6426,10 @@ def selftest() -> int:
             # field with no default silently turns this row into a TypeError
             # that only fires in a real terminal — the tty guard returns
             # first everywhere else.  It did, for as long as dctx existed.
-            Turn("", "", 40000, 8000, 900000, 3000, 640000, 3, 142000, None),
+            # The four dollar sums are the same specimen priced at Opus
+            # rates, which is what read_turns would have produced from it.
+            Turn("", "", 40000, 8000, 900000, 3000, 640000, 3, 142000, None,
+                 *_usd(None, 40000, 8000, 900000, 3000)),
             {"sess": 0.5, "week": 2.0}, CTX_1M, COLOUR_INK)),
         # The TOTALS row, which the per-prompt specimen above cannot stand in
         # for.  It used to be the WIDER of the two — 🔋 and 🪫 carried a
@@ -5961,7 +6450,8 @@ def selftest() -> int:
         # — so the row is this width either way.
         ("cost-totals", cost_totals_group(
             (Turn("2026-08-24T12:00:00.000Z", "", 40000, 8000, 900000, 3000,
-                  640000, 3, 142000, None),),
+                  640000, 3, 142000, None, *_usd(None, 40000, 8000, 900000,
+                                                 3000)),),
             {"sess": 26.0, "week": 80.0}, CTX_1M, COLOUR_INK,
             calib={"sess": 0.5, "week": 2.0})),
     ]
@@ -6046,13 +6536,16 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     pay = pay._replace(current_dir=current,
                        project_dir=pay.project_dir or current)
 
-    tr = (read_transcript(pay.transcript)
-          if pay.transcript and os.path.isfile(pay.transcript)
-          else EMPTY_TRANSCRIPT)
+    # The agent files are walked ONCE here and handed to both readers.  Each
+    # would otherwise walk them itself, and a session that has run many
+    # agents has as many bytes there as in its own transcript.
+    have_tr = bool(pay.transcript) and os.path.isfile(pay.transcript)
+    agents = agent_records(pay.transcript) if have_tr else ()
+    tr = read_transcript(pay.transcript, agents) if have_tr else EMPTY_TRANSCRIPT
     git = detect_git()
     # load_limits fills the plan-wide halves and seeds the snapshot; the
     # session halves need the transcript, which only this function has.
-    lim, turn_s = _with_shares(load_limits(pay), pay.transcript)
+    lim, turn_s = _with_shares(load_limits(pay), pay.transcript, agents)
     cols_s = _flag(argv, "--cols")
     # "--cols 0" means "pretend the width is unknown", which is the only way to
     # exercise the fallback layout deterministically from a test.
@@ -6091,6 +6584,7 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
             label=_flag(argv, "--label", C_LABEL if words else E_ROW_PROMPT),
             totals_label=C_TOTALS_LABEL if words else E_ROW_TOTAL,
             compact_label=C_COMPACT_LABEL if words else E_ROW_COMPACT,
+            agents_label=C_AGENTS_LABEL if words else E_ROW_AGENTS,
             account_totals="--no-account-totals" not in argv,
             stamps="--no-datetime" not in argv,
             force_newline="--force-newline" in argv,
@@ -6109,8 +6603,13 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
         # file nobody is appending to, so there is nothing to wait for and
         # every golden case would pay the budget for a turn that is never
         # coming.
-        turns = (read_turns(transcript) if _flag(argv, "--transcript")
-                 else read_turns_settled(transcript))
+        # The agent files, read once: the settle wait below may parse the
+        # main file several times and must fold in the SAME agent reading
+        # each time, because that reading's extent is what gets published
+        # after the render as "reported up to here".
+        agents = agent_records(transcript)
+        turns = (read_turns(transcript, agents) if _flag(argv, "--transcript")
+                 else read_turns_settled(transcript, agents=agents))
 
         # --all is the by-hand mode: every prompt in the transcript, listed,
         # as plain text rather than a hook response.  It is not what the hook
@@ -6137,6 +6636,13 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
             print("{}")
             return 0
         print(json.dumps({"systemMessage": line}))
+        # The LIVE hook only, as with the settle wait: a golden case renders
+        # one transcript at five widths in one TMPDIR, and a state file
+        # written by the first would change what the second reports.  The
+        # goldens therefore exercise the stamp fallback; tests/agents.py
+        # exercises this.
+        if not _flag(argv, "--transcript"):
+            publish_agent_offsets(transcript, agents)
         return 0
     except Exception:
         # Fail silent, by contract.  "{}" is a valid no-op hook response, so

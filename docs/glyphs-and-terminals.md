@@ -29,6 +29,10 @@ Three rules, all learned expensively:
    which is a measurement, and no longer the inference this paragraph used to
    ask someone to replace.
 
+   The other row glyph added since, 👥 `E_ROW_AGENTS` U+1F465 (Unicode
+   6.0, Emoji_Presentation=Yes), holds to the rule — and is **unmeasured**
+   as of 2026-09-11. See the TODO in [Development](development.md).
+
    Choosing a replacement, if one is ever wanted: single codepoint, `W` under
    the test below, at or under Unicode 9, no variation selector. 📉 U+1F4C9
    (Unicode 6.0) and 🔽 U+1F53D (6.0) both qualify and both read as "it got

@@ -190,8 +190,38 @@ def rounding_boundary_session():
             answer(2400, "req-b2", 1000, 20000, 300000, 499600)]
 
 
+def agent_session():
+    """A session with a fork, whose spend lives in a file BESIDE the
+    transcript -- `agents/subagents/agent-fork1.jsonl`, written by main()
+    from AGENT_FILES -- and not in it.  The fork's tokens must reach 🧩 and
+    🎯; its context must not reach 🧠, which is the main thread's 41,012
+    and not the fork's 84,000.  The main record carries the turn's promptId
+    on its tool result, which is how the fork's records find their turn.
+    """
+    return [dict(prompt(3600, "Fork off and read the two exhibits."),
+                 promptId="p-fork"),
+            answer(3000, "req-m1", 12, 1000, 40000, 700, "Done."),
+            dict(tool_result(2400), promptId="p-fork")]
+
+
+AGENT_FILES = {
+    "agents": {
+        "agent-fork1.jsonl": [
+            {"type": "user", "isSidechain": True, "promptId": "p-fork",
+             "timestamp": iso(2900), "message": {"content": "read them"}},
+            dict(answer(2800, "req-fk1", 40, 6000, 80000, 2000),
+                 isSidechain=True),
+            dict(answer(2700, "req-fk2", 10, 2000, 84000, 1500),
+                 isSidechain=True),
+        ],
+    },
+}
+
+
 TRANSCRIPTS = {
     "main": main_session(),
+    # A fork's spend beside the transcript; see the builder.
+    "agents": agent_session(),
     # The ▾ field one step under a round million; see the builder.
     "rounding-boundary": rounding_boundary_session(),
     # ~70٪ read: the amber tier.
@@ -311,6 +341,10 @@ def payloads(corpus):
         # The unit ladder's rounding cut, which no other payload reaches.
         "17-rounding-boundary": case(
             transcript_path=os.path.join(corpus, "rounding-boundary.jsonl")),
+        # A fork's spend in a file beside the transcript: 🧩 and 🎯 count it,
+        # 🧠 does not, and the 🔋/🪫 session shares are priced with it.
+        "18-agents": case(
+            transcript_path=os.path.join(corpus, "agents.jsonl")),
     }
     # The cost fields of 06 are dropped, not set to None; case() cannot spell
     # that inside a nested dict, so it is done here.
@@ -326,6 +360,16 @@ def main(out_dir):
         with open(os.path.join(out_dir, name + ".jsonl"), "w") as fh:
             for r in recs:
                 fh.write(json.dumps(r, sort_keys=True) + "\n")
+    for name, files in AGENT_FILES.items():
+        for rel, recs in files.items():
+            path = os.path.join(out_dir, name, "subagents", rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as fh:
+                for r in recs:
+                    fh.write(json.dumps(r, sort_keys=True) + "\n")
+            with open(path[:-len(".jsonl")] + ".meta.json", "w") as fh:
+                json.dump({"agentType": "fork", "isFork": True,
+                           "spawnDepth": 1}, fh)
     for name, pay in payloads(out_dir).items():
         with open(os.path.join(out_dir, name + ".json"), "w") as fh:
             json.dump(pay, fh, indent=2, sort_keys=True)

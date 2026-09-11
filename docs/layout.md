@@ -235,10 +235,11 @@ person acts on. Bright means that and nothing else.
 spent 2.5٪ of a window without saying whether that was one expensive turn or
 forty cheap ones. It is the same quantity the cost line's 🎤 row prints, off
 the same derivation and — see `_with_shares` — deliberately the same turn:
-`prompts[-1]`, the last turn that made calls and was not a compaction, which
-is character for character the selection `render_cost_line` makes. Taking
-`turns[-1]` instead would let the two rows describe different turns whenever
-the last thing that happened was a compaction.
+`prompts[-1]`, the last turn that made calls and was not a compaction or the
+synthetic late-agents turn, which is character for character the selection
+`render_cost_line` makes. Taking `turns[-1]` instead would let the two rows
+describe different turns whenever the last thing that happened was a
+compaction, or an agent finishing after its turn.
 
 **Why the marks and not a separator.** Two figures divided by `" / "` read as
 "mine out of everyone's". Three do not divide that way, and once each figure

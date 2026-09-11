@@ -9,8 +9,8 @@
 #     pty would report a runner's answers about a layout tuned for JediTerm,
 #     which is worse than not asking: it would go green while the thing the
 #     check exists to catch stayed uncaught.
-#   * compaction-once.py reads real transcripts under ~/.claude/projects/.
-#     A runner has none, so it has nothing to replay.
+#   * compaction-once.py and agents-once.py read real transcripts under
+#     ~/.claude/projects/.  A runner has none, so it has nothing to replay.
 #
 # What IS here and might look like it should not be: usage-source.py reads a
 # macOS app's preference store.  It builds its own fixture store with plistlib
@@ -56,6 +56,8 @@ jobs:
         run: bash tests/golden-cost.sh
       - name: usage sources
         run: python3 tests/usage-source.py
+      - name: agent spend
+        run: python3 tests/agents.py
 
   floor:
     # The 3.9 claim in README.md, checked against a real 3.9. Separate from

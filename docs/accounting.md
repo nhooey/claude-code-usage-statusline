@@ -184,6 +184,97 @@ One quiet consequence: `read_transcript` measures answering time between turn
 starts, so a session that sat idle for twenty minutes and was then woken had
 those twenty minutes charged to the previous turn as work. It no longer does.
 
+## Agents are counted, and what the 🎤 row cannot carry gets a row of its own
+
+Nothing a subagent, a fork, or a workflow agent bills is in the session's own
+transcript. Claude Code writes it to files beside the transcript —
+`<sid>/subagents/agent-<id>.jsonl` for the Agent tool and forks (agents
+spawned by agents sit in the same directory), and
+`<sid>/subagents/workflows/wf_<id>/agent-<id>.jsonl` for a workflow's — and
+until 2026-09-11 every reader here opened the one file and called it the
+session. Across the 231 transcripts on this machine the main file carries
+**zero** `isSidechain` records now; the agent files carry 9,743 billed
+requests and $820 of the machine's $9,745 at list price. Eight percent
+overall, most of it in the few sessions that use agents at all.
+
+`agent_records` reads them, once per process, and three things take what it
+reads:
+
+* **`read_turns`** files each record under a turn. By the `promptId` on the
+  agent's **user** records — the one that opened it, and any later one that
+  resumed it with `SendMessage` — matched against the id on every user record
+  of the main transcript, tool results included. That is the rule rather than
+  the stamp because 14% of agent records here are stamped after the *next*
+  turn opened; by stamp they would land on the next prompt's row and that row
+  would lie by that much. The stamp is the fallback where no main record
+  carries the id — a workflow prompts its agents under ids of its own, and
+  transcripts before about 2.1.20x carry none — and it picks the last
+  non-compaction turn open at that moment, so agent spend never prints on the
+  🤏 row. Into the turn go the token sums, the dollar sums, `parts`, and
+  `agent_calls`. **Not** `ctx`, which is a reading of *this* window and is
+  watched to decide when this session needs a `/compact` — every agent runs a
+  window of its own. **Not** the turn's end: agents run in parallel with the
+  answer, and a background one finishing an hour later is not an hour of
+  answering.
+* **`read_transcript`** adds them to the status line's 🧩 and 🎯, and leaves
+  🧠 alone for the same reason.
+* **`_window_costs`** scans them for the 💳 unit. This one mattered most: the
+  unit is machine spend over the plan reading, the reading is Anthropic's and
+  includes every agent, and a numerator without them was short by the agent
+  share of the window — so the unit was small and every share divided by it
+  was high, by a factor that changed with which sessions had been running
+  forks.
+
+**Pricing is per record now, for every turn.** A `Turn` carries four dollar
+sums accumulated at each record's own model, and `turn_cost` is their total.
+It used to be the token sums at Opus rates, which could not say that a Sonnet
+fork inside an Opus turn cost Sonnet money; and `turn_shares` divided Opus
+cents by that total, which for a turn dominated by a Haiku fork would have put
+📖 five times too high. A compaction's `preTokens` go into the cache-read sum
+at the cache-read rate, which is what let `turn_cost` lose the "unless
+compact" clause it needed before.
+
+**The 👥 row.** A Stop prints one 🎤 row, for the last turn with main-thread
+calls, and an agent record filed on any other turn would print on no row.
+Two ways that happens. The turn was already reported — a background agent, a
+fork left running, a workflow, each of which can finish after the turn that
+spawned it printed. Or the turn shares its Stop with a later one: a queued
+prompt delivered inside a run already in flight opens a turn this program
+counts, but the one Stop reports the last of them. 43% of billed turns on
+this machine are that, and in a session that runs workflows under a stream
+of task notifications it is nearly all of them — 766 of 766 agent requests
+in one such session were on turns no 🎤 row would ever name. Filing spend
+there counts it in the totals and prints it nowhere, which is what happened
+to compactions before they got a row of their own.
+
+So a record that is **new** — not seen by any earlier Stop — and whose turn
+is not the one the 🎤 row is about goes into a synthetic turn instead:
+`agent` set, `calls` 0, so no selection of "the prompt to report" and no
+settle wait can pick it. It prints on the 👥 row above the 🎤/🎮 pair at the
+next Stop. The spawning turn does not also get it: the totals sum every turn,
+and a record in two of them is billed twice.
+
+"New" is the delicate part, and the compaction argument does not carry over:
+there, the boundary and the Stop record are ordered in one file; here there
+are two files and only clocks. So the boundary is **bytes**. The Stop hook,
+after rendering, writes `$TMPDIR/claude-statusline-agents-<sid>.json` — how
+far into each agent file the records it folded in reached. A record whose
+line ends beyond that offset was not there; one at or below it was on some
+earlier row. Append-only files make it exact and the clock does not enter.
+Without the file — the first Stop of a session, or a golden fixture, which
+renders one transcript at five widths in one `TMPDIR` and must not have the
+first width change the second — the fallback is the last Stop record's
+stamp, and that is **at most once**: an agent file flushes on its own
+schedule, and a record stamped before the Stop but written after it looks
+reported and prints nowhere. About 1% of late-eligible records here sit
+inside that window. `tests/agents-once.py` replays real sessions against
+both and, on this machine's 19 sessions with agents and Stops, finds every
+agent request on exactly one of 🎤 or 👥.
+
+What the row is **not**: a per-agent breakdown, or a live "N agents running"
+mark. It is the agent spend the 🎤 row cannot carry, so that the two rows
+above the 🎮 total account for everything under it.
+
 ## Compaction is reported exactly once
 
 A compaction is the one costly thing in a session that nothing else accounts

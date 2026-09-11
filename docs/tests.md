@@ -13,16 +13,18 @@ bash tests/golden.sh              # status mode, 129 comparisons — seconds
 bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
 python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
+python3 tests/agents.py           # agent spend: reader, fold-in, late row, scan — seconds
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
+tests/agents-once.py              # the same for agent spend — MINUTES
 ./claude-code-usage-statusline.py --selftest    # needs a real tty
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```
 
-The first four must end `fail 0   missing 0`. A deliberate layout change is
+The first five must end `fail 0   missing 0` (or `fail 0`). A deliberate layout change is
 accepted with `--regen` **after reading the diff** — that is the step where a
 regression gets blessed as the new expected output.
 
-The first four are also what CI runs, on every push, over Python 3.9 and
+The first five are also what CI runs, on every push, over Python 3.9 and
 3.13, plus `shellcheck` over `tests/*.sh` — see
 `.github/workflows/tests.yml`. `usage-source.py` reads a macOS app's
 preference store and is in CI anyway: it builds its own fixture store with
@@ -52,4 +54,12 @@ records nothing, so it takes no fixture with it. **It costs minutes, not
 seconds** — its runtime scales with the reader's history, and one recent run
 read 149 sessions to find the 28 with a compaction in them and took over ten
 minutes. Give it no timeout, or a generous one.
+
+`agents-once.py` is its sibling for agent spend: every session with a
+`subagents/` directory and a Stop record, each Stop replayed with the main
+file cut before its record and each agent file cut at its stamp, the state
+file published between Stops the way the live hook publishes it. It asserts
+that every agent request is on a 🎤 or 👥 row at the Stop that first saw it,
+and on the 👥 row at no later Stop. Same cost as its sibling, for the same
+reason.
 

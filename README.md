@@ -32,6 +32,11 @@ What you can read off it at a glance:
   🎤 this turn, 🎮 this session, 💳 the whole account — and 🔜 when it resets
 * 📖 / 📝 on the cost line: whether this prompt's money went on re-reading the
   conversation (which `/compact` reclaims) or on new material (which it does not)
+* every figure counts what the session's subagents, forks and workflow agents
+  billed, priced at each one's own model; 🧠 alone is the main thread's,
+  because it is read to decide when *this* window needs compacting. Agent
+  spend the prompt row cannot carry — a background agent finishing after its
+  turn printed — gets a 👥 row of its own, the way a compaction gets 🤏
 * ⌛ where the time went, 💾 the working diff, 🌿 the branch, 🤖 the model and
   its context size
 

@@ -11,7 +11,9 @@ bash tests/golden.sh              # status mode, 129 comparisons — seconds
 bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
 python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
+python3 tests/agents.py           # agent spend: reader, fold-in, 👥 row, scan — seconds
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
+tests/agents-once.py              # the same for agent spend — MINUTES
 ./claude-code-usage-statusline.py --selftest    # needs a real tty, see below
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```

@@ -103,6 +103,32 @@ def stop(minute):
             "timestamp": ts(minute), "isSidechain": False}
 
 
+def with_pid(r, pid):
+    """The same record, carrying the promptId every user record of a turn
+    carries in a real transcript.  It is how an agent's spend finds its
+    turn -- see agent_records in the program -- and the corpus above leaves
+    it off because nothing there has agents to find."""
+    r = dict(r)
+    r["promptId"] = pid
+    return r
+
+
+def agent_user(minute, pid):
+    """An agent's opening record.  It is the one place the spawning turn's
+    promptId is written on the agent's side; the assistant records that
+    follow it carry none."""
+    return {"type": "user", "isSidechain": True, "promptId": pid,
+            "timestamp": ts(minute), "message": {"content": "do a thing"}}
+
+
+def agent_answer(minute, rid, fresh, cw, cr, out, model="claude-opus-5",
+                 second=0):
+    r = answer(minute, rid, fresh, cw, cr, out, sidechain=True)
+    r["timestamp"] = ts(minute, second)
+    r["message"]["model"] = model
+    return r
+
+
 CASES = {
     # Three answered prompts, each larger than the last, with a Stop between
     # them.  The ordinary case: one prompt row and a totals row.
@@ -200,16 +226,71 @@ CASES = {
         wake(30, TASK % "b1s1s9729", meta=False),
         answer(31, "req-j4", 11, 800, 71000, 950),
     ],
+
+    # Agents.  Two prompts, each with a Stop.  Under the first, a fork that
+    # finished with the turn, folded into its row through the tool result
+    # that carries the turn's promptId; the same fork kept going and billed
+    # once more after the first Stop, which is LATE -- reported on no row
+    # yet -- and prints on the 👥 row above the pair.  Under the second, a
+    # Sonnet subagent, so the 🎤 row's 💰 is two models' prices summed per
+    # record and not one model's over the token sums.  The agent files are
+    # in AGENTS below, beside this transcript where Claude Code puts them.
+    "09-agents": [
+        with_pid(prompt(10, "Fork off and check the two exhibits."), "p1"),
+        answer(11, "req-k1", 14, 2000, 45000, 800),
+        with_pid(tool_result(13), "p1"),
+        answer(14, "req-k2", 6, 400, 47000, 1200),
+        stop(15),
+        with_pid(prompt(20, "Now have a subagent read the strategy."), "p2"),
+        answer(21, "req-k3", 9, 1500, 52000, 900),
+        with_pid(tool_result(24), "p2"),
+        answer(25, "req-k4", 3, 200, 54000, 700),
+    ],
 }
+
+# Agent transcripts, keyed by the case they belong to and then by the path
+# under `<case>/subagents/`.  Two depths, because the reader has to find both:
+# a fork at the top and a workflow's agent under `workflows/wf_<id>/`.
+AGENTS = {
+    "09-agents": {
+        "agent-fork1.jsonl": [
+            agent_user(11, "p1"),
+            agent_answer(12, "req-f1", 20, 3000, 61000, 2200),
+            agent_answer(12, "req-f2", 5, 500, 64000, 1800, second=40),
+            agent_answer(17, "req-f3", 4, 300, 66000, 900),   # after stop(15)
+        ],
+        "workflows/wf_9/agent-sub1.jsonl": [
+            agent_user(21, "p2"),
+            agent_answer(22, "req-s1", 30, 4000, 20000, 3000,
+                         model="claude-sonnet-5"),
+            agent_answer(23, "req-s2", 8, 600, 24000, 2500,
+                         model="claude-sonnet-5"),
+        ],
+    },
+}
+
+
+def write_jsonl(path, records):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        for r in records:
+            fh.write(json.dumps(r, sort_keys=True) + "\n")
 
 
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     for name, records in sorted(CASES.items()):
-        path = os.path.join(out_dir, name + ".jsonl")
-        with open(path, "w", encoding="utf-8") as fh:
-            for r in records:
-                fh.write(json.dumps(r, sort_keys=True) + "\n")
+        write_jsonl(os.path.join(out_dir, name + ".jsonl"), records)
+    for name, files in sorted(AGENTS.items()):
+        for rel, records in sorted(files.items()):
+            path = os.path.join(out_dir, name, "subagents", rel)
+            write_jsonl(path, records)
+            # The sidecar every real agent file has beside it.  Nothing reads
+            # it yet; it is here so the fixture is the layout and not a
+            # subset of it.
+            with open(path[:-len(".jsonl")] + ".meta.json", "w") as fh:
+                json.dump({"agentType": "fork" if "fork" in rel
+                           else "workflow-subagent", "spawnDepth": 1}, fh)
     return 0
 
 

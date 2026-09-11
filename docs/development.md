@@ -13,7 +13,7 @@ One file, sectioned by banner comment, in dependency order:
 | Measurement | `vis_width`, `trunc`, `term_profile` |
 | Formatting | `humanize`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `short_model`, `SI_UNITS`, `sub_dec` |
 | Colour tiers, Terminal geometry, Records | small |
-| Reading the payload / the transcript | `Turn`, `read_turns`, `read_turns_settled` |
+| Reading the payload / the transcript | `Turn`, `AgentRec`, `agent_records`, `agent_offsets`, `read_turns`, `read_turns_settled` |
 | Usage sources | `UsageSource`, `ClaudeUsageTrackerSource`, `tracker_reading`, `CommandSource`, `normalise_reading`, `usage_source` |
 | Git, Plan limits | `detect_git`, `load_limits`, `calibration`, `turn_cost_since`, `window_shares`, `session_shares` |
 | Status-line segment renderers, Status-line layout | `--mode status` |
@@ -32,6 +32,11 @@ there, and docs/ does not repeat it.
 Pure functions over frozen `NamedTuple` records. Module-level names are
 constants, and the few that depend on the terminal are computed once at import
 and passed as default arguments so a test can substitute them.
+
+The agent files are read once per process and handed to every reader that
+needs them — `read_transcript`, `read_turns`, `_with_shares` all take an
+`agents` argument — rather than memoised in a module name. Same rule: a
+process is one render, and the reading is an input to it.
 
 Three names are mutable and all three are set once, in `main()`, before
 anything renders: mark spacing, subscript decimals, and the selected usage
@@ -63,6 +68,13 @@ and the naughty ones*; and a saving that never existed, under
 
 **Unverified — needs a real terminal tab, so no runner and no agent can close
 it**
+
+0. 👥 `E_ROW_AGENTS`, U+1F465, the label glyph of the late-agents cost row
+   added 2026-09-11. Emoji_Presentation=Yes, Unicode 6.0, a single code
+   point — it holds to every rule under *Glyphs, terminals, and the naughty
+   ones* — but it has not been through `--selftest` or `probe-advance.sh`
+   in either terminal, so its two columns are a claim and not a reading.
+   Run both; record the result beside 🤏's.
 
 1. Bare Ghostty — outside tmux — is unmeasured and falls to the `unknown`
    profile. `term_profile` checks `TMUX` first, so both Ghostty runs measured
