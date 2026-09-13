@@ -11,15 +11,16 @@ One file, sectioned by banner comment, in dependency order:
 | Tunables | widths, thresholds, billing weights, prices, cost-line geometry |
 | Width tables | `EAW_WIDE` and the per-terminal overrides |
 | Measurement | `vis_width`, `trunc`, `term_profile` |
-| Formatting | `humanize`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `short_model`, `SI_UNITS`, `sub_dec` |
+| Formatting | `humanize`, `rate_fig`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `short_model`, `SI_UNITS`, `sub_dec`, `E_SUP_DIGITS` |
 | Colour tiers, Terminal geometry, Records | small |
 | Reading the payload / the transcript | `Turn`, `AgentRec`, `agent_records`, `agent_offsets`, `read_turns`, `read_turns_settled` |
 | Usage sources | `UsageSource`, `ClaudeUsageTrackerSource`, `tracker_reading`, `CommandSource`, `normalise_reading`, `usage_source` |
-| Git, Plan limits | `detect_git`, `load_limits`, `calibration`, `turn_cost_since`, `window_shares`, `session_shares` |
-| Status-line segment renderers, Status-line layout | `--mode status` |
+| Git, Plan limits | `detect_git`, `load_limits`, `calibration`, `turn_cost_since`, `window_shares`, `session_shares`, `publish_ctx_window`, `session_rate` |
+| Status-line segment renderers, Status-line layout | `--mode status`: one renderer per cell, `render_rate_cache` for the two-figure 🛫 🎯 cell, `render_model` for 🤖 with the effort's glyph, `effort_glyph`, `render_status` for the grid |
 | Cost line | `cost_group`, `cost_totals_group`, `stack_metrics`, `place_stacked`, `render_cost_line` |
 | Alignment self-test | `--selftest` |
-| Entry points | `main_status`, `main_cost`, `USAGE` |
+| The subagent rows | `--mode subagent`: `agent_file_for`, `read_agent_usage`, `agent_window_shares`, `token_rate`, `model_spec`, `render_agent_row`, `render_who`, `_KIND_MARK`, `_STATE_MARK` |
+| Entry points | `main_status`, `main_cost`, `main_subagent`, `USAGE` |
 
 The code comments are deliberately dense, and these documents duplicate the
 parts of them that are worth knowing before you open the file rather than
@@ -66,21 +67,56 @@ real Ghostty/JediTerm disagreement at U+1F900, both under *Glyphs, terminals,
 and the naughty ones*; and a saving that never existed, under
 `--subscript-decimals` in *Options*.
 
+**Measured 2026-09-12, and closed.** 👥 `E_ROW_AGENTS`, U+1F465, the label
+glyph of the late-agents cost row added 2026-09-11, went through
+`tests/probe-advance.sh` in Rider/JediTerm and in Ghostty, both outside tmux:
+`advance=2` in each. Its two columns are a reading now, recorded beside 🤏's
+under *Glyphs, terminals, and the naughty ones*.
+
 **Unverified — needs a real terminal tab, so no runner and no agent can close
 it**
 
-0. 👥 `E_ROW_AGENTS`, U+1F465, the label glyph of the late-agents cost row
-   added 2026-09-11. Emoji_Presentation=Yes, Unicode 6.0, a single code
-   point — it holds to every rule under *Glyphs, terminals, and the naughty
-   ones* — but it has not been through `--selftest` or `probe-advance.sh`
-   in either terminal, so its two columns are a claim and not a reading.
-   Run both; record the result beside 🤏's.
+0. The seventeen glyphs of the subagent row added 2026-09-13: the eleven
+   type marks in `_KIND_MARK` — 🔧 🎩 🔍 📐 📚 📟 🍴 🐚 🔗 🌐 🎎 — the five
+   state circles in `_STATE_MARK` — 🟢 🟡 🔵 🔴 ⚫ — and 🛫 U+1F6EB, the
+   token rate. Each holds to the glyph rules — single codepoint,
+   Emoji_Presentation=Yes, inside `EAW_WIDE` — except that 🟢 U+1F7E2 and 🟡 U+1F7E1 are Unicode 12, past the Unicode 9
+   line the rules prefer and the first glyphs on either readout to be. None
+   has been through `probe-advance.sh` or drawn by `--selftest` in either
+   terminal. The probe derives its list from the `E_*` constants and will
+   not see these until they are named that way or it is taught to read the
+   two tables; do that, run it, and record the result under *Glyphs,
+   terminals, and the naughty ones*. 🛫 replaced ✈️ U+2708 U+FE0F within
+   the hour: the airplane with the variation selector broke the rules on
+   both counts, and in JediTerm a digit was seen painted over the slash of
+   its cell. The row's one live glyph bug so far, and it went the way the
+   rules predict. The type marks and the circles appear on the panel rows
+   only, so a wrong width there shifts one row of the panel and nothing on
+   the status line; 🛫 is on the status line too since the evening of the
+   same day, in column 2, where a wrong width shifts row 2 to the right of
+   it. The row's width is no longer a guess: the panel's `columns` is
+   already net of its chrome, measured on screen 2026-09-13.
 
-1. Bare Ghostty — outside tmux — is unmeasured and falls to the `unknown`
-   profile. `term_profile` checks `TMUX` first, so both Ghostty runs measured
-   the `tmux` profile and say nothing about Ghostty on its own. The width
-   tables would be empty either way; what is untested is the paint room `_PAD`
-   gives the icons under `iterm`/`tmux` and withholds under JediTerm.
+0a. The superscript digits `E_SUP_DIGITS`, U+2070 U+00B9 U+00B2 U+00B3
+   U+2074–2079, added 2026-09-13 for the model's major version — `O⁵`,
+   `H⁴` — on the status line's column 2 and the panel rows both. Six are
+   East_Asian_Width Neutral and four (¹ ² ³ ⁴) Ambiguous, the split of the
+   subscript block, which both terminals advanced one column on 2026-09-08;
+   ⁴ is the Ambiguous one in live use, on every Haiku and Sonnet row. Not
+   probed. `probe-advance.sh` reads `E_*` constants, so it will see these
+   on its next run; record the result beside the subscripts' under *Glyphs,
+   terminals, and the naughty ones*. A two-column ⁴ would push 🤖H⁴🔥's
+   effort glyph one column into the gap and nothing else, since the cell
+   fills its column exactly.
+
+1. Bare Ghostty — outside tmux — falls to the `unknown` profile, and its
+   width behaviour is measured only as far as the probe above went: 👥
+   advanced two there on 2026-09-12, which is the first bare-Ghostty reading
+   of anything. `term_profile` checks `TMUX` first, so the two full Ghostty
+   runs of 2026-09-08 measured the `tmux` profile and say nothing about
+   Ghostty on its own. The width tables would be empty either way; what is
+   untested is the paint room `_PAD` gives the icons under `iterm`/`tmux` and
+   withholds under JediTerm, which only `--selftest`'s drawn rows can show.
 
 **Cleanup**
 

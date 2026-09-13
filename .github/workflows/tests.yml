@@ -58,6 +58,10 @@ jobs:
         run: python3 tests/usage-source.py
       - name: agent spend
         run: python3 tests/agents.py
+      - name: subagent rows
+        run: python3 tests/subagent.py
+      - name: token rate
+        run: python3 tests/rate.py
 
   floor:
     # The 3.9 claim in README.md, checked against a real 3.9. Separate from

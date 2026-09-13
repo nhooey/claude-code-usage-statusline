@@ -12,14 +12,16 @@ bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
 python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
 python3 tests/agents.py           # agent spend: reader, fold-in, 👥 row, scan — seconds
+python3 tests/subagent.py         # the agent panel rows: file lookup, billing, shares, shape — seconds
+python3 tests/rate.py             # the status line's 🛫: the sampler and its cell — seconds
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
 tests/agents-once.py              # the same for agent spend — MINUTES
 ./claude-code-usage-statusline.py --selftest    # needs a real tty, see below
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```
 
-The first four must end `fail 0   missing 0` — they all print the same
-trailer, so a run of all four reads the same way. Any golden failure
+The first seven must end `fail 0   missing 0` — they all print the same
+trailer, so a run of all of them reads the same way. Any golden failure
 writes the two outputs side by side under `out/` or `out-cost/`, so `diff`
 shows the disagreement directly.
 

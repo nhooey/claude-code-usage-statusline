@@ -2,18 +2,19 @@
 
 [![tests](https://github.com/nhooey/claude-code-usage-statusline/actions/workflows/tests.yml/badge.svg)](https://github.com/nhooey/claude-code-usage-statusline/actions/workflows/tests.yml)
 
-Two readouts for [Claude Code](https://claude.com/claude-code) — a **status
-line** under the prompt, and a **prompt-cost line** printed once per turn —
-rendered by one Python file with no dependencies.
+Three readouts for [Claude Code](https://claude.com/claude-code) — a **status
+line** under the prompt, a **prompt-cost line** printed once per turn, and a
+row per running **subagent** in the agent panel — rendered by one Python file
+with no dependencies.
 
 ## What it looks like
 
 Three rows, redrawn continuously under the prompt:
 
 ```
-👤💬 Why does the elapsed row report two durations when the session age is one number, and which…  | 🧩▴2.7M ▾841k  | 🎯 98٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The session age is wall cl…  | 🧠  11٪  115k  | 💰 115  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                                       | 🤖Opus5  📏1M  | ⚡🏃hi  | ⌛ 🎤   5m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the session age is one number, and which…  | 🤖O⁵🏃  | 🧩▴2.7M ▾841k  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The session age is wall cl…  | 💰 115  | 🛫200/s 🎯98٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                                       |         | 🧠 115k   11٪  | ⌛ 🎤   5m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
 ```
 
 Two more, printed by the `Stop` hook when a prompt finishes — what that one
@@ -24,10 +25,20 @@ prompt cost, stacked on what the session has spent:
 📊 🎮 Usage: Session (total)    🧩 ▴ 32k ▾7.9k  🎯 97٪  🧠 39.5٪   79k  💰   0.4   🔋  0.07٪ 💳 41٪  🪫  0.09٪ 💳 63٪  ⌛🤖   6m  🕐   02:23:20
 ```
 
+And one row per task in the agent panel, replacing the panel's own, while
+agents run:
+
+```
+◯ 🔍🟢 a1a65eb72… Verify brief citations Reading docs/layout.md   🤖O⁵🏃  ⌛ 13m  🧩▴ 13k ▾  1k  🛫200/s  🎯95٪  🧠 41k  💰 0.1  🔋.06٪  🪫.01٪
+◯ 🐚🟢 b1         npm test npm test --watch                                       ⌛ 13m
+```
+
 What you can read off it at a glance:
 
-* 🧩 tokens in and out, 🎯 how much of the prompt came from cache
-* 🧠 how full the context window is, 💰 what the session has cost in dollars
+* 🧩 tokens in and out, 💰 what the session has cost in dollars
+* 🛫 how fast the token total is climbing, 🎯 how much of the prompt came
+  from cache
+* 🧠 how full the context window is
 * 🔋 the 5-hour plan window and 🪫 the weekly one, each at three scopes —
   🎤 this turn, 🎮 this session, 💳 the whole account — and 🔜 when it resets
 * 📖 / 📝 on the cost line: whether this prompt's money went on re-reading the
@@ -37,8 +48,14 @@ What you can read off it at a glance:
   because it is read to decide when *this* window needs compacting. Agent
   spend the prompt row cannot carry — a background agent finishing after its
   turn printed — gets a 👥 row of its own, the way a compaction gets 🤏
-* ⌛ where the time went, 💾 the working diff, 🌿 the branch, 🤖 the model and
-  its context size
+* ⌛ where the time went, 💾 the working diff, 🌿 the branch, 🤖 the model as
+  its initial and version with the effort's glyph against it — `O⁵🏃`, `H⁴🔥`
+* on an agent's row: its type as a glyph (🔍 Explore, 📐 Plan, 🔧
+  general-purpose, 🐚 a shell …), its run state as a circle (🟢 running, 🟡
+  pending, 🔵 done, 🔴 failed, ⚫ killed), its id, its
+  name and then what it is doing right now, what *its own* transcript says
+  it has billed, 🛫 how fast the panel's token count is climbing, and 🔋 🪫
+  its share of each plan window
 
 **Every figure sits on a fixed screen column.** Values are formatted to a fixed
 width and carry a unit rather than more digits — `1.2k`, `4.5M`, `1.5h` — so
@@ -61,6 +78,10 @@ Then point `~/.claude/settings.json` at it:
   "statusLine": {
     "type": "command",
     "command": "~/src/claude-code-usage-statusline/claude-code-usage-statusline.py --mode status --mark-spacing"
+  },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "~/src/claude-code-usage-statusline/claude-code-usage-statusline.py --mode subagent --mark-spacing"
   },
   "hooks": {
     "Stop": [

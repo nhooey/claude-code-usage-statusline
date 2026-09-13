@@ -14,17 +14,19 @@ bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
 python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
 python3 tests/agents.py           # agent spend: reader, fold-in, late row, scan — seconds
+python3 tests/subagent.py         # the agent panel rows: file lookup, billing, shares, shape — seconds
+python3 tests/rate.py             # the status line's 🛫: the sampler and its cell — seconds
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
 tests/agents-once.py              # the same for agent spend — MINUTES
 ./claude-code-usage-statusline.py --selftest    # needs a real tty
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```
 
-The first five must end `fail 0   missing 0` (or `fail 0`). A deliberate layout change is
+The first seven must end `fail 0   missing 0` (or `fail 0`). A deliberate layout change is
 accepted with `--regen` **after reading the diff** — that is the step where a
 regression gets blessed as the new expected output.
 
-The first five are also what CI runs, on every push, over Python 3.9 and
+The first seven are also what CI runs, on every push, over Python 3.9 and
 3.13, plus `shellcheck` over `tests/*.sh` — see
 `.github/workflows/tests.yml`. `usage-source.py` reads a macOS app's
 preference store and is in CI anyway: it builds its own fixture store with
@@ -42,6 +44,12 @@ which reads as a fault in the program and is not one.
 `--selftest` is the only check that catches a glyph which measures correctly and
 paints wrong, and it needs a real terminal tab. Run it in each terminal, and
 look at the drawn rows as well as the numbers.
+
+`rate.py` exists because the goldens cannot show the figure it checks: they
+pin the clock, so every render of a case is the sampler's first tick and the
+🛫 field is blank in every golden file — correctly, and uselessly as a test
+of the slope. The suite steps the clock by hand against a scratch `TMPDIR`
+and pins the tick, the depth of the history, a damaged file, and the cell.
 
 `tests/README.md` carries the rest, including what the generated session is
 built to reach and why the differential test against the two programs this one

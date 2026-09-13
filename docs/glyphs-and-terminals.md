@@ -30,8 +30,10 @@ Three rules, all learned expensively:
    ask someone to replace.
 
    The other row glyph added since, 👥 `E_ROW_AGENTS` U+1F465 (Unicode
-   6.0, Emoji_Presentation=Yes), holds to the rule — and is **unmeasured**
-   as of 2026-09-11. See the TODO in [Development](development.md).
+   6.0, Emoji_Presentation=Yes), holds to the rule, and was **measured
+   2026-09-12** by `tests/probe-advance.sh`: `advance=2` in JediTerm and in
+   Ghostty, both without tmux — the first reading taken in bare Ghostty at
+   all, since every earlier Ghostty run had been under tmux.
 
    Choosing a replacement, if one is ever wanted: single codepoint, `W` under
    the test below, at or under Unicode 9, no variation selector. 📉 U+1F4C9

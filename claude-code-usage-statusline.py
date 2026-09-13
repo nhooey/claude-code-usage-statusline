@@ -8,6 +8,8 @@ Two readouts, two modes, one set of facts:
                     stdout: three rows, redrawn continuously
     --mode cost     stdin: the Stop-hook JSON payload
                     stdout: {"systemMessage": "<two rows>"}, once per turn
+    --mode subagent stdin: the agent panel's task list
+                    stdout: one {"id", "content"} line per task, every tick
     --selftest      draws specimen rows on the tty and asks the terminal
                     where the cursor landed; needs a real terminal tab
 
@@ -131,25 +133,45 @@ E_CACHE = "🎯"         # prompt-cache HIT rate — the glyph names what is
                        # terminals.  U+1F3AF is one codepoint, Unicode 6.0,
                        # two columns everywhere, and asks nothing of anybody.
 E_CTX = "🧠"           # context-window occupancy / growth
+E_RATE = "\U0001F6EB"  # 🛫  the token RATE — how fast 🧩's total is climbing,
+                       # in tokens per second.  On the status line since
+                       # 2026-09-13, beside 🎯 in column 2; on the agent
+                       # panel's rows a few hours before that, where the
+                       # figure is the panel's own samples rather than the
+                       # transcript's.  Was Δ, then 🚀 — which is
+                       # E_EFF_XHIGH, two cells along — then ✈️ U+2708
+                       # U+FE0F for a quarter of an hour, during which a
+                       # digit was seen painted over the cell's slash in
+                       # JediTerm.  That is the glyph rules' warning made
+                       # flesh: a text-presentation character plus a
+                       # variation selector, counted two here and advanced
+                       # otherwise there.  🛫 is the same picture, single
+                       # codepoint, Emoji_Presentation=Yes, Unicode 7, EAW W
+                       # — a glyph that can only be drawn one way.
 E_COST = "💰"          # cost
 E_DIFF = "💾"          # +adds/-removes
-E_EFF = "⚡"           # reasoning effort — the fixed part, so the segment is
-                       # found by the same icon whatever the level
-E_WIN = "📏"           # context-window size, beside the model that has it.
-                       # Deliberately from the Unicode 6.0 range: 🪟 (U+1FA9F)
-                       # and 🪣 (U+1FAA3) both read better and both come from
-                       # the Unicode 13 block this terminal carries loose
-                       # metrics for — painting past the two columns they
-                       # advance and leaving debris on redraw.
+# ⚡ U+26A1, the fixed mark of the effort cell — "⚡🏃hi" — left the readout on
+# 2026-09-13 with the cell itself: the effort is now the ladder glyph alone,
+# against the model spec, "🤖O⁵🏃", as the agent rows had it first.
+# 📏 U+1F4CF, the context-window size beside the model, left the readout on
+# 2026-09-13 when the model moved to column 3 without it.  The window is a
+# constant for the session, and 🧠's percentage is that constant read as a
+# level, so it was the one figure on the grid that never said anything twice.
+# The reasoning behind the glyph stands for the next one this file needs from
+# that region: it was deliberately from the Unicode 6.0 range, because 🪟
+# (U+1FA9F) and 🪣 (U+1FAA3) both read better and both come from the Unicode
+# 13 block this terminal carries loose metrics for — painting past the two
+# columns they advance and leaving debris on redraw.
 E_RESET = "🔜"         # marks a duration as time UNTIL: the figure beside it
                        # is a deadline, not a cycle.  A rotation glyph (🔄, ⟳
                        # before it) said only "something recurs here"; this one
                        # names the number, which is what earns its two columns.
-E_EFF_LOW = "🐢"       # effort ladder, legible as a picture before it is read
-E_EFF_MED = "🚶"       # as a word: the pace of the thing doing the work.
-E_EFF_HIGH = "🏃"      # All five single-codepoint and EAW-Wide (the 🎚/🎛
-E_EFF_XHIGH = "🚀"     # sliders are not, and would shift everything to their
-E_EFF_MAX = "🔥"       # right by a column on some terminals).
+E_EFF_LOW = "🐢"       # effort ladder, legible as a picture: the pace of the
+E_EFF_MED = "🚶"       # thing doing the work.  Since 2026-09-13 the picture is
+E_EFF_HIGH = "🏃"      # the whole cell, against the model spec, on both
+E_EFF_XHIGH = "🚀"     # readouts.  All five single-codepoint and EAW-Wide (the
+E_EFF_MAX = "🔥"       # 🎚/🎛 sliders are not, and would shift everything to
+                       # their right by a column on some terminals).
 E_STY = "🎨"           # output style
 E_SUM = "\u03a3"       # Greek capital sigma, ONE column — the n-ary summation
                        # U+2211 sits inside the 2190-2BFF range this file
@@ -525,6 +547,12 @@ LINE3_RESERVED = 105   # columns the non-pwd segments of line 3 occupy.  It
                        # line can afford whenever the width is unknown.
 PWD_MAX_FALLBACK = MAX_LINE - LINE3_RESERVED
 
+RATE_TICK_S = 5.0      # seconds between two samples of 🧩's total for the
+                       # 🛫 rate, and RATE_SAMPLES the samples kept: the
+                       # panel's own tick and depth (A_TICK_S, sixteen), so
+                       # the status line's 🛫 and an agent row's measure the
+                       # same eighty seconds.  See session_rate.
+RATE_SAMPLES = 16
 RIGHT_MARGIN = 4       # columns held empty at the right edge, covering two
                        # things neither the payload nor the tty reports.
                        # First, the status line is drawn into an Ink box with
@@ -548,12 +576,13 @@ LWT_PATH, LMIN_PATH = 2, 10
 
 LEFT_GAP = 2           # columns between 📦 project, 📁 path and 🌿 branch
 W_STY = 6              # 🎨 + the style name's first 4 characters
-VAL_W = 5              # a metric's first value field: "▴4.8M", "Opus5", " 142k"
+VAL_W = 5              # a metric's first value field: "▴4.8M", "200/s",
+                       # " 115k"
 VAL2_W = 6             # the second field — one wider, because one of them
-                       # carries a glyph as well as a figure ("📏200k").  All
-                       # three second fields share it, so output tokens,
-                       # context size and window size right-align down the
-                       # column.
+                       # carries a glyph as well as a figure ("🎯98٪", and
+                       # "📏200k" before it).  All three second fields share
+                       # it, so output tokens, the cache rate and the context
+                       # percentage right-align down the column.
 PAIR_GAP = 2           # between two metrics sharing one cell (⌛ and 🕐)
 LIM_PCT_W = 4          # the widest a limit percentage draws: three characters
                        # of figure plus the ٪ — see limit_pct for why three is
@@ -893,10 +922,10 @@ E_ROW_TOTAL = E_SESSION       # 🎮  the session tally
 E_ROW_COMPACT = "\U0001F90F"  # 🤏  the compaction
 E_ROW_AGENTS = "\U0001F465"   # 👥  agent spend the 🎤 row cannot carry.
                               # Emoji_Presentation=Yes and a single code
-                              # point, chosen for that; NOT yet measured by
-                              # --selftest in JediTerm or Ghostty.  Until it
-                              # is, a row carrying it is the one row whose
-                              # width is a claim rather than a reading.
+                              # point, chosen for that.  Measured 2026-09-12
+                              # by tests/probe-advance.sh: advance=2 in
+                              # JediTerm and in bare Ghostty, neither under
+                              # tmux -- a reading, like the other three.
 # The emoji is padded ahead of the text, never inside it: ljust counts
 # CHARACTERS and the glyph is two columns, so padding the joined string would
 # make the three labels agree on length and disagree on width.
@@ -1144,7 +1173,9 @@ def widths_for(profile: str) -> Widths:
                                                #  first, so Ghostty reaches
                                                #  this branch only inside tmux;
                                                #  bare Ghostty is "unknown" and
-                                               #  unmeasured.
+                                               #  unmeasured, bar one glyph:
+                                               #  👥 advanced two there,
+                                               #  2026-09-12.
         return Widths(
             narrow=frozenset({128368, 9201}),  # 🕰 and ⏱ both advance one
             icons=frozenset({9851}),           # ♻ U+267B advances two.  Correct
@@ -1197,9 +1228,9 @@ _PAD = " " if PROFILE in ("iterm", "tmux") else ""
 S_TOK = E_TOK + _PAD
 S_CTX = E_CTX + _PAD
 S_MOD = E_MOD + _PAD
+S_RATE = E_RATE + _PAD
 S_CACHE = E_CACHE + _PAD
 S_COST = E_COST + _PAD
-S_EFF = E_EFF + _PAD
 S_HUMAN = E_HUMAN + " "
 S_BOT = E_BOT + " "
 S_TIME = E_TIME + " "
@@ -1250,18 +1281,37 @@ S_SUM = E_SUM + " "
 
 # The right-hand column grid, listed left to right.
 #
-#            col 1       col 2            col 3      col 4             col 5
-#   row 1    🎨 style    🧩 tokens        🎯 cache   🔋 5-hour limit   📅 date
-#   row 2    🔀 PR       🧠 context       💰 cost    🪫 weekly limit   🕐 time
-#   row 3                🤖 model 📏win   ⚡ effort   ⌛ elapsed        💾 diff
+#            col 1       col 2       col 3            col 4             col 5
+#   row 1    🎨 style    🤖 model    🧩 tokens        🔋 5-hour limit   📅 date
+#   row 2    🔀 PR       💰 cost     🛫 rate 🎯cache  🪫 weekly limit   🕐 time
+#   row 3                            🧠 context       ⌛ elapsed        💾 diff
 #
-# Column 2 is the point of the arrangement: three two-value metrics whose
-# fields are the same width, so ▴'s figure sits over the context size and over
-# the model, and their second values line up down the right of the column.
-# Column 1 holds the two segments that can be absent (🎨 off the default style,
-# 🔀 off a PR branch) over an empty cell, so their absence leaves a gap at the
-# row's left edge rather than a hole between two figures.  Column 5 ends the
-# readout with the stamp and the diff.
+# Column 3 is the point of the arrangement: three two-value metrics whose
+# fields are the same width, so ▴'s figure sits over the token rate and over
+# the context size, and their second values — ▾, 🎯, the context percentage —
+# line up down the right of the column.  Column 2 is two short cells — 🤖
+# with the two-character model spec and the effort's glyph against it, 💰
+# and four columns of money — over an empty one.  Column 1 holds the two
+# segments that can be absent (🎨 off the default style, 🔀 off a PR branch)
+# over an empty cell, so their absence leaves a gap at the row's left edge
+# rather than a hole between two figures.  Column 5 ends the readout with
+# the stamp and the diff.
+#
+# Rearranged 2026-09-13, to Neil's spec, in steps over one evening.  Until
+# then column 2 was the two-value column with the model and its 📏 window on
+# its third row, and column 3 read 🎯 💰 ⚡ top to bottom.  The cache rate
+# moved in beside the new 🛫 token rate — two readings of the one stream of
+# requests, how fast it runs and how much of it the cache served — the cost
+# moved up beside the tokens it is the price of, and the model took the
+# cost's old cell without the window, which is a constant the 🧠 percentage
+# already divides by, and with its name cut to the two characters the agent
+# rows use, "O⁵".  The context row went to the bottom, so the rate sits
+# directly under the total it is the slope of, and its two fields swapped so
+# the size stacks under 🧩's tokens.  The effort cell went, its glyph moving
+# against the model spec as on the agent rows, "🤖O⁵🏃".  Then the two
+# columns changed places — the short cells first, the two-value column
+# against the limits — and last the model and the cost swapped rows, the
+# configuration above the spend.
 #
 # COLUMN 4 IS A GRID OF ITS OWN, three rows by four fields, and the widest
 # thing on the readout at 29 columns.  Fields 0 to 2 are the three scopes,
@@ -1318,7 +1368,7 @@ S_SUM = E_SUM + " "
 # measuring.  Between the chat text and column 1 there is deliberately no rule:
 # that boundary is a computed pad rather than a fixed gap, and a rule there
 # would have to be paid for in width.
-RIGHT_GRID = (11, 14, 7, 29, 14) if _PAD else (11, 13, 6, 29, 14)
+RIGHT_GRID = (11, 7, 14, 29, 14) if _PAD else (11, 6, 13, 29, 14)
 
 
 def set_mark_spacing(on: bool) -> None:
@@ -1341,7 +1391,7 @@ def set_mark_spacing(on: bool) -> None:
     global C_TOK, C_CACHE, C_LIM_TOT, C_SESS
     MARK_SP = " " if on else ""
     col4 = COL4_TIGHT_W + 4 * len(MARK_SP)
-    RIGHT_GRID = (11, 14, 7, col4, 14) if _PAD else (11, 13, 6, col4, 14)
+    RIGHT_GRID = (11, 7, 14, col4, 14) if _PAD else (11, 6, 13, col4, 14)
     LINE3_RESERVED = LINE3_TIGHT + 4 * len(MARK_SP)
     PWD_MAX_FALLBACK = MAX_LINE - LINE3_RESERVED
     # The cost row's two unspaced cells.  The other five hold a sign there and
@@ -1464,7 +1514,7 @@ def pad_val(want: int, txt: str, left: bool = False) -> str:
     Never use a plain format width for a value on these rows.  Python's `%-5s`
     and f-string `{v:>5}` pad to a count of characters, and every field here is
     fixed width precisely so the rows stack.  The moment a value contains a
-    two-column glyph — 📏 beside the model, 🧩 opening the token cell — a
+    two-column glyph — 🎯 inside the rate cell, 🧩 opening the token cell — a
     character count sees a string already at width and adds nothing.  The
     field comes out short, every later cell on that row shifts, and the row
     stops lining up with the ones above and below.  Invisible in testing with
@@ -1473,7 +1523,8 @@ def pad_val(want: int, txt: str, left: bool = False) -> str:
     The token marks are NOT an example of this.  ▴ and ▾ are one column, so
     "▴4M" measures three either way, and ↑ before them was one column too:
     this comment named the arrow for as long as it existed and the example
-    never demonstrated the bug.  📏 and 🧩 are characters that do.
+    never demonstrated the bug.  🎯 and 🧩 are characters that do, and so
+    was 📏 while it stood beside the model.
 
     It never truncates.  A value that outgrows its field pushes the cell's
     later fields right rather than corrupting anything else; only the fit_*
@@ -1731,6 +1782,17 @@ def trunc(s: str, want: int) -> str:
 # Neil's call, and the right one: a column is worth less than the difference
 # between a third of a point and thirty-eight of them.
 E_SUB_DIGITS = "₀₁₂₃₄₅₆₇₈₉"
+# The superscript digits, for the model's major version — "O⁵", "H⁴" — on the
+# agent rows and the status line both, since 2026-09-13 and to Neil's spec.
+# The same shape of risk as the subscripts above, and the same reading to go
+# on: six of the ten are East_Asian_Width Neutral and four — ¹ ² ³ ⁴ — are
+# Ambiguous, exactly the split of the subscript block, which both terminals
+# advanced one column on 2026-09-08.  ¹ ² ³ are Latin-1 rather than
+# U+2070-2079 and the four Opus, Sonnet, Haiku and Fable versions in the
+# catalogue land on ⁴ and ⁵, so one Ambiguous digit is in live use.  None of
+# these has been probed; see the TODO in docs/development.md.  vis_width
+# calls them one, as it does every codepoint outside its wide tables.
+E_SUP_DIGITS = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 SUB_DEC = False
 
 
@@ -1816,6 +1878,26 @@ def humanize(n: float) -> str:
     # instead the same column costs nothing, keeps mantissa under mantissa and
     # unit under unit, and says "no unit" in the place a unit would have been.
     return "%d " % int(n)
+
+
+def rate_fig(rate: float) -> str:
+    """The token rate in three characters where three will hold it.
+
+    humanize's blank unit under a thousand is dropped: the unit of this
+    field is the "/s", and "849 /s" reads as a typo.  Above a thousand
+    humanize keeps a decimal while the mantissa is under ten — "1.2k" — and
+    that is four; here the cell is three, so the figure is rounded to the
+    unit instead, "1k", "2k", and 9.9k rounds up to "10k".  "150k" is four
+    with no decimal to give and stays four: see A_RATE_W, and
+    VAL_W on the status line, where the "/s" makes the five.
+    """
+    s = humanize(rate).rstrip()
+    if vis_width(s) > 3:
+        for lim, unit in SI_UNITS:
+            if rate >= lim:
+                s = "%.0f%s" % (rate / lim, unit)
+                break
+    return s
 
 
 def pct2(v: int) -> str:
@@ -4515,6 +4597,72 @@ def publish_ctx_window(session_id: str, win: int) -> None:
         pass
 
 
+def _rate_path(session_id: str) -> str:
+    return os.path.join(os.environ.get("TMPDIR", "/tmp"),
+                        "claude-statusline-rate-%s" % session_id)
+
+
+def session_rate(session_id: str, tokens: Optional[int],
+                 now: Optional[float] = None) -> Optional[float]:
+    """🛫 for the main thread: how fast 🧩's total is climbing, in tokens per
+    second, or None while there is nothing to divide.
+
+    The agent panel hands its rows sixteen samples of a token count, taken
+    at a five-second tick, and the row takes the slope.  The status line is
+    handed no such thing — every render sees one total and no history — so
+    it keeps the history itself, in a file beside the published context
+    window: a list of [epoch, tokens] pairs, appended to when the last is
+    RATE_TICK_S or more old and cut to the last RATE_SAMPLES.  The rate is
+    the rise over the run from the oldest sample to the newest, over the
+    time between them — the timestamps recorded, not the tick assumed, since
+    the status line is redrawn when the session changes and not on a timer,
+    so the gap between two samples is at least the tick and often more.
+
+    What it measures is what 🧩 counts: the billable-equivalent total of
+    every request the session and its agents made, cache reads at their
+    weight.  That climbs by a request's whole prompt at each request and
+    rests while a tool runs, so like the panel's figure it is a reading of
+    pace and of life rather than a generation rate; between turns it falls
+    to zero and says so, which on this row is a fact and not a stall.
+
+    None for the first tick of a session — one sample has no slope — and
+    for a session with no id or no transcript, both of which are a row with
+    nothing to sample.  Keyed by session id in TMPDIR like the window store,
+    and safe there for the same reason: a fixture's id is never a live one.
+    Any fault in the file — absent, truncated, not a list — starts the
+    history over rather than propagating; the worst it costs is one blank
+    tick.
+    """
+    if not session_id or tokens is None:
+        return None
+    t = float(now if now is not None else time.time())
+    p = _rate_path(session_id)
+    samples = []
+    try:
+        with open(p) as fh:
+            raw = json.load(fh)
+        if isinstance(raw, list):
+            samples = [[float(a), float(b)] for a, b in raw]
+    except (OSError, ValueError, TypeError):
+        samples = []
+    if not samples or t - samples[-1][0] >= RATE_TICK_S:
+        samples.append([t, float(tokens)])
+        samples = samples[-RATE_SAMPLES:]
+        try:
+            tmp = "%s.%d" % (p, os.getpid())
+            with open(tmp, "w") as fh:
+                json.dump(samples, fh)
+            os.replace(tmp, p)
+        except OSError:
+            pass
+    if len(samples) < 2:
+        return None
+    span = samples[-1][0] - samples[0][0]
+    if span <= 0:
+        return None
+    return max(0.0, samples[-1][1] - samples[0][1]) / span
+
+
 def stored_ctx_window(session_id: str) -> int:
     """What the status line last published for this session, or 0."""
     if not session_id:
@@ -4635,37 +4783,61 @@ def render_tokens(up: Optional[int], down: int) -> str:
         F_TDN, pad_val(VAL2_W, E_DOWN + pad_val(4, humanize(down))), R)
 
 
-def render_cache(cache_pct: int) -> str:
-    """The prompt-cache hit rate.  Nothing when there was no usage at all."""
+def render_rate_cache(rate: Optional[float], cache_pct: int) -> str:
+    """🛫 the token rate and 🎯 the cache hit rate in one cell: "🛫200/s 🎯98٪".
+
+    Two readings of the one stream of requests — how fast it is running and
+    how much of each request the cache served — and the column-2 shape: the
+    mark, a VAL_W first field, a VAL2_W second, so "200/s" stacks under ▴'s
+    figure and the 🎯 with its percentage right-aligns under ▾'s.  The
+    cache figure carries its own mark inside the second field the way the
+    window carried 📏, because the field is a different quantity from the
+    first and a reader should not have to know the layout to tell which.
+
+    The rate is session_rate's and the figure is rate_fig's three characters
+    with the "/s" that makes them five: the same cell as the agent rows',
+    for the same quantity read on the main thread.  Blank — the mark still
+    drawn, the field empty — while there is no slope to report, which is the
+    first tick of a session and nothing else; a rate of nothing between
+    turns is "  0/s" and is meant to be read.
+
+    Nothing at all when there has been no usage, as the cache cell was on
+    its own: no requests is no rate and no hit rate, and a cell of two blank
+    fields would be a row saying something where there is nothing to say.
+    """
     if cache_pct is None or cache_pct < 0:
         return ""
-    return "%s%s%s%s" % (S_CACHE, cache_color(cache_pct),
-                         pad_val(4, pct2(cache_pct) + E_PCT), R)
+    fig = "" if rate is None else rate_fig(rate) + "/s"
+    return "%s%s%s%s%s%s" % (
+        S_RATE, F_TUP, pad_val(VAL_W, fig), cache_color(cache_pct),
+        pad_val(VAL2_W, E_CACHE + pad_val(3, pct2(cache_pct) + E_PCT)), R)
 
 
 def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
-    """Live context occupancy, as a percentage and then a size.
+    """Live context occupancy, as a size and then a percentage — "🧠 115k   11٪".
 
     The window itself is deliberately not printed: it is constant for the
     session, so of the three possible numbers it is the one that never says
-    anything twice — and 🤖 already carries it.
+    anything twice — and it was 🤖's second field until 2026-09-13.
 
-    Percentage first, size second, and the prompt-cost row was turned round to
-    match on the same day.  The two readouts describe the same window — this
-    one as a level, that one as the change in it over a turn — so a reader
-    moving between them should not have to work out which field is which each
-    time; that argument survives the reversal intact, because what it asks for
-    is one order, not a particular one.  Neil's call on which.
-
-    What the reversal costs is the tokens sitting under 🧩's tokens directly
-    above, figure under figure.  What it buys is the percentage in the leading
-    field, which is the figure this row is read for: how full the window is.
-    The size is the qualifier, and qualifiers go second here.
+    Size first, percentage second, since the evening of 2026-09-13 and to
+    Neil's spec; this cell has now been turned round twice.  The order it
+    replaces put the percentage first, on the argument that it is the figure
+    the row is read for and the size its qualifier, and turned the prompt-cost
+    row round to match on the same day.  This order puts the size under 🧩's
+    tokens two rows up — figure under figure, with the 🛫 rate between them
+    — and the percentage on the column's right edge, where 🎯's sits on the
+    row above.  The cost row was NOT turned back with it: it still reads
+    "🧠+ 8.0٪ + 16k", the change in the level before the change in the size,
+    and the two readouts now differ in order.  The argument for one order
+    across both — a reader moving between them should not have to work out
+    which field is which — stands as it did; it is outweighed here by the
+    stacking, and the cost line's two rows stack with each other regardless.
 
     One colour across both fields, and it is the percentage's.  The other two
     metrics in this column pair a light value with a dark one because their two
-    figures are different quantities — tokens up against tokens down, a model
-    against its window.  These two are one quantity said twice, so dimming
+    figures are different quantities — tokens up against tokens down, a rate
+    against a hit rate.  These two are one quantity said twice, so dimming
     either half would rank a figure against itself.
 
     Always pink rather than tiered, so an approaching window limit reads off
@@ -4677,8 +4849,8 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
     if ctx_pct is None:
         return ""
     return "%s%s%s%s%s" % (
-        S_CTX, F_PNK, pad_val(VAL_W, "%d%s" % (ctx_pct, E_PCT)),
-        pad_val(VAL2_W, humanize(ctx_tokens)), R)
+        S_CTX, F_PNK, pad_val(VAL_W, humanize(ctx_tokens)),
+        pad_val(VAL2_W, "%d%s" % (ctx_pct, E_PCT)), R)
 
 
 def render_cost(cost_usd: str) -> str:
@@ -4855,38 +5027,49 @@ def render_pr(pr: str) -> str:
     return "%s%s%s%s" % (S_PR, F_CYN, pad_val(4, pr), R)
 
 
-def render_model(model: str, ctx_window: int) -> str:
+def render_model(model: str, effort: str = "") -> str:
+    """🤖, the two-character model spec and the effort's glyph — "🤖O⁵🏃".
+
+    Three changes on 2026-09-13, all to Neil's spec.  The context window went:
+    "📏1M" stood in a second field beside the name for as long as the model
+    had column 2's width, and the window is a constant for the session that
+    🧠's percentage already reads as a level, so of the three numbers this
+    row could print about it this was the one that never said anything
+    twice.  It is still read — ctx_window_for, for the percentage and for
+    the Stop hook via publish_ctx_window — and simply not drawn.  And the
+    name went from short_model's spelled family, "Opus5", to model_spec's
+    initial and superscript major version, "O⁵", the form the agent rows had
+    taken that morning: one readout, one way of naming a model, and a cell
+    that fits the column 💰 set.  The payload's display name goes in as it
+    is; model_label reads either that or an id.  And the effort joined it:
+    "⚡🏃hi" had a cell of its own in this column — the fixed mark so the
+    segment is found by icon, the glyph as a picture of pace, the word to
+    tell "medium" from "max" — and now the glyph alone stands against the
+    spec, as render_agent_model had it since the morning.  What that costs
+    is the word: 🚶 and 🔥 are the two levels it told apart, and a reader
+    who cannot tell them has the glyph ladder at E_EFF_LOW.  What it buys is
+    a cell of the column's exact width, six, and a row of it back.
+    """
     if not model:
         return ""
-    return "%s%s%s%s%s%s" % (
-        S_MOD, F_PUR, pad_val(VAL_W, short_model(model), True),
-        F_PUR2, pad_val(VAL2_W, E_WIN + humanize(ctx_window)), R)
+    cell = "%s%s%s%s" % (S_MOD, F_PUR, pad_val(2, model_spec(model)), R)
+    if effort and effort != "null":
+        cell += effort_glyph(effort)
+    return cell
 
 
-def render_effort(effort: str) -> str:
-    """⚡, then a glyph for the level, then the level itself — "⚡🏃hi".
-
-    Three cues, each doing a different job.  ⚡ is fixed, so the segment is
-    found by icon like every other one on the row.  The level glyph is read
-    without reading, as a picture of pace.  The word removes any doubt about
-    which of five it is — the distinction that matters most, between "medium"
-    and "max", is the one an abbreviation blurs worst.
-
-    Colour climbs alongside, tiering by intensity rather than by health:
-    nothing here is unhealthy, it just runs hotter and costs more.
-    """
-    if not effort or effort == "null":
-        return ""
-    table = {
-        "low": (E_EFF_LOW, "lo", DIM + F_CRM),
-        "medium": (E_EFF_MED, "md", F_CRM),
-        "high": (E_EFF_HIGH, "hi", F_CYN),
-        "xhigh": (E_EFF_XHIGH, "xh", F_AMB),
-        "max": (E_EFF_MAX, "mx", F_RED),
-    }
-    glyph, label, colour = table.get(
-        effort, (E_EFF_MED, effort[:2], F_CRM))
-    return "%s%s%s%s%s" % (S_EFF, glyph, colour, pad_val(2, label), R)
+def effort_glyph(effort: str) -> str:
+    """The level's glyph on the ladder; the middle of it for a level not on
+    it.  The two-letter label and the tiered colour that stood beside the
+    glyph in the old ⚡ cell went with that cell on 2026-09-13 — an emoji
+    takes no colour, so the ladder's intensity is the picture alone."""
+    return {
+        "low": E_EFF_LOW,
+        "medium": E_EFF_MED,
+        "high": E_EFF_HIGH,
+        "xhigh": E_EFF_XHIGH,
+        "max": E_EFF_MAX,
+    }.get(effort, E_EFF_MED)
 
 
 def render_style(style: str) -> str:
@@ -5185,10 +5368,16 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     # one way.
     rule = rules and rules_on(cols)
 
+    # The 🛫 sample is taken on every render, whether or not the cell draws:
+    # the history has to be there before the first tick that could show a
+    # slope, and a transcript with no usage yet still has a total of zero.
+    tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
+    rate = session_rate(pay.session_id, tokens, now)
+
     usage = grid_row((
         render_style(pay.output_style),
+        render_model(pay.model, pay.effort),
         render_tokens(tr.tok_up, tr.tok_down),
-        render_cache(tr.cache_pct),
         render_limit(S_SESS, lim.session_pct, lim.session_share,
                      lim.session_reset, lim.session_turn, F_LIM_SESS, True,
                      now),
@@ -5196,8 +5385,8 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     ), rule=rule)
     limits_row = grid_row((
         render_pr(pay.pr_number),
-        render_ctx(ctx_pct, tr.ctx_tokens),
         render_cost(pay.cost_usd),
+        render_rate_cache(rate, tr.cache_pct),
         render_limit(S_WEEK, lim.weekly_pct, lim.weekly_share,
                      lim.weekly_reset, lim.weekly_turn, F_LIM_WEEK, False,
                      now),
@@ -5205,8 +5394,8 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     ), rule=rule)
     right = grid_row((
         "",
-        render_model(pay.model, ctx_window),
-        render_effort(pay.effort),
+        "",
+        render_ctx(ctx_pct, tr.ctx_tokens),
         render_elapsed(tr.busy_s, tr.start_s, turn_s, now),
         render_diff(pay.lines_added, pay.lines_removed),
     ), rule=rule)
@@ -6398,7 +6587,7 @@ def selftest() -> int:
           % (sorted(WIDTHS.narrow), sorted(WIDTHS.icons), WIDTHS.clusters))
 
     rows = [
-        ("cache", render_cache(98)),
+        ("rate-cache", render_rate_cache(138.0, 98)),
         ("limit-session", render_limit(S_SESS, "38", "5", "", "0.4")),
         ("limit-weekly", render_limit(S_WEEK, "84", "2", "", "0.05",
                                       F_LIM_WEEK)),
@@ -6413,13 +6602,12 @@ def selftest() -> int:
         # The same cell with nothing elapsed to report, which is how every
         # session starts and the state in which the clock used to wander.
         ("clock-alone", pair("", render_time(), RIGHT_GRID[-1])),
-        ("model-effort", render_model("Opus 5 (1M context)", CTX_1M)
-         + "   " + render_effort("high")),
+        ("model-effort", render_model("Opus 5 (1M context)", "high")),
         ("diff", render_diff("302", "70")),
         ("tokens", render_tokens(9900000, 460000)),
         ("mixed", grid_row((render_style("explanatory"),
                             render_tokens(9900000, 460000),
-                            render_cache(98),
+                            render_cost("115.2"),
                             render_limit(S_SESS, "38", "5", "", "0.4")))),
         ("cost-row", cost_group(
             # dctx explicitly: the specimen is built positionally, so a new
@@ -6515,6 +6703,594 @@ def _flag(argv: Sequence[str], name: str, default: str = "") -> str:
         return argv[argv.index(name) + 1]
     except (ValueError, IndexError):
         return default
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# The subagent rows — `--mode subagent`.
+#
+# Claude Code's agent panel lists every task the session is running — Agent
+# tool calls, forks, background shells, workflows, teammates — one row each,
+# and `subagentStatusLine` in settings.json lets a command REPLACE the text of
+# any of those rows.  Every few seconds the panel runs the command with one
+# JSON object on stdin and reads back one JSON object per line:
+#
+#     stdin   {"session_id", "transcript_path", "cwd", "columns",
+#              "tasks": [{"id", "name", "type", "status", "description",
+#                         "label", "startTime", "model", "effort",
+#                         "contextWindowSize", "tokenCount", "tokenSamples",
+#                         "cwd"}, ...]}
+#     stdout  {"id": "<task id>", "content": "<row text>"}   per task
+#
+# A task left out keeps the panel's own row; `content: ""` hides it.  Read
+# out of Claude Code 2.1.268 on 2026-09-13; nothing here is documented, so
+# the debug tap in main_subagent is how the shape is checked when it moves.
+#
+# WHAT THE PAYLOAD DOES NOT SAY is most of what is worth reading.  It carries
+# the harness's own `tokenCount` — the last request's input plus every output
+# token, a shape that is neither the context nor the bill — and nothing about
+# cache, cost, or the plan windows.  But a local agent's task id IS its agent
+# id, and agent_records already knows where `agent-<id>.jsonl` lives, so the
+# row is built the way the status line's is: from the transcript, priced per
+# record at its own model, with the plan figures taken from the snapshot the
+# status line just published.  The panel's figure is not printed at all.
+# ════════════════════════════════════════════════════════════════════════════
+
+# Fixed widths for the fields the status line does not already reserve.  The
+# same rule as RIGHT_GRID: every cell is as wide as its widest value, so the
+# rows of several agents stack field under field, and a row does not shift
+# when one agent's name is shorter than another's.
+A_KIND_W = 2           # the agent's TYPE as one glyph — 🔍 🔧 🐚 — see
+                       # _KIND_MARK.  A VALUE mark with no field mark ahead of
+                       # it and no letters after: it leads the row, the state
+                       # circle against it, and the two make one four-column
+                       # mark
+A_ID_W = 10            # the task id, cut with an ellipsis — "ab0eb3d18…".
+                       # Dim: not a name, but the address SendMessage and
+                       # ListAgents reach the agent by, and the one thing an
+                       # unnamed agent can still be found by
+A_STATE_W = 2          # the run state as a coloured circle — see
+                       # _STATE_MARK — second on the row, after the type
+A_HEAD_GAP = 1         # between the left group's cells — state-and-type, id,
+                       # name, activity — a single blank, per the spec; the
+                       # right group keeps A_GAP
+A_NAME_MIN = 8         # the floor of the name-and-activity field, which
+                       # takes whatever the metrics leave, like the pwd on
+                       # line 3; this is what it is held to on a narrow row
+A_ACT_MIN = 8          # the least of the activity worth drawing beside the
+                       # name before the field gives the name the columns
+A_CLOCK_W = 2 + 4      # ⌛ and the elapsed time, "⌛ 18m", "⌛4.3m": the
+                       # glyph against a three-character figure and its
+                       # unit, no blank between — the unit is the space
+A_RATE_W = 2 + 3 + 2   # 🛫 and the rate, "🛫 49/s", "🛫138/s": three
+                       # characters of figure, then the "/s".  A rate of a
+                       # hundred thousand and up is four ("150k") and
+                       # overruns by one, on that row only
+A_GAP = 2              # between cells; line 3's spacing, not the grid's 4
+A_TICK_S = 5.0         # seconds between the panel's tokenCount samples.  Not
+                       # in the payload: it is the 5000 ms timer that drives
+                       # the refresh, read out of the binary beside the
+                       # schema, and the rate below is only as right as it.
+                       # RATE_TICK_S is the status line's own copy of the
+                       # same figure, for the samples it takes itself.
+# E_RATE, the 🛫 this row's rate cell opens with, is with the glyphs at the
+# top of the file: since 2026-09-13 the status line draws it too.
+
+# The type cell: one glyph per kind of task, no letters.  Keyed first by
+# the agent TYPE the sidecar records — the Agent tool's subagent_type — and
+# then by the panel's task kind for the tasks that have no sidecar.  A type
+# not listed here draws 👥, the mark of an agent in general.  The two-letter
+# labels that stood beside these glyphs until 2026-09-13 are kept as the
+# comments, for the reader who cannot tell a 🎩 from a 🎎.
+#
+# Every glyph here is single-codepoint, Emoji_Presentation=Yes and inside
+# EAW_WIDE, per the glyph rules in docs/glyphs-and-terminals.md; none has
+# been through probe-advance.sh in either terminal yet.  🤝 U+1F91D was
+# passed over for the teammate for sitting in the U+1F900 block, which is
+# where the two terminals last disagreed.
+_KIND_MARK = {
+    "general-purpose": "\U0001F527",     # 🔧 GP
+    "claude": "\U0001F3A9",              # 🎩 CL  the catch-all
+    "Explore": "\U0001F50D",             # 🔍 EX
+    "Plan": "\U0001F4D0",                # 📐 PL
+    "claude-code-guide": "\U0001F4DA",   # 📚 CG
+    "statusline-setup": "\U0001F4DF",    # 📟 SL
+    "fork": "\U0001F374",                # 🍴 FK
+    "local_agent": "\U0001F465",         # 👥 AG  an agent with no sidecar
+    "local_bash": "\U0001F41A",          # 🐚 SH
+    "local_workflow": "\U0001F517",      # 🔗 WF
+    "remote_agent": "\U0001F310",        # 🌐 RM
+    "in_process_teammate": "\U0001F38E", # 🎎 TM
+}
+
+# The run state as a coloured circle, no word — Neil's call of 2026-09-13,
+# in place of 🔄 💤 ✅ ⛔ ❌.  It stands second on the row, against the type
+# glyph.  The panel's own ◯ ahead of both cannot be replaced from here: the
+# panel draws it before anything the command returns, coloured by its own
+# reading of the state, and the row begins after it.
+#
+# Same glyph rules as _KIND_MARK, same unmeasured standing, with one more
+# caveat: 🟢 and 🟡 are Unicode 12 (2019), past the Unicode 9 line the
+# glyph rules prefer, and the first glyphs on either readout to be.  🔵 🔴
+# are Unicode 6 and ⚫ is 4.1.  There is no older green circle.
+_STATE_MARK = {
+    "running": "\U0001F7E2",     # 🟢
+    "pending": "\U0001F7E1",     # 🟡
+    "completed": "\U0001F535",   # 🔵
+    "killed": "\u26AB",          # ⚫
+    "failed": "\U0001F534",      # 🔴
+}
+
+
+class AgentUsage(NamedTuple):
+    """What one agent's transcript says it billed.  See read_agent_usage."""
+    tok_up: Optional[int]   # billable-equivalent input, as the status line's
+    tok_down: int
+    cache_pct: int          # -1 for no usage at all
+    ctx_tokens: int         # the last request's whole input: its window
+    cost: float
+    parts: Tuple[Tuple[Optional[float], float], ...]  # (epoch, usd) per
+                            # request, for the window split
+    model: str              # the last record's model id; the payload's
+                            # `model` is an alias and may be missing
+    effort: str
+    calls: int
+    last_epoch: Optional[float]   # the last billed record's stamp: when a
+                            # finished agent stopped, which the payload does
+                            # not say
+
+
+NO_AGENT_USAGE = AgentUsage(None, 0, -1, 0, 0.0, (), "", "", 0, None)
+
+
+def agent_file_for(transcript: str, task_id: str) -> str:
+    """The transcript of the agent whose task id is `task_id`, or "".
+
+    Two depths, as agent_files says: directly under subagents/ for the Agent
+    tool and forks, one directory further for a workflow's agents.  Only a
+    local agent has one; a shell task or a remote agent leaves this "".
+    """
+    d = _agent_dir(transcript)
+    if not d or not task_id or not os.path.isdir(d):
+        return ""
+    direct = os.path.join(d, "agent-%s.jsonl" % task_id)
+    if os.path.isfile(direct):
+        return direct
+    hits = glob.glob(os.path.join(d, "workflows", "*", "agent-%s.jsonl"
+                                  % task_id))
+    return hits[0] if hits else ""
+
+
+def agent_meta(path: str) -> dict:
+    """The `.meta.json` sidecar beside an agent transcript: agentType,
+    description, model alias, spawnDepth.  {} where there is none."""
+    if not path.endswith(".jsonl"):
+        return {}
+    try:
+        with open(path[:-len(".jsonl")] + ".meta.json", "r",
+                  encoding="utf-8") as fh:
+            d = json.load(fh)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def read_agent_usage(path: str) -> AgentUsage:
+    """One pass over an agent's transcript, the way read_transcript reads the
+    session's: deduped on requestId, summed, priced per record.
+
+    Context is the LAST non-zero request's whole input — fresh plus both
+    cache classes — which is the same reading 🧠 takes on the status line,
+    for the same window question: this agent's, not the session's.
+    """
+    if not path:
+        return NO_AGENT_USAGE
+    reqs = _dedupe_usage(list(_records(path)))
+    fresh = cwrite = cread = down = 0
+    ctx = 0
+    cost = 0.0
+    parts = []
+    model = effort = ""
+    last = None
+    for r in reqs:
+        m = r.get("message") or {}
+        u = m.get("usage") or {}
+        f = u.get("input_tokens") or 0
+        cw = u.get("cache_creation_input_tokens") or 0
+        cr = u.get("cache_read_input_tokens") or 0
+        o = u.get("output_tokens") or 0
+        if not (f or cw or cr or o):
+            continue                        # an interrupted request
+        fresh += f
+        cwrite += cw
+        cread += cr
+        down += o
+        if f + cw + cr:
+            ctx = f + cw + cr
+        usd = sum(_usd(m.get("model"), f, cw, cr, o))
+        cost += usd
+        epoch = ts_epoch(r.get("timestamp") or "")
+        parts.append((epoch, usd))
+        last = epoch if epoch is not None else last
+        model = m.get("model") or model
+        effort = r.get("effort") or effort
+    in_all = fresh + cwrite + cread
+    if not parts:
+        return NO_AGENT_USAGE
+    return AgentUsage(
+        int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread), down,
+        int(100 * cread / in_all) if in_all > 0 else -1,
+        ctx, cost, tuple(parts), model, effort, len(parts), last)
+
+
+def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
+    """This agent's share of each live plan window, in percent.
+
+    turn_cost_since for a record list rather than a Turn: the same
+    boundaries (_window_starts), the same unit (calibration), the same rule
+    for an unstamped record — it counts IN.  None where either is missing,
+    which render_agent_limit draws as "?".
+    """
+    out = {"sess": None, "week": None}
+    if not u.parts:
+        return out
+    try:
+        starts = dict(zip(("sess", "week"), _window_starts()))
+        calib = calibration()
+    except Exception:
+        return out
+    for key, start in starts.items():
+        unit = calib.get(key)
+        if not unit:
+            continue
+        edge = start.timestamp() if start is not None else None
+        spent = sum(c for e, c in u.parts
+                    if edge is None or e is None or e >= edge)
+        out[key] = spent / unit
+    return out
+
+
+def model_label(model_id: str) -> str:
+    """A display name from a model id or alias, for short_model.
+
+    The panel hands over what the Agent tool was given — "haiku", "sonnet",
+    or a full id like "claude-opus-5[1m]" — and the transcript has the id the
+    API answered with, "claude-haiku-4-5-20251001".  The status line's
+    payload carries a display name ("Opus 5") and short_model is written for
+    that shape, so this makes one: family from the id, version from the
+    dotted digits after it, never the 8-digit date.
+    """
+    low = (model_id or "").lower()
+    fam = next((f for f in MODEL_FAMILIES if f.lower() in low), "")
+    if not fam:
+        return model_id[:VAL_W]
+    tail = low.split(fam.lower(), 1)[1]
+    # Up to two short runs of digits right after the family — "5", "4-5" —
+    # and nothing that runs on into more digits, which is the date stamp.
+    m = re.match(r"[-_. ]*(\d{1,3})(?:[-_.](\d{1,3}))?(?!\d)", tail)
+    if not m:
+        return fam
+    return fam + " " + ".".join(g for g in m.groups() if g)
+
+
+def token_rate(samples: Sequence, status: str) -> Optional[float]:
+    """Tokens per second over the panel's recent samples, or None.
+
+    `tokenSamples` is the last sixteen readings of the panel's own
+    tokenCount, one per refresh tick; the rate is the slope across them at
+    A_TICK_S per tick.  None for a task that is not running — its last
+    samples are flat and the figure would read as a stall — and for fewer
+    than two samples, which is a task in its first seconds.
+    """
+    if status != "running" or not isinstance(samples, list) or len(samples) < 2:
+        return None
+    try:
+        first, last = float(samples[0]), float(samples[-1])
+    except (TypeError, ValueError):
+        return None
+    span = A_TICK_S * (len(samples) - 1)
+    return max(0.0, last - first) / span if span > 0 else None
+
+
+def render_agent_limit(emoji: str, pct_s: str, share: Optional[float],
+                       colour: str, billed: bool = True) -> str:
+    """One plan window for one agent: 🔋 or 🪫, then its own share, hard
+    against the mark — "🔋.51٪".
+
+    render_limit's first scope and nothing after it, and without a scope
+    mark of its own: on this row every figure is the agent's, so a 👥 in
+    front of each would say once per cell what the row says once.  The
+    account figure and the countdown are the same on every row of the panel
+    and already on the status line beneath it.  The field is LIM_FIG_W, so
+    the figure stacks under the status line's.
+
+    Blank when the plan reading is missing: without a percentage to
+    calibrate against there is no unit to divide by.  `billed=False` is a
+    task with no transcript to take a share of — a shell, a remote agent —
+    and its cell is left blank rather than "?": the question mark means
+    "could not derive", and there was nothing to derive from."""
+    if not pct_s or _pct_num(pct_s) is None or not billed:
+        return ""
+    if share is None:
+        fig = "%s%s%s" % (DIM + F_CRM, pad_val(LIM_FIG_W, "?"), R)
+    elif share >= 99.5:
+        fig = "%s%s%s" % (colour, pad_val(LIM_FIG_W, E_HUNDRED + E_PCT), R)
+    else:
+        fig = "%s%s%s" % (colour, pad_val(LIM_FIG_W, limit_pct(share) + E_PCT),
+                          R)
+    return emoji + fig
+
+
+A_LIMIT_W = 2 + LIM_FIG_W    # the 🔋/🪫 cell: the mark and its figure
+
+
+def render_kind(agent_type: str, task_kind: str) -> str:
+    """The type cell: one glyph from _KIND_MARK, 👥 for a type not in it."""
+    return _KIND_MARK.get(agent_type or task_kind) or E_ROW_AGENTS
+
+
+def render_state(status: str) -> str:
+    """The run state as its circle, or the status's first two letters for
+    one _STATE_MARK has never heard of, so a new state is never blank."""
+    if not status:
+        return ""
+    return _STATE_MARK.get(status) or "%s%s%s" % (F_AMB, status[:2], R)
+
+
+def model_spec(model_id: str) -> str:
+    """Two characters for a model: the family's initial and its major
+    version in superscript — "O⁵", "H⁴", "F⁵" — or the family's first two
+    letters where the id carries no version ("So" for a bare "sonnet").  The
+    cell has two columns for this and the version is the half that tells two
+    Opuses apart; the initial is enough for the family, since no two start
+    alike.  The superscript is the spec's, and it does a job: "O5" reads as
+    a code and "O⁵" as a name with a version on it, which is what it is.
+    Digits only — a version that is not a digit passes through as it is.
+    See E_SUP_DIGITS for the width question."""
+    label = model_label(model_id)
+    if not label:
+        return ""
+    fam, _, ver = label.partition(" ")
+    if ver:
+        d = ver[:1]
+        return fam[:1] + (E_SUP_DIGITS[int(d)] if d.isdigit() else d)
+    return fam[:2]
+
+
+def render_agent_model(model_id: str, effort: str) -> str:
+    """🤖, the two-character model spec, and the effort's glyph against it —
+    "🤖O⁵🏃".  render_model's cell, less the _PAD after the icon: this row
+    is A_GAP-spaced rather than gridded and reserves the cell six columns
+    in every profile.  The status line took this shape from here on the
+    evening of 2026-09-13; until then it spelled the effort out, "⚡🏃hi",
+    and the word that told 🚶 from 🔥 was a row above this one."""
+    if not model_id:
+        return ""
+    cell = "%s%s%s%s" % (E_MOD, F_PUR, pad_val(2, model_spec(model_id)), R)
+    if effort and effort != "null":
+        cell += effort_glyph(effort)
+    return cell
+
+
+def render_agent_cache(cache_pct: int) -> str:
+    """🎯 and the hit rate in two characters, 💯 for a full one — the limit
+    cells' convention rather than render_cache's, which clamps at 99 because
+    the status line spends only two columns and a full cache there is the
+    same news as 99.  Here it is the mark's own field and reads as one scale
+    down the panel: 94٪, 💯٪."""
+    if cache_pct is None or cache_pct < 0:
+        return ""
+    if cache_pct >= 100:
+        fig = E_HUNDRED
+    else:
+        fig = pad_val(2, "%d" % cache_pct)
+    return "%s%s%s%s%s" % (E_CACHE, cache_color(cache_pct), fig, E_PCT, R)
+
+
+def render_agent_ctx(ctx_tokens: int) -> str:
+    """🧠 and the size alone — the percentage of the window is dropped.
+    A fresh agent is far from its window, and by the time one is not, the
+    size says so in the same four columns."""
+    if ctx_tokens <= 0:
+        return ""
+    return "%s%s%s%s" % (S_CTX, F_PNK, pad_val(4, humanize(ctx_tokens)), R)
+
+
+def render_agent_clock(start_ms, now: Optional[float],
+                       end: Optional[float] = None) -> str:
+    """⌛ how long the task has run.
+
+    Elapsed from the panel's startTime, which is wall clock since spawn and
+    includes any time the agent sat waiting on a tool — to now while it
+    runs, and to `end` once it has stopped, so a finished agent's figure
+    stops with it rather than counting on until the panel evicts the row."""
+    try:
+        t0 = float(start_ms) / 1000.0
+    except (TypeError, ValueError):
+        t0 = None
+    t = time.time() if now is None else now
+    if end is not None:
+        t = min(t, max(end, t0 or end))
+    if not t0:
+        return ""
+    # E_IDLE bare, not S_IDLE: dur_fmt is three characters and a unit, and
+    # the glyph sits against them — "⌛ 18m", "⌛4.3m" — per the spec, the
+    # same shape as the rate cell.
+    return "%s%s%s%s" % (E_IDLE, F_PRW, pad_val(4, dur_fmt(max(0.0, t - t0))),
+                         R)
+
+
+def render_agent_rate(rate: Optional[float]) -> str:
+    """🛫 the token rate, "🛫138/s".  The rate is the panel's, see
+    token_rate; blank rather than zero when there is none, so a finished
+    agent's row does not claim it is producing nothing."""
+    if rate is None:
+        return ""
+    return "%s%s%s/s%s" % (E_RATE, F_TUP, pad_val(3, rate_fig(rate)), R)
+
+
+def render_agent_row(task: dict, transcript: str, lim: Limits,
+                     cols: Optional[int], now: Optional[float]) -> str:
+    """One panel row for one task, in two groups like line 3 of the status
+    line: flush left, WHICH agent — type, state, id, name; flush right, at
+    fixed widths, what it is doing — model+effort, ⌛, 🧩 🛫 🎯 🧠 💰, 🔋 🪫.
+    The name takes whatever the right group leaves, so the metrics land on
+    the same columns for every row and the name is the field that gives.
+
+    The right group's total width is a constant, so right-aligning it puts
+    each metric on one column in every row whatever the id or the name.
+    Without a width to align to, the name is held to A_NAME_MIN and the
+    groups sit A_GAP apart.  Within the left group the cells sit one blank
+    apart, A_HEAD_GAP, and the type glyph stands against the state circle.
+
+    THE NAME, THEN WHAT IT IS DOING.  The name is the registry's where the
+    panel has one and the Agent tool's `description` where it has not —
+    which is most spawns, since a plain spawn is never entered in the
+    registry, and the description is set once at spawn and is what the
+    panel's own row titles the agent by.  Bright, not bold.  After it,
+    dimmer, the panel's `label`: for a local agent that is its progress summary, the
+    thing it is doing at this moment, and it is printed only where it says
+    something the name does not — the panel falls back to the description
+    for it, and a name said twice is a name said once with less room.  The
+    activity gives way first when the row is narrow, then the name.
+
+    Shaped to Neil's spec of 2026-09-13, after two live cuts.  What went
+    between them, all of it visible on the status line already: 📏 (which
+    the status line has since dropped too), 🧠's percentage, the 💳 and 🔜
+    halves of the limit cells, the 👥 mark ahead of each share, the model's
+    spelled family, and the status as a word.
+    """
+    tid = str(task.get("id") or "")
+    status = str(task.get("status") or "")
+    kind = str(task.get("type") or "")
+    path = agent_file_for(transcript, tid)
+    meta = agent_meta(path)
+    u = read_agent_usage(path)
+
+    model_id = (str(task.get("model") or "") or u.model
+                or str(meta.get("model") or ""))
+    shares = agent_window_shares(u)
+    rate = token_rate(task.get("tokenSamples"), status)
+    gap = " " * A_GAP
+
+    right = gap.join(seg(w, c) for w, c in (
+        (2 + 2 + 2, render_agent_model(
+            model_id, str(task.get("effort") or "") or u.effort)),
+        (A_CLOCK_W, render_agent_clock(
+            task.get("startTime"), now,
+            None if status == "running" else u.last_epoch)),
+        # The two cells borrowed from the status line are sized as that
+        # line's renderers size them, not by RIGHT_GRID index: the grid's
+        # columns changed places on 2026-09-13 and would have carried this
+        # row's 💰 to thirteen columns with them.
+        (vis_width(S_TOK) + VAL_W + VAL2_W, render_tokens(u.tok_up, u.tok_down)),
+        (A_RATE_W, render_agent_rate(rate)),
+        (2 + 2 + 1, render_agent_cache(u.cache_pct)),
+        (vis_width(S_CTX) + 4, render_agent_ctx(u.ctx_tokens)),
+        (vis_width(S_COST) + 4, render_cost("%.4f" % u.cost) if u.parts else ""),
+        (A_LIMIT_W, render_agent_limit(E_SESS, lim.session_pct,
+                                       shares["sess"], F_LIM_SESS,
+                                       bool(u.parts))),
+        (A_LIMIT_W, render_agent_limit(E_WEEK, lim.weekly_pct,
+                                       shares["week"], F_LIM_WEEK,
+                                       bool(u.parts))),
+    ))
+
+    desc = squash(str(task.get("description") or ""))
+    name = str(task.get("name") or "") or desc
+    act = squash(str(task.get("label") or ""))
+    if act == desc:
+        act = ""
+    # The type glyph and the state circle stand together, no blank between —
+    # type first, so the circle sits nearer the figures than the panel's own
+    # ◯ — and the left group's cells sit a single blank apart.
+    head = (" " * A_HEAD_GAP).join(seg(w, c) for w, c in (
+        (A_KIND_W + A_STATE_W,
+         render_kind(str(meta.get("agentType") or ""), kind)
+         + render_state(status)),
+        (A_ID_W, "%s%s%s" % (DIM + F_BLU2, fit_cols(tid, A_ID_W), R)),
+    ))
+    # The row is exactly `columns` wide, no margin taken off.  The panel
+    # hands over a width already net of its own chrome: the terminal's
+    # columns less the pointer, the ◯ and a blank before the row (four),
+    # less two of right padding — `Math.max(0, columns - Wb() - WA)` in
+    # 2.1.268, Wb() = 2 + width(◯) + 1, WA = 2.  Read off Neil's screen
+    # 2026-09-13: a 174-column terminal, the status line's last glyph at
+    # column 172, the row's first glyph at column 4, and a payload of 168.
+    # A row of 168 from column 4 ends at 172, on the status line's edge.
+    # RIGHT_MARGIN is the status line's own allowance against ITS width and
+    # has no business here: taken off as well, the row stopped six short.
+    room = A_NAME_MIN
+    if cols:
+        room = max(room, cols - vis_width(strip_ansi(head)) - A_HEAD_GAP
+                   - vis_width(strip_ansi(right)) - A_GAP)
+    who = render_who(name, act, room)
+    return (head + " " * A_HEAD_GAP + seg(room, who) + gap + right).rstrip()
+
+
+def render_who(name: str, act: str, room: int) -> str:
+    """The name, bright, and after it what the agent is doing, dimmer, in
+    `room` columns.  The activity is drawn only if at least A_ACT_MIN of it
+    fits beside the whole name; otherwise the name has the field, cut to it
+    if it must be."""
+    if not name and not act:
+        return ""
+    if not name:
+        return "%s%s%s" % (F_CHAT_B, fit_cols(act, room), R)
+    left = room - vis_width(name) - A_HEAD_GAP
+    # Plain weight, at Neil's call: the name is brighter than the activity
+    # by hue alone — F_BLU against F_CHAT_B — and bold on top of that made
+    # it the loudest thing on a row whose figures are the point.
+    if act and left >= A_ACT_MIN:
+        return "%s%s%s%s%s%s%s" % (F_BLU, name, R, " " * A_HEAD_GAP,
+                                   F_CHAT_B, fit_cols(act, left), R)
+    return "%s%s%s" % (F_BLU, fit_cols(name, room), R)
+
+
+def render_subagent(pay: dict, cols: Optional[int],
+                    now: Optional[float] = None) -> str:
+    """Every row, one JSON line each, for the panel to read back."""
+    tasks = pay.get("tasks") or []
+    transcript = str(pay.get("transcript_path") or "")
+    lim = load_limits(read_payload("{}"))   # no payload of its own: the
+                                            # snapshot the status line left
+    out = []
+    for task in tasks:
+        if not isinstance(task, dict) or not task.get("id"):
+            continue
+        try:
+            row = render_agent_row(task, transcript, lim, cols, now)
+        except Exception:
+            continue                        # keep the panel's own row
+        out.append(json.dumps({"id": task["id"], "content": row},
+                              ensure_ascii=False))
+    return "".join(line + "\n" for line in out)
+
+
+def main_subagent(argv: Sequence[str], raw: str) -> int:
+    try:
+        pay = json.loads(raw)
+    except Exception:
+        return 0                            # nothing printed: panel's rows stand
+    if not isinstance(pay, dict):
+        return 0
+    # The same debug tap as main_status, one file over.  The payload's shape
+    # is undocumented and this is how it is read when a release moves it.
+    if os.path.isfile(os.path.expanduser("~/.claude/.statusline-debug")):
+        try:
+            with open(os.path.join(os.environ.get("TMPDIR", "/tmp"),
+                                   "statusline-subagent-payload.json"),
+                      "w") as fh:
+                fh.write(raw)
+        except OSError:
+            pass
+    cols_s = _flag(argv, "--cols")
+    if cols_s.isdigit():
+        cols = int(cols_s) or None
+    else:
+        c = pay.get("columns")
+        cols = int(c) if isinstance(c, (int, float)) and c > 0 else term_cols()
+    sys.stdout.write(render_subagent(pay, cols, frozen_now()))
+    return 0
 
 
 def main_status(argv: Sequence[str], raw: str) -> int:
@@ -6652,20 +7428,29 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
 
 
 USAGE = """\
-usage: claude-code-usage-statusline.py --mode {status|cost} [options]
+usage: claude-code-usage-statusline.py --mode {status|cost|subagent} [options]
        claude-code-usage-statusline.py --selftest
 
-Renders the Claude Code status line and the per-prompt cost line from one set
-of glyphs, widths and formatters.  docs/, beside this file, carries the
-design notes: the layout rule, the terminal width tables, and the chrome the
-cost rows are laid out against.
+Renders the Claude Code status line, the per-prompt cost line and the agent
+panel's rows from one set of glyphs, widths and formatters.  docs/, beside
+this file, carries the design notes: the layout rule, the terminal width
+tables, and the chrome the cost rows are laid out against.
 
 modes:
   --mode status      read the status-line JSON on stdin, print three rows
   --mode cost        read the Stop-hook JSON on stdin, print a systemMessage
+  --mode subagent    read the agent panel's task list on stdin, print one
+                     {"id", "content"} line per task -- the subagentStatusLine
+                     setting.  Each row, flush left: type, id, run state,
+                     then the name (or the description, where the panel has
+                     no name) filling what is left; flush right at fixed
+                     widths: model, effort, elapsed and token rate, what the
+                     agent's own transcript says it billed (tokens, cache
+                     rate, context, cost), and its share of the two plan
+                     windows.  --cols and --usage-source apply.
   --selftest         draw specimen rows and measure them against the terminal
 
-options (both modes):
+options (all modes):
   --subscript-decimals
                      write a fraction in U+2080..U+2089 instead of after a
                      point: 🎤 1.2٪ becomes 🎤 1₂٪, 💰 29.8 becomes 💰 29₈.
@@ -6760,6 +7545,12 @@ def main(argv: Sequence[str]) -> int:
             print("{}")
             return 0
         return main_cost(argv, raw)
+    if mode == "subagent":
+        try:
+            raw = sys.stdin.read()
+        except Exception:
+            return 0
+        return main_subagent(argv, raw)
     if mode != "status":
         sys.stderr.write("unknown --mode %r\n" % mode)
         sys.stdout.write(USAGE)

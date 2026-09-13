@@ -1,12 +1,14 @@
 # Options
 
-The program has two modes and a self-test:
+The program has three modes and a self-test:
 
 ```
 --mode status   stdin: the status-line JSON payload
                 stdout: three rows
 --mode cost     stdin: the Stop-hook JSON payload
                 stdout: {"systemMessage": "<two rows>"}
+--mode subagent stdin: the agent panel's task list
+                stdout: one {"id": ..., "content": ...} line per task
 --selftest      draws specimen rows on the tty and asks the terminal where
                 the cursor landed; needs a real terminal tab
 ```
@@ -28,7 +30,52 @@ move it:
 | `--no-usage-text` | drop the `Usage: ...` words from every row label, keeping each row's marker glyph |
 | `--force-newline` | always open the message with a blank line |
 
-`--no-mark-spacing` works in both modes and changes both. On the status line
+`--mode subagent` is the `subagentStatusLine` setting. Claude Code runs it
+every few seconds while the session has tasks in its agent panel — Agent tool
+calls, forks, background shells, workflows — with the task list on stdin, and
+replaces each panel row with the `content` printed for its `id`. A task left
+out keeps the panel's own row. It takes no options of its own: the row is
+fixed, and `--cols` and `--usage-source` below apply to it as they do to the
+other two (`--no-mark-spacing` changes nothing here — no cell on this row
+carries a mark-spacing blank).
+
+The row is two groups, like line 3 of the status line. Flush left, *which*
+agent, its cells one blank apart: the type glyph (🔍 Explore, 📐 Plan, 🔧
+general-purpose, 🐚 a shell, 👥 anything else) with the run state as a
+coloured circle against it — 🟢 running, 🟡 pending, 🔵 done, 🔴 failed, ⚫
+killed — the task id, then the name, bright, and after it, dimmer, what the
+agent is doing right now — the panel's progress summary — the two together
+taking whatever the right group leaves, the activity giving way first. The
+name is the registry's where the panel has one and the Agent tool's
+`description` where it has not, which is most spawns. Flush right at fixed
+widths, *what it is doing*: 🤖 a two-character model spec with the effort's
+glyph against it (`O⁵🏃`, `H⁴🔥`; the ladder is 🐢 🚶 🏃 🚀 🔥, and the
+status line's cell is the same since the same day), ⌛ elapsed, 🧩 tokens, 🛫 the token rate in tokens per
+second, 🎯 🧠 💰, and 🔋 🪫 the agent's own share of each window. Right-aligning a
+constant-width group puts each metric on one column in every row, ending on
+the status line's own right edge, and the name is the field that gives. The
+row is exactly the payload's `columns` wide: the panel states that width
+already net of its own chrome — the `◯ ` pointer before the row and two
+columns of padding after — so a row that fills it ends where the status line
+does. The panel's ◯ itself is drawn before anything the command returns and
+cannot be replaced from here.
+
+The payload carries a name, a type, a status, a start time, a model, an
+effort and the panel's own running token count. Everything else on the row —
+🧩 🎯 🧠 💰 and the two shares — is read from the agent's own transcript,
+`<session>/subagents/agent-<id>.jsonl`, the same way the status line reads the
+session's, and the plan windows are the snapshot the status line last
+published. A task with no transcript (a shell, a remote agent) shows the
+fields the payload gives and nothing where the others would be. 🛫 is the
+slope of the panel's last sixteen token readings at its five-second tick, and
+is the one figure on the row that comes from the panel rather than the file.
+That reading is the last request's input plus every output, so it climbs by
+a whole context at each request and rests while a tool runs: a sign of life
+and of pace, not a generation rate. The status line's own 🛫, in column 2
+beside 🎯, is the same figure for the main thread, sampled by the program
+itself — see [Columns 2 and 3](layout.md#columns-2-and-3).
+
+`--no-mark-spacing` works in every mode. On the status line
 it closes the blank between each column-4 mark and its value, narrowing that
 column from 33 to 29. On the cost line it reaches 🧩 and 🎯 only, for two
 columns: those are the two cells with nothing in the column after the mark,

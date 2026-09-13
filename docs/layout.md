@@ -38,9 +38,9 @@ The five right-hand columns are divided by a faint vertical rule at wide
 enough widths:
 
 ```
-👤💬 Why did the "Prompt Usage" line not stack …   | 🧩↑ 23M ↓837k  | 🎯 98٪  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
-🤖💬 Two separate things, and the second one is …  | 🧠  11٪  115k  | 💰 115  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
-📦repo  📁~/Workbench/…/marbled-godwit             | 🤖Opus5  📏1M  | ⚡🏃hi  | ⌛ 🎤   3m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
+👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃  | 🧩▴ 23M ▾837k  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
+🤖💬 Two separate things, and the second one is …  | 💰 115  | 🛫200/s 🎯98٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
+📦repo  📁~/Workbench/…/marbled-godwit             |         | 🧠 115k   11٪  | ⌛ 🎤   3m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
 ```
 
 They are **on by default** and off with `--no-column-rules`.
@@ -58,7 +58,7 @@ emoji, which carries its own side bearing inside its two columns. One column
 of air before an emoji looks like two before a digit.
 
 **Why a rule at all**, when the columns already have gaps. Four blanks is a
-gap next to `⚡🏃hi` and an expanse next to column 4's thirty-three, and white
+gap next to `💰 115` and an expanse next to column 4's thirty-three, and white
 space of a width that changes with its neighbours has to be re-measured on
 every row before it reads as a division. A stroke on a fixed column does not.
 The grid was always five columns; this is the first thing that says so.
@@ -114,6 +114,64 @@ outside that assembly (`--selftest` builds one).
 There is deliberately **no rule between the chat text and column 1**. That
 boundary is a computed pad, not a fixed gap, and a rule there would have to be
 paid for in width rather than found inside it.
+
+## Columns 2 and 3
+
+```
+           col 2       col 3
+  row 1    🤖 model    🧩 tokens
+  row 2    💰 cost     🛫 rate 🎯cache
+  row 3                🧠 context
+```
+
+Column 3 is three two-value metrics in one shape — a mark, a five-column
+first field, a six-column second — so `▴`'s figure sits over the token rate
+and over the context size, and `▾`'s over the 🎯 and the context percentage.
+🧠 reads size first, then percentage, so the size stacks under 🧩's tokens
+and the percentage ends the column under 🎯's; the cost line's 🧠 cell keeps
+the other order, change in level then change in size, and the two readouts
+differ there. Column 2 is two short cells over an empty one: 🤖 with the
+model's initial, its major version in superscript and the effort's glyph
+against it — `O⁵🏃`, `H⁴🔥`, the cell the agent rows have — and 💰.
+
+**Rearranged 2026-09-13**, in steps over one evening. Until then column 2
+was the two-value column with the model and its 📏 window on its third row,
+and column 3 read 🎯 💰 ⚡ top to bottom. The cache rate moved in beside the
+new 🛫 token rate — two readings of the one stream of requests, how fast it
+runs and how much of it the cache served — the cost moved up beside the
+tokens it is the price of, and the model took the cost's old cell without
+the window, which is a constant the 🧠 percentage already divides by, and
+with its name cut to the agent rows' two characters. The context row went
+to the bottom, so the rate sits directly under the total it is the slope of,
+and its two fields swapped so the size stacks under 🧩's tokens. The effort
+cell went, its glyph moving against the model spec: `⚡🏃hi` had spent a
+cell on a fixed mark, a picture and a word, and the picture alone now does
+the job, at the cost of the word that told 🚶 from 🔥. Then the two columns
+changed places — the short cells first, the two-value column against the
+limits — and last the model and the cost swapped rows, configuration above
+spend. The third row of column 2 is empty, and reserved, for now.
+
+**🛫 is tokens per second**, and on this row it is the program's own reading.
+The agent panel hands its rows sixteen samples of a token count at a
+five-second tick; the status line is handed one total and no history, so it
+keeps the history itself — `session_rate`, a per-session file in `TMPDIR`
+beside the published context window, appended to every `RATE_TICK_S` and cut
+to `RATE_SAMPLES` — and takes the rise over the recorded span. What it
+measures is what 🧩 counts, the billable-equivalent total of every request
+the session and its agents made, so it climbs by a request's whole prompt at
+each request and rests while a tool runs: a reading of pace and of life, as
+the panel's is, and not a generation rate. Between turns it reads `0/s` and
+means it. The field is blank for the first five seconds of a session, when
+there is one sample and no slope, and that blank is what every golden file
+records — the goldens pin the clock, so every render is a first tick.
+`tests/rate.py` is where the slope is checked.
+
+**The superscript version** is the one part of the cell whose width is a
+reading from a sibling rather than from itself. ⁰ and ⁵–⁹ are
+East_Asian_Width Neutral; ¹ ² ³ ⁴ are Ambiguous — the same split as the
+subscript digits `--subscript-decimals` draws, which both terminals advanced
+one column on 2026-09-08. Haiku's ⁴ is the Ambiguous one in live use. Not yet
+probed; see the TODO in [Development](development.md).
 
 ## Column 4 is a grid of its own
 
@@ -275,7 +333,7 @@ this machine, because the scan can only see transcripts that sit on it while
 the percentage it divides into counts a phone and the web app too.
 
 A globe stood here first, on the argument that 💳 sits two fields from 💰 in
-column 3 and two money pictures on one row invite the misread that retired 📆.
+column 2 and two money pictures on one row invite the misread that retired 📆.
 Overruled deliberately: 💰 is dollars this session and 💳 is percent of a plan
 window, so the two are never confusable as figures, and the reading the card
 buys is worth more than the separation the globe bought.
