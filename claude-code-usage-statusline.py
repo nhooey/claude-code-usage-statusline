@@ -416,8 +416,22 @@ F_AMB = "\033[38;2;255;200;0m"             # amber       — *_WARN thresholds
 F_RED = "\033[38;2;255;90;90m"             # red         — *_CRIT thresholds
 F_CYN = "\033[38;2;80;200;220m"            # cyan        — PR, output style
 F_PUR = "\033[38;2;200;130;255m"           # purple      — model
-F_PUR2 = "\033[38;2;140;91;179m"           # dark purple — model's second field
 F_TUP = "\033[38;2;120;200;220m"           # teal        — ▴ input tokens
+F_RATE = "\033[38;2;100;225;180m"          # mint        — 🛫 tokens per second.
+                                           # Its own hue since 2026-09-13: it
+                                           # was F_TUP, the ▴ figure's, and on
+                                           # the status line it now sits one
+                                           # row under that figure in the same
+                                           # field, where one colour said the
+                                           # rate WAS the input count.  Mint is
+                                           # off every other reading here — a
+                                           # green with the blue of the teal
+                                           # above it and none of F_GRN's
+                                           # yellow, so it does not read as the
+                                           # healthy tier of anything, which a
+                                           # rate is never in.  F_PUR2, the
+                                           # dark purple of the model's second
+                                           # field, went with 📏 the same day.
 F_TDN = "\033[38;2;220;140;200m"           # pink        — ▾ output tokens
 F_YEL = "\033[38;2;255;210;60m"            # yellow      — cost (never tiered)
 F_PNK = "\033[38;2;255;120;190m"           # hot pink    — context %
@@ -4809,7 +4823,7 @@ def render_rate_cache(rate: Optional[float], cache_pct: int) -> str:
         return ""
     fig = "" if rate is None else rate_fig(rate) + "/s"
     return "%s%s%s%s%s%s" % (
-        S_RATE, F_TUP, pad_val(VAL_W, fig), cache_color(cache_pct),
+        S_RATE, F_RATE, pad_val(VAL_W, fig), cache_color(cache_pct),
         pad_val(VAL2_W, E_CACHE + pad_val(3, pct2(cache_pct) + E_PCT)), R)
 
 
@@ -7125,7 +7139,7 @@ def render_agent_rate(rate: Optional[float]) -> str:
     agent's row does not claim it is producing nothing."""
     if rate is None:
         return ""
-    return "%s%s%s/s%s" % (E_RATE, F_TUP, pad_val(3, rate_fig(rate)), R)
+    return "%s%s%s/s%s" % (E_RATE, F_RATE, pad_val(3, rate_fig(rate)), R)
 
 
 def render_agent_row(task: dict, transcript: str, lim: Limits,
