@@ -39,8 +39,14 @@ def legacy_limits(reading):
     """Project only an unassociated default quota bucket into Claude chrome."""
     if not isinstance(reading, dict):
         return NO_LIMITS
-    if reading.get("stale"):
-        return NO_LIMITS
+    # A stale reading still projects.  "stale" is the collector's word for an
+    # as_of older than its refresh cadence — sixty seconds for the tracker app,
+    # which polls on its own schedule of about a minute, so roughly half of
+    # all renders arrived here stale and drew a status line with column 4
+    # missing and "quota stale" appended beneath it.  The age is reported
+    # (--diagnose, the account summary), never enforced: the old program's
+    # _read_plan_cache made the same call, and for the same reason — a figure
+    # a minute old is the best figure there is.
     buckets = reading.get("buckets")
     if not isinstance(buckets, list) or len(buckets) != 1:
         return NO_LIMITS

@@ -470,9 +470,14 @@ def seed_limits_snapshot(lim: Limits, reading: Optional[dict] = None) -> dict:
     account = reading.get("account_name") if isinstance(reading, dict) else ""
     period = reading.get("period_start") if isinstance(reading, dict) else ""
     scope = "\0".join(str(value or "") for value in (source, account, period))
-    _SNAPSHOT = {"session_pct": lim.session_pct,
+    # The percentages go in as NUMBERS, the form the old plan cache carried
+    # and the one calibration compares against CALIB_MIN_PCT.  Limits carries
+    # them as strings for the renderer, and seeding those verbatim made
+    # `sp >= 2.0` a TypeError — caught by _with_shares' catch-all and drawn
+    # as `?` in every share cell, on every render, with nothing on stderr.
+    _SNAPSHOT = {"session_pct": _pct_num(lim.session_pct),
                  "session_resets_at": lim.session_reset,
-                 "weekly_pct": lim.weekly_pct,
+                 "weekly_pct": _pct_num(lim.weekly_pct),
                  "weekly_resets_at": lim.weekly_reset,
                  "_scope": scope}
     return _SNAPSHOT
@@ -1043,6 +1048,10 @@ def calibration() -> Dict[str, Optional[float]]:
     # See CALIB_MIN_PCT: below it the reading's own quantisation is worth
     # more than the figure, and "?" is the honest reading of a scale that
     # cannot be drawn yet.
+    # Through _pct_num whichever branch supplied them: a cache entry written
+    # while the snapshot still carried strings would otherwise poison every
+    # render for CALIB_TTL after the fix that stopped writing them.
+    sp, wp = _pct_num(sp), _pct_num(wp)
     if sp and sp >= CALIB_MIN_PCT and sc is not None:
         out["sess"] = sc / sp
     if wp and wp >= CALIB_MIN_PCT and wc is not None:
