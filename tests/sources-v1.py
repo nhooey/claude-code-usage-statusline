@@ -35,7 +35,9 @@ assert collect("claude", "native", context=native_context, now=1000)["buckets"][
 with tempfile.TemporaryDirectory() as tmp:
     script=os.path.join(tmp, "source.py")
     count=os.path.join(tmp, "count")
-    with open(script, "w") as fh: fh.write("#!/bin/sh\necho x >> %s\nprintf '{\\\"schema_version\\\":1,\\\"as_of\\\":1,\\\"windows\\\":[{\\\"id\\\":\\\"x\\\",\\\"used_percent\\\":12}]}'\n" % count)
+    # Single-quoted echo, not printf with \" escapes: bash's printf unescapes
+    # them and dash's (Ubuntu's /bin/sh) does not, which is invalid JSON there.
+    with open(script, "w") as fh: fh.write("#!/bin/sh\necho x >> %s\necho '{\"schema_version\":1,\"as_of\":1,\"windows\":[{\"id\":\"x\",\"used_percent\":12}]}'\n" % count)
     os.chmod(script, 0o700)
     os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"]=os.path.join(tmp, "state")
     got=collect("codex", "cmd:" + script, "a/b", "day", now=1000)
