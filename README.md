@@ -1,19 +1,21 @@
-# claude-code-usage-statusline
+# coding-agent-usage-line
 
 [![tests](https://github.com/nhooey/claude-code-usage-statusline/actions/workflows/tests.yml/badge.svg)](https://github.com/nhooey/claude-code-usage-statusline/actions/workflows/tests.yml)
 
-Three readouts for [Claude Code](https://claude.com/claude-code) — a **status
-line** under the prompt, a **prompt-cost line** printed once per turn, and a
-row per running **subagent** in the agent panel — rendered by one Python file
-with no dependencies.
+Usage readouts for [Claude Code](https://claude.com/claude-code) and Codex,
+rendered by a standard-library Python package with no installation step.
+Operational commands require `--agent claude` or `--agent codex`; Claude keeps
+its status, Stop-hook and subagent-panel presentation, while Codex supplies
+one-shot status and Stop summaries (use Codex's own `/statusline` for its live
+footer).
 
-## What it looks like
+## Claude Code presentation
 
 Three rows, redrawn continuously under the prompt:
 
 ```
 👤💬 Why does the elapsed row report two durations when the session age is one number, and which…  | 🤖O⁵🏃  | 🧩▴2.7M ▾841k  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The session age is wall cl…  | 💰 115  | 🛫200/s 🎯98٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
+🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The session age is wall cl…  | 💰115   | 🛫200/s 🎯98٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
 📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                                       |         | 🧠 115k   11٪  | ⌛ 🎤   5m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
 ```
 
@@ -29,7 +31,7 @@ And one row per task in the agent panel, replacing the panel's own, while
 agents run:
 
 ```
-◯ 🔍🟢 a1a65eb72… Verify brief citations Reading docs/layout.md   🤖O⁵🏃  ⌛ 13m  🧩▴ 13k ▾  1k  🛫200/s  🎯95٪  🧠 41k  💰 0.1  🔋.06٪  🪫.01٪
+◯ 🔍🟢 a1a65eb72… Verify brief citations Reading docs/layout.md   🤖O⁵🏃  ⌛ 13m  🧩▴ 13k ▾  1k  🛫200/s  🎯95٪  🧠 41k  💰0.1   🔋.06٪  🪫.01٪
 ◯ 🐚🟢 b1         npm test npm test --watch                                       ⌛ 13m
 ```
 
@@ -62,6 +64,13 @@ width and carry a unit rather than more digits — `1.2k`, `4.5M`, `1.5h` — so
 switching between tabs never moves a number, and nothing on the readout shifts
 as the session grows.
 
+**Brightness is magnitude.** A figure with no ceiling of its own — tokens,
+the rate, the cost, a duration, the diff — is dim until it is worth noticing
+and full strength after: 100k tokens, 1k/s, a dollar, ten minutes, a hundred
+lines, the same cuts on the status line and on every agent row. Percentages
+have their ceiling built in and stay bright; the limit rows use brightness for
+scope and urgency instead. See [Layout](docs/layout.md#brightness-as-magnitude-everywhere-else).
+
 It fits what it has: the columns compress as the terminal narrows, and drop
 gracefully when the terminal will not say how wide it is.
 
@@ -77,17 +86,17 @@ Then point `~/.claude/settings.json` at it:
 {
   "statusLine": {
     "type": "command",
-    "command": "~/src/claude-code-usage-statusline/claude-code-usage-statusline.py --mode status --mark-spacing"
+    "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode status --mark-spacing"
   },
   "subagentStatusLine": {
     "type": "command",
-    "command": "~/src/claude-code-usage-statusline/claude-code-usage-statusline.py --mode subagent --mark-spacing"
+    "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode subagent --mark-spacing"
   },
   "hooks": {
     "Stop": [
       { "hooks": [ {
           "type": "command",
-          "command": "~/src/claude-code-usage-statusline/claude-code-usage-statusline.py --mode cost --no-usage-text --force-newline --mark-spacing",
+          "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode cost --no-usage-text --force-newline --mark-spacing",
           "timeout": 20
       } ] }
     ]
@@ -95,15 +104,65 @@ Then point `~/.claude/settings.json` at it:
 }
 ```
 
-That is the whole installation: one file, the standard library, and the JSON
-Claude Code already sends. It runs on Python 3.9 — the macOS Command Line Tools
+Keep the launcher and its sibling `coding_agent_usage_line/` package together;
+there are no third-party Python dependencies or package-install steps.
+It runs on Python 3.9 — the macOS Command Line Tools
 interpreter — so it works in any project rather than only one whose devshell
 supplies newer packages.
 
-The 🔋 and 🪫 plan rows use Claude Code's own `rate_limits` whenever the payload
-carries them. When it does not, they can fall back to an optional
-[usage source](docs/usage-sources.md); without one, those two rows simply show
-what Claude Code said and blank where it said nothing.
+For Codex, add a Stop hook in either `~/.codex/hooks.json` or a project's
+`.codex/hooks.json` (after reviewing it with Codex's `/hooks` command and
+trusting the project):
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      { "hooks": [ {
+          "type": "command",
+          "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent codex --mode cost",
+          "timeout": 30
+      } ] }
+    ]
+  }
+}
+```
+
+Codex hook `systemMessage` output is a warning/event-stream message, not a
+replacement footer. Keep Codex's configured `tui.status_line` to its built-in
+identifiers and use `/statusline` for the live footer. This project does not
+edit either settings file for you. Review new or changed definitions in
+`/hooks` before they run; see the [official hook guide](https://learn.chatgpt.com/docs/hooks).
+
+For a saved Codex rollout:
+
+```sh
+./coding-agent-usage-line.py --agent codex --usage-source native --transcript /path/to/rollout.jsonl
+./coding-agent-usage-line.py --agent codex --mode cost --all --usage-source none --transcript /path/to/rollout.jsonl
+```
+
+Codex reports retain full model names and reasoning effort. Subscription quota
+buckets are separate labeled groups: a general weekly-only bucket stays
+weekly-only even when Spark has both five-hour and weekly meters. Missing
+metrics are not fabricated as zero, and subscription tokens are not priced as
+API spending. Codex does not support Claude's subagent-panel hook.
+
+Per-child token usage is reportable, but Codex does not supply a documented
+per-child share of each subscription quota bucket. This project's Claude
+shares are calibrated estimates; the Codex port does not reuse that calibration
+or apportion account percentages across children. It leaves those percentages
+unavailable rather than treating account-level meters as child-level readings.
+
+Select account intake independently with `--usage-source`: native agent data,
+a custom command, an optional tracker, Codex's managed app-server, organization
+APIs, or explicit experimental subscription APIs. The default `auto` prefers
+current native data. No Claude Usage app is required; use `--usage-source native`
+to avoid external refreshes. See [usage sources](docs/usage-sources.md).
+
+Migration: update hook commands to `coding-agent-usage-line.py` and add
+`--agent claude` or `--agent codex`. There is no old-executable shim. The product
+name has changed; the repository, clone URL and checkout name remain
+`claude-code-usage-statusline` for now.
 
 Common tweaks: add `--no-column-rules` to the status command for plain gaps
 instead of the faint `|` borders, or `--no-mark-spacing` to tighten the readout
@@ -119,7 +178,7 @@ on a narrow terminal. The [full list](docs/options.md) is in the docs.
 | [Accounting](docs/accounting.md) | how costs and window shares are derived, and what the two modes tell each other |
 | [Glyphs and terminals](docs/glyphs-and-terminals.md) | why the width tables are hand-maintained, and how to pick a glyph that does not break alignment |
 | [Tests](docs/tests.md) | the suites, what CI runs, and what needs a real terminal |
-| [Development](docs/development.md) | a map of the one file, the style rules, and where this is going |
+| [Development](docs/development.md) | the module boundaries, style rules, and implementation plan |
 
 ## License
 

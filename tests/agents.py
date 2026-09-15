@@ -25,7 +25,7 @@ import sys
 import tempfile
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-PROG = os.path.join(DIR, "..", "claude-code-usage-statusline.py")
+PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
 pass_n = fail_n = 0
 
@@ -60,10 +60,12 @@ def near(name, got, want, tol=1e-9):
 
 
 def load_program():
-    spec = importlib.util.spec_from_file_location("statusline", PROG)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    global _agent_state_path, _settled
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if root not in sys.path: sys.path.insert(0, root)
+    from coding_agent_usage_line import claude
+    from coding_agent_usage_line.claude_records import _agent_state_path, _settled
+    return claude
 
 
 # ── Fixture records ─────────────────────────────────────────────────────────
@@ -175,6 +177,7 @@ def main():
     if hasattr(os, "tzset"):
         os.tzset()
     tmp = tempfile.mkdtemp(prefix="statusline-agents.")
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = os.path.join(tmp, "state")
     try:
         return run(tmp)
     finally:
@@ -359,7 +362,7 @@ def run(tmp):
 
     # Without the state file the stamp decides: after the last Stop record
     # is late, before it is taken as reported.
-    os.remove(sl._agent_state_path(tr))
+    os.remove(_agent_state_path(tr))
     check("stamp fallback: a record before the last Stop is not late",
           [t.agent for t in sl.read_turns(tr)], [False, False, False])
     tr = session(tmp, "late", main[:5], agents=[("agent-a", agent)])
@@ -389,8 +392,8 @@ def run(tmp):
 
     # The settle wait looks past the synthetic turn to the live one.
     check("the settle test ignores the agents turn",
-          (sl._settled(sl.read_turns(tr)),
-           sl._settled(tuple(t._replace(calls=0) for t in sl.read_turns(tr)))),
+          (_settled(sl.read_turns(tr)),
+           _settled(tuple(t._replace(calls=0) for t in sl.read_turns(tr)))),
           (True, False))
 
     # And the rendered rows: the label, and the blanks in ⌛ and 📅.

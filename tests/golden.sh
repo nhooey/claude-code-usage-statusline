@@ -40,7 +40,7 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-NEW="$DIR/../claude-code-usage-statusline.py"
+NEW="$DIR/../coding-agent-usage-line.py"
 PY=/usr/bin/python3
 GOLD="$DIR/golden/status"
 OUT="$DIR/out"
@@ -72,7 +72,7 @@ check() {   # $1 = case name, $2 = payload, $3 = cols ("" for unknown),
   # "--cols 0" is how the program is told to pretend the width is unknown;
   # without it, it finds a real one and renders a layout the golden never saw.
   # shellcheck disable=SC2086
-  got=$( cd "$wd" && "$PY" "$NEW" --mode status --cols "${cols:-0}" $flags < "$payload" )
+  got=$( cd "$wd" && "$PY" "$NEW" --agent claude --mode status --cols "${cols:-0}" $flags < "$payload" )
   want="$GOLD/$name.txt"
   if [ "$regen" -eq 1 ]; then
     printf '%s' "$got" > "$want"
@@ -128,18 +128,13 @@ done
 # row quoting a three-hour-old app snapshot under a status row reading the
 # live one, because "expired" was being read as "beaten".
 echo "--- a stale plan cache loses to the app ---"
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 15.0,
-  "session_resets_at": "2026-08-16 02:30",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00",
-  "as_of": "2026-08-16 01:00"
-}
-JSON
+# Pin a selected fallback response so a preceding native fixture with the
+# same synthetic session cannot satisfy this historical check from cache.
+set_claude_fixture 41 2026-08-16T04:00:00Z 63 2026-08-18T01:00:00Z
 for p in 02-no-limits 10-empty-payload; do
   check "stale-plan-$p@196" "$CORPUS/$p.json" 196 "$SCRATCH/repo"
 done
+export CODING_AGENT_USAGE_LINE_USAGE_SOURCE=auto
 
 # ── --no-mark-spacing ───────────────────────────────────────────────────────
 #
@@ -197,15 +192,7 @@ check "norules-04@196" "$CORPUS/04-pr-and-style.json" 196 "$SCRATCH/repo" \
 # file can choose.  15٪ keeps the reading clear of CALIB_MIN_PCT; the case
 # below is the one that goes under it.
 echo "--- a window that opens inside the last turn ---"
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 15.0,
-  "session_resets_at": "2026-08-16 07:18",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00",
-  "as_of": "2026-08-16 02:23"
-}
-JSON
+set_claude_fixture 15 2026-08-16T07:18:00Z 87 2026-08-18T01:00:00Z
 check "straddle-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo"
 
 # ── a reading too coarse to divide by ───────────────────────────────────────
@@ -229,16 +216,8 @@ check "straddle-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo"
 # calibration() formats them -- "%s|%s" over two datetimes -- or the entry
 # misses and the suite goes off to scan this machine's transcripts.
 echo "--- a reading too coarse to calibrate from ---"
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 1.0,
-  "session_resets_at": "2026-08-16 07:18",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00",
-  "as_of": "2026-08-16 02:23"
-}
-JSON
-cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+set_claude_fixture 1 2026-08-16T07:18:00Z 87 2026-08-18T01:00:00Z
+cat > "$CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE" <<'JSON'
 {
   "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00",
   "sess_cost": 5.50, "sess_pct": 1.0,
@@ -251,11 +230,14 @@ check "uncalibrated-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo"
 # why: the next case added below would otherwise inherit a live-shape cache
 # keyed to one particular pair of boundaries, miss on it, and scan the
 # machine -- which is slow, and answers with whoever ran it.
-cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+cat > "$CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE" <<'JSON'
 {"sess": 5.50, "week": 4.10}
 JSON
 
 # ── --subscript-decimals ────────────────────────────────────────────────────
+# Ordinary corpus payloads must again choose their supplied native windows;
+# only the final no-limits fixture below selects a command response.
+export CODING_AGENT_USAGE_LINE_USAGE_SOURCE=auto
 #
 # The switch reaches five formatters at once, so what has to be pinned is not
 # one cell but the WIDTH of every row it touches: no field is narrowed for it
@@ -286,19 +268,12 @@ done
 # The straddle plant is reused to get there.  It puts the 5-hour boundary
 # inside the last turn, which leaves this session holding 0.63٪ of the window
 # -- the only sub-1 limit reading this corpus produces.
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 15.0,
-  "session_resets_at": "2026-08-16 07:18",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00",
-  "as_of": "2026-08-16 02:23"
-}
-JSON
+set_claude_fixture 15 2026-08-16T07:18:00Z 87 2026-08-18T01:00:00Z
 check "subdec-sub1-02@196" "$CORPUS/02-no-limits.json" 196 "$SCRATCH/repo" \
       --subscript-decimals
 
 # ── the model label, one case per branch of short_model ─────────────────────
+export CODING_AGENT_USAGE_LINE_USAGE_SOURCE=auto
 #
 # 05-haiku-max and 11-sonnet-200k already carry two of the three branches
 # across the main loop: Haiku 4.5 as the family that fits whole, Sonnet 4.6 as

@@ -36,7 +36,7 @@ import tempfile
 # without touching the installed one.
 PROG = os.environ.get("COST_PROG") or os.path.join(
     os.path.dirname(os.path.abspath(__file__)), os.pardir,
-    "claude-code-usage-statusline.py")
+    "coding-agent-usage-line.py")
 COMPACT_ROW = "\U0001F90F"          # 🤏, the compaction label's glyph
 
 

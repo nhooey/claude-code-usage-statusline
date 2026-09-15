@@ -1,4 +1,4 @@
-# Tests for `claude-code-usage-statusline.py`
+# Tests for `coding-agent-usage-line.py`
 
 These live beside the program, in its own repository. They did not until
 2026-08-28: ten of the thirteen status payloads read a real 8.7 MB session
@@ -7,16 +7,25 @@ conversation and was never going into a repository. Both corpora are now
 generated, so there is nothing left in here that belongs to anyone.
 
 ```sh
-bash tests/golden.sh              # status mode, 129 comparisons — seconds
-bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
+bash tests/golden.sh              # status mode, 135 comparisons — seconds
+bash tests/golden-cost.sh         # cost mode, 77 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
-python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
+python3 tests/usage-source.py     # tracker/command/cache migration, 39 cases — seconds
 python3 tests/agents.py           # agent spend: reader, fold-in, 👥 row, scan — seconds
 python3 tests/subagent.py         # the agent panel rows: file lookup, billing, shares, shape — seconds
-python3 tests/rate.py             # the status line's 🛫: the sampler and its cell — seconds
+python3 tests/rate.py             # the status line's 🛫: the sampler and its cell; the brightness cuts — seconds
+python3 tests/formatting.py        # shared formatting and mutable display switches
+python3 tests/sources-v1.py        # safe normalized schema and separate quota buckets
+python3 tests/source-cache.py      # cache isolation, freshness and refresh backoff
+python3 tests/claude-sources.py    # shared account intake projected for Claude
+python3 tests/claude-subagent-render.py # prepared panel rows, no transcript/source reads
+python3 tests/http-sources.py      # offline admin/private HTTP contracts
+python3 tests/app-server.py        # fake app-server framing and bounded cleanup
+python3 tests/codex.py             # Codex accounting and origin-aware report state
+python3 tests/port-cli.py          # public CLI and concurrent exactly-once late usage
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
 tests/agents-once.py              # the same for agent spend — MINUTES
-./claude-code-usage-statusline.py --selftest    # needs a real tty, see below
+./coding-agent-usage-line.py --selftest    # needs a real tty, see below
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```
 
@@ -24,6 +33,12 @@ The first seven must end `fail 0   missing 0` — they all print the same
 trailer, so a run of all of them reads the same way. Any golden failure
 writes the two outputs side by side under `out/` or `out-cost/`, so `diff`
 shows the disagreement directly.
+
+The port suites use temporary generated rollouts, SQLite indexes, scripted
+collectors and injected transports. They do not inspect installed credentials
+or replay your live history. Their success trailers differ from the original
+golden suites; each exits nonzero on failure. No golden files should be
+regenerated merely to accommodate the port.
 
 **Run them from a directory macOS does not guard.** Under `Documents`,
 `Downloads` or `Desktop`, TCC can make Python's import machinery raise
@@ -106,11 +121,11 @@ to both and cancelled. A golden file has nothing to cancel against.
 
 | pinned | otherwise |
 |---|---|
-| the clock (`CLAUDE_STATUSLINE_NOW`) | every duration and both clock cells move |
+| the clock (`CODING_AGENT_USAGE_LINE_NOW`) | every duration and both clock cells move |
 | `TZ=UTC` | 🕐 and 📅 differ by the offset and it reads as a layout fault |
-| `TMPDIR` | the published context window survives between runs, so a case can read a figure a previous case wrote |
-| `CLAUDE_PLAN_CACHE`, `CLAUDE_CALIB_CACHE` | the test writes to the live readout, and the calibration walks every transcript on the machine |
-| a usage source's reading, planted, **including its `as_of`** | two payloads have no `rate_limits` of their own. Unplanted, they ask the selected source and render this machine's real plan consumption — which is also why `CLAUDE_USAGE_SOURCE=none` is pinned beside it; planted without an `as_of`, they pick whichever source the wall clock made look fresher at that instant — see below |
+| `CODING_AGENT_USAGE_LINE_STATE_DIR` and scratch `TMPDIR` | published context, rate samples and source/report state survive between runs, so a case can read a figure a previous case wrote |
+| `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE`, `CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR` | the test writes to live calibration or walks transcripts outside its fixture tree |
+| a usage source's reading, planted, **including its `as_of`** | payloads without native limits can read a different cache or external source. The selected fixture source and normalized cache are pinned; a test cannot rely on whichever source the host happens to have |
 | the calibration, planted, **in the short shape** | it is now the units the session shares divide by, so its values reach the rows |
 | the terminal profile (`jediterm`) | the answer depends on which terminal ran the suite |
 | the working directory (a fixture repo) | the goldens encode today's branch name and today's uncommitted work |
@@ -250,7 +265,7 @@ To check the fixture against reality after an app update:
 
 ```sh
 defaults export HamedElfayome.Claude-Usage - > /tmp/store.plist
-CLAUDE_USAGE_TRACKER_PLIST=/tmp/store.plist python3 tests/usage-source.py
+CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST=/tmp/store.plist python3 tests/usage-source.py
 ```
 
 A field that moved fails with its name in the diff.
@@ -451,9 +466,9 @@ the thing somebody will read as a fault, so each is still written down.
    line, so a well-kept session never proves its window and every 🧠 figure
    runs 5× high — 51.3٪ against a true 10.3٪, in the session this was found in.
    So the status mode writes Claude Code's own `context_window_size` to
-   `$TMPDIR/claude-statusline-ctxwin-<session id>` on every render. Keyed by
-   session id, which is what makes it safe to leave in `TMPDIR` unisolated: a
-   fixture's synthetic id can never be read by a live session.
+   a hashed per-session file in the private application state directory.
+   Tests override `CODING_AGENT_USAGE_LINE_STATE_DIR` with fresh scratch state
+   rather than relying only on a synthetic session ID for isolation.
 
 ## Changing what the rows draw
 

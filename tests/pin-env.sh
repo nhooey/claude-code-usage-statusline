@@ -38,7 +38,7 @@ pin_env() {               # $1 = scratch dir; wiped and rebuilt on every call
 
   # The clock.  See frozen_now() in the program: every renderer already took a
   # `now`, and this is what finally fills it in.
-  export CLAUDE_STATUSLINE_NOW="$PIN_NOW"
+  export CODING_AGENT_USAGE_LINE_NOW="$PIN_NOW"
 
   # The zone.  The readout formats in local time, so a golden generated in
   # +07 and checked in UTC differs by seven hours on the 🕐 and 📅 cells and
@@ -46,30 +46,19 @@ pin_env() {               # $1 = scratch dir; wiped and rebuilt on every call
   export TZ=UTC
   export LC_ALL=en_US.UTF-8
 
-  # TMPDIR holds three per-session files the program writes and reads back:
-  # the plan-window baseline that the 🔋/🪫 deltas are measured from, the
-  # published context window, and the menu-bar app's usage snapshot.  A fresh
-  # directory every run means the baseline is always absent, so every delta
-  # starts at zero — which is a stated value rather than whatever this machine
-  # happened to have consumed since the session opened.
+  # Isolate scratch files as well as the application state pinned below.
   export TMPDIR="$scratch/tmp"
 
-  # Both of these default into /tmp, shared with the live readout.  Isolated
-  # for the reason PLAN_CACHE's own comment gives: a test must not be able to
-  # write to the thing it is testing around.  Fourteen of the sixteen payloads
-  # carry rate_limits, and an unisolated run publishes 08-limits-critical's
-  # figures to the real cost line and leaves them there for five minutes.
-  export CLAUDE_PLAN_CACHE="$scratch/tmp/plan-limits.json"
-  export CLAUDE_CALIB_CACHE="$scratch/tmp/calib.json"
-  export CLAUDE_LIMIT_CACHE="$scratch/tmp/claude-usage-cache.json"
+  # Supply a prepared calibration without scanning the developer's history.
+  export CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE="$scratch/tmp/calib.json"
+  # Shared source caches and context/rate/report files are private JSON state.
+  # A fresh root prevents previous local runs from influencing the goldens.
+  export CODING_AGENT_USAGE_LINE_STATE_DIR="$scratch/tmp/source-state"
+  export CODING_AGENT_USAGE_LINE_TEST_SOURCE_DIR="$scratch/tmp"
+  CLAUDE_FIXTURE_N=0
 
-  # And nobody is asked for a fresh reading.  The cache below is planted with
-  # a fresh mtime, so LIMIT_TTL is satisfied and no source would be consulted
-  # anyway — but "would not be" is a property of the fixture's mtime, and this
-  # is a property of the run.  On the machine this is developed on, "auto"
-  # resolves to the menu-bar app and one slow run past the TTL would put this
-  # account's real plan consumption into a golden file.
-  export CLAUDE_USAGE_SOURCE=none
+  # Auto reads native payloads or the fixture plist below, never a live store.
+  export CODING_AGENT_USAGE_LINE_USAGE_SOURCE=auto
 
   # The terminal profile, which selects the per-terminal width overrides.
   # Pinned to jediterm — Neil's terminal, and the profile the override tables
@@ -82,40 +71,19 @@ pin_env() {               # $1 = scratch dir; wiped and rebuilt on every call
   unset TERM_PROGRAM
   export TERMINAL_EMULATOR=JetBrains-JediTerm
 
-  # A usage source's reading, planted.  Two payloads carry no rate_limits and
-  # fall through to this file; unplanted, the program finds it stale and asks
-  # the selected source, which on a developer's Mac reports that machine's
-  # real plan consumption — a number that is different every hour and belongs
-  # to one person.  Fresh mtime, so the 60-second TTL is satisfied, and
-  # CLAUDE_USAGE_SOURCE=none above so that even an expired one asks nobody.
-  #
-  # `as_of` is the field that decides which source a render quotes, so it is
-  # pinned rather than left to the file's mtime — 200 seconds before PIN_NOW,
-  # which is older than the plan cache any payload with rate_limits writes
-  # (stamped at the pinned minute, 20 seconds old) and newer than the stale
-  # one planted at the end of golden.sh.  Both branches of limits_snapshot
-  # are therefore chosen by a number in a fixture rather than by whether a
-  # real minute happened to tick during the run, which is how the app and the
-  # plan cache traded places between two adjacent cases of one suite.
-  #
-  # The reset times are LOCAL "%Y-%m-%d %H:%M" strings because that is the
-  # STAMP_FMT every channel in the program carries.  They were bare epochs, which short_dur
-  # also accepts — so the countdown rendered and the fixture looked right —
-  # but _window_starts parses with one strptime and an epoch is not a date,
-  # so the two fallback payloads reached _with_shares with no window boundary
-  # and drew "?" where the live program draws a figure.  A fixture that is
-  # merely accepted is not the same as a fixture that is faithful.  These two
-  # are the same instants as the epochs they replace, under TZ=UTC: 1786852800
-  # is 1.6h after PIN_NOW and 1787014800 is 1.9d after it.
-  cat > "$CLAUDE_LIMIT_CACHE" <<'JSON'
-{
-  "session_pct": 41,
-  "session_resets_at": "2026-08-16 04:00",
-  "weekly_pct": 63,
-  "weekly_resets_at": "2026-08-18 01:00",
-  "as_of": "2026-08-16 02:20"
-}
-JSON
+  # The fallback plist uses the tracker's CFDate epoch. Its as_of is pinned
+  # 200 seconds before PIN_NOW; reset epochs normalize through v1, then the
+  # Claude bridge supplies local STAMP_FMT strings to its accounting. These
+  # are the original fixture instants, independent of file mtime and host data.
+  export CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST="$scratch/tmp/tracker.plist"
+  cat > "$CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>activeProfileId</key><string>golden</string>
+<key>profiles_v3</key><string>[{"id":"golden","claudeUsage":{"sessionPercentage":41,"sessionResetTime":808545600,"weeklyPercentage":63,"weeklyResetTime":808707800,"lastUpdated":808539600}}]</string>
+</dict></plist>
+PLIST
 
   # The calibration, planted for the same reason and a worse one: uncached, it
   # walks every transcript on this machine to derive dollars-per-percent, so
@@ -140,7 +108,7 @@ JSON
   # window holding 15٪, which is a possible reading of a bad calibration and
   # an impossible row to leave in a golden file for somebody to find.  These
   # two are a plausible reading held still, not a measurement.
-  cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+  cat > "$CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE" <<'JSON'
 {"sess": 5.50, "week": 4.10}
 JSON
 
@@ -161,4 +129,18 @@ JSON
       commit -q --allow-empty -m fixture 2>/dev/null
   echo uncommitted > "$scratch/repo-dirty/changed.txt"
   git -C "$scratch/repo-dirty" add changed.txt 2>/dev/null
+}
+
+# Replace the selected v1 reading for a deliberately exceptional golden case.
+# Each response gets a new command identity so the collector's fresh cache
+# cannot mistake a previous fixture for this one.
+set_claude_fixture() { # session %, session reset ISO, week %, week reset ISO
+  CLAUDE_FIXTURE_N=$((CLAUDE_FIXTURE_N + 1))
+  local path="$CODING_AGENT_USAGE_LINE_TEST_SOURCE_DIR/claude-source-$CLAUDE_FIXTURE_N"
+  cat > "$path" <<EOF
+#!/bin/sh
+printf '%s\\n' '{"schema_version":1,"as_of":$PIN_NOW,"windows":[{"id":"session","duration_seconds":18000,"used_percent":$1,"resets_at":"$2"},{"id":"week","duration_seconds":604800,"used_percent":$3,"resets_at":"$4"}]}'
+EOF
+  chmod 700 "$path"
+  export CODING_AGENT_USAGE_LINE_USAGE_SOURCE="cmd:$path"
 }

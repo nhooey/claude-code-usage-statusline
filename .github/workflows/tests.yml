@@ -14,7 +14,7 @@
 #
 # What IS here and might look like it should not be: usage-source.py reads a
 # macOS app's preference store.  It builds its own fixture store with plistlib
-# and drives the source through CLAUDE_USAGE_TRACKER_PLIST, so it needs
+# and drives the source through a fixture plist override, so it needs
 # neither macOS nor the app, and it is the only check that would have caught
 # that app changing its schema.
 #
@@ -56,10 +56,16 @@ jobs:
         run: bash tests/golden-cost.sh
       - name: usage sources
         run: python3 tests/usage-source.py
+      - name: normalized source contracts
+        run: python3 tests/sources-v1.py && python3 tests/source-cache.py && python3 tests/http-sources.py && python3 tests/app-server.py && python3 tests/claude-sources.py
+      - name: Codex rollout accounting
+        run: python3 tests/codex.py
+      - name: shared formatting and public port CLI
+        run: python3 tests/formatting.py && python3 tests/port-cli.py
       - name: agent spend
         run: python3 tests/agents.py
       - name: subagent rows
-        run: python3 tests/subagent.py
+        run: python3 tests/subagent.py && python3 tests/claude-subagent-render.py
       - name: token rate
         run: python3 tests/rate.py
 

@@ -23,7 +23,7 @@ import sys
 import tempfile
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-PROG = os.path.join(DIR, "..", "claude-code-usage-statusline.py")
+PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
 pass_n = fail_n = 0
 
@@ -58,10 +58,17 @@ def near(name, got, want, tol=1e-9):
 
 
 def load_program():
-    spec = importlib.util.spec_from_file_location("statusline", PROG)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if root not in sys.path: sys.path.insert(0, root)
+    from coding_agent_usage_line import claude
+    return claude
+
+
+def load_renderer():
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if root not in sys.path: sys.path.insert(0, root)
+    from coding_agent_usage_line import claude_subagent_render
+    return claude_subagent_render
 
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -162,23 +169,39 @@ def run(tmp):
     # cache is what the status line writes from Claude Code's rate_limits;
     # the calibration cache without a "windows" key is the planted-fixture
     # form _read_calib_cache returns as units.
-    os.environ["CLAUDE_STATUSLINE_NOW"] = "%d" % NOW
-    os.environ["CLAUDE_PLAN_CACHE"] = os.path.join(tmp, "plan.json")
-    os.environ["CLAUDE_CALIB_CACHE"] = os.path.join(tmp, "calib.json")
-    os.environ["CLAUDE_LIMIT_CACHE"] = os.path.join(tmp, "app.json")
-    os.environ["CLAUDE_USAGE_SOURCE"] = "none"
-    os.environ["TMPDIR"] = tmp          # the debug tap writes here if armed
+    os.environ["CODING_AGENT_USAGE_LINE_NOW"] = "%d" % NOW
+    os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE"] = os.path.join(tmp, "calib.json")
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = os.path.join(tmp, "state")
+    # The panel uses the same v1 collector contract as status/cost.  Keep
+    # this test's quota fixture at that boundary rather than reviving its old
+    # global Claude cache as an implicit source.
+    fixture_source = os.path.join(tmp, "quota-source")
+    fixture = {"schema_version": 1, "as_of": NOW, "buckets": [{
+        "id": "default", "label": "default", "windows": [
+            {"id": "session", "duration_seconds": 18000,
+             "used_percent": 41, "resets_at": NOW + 2 * 3600},
+            {"id": "week", "duration_seconds": 604800,
+             "used_percent": 63, "resets_at": NOW + 3 * 86400}]}]}
+    with open(fixture_source, "w", encoding="utf-8") as fh:
+        fh.write("#!/bin/sh\nprintf '%%s\\n' '%s'\n" %
+                 (json.dumps(fixture, separators=(",", ":"))))
+    os.chmod(fixture_source, 0o700)
+    os.environ["CODING_AGENT_USAGE_LINE_USAGE_SOURCE"] = "cmd:" + fixture_source
+    os.environ.pop("CLAUDE_USAGE_SOURCE", None)
+    os.environ["TMPDIR"] = tmp          # isolate subprocess scratch files too
     os.environ.pop("TMUX", None)
     os.environ.pop("TERM_PROGRAM", None)
     os.environ["TERMINAL_EMULATOR"] = "JetBrains-JediTerm"
-    with open(os.environ["CLAUDE_PLAN_CACHE"], "w") as fh:
-        json.dump({"session_pct": "41", "session_resets_at": "2026-08-16 04:00",
-                   "weekly_pct": "63", "weekly_resets_at": "2026-08-18 01:00",
-                   "as_of": "2026-08-16 02:20"}, fh)
-    with open(os.environ["CLAUDE_CALIB_CACHE"], "w") as fh:
+    with open(os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE"], "w") as fh:
         json.dump({"sess": 1.0, "week": 10.0}, fh)   # $1 and $10 per point
 
     sl = load_program()
+    sr = load_renderer()
+    # Agent accounting consumes an already selected source snapshot; this is
+    # the legacy projection that the orchestration adapter receives from the
+    # v1 fixture source below, not a second cache lookup by the renderer.
+    sl.seed_limits_snapshot(sl.Limits(
+        "41", "2026-08-16 04:00", "", "63", "2026-08-18 01:00", ""))
     OPUS = sl._price("claude-opus-5")
 
     print("--- finding the transcript ---")
@@ -250,19 +273,19 @@ def run(tmp):
               "claude-fable-5-1", "Opus 5", "")],
           ["Opus 5", "Haiku 4.5", "Sonnet", "Fable 5.1", "Opus 5", ""])
     near("token rate is the slope over the panel's samples at its tick",
-         sl.token_rate([100, 200, 400], "running"), 300 / 10.0)
+         sr.token_rate([100, 200, 400], "running"), 300 / 10.0)
     check("no rate for a finished task or a single sample",
-          (sl.token_rate([100, 200], "completed"),
-           sl.token_rate([100], "running"), sl.token_rate(None, "running")),
+          (sr.token_rate([100, 200], "completed"),
+           sr.token_rate([100], "running"), sr.token_rate(None, "running")),
           (None, None, None))
     check("the type cell: sidecar type first, then the task kind, then 👥",
-          [ANSI.sub("", sl.render_kind(a, k)) for a, k in (
+          [ANSI.sub("", sr.render_kind(a, k)) for a, k in (
               ("Explore", "local_agent"), ("", "local_bash"),
               ("", "local_agent"), ("my-reviewer", "local_agent"))],
           ["\U0001F50D", "\U0001F41A", "\U0001F465", "\U0001F465"])
     check("the state cell: a coloured circle, or two letters for a state "
           "never seen",
-          [ANSI.sub("", sl.render_state(x)) for x in
+          [ANSI.sub("", sr.render_state(x)) for x in
            ("running", "completed", "killed", "failed", "pending", "odd", "")],
           ["\U0001F7E2", "\U0001F535", "\u26AB", "\U0001F534", "\U0001F7E1",
            "od", ""])
@@ -276,7 +299,7 @@ def run(tmp):
               "fable", "claude-fable-5-1", "Opus 5 (1M context)", "")],
           ["O\u2075", "H\u2074", "So", "Fa", "F\u2075", "O\u2075", ""])
     check("the cache cell: two characters, 💯 for a full one, blank for none",
-          [ANSI.sub("", sl.render_agent_cache(v)) for v in (94, 100, 5, -1)],
+          [ANSI.sub("", sr.render_agent_cache(v)) for v in (94, 100, 5, -1)],
           ["\U0001F3AF94٪", "\U0001F3AF\U0001F4AF٪", "\U0001F3AF 5٪", ""])
 
     print("--- the rows ---")
@@ -303,7 +326,7 @@ def run(tmp):
         "\U0001F3AF%d%s" % (u.cache_pct, sl.E_PCT),
         "\U0001F9E0 41k",
         sl.seg(sl.vis_width(sl.S_COST) + 4,
-               "\U0001F4B0" + sl.pad_val(4, sl.money_fmt(u.cost))),
+               "\U0001F4B0" + sl.pad_val(4, sl.money_fig(u.cost))),
         "\U0001F50B" + sl.pad_val(4, pct(want)),
         "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0))))
     head = "\U0001F50D\U0001F7E2 a1         "
@@ -330,12 +353,12 @@ def run(tmp):
           "\U0001F41A\U0001F7E2 bash-1  npm test npm test --watch  ⌛ 13m")
     check("a name and its activity, and a label that only repeats the "
           "description is not drawn",
-          [ANSI.sub("", sl.render_who(n, a, 40)) for n, a in (
+          [ANSI.sub("", sr.render_who(n, a, 40)) for n, a in (
               ("Marigold", "Reading the plan"), ("Marigold", ""),
               ("", "Reading the plan"), ("", ""))],
           ["Marigold Reading the plan", "Marigold", "Reading the plan", ""])
     check("the activity gives way first, then the name",
-          [ANSI.sub("", sl.render_who("Marigold", "Reading the plan, slowly",
+          [ANSI.sub("", sr.render_who("Marigold", "Reading the plan, slowly",
                                       w)) for w in (30, 20, 12, 6)],
           ["Marigold Reading the plan, sl…", "Marigold Reading th…",
            "Marigold", "Marig…"])
@@ -346,7 +369,7 @@ def run(tmp):
            re.search(r"Review the plan, [^…]*…  \U0001F916",
                      render(sl, dict(wide, columns=130))[1]["a1"]) is not None,
            render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
-           .count(long[:sl.A_NAME_MIN - 1] + "…")),
+           .count(long[:sr.A_NAME_MIN - 1] + "…")),
           (1, True, 1))
 
     rc, rows = render(sl, dict(pay, tasks=[task("a1"), {"no": "id"}, 7]))
@@ -362,8 +385,7 @@ def run(tmp):
         check("bad input %r: exit 0 and nothing printed, so the panel's "
               "own rows stand" % raw, (rc, buf.getvalue()), (0, ""))
 
-    os.unlink(os.environ["CLAUDE_PLAN_CACHE"])
-    rc, rows = render(sl, pay)
+    rc, rows = render(sl, pay, ["--usage-source", "native"])
     check("no plan reading: the 🔋 and 🪫 cells are blank, the rest stands",
           ("\U0001F50B" in rows["a1"], "\U0001F4B0" in rows["a1"]),
           (False, True))

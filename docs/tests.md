@@ -9,16 +9,25 @@ of every run — so nothing in here belongs to anyone, and a fixture cannot
 drift away from the generator that describes it.
 
 ```sh
-bash tests/golden.sh              # status mode, 129 comparisons — seconds
-bash tests/golden-cost.sh         # cost mode, 72 comparisons — seconds
+bash tests/golden.sh              # status mode, 135 comparisons — seconds
+bash tests/golden-cost.sh         # cost mode, 77 comparisons — seconds
 bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
-python3 tests/usage-source.py     # the usage sources, 41 cases — seconds
+python3 tests/usage-source.py     # tracker/command/cache migration, 39 cases — seconds
 python3 tests/agents.py           # agent spend: reader, fold-in, late row, scan — seconds
 python3 tests/subagent.py         # the agent panel rows: file lookup, billing, shares, shape — seconds
-python3 tests/rate.py             # the status line's 🛫: the sampler and its cell — seconds
+python3 tests/rate.py             # the status line's 🛫: the sampler and its cell; the brightness cuts — seconds
+python3 tests/formatting.py       # shared width/formatting/configuration
+python3 tests/sources-v1.py       # normalized schema and quota hierarchy
+python3 tests/source-cache.py     # source precedence, freshness, backoff, isolation
+python3 tests/claude-sources.py   # shared intake to Claude display projection
+python3 tests/claude-subagent-render.py # prepared panel rows without I/O
+python3 tests/http-sources.py     # offline admin/private endpoint contracts
+python3 tests/app-server.py       # fake app-server framing, buckets and cleanup
+python3 tests/codex.py            # rollout accounting, descendants and reporting state
+python3 tests/port-cli.py         # public CLI, held-open stdin and concurrent late usage
 tests/compaction-once.py          # replay real sessions — MINUTES, see below
 tests/agents-once.py              # the same for agent spend — MINUTES
-./claude-code-usage-statusline.py --selftest    # needs a real tty
+./coding-agent-usage-line.py --selftest    # needs a real tty
 bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
 ```
 
@@ -26,15 +35,14 @@ The first seven must end `fail 0   missing 0` (or `fail 0`). A deliberate layout
 accepted with `--regen` **after reading the diff** — that is the step where a
 regression gets blessed as the new expected output.
 
-The first seven are also what CI runs, on every push, over Python 3.9 and
+All the deterministic suites above also run in CI over Python 3.9 and
 3.13, plus `shellcheck` over `tests/*.sh` — see
 `.github/workflows/tests.yml`. `usage-source.py` reads a macOS app's
 preference store and is in CI anyway: it builds its own fixture store with
-`plistlib`, so it needs neither macOS nor the app. The last three are NOT in
-CI and cannot be: two of them need a controlling tty and, more than that, the
-specific terminal whose widths are in question, and a runner's answers about a
-JediTerm layout would be worse than no answer. The third has no real
-transcripts to replay on a runner.
+`plistlib`, so it needs neither macOS nor the app. HTTP and app-server tests
+likewise use fixtures, not live credentials. The two real-history replay
+scripts and two real-terminal checks are manual: CI has neither those private
+histories nor the specific terminal whose rendering is being checked.
 
 **Run the suites from a directory macOS does not guard.** Under `Documents`,
 `Downloads` or `Desktop`, TCC can make Python's import machinery raise
@@ -48,8 +56,12 @@ look at the drawn rows as well as the numbers.
 `rate.py` exists because the goldens cannot show the figure it checks: they
 pin the clock, so every render of a case is the sampler's first tick and the
 🛫 field is blank in every golden file — correctly, and uselessly as a test
-of the slope. The suite steps the clock by hand against a scratch `TMPDIR`
+of the slope. The suite steps the clock by hand against a scratch state directory
 and pins the tick, the depth of the history, a damaged file, and the cell.
+It also pins the brightness-as-magnitude rule — one fixed cut per kind, dim
+under it, and a dim first field reset before the second — because the goldens
+record the escapes without saying which of them is the rule and which the
+value, and a re-bless would accept a 🛫 that dimmed the 🎯 beside it.
 
 `tests/README.md` carries the rest, including what the generated session is
 built to reach and why the differential test against the two programs this one
@@ -70,4 +82,3 @@ file published between Stops the way the live hook publishes it. It asserts
 that every agent request is on a 🎤 or 👥 row at the Stop that first saw it,
 and on the 👥 row at no later Stop. Same cost as its sibling, for the same
 reason.
-

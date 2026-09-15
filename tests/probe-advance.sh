@@ -23,7 +23,9 @@ export LC_ALL=en_US.UTF-8
 # nothing draws with. Four glyphs live only in the Python — E_COSTLINE and the
 # three E_ROW_* — and this probe had never measured one of them.
 DIR="$(cd "$(dirname "$0")" && pwd)"
-LIVE="${PROBE_PROG:-$DIR/../claude-code-usage-statusline.py}"
+# Glyph constants live in the shared formatting module.  The launcher is
+# intentionally thin and contains none for this parser to inspect.
+LIVE="${PROBE_PROG:-$DIR/../coding_agent_usage_line/formatting.py}"
 PY=/usr/bin/python3
 
 exec 3<>/dev/tty || { echo "no controlling terminal"; exit 1; }
@@ -136,7 +138,7 @@ PYEOF
 }
 
 printf -- '--- glyphs this status line uses ---\n'
-printf -- '(derived from the E_* constants in claude-code-usage-statusline.py,\n'
+printf -- '(derived from the E_* constants in coding_agent_usage_line/formatting.py,\n'
 printf -- ' not a list kept here: a list kept here drifts the moment a glyph\n'
 printf -- ' changes)\n'
 
@@ -211,7 +213,7 @@ for m in $MEASURED; do
   [ "$got" = 2 ] && [ "$says" = 1 ] && icons="$icons $cp"
 done
 
-printf -- '\n--- paste into widths_for() in claude-code-usage-statusline.py ---\n'
+printf -- '\n--- paste into widths_for() in coding_agent_usage_line/formatting.py ---\n'
 printf '# probed %s\n' "$(date '+%Y-%m-%d %H:%M')"
 printf '#   TERM_PROGRAM=%s TERM=%s TMUX=%s%s\n' \
   "${TERM_PROGRAM:-unset}" "${TERM:-unset}" \

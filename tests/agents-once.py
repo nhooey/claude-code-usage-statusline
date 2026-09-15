@@ -37,14 +37,17 @@ import tempfile
 
 PROG = os.environ.get("COST_PROG") or os.path.join(
     os.path.dirname(os.path.abspath(__file__)), os.pardir,
-    "claude-code-usage-statusline.py")
+    "coding-agent-usage-line.py")
 
 
 def load_program():
-    spec = importlib.util.spec_from_file_location("statusline", PROG)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    global _agent_dir, _agent_state_path, ts_epoch
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from coding_agent_usage_line import claude
+    from coding_agent_usage_line.claude_records import _agent_dir, _agent_state_path, ts_epoch
+    return claude
 
 
 def find_sessions():
@@ -71,12 +74,12 @@ def replay(sl, transcript, work):
         except ValueError:
             continue
         if r.get("subtype") == "stop_hook_summary" and not r.get("isSidechain"):
-            stops.append((i, sl.ts_epoch(r.get("timestamp") or "")))
+            stops.append((i, ts_epoch(r.get("timestamp") or "")))
     # Every agent file, parsed once, with each line's stamp.
     src = sl.agent_files(transcript)
     agent_lines = {}
     for path in src:
-        rel = os.path.relpath(path, sl._agent_dir(transcript))
+        rel = os.path.relpath(path, _agent_dir(transcript))
         rows = []
         with open(path, "rb") as fh:
             for raw in fh:
@@ -84,7 +87,7 @@ def replay(sl, transcript, work):
                     r = json.loads(raw)
                 except ValueError:
                     r = {}
-                rows.append((sl.ts_epoch((r.get("timestamp") or "")
+                rows.append((ts_epoch((r.get("timestamp") or "")
                                          if isinstance(r, dict) else ""), raw))
         agent_lines[rel] = rows
 
@@ -142,7 +145,7 @@ def replay(sl, transcript, work):
                     late_seen.setdefault(rid, set()).add(i)
         sl.publish_agent_offsets(cut_tr, agents)
     try:
-        os.remove(sl._agent_state_path(cut_tr))
+        os.remove(_agent_state_path(cut_tr))
     except OSError:
         pass
     twice = [k for k, at in late_seen.items() if len(at) > 1]
@@ -158,6 +161,7 @@ def main(argv):
         return 0
     work = tempfile.mkdtemp(prefix="agents-once.")
     os.environ["TMPDIR"] = work
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = os.path.join(work, "state")
     bad = 0
     try:
         for tr in paths:

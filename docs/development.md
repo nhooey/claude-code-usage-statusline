@@ -2,25 +2,33 @@
 
 ## Reading the code
 
-One file, sectioned by banner comment, in dependency order:
+The executable is a thin checkout launcher. Keep it beside the
+`coding_agent_usage_line/` package; no package installation is required.
 
-| section | what |
+| module | responsibility |
 |---|---|
-| Glyphs | every character, by name |
-| ANSI truecolor escapes | the palette |
-| Tunables | widths, thresholds, billing weights, prices, cost-line geometry |
-| Width tables | `EAW_WIDE` and the per-terminal overrides |
-| Measurement | `vis_width`, `trunc`, `term_profile` |
-| Formatting | `humanize`, `rate_fig`, `dec_align`, `pad_val`, `pct`, `money_fmt`, `money_cell`, `short_model`, `SI_UNITS`, `sub_dec`, `E_SUP_DIGITS` |
-| Colour tiers, Terminal geometry, Records | small |
-| Reading the payload / the transcript | `Turn`, `AgentRec`, `agent_records`, `agent_offsets`, `read_turns`, `read_turns_settled` |
-| Usage sources | `UsageSource`, `ClaudeUsageTrackerSource`, `tracker_reading`, `CommandSource`, `normalise_reading`, `usage_source` |
-| Git, Plan limits | `detect_git`, `load_limits`, `calibration`, `turn_cost_since`, `window_shares`, `session_shares`, `publish_ctx_window`, `session_rate` |
-| Status-line segment renderers, Status-line layout | `--mode status`: one renderer per cell, `render_rate_cache` for the two-figure 🛫 🎯 cell, `render_model` for 🤖 with the effort's glyph, `effort_glyph`, `render_status` for the grid |
-| Cost line | `cost_group`, `cost_totals_group`, `stack_metrics`, `place_stacked`, `render_cost_line` |
-| Alignment self-test | `--selftest` |
-| The subagent rows | `--mode subagent`: `agent_file_for`, `read_agent_usage`, `agent_window_shares`, `token_rate`, `model_spec`, `render_agent_row`, `render_who`, `_KIND_MARK`, `_STATE_MARK` |
-| Entry points | `main_status`, `main_cost`, `main_subagent`, `USAGE` |
+| `cli.py` | validate agent/source/options, prepare Codex reports, dispatch to the selected adapter |
+| `formatting.py` | shared glyphs, measured widths, ANSI palette, number formatting and terminal geometry |
+| `models.py` | immutable token/request records, with missing categories distinguished from zero |
+| `sources.py` | source selection, grouped quota normalization, command/app-server/HTTP collection and refresh policy |
+| `state.py` | private scoped source cache, refresh locks and atomic Codex report claims |
+| `codex.py` | rollout records, thread identity, descendant discovery, request deduplication and turn attribution |
+| `render.py` | prepared Codex status/history/Stop text and separate account-period rows |
+| `claude_records.py` | Claude payload/transcript records, usage parsing, model prices and turn/agent accounting primitives |
+| `claude.py` | Claude orchestration: read inputs, prepare accounting/cache snapshots, serialize status/Stop/panel output |
+| `claude_sources.py` | shared source reading to Claude's established default-window display bridge |
+| `claude_render.py` | prepared Claude status cells and fixed-column grid |
+| `claude_cost_render.py` | prepared Claude cost-row placement, palette and layout |
+| `claude_subagent_render.py` | prepared Claude task rows, without transcript or source reads |
+
+The accepted portability scope and remaining module-boundary criteria are in
+[the agent-agnostic implementation plan](agent-agnostic-plan.md).
+
+The substantial Claude sections retain their original comments and formatting
+algorithms. Shared formatters do not select sources or read vendor histories;
+rendering receives prepared readings. A named quota bucket is not squeezed
+into the legacy default five-hour/weekly pair: its identity and nested windows
+remain in the generic account output.
 
 The code comments are deliberately dense, and these documents duplicate the
 parts of them that are worth knowing before you open the file rather than
@@ -30,21 +38,30 @@ there, and docs/ does not repeat it.
 
 ## Style
 
-Pure functions over frozen `NamedTuple` records. Module-level names are
-constants, and the few that depend on the terminal are computed once at import
-and passed as default arguments so a test can substitute them.
+Prefer pure rendering functions over immutable records and prepared snapshots.
+Keep file reads, subprocesses, HTTP, cache writes and report claiming in the
+adapter/source/state layers. A missing observation is not an observed zero.
 
 The agent files are read once per process and handed to every reader that
 needs them — `read_transcript`, `read_turns`, `_with_shares` all take an
 `agents` argument — rather than memoised in a module name. Same rule: a
 process is one render, and the reading is an input to it.
 
-Three names are mutable and all three are set once, in `main()`, before
-anything renders: mark spacing, subscript decimals, and the selected usage
-source. Each is a command-line flag consumed several calls deep — inside a
-formatter, or inside a cache refresh — and threading a display switch through
-every renderer that does not care about it buys nothing. They are set before
-the first render and never again, and a process is one render.
+The display knobs for mark spacing and subscript decimals are set before
+rendering. Code outside `formatting.py` reads dependent mutable widths through
+the module, not copied imports. Source selection happens before rendering, so
+cells and rows cannot independently refresh or disagree about the reading.
+
+Codex account quotas and request tokens are different records. A request ID
+deduplicates copied fork history; a thread ID identifies a child; an explicit
+root-turn link attributes child usage. Do not substitute the shared session ID
+for any of these. Atomic session-wide claims retain origin turns so late child
+usage can print once without being charged to the latest turn. Historical
+`--all` reports are read-only and do not consume those claims.
+
+Claude's turn/session/child quota shares are calibrated estimates. There is no
+Codex conversion from a child's tokens to its share of a subscription bucket,
+and no API-price fallback for subscription usage. Preserve unavailable values.
 
 
 ## TODO
@@ -130,8 +147,8 @@ it**
 
 Vague on purpose — these are the intentions, not a design:
 
-1. **This program, made agnostic** between harnesses and agents, rather than
-   knowing about Claude Code specifically.
+1. **Additional agent adapters and intake methods**, following the boundaries
+   and capability differences in the [portability plan](agent-agnostic-plan.md).
 2. **A terminal diagnostic program**, in a repo of its own: drive every
    terminal-and-multiplexer combination, read back screenshots, and work out
    what each one gets wrong with which emoji. `tests/probe-advance.sh` is the

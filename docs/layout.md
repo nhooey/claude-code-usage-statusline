@@ -39,7 +39,7 @@ enough widths:
 
 ```
 👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃  | 🧩▴ 23M ▾837k  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
-🤖💬 Two separate things, and the second one is …  | 💰 115  | 🛫200/s 🎯98٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
+🤖💬 Two separate things, and the second one is …  | 💰115   | 🛫200/s 🎯98٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
 📦repo  📁~/Workbench/…/marbled-godwit             |         | 🧠 115k   11٪  | ⌛ 🎤   3m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
 ```
 
@@ -58,7 +58,7 @@ emoji, which carries its own side bearing inside its two columns. One column
 of air before an emoji looks like two before a digit.
 
 **Why a rule at all**, when the columns already have gaps. Four blanks is a
-gap next to `💰 115` and an expanse next to column 4's thirty-three, and white
+gap next to `💰115` and an expanse next to column 4's thirty-three, and white
 space of a width that changes with its neighbours has to be re-measured on
 every row before it reads as a division. A stroke on a fixed column does not.
 The grid was always five columns; this is the first thing that says so.
@@ -130,9 +130,17 @@ and over the context size, and `▾`'s over the 🎯 and the context percentage.
 🧠 reads size first, then percentage, so the size stacks under 🧩's tokens
 and the percentage ends the column under 🎯's; the cost line's 🧠 cell keeps
 the other order, change in level then change in size, and the two readouts
-differ there. Column 2 is two short cells over an empty one: 🤖 with the
-model's initial, its major version in superscript and the effort's glyph
-against it — `O⁵🏃`, `H⁴🔥`, the cell the agent rows have — and 💰.
+differ there. The size dims under a hundred thousand tokens like every count
+in the column and the percentage never dims — see [Brightness as
+magnitude](#brightness-as-magnitude-everywhere-else). Column 2 is two short
+cells over an empty one: 🤖 with the model's initial, its major version in
+superscript and the effort's glyph against it — `O⁵🏃`, `H⁴🔥`, the cell the
+agent rows have — and 💰 with the cost as three characters and a unit column,
+`💰115 `, `💰1.2k`. The money holds humanize's blank unit column under a
+thousand dollars, so its digits
+stack under digits and its `k`, when it comes, lands where every other `k` on
+the readout does. The cost line keeps `money_fmt`'s four digits, `12.3`,
+because there a decimal point has a column reserved to stack in.
 
 **Rearranged 2026-09-13**, in steps over one evening. Until then column 2
 was the two-value column with the model and its 📏 window on its third row,
@@ -288,6 +296,84 @@ one of its distinctions had to go. Hours-against-days went: a window that
 resets tomorrow and one that resets this afternoon are the same news — not yet
 — while one resetting inside the hour is the only reading on that field a
 person acts on. Bright means that and nothing else.
+
+### Brightness as magnitude, everywhere else
+
+Since 2026-09-14 every figure on the status line and the agent rows that has
+**no ceiling of its own** is dim under a fixed cut and full strength at or over
+it. A percentage says what high is by being one — 100 is the window, and a
+reader knows it without being told — and 🎯 has its tiers. A token count, a
+rate, a cost, a duration and a diff have no such edge: `841k` and `8.4k` sat in
+the same ink and the same four columns, and the unit had to be parsed before
+one could be told from the other. Now the ink says it first.
+
+| kind | cut | where |
+|---|---|---|
+| tokens | 100k | 🧩 ▴ and ▾ each on its own, 🧠's size — both readouts |
+| rate | 1k/s | 🛫, both readouts |
+| cost | $1 | 💰, both readouts |
+| duration | 10 min | ⌛ 🎤 👤 🤖 Σ each on its own; an agent's ⌛ |
+| diff | 100 lines | 💾 each half on its own |
+
+`MAG_TOK`, `MAG_RATE`, `MAG_COST`, `MAG_DUR_S`, `MAG_DIFF` in the program, and
+`mag_dim` applies them.
+
+**One cut per kind, fixed, and the same wherever that kind is drawn.** Not
+"high for this session" and not "high against the other rows on the panel". A
+relative cut would make the same brightness mean a different thing in every
+frame — the fault hue was cured of on the limit rows, one section up — where a
+static one lets an agent row be read against the status line above it and
+against yesterday's, and lets the flip itself be read as an event: ▾ has come
+to a hundred thousand; that agent has run ten minutes.
+
+**Where the cuts sit** is where a reading becomes worth noticing, not at a unit
+boundary. A hundred thousand tokens is half a standard window, the size at
+which a context becomes a compaction question, and the band that divides light
+agents from heavy ones; 🧩's ▴ passes it inside a few turns, ▾ in a long
+session. A thousand a second is the `k` of `1k/s`, about what the main thread
+runs at with a full window and a request every ten seconds, against `0/s`
+between turns. A dollar is the line a person draws without help; a session
+crosses it early, an agent that crosses it is a heavy one. Ten minutes is the
+turn or the agent a reader looks up for — the session's own age and its 👤 🤖
+split pass it early and stay bright, which is the right reading of them. A
+hundred lines is where an uncommitted diff is work rather than a tweak.
+
+**The shares take a cut of their own kind.** A 🎤 or 🎮 share is a
+percentage, but of a window it will never fill, so 100 is not the edge a
+reader holds it against; the question is whether this turn, this session,
+this agent is a real part of the *week*, and the weekly share answers it for
+both rows at once. Since 2026-09-14: 🎤 dims on both limit rows when the
+turn's weekly share is under 1٪ (`MAG_SHARE_TURN`), 🎮 on both rows when the
+session's weekly share is under 5٪ (`MAG_SHARE_SESS`), and an agent's 🔋 🪫
+pair dims together when its weekly share is under 0.2٪ (`MAG_SHARE_AGENT`) —
+an agent is a fraction of a turn, and the turn's cut would dim nearly every
+row of the panel; this one keeps the agent that did the turn's work bright
+and dims the ones that ran an errand. The 5-hour share of the same spend is
+always the larger figure and would put the two rows on different sides of the
+cut for the same turn, so it is never consulted: the pair flips together, off
+the week alone (`share_dims`). A share that could not be derived draws `?`
+and was dim already.
+
+**What it does not touch.** The limit percentages themselves; 🎯, which has a rule of its own (below); 🧠's percentage, whose window is its ceiling — so `🧠 115k   11٪`
+of a 1M window reads bright-dim and says exactly that, a lot of context and a
+small part of the room; the 🔜 countdown, which `reset_dim` already dims the
+*other* way, since for a time-until it is the small figure that matters (the
+⌛ row directly under it dims small figures — the two rows agree on what bright
+means, the figure worth looking up for, and differ on which end of the scale
+that is because the scales run opposite ways); the 5-hour row's 💳, dimmed as
+context and not as a magnitude; and the cost line, a different readout with a
+stacking of its own. `DIM` is never a hue: on every figure it means one thing,
+and the same thing every frame.
+
+**🎯's own rule.** The hit rate keeps its three tiers — red at or under 50٪,
+amber at or under 80٪, green above — and since 2026-09-14 the green tier is
+dim as well as green. A high hit rate is the state nothing has to be done
+about, and the figure that asks for nothing should not be the one the eye
+lands on; amber and red mean something invalidated the cached prefix, and
+stay full strength. It is the magnitude rule read from the other end: there
+the small figure is the quiet one, here the large one is. The `DIM` is for
+the figure only — the 🎯 is drawn ahead of the colour on both readouts, so
+the mark stays bright and the cell still reads as a cell.
 
 **Why the turn figure is there.** Before it the row could say a session had
 spent 2.5٪ of a window without saying whether that was one expensive turn or

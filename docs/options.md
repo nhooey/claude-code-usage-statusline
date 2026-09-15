@@ -1,6 +1,27 @@
 # Options
 
-The program has three modes and a self-test:
+Operational modes require `--agent claude|codex`. Help and the terminal
+`--selftest` do not require an agent. Select account intake independently with
+`--usage-source`; transcript data always supplies the session's own metrics.
+
+| common option | effect |
+|---|---|
+| `--agent claude\|codex` | choose the transcript and hook adapter |
+| `--usage-source SPEC` | choose account intake; see [Usage sources](usage-sources.md) |
+| `--transcript PATH` | read an explicit file in status or cost mode without waiting for stdin; do not consume live Stop-report state |
+| `--account NAME` | a non-secret account/cache namespace; default `default` |
+| `--account-period day\|week\|month` | UTC calendar period for organization reports; weeks start Monday; default `day` |
+| `--diagnose` | emit redacted source/freshness/coverage diagnostics on stderr |
+| `--all` | with cost mode, report historical turns and completed child rows as plain text |
+
+Codex supports one-shot status and JSON Stop summaries. It groups requests by
+root turn, includes descendant usage without adding copied fork prefixes, and
+reports late usage once with its original turn attribution. Its live footer is
+configured through Codex's own `/statusline`; there is no external footer
+command. `--mode subagent` is Claude-only and exits 2 for Codex with an explanation.
+The display switches below apply to Claude's presentation.
+
+Claude has three modes and a self-test:
 
 ```
 --mode status   stdin: the status-line JSON payload
@@ -66,14 +87,21 @@ effort and the panel's own running token count. Everything else on the row —
 `<session>/subagents/agent-<id>.jsonl`, the same way the status line reads the
 session's, and the plan windows are the snapshot the status line last
 published. A task with no transcript (a shell, a remote agent) shows the
-fields the payload gives and nothing where the others would be. 🛫 is the
+fields the payload gives and nothing where the others would be. Brightness
+on the row follows the status line's cuts (see *Brightness as magnitude* in
+`layout.md`): 🧩 🧠 🛫 💰 ⌛ dim under theirs, 🎯 dims its green tier, and
+the 🔋 🪫 pair dims together when the agent's weekly share is under 0.2٪ — a
+light agent, whichever window you read it in. 🛫 is the
 slope of the panel's last sixteen token readings at its five-second tick, and
 is the one figure on the row that comes from the panel rather than the file.
 That reading is the last request's input plus every output, so it climbs by
 a whole context at each request and rests while a tool runs: a sign of life
-and of pace, not a generation rate. The status line's own 🛫, in column 2
+and of pace, not a generation rate. The status line's own 🛫, in column 3
 beside 🎯, is the same figure for the main thread, sampled by the program
-itself — see [Columns 2 and 3](layout.md#columns-2-and-3).
+itself — see [Columns 2 and 3](layout.md#columns-2-and-3). ⌛ 🧩 🛫 🧠 💰
+dim under the status line's own magnitude cuts — ten minutes, 100k tokens,
+1k/s, a dollar — so the heavy agents are the bright rows of the panel; see
+[Brightness as magnitude](layout.md#brightness-as-magnitude-everywhere-else).
 
 `--no-mark-spacing` works in every mode. On the status line
 it closes the blank between each column-4 mark and its value, narrowing that
@@ -144,24 +172,14 @@ cell rather than as a whole row shifted: a diagnosis instead of a mystery.
 "pretend the width is unknown", which is the only way to exercise the fallback
 layout deterministically.
 
-`--usage-source SPEC` works in both modes and says where the plan figures come
-from **when Claude Code's payload carries none**. Claude Code's own figures
-are always preferred and this is never consulted while they are there.
-`auto` is the default and `CLAUDE_USAGE_SOURCE` sets it from the environment.
-
-| spec | source |
-|---|---|
-| `auto` | the first built-in that finds what it reads. One built-in today, so: the tracker app on macOS, nothing anywhere else |
-| `none`, `off` | ask nobody. The cached reading is still read, so this is "do not take a NEW reading", not "forget" |
-| `claude-usage-tracker` | the [Claude Usage Tracker](https://github.com/hamed-elfayome/Claude-Usage-Tracker) menu-bar app, read from its UserDefaults store |
-| `cmd:PATH` | any program that prints a reading as JSON on stdout |
-
-A named source is used whether or not it is available, and that is deliberate:
-naming one is an instruction, and an instruction that silently degrades to a
-different source is how a readout comes to be quoting something nobody chose.
-It will return nothing and the rows will be blank, which is a question with an
-answer. `auto` is the mode that is allowed to shrug.
+`--usage-source SPEC` applies to all supported modes. Explicit external
+selection overrides native account readings and never silently selects a
+different source. `auto` prefers current native data, a valid native cache,
+then the optional tracker for Claude or managed app-server for Codex. `native`
+excludes external refreshes; `none`/`off` also allow compatible cached readings.
+`CODING_AGENT_USAGE_LINE_USAGE_SOURCE` sets the default; the CLI takes precedence.
+Provider-specific sources are rejected for the other agent. The complete
+source and credential list is in [Usage sources](usage-sources.md).
 
 The four removing switches all default to ON — i.e. everything is drawn unless
 asked otherwise — so a bare invocation is the full readout.
-

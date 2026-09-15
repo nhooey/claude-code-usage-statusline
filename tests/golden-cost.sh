@@ -24,7 +24,7 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-NEW="$DIR/../claude-code-usage-statusline.py"
+NEW="$DIR/../coding-agent-usage-line.py"
 PY=/usr/bin/python3
 GOLD="$DIR/golden/cost"
 OUT="$DIR/out-cost"
@@ -44,6 +44,10 @@ CORPUS="$SCRATCH/cost"
 mkdir -p "$GOLD" "$OUT"
 rm -f "$OUT"/*.got "$OUT"/*.want
 
+# Stop payloads have no native quota envelope.  Use a fresh v1 fixture rather
+# than the status line's retired plan-cache handoff.
+set_claude_fixture 41 2026-08-16T04:00:00Z 63 2026-08-18T01:00:00Z
+
 pass=0; fail=0; missing=0; wrote=0
 
 check() {   # $1 name, $2 transcript, $3 cols ("" unknown), $4... extra flags
@@ -53,7 +57,7 @@ check() {   # $1 name, $2 transcript, $3 cols ("" unknown), $4... extra flags
   # the row rather than the envelope: a golden full of \u escapes is a golden
   # nobody can read a diff of.
   got=$( cd "$SCRATCH/repo" \
-         && "$PY" "$NEW" --mode cost --transcript "$tr" --cols "${cols:-0}" \
+         && "$PY" "$NEW" --agent claude --mode cost --transcript "$tr" --cols "${cols:-0}" \
             "$@" </dev/null \
          | "$PY" -c 'import json,sys
 d = json.load(sys.stdin)
@@ -113,14 +117,7 @@ echo "--- with the status line's plan cache planted ---"
 # back as a bare "{}": round() raised on a str inside limit_cell, main_cost's
 # catch-all swallowed it, and every one of these five cases recorded an empty
 # golden.  The fixture has to match the writer, not the payload.
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 15.0,
-  "session_resets_at": "2026-08-16 02:30",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00"
-}
-JSON
+set_claude_fixture 15 2026-08-16T02:30:00Z 87 2026-08-18T01:00:00Z
 for c in 196 150 120 92 ""; do
   check "plan-cache-01@${c:-none}" "$CORPUS/01-plain.jsonl" "$c"
 done
@@ -130,14 +127,7 @@ done
 # 2026-08-27 this row clamped it to "99٪" where the status line drew 💯 --
 # two readouts disagreeing about the one moment either of them matters.  No
 # case went near 99.5, so nothing said so.  This is that case.
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 99.6,
-  "session_resets_at": "2026-08-16 02:30",
-  "weekly_pct": 100.0,
-  "weekly_resets_at": "2026-08-18 01:00"
-}
-JSON
+set_claude_fixture 99.6 2026-08-16T02:30:00Z 100 2026-08-18T01:00:00Z
 for c in 196 120; do
   check "plan-full-01@$c" "$CORPUS/01-plain.jsonl" "$c"
 done
@@ -187,14 +177,7 @@ check "all-off-02@92" "$CORPUS/02-compaction.jsonl" 92 \
 # one they are equal, the last turn being the only turn inside.  The weekly
 # figures are untouched by the plant and are what says so.
 echo "--- a window that opens inside the last turn ---"
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 15.0,
-  "session_resets_at": "2026-08-16 06:31",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00"
-}
-JSON
+set_claude_fixture 15 2026-08-16T06:31:00Z 87 2026-08-18T01:00:00Z
 for c in 196 120; do
   check "straddle-01@$c" "$CORPUS/01-plain.jsonl" "$c"
 done
@@ -214,15 +197,8 @@ done
 # the twin case in golden.sh; the key here is the pair of starts THIS plan
 # cache implies, which is a different pair.
 echo "--- a reading too coarse to calibrate from ---"
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 1.0,
-  "session_resets_at": "2026-08-16 06:31",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00"
-}
-JSON
-cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+set_claude_fixture 1 2026-08-16T06:31:00Z 87 2026-08-18T01:00:00Z
+cat > "$CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE" <<'JSON'
 {
   "windows": "2026-08-16 01:31:00|2026-08-11 01:00:00",
   "sess_cost": 5.50, "sess_pct": 1.0,
@@ -234,7 +210,7 @@ for c in 196 120; do
 done
 
 # Put the fixture back, for the reason golden.sh's twin gives.
-cat > "$CLAUDE_CALIB_CACHE" <<'JSON'
+cat > "$CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE" <<'JSON'
 {"sess": 5.50, "week": 4.10}
 JSON
 
@@ -249,14 +225,7 @@ JSON
 # 🔋 and 🪫 cells carry figures at all; without it they are blank and the case
 # would exercise nothing.
 echo "--- --subscript-decimals ---"
-cat > "$CLAUDE_PLAN_CACHE" <<'JSON'
-{
-  "session_pct": 15.0,
-  "session_resets_at": "2026-08-16 02:30",
-  "weekly_pct": 87.0,
-  "weekly_resets_at": "2026-08-18 01:00"
-}
-JSON
+set_claude_fixture 15 2026-08-16T02:30:00Z 87 2026-08-18T01:00:00Z
 for c in 196 120; do
   check "subdec-01@$c" "$CORPUS/01-plain.jsonl" "$c" --subscript-decimals
 done

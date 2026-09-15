@@ -1,7 +1,41 @@
 # Accounting
 
-Where the figures come from, what the two modes tell each other, and the
-rules that keep a share of a window honest.
+Where the figures come from, and which numbers can be attributed to a turn,
+session or child agent.
+
+## Codex: request usage is not a quota share
+
+Codex reports aggregate recorded request tokens, including newly billed child
+and descendant requests. Response IDs deduplicate copied fork history. An
+explicit root-turn link associates a child's requests with a parent turn;
+missing links remain separately labeled child/session usage, not guessed
+current-turn usage. Completed-child history identifies the child and preserves
+its recorded model and reasoning effort.
+
+Cached-input and reasoning-output tokens are subsets of their respective
+totals, not extra tokens. Missing categories stay unavailable. Per-request
+records take precedence over ambiguous same-turn legacy cumulative records;
+`--diagnose` reports that ambiguity rather than inventing request identities.
+Missing index/child files can also leave descendant coverage incomplete.
+
+Stop reports distinguish fresh incremental usage from the complete recorded
+session total. A session-wide locked journal claims request IDs once, retaining
+origin turns for late child usage. Repeated unchanged Stops print `{}`;
+`--all` and explicit transcript reports do not consume that journal.
+
+Account quotas retain bucket IDs, headings, model/feature metadata and each
+bucket's own windows. A general weekly-only reading does not gain a five-hour
+meter from Spark. Separate reset anchors are not interchangeable.
+
+Codex exposes [thread token usage and account quota readings separately](https://learn.chatgpt.com/docs/app-server),
+without a documented conversion to per-child quota consumption. Reasoning
+effort can affect consumption, but it is not a quota conversion formula. The
+port does not apply Claude's calibration or API prices to Codex subscription
+tokens. Organization API totals are separate account-period rows, never added
+to a session's tokens or bill.
+
+The following sections describe the retained **Claude-specific estimated
+accounting**, including its calibration and historical fixes.
 
 ## What the two modes tell each other
 
@@ -11,14 +45,15 @@ test cannot write to the thing it is testing.
 
 | channel | why |
 |---|---|
-| `PLAN_CACHE` (`/tmp/claude-plan-limits.json`) | the status line publishes the plan figures it took from Claude Code's payload, so the cost rows quote the SAME ones. Two sources exist — the payload's `rate_limits` and whatever [usage source](usage-sources.md) is configured — and `load_limits` is all-or-nothing between them |
-| `CALIB_CACHE` (`/tmp/claude-calib-cache.json`) | the cost of everything on this machine inside each plan window, keyed by the windows it was measured over. Scanning transcripts is too slow to redo per turn; dividing by a percentage is free, so the division is NOT cached |
-| `$TMPDIR/claude-statusline-ctxwin-<session id>` | the Stop payload carries no model, and the transcript records both Opus variants as plain `claude-opus-5`, so the cost line cannot tell a 200k window from a 1M one. Guessing from the largest reading seen fails exactly where it matters — it is *compacting* that keeps a 1M session under the 200k line, so a well-kept session never proves its window and every 🧠 figure runs 5× high |
+| selected plan snapshot (shared source cache) | the shared source pipeline selects the reading once; the Claude projection and calibration use that same snapshot, without a second source refresh from a renderer |
+| calibration scan | the cost of the configured local history inside each plan window, keyed by its window anchors. Scanning transcripts is too slow to redo per turn; dividing by a percentage is free, so the division is NOT cached |
+| per-session context-window state | the Stop payload carries no model, and the transcript records both Opus variants as plain `claude-opus-5`, so the cost line cannot tell a 200k window from a 1M one. Guessing from the largest reading seen fails exactly where it matters — it is *compacting* that keeps a 1M session under the 200k line, so a well-kept session never proves its window and every 🧠 figure runs 5× high |
 
-`/tmp` rather than `TMPDIR` for the first two, deliberately: the status line has
-been observed writing its caches to `/tmp` while the Stop hook's `TMPDIR`
-pointed inside `/var/folders`. A path that resolves differently per process
-cannot be a channel between them.
+These channels now live in private, scoped application state, described under
+[refresh and storage](usage-sources.md#refresh-and-storage), rather than global
+`/tmp/claude-*` files. A stable state root lets status and Stop find the same
+channel even when their launchers supply different `TMPDIR` values. Source and
+account namespaces must not share calibration just because reset times match.
 
 ### One snapshot per render
 
@@ -48,15 +83,14 @@ session's hook had cached moments earlier.
 
 Two rules now:
 
-* **`limits_snapshot()` chooses once per process**, and everything downstream
-  takes what it chose. A render is one process, so there is nothing to keep in
-  sync.
-* **"Fresher" is measured, not assumed.** Each source says when its reading was
-  taken — a usage source in its own `as_of` field, which the program used to
-  throw away, and the plan cache in one written beside the figures — and
-  `_reading_age` compares them. An expired cache is not evidence that the
-  other source is newer; the tracker app polls on its own schedule and can be
-  hours behind.
+* **The source pipeline chooses once per render**, and everything downstream
+  takes the prepared snapshot. Status cells, cost groups and panel rows do not
+  independently refresh account data.
+* **"Fresher" is measured, not assumed.** A reading keeps its own `as_of`,
+  separate from the time it was fetched. An explicit source selection remains
+  authoritative; a failed selection cannot silently switch to native or another
+  collector. Stale readings and expired windows must not look current. The
+  tracker polls on its own schedule and can be hours behind.
 
 The calibration cache is the third way a unit could disagree with the figure
 beside it, so it stores the **scan** rather than the ratio: the two window
@@ -293,4 +327,3 @@ That last fact is worth stating on its own, because it looks like a bug in the
 reader: **a turn's assistant records can still be missing from the `.jsonl` when
 the `Stop` hook reads it** — observed 1.2 s after their own timestamps. Hence
 `read_turns_settled`, which polls for up to 1.5 s.
-

@@ -1,78 +1,154 @@
-# Plan figures when the payload carries none
+# Usage sources
 
-The two limit rows — 🔋 the 5-hour window, 🪫 the 7-day one — want a
-whole-plan percentage and a reset time. Claude Code's status-line payload
-carries both in `rate_limits`, and when it does, that is what is used, whole:
-it is the API's own accounting, arriving with the render rather than through a
-file. `load_limits` is all-or-nothing about it, so a payload that supplies
-either figure supplies both rows or neither.
+The public command is `coding-agent-usage-line.py --agent claude|codex`.
+`--usage-source` independently selects account intake: `auto`, `native`,
+`none`/`off`, `claude-usage-tracker`, `codex-app-server`, `anthropic-admin`,
+`openai-admin`, the explicitly opt-in experimental subscription sources, or
+`cmd:PATH`. Admin readings are organization-period rows, never personal quota
+or turn costs. `--account` and `--account-period day|week|month` scope cached
+readings; cache identity includes agent, source, account and period.
 
-Two of the sixteen payload shapes in the corpus carry no such block, and the
-`Stop` hook's payload never does. So there is a second channel, and something
-has to fill it. That something is a **usage source**.
+The normalized v1 command contract is `schema_version`, `as_of`, `buckets`
+and optional `account`. A bucket has stable `id`, `label`, optional explicit
+`model` or `feature`, and `windows`; every window has `id`,
+`duration_seconds`, `used_percent`, and optional `resets_at`. Buckets are
+preserved through cache and rendering: a weekly-only General bucket is not
+filled from a separate Spark bucket with a 5-hour meter. The earlier flat
+`windows` v1 shape and legacy `session_pct`/`weekly_pct` commands remain
+accepted as one unassociated default bucket.
 
-## The interface
+`auto` reads current native data first, then a fresh native cache, then only
+the local tracker (Claude) or managed app-server (Codex). It never chooses
+admin or experimental endpoints merely because credentials exist. `off` does
+not refresh, but can show a compatible cached reading marked stale. Source
+caches are atomic, mode-private, and scoped by provider/account namespace and
+UTC calendar period; unknown managed identities fall back to the real session
+rather than another account's reading.
 
-A source is an object with a `name`, an `available()` and a `read()`.
-`read()` returns a plain dict, may return `{}`, and is not required to know
-anything about the readout. Everything else happens once, in
-`normalise_reading()`:
+Admin sources use `ANTHROPIC_ADMIN_KEY` or `OPENAI_ADMIN_KEY` and render as
+labeled organization-period totals, never as session cost or subscription
+quota. Experimental subscription sources require explicit
+`CLAUDE_OAUTH_ACCESS_TOKEN`, or both `CODEX_USAGE_ACCESS_TOKEN` and
+`CODEX_USAGE_ACCOUNT_ID`; they are versioned fixture contracts, not stable
+vendor API promises. `--diagnose` emits only source/freshness capability
+information, never raw responses or credentials.
 
-* times become local `%Y-%m-%d %H:%M` stamps, from Unix epochs, Apple epochs
-  or stamps, whichever the source had;
-* percentages become numbers, or vanish;
-* **any other key is dropped.**
+## Choosing a source
 
-The third is not tidiness. The reading is written to a file under `/tmp`, and
-a source is an arbitrary program reading an arbitrary store — the built-in one
-reads a record that also holds an OAuth account blob and an API session key,
-three keys along from the figures it wants. A pass-through would put whatever
-a source handed back into that file forever. A whitelist puts seven fields
-there and cannot be talked into an eighth. `tests/usage-source.py` plants a
-credential-shaped canary in its fixture and fails if it reaches either the
-reading or the disk.
+| source | agent | authentication/input |
+|---|---|---|
+| `native` | both | the active payload/rollout and compatible native cache; no external refresh |
+| `cmd:PATH` | both | your program, run as one path without shell-string evaluation |
+| `claude-usage-tracker` | Claude | optional local tracker preference store |
+| `codex-app-server` | Codex | Codex's managed authentication; `codex` must be on PATH |
+| `anthropic-admin` | Claude | `ANTHROPIC_ADMIN_KEY` |
+| `openai-admin` | Codex | `OPENAI_ADMIN_KEY` |
+| `experimental-claude-oauth` | Claude | explicit `CLAUDE_OAUTH_ACCESS_TOKEN` |
+| `experimental-codex-api` | Codex | explicit `CODEX_USAGE_ACCESS_TOKEN` and `CODEX_USAGE_ACCOUNT_ID` |
 
-A reset time that is not at least five minutes in the future is dropped rather
-than carried, because a countdown of zero reads as a window about to turn over
-rather than as a reading nobody should trust. A reading with neither
-percentage in it is not a reading and cannot overwrite a good one.
+An explicit external choice controls account intake even when native data is
+available. Failure leaves that source unavailable or stale; it does not switch
+providers. The account period affects organization reports, not the durations
+of rolling quota windows. Organization input/output/cost totals stay separate
+from transcript turn/session totals.
 
-## The built-in source
+Codex app-server collection performs only initialization and
+`account/rateLimits/read`, then closes the process. It does not start a thread,
+send a prompt, log in/out or reset quota. The
+[official app-server contract](https://learn.chatgpt.com/docs/app-server)
+defines the multi-bucket map separately from its legacy single-bucket view.
+
+## Custom-command contract
+
+`--usage-source cmd:/absolute/path/to/reader` runs the executable directly, or
+uses `bash` for a non-executable script. It sends a small JSON context on stdin:
+agent, session, model, account, period, period_start and period_end. Conversation
+text, raw native payloads and credentials are not included. The command inherits
+the invoking environment, so only run readers you trust. It must exit 0 and
+print one JSON object, with at most 1 MiB of output within five seconds.
+
+Example reading (illustrative, not a live account):
+
+```json
+{
+  "schema_version": 1,
+  "as_of": "2026-09-14T12:00:00Z",
+  "buckets": [
+    {"id": "general", "label": "General", "windows": [
+      {"id": "weekly", "duration_seconds": 604800, "used_percent": 97,
+       "resets_at": "2026-09-21T17:17:00Z"}
+    ]},
+    {"id": "spark", "label": "Spark", "windows": [
+      {"id": "five-hour", "duration_seconds": 18000, "used_percent": 100,
+       "resets_at": "2026-09-14T20:15:00Z"},
+      {"id": "weekly", "duration_seconds": 604800, "used_percent": 100,
+       "resets_at": "2026-09-21T15:15:00Z"}
+    ]}
+  ]
+}
+```
+
+Percentages are **used**, not remaining. Missing windows and model associations
+stay missing. Supply `model` or `feature` on a bucket only when your source
+explicitly identifies it; do not assign every bucket to the selected model.
+The general bucket above has no five-hour meter. Matching durations or reset
+anchors never license merging it with Spark.
+
+Optional `account` fields are `period_start`, `period_end`, `input_tokens`,
+`cached_input_tokens`, `output_tokens`, `reasoning_output_tokens`, `cost_usd`
+and `scope`. Cached input and reasoning output are subsets, not extra tokens.
+Boundary timestamps accept Unix seconds or RFC3339 and normalize to UTC.
+Invalid/nonfinite numbers and terminal-control labels are unavailable; unknown
+keys are dropped before persistence. Legacy flat commands may still return
+`session_pct`, `weekly_pct`, `session_resets_at` and `weekly_resets_at`.
+
+## Refresh and storage
+
+Local/native/command refreshes default to 60 seconds; direct API sources use
+300 seconds. Fetch time is separate from source `as_of`, so an old reading is
+visibly stale without causing a collector invocation on every render. Failed
+refreshes back off, including bounded HTTP Retry-After delays. Expired quota
+windows are historical, not current availability.
+
+State lives under `$XDG_STATE_HOME/coding-agent-usage-line`, defaulting to
+`~/.local/state/coding-agent-usage-line`. Use
+`CODING_AGENT_USAGE_LINE_STATE_DIR` to override it. Directories are 0700 and files
+0600, with scoped locks and atomic replacement. Only normalized whitelisted
+fields and report IDs are stored, not raw API replies or transcript text.
+
+`CODING_AGENT_USAGE_LINE_USAGE_SOURCE` sets the source default; a CLI option wins.
+Claude history defaults to `~/.claude/projects`; override it with
+`CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR`. Claude calibration and per-session
+context/rate/report state also use the private state root, with hashed scope
+identities rather than global temporary filenames. Tests can supply a prepared
+calibration at `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE` and freeze the Claude
+display clock with `CODING_AGENT_USAGE_LINE_NOW`. The old application-owned
+`CLAUDE_*` environment variables are no longer supported; vendor credential
+names are unchanged.
+
+Use a distinct non-secret `--account NAME` for managed accounts whose identity
+is otherwise unavailable. Do not put access tokens in `--account`, source paths
+or command-line arguments. Experimental sources do not read credential stores,
+scrape browser cookies or refresh tokens. Fixed HTTPS endpoints reject redirects;
+admin pagination and all collector processes have bounded budgets.
+
+## Optional Claude tracker
 
 [**Claude Usage Tracker**](https://github.com/hamed-elfayome/Claude-Usage-Tracker),
-a macOS menu-bar app, is the one source shipped. It polls Anthropic on its own
+a macOS menu-bar app, is one optional source. It polls Anthropic on its own
 schedule and keeps the answer in its UserDefaults store, which is the whole
 appeal: no OAuth handling here, no network call, no token to keep. The figures
 are already on disk and somebody else's program is responsible for them.
 
 It is read through `defaults export` rather than by opening the `.plist`,
-because a running app's preferences live in `cfprefsd` and reach the file when
-`cfprefsd` feels like it — the app writes every 30 seconds and the file lagged
-it by minutes in testing. `CLAUDE_USAGE_TRACKER_PLIST` overrides that with a
+because a running app's preferences live in `cfprefsd` and may reach the file
+later. `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST` overrides that with a
 path to an exported store, which is how the tests drive it on a machine with
 no app, and how a store copied off another machine can be read.
 
 `activeProfileId` names the account record to read; `isSelectedForDisplay` is
 the fallback and the first record is the fallback's fallback. Six fields are
 taken from the `claudeUsage` object inside it and nothing else is touched.
-
-## Anything else, in twenty lines
-
-`--usage-source cmd:PATH` runs a program and reads JSON off its stdout. That
-is the whole contract — print an object, exit 0 — and since
-`normalise_reading()` accepts epochs or stamps and any subset of the fields, a
-working source is about this long:
-
-```sh
-#!/bin/sh
-printf '{"session_pct": %s, "weekly_pct": %s, "session_resets_at": %s}\n' \
-    "$(your_thing --session)" "$(your_thing --week)" "$(your_thing --reset)"
-```
-
-It is run directly if it is executable and through `bash` if it is not, which
-is the difference a fresh checkout of somebody's dotfiles makes. A source
-worth shipping is a subclass of `UsageSource` added to `USAGE_SOURCES`, which
-is what `auto` walks.
 
 ## What this replaced, and how it failed
 
@@ -106,4 +182,3 @@ so the derivation is documented in `tracker_reading()` rather than ported.
 Reviving it means reading the history file the app now keeps under
 `~/Library/Application Support/Claude Usage/history/`; it does not mean
 remembering what it did.
-

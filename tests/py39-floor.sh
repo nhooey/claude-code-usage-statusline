@@ -21,8 +21,9 @@
 set -u
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-PROG="$DIR/../claude-code-usage-statusline.py"
+PROG="$DIR/../coding-agent-usage-line.py"
 PY="${PY39:-/usr/bin/python3}"
+export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/coding-agent-usage-line-pycache}"
 
 pass=0; fail=0
 
@@ -40,8 +41,8 @@ case "$ver" in
      echo "        claim in README.md is NOT verified by it." ;;
 esac
 
-# 1. syntax, over everything
-for f in "$PROG" "$DIR"/*.py; do
+# 1. syntax, over the launcher, package, and offline fixtures.
+for f in "$PROG" "$DIR"/*.py "$DIR"/../coding_agent_usage_line/*.py; do
     if out=$("$PY" -m py_compile "$f" 2>&1); then
         ok "compile $(basename "$f")"
     else
@@ -54,6 +55,10 @@ done
 tmp=$(mktemp -d) || exit 2
 trap 'rm -rf "$tmp"' EXIT
 : > "$tmp/t.jsonl"
+export CODING_AGENT_USAGE_LINE_STATE_DIR="$tmp/state"
+export CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR="$tmp/projects"
+export CODING_AGENT_USAGE_LINE_USAGE_SOURCE=native
+export CODEX_HOME="$tmp/codex"
 
 status_payload() {
     printf '{"session_id":"py39","transcript_path":"%s","cwd":"%s",' \
@@ -61,16 +66,36 @@ status_payload() {
     printf '"model":{"display_name":"Opus"},"workspace":{"current_dir":"%s"}}' "$tmp"
 }
 
-if out=$(status_payload | "$PY" "$PROG" --mode status 2>&1) && [ -n "$out" ]; then
+if out=$(status_payload | "$PY" "$PROG" --agent claude --mode status 2>&1) && [ -n "$out" ]; then
     ok "render --mode status"
 else
     bad "render --mode status" "$out"
 fi
 
-if out=$(status_payload | "$PY" "$PROG" --mode cost 2>&1); then
+if out=$(status_payload | "$PY" "$PROG" --agent claude --mode cost 2>&1); then
     ok "render --mode cost"
 else
     bad "render --mode cost" "$out"
+fi
+
+if out=$("$PY" "$PROG" --agent codex --mode status --transcript "$tmp/t.jsonl" \
+         --usage-source native 2>&1) && [ -n "$out" ]; then
+    ok "render Codex status"
+else
+    bad "render Codex status" "$out"
+fi
+
+if out=$("$PY" "$PROG" --agent codex --mode cost --transcript "$tmp/t.jsonl" \
+         --usage-source native 2>&1) && [ -n "$out" ]; then
+    ok "render Codex cost"
+else
+    bad "render Codex cost" "$out"
+fi
+
+if out=$("$PY" "$PROG" --agent codex --mode subagent --usage-source native 2>&1); then
+    bad "reject Codex subagent" "$out"
+else
+    ok "reject Codex subagent"
 fi
 
 printf '\npass %d   fail %d   missing 0\n' "$pass" "$fail"
