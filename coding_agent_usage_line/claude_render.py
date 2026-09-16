@@ -8,7 +8,8 @@ from typing import Optional
 
 from . import formatting as fmt
 from .formatting import *
-from .claude_records import Git, Limits, Payload, Transcript
+from .claude_records import (CacheShares, Git, Limits, NO_CACHE_SHARES,
+                             Payload, Transcript)
 
 def project_name(git: Git, project_dir: str) -> str:
     """The project name: basename of the MAIN repo root inside a repo, and the
@@ -104,10 +105,19 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
     Neil's spec; this cell has now been turned round twice.  The order it
     replaces put the percentage first, on the argument that it is the figure
     the row is read for and the size its qualifier, and turned the prompt-cost
-    row round to match on the same day.  This order puts the size under 🧩's
+    row round to match on the same day.  This order put the size under 🧩's
     tokens two rows up — figure under figure, with the 🛫 rate between them
-    — and the percentage on the column's right edge, where 🎯's sits on the
-    row above.  The cost row was NOT turned back with it: it still reads
+    — and the percentage on the column's right edge, where 🎯's sat on the
+    row above.  Since the evening of 2026-09-16 the cell heads column 3 over
+    the two cache-share rows instead, and stacks with THEM: the size is
+    still first, and its unit lands on the column the 🎤 figures' ٪ ends on
+    below it — the first field is as wide as the share row's spaced mark,
+    🎤 and figure, less the 🧠's own width — and the percentage still ends
+    on the column's right edge, which is now the edge 🎮's figures end on;
+    the second field is whatever the column has past the first.  Both are
+    read from the share row's geometry rather than fixed, so the two edges
+    hold with or without the mark spacing and in either icon profile.  The
+    cost row was NOT turned back: it still reads
     "🧠+ 8.0٪ + 16k", the change in the level before the change in the size,
     and the two readouts now differ in order.  The argument for one order
     across both — a reader moving between them should not have to work out
@@ -134,10 +144,17 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
     """
     if ctx_pct is None:
         return ""
+    # fmt's bindings: set_mark_spacing rebinds MARK_SP and the grid after
+    # import.  The size ends where the share row's 🎤 figure ends, and the
+    # percentage where its 🎮 figure does.
+    turn_end = (vis_width(S_READ) + vis_width(E_TURN) + len(fmt.MARK_SP)
+                + SHARE_FIG_W)
+    size_w = turn_end - vis_width(S_CTX)
+    pct_w = fmt.RIGHT_GRID[2] - turn_end
     return "%s%s%s%s%s%s%s" % (
         S_CTX, mag_dim(ctx_tokens, MAG_TOK) + F_PNK,
-        pad_val(VAL_W, humanize(ctx_tokens)), R,
-        F_PNK, pad_val(VAL2_W, "%d%s" % (ctx_pct, E_PCT)), R)
+        pad_val(size_w, humanize(ctx_tokens)), R,
+        F_PNK, pad_val(pct_w, "%d%s" % (ctx_pct, E_PCT)), R)
 
 
 def render_cost(cost_usd: str) -> str:
@@ -153,6 +170,25 @@ def render_cost(cost_usd: str) -> str:
         return ""
     return "%s%s%s%s" % (S_COST, mag_dim(c, MAG_COST) + F_YEL,
                          pad_val(4, money_fig(c)), R)
+
+
+def render_model_cost(model: str, effort: str, cost_usd: str) -> str:
+    """The model and the cost side by side in one cell — "🤖O⁵🏃 💰115 ".
+
+    Column 2's first row since the evening of 2026-09-16, to Neil's spec.
+    Until then these were two rows of a column of their own, over an empty
+    third, beside the two-value column; now the two-value column holds them
+    on its first row and its own two cells drop a row each.  The model's
+    half is held at W_MOD past the icon whether or not an effort glyph is
+    drawn, so the 💰 does not shift with the effort; one space between,
+    so the glyph and the coin are not two emoji touching.  Either half
+    absent draws blank in its place, and both absent draws nothing.
+    """
+    mod = render_model(model, effort)
+    cost = render_cost(cost_usd)
+    if not mod and not cost:
+        return ""
+    return seg(vis_width(S_MOD) + W_MOD, mod) + " " + cost
 
 
 def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
@@ -277,6 +313,71 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
             DIM + colour if dim_session else colour),
         fig(E_ACCT, pct_v, tcol, LIM_ACCT_W, 2),
         rst)))
+
+
+def render_cache_share(emoji: str, turn: Optional[int], sess: Optional[int],
+                       colour: str = F_SHARE, dim_turn: bool = False,
+                       dim_sess: bool = False) -> str:
+    """One column-3 row: where a bill went, at two scopes.  "📖 🎤 61٪ 🎮 45٪".
+
+    The pair render_limit draws first -- 🎤 the turn just answered, 🎮 this
+    session -- ahead of the same kind of figure it draws there, a whole
+    percent right-aligned in a field its widest reading fills, with the
+    mark touching the figure and MARK_SP between them.  The reading is a
+    share of a BILL rather than of a window: what fraction of the money went
+    on re-reading the conversation (📖, the row `emoji` names) or on caching
+    what the turn added (📝).  See E_READ for why those two and why they
+    are shares of the cost, and turn_shares for the derivation.
+
+    Two scopes and not column 4's three, because the account has no bill on
+    this machine to take a share of; and no fourth field, because a share
+    has no horizon.  The column is therefore shorter than its neighbour and
+    stops where the transcript does.
+
+    "?" for a scope with no figure -- a turn with no cost to divide -- and
+    nothing at all when neither scope has one, which is a session with no
+    transcript: the row goes blank as render_limit's does without a
+    reading, and so does the 🧠 over both, which has no context to read.
+    The two rows close the column since the evening of 2026-09-16; they
+    headed it, over a reserved blank, for the day before that.
+
+    ONE COLOUR FOR BOTH ROWS, and brightness for what the column has to
+    say.  Column 4's two hues answer "which window is this?", a question 📖
+    and 📝 answer for themselves; the cost line paints this same pair one
+    colour, and a quantity should keep its ink across the readouts as it
+    keeps its glyph.  What varies is emphasis, and on the caller's word:
+    `dim_turn` and `dim_sess` dim a scope's figure on BOTH rows, decided off
+    that scope's 📖 alone against MAG_SHARE_READ (see cache_dims), so the
+    pair flips together and a bright 🎤 says one thing -- this prompt's
+    money went mostly on re-reading, and shrinking the context would pay.
+    A percentage with a ceiling would ordinarily be left alone (MAG_TOK's
+    note), and this one is not, because 100 is not the edge a reader holds
+    it against: what re-reading a large window costs is normally the
+    majority of the bill, so "high" here is well above the half and needs
+    saying.
+
+    💯 stands in for 100 in the three columns "99٪" fills, on the threshold
+    limit_cell and render_limit share, so the three readouts can never
+    disagree about what a full share looks like.  It is reachable here in a
+    way it is not on the limit rows: a turn whose only cost was re-reading
+    rounds to it.
+    """
+    if turn is None and sess is None:
+        return ""
+
+    def fig(mark: str, v: Optional[int], col: str) -> str:
+        if v is None:
+            return "%s%s%s%s%s" % (mark, fmt.MARK_SP, DIM + F_CRM,
+                                   pad_val(SHARE_FIG_W, "?"), R)
+        if v >= 99.5:
+            return "%s%s%s%s%s" % (mark, fmt.MARK_SP, col,
+                                   pad_val(SHARE_FIG_W, E_HUNDRED + E_PCT), R)
+        return "%s%s%s%s%s" % (mark, fmt.MARK_SP, col,
+                               pad_val(SHARE_FIG_W, pct(v)), R)
+
+    return "%s%s" % (emoji, " ".join((
+        fig(E_TURN, turn, DIM + colour if dim_turn else colour),
+        fig(E_SESSION, sess, DIM + colour if dim_sess else colour))))
 
 
 def render_diff(added: str, removed: str) -> str:
@@ -456,14 +557,19 @@ def render_date(now: Optional[float] = None) -> str:
 
 def render_elapsed(busy_s: float, start_s: float, turn_s: float = 0.0,
                    now: Optional[float] = None) -> str:
-    """The session's clock, in the four fields the rows above it use.
+    """The session's clock, in the four fields the two rows below it use.
+
+    It heads the column since the evening of 2026-09-16, to Neil's spec,
+    over the 🔋 and 🪫 rows it had closed since it was built; the fields
+    and the marks are unchanged, and everything below that says "above"
+    of the limit rows now means below.
 
     Three scope fields, then the whole.  🎤 is scoped: how long the turn those
     rows are reporting the cost of actually took, which is the one figure that
     lets "🎤 .82٪" be read as expensive or merely long.  👤 and 🤖 are
     positional — they split the age that Σ states, and there is no
     account-wide time to put under 💳.  Σ closes the row in the column 🔜
-    takes on the two rows above — the same kind of mark, one that says what
+    takes on the two rows below — the same kind of mark, one that says what
     the figure after it measures rather than naming a metric.
 
     That split stays exhaustive and stays worth its columns: 👤 is the part
@@ -476,10 +582,10 @@ def render_elapsed(busy_s: float, start_s: float, turn_s: float = 0.0,
     renders "6d" — a real loss of precision below ten, and the reason the
     argument is passed explicitly rather than inferred.  It is paid for
     twice over.  The field it buys is LIM_FIG_W, shared with the two limit
-    rows above, and those cannot go below four columns because a percentage
+    rows below, and those cannot go below four columns because a percentage
     spends three characters and a ٪; two digits and a unit fit that field
     with the unit landing under the ٪, which is the whole point of the
-    column.  And these three are context for the figures above them — "was
+    column.  And these three are context for the figures below them — "was
     that turn long?", "how much of the day was waiting?" — questions a
     rounded answer settles.
 
@@ -487,9 +593,9 @@ def render_elapsed(busy_s: float, start_s: float, turn_s: float = 0.0,
     scope field and can hold them, and because the session's own age is the one
     duration on the row that gets read as a fact in its own right rather than
     as scale for something else.  Its mark is padded to two columns by S_SUM
-    so it stacks on the 🔜 above it, and painted F_SUM — the grey that emoji
+    so it stacks over the 🔜 below it, and painted F_SUM — the grey that emoji
     paints itself — rather than the row's own colour, so the mark recedes and
-    the figure carries the row, which is what the two rows above already do.
+    the figure carries the row, which is what the two rows below already do.
 
     An absent turn blanks its whole field, mark included, rather than drawing
     a "0s" that reads as a turn which took no time.  👤 and 🤖 do draw their
@@ -693,7 +799,8 @@ def render_chat_rows(tr: Transcript, tail1: str, tail2: str,
 def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
                   cols: Optional[int], now: Optional[float] = None,
                   turn_s: float = 0.0, rules: bool = True,
-                  ctx_window: int = 0, rate: Optional[float] = None) -> str:
+                  ctx_window: int = 0, rate: Optional[float] = None,
+                  cache: CacheShares = NO_CACHE_SHARES) -> str:
     """The whole three-row readout, as one string ending in a newline.
 
     Line 3 reads as two halves.  Flush left: where the work is happening.
@@ -724,29 +831,34 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     # Both rows' 🎤 and 🎮 dim off the WEEKLY shares, so the pair flips
     # together.  See MAG_SHARE_TURN.
     dim_turn, dim_sess = share_dims(lim.weekly_turn, lim.weekly_share)
+    # Column 3's pair likewise: each scope off its own 📖, both rows
+    # together.  See MAG_SHARE_READ.
+    dim_rd_turn, dim_rd_sess = cache_dims(cache.turn_read, cache.sess_read)
     usage = grid_row((
         render_style(pay.output_style),
-        render_model(pay.model, pay.effort),
-        render_tokens(tr.tok_up, tr.tok_down),
-        render_limit(S_SESS, lim.session_pct, lim.session_share,
-                     lim.session_reset, lim.session_turn, F_LIM_SESS, True,
-                     now, dim_turn, dim_sess),
+        render_model_cost(pay.model, pay.effort, pay.cost_usd),
+        render_ctx(ctx_pct, tr.ctx_tokens),
+        render_elapsed(tr.busy_s, tr.start_s, turn_s, now),
         render_date(now),
     ), rule=rule)
     limits_row = grid_row((
         render_pr(pay.pr_number),
-        render_cost(pay.cost_usd),
-        render_rate_cache(rate, tr.cache_pct),
-        render_limit(S_WEEK, lim.weekly_pct, lim.weekly_share,
-                     lim.weekly_reset, lim.weekly_turn, F_LIM_WEEK, False,
+        render_tokens(tr.tok_up, tr.tok_down),
+        render_cache_share(S_READ, cache.turn_read, cache.sess_read,
+                           F_SHARE, dim_rd_turn, dim_rd_sess),
+        render_limit(S_SESS, lim.session_pct, lim.session_share,
+                     lim.session_reset, lim.session_turn, F_LIM_SESS, True,
                      now, dim_turn, dim_sess),
         render_time(now),
     ), rule=rule)
     right = grid_row((
         "",
-        "",
-        render_ctx(ctx_pct, tr.ctx_tokens),
-        render_elapsed(tr.busy_s, tr.start_s, turn_s, now),
+        render_rate_cache(rate, tr.cache_pct),
+        render_cache_share(S_WRITE, cache.turn_write, cache.sess_write,
+                           F_SHARE, dim_rd_turn, dim_rd_sess),
+        render_limit(S_WEEK, lim.weekly_pct, lim.weekly_share,
+                     lim.weekly_reset, lim.weekly_turn, F_LIM_WEEK, False,
+                     now, dim_turn, dim_sess),
         render_diff(pay.lines_added, pay.lines_removed),
     ), rule=rule)
 

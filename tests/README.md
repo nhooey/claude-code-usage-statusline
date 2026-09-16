@@ -299,6 +299,56 @@ takes the column to 29. The six `tight-*` cases cover it at three widths on
 two payloads; the default is the spacing, and `settings.json` asks for it by
 name.
 
+## Column 3 is where the money went
+
+Added 2026-09-16, and it moved 134 of the 135 status goldens — every row
+that draws the grid gained a cell between 🧩 and 🔋: `📖 🎤 34٪ 🎮 32٪` over
+`📝 🎤  7٪ 🎮  7٪` over a blank, the cache-read and cache-creation shares of
+the turn's cost and of the session's. The turn figure is the cost line's own
+📖 📝 for the same transcript (`01-baseline` reads `📖 34٪ 📝  7٪` on both
+readouts), and the session figure is `session_cache_shares`, summed before
+dividing — `tests/rate.py` pins both against hand-built turns.
+
+Two side effects in the goldens, neither a regression:
+
+* **The chat rows lost 20 columns** at every width, the column's 16 and a
+  `SEG_GAP`, so `01-baseline@196` cuts its question twenty characters
+  earlier and `@120` is down to the bare ellipsis it already showed at `@92`.
+* **`RULE_MIN` is 180**, not 160; 196 is still the one width in the corpus
+  that carries the rules, so no case changed which side of the threshold it
+  is on. `LINE3_RESERVED` is 129 with the spacing on and 123 without; the
+  fallback pwd budget followed it down to 36, which the fixture's
+  `~/src/statusline-fixture/deep/tree` still fits.
+
+Later the same day the figures gained a brightness rule — each scope's pair
+dim under a 📖 share of 67٪, `MAG_SHARE_READ` — and every golden with a
+transcript moved again by one `DIM` escape per figure. The corpus reads
+34٪/32٪ throughout, so no golden shows the bright state; `tests/rate.py` pins
+the rule and the pairing, and the number's provenance is in `cache_dims`.
+
+The one golden that did not move is `10-empty-payload@150`: no transcript,
+no rules at that width, and a row of blank cells right-aligned to the same
+edge is the same row however many cells it has.
+
+## Six columns back to five, the same evening
+
+The 2026-09-16 rearrangement moved every status golden again. The model and
+the cost went side by side on one row — `🤖O⁵🏃 💰115 `, the model held at
+`W_MOD` so the coin does not shift with the effort glyph — at the top of the
+two-value column, with 🧩 and 🛫 🎯 a row down each; their own column went.
+🧠 heads the share column now, `🧠   115k    11٪` over 📖 and 📝, its `k`
+under the 🎤 figures' `٪` and its `٪` on the column's edge, both read from
+the share row's geometry (`tests/rate.py` pins the two edges, spaced and
+tight). And ⌛ heads the limits column over 🔋 and 🪫.
+
+In the goldens: the chat rows got ten columns back at every width, and
+`RULE_MIN` is 170, `LINE3_RESERVED` 119 with the spacing and 113 without —
+the share column's twenty less the ten the merge returned. 196 is still the
+only width in the corpus that carries the rules. `03-no-transcript` shows
+the first row with the share column blank beside a drawn 🤖 💰, since 🧠
+draws nothing without a context reading, and `10-empty-payload@150` moved
+this time: the blank row is one cell shorter.
+
 **The cost suite followed on 2026-08-27, and grew by seven.** The flag reaches
 🧩, 🎯 and the 💳 inside a totals-row limit cell — the other five cells hold
 a `+` or the blank the totals row stacks under it, and closing those would

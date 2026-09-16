@@ -14,9 +14,9 @@ footer).
 Three rows, redrawn continuously under the prompt:
 
 ```
-👤💬 Why does the elapsed row report two durations when the session age is one number, and which…  | 🤖O⁵🏃  | 🧩▴2.7M ▾841k  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The session age is wall cl…  | 💰115   | 🛫200/s 🎯98٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                                       |         | 🧠 115k   11٪  | ⌛ 🎤   5m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the session age is o…  | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🎤   5m 👤   5h 🤖  4h Σ  9.3h  | 📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The se…  | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                   | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
 Two more, printed by the `Stop` hook when a prompt finishes — what that one
@@ -43,8 +43,10 @@ What you can read off it at a glance:
 * 🧠 how full the context window is
 * 🔋 the 5-hour plan window and 🪫 the weekly one, each at three scopes —
   🎤 this turn, 🎮 this session, 💳 the whole account — and 🔜 when it resets
-* 📖 / 📝 on the cost line: whether this prompt's money went on re-reading the
-  conversation (which `/compact` reclaims) or on new material (which it does not)
+* 📖 / 📝 where the money went: the share of a bill spent re-reading the
+  conversation (which `/compact` reclaims) against the share spent caching new
+  material (which it does not) — on the status line at two scopes, 🎤 this
+  turn and 🎮 this session; on the cost line for the prompt just answered
 * every figure counts what the session's subagents, forks and workflow agents
   billed, priced at each one's own model; 🧠 alone is the main thread's,
   because it is read to decide when *this* window needs compacting. Agent

@@ -136,6 +136,30 @@ class Limits(NamedTuple):
 NO_LIMITS = Limits("", "", "", "", "", "")
 
 
+class CacheShares(NamedTuple):
+    """Where the money went, as whole percent of a bill: 📖 the part spent
+    re-reading the conversation (cache_read) and 📝 the part spent caching
+    what was added (cache_creation) -- turn_shares' pair, at two scopes.
+
+    `turn_*` is the prompt just answered, the same turn _with_shares picks
+    for column 4's 🎤, and `sess_*` is every turn of the session summed
+    before dividing, which is the totals-row 💰 of the cost line taken
+    apart.  None is a figure that could not be derived -- no cost to take a
+    share of -- and draws "?"; all four None is a session with no transcript
+    to read, and the column is not drawn at all.  Integers, not strings,
+    because unlike Limits' percentages these never arrive from a source in a
+    precision of their own: they are rounded here, once, to the whole point
+    the three-column field holds.
+    """
+    turn_read: Optional[int] = None
+    turn_write: Optional[int] = None
+    sess_read: Optional[int] = None
+    sess_write: Optional[int] = None
+
+
+NO_CACHE_SHARES = CacheShares()
+
+
 class Turn(NamedTuple):
     """One prompt the user typed, and everything billed while answering it.
 

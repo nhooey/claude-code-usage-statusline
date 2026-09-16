@@ -96,16 +96,17 @@ slope of the panel's last sixteen token readings at its five-second tick, and
 is the one figure on the row that comes from the panel rather than the file.
 That reading is the last request's input plus every output, so it climbs by
 a whole context at each request and rests while a tool runs: a sign of life
-and of pace, not a generation rate. The status line's own 🛫, in column 3
+and of pace, not a generation rate. The status line's own 🛫, in column 2
 beside 🎯, is the same figure for the main thread, sampled by the program
-itself — see [Columns 2 and 3](layout.md#columns-2-and-3). ⌛ 🧩 🛫 🧠 💰
+itself — see [Column 2](layout.md#column-2). ⌛ 🧩 🛫 🧠 💰
 dim under the status line's own magnitude cuts — ten minutes, 100k tokens,
 1k/s, a dollar — so the heavy agents are the bright rows of the panel; see
 [Brightness as magnitude](layout.md#brightness-as-magnitude-everywhere-else).
 
 `--no-mark-spacing` works in every mode. On the status line
 it closes the blank between each column-4 mark and its value, narrowing that
-column from 33 to 29. On the cost line it reaches 🧩 and 🎯 only, for two
+column from 33 to 29, and the same blank in column 3's two fields, 16 to 14.
+On the cost line it reaches 🧩 and 🎯 only, for two
 columns: those are the two cells with nothing in the column after the mark,
 where 🧠 💰 🔋 🪫 and ⌛🤖 hold a `+` on the per-prompt row and the blank
 the totals row stacks under it. That column is content, not spacing, and
@@ -113,10 +114,10 @@ closing it would unstack the two rows. `--mark-spacing` is the default and is
 accepted so a settings file can say which one it means.
 
 `--no-column-rules` is `--mode status` only, and drops the faint `|` borders
-between the five right-hand columns. They are painted into the gaps the grid
+between the six right-hand columns. They are painted into the gaps the grid
 already spends, so this changes the ink and nothing else — no column moves
 either way. `--column-rules` is the default and is accepted so a settings file
-can name what it wants. Note that the rules are ALREADY off below 160 columns,
+can name what it wants. Note that the rules are ALREADY off below 180 columns,
 at an unknown width, and under `--no-mark-spacing`; the flag turns them off at
 the widths that would otherwise carry them. See
 [Rules between the columns](layout.md#rules-between-the-columns).

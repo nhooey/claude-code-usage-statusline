@@ -38,9 +38,9 @@ The five right-hand columns are divided by a faint vertical rule at wide
 enough widths:
 
 ```
-👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃  | 🧩▴ 23M ▾837k  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 📅  2026-08-16
-🤖💬 Two separate things, and the second one is …  | 💰115   | 🛫200/s 🎯98٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 🕐    02:23:20
-📦repo  📁~/Workbench/…/marbled-godwit             |         | 🧠 115k   11٪  | ⌛ 🎤   3m 👤   5h 🤖  4h Σ  9.3h  | 💾 +3.4k - 214
+👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🎤   3m 👤   5h 🤖  4h Σ  9.3h  | 📅  2026-08-16
+🤖💬 Two separate things, and the second one is …  | 🧩▴ 23M ▾837k  | 📖 🎤 61٪ 🎮 45٪  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo  📁~/Workbench/…/marbled-godwit             | 🛫200/s 🎯98٪  | 📝 🎤 15٪ 🎮 20٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
 They are **on by default** and off with `--no-column-rules`.
@@ -61,7 +61,7 @@ of air before an emoji looks like two before a digit.
 gap next to `💰115` and an expanse next to column 4's thirty-three, and white
 space of a width that changes with its neighbours has to be re-measured on
 every row before it reads as a division. A stroke on a fixed column does not.
-The grid was always five columns; this is the first thing that says so.
+The grid was always a grid — five columns then, six for one day, and five again since the evening of 2026-09-16; this is the first thing that says so.
 
 **ASCII `|`, not `│` (U+2502).** The box-drawing character is the better glyph
 by a distance — it is designed to join vertically, so a stack of three reads as
@@ -88,7 +88,7 @@ enough:
 | Condition | Why |
 | --- | --- |
 | `--no-mark-spacing` | The tight layout exists for terminals that cannot afford the readout at its designed width, and it pays for that by closing the blank inside every column-4 field. A layout just asked to give up space inside its own fields is not one to hand chrome to. |
-| width below `RULE_MIN` (160) | Line 3 owes 113 columns before a single name is drawn — 95 of grid, the right margin, the gap, and the where-group's chrome. At 160 the project, path and branch share the 47 left, against the 22 `allocate_left` cuts them to at the floor. They are being trimmed there already; the threshold is not about avoiding the trim but about there being enough left after it. Below, the row closes on that floor. |
+| width below `RULE_MIN` (170) | Line 3 owes 123 columns before a single name is drawn — 105 of grid, the right margin, the gap, and the where-group's chrome. At 170 the project, path and branch share the 47 left, against the 22 `allocate_left` cuts them to at the floor. They are being trimmed there already; the threshold is not about avoiding the trim but about there being enough left after it. Below, the row closes on that floor. |
 | width unknown | The fallback path flows line 3 leftwards with only `MIN_GAP` and estimates the pwd rather than fitting it — the shape the readout takes when it has run out of room. Guessing generous costs a rule drawn into a row that is already overrunning. |
 | `--no-column-rules` | Asked for. `--column-rules` is the default and is accepted so a settings file can name what it wants. |
 
@@ -115,32 +115,46 @@ There is deliberately **no rule between the chat text and column 1**. That
 boundary is a computed pad, not a fixed gap, and a rule there would have to be
 paid for in width rather than found inside it.
 
-## Columns 2 and 3
+## Column 2
 
 ```
-           col 2       col 3
-  row 1    🤖 model    🧩 tokens
-  row 2    💰 cost     🛫 rate 🎯cache
-  row 3                🧠 context
+           col 2
+  row 1    🤖 model 💰 cost
+  row 2    🧩 tokens
+  row 3    🛫 rate 🎯cache
 ```
 
-Column 3 is three two-value metrics in one shape — a mark, a five-column
-first field, a six-column second — so `▴`'s figure sits over the token rate
-and over the context size, and `▾`'s over the 🎯 and the context percentage.
-🧠 reads size first, then percentage, so the size stacks under 🧩's tokens
-and the percentage ends the column under 🎯's; the cost line's 🧠 cell keeps
-the other order, change in level then change in size, and the two readouts
-differ there. The size dims under a hundred thousand tokens like every count
-in the column and the percentage never dims — see [Brightness as
-magnitude](#brightness-as-magnitude-everywhere-else). Column 2 is two short
-cells over an empty one: 🤖 with the model's initial, its major version in
-superscript and the effort's glyph against it — `O⁵🏃`, `H⁴🔥`, the cell the
-agent rows have — and 💰 with the cost as three characters and a unit column,
-`💰115 `, `💰1.2k`. The money holds humanize's blank unit column under a
-thousand dollars, so its digits
-stack under digits and its `k`, when it comes, lands where every other `k` on
-the readout does. The cost line keeps `money_fmt`'s four digits, `12.3`,
-because there a decimal point has a column reserved to stack in.
+The session's own figures: what it is running and what it has cost, over
+two two-value metrics in one shape — a mark, a five-column first field, a
+six-column second — so `▴`'s figure sits over the token rate and `▾`'s over
+the 🎯. The first row is two short cells side by side: 🤖 with the model's
+initial, its major version in superscript and the effort's glyph against it
+— `O⁵🏃`, `H⁴🔥`, the cell the agent rows have — held at `W_MOD` past the
+icon whether or not the glyph is drawn, so the coin does not move with the
+effort; then one space; then 💰 with the cost as three characters and a unit
+column, `💰115 `, `💰1.2k`. The money holds humanize's blank unit column
+under a thousand dollars, so its digits stack under digits and its `k`, when
+it comes, lands where every other `k` on the readout does. The cost line
+keeps `money_fmt`'s four digits, `12.3`, because there a decimal point has a
+column reserved to stack in. With the icons' iTerm pad the pair is one
+column wider than the two-value rows and the column takes the wider; without
+it the three rows are exactly one width.
+
+**Rearranged again on the evening of 2026-09-16**, from six columns to
+five. Until then the model and the cost were two rows of a column of their
+own, over an empty third, and this column read 🧩 🛫 🧠 top to bottom. They
+went side by side at the top of this column, the tokens and the rate each
+dropped a row under them, and their column went with them — seven of cell
+and a gap, one back for the wider row, ten columns off the grid, which
+`RULE_MIN` and `LINE3_RESERVED` follow down. 🧠 left for the top of [column
+3](#column-3-is-the-context-over-where-the-money-went), over the two
+cache-share rows, and the ⌛ row went to the head of [column
+4](#column-4-is-a-grid-of-its-own), over the two limit rows. What it costs
+is the stacking the 2026-09-13 arrangement bought the context row, its size
+under 🧩's tokens; what it buys is a readout with no reserved cells left —
+every column three rows deep, every row full, and the first row reading what
+the session is, how full it is and how long it has run. The rate still sits
+under the total it is the slope of.
 
 **Rearranged 2026-09-13**, in steps over one evening. Until then column 2
 was the two-value column with the model and its 📏 window on its third row,
@@ -157,7 +171,8 @@ cell on a fixed mark, a picture and a word, and the picture alone now does
 the job, at the cost of the word that told 🚶 from 🔥. Then the two columns
 changed places — the short cells first, the two-value column against the
 limits — and last the model and the cost swapped rows, configuration above
-spend. The third row of column 2 is empty, and reserved, for now.
+spend. The third row of that column was empty, and reserved, until the
+rearrangement above spent it.
 
 **🛫 is tokens per second**, and on this row it is the program's own reading.
 The agent panel hands its rows sixteen samples of a token count at a
@@ -181,25 +196,128 @@ subscript digits `--subscript-decimals` draws, which both terminals advanced
 one column on 2026-09-08. Haiku's ⁴ is the Ambiguous one in live use. Not yet
 probed; see the TODO in [Development](development.md).
 
+## Column 3 is the context over where the money went
+
+```
+🧠   115k    11٪
+📖 🎤 61٪ 🎮 45٪
+📝 🎤 15٪ 🎮 20٪
+```
+
+**🧠 heads it**, since the evening of 2026-09-16, and stacks with the two
+rows under it: size first, then percentage, and each field is read from the
+share rows' geometry rather than fixed — the size ends on the column the
+🎤 figures' `٪` ends on, so its `k` lands under theirs, and the percentage
+ends on the column's right edge, where the 🎮 figures end. Both edges hold
+with or without the mark spacing and in either icon profile. The cost
+line's 🧠 cell keeps the other order, change in level then change in size,
+and the two readouts differ there. The size dims under a hundred thousand
+tokens like every count on the readout and the percentage never dims — see
+[Brightness as magnitude](#brightness-as-magnitude-everywhere-else). Until
+that evening the cell closed column 2, its size under 🧩's tokens.
+
+**The two share rows** were added that morning, to the left of the limits
+and in their shape, over an empty third row that 🧠 has since taken:
+
+📖 is the share of a bill that went on re-reading the conversation so far —
+`cache_read`, the one component `/compact` reclaims — and 📝 the share that
+went on caching what was added — `cache_creation`, which it does not. The
+cost line has printed this pair for the prompt just answered since
+2026-09-03, in the half-cell its 🎤 row had spare; see [Where one prompt's
+money went](#where-one-prompts-money-went) for what the pair is for and why
+it is a share of the cost rather than of a window. What the status line adds
+is the **second scope**: 🎤 is that same turn, off `turn_shares` and — like
+column 4's 🎤 — the same turn `_with_shares` picks, so the two readouts can
+never describe different prompts; 🎮 is the session, every turn's dollars
+summed *before* dividing (`session_cache_shares`), so a hundred-token turn
+does not weigh as much as a hundred-thousand-token one. The cost line's
+totals row could not carry that figure, because the half-cell it would go in
+is spent on 💳.
+
+**Two fields, not four.** There is no account-wide bill on this machine to
+take a share of, and a share has no horizon to count down to, so the column
+stops at the session. It is shaped like its neighbour on purpose — mark,
+`MARK_SP`, a whole percent right-aligned in a field its widest reading fills
+— and sits to the left of it so the 🎤 🎮 sequence runs once across both
+columns: a reader who has learned "narrow, then wide" on column 4 reads
+column 3 without being taught, and meets 💳 and 🔜 as additions rather than
+as a second arrangement.
+
+**Three columns per figure, not four.** `SHARE_FIG_W` is 3 where `LIM_FIG_W`
+is 4, because the fourth column on the limit rows exists for `.01٪`, a
+sub-1 reading these shares never take: a fraction of a percent of one
+prompt's cost is not a figure anyone acts on, and rounding it to `0٪` says the
+same thing. `99٪` is the widest that is spelled; at or over 99.5 the figure
+is drawn 💯 in the same three, on the threshold `limit_cell` and
+`render_limit` share, so no readout can disagree about what a full share
+looks like. It is reachable here in a way it is not on the limit rows: a turn
+whose only cost was re-reading rounds to it.
+
+**One colour, and brightness for the rest.** Both rows paint their figures
+`F_SHARE`, the amber the cost line's `share_half` already uses for this pair,
+because a quantity should keep its ink across the readouts as it keeps its
+glyph. Not one hue per row as the limits have: their hue answers *which window
+is this?*, a question 📖 and 📝 answer by being different pictures. What the
+column has to say inside itself rides on brightness, as on the limit rows:
+each scope's pair — 📖 and 📝 together — is dim when that scope's 📖 share is
+under `MAG_SHARE_READ` (67٪) and full strength at or over it. Off 📖 alone,
+because it is the figure the column exists for, and as a pair, so two figures
+about one scope never sit on different sides of a cut. A bright 🎤 therefore
+says one thing: two dollars in three of this prompt went on re-reading, and
+shrinking the context would pay.
+
+A percentage would ordinarily be left alone by the magnitude rule — 100 is
+its edge, and the reader knows it. This one is not, because 100 is not the
+edge anyone holds it against: measured on 2026-09-16 over 275 sessions and
+6,002 turns on the machine this was written on, the *median* turn spends 73٪
+of its bill re-reading and the median session 56٪. Re-reading is normally the
+majority of a prompt's cost, so "high" sits well above the half and has to be
+said. Two thirds lights 60٪ of turns and 26٪ of sessions — a bright 🎤 and a
+dim one are both ordinary, and a bright 🎮 is news — and divides by what
+matters: turns at or over it sat on a median context of 311k, turns under it
+on 137k. The half would have lit three quarters of everything; three quarters
+would have lit one session in nine. One number for both scopes, unlike the
+limit rows' two cuts, because there the turn and the session are different
+fractions of a week and here each is a share of its own bill. See
+`cache_dims`.
+
+**What is drawn when there is nothing.** A scope with no figure — a turn with
+no cost to divide — draws `?` as column 4 does; a session with no transcript
+draws nothing on either row, so the column goes blank rather than printing
+two question marks about a bill that does not exist — and 🧠 goes with it,
+since there is no context to read either.
+
+**What it cost.** Sixteen columns of cell and four of gap, so line 3 owed 20
+more before a name is drawn: `LINE3_RESERVED` went to 129 with the spacing on
+and 123 without (`--no-mark-spacing` closes this column's two fields with
+column 4's four), and `RULE_MIN` moved from 160 to 180 by exactly the
+column's width, so the 47 columns it leaves the names at the threshold are
+the 47 it left them before. The evening's rearrangement gave ten of those
+back — 119 and 113, and 170 — by the same arithmetic.
+
 ## Column 4 is a grid of its own
 
-The three rows on the right of the status line share a four-field sub-grid,
-33 columns wide, and it is the widest thing on the readout:
+The three rows beside the stamp share a four-field sub-grid, 33 columns
+wide, and it is the widest thing on the readout:
 
 ```
+⌛ 🎤   5m 👤   6d 🤖  6h Σ  5.8d
 🔋 🎤 .98٪ 🎮 2.5٪ 💳 44٪ 🔜 2.4h
 🪫 🎤 .09٪ 🎮 2.6٪ 💳 51٪ 🔜 4.6d
-⌛ 🎤   5m 👤   6d 🤖  6h Σ  5.8d
 ```
+
+The ⌛ row heads it since the evening of 2026-09-16; it closed the column
+until then, and the prose below that has the limit rows "above" it was
+written that way round.
 
 `--no-mark-spacing` closes the blank after every mark, which is four columns —
 one per field — and leaves the widest reading in each field touching the mark
 that labels it:
 
 ```
+⌛ 🎤  5m 👤  6d 🤖 6h Σ 5.8d
 🔋 🎤.98٪ 🎮2.5٪ 💳44٪ 🔜2.4h
 🪫 🎤.09٪ 🎮2.6٪ 💳51٪ 🔜4.6d
-⌛ 🎤  5m 👤  6d 🤖 6h Σ 5.8d
 ```
 
 The switch is a literal space and not a wider field, which is the other way to
@@ -354,7 +472,7 @@ cut for the same turn, so it is never consulted: the pair flips together, off
 the week alone (`share_dims`). A share that could not be derived draws `?`
 and was dim already.
 
-**What it does not touch.** The limit percentages themselves; 🎯, which has a rule of its own (below); 🧠's percentage, whose window is its ceiling — so `🧠 115k   11٪`
+**What it does not touch.** The limit percentages themselves; 🎯, which has a rule of its own (below); column 3's shares, which take a cut of their own kind for a reason of their own — see [Column 3](#column-3-is-the-context-over-where-the-money-went); 🧠's percentage, whose window is its ceiling — so `🧠   115k    11٪`
 of a 1M window reads bright-dim and says exactly that, a lot of context and a
 small part of the room; the 🔜 countdown, which `reset_dim` already dims the
 *other* way, since for a time-until it is the small figure that matters (the
@@ -455,10 +573,10 @@ where a window ends.
 Nothing in the cost corpus went near 99.5, which is why the clamp sat there
 being wrong without a failing case. `plan-full-01` is that case now.
 
-**What it cost.** Column 4 went from 23 columns to 33, so the left half of
-line 3 loses 10 — `LINE3_RESERVED` is 109 with the spacing on and 105 with it
-off, and it is measured rather than estimated, so it has to be re-measured
-whenever the column moves.
+**What it cost.** The limits column went from 23 columns to 33, so the left half of
+line 3 lost 10 — `LINE3_RESERVED` was 109 with the spacing on and 105 with it
+off, until the share column took 20 more and the evening's rearrangement gave ten back; it is measured rather than estimated, so it
+has to be re-measured whenever a column moves.
 
 The ⌛ row's other two scope fields stay positional rather than scoped. 👤 and
 🤖 split the age that Σ states, and there is no account-wide time to put under
@@ -478,6 +596,11 @@ went:
 🔋  1.27٪ 💳 78٪          the totals row underneath, unchanged
 🪫  0.18٪ 💳 16٪
 ```
+
+Since 2026-09-16 the status line prints the same pair in [column
+3](#column-3-is-the-context-over-where-the-money-went), for this turn and for the session —
+the scope the totals row here cannot carry, because that half of its cell is
+💳's.
 
 **These are shares of the turn, not of the window**, even though the glyph
 that opens the cell is a window's. That is the only form the field can hold:

@@ -620,12 +620,18 @@ def stored_ctx_window(session_id: str) -> int:
 
 def _with_shares(lim: Limits, transcript: str,
                  agents: Optional[Sequence[AgentRec]] = None
-                 ) -> Tuple[Limits, float]:
+                 ) -> Tuple[Limits, float, CacheShares]:
     """Attach how much of each window this session, and its last turn, used.
 
     Returns the turn's wall-clock seconds alongside, because ⌛'s new 🎤
     field needs exactly the turn this picked and reading the transcript a
     second time to find it again would be both slower and free to disagree.
+    And, since 2026-09-16, the 📖 📝 shares of column 3 -- the same
+    turn's, and the session's -- off the same read, for the same reason.
+    Those need no plan reading and no calibration, only the transcript, so
+    they are derived before the limits are looked at and a session with no
+    usable window still gets its column; the limits' early return is
+    below them, not above.
 
     The same derivation the cost line's totals row uses — session_shares over
     this transcript's turns, bounded by the window and divided by
@@ -676,26 +682,35 @@ def _with_shares(lim: Limits, transcript: str,
     happened was a compaction or a batch drained without billing.
     """
     if not transcript or not os.path.isfile(transcript):
-        return lim, 0.0
-    if not lim.session_pct and not lim.weekly_pct:
-        return lim, 0.0
+        return lim, 0.0, NO_CACHE_SHARES
     try:
         turns = read_turns(transcript, agents)
-        calib = calibration()
-        sh = session_shares(turns, calib)
         prompts = [t for t in turns if t.calls and not t.compact
                    and not t.agent]
         last = prompts[-1] if prompts else None
+        cache = NO_CACHE_SHARES
+        if turns:
+            cache = CacheShares(*(turn_shares(last) if last is not None
+                                  else (None, None)),
+                                *session_cache_shares(turns))
+    except Exception:
+        return lim, 0.0, NO_CACHE_SHARES
+    turn_s = last.dur_s if last is not None else 0.0
+    if not lim.session_pct and not lim.weekly_pct:
+        return lim, turn_s, cache
+    try:
+        calib = calibration()
+        sh = session_shares(turns, calib)
         tn = {"sess": None, "week": None}
         if last is not None:
             tn = window_shares(last, calib)
     except Exception:
-        return lim, 0.0
+        return lim, turn_s, cache
     return (lim._replace(session_share=_pct_str(sh["sess"]),
                          weekly_share=_pct_str(sh["week"]),
                          session_turn=_pct_str(tn["sess"]),
                          weekly_turn=_pct_str(tn["week"])),
-            last.dur_s if last is not None else 0.0)
+            turn_s, cache)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -808,6 +823,32 @@ def turn_shares(t: Turn) -> Tuple[Optional[int], Optional[int]]:
         return None, None
     return (int(round(100 * t.usd_cr / c)),
             int(round(100 * t.usd_cw / c)))
+
+
+def session_cache_shares(turns: Sequence[Turn]
+                         ) -> Tuple[Optional[int], Optional[int]]:
+    """turn_shares over the whole session: 📖 and 📝 as shares of every
+    dollar the session has spent, for the status line's 🎮 fields.
+
+    Summed BEFORE dividing, not an average of the per-turn shares, for the
+    reason cost_totals_group recomputes the cache rate that way: an average
+    would weight a hundred-token turn like a hundred-thousand-token one, and
+    the question this answers -- of what this sitting has cost, how much was
+    the transcript charging for still being there -- is a question about
+    dollars, not about turns.  Every turn, compactions and the late-agents
+    row included, because the denominator is the same sum the cost line's
+    totals row prints beside 💰, and a share of a figure the reader can see
+    should be a share of exactly that figure.  Not bounded by any window:
+    the plan windows are column 4's business, and this column is about the
+    session's own bill, however old the session is.
+    """
+    c = sum(turn_cost(t) for t in turns)
+    if c <= 0:
+        return None, None
+    return (int(round(100 * sum(t.usd_cr for t in turns) / c)),
+            int(round(100 * sum(t.usd_cw for t in turns) / c)))
+
+
 def window_for(turns: Sequence[Turn], session_id: str = "") -> int:
     """The context window in force: what the status line published, else a guess.
 
@@ -1549,6 +1590,11 @@ def selftest() -> int:
 
     rows = [
         ("rate-cache", render_rate_cache(138.0, 98)),
+        # Column 3, both shapes a field can take: a spelled share and the
+        # 💯 that stands in for a full one.  The glyph is two columns in a
+        # field of three, so a miscount here shows as the 🎮 after it
+        # drifting a column.
+        ("cache-share", render_cache_share(S_READ, 100, 34)),
         ("limit-session", render_limit(S_SESS, "38", "5", "", "0.4")),
         ("limit-weekly", render_limit(S_WEEK, "84", "2", "", "0.05",
                                       F_LIM_WEEK)),
@@ -1564,11 +1610,18 @@ def selftest() -> int:
         # session starts and the state in which the clock used to wander.
         ("clock-alone", pair("", render_time(), fmt.RIGHT_GRID[-1])),
         ("model-effort", render_model("Opus 5 (1M context)", "high")),
+        # The two side by side, as column 2's first row draws them: the
+        # model's half is held to width whether or not the glyph is there,
+        # and a miscount of the glyph shows as the 💰 drifting.
+        ("model-cost", render_model_cost("Opus 5 (1M context)", "high",
+                                         "115.2")),
+        ("model-cost-plain", render_model_cost("Sonnet 4.6", "", "1234.5")),
         ("diff", render_diff("302", "70")),
         ("tokens", render_tokens(9900000, 460000)),
+        ("context", render_ctx(11, 115000)),
         ("mixed", grid_row((render_style("explanatory"),
-                            render_tokens(9900000, 460000),
-                            render_cost("115.2"),
+                            render_model_cost("Opus 5", "high", "115.2"),
+                            render_cache_share(S_WRITE, 7, 61),
                             render_limit(S_SESS, "38", "5", "", "0.4")))),
         ("cost-row", cost_group(
             # dctx explicitly: the specimen is built positionally, so a new
@@ -1977,7 +2030,7 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     seed_limits_snapshot(base_limits, prepared.reading)
     # Session/turn shares still require the one transcript scan performed
     # above; rendering itself receives only the prepared snapshot.
-    lim, turn_s = _with_shares(base_limits, pay.transcript, agents)
+    lim, turn_s, cache = _with_shares(base_limits, pay.transcript, agents)
     cols_s = _flag(argv, "--cols")
     # "--cols 0" means "pretend the width is unknown", which is the only way to
     # exercise the fallback layout deterministically from a test.
@@ -1989,7 +2042,8 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
     rate = session_rate(pay.session_id, tokens, frozen_now())
     output = render_status(pay, tr, git, lim, cols, frozen_now(), turn_s,
-                           "--no-column-rules" not in argv, ctx_window, rate)
+                           "--no-column-rules" not in argv, ctx_window, rate,
+                           cache)
     account_data = prepared.reading.get("account")
     has_account = (isinstance(account_data, dict) and
                    any(account_data.get(key) is not None
@@ -2150,7 +2204,8 @@ options (all modes):
                      the terminal in use.
   --no-mark-spacing  close the blank between a mark and its value (🎤 .98٪
                      becomes 🎤.98٪).  Status: all four column-4 fields, so
-                     the column narrows from 33 to 29.  Cost: 🧩, 🎯 and the
+                     the column narrows from 33 to 29, and column 3's two,
+                     16 to 14.  Cost: 🧩, 🎯 and the
                      💳 inside a totals-row limit cell -- the marks with
                      nothing in that column.  The other five hold a "+" or the
                      blank the totals row stacks under it, and closing those
@@ -2180,7 +2235,7 @@ options (--mode status):
                      They take no width either way, so this changes nothing
                      but the ink.  --column-rules is the default and is
                      accepted so a settings file can say which it wants.
-                     Note the rules are ALREADY off below 160 columns, at an
+                     Note the rules are ALREADY off below 180 columns, at an
                      unknown width, and under --no-mark-spacing; this switches
                      them off at the widths that would otherwise carry them.
 

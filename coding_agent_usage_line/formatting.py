@@ -186,7 +186,8 @@ E_WEEK = "🪫"         # weekly window consumed — a drained battery under
 # just answered consumed, what this session has consumed, what the account
 # has.  Each MARKS a figure rather than naming a metric, so each is emitted
 # bare and lets its field's padding supply the column of air, exactly as
-# 🔜 and Σ do on the same rows.
+# 🔜 and Σ do on the same rows.  Column 3 takes the first two of them, since
+# 2026-09-16, for the same pair of scopes on a different bill -- see E_READ.
 #
 # The first two are the cost line's own row marks rather than new ones:
 # E_ROW_PROMPT and E_ROW_TOTAL below ARE these.  One quantity, one glyph,
@@ -301,6 +302,21 @@ E_WRITE = "📝"         # same denominator, the other component:
                        #
                        # U+1F4DD, Unicode 6.0, single codepoint,
                        # Emoji_Presentation=Yes, EAW W, inside EAW_WIDE.
+                       #
+                       # BOTH HEAD A STATUS-LINE ROW AS WELL, since
+                       # 2026-09-16: column 3, to the left of the limits,
+                       # is the pair read at two scopes -- 🎤 the turn just
+                       # answered, 🎮 the session summed -- in the shape of
+                       # the column beside it, so the eye that has learned
+                       # "🎤 then 🎮, narrow then wide" on column 4 reads
+                       # column 3 without being taught.  The cost line
+                       # carried the turn's pair alone, in a half-cell it
+                       # had spare; the session's had nowhere to go there,
+                       # because its totals row spends that half on 💳.
+                       # The status line is where the session figure lives,
+                       # and it is the one that says whether this SITTING,
+                       # not this prompt, is paying to re-read itself.  See
+                       # render_cache_share.
 
 E_COSTLINE = "📊"      # prefix of the prompt-cost row
 
@@ -443,19 +459,29 @@ B_DRK = "\033[48;2;12;14;18m"              # near-black background, chat rows
 # is wanted back on a channel of its own.
 F_LIM_SESS = F_GRN                         # the 🔋 5-hour row
 F_LIM_WEEK = F_RED                         # the 🪫 weekly row
+# Column 3's 📖 and 📝 rows, ONE colour for the pair: the cost line's
+# share_half paints these same two figures amber and a quantity keeps its
+# ink across the readouts as it keeps its glyph.  Not one hue per row as the
+# limits have, because the limit rows' hue answers a question -- which
+# window is this? -- that 📖 and 📝 answer by being different pictures; a
+# second hue would be a second channel saying what the mark already says.
+# What the column distinguishes inside itself rides on brightness, as the
+# limit rows' does: see MAG_SHARE_READ.
+F_SHARE = F_AMB
 
-# Σ, and Σ only — the ⌛ row's mark, in the colour the 🔜 above it paints
+# Σ, and Σ only — the ⌛ row's mark, in the colour the 🔜 below it paints
 # itself.  MEASURED, not matched by eye: Apple Color Emoji stores 🔜 as a PNG
 # in its sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
 # every strike from 20ppem to 160 — a flat neutral grey, no hue at all, which
 # is not what an emoji named SOON looks like it should be.  L* 32.3.
 #
-# It is the mark that takes this and not the figure.  On the two rows above,
+# It is the mark that takes this and not the figure.  On the two limit rows,
 # the countdown's figure carries the row's colour and 🔜 paints itself this
 # grey; the ⌛ row painted BOTH halves F_PRW and was the one row where the mark
 # competed with what it labels.  Now all three read the same way down the
-# column — a receding mark, a figure that carries the row — and Σ stacks under
-# 🔜 in ink as well as in column.
+# column — a receding mark, a figure that carries the row — and Σ stacks with
+# 🔜 in ink as well as in column.  (The ⌛ row closed the column when this
+# was written and has headed it since the evening of 2026-09-16.)
 #
 # It is dim on purpose and it is dim in fact: 2.2:1 against the chat rows'
 # background, which is under every legibility threshold there is.  That is the
@@ -518,14 +544,25 @@ MARK_SP = " "          # what sits between a column-4 mark and its value.
                        # Read at render time, so set_mark_spacing() can move
                        # it after import — see the four constants it drags
                        # along.
+COL3_TIGHT_W = 14      # column 3 with MARK_SP empty: a row mark and its
+                       # space, then 🎤 and 🎮 each ahead of SHARE_FIG_W,
+                       # divided by one space.  Each of its two fields grows
+                       # by len(MARK_SP).
 COL4_TIGHT_W = 29      # column 4 with MARK_SP empty; each of its four fields
-                       # grows by len(MARK_SP)
-LINE3_TIGHT = 105      # LINE3_RESERVED at COL4_TIGHT_W, measured
-LINE3_RESERVED = 105   # columns the non-pwd segments of line 3 occupy.  It
-                       # was 110 while column 4 was 34 wide and is measured,
-                       # not estimated: shrink that column and this follows it
-                       # down, or the pwd is held five columns shorter than the
-                       # line can afford whenever the width is unknown.
+                       # grows by len(MARK_SP).
+LINE3_TIGHT = 113      # LINE3_RESERVED at COL3_TIGHT_W + COL4_TIGHT_W, measured
+LINE3_RESERVED = 113   # columns the non-pwd segments of line 3 occupy.  It
+                       # was 123 until the evening of 2026-09-16, when the
+                       # model and the cost went side by side on one row and
+                       # their column with them -- seven of cell and a
+                       # SEG_GAP gone, one back for the wider row -- 105
+                       # until column 3 arrived that morning and took
+                       # eighteen -- fourteen of cell and a SEG_GAP -- and 110
+                       # before that, while column 4 was 34 wide.  Measured,
+                       # not estimated: shrink a column and this follows it
+                       # down, or the pwd is held that many columns shorter
+                       # than the line can afford whenever the width is
+                       # unknown.
 PWD_MAX_FALLBACK = MAX_LINE - LINE3_RESERVED
 
 RATE_TICK_S = 5.0      # seconds between two samples of 🧩's total for the
@@ -557,6 +594,10 @@ LWT_PATH, LMIN_PATH = 2, 10
 
 LEFT_GAP = 2           # columns between 📦 project, 📁 path and 🌿 branch
 W_STY = 6              # 🎨 + the style name's first 4 characters
+W_MOD = 4              # the model cell past its icon: the two-character
+                       # spec and the effort's glyph, "O⁵🏃".  Held whether
+                       # or not the glyph is drawn, so the 💰 beside it does
+                       # not move with the effort — see render_model_cost.
 VAL_W = 5              # a metric's first value field: "▴4.8M", "200/s",
                        # " 115k"
 VAL2_W = 6             # the second field — one wider, because one of them
@@ -599,7 +640,7 @@ LIM_FIG_W = 4          # the field each of the three marks right-aligns its
                        # stack.  Right-alignment lands the last character of
                        # every reading on one column, so the ٪ of a
                        # percentage sits under the m/h/d of a duration on the
-                       # row below — a units rule down the column, not three
+                       # ⌛ row — a units rule down the column, not three
                        # figures that happen to start together.  The cost is a
                        # leading blank on short readings ("💳 44٪"), which is
                        # the alignment, not slack.
@@ -620,6 +661,20 @@ LIM_ACCT_W = 3         # field 2 only — 💳 the account, and 🤖 below it.  
                        # 🤖 fits because the ⌛ row's scope figures now ask
                        # dur_fmt for two digits: "12h" is three columns, and a
                        # unit still lands under a ٪.
+SHARE_FIG_W = 3        # column 3's two fields, 🎤 and 🎮 ahead of a 📖 or 📝
+                       # share.  Three, because the figure is a whole percent
+                       # of a bill: turn_shares rounds it once and the cost
+                       # line's share_half already draws it in three, so this
+                       # is the same reading in the same width on both
+                       # readouts.  "99٪" is the widest that is spelled; a
+                       # share at or over 99.5 is drawn 💯 in the same three,
+                       # exactly as LIM_ACCT_W's account figure is.  Not
+                       # LIM_FIG_W, though the column is shaped like its
+                       # neighbour's: that fourth column exists for ".01٪",
+                       # a sub-1 reading these shares never take -- a
+                       # fraction of a percent of one prompt's cost is not a
+                       # figure anyone acts on, and rounding it to 0 says the
+                       # same thing in fewer columns.
 RST_W = 6              # the countdown/elapsed field — column 4's LAST, shared
                        # by 🔋 📆 ⌛ so the three durations line up down it.
                        # Two columns of mark and four of figure, dur_fmt's
@@ -654,11 +709,11 @@ SEG_RULE = "|"         # the divider drawn inside that gap, at wide enough
                        # begins with an emoji, and an emoji carries its own
                        # side bearing.  Splitting the four columns evenly is
                        # not possible anyway.
-RULE_MIN = 160         # narrowest row that still gets the rules.  Set against
+RULE_MIN = 170         # narrowest row that still gets the rules.  Set against
                        # what line 3 owes before a single name is drawn, which
-                       # is measured and not estimated: 95 columns of grid,
+                       # is measured and not estimated: 105 columns of grid,
                        # RIGHT_MARGIN, MIN_GAP and the where-group's own chrome
-                       # come to 113.  At this width the project, path and
+                       # come to 123.  At this width the project, path and
                        # branch share the 47 that are left, against the 22
                        # allocate_left will cut them to at the floor — a bit
                        # over twice their minimum.  They are already being
@@ -667,6 +722,16 @@ RULE_MIN = 160         # narrowest row that still gets the rules.  Set against
                        # leave something readable.  Below it the row is closing
                        # on that floor, and one closing on its floor has
                        # nothing to spend on chrome.
+                       #
+                       # It was 160 until column 3 arrived on 2026-09-16 and
+                       # took twenty columns -- sixteen of cell, four of gap
+                       # -- and 180 until that evening, when the model and
+                       # the cost's column folded into the tokens' and gave
+                       # ten back.  The threshold moved by exactly each, so
+                       # the 47 it leaves the names is the 47 it left them
+                       # before: the argument is about what survives the
+                       # trim, and a wider or narrower grid does not change
+                       # how much has to.
                        #
                        # Deliberately NOT MAX_LINE, which sits near it and
                        # answers a different question: that is the width to
@@ -731,6 +796,13 @@ CACHE_WARN, CACHE_CRIT = 80, 50    # cache hit %: ≤ WARN amber, ≤ CRIT red
 #                    and a turn's cut would dim nearly every row of the
 #                    panel; this one leaves the agent that did the turn's
 #                    work bright and dims the ones that ran an errand.
+#   MAG_SHARE_READ   two thirds of a BILL, for column 3's 🎤 and 🎮 -- each
+#                    scope's 📖 and 📝 as a pair, off the 📖 alone, since
+#                    2026-09-16.  The one cut here that is a percentage,
+#                    and a percentage of a figure the reader can see: it
+#                    says whether the transcript, rather than the answer,
+#                    is what the money went on.  See cache_dims for the
+#                    measurement the number came from.
 # A share that could not be derived draws "?" and was dim already.
 #
 # What it does NOT touch.  The limit percentages themselves (a ceiling of
@@ -749,6 +821,7 @@ MAG_DIFF = 100         # 💾 lines, each half on its own
 MAG_SHARE_TURN = 1.0   # ٪ of the WEEK: 🎤 on both limit rows
 MAG_SHARE_SESS = 5.0   # ٪ of the WEEK: 🎮 on both limit rows
 MAG_SHARE_AGENT = 0.2  # ٪ of the WEEK: an agent's 🔋 🪫, as a pair
+MAG_SHARE_READ = 67    # ٪ of the BILL that was 📖: column 3's 🎤 and 🎮
 # The one stamp format crossing every boundary in this program: the plan cache
 # the two modes trade readings through, the reset times a usage source reports,
 # and `as_of`, which decides which of two readings is quoted.  LOCAL time and
@@ -1200,6 +1273,11 @@ S_SESS = E_SESS + " "
 # does, the pad belongs HERE rather than in the grid, because it is a property
 # of the glyph and travels with it.
 S_WEEK = E_WEEK + " "
+# Column 3's two row marks, spaced as 🔋 and 🪫 beside them are: the mark
+# names the row and the space is the same one every prefix on these rows
+# takes.  Both glyphs measure two like the batteries and need no compensation.
+S_READ = E_READ + " "
+S_WRITE = E_WRITE + " "
 # No separator space, unlike the other S_ forms: 🔜 and Σ mark what the figure
 # beside them measures rather than naming a metric, and the field they sit in
 # right-aligns its value hard against them, so a separator here would be the
@@ -1220,18 +1298,21 @@ S_SUM = E_SUM + " "
 
 # The right-hand column grid, listed left to right.
 #
-#            col 1       col 2       col 3            col 4             col 5
-#   row 1    🎨 style    🤖 model    🧩 tokens        🔋 5-hour limit   📅 date
-#   row 2    🔀 PR       💰 cost     🛫 rate 🎯cache  🪫 weekly limit   🕐 time
-#   row 3                            🧠 context       ⌛ elapsed        💾 diff
+#            col 1       col 2            col 3            col 4             col 5
+#   row 1    🎨 style    🤖 model 💰 cost  🧠 context       ⌛ elapsed        📅 date
+#   row 2    🔀 PR       🧩 tokens        📖 read share    🔋 5-hour limit   🕐 time
+#   row 3                🛫 rate 🎯cache  📝 write share   🪫 weekly limit   💾 diff
 #
-# Column 3 is the point of the arrangement: three two-value metrics whose
-# fields are the same width, so ▴'s figure sits over the token rate and over
-# the context size, and their second values — ▾, 🎯, the context percentage —
-# line up down the right of the column.  Column 2 is two short cells — 🤖
-# with the two-character model spec and the effort's glyph against it, 💰
-# with three characters of money and a unit column — over an empty one.
-# Column 1 holds the two
+# Column 2 is the session's own figures: what it is running and what it has
+# cost on the first row, then two two-value metrics whose fields are the
+# same width, so ▴'s figure sits over the token rate and ▾'s over the 🎯.
+# The first row is two short cells side by side — 🤖 with the two-character
+# model spec and the effort's glyph against it, held to W_MOD whether or
+# not the glyph is drawn, then 💰 with three characters of money and a unit
+# column — and with a space between them it is one column wider than the
+# two-value rows where the icons carry _PAD, and exactly their width where
+# they do not; see render_model_cost.  Column 3 is the context over where
+# the bill went.  Column 1 holds the two
 # segments that can be absent (🎨 off the default style, 🔀 off a PR branch)
 # over an empty cell, so their absence leaves a gap at the row's left edge
 # rather than a hole between two figures.  Column 5 ends the readout with
@@ -1253,6 +1334,38 @@ S_SUM = E_SUM + " "
 # against the limits — and last the model and the cost swapped rows, the
 # configuration above the spend.
 #
+# AND AGAIN ON THE EVENING OF 2026-09-16, to Neil's spec, from six columns
+# to five.  The model and the cost went side by side on one row, at the top
+# of the two-value column, and the tokens and the rate each dropped a row
+# under them; their own column, two short cells over a reserved third, went
+# with them.  🧠 left the two-value column for the top of the cache-share
+# column, over 📖 and 📝, which each dropped a row in turn.  And the ⌛ row
+# went to the head of the limits column, over 🔋 and 🪫, which dropped a
+# row each as well.  What it costs is the stacking the 2026-09-13
+# arrangement bought the context row — its size no longer sits under 🧩's
+# tokens — and what it buys is a readout with no reserved cells left: every
+# column is three rows deep and every row is full, the first row reads
+# what the session is and how long it has run, and the grid is ten columns
+# narrower, which RULE_MIN and LINE3_RESERVED follow down.  The rate still
+# sits under the total it is the slope of.
+#
+# COLUMN 3 IS THE CONTEXT OVER THE PAIR THE COST LINE PRINTS IN ITS SPARE
+# HALF-CELL.  The pair is read at two scopes -- added 2026-09-16, to Neil's
+# spec, to the LEFT of the limits and in their shape.  📖 the share of a
+# bill spent re-reading the conversation and 📝 the share spent caching
+# what was added, each as 🎤 the turn just answered and 🎮 this session
+# summed; see E_READ for what the pair is for and SHARE_FIG_W for the
+# field.  Two fields and not column 4's four, because there is no
+# account-wide bill to take a share of and no horizon the shares are spent
+# against -- the scopes stop where the transcript does.  Over them, since
+# that evening, 🧠: the context the re-reading is of, its size first and
+# its percentage on the column's right edge, where 🎮's figures end below
+# it.  Left of the limits and not right, so the two columns that carry
+# 🎤 🎮 sit together and the scope sequence runs once across both -- a
+# reader crossing from column 3 to 4 meets the same marks widening the same
+# way, with 💳 and 🔜 added, and does not have to learn a second
+# arrangement to read the second column.
+#
 # COLUMN 4 IS A GRID OF ITS OWN, three rows by four fields, and the widest
 # thing on the readout at 29 columns.  Fields 0 to 2 are the three scopes,
 # widening left to right — 🎤 this turn, 🎮 this session, 💳 the account —
@@ -1262,7 +1375,7 @@ S_SUM = E_SUM + " "
 #
 # The duration went last on 2026-08-28, having led the column since it was
 # built.  Leading was defensible — a countdown answers the same question as
-# the ⌛ row below it, and the three durations stack whichever end they sit
+# the ⌛ row, and the three durations stack whichever end they sit
 # at — but it cost the arrangement its opening.  Fields 0 to 2 are ONE
 # sequence, a scope widening a step at a time, and the reader met it a field
 # in from the column's edge with a figure of a different kind in front of it.
@@ -1308,7 +1421,7 @@ S_SUM = E_SUM + " "
 # measuring.  Between the chat text and column 1 there is deliberately no rule:
 # that boundary is a computed pad rather than a fixed gap, and a rule there
 # would have to be paid for in width.
-RIGHT_GRID = (11, 7, 14, 29, 14) if _PAD else (11, 6, 13, 29, 14)
+RIGHT_GRID = (11, 15, 14, 29, 14) if _PAD else (11, 13, 14, 29, 14)
 
 
 def set_mark_spacing(on: bool) -> None:
@@ -1316,10 +1429,10 @@ def set_mark_spacing(on: bool) -> None:
 
     Four constants move together and none of them may be left behind.  MARK_SP
     is what the renderers print; column 4 in RIGHT_GRID is four columns wider
-    with it, one per field; LINE3_RESERVED is what line 3 spends outside the
-    pwd and so follows column 4 exactly; and PWD_MAX_FALLBACK is derived from
-    that, which is why it is recomputed here rather than left at the value it
-    took at import.
+    with it, one per field, and column 3 two wider, likewise; LINE3_RESERVED
+    is what line 3 spends outside the pwd and so follows both columns
+    exactly; and PWD_MAX_FALLBACK is derived from that, which is why it is
+    recomputed here rather than left at the value it took at import.
 
     Called once from main() before anything renders.  Rebinding module globals
     is not how this file usually works — nothing else here is settable — and it
@@ -1330,9 +1443,11 @@ def set_mark_spacing(on: bool) -> None:
     global MARK_SP, RIGHT_GRID, LINE3_RESERVED, PWD_MAX_FALLBACK
     global C_TOK, C_CACHE, C_LIM_TOT, C_SESS
     MARK_SP = " " if on else ""
+    col3 = COL3_TIGHT_W + 2 * len(MARK_SP)
     col4 = COL4_TIGHT_W + 4 * len(MARK_SP)
-    RIGHT_GRID = (11, 7, 14, col4, 14) if _PAD else (11, 6, 13, col4, 14)
-    LINE3_RESERVED = LINE3_TIGHT + 4 * len(MARK_SP)
+    RIGHT_GRID = ((11, 15, col3, col4, 14) if _PAD
+                  else (11, 13, col3, col4, 14))
+    LINE3_RESERVED = LINE3_TIGHT + 6 * len(MARK_SP)
     PWD_MAX_FALLBACK = MAX_LINE - LINE3_RESERVED
     # The cost row's two unspaced cells.  The other five hold a sign there and
     # do not move; see the cost-line geometry block.  A cost width left behind
@@ -2359,6 +2474,45 @@ def share_dims(week_turn: str, week_sess: str) -> Tuple[bool, bool]:
         _pct_num(week_sess) if week_sess else None
     return (t is not None and t < MAG_SHARE_TURN,
             s is not None and s < MAG_SHARE_SESS)
+
+
+def cache_dims(turn_read: Optional[int], sess_read: Optional[int]
+               ) -> Tuple[bool, bool]:
+    """Whether column 3's 🎤 and 🎮 dim, each scope's 📖 📝 as a pair, off the
+    📖 share alone: dim under MAG_SHARE_READ, full strength at or over it.
+
+    Off 📖 and not 📝, because 📖 is the figure the column exists for -- the
+    part of the bill /compact can reclaim -- and 📝 is its complement's
+    context.  A pair rather than each figure on its own for the reason the
+    limit rows' 🎤 🎮 flip together off the week (share_dims): two figures
+    about one scope on different sides of a cut would read as two events
+    where there is one.  A share that is missing is not dimmed here -- it
+    draws "?" and render_cache_share's fig dims that itself.
+
+    TWO THIRDS, and measured rather than argued for.  On 2026-09-16, over
+    the 275 most recent sessions on the machine this was written on (6,002
+    turns, read through read_turns and priced by turn_shares): the median
+    turn spends 73٪ of its bill re-reading and the median session 56٪ --
+    far above the "8٪ to 57٪" E_READ's note recorded when the cost line's
+    cell was built, and enough that re-reading is normally the MAJORITY of
+    what a prompt costs.  So a cut at the half lights three quarters of
+    everything (78٪ of turns, 60٪ of sessions) and brightness stops being a
+    signal.  At 67٪ it lights 60٪ of turns and 26٪ of sessions -- a bright
+    🎤 and a dim one are both ordinary, and a bright 🎮 is news -- and it
+    divides by the thing that matters: turns at or over it sat on a median
+    context of 311k, turns under it on 137k.  75٪ was the other candidate
+    and lights 11٪ of sessions, which makes the 🎮 pair a figure that is
+    dim whatever it says.  Two thirds also has a reading a person can say
+    aloud: two dollars in three went on the transcript, not the answer.
+
+    One number for both scopes, deliberately.  The scopes are the same
+    quantity at two ranges, and the limit rows' two cuts (MAG_SHARE_TURN,
+    MAG_SHARE_SESS) differ because a turn and a session are different
+    fractions of a WEEK; here the denominator is each scope's own bill, so
+    the same share means the same thing at either.
+    """
+    return (turn_read is not None and turn_read < MAG_SHARE_READ,
+            sess_read is not None and sess_read < MAG_SHARE_READ)
 
 
 def cache_color(p: int) -> str:

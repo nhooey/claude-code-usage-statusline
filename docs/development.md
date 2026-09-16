@@ -110,7 +110,7 @@ it**
    rules predict. The type marks and the circles appear on the panel rows
    only, so a wrong width there shifts one row of the panel and nothing on
    the status line; 🛫 is on the status line too since the evening of the
-   same day, in column 2, where a wrong width shifts row 2 to the right of
+   same day, in column 2, where a wrong width shifts row 3 to the right of
    it. The row's width is no longer a guess: the panel's `columns` is
    already net of its chrome, measured on screen 2026-09-13.
 
