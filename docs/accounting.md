@@ -251,7 +251,31 @@ reads:
   answer, and a background one finishing an hour later is not an hour of
   answering.
 * **`read_transcript`** adds them to the status line's 🧩 and 🎯, and leaves
-  🧠 alone for the same reason.
+  🧠 alone for the same reason. Since 2026-09-25 it takes the **clock** off
+  them too. The same walk fills a list of each agent's working spans —
+  segmented exactly as the main thread's are, an agent's prompt to the last
+  record its answer produced, so an agent resumed later by `SendMessage`
+  opens a second span rather than one long one — and the busy clock is the
+  length of the **union** of those spans with the main thread's. Union and
+  never sum: five agents working the same ten minutes is ten minutes of the
+  session's clock, and summing would put the busy figure past Σ and 👤 at a
+  permanent zero the moment anything ran in parallel. What it fixes is a main thread that dispatches
+  agents and waits, which writes nothing to its own file while they work: on
+  the eight most recent sessions with agents here the figure roughly doubles,
+  and on the most agent-heavy of them the busy figure went from 14% of the
+  session's age to 97% of it — which is what the machine was actually doing.
+
+  Since the same day the walk fills a second list, of each agent's **tool**
+  spans, and ⌛'s 🔧 is the union of those with the main thread's. A tool's
+  clock runs from the assistant record that asks for it to the `tool_result`
+  that answers it, matched by `tool_use_id`; a Task's span therefore covers
+  its agent's entire run, which is what lets the fold be recursive without a
+  special case — the agent's own tools are already inside it, and unioning
+  counts them once. A **background** agent is the case that needs the second
+  list: its result comes back at once and it keeps working, so its tools run
+  outside every span its parent recorded. ⌛'s 🤖 is then the busy clock
+  with these seconds taken out, which is what makes 🔧 🤖 👤 a partition
+  of Σ rather than three overlapping readings of it.
 * **`_window_costs`** scans them for the 💳 unit. This one mattered most: the
   unit is machine spend over the plan reading, the reading is Anthropic's and
   includes every agent, and a numerator without them was short by the agent

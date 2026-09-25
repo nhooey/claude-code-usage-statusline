@@ -83,8 +83,9 @@ def ts(minute, second=0):
 
 
 def agent_user(minute, pid="p1"):
-    return {"type": "user", "isSidechain": True, "promptId": pid,
-            "timestamp": ts(minute), "message": {"content": "do a thing"}}
+    return {"type": "user", "userType": "external", "isSidechain": True,
+            "promptId": pid, "timestamp": ts(minute),
+            "message": {"content": "do a thing"}}
 
 
 def agent_answer(minute, rid, fresh, cw, cr, out, model="claude-opus-5",
@@ -96,6 +97,40 @@ def agent_answer(minute, rid, fresh, cw, cr, out, model="claude-opus-5",
                 "cache_creation_input_tokens": cw,
                 "cache_read_input_tokens": cr,
                 "output_tokens": out}}}
+
+
+def agent_edit(minute, tid, added, removed):
+    """One Edit result: a hunk with `added` "+" lines and `removed` "-" ones."""
+    return {"type": "user", "isSidechain": True, "timestamp": ts(minute),
+            "message": {"content": [{"type": "tool_result",
+                                     "tool_use_id": tid}]},
+            "toolUseResult": {"filePath": "/f", "structuredPatch": [
+                {"oldStart": 1, "oldLines": 1, "newStart": 1, "newLines": 1,
+                 "lines": ([" keep"] + ["-old"] * removed
+                           + ["+new"] * added)}]}}
+
+
+def agent_write(minute, tid, text):
+    """A Write to a NEW file: no patch to count, the whole file in `content`."""
+    return {"type": "user", "isSidechain": True, "timestamp": ts(minute),
+            "message": {"content": [{"type": "tool_result",
+                                     "tool_use_id": tid}]},
+            "toolUseResult": {"type": "create", "filePath": "/g",
+                              "content": text, "structuredPatch": []}}
+
+
+def agent_call(minute, rid, tid, second=0):
+    """An agent record that asks for a tool."""
+    r = agent_answer(minute, rid, 1, 0, 0, 1, second=second)
+    r["message"]["content"] = [{"type": "tool_use", "id": tid, "name": "Bash"}]
+    return r
+
+
+def agent_result(minute, tid, second=0):
+    """And the result that answers it, which is where the tool's clock stops."""
+    return {"type": "user", "isSidechain": True, "timestamp": ts(minute, second),
+            "message": {"content": [{"type": "tool_result",
+                                     "tool_use_id": tid}]}}
 
 
 def write_jsonl(path, records):
@@ -212,10 +247,19 @@ def run(tmp):
                                    second=30),                 # a retry
                       agent_answer(12, "err", 0, 0, 0, 0),     # an API error
                       agent_answer(13, "r2", 50, 1000, 40000, 600,
-                                   model="claude-sonnet-5", effort="low")],
+                                   model="claude-sonnet-5", effort="low"),
+                      agent_edit(11, "t1", 9, 4),
+                      agent_edit(11, "t1", 9, 4),         # the same result
+                      agent_write(12, "t2", "a\nb\nc\n")],
          {"agentType": "Explore", "model": "sonnet"}),
         ("agent-a2", [agent_user(10), agent_answer(11, "x", 10, 0, 0, 10)],
          None),                                                # no sidecar
+        ("agent-a3", [agent_user(10), agent_answer(11, "y", 10, 0, 0, 10)],
+         {"agentType": "Explore", "parentAgentId": "a1",        # a1's child:
+          "spawnDepth": 2}),                                   # one `├ ` deep
+        ("agent-a4", [agent_user(10), agent_answer(11, "z", 10, 0, 0, 10)],
+         {"agentType": "Explore", "parentAgentId": "a3",        # and its own
+          "spawnDepth": 3}),
     ], workflow=[
         ("agent-w1", [agent_user(10), agent_answer(11, "w", 10, 0, 0, 10)],
          {"agentType": "workflow-subagent"}),
@@ -252,6 +296,60 @@ def run(tmp):
           ("claude-sonnet-5", "low", sl.ts_epoch(ts(13))))
     check("no file reads as no usage", sl.read_agent_usage(""),
           sl.NO_AGENT_USAGE)
+
+    print("--- what the agent wrote ---")
+    check("a patch counted a line at a time, a new file counted whole, and "
+          "a result that appears twice counted once",
+          (u.lines_added, u.lines_removed), (9 + 3, 4))
+    check("an agent that only read wrote nothing, which is zero and not "
+          "unknown",
+          (lambda x: (x.lines_added, x.lines_removed))(
+              sl.read_agent_usage(sl.agent_file_for(tr, "a2"))), (0, 0))
+    check("a result with no tool-use id is still counted; nothing else "
+          "identifies it",
+          sl.agent_diff([dict(agent_edit(11, "t9", 2, 1), message={})]),
+          (2, 1))
+    check("records that are not tool results, and malformed ones, count "
+          "nothing",
+          sl.agent_diff([agent_user(10), {"toolUseResult": "text"},
+                         {"toolUseResult": {"structuredPatch": "no"}},
+                         {"toolUseResult": {"type": "create",
+                                            "content": None}}]),
+          (0, 0))
+
+    print("--- time inside a tool ---")
+    # The recursion is over parentAgentId, which is the only place the tree
+    # is written down: p spawned k, and x is a sibling that belongs to
+    # neither.
+    tt = session(tmp, "tools", agents=[
+        ("agent-p", [agent_user(10), agent_call(11, "r1", "t1"),
+                     agent_result(14, "t1")], {"agentType": "Explore"}),
+        ("agent-k", [agent_user(20), agent_call(21, "r2", "t2"),
+                     agent_result(29, "t2")],
+         {"agentType": "Explore", "parentAgentId": "p", "spawnDepth": 2}),
+        ("agent-x", [agent_user(30), agent_call(31, "r3", "t3"),
+                     agent_result(35, "t3")], {"agentType": "Explore"}),
+    ])
+    check("an agent's tool time is its own and every descendant's, and an "
+          "agent it did not spawn is not in it",
+          round(sl.union_seconds(
+              sl.agent_tool_spans(sl.agent_file_for(tt, "p"))) / 60),
+          3 + 8)
+    check("the child's own reading is the child alone",
+          round(sl.union_seconds(
+              sl.agent_tool_spans(sl.agent_file_for(tt, "k"))) / 60), 8)
+    check("a task with no transcript — a shell — has none",
+          sl.agent_tool_spans(""), [])
+    check("the two cells split the agent's life: the clock is its run less "
+          "its tools, and \U0001F527 blanks at nothing rather than drawing a zero",
+          [ANSI.sub("", x) for x in (
+              sr.render_agent_clock(int((NOW - 900) * 1000), NOW, None, 300.0),
+              sr.render_agent_tool(300.0), sr.render_agent_tool(0.0))],
+          ["\U0001F916 10m", "\U0001F527  5m", ""])
+    check("a tool reading larger than the run cannot drive the clock below "
+          "zero", ANSI.sub("", sr.render_agent_clock(
+              int((NOW - 60) * 1000), NOW, None, 9999.0)),
+          "\U0001F916  0s")
 
     print("--- the plan windows ---")
     sh = sl.agent_window_shares(u)
@@ -319,16 +417,18 @@ def run(tmp):
     pct = lambda v: sl.limit_pct(v) + sl.E_PCT
     right = "  ".join((
         "\U0001F916O\u2075\U0001F3C3",
-        "⌛ 13m",
+        " " * sr.A_CLOCK_W,             # 🔧: a1 pairs no tool call
+        "\U0001F916 13m",
+        sl.seg(sl.vis_width(sl.S_COST) + 4,
+               "\U0001F4B0" + sl.pad_val(4, sl.money_fig(u.cost))),
+        "\U0001F9E0 41k",
         sl.seg(sl.vis_width(sl.S_TOK) + sl.VAL_W + sl.VAL2_W,
                ANSI.sub("", sl.render_tokens(u.tok_up, u.tok_down))),
         "\U0001F6EB200/s",
         "\U0001F3AF%d%s" % (u.cache_pct, sl.E_PCT),
-        "\U0001F9E0 41k",
-        sl.seg(sl.vis_width(sl.S_COST) + 4,
-               "\U0001F4B0" + sl.pad_val(4, sl.money_fig(u.cost))),
         "\U0001F50B" + sl.pad_val(4, pct(want)),
-        "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0))))
+        "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0)),
+        ANSI.sub("", sl.render_diff("12", "4"))))
     head = "\U0001F50D\U0001F7E2 a1         "
     check("an agent's row: the left group, the name, then the right group, "
           "filling the payload's columns exactly",
@@ -345,12 +445,17 @@ def run(tmp):
            "\U0001F916O\u2075" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
+    check("an agent that wrote nothing still states it; a task with no "
+          "transcript to count states nothing, as its 💰 does",
+          ("\U0001F4BE +   0 -   0" in ANSI.sub("", rows["a2"]),
+           "\U0001F4BE" in rows["bash-1"]),
+          (True, False))
     check("and its clock stopped at its last record, not at now",
-          re.search(r"⌛\s*(\S+)", rows["a2"]).group(1), "1m")
+          re.search(r"\U0001F916\s+(\S+)", rows["a2"]).group(1), "1m")
     check("an unnamed task takes its description for a name, then its "
           "label for what it is doing; a shell shows nothing it did not bill",
           re.sub(r" {2,}", "  ", rows["bash-1"]),
-          "\U0001F41A\U0001F7E2 bash-1  npm test npm test --watch  ⌛ 13m")
+          "\U0001F41A\U0001F7E2 bash-1  npm test npm test --watch  \U0001F916 13m")
     check("a name and its activity, and a label that only repeats the "
           "description is not drawn",
           [ANSI.sub("", sr.render_who(n, a, 40)) for n, a in (
@@ -362,12 +467,33 @@ def run(tmp):
                                       w)) for w in (30, 20, 12, 6)],
           ["Marigold Reading the plan, sl…", "Marigold Reading th…",
            "Marigold", "Marig…"])
+    check("the panel's tree costs two columns a level below the first, and "
+          "a task with no sidecar is a root",
+          [sr.tree_cols({}, m) for m in (
+              {"spawnDepth": 1}, {"spawnDepth": 2}, {"spawnDepth": 3}, {},
+              {"spawnDepth": "two"})],
+          [0, 2, 4, 0, 0])
+    nested = dict(pay, tasks=[task("a1"), task("a3"), task("a4")])
+    rows_n = render(sl, nested)[1]
+    check("a nested row pays for the `├ ` the panel draws before it, so the "
+          "panel's own chrome plus the row is one width at every depth",
+          [sl.vis_width(rows_n[t]) + 2 * (d - 1)
+           for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
+          [200, 200, 200])
+    at_model = lambda r: sl.vis_width(r[:r.index("\U0001F916")])
+    check("and the right group is what holds its column: the name gives",
+          [at_model(rows_n[t]) + 2 * (d - 1)
+           for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
+          [at_model(rows_n["a1"])] * 3)
     long = "Review the plan, then the code under it, then the docs beside it"
     wide = dict(pay, tasks=[task("a1", name="", description=long)])
     check("the name takes what the metrics leave, and gives way first",
           (render(sl, dict(wide, columns=400))[1]["a1"].count(long),
            re.search(r"Review the plan, [^…]*…  \U0001F916",
-                     render(sl, dict(wide, columns=130))[1]["a1"]) is not None,
+                     # 138 and not the 130 it was: the right group grew by the
+                     # 🔧 cell and its gap, and this case is about a width
+                     # that squeezes the NAME, not one that squeezes it away.
+                     render(sl, dict(wide, columns=138))[1]["a1"]) is not None,
            render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
            .count(long[:sr.A_NAME_MIN - 1] + "…")),
           (1, True, 1))

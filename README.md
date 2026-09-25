@@ -14,7 +14,7 @@ footer).
 Three rows, redrawn continuously under the prompt:
 
 ```
-👤💬 Why does the elapsed row report two durations when the session age is o…  | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🎤   5m 👤   5h 🤖  4h Σ  9.3h  | 📅  2026-08-16
+👤💬 Why does the elapsed row report two durations when the session age is o…  | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  5h Σ  9.3h  | 📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The se…  | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
 📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                   | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
@@ -31,8 +31,8 @@ And one row per task in the agent panel, replacing the panel's own, while
 agents run:
 
 ```
-◯ 🔍🟢 a1a65eb72… Verify brief citations Reading docs/layout.md   🤖O⁵🏃  ⌛ 13m  🧩▴ 13k ▾  1k  🛫200/s  🎯95٪  🧠 41k  💰0.1   🔋.06٪  🪫.01٪
-◯ 🐚🟢 b1         npm test npm test --watch                                       ⌛ 13m
+◯ 🔍🟢 a1a65eb72… Verify brief citations Reading docs/layout.md       🤖O⁵🏃  🔧  5m  🤖  8m  💰0.1   🧠 41k  🧩▴ 13k ▾  1k  🛫200/s  🎯95٪  🔋.06٪  🪫.01٪  💾 +  84 -  12
+◯ 🐚🟢 b1         npm test npm test --watch                                           🤖 13m
 ```
 
 What you can read off it at a glance:
@@ -52,14 +52,18 @@ What you can read off it at a glance:
   because it is read to decide when *this* window needs compacting. Agent
   spend the prompt row cannot carry — a background agent finishing after its
   turn printed — gets a 👥 row of its own, the way a compaction gets 🤏
-* ⌛ where the time went, 💾 the working diff, 🌿 the branch, 🤖 the model as
+* ⌛ where the time went, split three ways that add up to the session's
+  age: 🔧 inside a tool, 🤖 waiting on the model, 👤 waiting on you —
+  and the same 🔧 🤖 pair on each agent's row, splitting its run.
+  💾 the working diff, 🌿 the branch, 🤖 the model as
   its initial and version with the effort's glyph against it — `O⁵🏃`, `H⁴🔥`
 * on an agent's row: its type as a glyph (🔍 Explore, 📐 Plan, 🔧
   general-purpose, 🐚 a shell …), its run state as a circle (🟢 running, 🟡
   pending, 🔵 done, 🔴 failed, ⚫ killed), its id, its
   name and then what it is doing right now, what *its own* transcript says
-  it has billed, 🛫 how fast the panel's token count is climbing, and 🔋 🪫
-  its share of each plan window
+  it has billed, 🛫 how fast the panel's token count is climbing, 🔋 🪫
+  its share of each plan window, and 💾 the lines it has written, counted off
+  its own edits
 
 **Every figure sits on a fixed screen column.** Values are formatted to a fixed
 width and carry a unit rather than more digits — `1.2k`, `4.5M`, `1.5h` — so

@@ -555,7 +555,7 @@ def render_date(now: Optional[float] = None) -> str:
                          pad_val(11, time.strftime("%Y-%m-%d", t)), R)
 
 
-def render_elapsed(busy_s: float, start_s: float, turn_s: float = 0.0,
+def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
                    now: Optional[float] = None) -> str:
     """The session's clock, in the four fields the two rows below it use.
 
@@ -564,18 +564,46 @@ def render_elapsed(busy_s: float, start_s: float, turn_s: float = 0.0,
     and the marks are unchanged, and everything below that says "above"
     of the limit rows now means below.
 
-    Three scope fields, then the whole.  🎤 is scoped: how long the turn those
-    rows are reporting the cost of actually took, which is the one figure that
-    lets "🎤 .82٪" be read as expensive or merely long.  👤 and 🤖 are
-    positional — they split the age that Σ states, and there is no
-    account-wide time to put under 💳.  Σ closes the row in the column 🔜
-    takes on the two rows below — the same kind of mark, one that says what
-    the figure after it measures rather than naming a metric.
+    THREE FIELDS THAT PARTITION THE WHOLE, then the whole.  🔧 is the part
+    spent inside a tool, 🤖 what answering is left once those seconds come
+    out — the machine actually thinking — and 👤 the part spent waiting for
+    someone to type.  They sum to Σ and none of them overlaps another, so
+    every second of the session is in exactly one of the three.  Σ closes the
+    row in the column 🔜 takes on the two rows below — the same kind of mark,
+    one that says what the figure after it measures rather than naming a
+    metric.  There is no account-wide time to put under 💳, which is why this
+    row does not carry that row's scopes.
 
-    That split stays exhaustive and stays worth its columns: 👤 is the part
-    spent waiting for someone to type, 🤖 the part spent answering, and they
-    sum to Σ.  "1.9h of work inside 19h" is a fact about how a day went that
-    neither figure states alone.
+    THE ORDER IS THE MACHINE'S WORK FIRST AND THE PERSON'S WAIT LAST, which
+    is the order a reader asks for them: 🔧 then 🤖 are the two halves of
+    the same question — what was this session doing — and they belong beside
+    each other, where the pair can be read as a ratio without the wait
+    standing between them.  👤 is then the remainder, and it falls where a
+    remainder should: immediately before the Σ it completes.  The two limit
+    rows under it widen left to right instead, 🎤 to 🎮 to 💳, and the
+    columns do not have to agree about that — each row is one sequence and
+    only field 3, the duration, stacks across all three.
+
+    "1.9h of work inside 19h, and 1.2h of the work was a shell" is a fact
+    about how a day went that no one of the three states alone.
+
+    🔧 IS TAKEN OUT OF 🤖 rather than nested inside it, and the difference
+    is the question the row answers.  Nested, 🤖 stays "how much of the day
+    was the machine busy" and 🔧 is a footnote to it.  Partitioned, 🤖
+    becomes "how much of the day was the MODEL busy" — a different figure,
+    and the one that moves when a session changes character: an hour of
+    dispatching agents and waiting on builds now reads as an hour of 🔧 and
+    a few minutes of 🤖, where before both cells simply said an hour.  The
+    tool seconds are this thread's and every agent's, nested tools counted
+    once; see scan_tool_spans.
+
+    WHAT IT REPLACED.  🎤 stood in 🔧's field until 2026-09-25, holding how
+    long the turn those rows report the cost of actually took.  It was scoped
+    where nothing else on the row is, and it bought scale for the 🎤
+    percentages below at the price of the row's one structural claim — that
+    its figures are all about the same session, over the same age.  The turn
+    duration is still printed, on the cost line's own 🎤 row, next to the
+    cost it qualifies, which is where it was always read from anyway.
 
     THE THREE SCOPE FIGURES SPEND TWO DIGITS, Σ SPENDS THREE.  dur_fmt's
     digits=2 forbids the decimal outright, so 1.9h renders "2h" and 5.5d
@@ -597,14 +625,17 @@ def render_elapsed(busy_s: float, start_s: float, turn_s: float = 0.0,
     paints itself — rather than the row's own colour, so the mark recedes and
     the figure carries the row, which is what the two rows below already do.
 
-    An absent turn blanks its whole field, mark included, rather than drawing
-    a "0s" that reads as a turn which took no time.  👤 and 🤖 do draw their
-    zeros, because for those a zero IS the measurement.
+    All three fields draw their zeros, 🔧 included: a session that has run
+    no tool spent no time in one, and in a partition a zero IS the
+    measurement.  (🎤 blanked instead, mark and all, because a turn that was
+    never found is not a turn that took no time — the field had two empty
+    states and this one has one.)
 
     Every figure on the row dims under MAG_DUR_S, ten minutes, and each on
-    its own: the turn is the field that flips in practice — a long turn is
-    the thing this row is looked at for — while Σ and its split pass the cut
-    in the session's first minutes and stay bright.  The 🔜 directly above
+    its own: 🔧 and 🤖 are the fields that flip in practice — ten minutes
+    in tools, or ten minutes of thinking, is a session that has done
+    something — while Σ and 👤 pass the cut in the session's first minutes
+    and stay bright.  The 🔜 directly above
     dims the other way, and deliberately: for a time-until it is the SMALL
     figure that matters (reset_dim).  The two rows agree on what bright
     means — the figure worth looking up for — and differ on which end of
@@ -615,15 +646,20 @@ def render_elapsed(busy_s: float, start_s: float, turn_s: float = 0.0,
     t = time.time() if now is None else now
     age = t - start_s if t > start_s else 0.0
     idle = age - busy_s if age > busy_s else 0.0
+    # The tool clock is a subset of the busy clock by construction — a tool
+    # result is `is_work`, so its span lies inside the turn that asked for
+    # it — and the max() is there for the case construction does not cover:
+    # a background agent whose tools outlive the span its own file recorded.
+    # A negative 🤖 would break the partition the row is drawn to state.
+    model_s = busy_s - tool_s if busy_s > tool_s else 0.0
 
     def fig(mark: str, v: float, w: int = LIM_FIG_W) -> str:
         return "%s%s%s%s%s" % (mark, fmt.MARK_SP, mag_dim(v, MAG_DUR_S) + F_PRW,
                                pad_val(w, dur_fmt(v, 2)), R)
 
-    turn = (fig(E_TURN, turn_s) if turn_s
-            else " " * (vis_width(E_TURN) + len(fmt.MARK_SP) + LIM_FIG_W))
     return "%s%s %s %s %s%s%s%s%s%s%s" % (
-        S_IDLE, turn, fig(E_WAIT, idle), fig(E_WORK, busy_s, LIM_ACCT_W),
+        S_IDLE, fig(E_TOOL, tool_s), fig(E_WORK, model_s),
+        fig(E_WAIT, idle, LIM_ACCT_W),
         F_SUM, S_SUM, R, fmt.MARK_SP,
         mag_dim(age, MAG_DUR_S) + F_PRW,
         pad_val(RST_W - vis_width(S_SUM), dur_fmt(age)), R)
@@ -798,7 +834,7 @@ def render_chat_rows(tr: Transcript, tail1: str, tail2: str,
 
 def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
                   cols: Optional[int], now: Optional[float] = None,
-                  turn_s: float = 0.0, rules: bool = True,
+                  rules: bool = True,
                   ctx_window: int = 0, rate: Optional[float] = None,
                   cache: CacheShares = NO_CACHE_SHARES) -> str:
     """The whole three-row readout, as one string ending in a newline.
@@ -838,7 +874,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         render_style(pay.output_style),
         render_model_cost(pay.model, pay.effort, pay.cost_usd),
         render_ctx(ctx_pct, tr.ctx_tokens),
-        render_elapsed(tr.busy_s, tr.start_s, turn_s, now),
+        render_elapsed(tr.busy_s, tr.start_s, tr.tool_s, now),
         render_date(now),
     ), rule=rule)
     limits_row = grid_row((

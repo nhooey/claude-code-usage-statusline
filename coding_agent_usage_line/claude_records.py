@@ -95,6 +95,10 @@ class Transcript(NamedTuple):
     asst_text: str
     busy_s: float           # seconds spent answering, summed over every turn
     start_s: float          # epoch of the first STAMPED record, 0 if none
+    tool_s: float = 0.0     # of that answering, the part spent inside a tool —
+                            # this thread's and every agent's, unioned.  See
+                            # tool_spans.  Defaulted so EMPTY_TRANSCRIPT and
+                            # the fixtures that predate it still build.
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -388,8 +392,9 @@ def agent_files(transcript: str) -> List[str]:
                             recursive=True))
 
 
-def agent_records(transcript: str, seen: Optional[set] = None
-                  ) -> Tuple[AgentRec, ...]:
+def agent_records(transcript: str, seen: Optional[set] = None,
+                  spans: Optional[list] = None,
+                  tools: Optional[list] = None) -> Tuple[AgentRec, ...]:
     """Every billed request an agent of this session made, in stamp order.
 
     Nothing an agent bills is in the session's own transcript.  The main file
@@ -423,11 +428,28 @@ def agent_records(transcript: str, seen: Optional[set] = None
     the Stop hook stores to say "I have reported everything up to here" —
     see agent_offsets — and it is bytes rather than a stamp because files
     that flush on their own schedules share no clock.
+
+    `spans` is an out-parameter, and it is one because this walk already
+    parses every line of every agent file: pass a list and each agent's
+    WORKING spans are appended to it — the same segmentation read_transcript
+    does on the main thread, an agent's prompt to the last record its answer
+    produced — so the one read serves both the token totals and the clock.
+    An agent resumed by a later SendMessage opens a second span rather than
+    one long one, so the hours it spent waiting to be resumed are not
+    charged to it.
+
+    `tools` is the second out-parameter of the same kind, for ⌛'s 🔧: pass a
+    list and every agent's TOOL spans are appended to it, off the same read
+    again.  An agent that spawned agents of its own needs no special case —
+    its Task span already covers the child's whole run, and the child's own
+    spans are appended here too, so the union counts the nesting once.
     """
     seen = set() if seen is None else seen
     out = []
     for path in agent_files(transcript):
         pid = ""
+        open_at = prev = None
+        pending = {}
         try:
             fh = open(path, "rb")
         except OSError:
@@ -442,6 +464,17 @@ def agent_records(transcript: str, seen: Optional[set] = None
                     continue
                 if not isinstance(r, dict):
                     continue
+                if tools is not None:
+                    scan_tool_spans(r, pending, tools)
+                if spans is not None:
+                    t = ts_epoch(r.get("timestamp") or "")
+                    if t is not None:
+                        if turn_start_text(r) is not None:
+                            if open_at is not None and prev > open_at:
+                                spans.append((open_at, prev))
+                            open_at = prev = t
+                        elif open_at is not None and is_work(r):
+                            prev = t
                 if r.get("type") == "user":
                     pid = r.get("promptId") or pid
                     continue
@@ -464,6 +497,8 @@ def agent_records(transcript: str, seen: Optional[set] = None
                 out.append(AgentRec(ts_epoch(r.get("timestamp") or ""), pid,
                                     m.get("model"), fresh, cw, cr, o, k,
                                     path, pos))
+        if spans is not None and open_at is not None and prev > open_at:
+            spans.append((open_at, prev))
     # Stamp order across files, unparseable stamps last: the fold-in walks
     # turns forward and a record that cannot be placed in time is handed to
     # the last turn rather than the first.
@@ -663,7 +698,83 @@ def publish_agent_offsets(transcript: str,
         pass
 
 
-def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None
+def union_seconds(spans: Sequence[Tuple[float, float]]) -> float:
+    """The length of the UNION of `spans`, in seconds.
+
+    Overlapping spans are merged rather than added, which is the whole reason
+    this is not a sum: five agents working the same ten minutes is ten minutes
+    of the session's clock, not fifty.  The alternative — summing — makes 🤖
+    exceed Σ the moment anything runs in parallel and turns 👤 into a
+    permanent zero, and the pair's only claim is that it splits the age.
+    """
+    total = 0.0
+    cur = None
+    for lo, hi in sorted(s for s in spans if s[1] > s[0]):
+        if cur is None:
+            cur = [lo, hi]
+        elif lo <= cur[1]:
+            cur[1] = max(cur[1], hi)
+        else:
+            total += cur[1] - cur[0]
+            cur = [lo, hi]
+    return total + (cur[1] - cur[0] if cur else 0.0)
+
+
+def scan_tool_spans(r: dict, pending: Dict[str, float],
+                    out: List[Tuple[float, float]]) -> None:
+    """Fold one record into a running scan for (start, end) of every tool call.
+
+    A tool's clock starts on the ASSISTANT record that asked for it and stops
+    on the `tool_result` that answers it, matched by `tool_use_id` — never by
+    adjacency.  Adjacency is wrong here: one assistant record can carry four
+    `tool_use` blocks that run at once and land in any order, and pairing them
+    off in file order would hand each the wrong end.  The ids are always
+    there — 106 of 106 results in the session this was written from paired,
+    none dangling — and a result whose id names no call it has seen is simply
+    not counted, which is the right answer for a transcript that was resumed
+    mid-call.
+
+    The span is the whole time the thread was inside the tool: the wait for a
+    permission prompt is in it, because a turn that sat on a dialog for two
+    minutes did spend two minutes not thinking.  And a Task's span is its
+    agent's ENTIRE run, which is what makes the fold below recursive for
+    free — an agent that ran ten minutes inside a Task contributes those ten
+    minutes once, whether they are read here or off the agent's own file.
+
+    `pending` and `out` are the caller's, so one walk of a file can feed this
+    and the billing scan beside it; see agent_records.
+    """
+    t = ts_epoch(r.get("timestamp") or "")
+    if t is None:
+        return
+    blocks = (r.get("message") or {}).get("content")
+    if not isinstance(blocks, list):
+        return
+    for b in blocks:
+        if not isinstance(b, dict):
+            continue
+        kind = b.get("type")
+        if kind == "tool_use":
+            if b.get("id"):
+                pending[str(b["id"])] = t
+        elif kind == "tool_result":
+            t0 = pending.pop(str(b.get("tool_use_id") or ""), None)
+            if t0 is not None and t > t0:
+                out.append((t0, t))
+
+
+def tool_spans(records: Sequence[dict]) -> List[Tuple[float, float]]:
+    """Every tool call in `records`, as (start, end).  See scan_tool_spans."""
+    pending: Dict[str, float] = {}
+    out: List[Tuple[float, float]] = []
+    for r in records:
+        scan_tool_spans(r, pending, out)
+    return out
+
+
+def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
+                    agent_spans: Sequence[Tuple[float, float]] = (),
+                    agent_tools: Sequence[Tuple[float, float]] = ()
                     ) -> Transcript:
     """One pass for the status line: totals, cache rate, context, last texts.
 
@@ -672,6 +783,25 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None
     the transcript, or None to read them here — because it was billed, and
     a 🧩 that reports the main thread alone is short by whatever the forks
     and workflows spent, which in the sessions that use them is most of it.
+
+    Busy time counts them too — `agent_spans`, which agent_records fills as
+    it walks the same files.  An agent is the session working, and on the
+    sessions here it is MOST of the working: a main thread that dispatches
+    six agents and waits sits idle in its own file, so a 🤖 read off that
+    file alone said 14% of a day where the machine was busy for 97% of it.
+    Measured over the eight most recent sessions with agents on this
+    machine, folding them in roughly doubles the figure.  The two clocks are
+    UNIONED, never summed — see union_seconds — so 👤 and 🤖 still split Σ
+    exactly, which is the one thing that pair promises.
+
+    Tool time counts them the same way, and for the same reason — `agent_tools`
+    beside `agent_spans`, off the one walk.  It is the part of the busy clock
+    the session spent inside a tool rather than waiting on a model, and it is
+    a SUBSET of 🤖 rather than a slice taken out of it: 🤖 still reports every
+    second of answering, tool seconds included, so the pair reads as a
+    nesting — 🔧 ≤ 🤖 ≤ Σ — and not as a third share of the age.  Unioned like
+    the rest, which is what makes an agent's tools inside a Task's own span
+    count once instead of twice; see scan_tool_spans.
 
     Context size does NOT.  It is a reading of THIS window — the one 🧠 is
     watched to decide when to compact — and every agent runs a window of its
@@ -690,7 +820,13 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None
         cwrite += u.get("cache_creation_input_tokens") or 0
         cread += u.get("cache_read_input_tokens") or 0
         down += u.get("output_tokens") or 0
-    for a in (agent_records(path) if agents is None else agents):
+    if agents is None:                  # no caller-supplied walk: do it here,
+        own = []                        # and take both clocks off it too
+        own_tools = []
+        agents = agent_records(path, spans=own, tools=own_tools)
+        agent_spans = tuple(agent_spans) + tuple(own)
+        agent_tools = tuple(agent_tools) + tuple(own_tools)
+    for a in agents:
         fresh += a.fresh
         cwrite += a.cache_write
         cread += a.cache_read
@@ -733,9 +869,12 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None
     # every gap where the session sat waiting for someone to type.  The two
     # figures together are the point of the pair: 1.9h of work inside an 18h
     # session says something neither number says alone.
-    busy = 0.0
+    spans = []
+    tools = []
+    pending = {}
     first = open_at = prev = None
     for r in records:
+        scan_tool_spans(r, pending, tools)
         t = ts_epoch(r.get("timestamp") or "")
         if t is None:
             continue
@@ -743,12 +882,14 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None
             first = t
         if turn_start_text(r) is not None:
             if open_at is not None and prev > open_at:
-                busy += prev - open_at
+                spans.append((open_at, prev))
             open_at = prev = t
         elif open_at is not None and is_work(r):
             prev = t
     if open_at is not None and prev > open_at:
-        busy += prev - open_at
+        spans.append((open_at, prev))
+    busy = union_seconds(spans + list(agent_spans))
+    tool = union_seconds(tools + list(agent_tools))
 
     return Transcript(
         busy_s=busy,
@@ -767,6 +908,7 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None
         user_text=squash(user_text),
         asst_ts=asst_ts,
         asst_text=squash(asst_text),
+        tool_s=tool,
     )
 
 

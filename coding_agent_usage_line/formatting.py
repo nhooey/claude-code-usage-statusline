@@ -136,6 +136,22 @@ E_SUM = "\u03a3"       # Greek capital sigma, ONE column — the n-ary summation
                        # treats as unmeasurable, and the column matters here
 E_WAIT = "👤"          # time the session spent waiting for a person
 E_WORK = "🤖"          # time it spent answering
+E_TOOL = "🔧"          # of that answering, the part spent inside a
+                       # tool rather than waiting on a model.  A spanner is
+                       # the picture every harness already uses for the
+                       # things a model can reach for, and it is the ONE
+                       # glyph on the ⌛ row that names a mechanism rather
+                       # than a party: 👤 and 🤖 say WHO the seconds
+                       # belonged to, 🔧 says what they were spent doing.
+                       #
+                       # It is read as a subset of the 🤖 beside it, never
+                       # as a third slice of Σ — see read_transcript — so
+                       # it sits before the pair that does split the age
+                       # rather than inside it.
+                       #
+                       # U+1F527, Unicode 6.0, single codepoint,
+                       # Emoji_Presentation=Yes, inside EAW_WIDE — the same
+                       # four properties every mark in this grid needs.
 E_DATE = "📅"          # calendar date, above the wall clock it belongs to
 E_TIME = "🕐"          # wall clock.
                        #

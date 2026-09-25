@@ -119,8 +119,9 @@ def answer(minute, rid, fresh, cw, cr, out, model=None, second=0):
 def agent_user(minute, pid):
     """The record that opens or resumes an agent, and the one place the
     turn's promptId is written on the agent's side."""
-    return {"type": "user", "isSidechain": True, "promptId": pid,
-            "timestamp": ts(minute), "message": {"content": "do a thing"}}
+    return {"type": "user", "userType": "external", "isSidechain": True,
+            "promptId": pid, "timestamp": ts(minute),
+            "message": {"content": "do a thing"}}
 
 
 def agent_answer(minute, rid, fresh, cw, cr, out, model="claude-opus-5",
@@ -128,6 +129,23 @@ def agent_answer(minute, rid, fresh, cw, cr, out, model="claude-opus-5",
     r = answer(minute, rid, fresh, cw, cr, out, model, second)
     r["isSidechain"] = True
     return r
+
+
+def calls(minute, rid, *ids, **kw):
+    """An assistant record that asks for tools: one tool_use block per id."""
+    r = answer(minute, rid, 1, 0, 0, 1, second=kw.get("second", 0))
+    r["message"]["content"] = [{"type": "tool_use", "id": i, "name": "Bash"}
+                               for i in ids]
+    return r
+
+
+def result(minute, *ids, **kw):
+    """The results that answer them, by id.  A turn ends on one of these, so
+    the shape is the tool_result shape is_work already knows: a LIST."""
+    return {"type": "user", "userType": "external",
+            "timestamp": ts(minute, kw.get("second", 0)),
+            "message": {"content": [{"type": "tool_result", "tool_use_id": i,
+                                     "content": "ok"} for i in ids]}}
 
 
 def boundary(minute, pre, ms):
@@ -272,6 +290,87 @@ def run(tmp):
           (st.tok_up, st.tok_down),
           (int(2300 + 0.1 * (50000 + 60000 + 3000)), 1030))
     check("status 🧠 does not", st.ctx_tokens, 61000)
+
+    print("--- the clock counts the agents too ---")
+    # The main thread answers for a minute and then waits: everything after
+    # is the agents working, and a 🤖 read off the main file alone would call
+    # that hour idle.
+    busy = session(tmp, "busy", [prompt(10, "go", "p1"),
+                                 answer(11, "m1", 10, 0, 0, 10),
+                                 tool_result(11, "p1")], agents=[
+        ("agent-a1", [agent_user(11, "p1"),
+                      agent_answer(40, "b-a1", 10, 0, 0, 10)]),
+        ("agent-a2", [agent_user(20, "p1"),            # overlaps a1
+                      agent_answer(50, "b-a2", 10, 0, 0, 10)]),
+        ("agent-a3", [agent_user(52, "p1"),            # after both, with a
+                      agent_answer(55, "b-a3", 10, 0, 0, 10),   # gap before
+                      agent_user(57, "p2"),            # resumed by a later
+                      agent_answer(59, "b-a4", 10, 0, 0, 10)]), # turn
+    ])
+    check("the main thread alone is its one minute",
+          round(sl.read_transcript(busy, ()).busy_s), 60)
+    check("with the agents it is the union of every working span, never "
+          "their sum: 10-50 ran together, then 52-55 and 57-59",
+          round(sl.read_transcript(busy).busy_s), (40 + 3 + 2) * 60)
+    check("the walk hands back the spans it saw, one per agent TURN, so a "
+          "resumed agent is not charged for the wait between them",
+          (lambda sp: (sl.agent_records(busy, spans=sp),
+                       (len(sp), sorted(round((b - a) / 60) for a, b in sp))))(
+              [])[1],
+          (4, [2, 3, 29, 30]))
+    check("overlapping spans merge and disjoint ones add",
+          (sl.union_seconds(((0, 10), (5, 20), (30, 40))),
+           sl.union_seconds(()), sl.union_seconds(((7, 7), (9, 3)))),
+          (30.0, 0.0, 0.0))
+    b = sl.read_transcript(busy)
+    check("and never outruns the age it is a part of",
+          b.busy_s <= sl.ts_epoch(ts(59)) - b.start_s, True)
+
+    print("--- time inside a tool ---")
+    # Two calls asked for at once and answered out of order.  Pairing them
+    # off in file order would hand each the other's end, which is why
+    # scan_tool_spans matches on the id and nothing else.
+    tt = session(tmp, "tools", [
+        prompt(10, "go", "p1"),
+        calls(11, "m1", "t1", "t2"),
+        result(16, "t2"),                   # 11 -> 16, five minutes
+        result(13, "t1"),                   # 11 -> 13, two, INSIDE it
+        calls(20, "m2", "t3"),
+        result(22, "t3"),                   # 20 -> 22, disjoint
+        result(23, "t9"),                   # answers nothing this file saw
+    ])
+    recs = list(sl._records(tt))
+    check("three calls pair by id; the fourth result names no call and is "
+          "not one", len(sl.tool_spans(recs)), 3)
+    check("and the spans union rather than sum: 11-16 swallows 11-13",
+          round(sl.union_seconds(sl.tool_spans(recs)) / 60), 5 + 2)
+
+    # A Task's span covers its agent's whole run, so the agent's own tools
+    # are already inside it.  A BACKGROUND agent's are not: its result comes
+    # back at once and it keeps working after.
+    nest = session(tmp, "nest", [
+        prompt(10, "go", "p1"),
+        calls(11, "m1", "t1"),
+        result(40, "t1"),                   # a Task that waited: 11 -> 40
+        calls(12, "m2", "t2"),
+        result(12, "t2", second=30),        # a background dispatch: 30s
+    ], agents=[
+        ("agent-a1", [agent_user(11, "p1"), calls(20, "b1", "u1"),
+                      result(30, "u1"),
+                      agent_answer(35, "b2", 10, 0, 0, 10)]),
+        ("agent-a2", [agent_user(12, "p1"), calls(50, "c1", "u2"),
+                      result(58, "u2"),
+                      agent_answer(59, "c2", 10, 0, 0, 10)]),
+    ])
+    check("the agent that its Task waited on adds nothing — its tools ran "
+          "inside the span the Task already claimed — and the background "
+          "one, which ran after its result came back, adds all of its own",
+          round(sl.read_transcript(nest).tool_s / 60), 29 + 8)
+    check("the main thread alone sees only what its own file pairs",
+          round(sl.read_transcript(nest, ()).tool_s / 60), 29)
+    check("and tool time never outruns the busy clock it is a part of",
+          (lambda t: t.tool_s <= t.busy_s)(sl.read_transcript(nest)), True)
+    check("no transcript, no tool time", sl.EMPTY_TRANSCRIPT.tool_s, 0.0)
 
     print("--- the fallback ---")
     # No promptId anywhere on the main side: the stamp decides, and a

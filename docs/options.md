@@ -71,8 +71,15 @@ name is the registry's where the panel has one and the Agent tool's
 `description` where it has not, which is most spawns. Flush right at fixed
 widths, *what it is doing*: 🤖 a two-character model spec with the effort's
 glyph against it (`O⁵🏃`, `H⁴🔥`; the ladder is 🐢 🚶 🏃 🚀 🔥, and the
-status line's cell is the same since the same day), ⌛ elapsed, 🧩 tokens, 🛫 the token rate in tokens per
-second, 🎯 🧠 💰, and 🔋 🪫 the agent's own share of each window. Right-aligning a
+status line's cell is the same since the same day), then 🔧 🤖 — the
+seconds this agent spent inside a tool and the seconds it spent waiting on
+the model, which together are its whole run; the 🔧 counts every agent it
+spawned as well, and the 🤖 was an ⌛ until 2026-09-25, when the mark
+stopped restating the `m`/`h`/`d` the figure beside it already carries —
+💰 🧠 what it
+has spent and the window it is holding, 🧩 tokens, 🛫 the token rate in tokens
+per second, 🎯 the cache rate, 🔋 🪫 the agent's own share of each window, and
+last 💾 +adds/-removes, the lines this agent has written. Right-aligning a
 constant-width group puts each metric on one column in every row, ending on
 the status line's own right edge, and the name is the field that gives. The
 row is exactly the payload's `columns` wide: the panel states that width
@@ -81,15 +88,32 @@ columns of padding after — so a row that fills it ends where the status line
 does. The panel's ◯ itself is drawn before anything the command returns and
 cannot be replaced from here.
 
+That width is stated for a row the session itself started, and an agent that
+spawned its own agents gets a tree in the panel: `├ ` before the ◯ of each
+child, one per level down. Those two columns a level are chrome the payload
+never mentions, so the row pays for them itself — the depth is in the agent's
+sidecar, `spawnDepth`, and a task with no sidecar hangs off nothing and pays
+nothing. A child row is that much narrower than its parent's and its 🪫 lands
+on the same column, instead of two past the edge with the panel cutting the
+cell off to fit.
+
 The payload carries a name, a type, a status, a start time, a model, an
 effort and the panel's own running token count. Everything else on the row —
-🧩 🎯 🧠 💰 and the two shares — is read from the agent's own transcript,
+🧩 🎯 🧠 💰 💾 and the two shares — is read from the agent's own transcript,
 `<session>/subagents/agent-<id>.jsonl`, the same way the status line reads the
 session's, and the plan windows are the snapshot the status line last
 published. A task with no transcript (a shell, a remote agent) shows the
-fields the payload gives and nothing where the others would be. Brightness
+fields the payload gives and nothing where the others would be — 💾 included,
+since nothing counted is not the same fact as nothing written. An agent that
+has a transcript and has only read draws `+0 -0`, as the status line draws a
+session that has changed nothing. The pair is counted the way a diff is: over
+the `structuredPatch` each Edit's result carries, `+` a line added and `-` one
+removed, with a Write to a new file — which has no patch — counted whole out
+of the content it wrote, and each result taken once on its tool-use id so a
+resumed transcript does not count an edit twice. Brightness
 on the row follows the status line's cuts (see *Brightness as magnitude* in
-`layout.md`): 🧩 🧠 🛫 💰 ⌛ dim under theirs, 🎯 dims its green tier, and
+`layout.md`): 🧩 🧠 🛫 💰 🔧 🤖 dim under theirs, 💾 dims each half on its own
+count, 🎯 dims its green tier, and
 the 🔋 🪫 pair dims together when the agent's weekly share is under 0.2٪ — a
 light agent, whichever window you read it in. 🛫 is the
 slope of the panel's last sixteen token readings at its five-second tick, and
@@ -98,7 +122,7 @@ That reading is the last request's input plus every output, so it climbs by
 a whole context at each request and rests while a tool runs: a sign of life
 and of pace, not a generation rate. The status line's own 🛫, in column 2
 beside 🎯, is the same figure for the main thread, sampled by the program
-itself — see [Column 2](layout.md#column-2). ⌛ 🧩 🛫 🧠 💰
+itself — see [Column 2](layout.md#column-2). 🔧 🤖 🧩 🛫 🧠 💰
 dim under the status line's own magnitude cuts — ten minutes, 100k tokens,
 1k/s, a dollar — so the heavy agents are the bright rows of the panel; see
 [Brightness as magnitude](layout.md#brightness-as-magnitude-everywhere-else).

@@ -65,13 +65,21 @@ def prompt(before, text):
             "timestamp": iso(before), "message": {"content": text}}
 
 
-def answer(before, rid, fresh, cw, cr, out, text=None, sidechain=False):
+def answer(before, rid, fresh, cw, cr, out, text=None, sidechain=False,
+           tool=None):
     """An assistant record carrying billed usage, and optionally text.
 
     requestId is what dedups a repeat, so it has to be distinct per record and
     stable across runs -- hence a passed-in string rather than a counter.
+
+    `tool` adds a tool_use block with that id, which starts a tool's clock;
+    tool_done below stops it.  It rides an existing billed record rather than
+    adding one of its own, so the token sums in every golden stay what they
+    were and only the duration moves.
     """
     blocks = [{"type": "text", "text": text}] if text is not None else []
+    if tool:
+        blocks.append({"type": "tool_use", "id": tool, "name": "Bash"})
     return {"type": "assistant", "requestId": rid, "timestamp": iso(before),
             "isSidechain": sidechain,
             "message": {"id": rid, "content": blocks, "usage": {
@@ -87,6 +95,18 @@ def tool_result(before):
     looks like, which is why promptSource and not shape is the prompt test."""
     return {"type": "user", "userType": "external", "timestamp": iso(before),
             "message": {"content": "<tool_use_result>ok</tool_use_result>"}}
+
+
+def tool_done(before, tid):
+    """The result that stops a tool's clock, paired to the call by its id.
+
+    Distinct from tool_result above, which is the same kind of record with
+    string content and no id: that one is there to prove promptSource and not
+    shape is the prompt test, and it deliberately pairs with nothing.
+    """
+    return {"type": "user", "userType": "external", "timestamp": iso(before),
+            "message": {"content": [{"type": "tool_result",
+                                     "tool_use_id": tid, "content": "ok"}]}}
 
 
 # The two chat rows, which are the only free text on the readout and the only
@@ -135,9 +155,15 @@ def main_session():
             # measures is the span named above.
             at = start - int(span * (i + 1) / float(calls))
             n += 1
-            recs.append(answer(at, "req-%03d" % n, 3, 1800, 155000, 6000))
+            # One tool call per turn, opened on the turn's first billed
+            # record and answered a quarter of the turn later: 3,450 of the
+            # 13,800 answering seconds are spent inside a tool, which is what
+            # ⌛'s 🔧 reports and what its 🤖 no longer counts.
+            recs.append(answer(at, "req-%03d" % n, 3, 1800, 155000, 6000,
+                               tool=("tu-%d" % ti) if i == 0 else None))
             if i == 0:
                 recs.append(tool_result(at))
+                recs.append(tool_done(at - span // 4, "tu-%d" % ti))
         if ti == 1:
             # The same requestId twice.  Claude Code writes a repeat when a
             # request is retried, and counting it twice would inflate every
@@ -200,8 +226,10 @@ def agent_session():
     """
     return [dict(prompt(3600, "Fork off and read the two exhibits."),
                  promptId="p-fork"),
-            answer(3000, "req-m1", 12, 1000, 40000, 700, "Done."),
-            dict(tool_result(2400), promptId="p-fork")]
+            answer(3000, "req-m1", 12, 1000, 40000, 700, "Done.",
+                   tool="tu-fork"),
+            dict(tool_result(2400), promptId="p-fork"),
+            dict(tool_done(2400, "tu-fork"), promptId="p-fork")]
 
 
 AGENT_FILES = {
@@ -209,8 +237,17 @@ AGENT_FILES = {
         "agent-fork1.jsonl": [
             {"type": "user", "isSidechain": True, "promptId": "p-fork",
              "timestamp": iso(2900), "message": {"content": "read them"}},
-            dict(answer(2800, "req-fk1", 40, 6000, 80000, 2000),
+            dict(answer(2800, "req-fk1", 40, 6000, 80000, 2000,
+                        tool="tu-fk"),
                  isSidechain=True),
+            # The fork's own tool, 2800 -> 2700.  It runs INSIDE the 3000 ->
+            # 2400 span its Task already claimed on the main thread, so the
+            # union must still read 600 seconds and not 700: see
+            # scan_tool_spans on why the recursion needs no special case.
+            {"type": "user", "isSidechain": True, "timestamp": iso(2700),
+             "message": {"content": [{"type": "tool_result",
+                                      "tool_use_id": "tu-fk",
+                                      "content": "ok"}]}},
             dict(answer(2700, "req-fk2", 10, 2000, 84000, 1500),
                  isSidechain=True),
         ],

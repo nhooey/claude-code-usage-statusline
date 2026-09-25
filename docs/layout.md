@@ -38,7 +38,7 @@ The five right-hand columns are divided by a faint vertical rule at wide
 enough widths:
 
 ```
-👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🎤   3m 👤   5h 🤖  4h Σ  9.3h  | 📅  2026-08-16
+👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  5h Σ  9.3h  | 📅  2026-08-16
 🤖💬 Two separate things, and the second one is …  | 🧩▴ 23M ▾837k  | 📖 🎤 61٪ 🎮 45٪  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
 📦repo  📁~/Workbench/…/marbled-godwit             | 🛫200/s 🎯98٪  | 📝 🎤 15٪ 🎮 20٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
@@ -301,7 +301,7 @@ The three rows beside the stamp share a four-field sub-grid, 33 columns
 wide, and it is the widest thing on the readout:
 
 ```
-⌛ 🎤   5m 👤   6d 🤖  6h Σ  5.8d
+⌛ 🔧  47m 🤖   6h 👤  6d Σ  5.8d
 🔋 🎤 .98٪ 🎮 2.5٪ 💳 44٪ 🔜 2.4h
 🪫 🎤 .09٪ 🎮 2.6٪ 💳 51٪ 🔜 4.6d
 ```
@@ -315,7 +315,7 @@ one per field — and leaves the widest reading in each field touching the mark
 that labels it:
 
 ```
-⌛ 🎤  5m 👤  6d 🤖 6h Σ 5.8d
+⌛ 🔧 47m 🤖  6h 👤 6d Σ 5.8d
 🔋 🎤.98٪ 🎮2.5٪ 💳44٪ 🔜2.4h
 🪫 🎤.09٪ 🎮2.6٪ 💳51٪ 🔜4.6d
 ```
@@ -326,11 +326,47 @@ alignment, where a short reading swallows it and the gap comes and goes with
 the value. It also drags `LINE3_RESERVED` with it, and so how much of the pwd
 survives when the terminal will not report a width — see `set_mark_spacing`.
 
-Fields 0 to 2 are three scopes that widen left to right — 🎤 the turn just
-answered, 🎮 this session, 💳 the account — each a mark and a value
-right-aligned in `LIM_FIG_W`, divided from the next by a single space. Field 3
-is a duration and its mark says which kind: 🔜 time until this window resets,
-Σ time since the session opened.
+On the two limit rows, fields 0 to 2 are three scopes that widen left to
+right — 🎤 the turn just answered, 🎮 this session, 💳 the account — each
+a mark and a value right-aligned in `LIM_FIG_W`, divided from the next by a
+single space. Field 3 is a duration and its mark says which kind: 🔜 time
+until this window resets, Σ time since the session opened.
+
+The ⌛ row spends the same three fields on a **partition** rather than a
+scope sequence: 🔧 the seconds spent inside a tool, 🤖 the seconds spent
+waiting on the model, 👤 the seconds spent waiting for a person to type.
+They add up to the Σ in field 3 exactly, and no second is in two of them.
+The order is the machine's work first and the person's wait last, so the two
+figures a reader compares — tooling against thinking — sit next to each other,
+and the remainder falls immediately before the Σ it completes.
+
+**🔧 came from the 🎤 that stood in field 0 until 2026-09-25**, which held
+how long the turn the rows below report the cost of actually took. That field
+was scoped where nothing else on its row is; it bought scale for the 🎤
+percentages under it at the price of the row's one structural claim, that
+every figure on it is about the same session over the same age. The turn's
+duration is still printed on the cost line's own 🎤 row, beside the cost it
+qualifies.
+
+**🤖 changed meaning with it.** It was every second spent answering, tool
+seconds included; it is now every second spent answering with the tool
+seconds taken out — the model thinking, and nothing else. Nested, 🔧 would
+have been a footnote to 🤖; partitioned, the two say different things and a
+session changes which one is large. An hour of dispatching agents and waiting
+on builds now reads as an hour of 🔧 beside minutes of 🤖, where before
+both cells simply said an hour.
+
+**Where the tool seconds come from.** A tool's clock starts on the assistant
+record that asks for it and stops on the `tool_result` that answers it,
+matched by `tool_use_id` and never by adjacency — four calls issued at once
+land in any order. The spans of the main thread and of every agent file are
+**unioned**, as 🤖's already are, which makes the fold recursive for free: a
+Task's span covers its agent's entire run, so that agent's own tools are
+already inside it and counting them again changes nothing. What the union
+catches that the nesting does not is a **background** agent, whose tool result
+comes back at once while it keeps working — its tools run outside every span
+its parent recorded, and are counted there. `scan_tool_spans` and
+`agent_tool_spans` in the program.
 
 **Why the duration goes last.** It led the column until 2026-08-28, and the
 argument for that was a real one: a countdown asks the same question as the ⌛
@@ -430,7 +466,7 @@ one could be told from the other. Now the ink says it first.
 | tokens | 100k | 🧩 ▴ and ▾ each on its own, 🧠's size — both readouts |
 | rate | 1k/s | 🛫, both readouts |
 | cost | $1 | 💰, both readouts |
-| duration | 10 min | ⌛ 🎤 👤 🤖 Σ each on its own; an agent's ⌛ |
+| duration | 10 min | ⌛ 🔧 🤖 👤 Σ each on its own; an agent's 🔧 and 🤖 |
 | diff | 100 lines | 💾 each half on its own |
 
 `MAG_TOK`, `MAG_RATE`, `MAG_COST`, `MAG_DUR_S`, `MAG_DIFF` in the program, and
@@ -578,9 +614,10 @@ line 3 lost 10 — `LINE3_RESERVED` was 109 with the spacing on and 105 with it
 off, until the share column took 20 more and the evening's rearrangement gave ten back; it is measured rather than estimated, so it
 has to be re-measured whenever a column moves.
 
-The ⌛ row's other two scope fields stay positional rather than scoped. 👤 and
-🤖 split the age that Σ states, and there is no account-wide time to put under
-💳. That was the compromise before this change too, one field narrower.
+The ⌛ row's fields are positional rather than scoped, and have been since
+before this change. 🔧, 🤖 and 👤 partition the age that Σ states, and
+there is no account-wide time to put under 💳 — so the two rows share a grid
+and not a vocabulary.
 
 ## Where one prompt's money went
 

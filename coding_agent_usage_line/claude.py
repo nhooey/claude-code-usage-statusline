@@ -620,14 +620,17 @@ def stored_ctx_window(session_id: str) -> int:
 
 def _with_shares(lim: Limits, transcript: str,
                  agents: Optional[Sequence[AgentRec]] = None
-                 ) -> Tuple[Limits, float, CacheShares]:
+                 ) -> Tuple[Limits, CacheShares]:
     """Attach how much of each window this session, and its last turn, used.
 
-    Returns the turn's wall-clock seconds alongside, because ⌛'s new 🎤
-    field needs exactly the turn this picked and reading the transcript a
-    second time to find it again would be both slower and free to disagree.
-    And, since 2026-09-16, the 📖 📝 shares of column 3 -- the same
-    turn's, and the session's -- off the same read, for the same reason.
+    Returns the 📖 📝 shares of column 3 alongside -- the same turn's, and
+    the session's -- off the same read, because they need exactly the turn
+    this picked and reading the transcript a second time to find it again
+    would be both slower and free to disagree.
+
+    (The turn's wall-clock seconds came back here too until 2026-09-25, for
+    ⌛'s first field.  That field is 🔧 now and reads off the transcript
+    the status line has already summed, so nothing asks for it here.)
     Those need no plan reading and no calibration, only the transcript, so
     they are derived before the limits are looked at and a session with no
     usable window still gets its column; the limits' early return is
@@ -682,7 +685,7 @@ def _with_shares(lim: Limits, transcript: str,
     happened was a compaction or a batch drained without billing.
     """
     if not transcript or not os.path.isfile(transcript):
-        return lim, 0.0, NO_CACHE_SHARES
+        return lim, NO_CACHE_SHARES
     try:
         turns = read_turns(transcript, agents)
         prompts = [t for t in turns if t.calls and not t.compact
@@ -694,10 +697,9 @@ def _with_shares(lim: Limits, transcript: str,
                                   else (None, None)),
                                 *session_cache_shares(turns))
     except Exception:
-        return lim, 0.0, NO_CACHE_SHARES
-    turn_s = last.dur_s if last is not None else 0.0
+        return lim, NO_CACHE_SHARES
     if not lim.session_pct and not lim.weekly_pct:
-        return lim, turn_s, cache
+        return lim, cache
     try:
         calib = calibration()
         sh = session_shares(turns, calib)
@@ -705,12 +707,12 @@ def _with_shares(lim: Limits, transcript: str,
         if last is not None:
             tn = window_shares(last, calib)
     except Exception:
-        return lim, turn_s, cache
+        return lim, cache
     return (lim._replace(session_share=_pct_str(sh["sess"]),
                          weekly_share=_pct_str(sh["week"]),
                          session_turn=_pct_str(tn["sess"]),
                          weekly_turn=_pct_str(tn["week"])),
-            turn_s, cache)
+            cache)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1765,6 +1767,16 @@ class AgentUsage(NamedTuple):
     last_epoch: Optional[float]   # the last billed record's stamp: when a
                             # finished agent stopped, which the payload does
                             # not say
+    # What this agent WROTE, counted off its own tool results.  Defaulted so
+    # every construction that predates the pair still builds, and zero for an
+    # agent that only read.  See agent_diff.
+    lines_added: int = 0
+    lines_removed: int = 0
+    tool_s: float = 0.0     # seconds inside a tool, this agent's own and
+                            # every agent it spawned.  Filled by the caller,
+                            # not by read_agent_usage: it is the one figure on
+                            # the row that needs files other than this one.
+                            # See agent_tool_spans.
 
 
 NO_AGENT_USAGE = AgentUsage(None, 0, -1, 0, 0.0, (), "", "", 0, None)
@@ -1788,6 +1800,72 @@ def agent_file_for(transcript: str, task_id: str) -> str:
     return hits[0] if hits else ""
 
 
+_KIDS: Dict[str, Dict[str, List[str]]] = {}
+
+
+def _agent_id(path: str) -> str:
+    """The agent id in `<dir>/agent-<id>.jsonl`, or "" for anything else."""
+    base = os.path.basename(path)
+    if not base.startswith("agent-") or not base.endswith(".jsonl"):
+        return ""
+    return base[len("agent-"):-len(".jsonl")]
+
+
+def _children_by_parent(directory: str) -> Dict[str, List[str]]:
+    """Every agent transcript under `directory`, grouped by the agent that
+    spawned it.
+
+    Built once per directory and memoised for the life of the process, which
+    is one render: a session with 86 agents would otherwise read 86 sidecars
+    per row and 7,396 in total, and this is a status line.
+    """
+    hit = _KIDS.get(directory)
+    if hit is not None:
+        return hit
+    kids: Dict[str, List[str]] = {}
+    for f in sorted(glob.glob(os.path.join(directory, "**", "agent-*.jsonl"),
+                              recursive=True)):
+        parent = agent_meta(f).get("parentAgentId")
+        if parent:
+            kids.setdefault(str(parent), []).append(f)
+    _KIDS[directory] = kids
+    return kids
+
+
+def agent_tool_spans(path: str) -> List[Tuple[float, float]]:
+    """(start, end) for every tool call this agent ran, its descendants' in.
+
+    The recursion is over `parentAgentId` in the sidecars, which is the only
+    place the tree is written down: an agent an agent spawned sits in the
+    same `subagents/` directory as its parent and is told apart from a
+    sibling by that field alone.
+
+    It is belt-and-braces rather than the mechanism.  A child's whole run is
+    already inside the parent's own Task span, so the union would come out
+    the same for an agent that waited on its children — which is the usual
+    case, and the reason scan_tool_spans can call itself recursive for free.
+    What this catches is the case where it is not: an agent dispatched in the
+    BACKGROUND returns its tool result at once and keeps working, and its
+    tools then run outside every span its parent recorded.  Unioned, so the
+    ordinary case is not counted twice.
+    """
+    if not path:
+        return []
+    directory = os.path.dirname(path)
+    kids = _children_by_parent(directory) if directory else {}
+    out: List[Tuple[float, float]] = []
+    seen = set()
+    queue = [path]
+    while queue:
+        cur = queue.pop()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        out.extend(tool_spans(list(_records(cur))))
+        queue.extend(kids.get(_agent_id(cur), ()))
+    return out
+
+
 def agent_meta(path: str) -> dict:
     """The `.meta.json` sidecar beside an agent transcript: agentType,
     description, model alias, spawnDepth.  {} where there is none."""
@@ -1802,6 +1880,55 @@ def agent_meta(path: str) -> dict:
         return {}
 
 
+def agent_diff(records: Sequence[dict]) -> Tuple[int, int]:
+    """+adds/-removes across everything this agent wrote, from its tool results.
+
+    The status line takes the session's pair from the payload, which Claude
+    Code fills in for the session and says nothing about per agent, so the
+    agent row counts its own the way a diff is counted: over the
+    `structuredPatch` an Edit's result carries, one hunk line at a time, `+`
+    added and `-` removed.  A Write to a NEW file has no patch to count — the
+    result is `type: "create"` with the whole file in `content` — and every
+    line of it is an addition, which is the reading Claude Code's own total
+    takes of the same call.
+
+    Deduped on the tool-use id, for the reason _dedupe_usage dedupes on the
+    request id: a resumed or compacted transcript can carry the same result
+    twice, and counting one edit twice would double the figure the row is
+    for.  A result with no id is counted; nothing else identifies it, and
+    dropping it would undercount.
+    """
+    added = removed = 0
+    seen = set()
+    for r in records:
+        res = r.get("toolUseResult")
+        if not isinstance(res, dict):
+            continue
+        tid = ""
+        for block in (r.get("message") or {}).get("content") or ():
+            if isinstance(block, dict) and block.get("tool_use_id"):
+                tid = str(block["tool_use_id"])
+                break
+        if tid:
+            if tid in seen:
+                continue
+            seen.add(tid)
+        patch = res.get("structuredPatch")
+        if isinstance(patch, list) and patch:
+            for hunk in patch:
+                for line in (hunk or {}).get("lines") or ():
+                    if not isinstance(line, str) or not line:
+                        continue
+                    if line[0] == "+":
+                        added += 1
+                    elif line[0] == "-":
+                        removed += 1
+        elif res.get("type") == "create" and isinstance(res.get("content"),
+                                                        str):
+            added += len(res["content"].splitlines())
+    return added, removed
+
+
 def read_agent_usage(path: str) -> AgentUsage:
     """One pass over an agent's transcript, the way read_transcript reads the
     session's: deduped on requestId, summed, priced per record.
@@ -1812,7 +1939,8 @@ def read_agent_usage(path: str) -> AgentUsage:
     """
     if not path:
         return NO_AGENT_USAGE
-    reqs = _dedupe_usage(list(_records(path)))
+    recs = list(_records(path))
+    reqs = _dedupe_usage(recs)
     fresh = cwrite = cread = down = 0
     ctx = 0
     cost = 0.0
@@ -1847,7 +1975,8 @@ def read_agent_usage(path: str) -> AgentUsage:
     return AgentUsage(
         int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread), down,
         int(100 * cread / in_all) if in_all > 0 else -1,
-        ctx, cost, tuple(parts), model, effort, len(parts), last)
+        ctx, cost, tuple(parts), model, effort, len(parts), last,
+        *agent_diff(recs))
 
 
 def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
@@ -1893,7 +2022,8 @@ def prepare_subagent_tasks(pay: dict):
             continue
         try:
             path = agent_file_for(transcript, str(task["id"]))
-            usage = read_agent_usage(path)
+            usage = read_agent_usage(path)._replace(
+                tool_s=union_seconds(agent_tool_spans(path)))
             prepared.append((task, usage, agent_meta(path),
                              agent_window_shares(usage)))
         except Exception:
@@ -1979,10 +2109,17 @@ def main_status(argv: Sequence[str], raw: str) -> int:
 
     # The agent files are walked ONCE here and handed to both readers.  Each
     # would otherwise walk them itself, and a session that has run many
-    # agents has as many bytes there as in its own transcript.
+    # agents has as many bytes there as in its own transcript.  The same walk
+    # fills `spans` — when each agent was working, for ⌛🤖 — and `tools` —
+    # when each was inside a tool, for ⌛🔧 — so neither clock costs a second
+    # read.
     have_tr = bool(pay.transcript) and os.path.isfile(pay.transcript)
-    agents = agent_records(pay.transcript) if have_tr else ()
-    tr = read_transcript(pay.transcript, agents) if have_tr else EMPTY_TRANSCRIPT
+    spans = []
+    tools = []
+    agents = (agent_records(pay.transcript, spans=spans, tools=tools)
+              if have_tr else ())
+    tr = (read_transcript(pay.transcript, agents, spans, tools) if have_tr
+          else EMPTY_TRANSCRIPT)
     # Offline transcript reports have no hook workspace.  Do not silently use
     # this command's cwd (nor run its potentially expensive dirty-tree probe)
     # as though it were the recorded session's project.
@@ -2030,7 +2167,7 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     seed_limits_snapshot(base_limits, prepared.reading)
     # Session/turn shares still require the one transcript scan performed
     # above; rendering itself receives only the prepared snapshot.
-    lim, turn_s, cache = _with_shares(base_limits, pay.transcript, agents)
+    lim, cache = _with_shares(base_limits, pay.transcript, agents)
     cols_s = _flag(argv, "--cols")
     # "--cols 0" means "pretend the width is unknown", which is the only way to
     # exercise the fallback layout deterministically from a test.
@@ -2041,7 +2178,7 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     publish_ctx_window(pay.session_id, ctx_window)
     tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
     rate = session_rate(pay.session_id, tokens, frozen_now())
-    output = render_status(pay, tr, git, lim, cols, frozen_now(), turn_s,
+    output = render_status(pay, tr, git, lim, cols, frozen_now(),
                            "--no-column-rules" not in argv, ctx_window, rate,
                            cache)
     account_data = prepared.reading.get("account")
