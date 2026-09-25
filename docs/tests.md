@@ -1,84 +1,96 @@
 # Tests
 
-The tests live in `tests/`, beside the program. They did not until
-2026-08-28: ten of the thirteen status payloads read a real 8.7 MB session
-transcript under `~/.claude/projects/`, which is somebody's actual
-conversation. Both corpora are generated now — `mkcorpus-status.py` and
-`mkcorpus-cost.py` write their fixtures into the scratch directory at the top
-of every run — so nothing in here belongs to anyone, and a fixture cannot
-drift away from the generator that describes it.
+Everything is standard-library Python and bash, so there is nothing to install.
+Run the whole deterministic set from the repository root, in bash or zsh:
 
 ```sh
-bash tests/golden.sh              # status mode, 135 comparisons — seconds
-bash tests/golden-cost.sh         # cost mode, 77 comparisons — seconds
-bash tests/py39-floor.sh          # the claimed 3.9 floor, checked — seconds
-python3 tests/usage-source.py     # tracker/command/cache migration, 39 cases — seconds
-python3 tests/agents.py           # agent spend: reader, fold-in, late row, scan — seconds
-python3 tests/subagent.py         # the agent panel rows: file lookup, billing, shares, shape — seconds
-python3 tests/rate.py             # the status line's 🛫: the sampler and its cell; the brightness cuts — seconds
-python3 tests/formatting.py       # shared width/formatting/configuration
-python3 tests/sources-v1.py       # normalized schema and quota hierarchy
-python3 tests/source-cache.py     # source precedence, freshness, backoff, isolation
-python3 tests/claude-sources.py   # shared intake to Claude display projection
-python3 tests/claude-subagent-render.py # prepared panel rows without I/O
-python3 tests/http-sources.py     # offline admin/private endpoint contracts
-python3 tests/app-server.py       # fake app-server framing, buckets and cleanup
-python3 tests/codex.py            # rollout accounting, descendants and reporting state
-python3 tests/port-cli.py         # public CLI, held-open stdin and concurrent late usage
-tests/compaction-once.py          # replay real sessions — MINUTES, see below
-tests/agents-once.py              # the same for agent spend — MINUTES
-./coding-agent-usage-line.py --selftest    # needs a real tty
-bash tests/probe-advance.sh       # needs a real tty; measures, does not assert
+for s in golden golden-cost py39-floor; do
+  bash "tests/$s.sh" || { echo "FAIL: $s"; break; }
+done
+for t in usage-source sources-v1 source-cache http-sources app-server \
+         claude-sources codex formatting port-cli agents subagent \
+         claude-subagent-render rate; do
+  python3 "tests/$t.py" || { echo "FAIL: $t"; break; }
+done
 ```
 
-The first seven must end `fail 0   missing 0` (or `fail 0`). A deliberate layout change is
-accepted with `--regen` **after reading the diff** — that is the step where a
-regression gets blessed as the new expected output.
+Each suite exits non-zero on failure. They take seconds, use generated fixtures
+only, and never read your credentials or your `~/.claude` history.
 
-All the deterministic suites above also run in CI over Python 3.9 and
-3.13, plus `shellcheck` over `tests/*.sh` — see
-`.github/workflows/tests.yml`. `usage-source.py` reads a macOS app's
-preference store and is in CI anyway: it builds its own fixture store with
-`plistlib`, so it needs neither macOS nor the app. HTTP and app-server tests
-likewise use fixtures, not live credentials. The two real-history replay
-scripts and two real-terminal checks are manual: CI has neither those private
-histories nor the specific terminal whose rendering is being checked.
+Run them from a directory macOS does not guard. Under `Documents`, `Downloads`
+or `Desktop`, TCC can make Python's imports fail part-way through with
+`PermissionError: [Errno 1] Operation not permitted`, which looks like a bug in
+the program and is not.
 
-**Run the suites from a directory macOS does not guard.** Under `Documents`,
-`Downloads` or `Desktop`, TCC can make Python's import machinery raise
-`PermissionError: [Errno 1] Operation not permitted` part-way through a run,
-which reads as a fault in the program and is not one.
+## The suites
 
-`--selftest` is the only check that catches a glyph which measures correctly and
-paints wrong, and it needs a real terminal tab. Run it in each terminal, and
-look at the drawn rows as well as the numbers.
+| Command | Checks | Result line |
+|---|---|---|
+| `bash tests/golden.sh` | `--mode status` output, byte for byte, against 135 golden files | `pass 135   fail 0   missing 0` |
+| `bash tests/golden-cost.sh` | `--mode cost` output against 77 golden files | `pass 77   fail 0   missing 0` |
+| `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 37   fail 0   missing 0` |
+| `python3 tests/usage-source.py` | the Claude Usage Tracker reader, `cmd:` sources, and the scoped source cache | `pass 39   fail 0   missing 0` |
+| `python3 tests/sources-v1.py` | the normalized v1 reading: schema, timestamps, separate quota buckets | `ok …` |
+| `python3 tests/source-cache.py` | source precedence, freshness, refresh backoff, cache isolation | `ok …` |
+| `python3 tests/http-sources.py` | admin and experimental HTTP sources against injected transports | `ok …` |
+| `python3 tests/app-server.py` | a fake Codex app-server: framing, buckets, bounded cleanup | `ok …` |
+| `python3 tests/claude-sources.py` | a normalized reading projected onto Claude's limit rows | `ok …` |
+| `python3 tests/codex.py` | Codex rollout accounting, child threads, Stop report state | `ok …` |
+| `python3 tests/formatting.py` | shared width and formatting helpers, display switches | `ok …` |
+| `python3 tests/port-cli.py` | the public CLI end to end, including held-open stdin and concurrent Stops | unittest `OK` (14 tests) |
+| `python3 tests/agents.py` | agent spend: reading agent files, folding them into turns, the 👥 row, the tool-time partition | `pass 51   fail 0` |
+| `python3 tests/subagent.py` | the agent-panel rows: finding an agent's file, billing, window shares, nesting, row shape | `pass 57   fail 0` |
+| `python3 tests/claude-subagent-render.py` | panel row rendering with no file or source reads | `ok …` |
+| `python3 tests/rate.py` | the 🛫 token-rate sampler and cell, and the brightness-as-magnitude cuts | `pass 51   fail 0` |
 
-`rate.py` exists because the goldens cannot show the figure it checks: they
-pin the clock, so every render of a case is the sampler's first tick and the
-🛫 field is blank in every golden file — correctly, and uselessly as a test
-of the slope. The suite steps the clock by hand against a scratch state directory
-and pins the tick, the depth of the history, a damaged file, and the cell.
-It also pins the brightness-as-magnitude rule — one fixed cut per kind, dim
-under it, and a dim first field reset before the second — because the goldens
-record the escapes without saying which of them is the rule and which the
-value, and a re-bless would accept a 🛫 that dimmed the 🎯 beside it.
+The goldens pin the clock, so every render is the rate sampler's first tick and
+🛫 is blank in every golden file. `rate.py` exists to check what the goldens
+cannot: it steps the clock itself.
 
-`tests/README.md` carries the rest, including what the generated session is
-built to reach and why the differential test against the two programs this one
-replaced was retired.
+## What CI runs
 
-`compaction-once.py` is the one test that still reads real sessions: the rule
-it checks is about a SEQUENCE of Stop hooks across a whole conversation, so it
-replays whatever transcripts this machine has under `~/.claude/projects/`. It
-records nothing, so it takes no fixture with it. **It costs minutes, not
-seconds** — its runtime scales with the reader's history, and one recent run
-read 149 sessions to find the 28 with a compaction in them and took over ten
-minutes. Give it no timeout, or a generous one.
+[`.github/workflows/tests.yml`](../.github/workflows/tests.yml) runs on every
+push and pull request:
 
-`agents-once.py` is its sibling for agent spend: every session with a
-`subagents/` directory and a Stop record, each Stop replayed with the main
-file cut before its record and each agent file cut at its stamp, the state
-file published between Stops the way the live hook publishes it. It asserts
-that every agent request is on a 🎤 or 👥 row at the Stop that first saw it,
-and on the 👥 row at no later Stop. Same cost as its sibling, for the same
-reason.
+- **goldens** — every suite in the table above except `py39-floor.sh`, on
+  Python 3.9 and 3.13. The two golden scripts call `/usr/bin/python3`
+  directly, so they run on the runner's system Python whichever matrix entry
+  is active.
+- **python 3.9 floor** — `py39-floor.sh`, pointed at a real 3.9 through `PY39`.
+- **shell** — `bash -n` and `shellcheck -S warning` over `tests/*.sh`.
+
+`usage-source.py` runs in CI even though it reads a macOS app's preference
+store: it builds its own store with `plistlib`, so it needs neither macOS nor
+the app.
+
+## Checks that stay manual
+
+| Command | Why CI cannot run it |
+|---|---|
+| `tests/compaction-once.py [TRANSCRIPT…]` | replays your real sessions to check every compaction is reported exactly once; minutes, not seconds |
+| `tests/agents-once.py [TRANSCRIPT…]` | the same for agent spend reported late |
+| `./coding-agent-usage-line.py --selftest` | measures the layout in the terminal you run it in; needs a real tty |
+| `bash tests/probe-advance.sh` | measures every glyph's cursor advance in this terminal; needs a real tty and asserts nothing |
+
+A runner has no Claude history to replay and no real terminal to measure.
+See [tests/README.md](../tests/README.md#manual-checks) for how to run each.
+
+## Changing what the readout draws
+
+Edit the program, then re-record and read the diff:
+
+```sh
+bash tests/golden.sh --regen        # or golden-cost.sh --regen
+git diff tests/golden/
+```
+
+Accept the new goldens only if every line that moved is one you meant to move,
+and commit them with the change. `--regen` is the step where a regression gets
+recorded as the expected output, so the diff is the review.
+
+A failing golden run writes both sides under `tests/out/` (status) or
+`tests/out-cost/` (cost) as `NAME.got` and `NAME.want`.
+
+[tests/README.md](../tests/README.md) covers how the goldens are built, what
+the pinned environment holds still, what each case is for, and the recorded
+behaviours that look like bugs.

@@ -972,7 +972,7 @@ C_SEG_GAP = 2  # between adjacent cost-row segments; matches the status line's
 # Columns the CLI spends before the cost row's first character: the box's
 # five-column indent ("  ⎿  ") plus "Stop says: ", which appear nowhere in the
 # hook payload and cannot be measured from here.  docs/layout.md, '"Stop
-# says: ", and the eleven columns', for what these two figures buy — why the rows ship as
+# says:" and --force-newline', for what these two figures buy — why the rows ship as
 # ONE systemMessage, and why an unsubtracted chrome shows up as a WRAPPED
 # second line rather than a trailing ellipsis.
 #
@@ -1861,7 +1861,7 @@ E_SUB_DIGITS = "₀₁₂₃₄₅₆₇₈₉"
 # advanced one column on 2026-09-08.  ¹ ² ³ are Latin-1 rather than
 # U+2070-2079 and the four Opus, Sonnet, Haiku and Fable versions in the
 # catalogue land on ⁴ and ⁵, so one Ambiguous digit is in live use.  None of
-# these has been probed; see the TODO in docs/development.md.  vis_width
+# these has been probed; see "Open issues" in docs/development.md.  vis_width
 # calls them one, as it does every codepoint outside its wide tables.
 E_SUP_DIGITS = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 SUB_DEC = False

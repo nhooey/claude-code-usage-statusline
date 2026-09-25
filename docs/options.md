@@ -1,210 +1,221 @@
 # Options
 
-Operational modes require `--agent claude|codex`. Help and the terminal
-`--selftest` do not require an agent. Select account intake independently with
-`--usage-source`; transcript data always supplies the session's own metrics.
-
-| common option | effect |
-|---|---|
-| `--agent claude\|codex` | choose the transcript and hook adapter |
-| `--usage-source SPEC` | choose account intake; see [Usage sources](usage-sources.md) |
-| `--transcript PATH` | read an explicit file in status or cost mode without waiting for stdin; do not consume live Stop-report state |
-| `--account NAME` | a non-secret account/cache namespace; default `default` |
-| `--account-period day\|week\|month` | UTC calendar period for organization reports; weeks start Monday; default `day` |
-| `--diagnose` | emit redacted source/freshness/coverage diagnostics on stderr |
-| `--all` | with cost mode, report historical turns and completed child rows as plain text |
-
-Codex supports one-shot status and JSON Stop summaries. It groups requests by
-root turn, includes descendant usage without adding copied fork prefixes, and
-reports late usage once with its original turn attribution. Its live footer is
-configured through Codex's own `/statusline`; there is no external footer
-command. `--mode subagent` is Claude-only and exits 2 for Codex with an explanation.
-The display switches below apply to Claude's presentation.
-
-Claude has three modes and a self-test:
-
 ```
---mode status   stdin: the status-line JSON payload
-                stdout: three rows
---mode cost     stdin: the Stop-hook JSON payload
-                stdout: {"systemMessage": "<two rows>"}
---mode subagent stdin: the agent panel's task list
-                stdout: one {"id": ..., "content": ...} line per task
---selftest      draws specimen rows on the tty and asks the terminal where
-                the cursor landed; needs a real terminal tab
+coding-agent-usage-line.py --agent claude|codex [--mode status|cost|subagent] [options]
+coding-agent-usage-line.py --selftest
 ```
 
-`--mode cost` takes these, most of which only ever REMOVE something or
-move it:
+`--agent` is required for every mode. Only `--help` and `--selftest` run
+without it. Flags are validated before stdin is read, so a malformed hook
+command fails at once (exit 2) instead of waiting for input.
 
-| option | effect |
+A bare invocation draws everything. Every Claude display switch either removes
+something or changes spacing, so you only add flags to take things away.
+
+| I want to… | Use |
 |---|---|
-| `--transcript PATH` | read this transcript instead of the payload's; also suppresses the flush wait, so tests do not pay for it |
-| `--all` | list every prompt as plain text instead of emitting a hook response |
-| `--prefix TEXT` | the icon block at the head of each row (default 📊) |
-| `--label TEXT` | the label after it, bolded at print time |
-| `--color` | emit colour; the hook needs plain, so plain is the default |
-| `--no-totals` | drop the session-totals row |
-| `--no-right-align` | print flush left |
-| `--no-account-totals` | drop the second half of the 🔋 and 🪫 cells — `💳 99٪` on the totals row (`💳 💯` at a full window), `📖`/`📝` on the per-prompt row — leaving each window's own share alone. The two halves go together because they stack; see *Where one prompt's money went* |
-| `--no-datetime` | drop the 📅 date and 🕐 clock cells |
-| `--no-usage-text` | drop the `Usage: ...` words from every row label, keeping each row's marker glyph |
-| `--force-newline` | always open the message with a blank line |
+| read a saved transcript by hand | `--transcript PATH`, plus `--mode cost --all` for every prompt |
+| plain gaps instead of the faint `\|` rules | `--no-column-rules` |
+| a tighter readout on a narrow terminal | `--no-mark-spacing` |
+| shorter cost-line labels | `--no-usage-text` |
+| see why a plan figure is blank | `--diagnose` |
+| change where plan figures come from | `--usage-source SPEC` — see [Usage sources](usage-sources.md) |
 
-`--mode subagent` is the `subagentStatusLine` setting. Claude Code runs it
-every few seconds while the session has tasks in its agent panel — Agent tool
-calls, forks, background shells, workflows — with the task list on stdin, and
+## Modes
+
+| Mode | Reads on stdin | Prints | Agents |
+|---|---|---|---|
+| `status` (default) | the status-line JSON payload | three rows (Claude); a summary and quota lines (Codex) | both |
+| `cost` | the Stop-hook JSON payload | `{"systemMessage": "..."}`, or `{}` when there is nothing to report | both |
+| `subagent` | the agent panel's task list | one `{"id": ..., "content": ...}` line per task | Claude only |
+| `--selftest` | nothing | specimen rows drawn on the terminal, and a report of where the cursor landed | — |
+
+Hooks never break a session: a missing transcript or an internal error in
+`cost` mode prints `{}` and exits 0. In `subagent` mode unreadable input
+prints nothing, which leaves the panel's own rows in place.
+
+`--agent codex --mode subagent` exits 2, because Codex has no agent-panel
+hook. Use `--mode cost --all` for its child-agent reports. See
+[Codex](codex.md).
+
+`--selftest` needs a real terminal tab: it draws rows on `/dev/tty` and asks
+the terminal where the cursor ended up. See
+[Glyphs and terminals](glyphs-and-terminals.md).
+
+## Shared options
+
+These work for both agents.
+
+| Option | Default | Effect |
+|---|---|---|
+| `--agent claude\|codex` | — | Which transcript format and hook conventions to use. Required. |
+| `--mode MODE` | `status` | See [Modes](#modes). |
+| `--transcript PATH` | the payload's path | Read this transcript instead of the one the payload names, and don't read stdin. For offline use: it skips the Stop hook's wait for the transcript to finish writing, and never records "already reported" state, so it can't change what the live hook reports next. |
+| `--usage-source SPEC` | `auto` | Where plan/quota figures come from. See [Usage sources](usage-sources.md). |
+| `--account NAME` | `default` | A non-secret label that keeps cached readings for different accounts apart. Never put a token here. |
+| `--account-period day\|week\|month` | `day` | The UTC calendar period for organization reports (`anthropic-admin`, `openai-admin`). Weeks start on Monday. |
+| `--all` | off | With `--mode cost`: list every prompt as plain text instead of emitting a hook response. Codex also lists completed child agents. Doesn't consume Stop-hook state. |
+| `--diagnose` | off | Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses. |
+| `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
+
+### Terminal width
+
+A status-line command runs with pipes for stdio, so it can't ask its own
+terminal for a width. The program walks up its process ancestry to the first
+process with a terminal and asks that device, on every render, so a resize is
+picked up on the next frame. There is no terminal under `claude -p` or in
+cloud sessions; the readout then uses a fallback layout that doesn't depend on
+the width. `--cols` overrides the walk. The tests use it for reproducible
+output.
+
+In `subagent` mode the panel supplies `columns` in its payload and that is
+used unless `--cols` is given.
+
+## Claude display options
+
+| Option | Modes | Effect |
+|---|---|---|
+| `--no-column-rules` | status | Drop the faint `\|` rules between the columns. Nothing moves. |
+| `--no-mark-spacing` | all | Close the blank between a mark and its value. |
+| `--subscript-decimals` | all | Write fractions as subscript digits: `1.2٪` becomes `1₂٪`. |
+| `--color` | cost | Colour the rows. Off by default because the Stop hook's message is shown as plain text. |
+| `--no-totals` | cost | Drop the 🎮 session-totals row. |
+| `--no-right-align` | cost | Print the rows flush left. |
+| `--no-account-totals` | cost | Drop the second half of each 🔋 and 🪫 cell: `💳 41٪` on the totals row, `📖`/`📝` on the prompt row. |
+| `--no-datetime` | cost | Drop the 📅 date and 🕐 time cells. |
+| `--no-usage-text` | cost | Drop the `Usage: …` words from the row labels, keeping each row's glyph. |
+| `--force-newline` | cost | Always start the message with a blank line. |
+| `--prefix TEXT` | cost | The mark at the start of each row. Default `📊`. |
+| `--label TEXT` | cost | The label of the prompt row. Default `🎤 Usage: Prompt (last)`, or `🎤` with `--no-usage-text`. |
+
+`--column-rules` and `--mark-spacing` are the defaults and are accepted so a
+settings file can say explicitly what it wants. A flag given for a mode it
+doesn't apply to is accepted and ignored. With `--agent codex` these flags are
+rejected as unknown options (exit 2), except `--prefix` and `--label`, which
+are accepted and ignored.
+
+### `--no-mark-spacing`
+
+Closes the one-column gap between a mark and its value, for terminals too
+narrow for the full readout. On the status line this narrows column 4 by four
+columns and column 3 by two:
+
+```
+default   ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h
+          🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m
+tight     ⌛ 🔧 58m 🤖  3h 👤 6h Σ 9.3h
+          🔋 🎤1.2٪ 🎮3.8٪ 💳15٪ 🔜6.7m
+```
+
+On the cost line it reaches only the marks with nothing after them — 🧩, 🎯,
+💳, 📖 and 📝:
+
+```
+default   🧩 ▴9.6k ▾3.4k  🎯 98٪  🧠+ 8.0٪ + 16k  💰+  0.1   🔋+ 0.02٪ 📖 29٪
+tight     🧩▴9.6k ▾3.4k  🎯98٪  🧠+ 8.0٪ + 16k  💰+  0.1   🔋+ 0.02٪ 📖29٪
+```
+
+The column after 🧠, 💰, 🔋, 🪫 and ⌛🤖 holds a `+` on the prompt row and a
+blank on the totals row beneath it. That column is what keeps the two rows
+stacked digit under digit, so it stays. The agent panel's rows have no mark
+spacing to close and don't change.
+
+It also turns off the column rules. See
+[Column rules](layout.md#column-rules).
+
+### `--no-column-rules`
+
+The rules are painted into gaps the grid leaves anyway, so turning them off
+changes the ink and nothing else. They are already off below 170 columns, when
+the width is unknown, and under `--no-mark-spacing`; the flag turns them off at
+the widths that would otherwise draw them.
+
+### `--subscript-decimals`
+
+Writes the digits after a decimal point as subscripts (U+2080–U+2089), so the
+point takes no column:
+
+```
+off   🧩▴2.7M ▾841k    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m
+on    🧩▴ 2₇M ▾841k    🔋 🎤  1₂٪ 🎮  3₈٪ 💳 15٪ 🔜  6₇m
+```
+
+(Two cells from the status line's second row.)
+
+A reading under 1٪ keeps its leading zero — `.08٪` becomes `0₀₈٪` — because
+`₀₈` alone reads as a small 8. That makes the sub-1 reading the same width in
+both forms, and it is the widest reading, so **no field gets narrower**: a
+shorter figure just gets another column of padding and nothing on the row
+moves. The option changes how figures look, not how much room they take.
+
+Both JediTerm and Ghostty draw the subscript digits one column wide, which is
+what the program assumes.
+
+## Agent panel rows (`--mode subagent`)
+
+This mode is the `subagentStatusLine` setting. While the session has tasks in
+its agent panel — Agent tool calls, forks, background shells, workflows —
+Claude Code runs the command every few seconds with the task list on stdin and
 replaces each panel row with the `content` printed for its `id`. A task left
-out keeps the panel's own row. It takes no options of its own: the row is
-fixed, and `--cols` and `--usage-source` below apply to it as they do to the
-other two (`--no-mark-spacing` changes nothing here — no cell on this row
-carries a mark-spacing blank).
+out keeps the panel's own row. What each cell means is covered in
+[Layout](layout.md).
 
-The row is two groups, like line 3 of the status line. Flush left, *which*
-agent, its cells one blank apart: the type glyph (🔍 Explore, 📐 Plan, 🔧
-general-purpose, 🐚 a shell, 👥 anything else) with the run state as a
-coloured circle against it — 🟢 running, 🟡 pending, 🔵 done, 🔴 failed, ⚫
-killed — the task id, then the name, bright, and after it, dimmer, what the
-agent is doing right now — the panel's progress summary — the two together
-taking whatever the right group leaves, the activity giving way first. The
-name is the registry's where the panel has one and the Agent tool's
-`description` where it has not, which is most spawns. Flush right at fixed
-widths, *what it is doing*: 🤖 a two-character model spec with the effort's
-glyph against it (`O⁵🏃`, `H⁴🔥`; the ladder is 🐢 🚶 🏃 🚀 🔥, and the
-status line's cell is the same since the same day), then 🔧 🤖 — the
-seconds this agent spent inside a tool and the seconds it spent waiting on
-the model, which together are its whole run; the 🔧 counts every agent it
-spawned as well and leaves out a tool that is a question put to the user, and the 🤖 was an ⌛ until 2026-09-25, when the mark
-stopped restating the `m`/`h`/`d` the figure beside it already carries —
-💰 🧠 what it
-has spent and the window it is holding, 🧩 tokens, 🛫 the token rate in tokens
-per second, 🎯 the cache rate, 🔋 🪫 the agent's own share of each window, and
-last 💾 +adds/-removes, the lines this agent has written. Right-aligning a
-constant-width group puts each metric on one column in every row, ending on
-the status line's own right edge, and the name is the field that gives. The
-row is exactly the payload's `columns` wide: the panel states that width
-already net of its own chrome — the `◯ ` pointer before the row and two
-columns of padding after — so a row that fills it ends where the status line
-does. The panel's ◯ itself is drawn before anything the command returns and
-cannot be replaced from here.
+The payload carries each task's name, type, status, start time, model, effort
+and a running token count. Everything else — tokens, cache rate, context,
+cost, time inside tools, lines written and the plan-window shares — comes
+from the agent's own transcript,
+`<session>/subagents/agent-<id>.jsonl`, with workflow agents one directory
+further down. A task with no transcript (a shell, a remote agent) shows only
+what the payload gives.
 
-That width is stated for a row the session itself started, and an agent that
-spawned its own agents gets a tree in the panel: `├ ` before the ◯ of each
-child, one per level down. Those two columns a level are chrome the payload
-never mentions, so the row pays for them itself — the depth is in the agent's
-sidecar, `spawnDepth`, and a task with no sidecar hangs off nothing and pays
-nothing. A child row is that much narrower than its parent's and its 🪫 lands
-on the same column, instead of two past the edge with the panel cutting the
-cell off to fit.
+The payload's `columns` is already net of the panel's own chrome: the `◯ `
+pointer before the row and two columns of padding after it. An agent started
+by another agent is drawn one level deeper, with `├ ` before its pointer. The
+payload doesn't count those two columns, so the row makes itself two columns
+narrower for each level below the first (the depth is `spawnDepth` in the
+agent's `.meta.json` sidecar). That keeps every row's right-hand cells on the
+same columns as its parent's.
 
-The payload carries a name, a type, a status, a start time, a model, an
-effort and the panel's own running token count. Everything else on the row —
-🧩 🎯 🧠 💰 💾 and the two shares — is read from the agent's own transcript,
-`<session>/subagents/agent-<id>.jsonl`, the same way the status line reads the
-session's, and the plan windows are the snapshot the status line last
-published. A task with no transcript (a shell, a remote agent) shows the
-fields the payload gives and nothing where the others would be — 💾 included,
-since nothing counted is not the same fact as nothing written. An agent that
-has a transcript and has only read draws `+0 -0`, as the status line draws a
-session that has changed nothing. The pair is counted the way a diff is: over
-the `structuredPatch` each Edit's result carries, `+` a line added and `-` one
-removed, with a Write to a new file — which has no patch — counted whole out
-of the content it wrote, and each result taken once on its tool-use id so a
-resumed transcript does not count an edit twice. Brightness
-on the row follows the status line's cuts (see *Brightness as magnitude* in
-`layout.md`): 🧩 🧠 🛫 💰 🔧 🤖 dim under theirs, 💾 dims each half on its own
-count, 🎯 dims its green tier, and
-the 🔋 🪫 pair dims together when the agent's weekly share is under 0.2٪ — a
-light agent, whichever window you read it in. 🛫 is the
-slope of the panel's last sixteen token readings at its five-second tick, and
-is the one figure on the row that comes from the panel rather than the file.
-That reading is the last request's input plus every output, so it climbs by
-a whole context at each request and rests while a tool runs: a sign of life
-and of pace, not a generation rate. The status line's own 🛫, in column 2
-beside 🎯, is the same figure for the main thread, sampled by the program
-itself — see [Column 2](layout.md#column-2). 🔧 🤖 🧩 🛫 🧠 💰
-dim under the status line's own magnitude cuts — ten minutes, 100k tokens,
-1k/s, a dollar — so the heavy agents are the bright rows of the panel; see
-[Brightness as magnitude](layout.md#brightness-as-magnitude-everywhere-else).
+`--cols`, `--usage-source`, `--account`, `--account-period`, `--diagnose` and
+`--subscript-decimals` apply in this mode.
 
-`--no-mark-spacing` works in every mode. On the status line
-it closes the blank between each column-4 mark and its value, narrowing that
-column from 33 to 29, and the same blank in column 3's two fields, 16 to 14.
-On the cost line it reaches 🧩 and 🎯 only, for two
-columns: those are the two cells with nothing in the column after the mark,
-where 🧠 💰 🔋 🪫 and ⌛🤖 hold a `+` on the per-prompt row and the blank
-the totals row stacks under it. That column is content, not spacing, and
-closing it would unstack the two rows. `--mark-spacing` is the default and is
-accepted so a settings file can say which one it means.
+## Environment variables
 
-`--no-column-rules` is `--mode status` only, and drops the faint `|` borders
-between the six right-hand columns. They are painted into the gaps the grid
-already spends, so this changes the ink and nothing else — no column moves
-either way. `--column-rules` is the default and is accepted so a settings file
-can name what it wants. Note that the rules are ALREADY off below 180 columns,
-at an unknown width, and under `--no-mark-spacing`; the flag turns them off at
-the widths that would otherwise carry them. See
-[Rules between the columns](layout.md#rules-between-the-columns).
+| Variable | Effect |
+|---|---|
+| `CODING_AGENT_USAGE_LINE_USAGE_SOURCE` | Default for `--usage-source`. The flag wins. |
+| `CODING_AGENT_USAGE_LINE_STATE_DIR` | Where caches and per-session state live. Default `$XDG_STATE_HOME/coding-agent-usage-line`, or `~/.local/state/coding-agent-usage-line`. |
+| `CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR` | Where Claude transcripts live, for calibration. Default `~/.claude/projects`. |
+| `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST` | Read an exported Claude Usage Tracker store from this path instead of the running app's preferences. |
+| `CODEX_HOME` | Codex's data directory, used to find child-agent rollouts. Default `~/.codex`. |
+| `ANTHROPIC_ADMIN_KEY`, `OPENAI_ADMIN_KEY`, `CLAUDE_OAUTH_ACCESS_TOKEN`, `CODEX_USAGE_ACCESS_TOKEN`, `CODEX_USAGE_ACCOUNT_ID` | Credentials for the sources that need them. See [Usage sources](usage-sources.md#sources). |
 
-`--subscript-decimals` works in both modes and is **off by default**. It writes
-a fraction in `U+2080`–`U+2089` instead of after a point, so the point costs
-nothing:
+Two more exist for the test suites: `CODING_AGENT_USAGE_LINE_NOW` freezes the
+clock and `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE` supplies a prepared
+calibration. Neither is for everyday use.
 
-```
-off   🧩 ▴6.6M ▾389k  🎯 96٪  🔋 🎤 .79٪ 🎮 4.1٪ 💳 11٪ 🔜 4.5h   💰 35.5
-on    🧩 ▴ 6₆M ▾389k  🎯 96٪  🔋 🎤 0₇₉٪ 🎮  4₁٪ 💳 11٪ 🔜  4₅h   💰  35₅
-```
+## Migrating from `claude-code-usage-statusline.py`
 
-The leading zero the status line normally drops **comes back**: `.38` is
-unambiguous because the point marks the figure as a fraction, and `₃₈` is not
-— it is the glyph sequence a reader takes for 38, one point size down. So a
-reading under 1٪ is the same width either way and the switch buys nothing
-there. That branch has a golden of its own, because it is the one somebody
-tidies away later on the grounds that the zero is redundant.
+The program used to be a single file, `claude-code-usage-statusline.py`. It is
+now `coding-agent-usage-line.py` beside the `coding_agent_usage_line/`
+package, and every operational command needs `--agent`. There is no
+compatibility shim under the old name.
 
-**No field is narrowed for it, and none ever will be by this switch.** Every
-reservation keeps the width it had, so a shorter figure gets one more column of
-leading pad and no row changes width — verified across both modes at six
-widths.
+1. In `~/.claude/settings.json`, change each command's program to
+   `coding-agent-usage-line.py` and add `--agent claude`.
+2. Rename environment variables:
 
-This note used to call that a deferral: the saving was "real (`LIM_FIG_W`
-could go 4 → 3, three columns back on the 🔋 row)" and merely waiting on a
-probe. **The probe ran on 2026-09-08 and the saving was never there.** What
-sets that field is the widest thing that can land in it, and swept across every
-hundredth of a percent the widest is four columns in both forms, for the same
-reason:
+   | Old | New |
+   |---|---|
+   | `CLAUDE_USAGE_SOURCE` | `CODING_AGENT_USAGE_LINE_USAGE_SOURCE` |
+   | `CLAUDE_PROJECTS_DIR` | `CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR` |
+   | `CLAUDE_USAGE_TRACKER_PLIST` | `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST` |
+   | `CLAUDE_CALIB_CACHE` | `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE` |
+   | `CLAUDE_STATUSLINE_NOW` | `CODING_AGENT_USAGE_LINE_NOW` |
 
-```
-off   .01٪        three characters of figure, then the unit
-on    0₀₁٪        the leading zero comes back, so three again
-```
+   `CLAUDE_PLAN_CACHE` and `CLAUDE_LIMIT_CACHE` are gone: readings are now
+   cached under the state directory. The old names are ignored.
+3. Credential variables (`ANTHROPIC_ADMIN_KEY` and the rest) keep their vendor
+   names.
 
-Subscripts narrow the readings at or above 1٪ — `4.1٪` to `4₁٪` — and those
-were never the widest. The sub-1 reading is, in both forms, and the leading
-zero that makes it so is a deliberate choice explained above. `LIM_FIG_W` 4 → 3
-is still available; it costs a digit of precision below 1٪, equally in both
-forms, and it has nothing to do with subscripts.
-
-The width question the probe was actually needed for is settled: all ten digits
-advance **one column** in JediTerm and in Ghostty, which is what East Asian
-Width says of the block and what `vis_width` has always returned. It was worth
-asking — U+1F900 one plane up is a Neutral codepoint that Ghostty advances one
-and JediTerm advances two. Holding the widths still means that if the terminal draws
-these two columns wide, the damage shows up as a figure overrunning its own
-cell rather than as a whole row shifted: a diagnosis instead of a mystery.
-
-`--cols N` works in both modes and overrides the terminal-width walk; `0` means
-"pretend the width is unknown", which is the only way to exercise the fallback
-layout deterministically.
-
-`--usage-source SPEC` applies to all supported modes. Explicit external
-selection overrides native account readings and never silently selects a
-different source. `auto` prefers current native data, a valid native cache,
-then the optional tracker for Claude or managed app-server for Codex. `native`
-excludes external refreshes; `none`/`off` also allow compatible cached readings.
-`CODING_AGENT_USAGE_LINE_USAGE_SOURCE` sets the default; the CLI takes precedence.
-Provider-specific sources are rejected for the other agent. The complete
-source and credential list is in [Usage sources](usage-sources.md).
-
-The four removing switches all default to ON — i.e. everything is drawn unless
-asked otherwise — so a bare invocation is the full readout.
+The repository and its clone URL are still `claude-code-usage-statusline`.

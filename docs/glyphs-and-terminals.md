@@ -1,109 +1,129 @@
-# Glyphs, terminals, and the naughty ones
+# Glyphs and terminals
 
-Most of what is hard here is not the layout. It is that **JediTerm** — the
-terminal JetBrains Rider embeds, and the one these rows are tuned for —
-disagrees with every published width table about how many columns an emoji
-occupies, and disagrees with ITSELF about how many it paints.
+The readout keeps every figure on a fixed column, and that only works if the
+program knows how many columns each character advances the cursor. Terminals
+disagree about that for emoji, and no published width table matches all of
+them. The program uses one width table with small per-terminal overrides,
+and has been measured in Ghostty, iTerm2, JediTerm (JetBrains IDEs) and tmux.
 
-Three rules, all learned expensively:
+## Choosing a glyph
 
-1. **Never infer a width from which row looks wrong. MEASURE it.** Run
-   `tests/probe-advance.sh` in a real terminal tab (it needs a controlling
-   tty, which Claude Code does not have) and it reports the advance of every
-   glyph by asking the terminal directly, with DSR. Four separate conclusions
-   drawn from screenshots were later contradicted by that probe.
-2. **Prefer single-codepoint pictographs from U+1F300 up**, nothing newer than
-   about Unicode 9, and no variation selectors. A codepoint that defaults to
-   TEXT presentation is drawn one column wide by some terminals and two by
-   others; picking one buys a per-terminal alignment bug for a picture. The
-   per-terminal override tables are empty because the glyph set holds to this
-   — an invariant, not a coincidence, and the thing to defend when choosing
-   the next glyph.
+A new mark must be:
 
-   **One glyph does not hold to it: 🤏 `E_ROW_COMPACT`, U+1F90F, is Unicode
-   12.** It is kept, and it has caused no observed trouble, but it is an
-   exception rather than the rule; this documentation used to claim there
-   were none. It takes its two columns from the broad `0x1F300–0x1FBFF`
-   range rather than from anything specific to it. **Measured 2026-09-08:
-   two columns in JediTerm and two under Ghostty**, so the range is right about it in both —
-   which is a measurement, and no longer the inference this paragraph used to
-   ask someone to replace.
+1. **One codepoint.** No variation selector (U+FE0F), no ZWJ sequence, no
+   skin tone, no flag.
+2. **East Asian Width `W`.**
 
-   The other row glyph added since, 👥 `E_ROW_AGENTS` U+1F465 (Unicode
-   6.0, Emoji_Presentation=Yes), holds to the rule, and was **measured
-   2026-09-12** by `tests/probe-advance.sh`: `advance=2` in JediTerm and in
-   Ghostty, both without tmux — the first reading taken in bare Ghostty at
-   all, since every earlier Ghostty run had been under tmux.
+   ```sh
+   python3 -c "import unicodedata as u; print(u.east_asian_width('⌛'))"
+   ```
 
-   Choosing a replacement, if one is ever wanted: single codepoint, `W` under
-   the test below, at or under Unicode 9, no variation selector. 📉 U+1F4C9
-   (Unicode 6.0) and 🔽 U+1F53D (6.0) both qualify and both read as "it got
-   smaller". Note that the obvious candidate does NOT: U+1F5DC 🗜 is named
-   literally `COMPRESSION` and is Neutral, Unicode 7, text-presentation by
-   default — naughty on every count.
-3. **Distinguish a layout bug from a paint bug before fixing either.** A layout
-   bug moves a whole cell and survives a copy-paste of the row. A paint bug
-   corrupts single characters (`1sm` for a value of `1s`) and vanishes in a
-   paste, because the buffer is correct and only the screen is not. Ask for a
-   paste; it settles the question instantly.
+   `W` is safe. `N` (Neutral) and `A` (Ambiguous) are the codepoints terminals
+   disagree about: many are text-presentation by default and draw one column
+   in some terminals and two in others. Ambiguous includes box-drawing
+   characters, which is why the column rule is ASCII `|` and not `│`.
+3. **Unicode 9 or older**, preferably from U+1F300 up, so an older terminal
+   font still has it.
+4. **Outside U+1F900–U+1F90B.** The program treats that band as wide; JediTerm
+   agrees and Ghostty does not.
+5. **Declared as an `E_*` constant** in `coding_agent_usage_line/formatting.py`
+   and used by name, never as a literal in a renderer. `tests/probe-advance.sh`
+   finds the glyphs to measure by parsing those constants; a literal is a glyph
+   nobody measures.
 
-A glyph that breaks rule 2 is a **naughty** one. The test is cheap:
+Then measure it. Run `bash tests/probe-advance.sh` in a real terminal tab and
+check it advances two columns, and run `./coding-agent-usage-line.py
+--selftest` and look at the drawn rows. A glyph can measure correctly and still
+paint wrong.
 
-```sh
-python3 -c "import unicodedata as u; print(u.east_asian_width('⌛'))"
-```
+One glyph in use breaks rule 3: 🤏 `E_ROW_COMPACT` (U+1F90F) is Unicode 12. It
+measures two columns in both JediTerm and Ghostty, so it stays. If it ever
+needs replacing, 📉 U+1F4C9 and 🔽 U+1F53D both satisfy every rule. 🗜 U+1F5DC
+does not: it is Neutral, Unicode 7, and text-presentation by default.
 
-`W` is safe. `N` and `A` are not — they are the codepoints terminals disagree
-about, and `A` (Ambiguous) includes the em dash, which is why prose read in
-JediTerm is written without one.
+## Diagnosing a misaligned row
 
-## Why `vis_width` is not a "correct" Unicode implementation
+**Measure, don't infer.** A width deduced from which row looks wrong has been
+wrong repeatedly; the probe asks the terminal directly. Run it after a terminal
+update, and before changing any glyph or `EAW_WIDE` entry.
 
-It counts per codepoint with no grapheme clustering, and uses a hand-maintained
-width table rather than `unicodedata`. Both look like bugs and both are
-deliberate. **Swapping in `wcwidth`, or `unicodedata.east_asian_width`, or any
-correct implementation, breaks the alignment of every row.** The fix is
-tempting and has been attempted before, so it is documented at each site in the
-code as well as here.
+**Tell a layout fault from a paint fault** before fixing either. Ask for the
+row as pasted text:
 
-`EAW_WIDE` began as a generated East_Asian_Width table and was then corrected
-against the probe. The corrections are the point:
+- A **layout** fault moves a whole cell and is still there in the paste. The
+  program's width arithmetic is wrong.
+- A **paint** fault corrupts individual characters (`1sm` where the value is
+  `1s`) and is gone in the paste, because the buffer is right and only the
+  screen is wrong. The terminal's font fallback is the usual cause; a
+  different glyph is the usual fix.
 
-* `127462–127490` folds in the regional indicators — two columns EACH here, so
-  a flag costs four, where a clustering terminal paints two.
-* `127744–130047` is U+1F300 through U+1FAFF as ONE range where the generated
-  table had a dozen with gaps. Every pictograph probed there came back two
-  columns, including the ones EAW calls Neutral for defaulting to text
-  presentation (🗑 🛢 🗓 🎟 🌡). The gaps mattered: those appear in
-  conversation, and each one measured as a single column dragged its row out of
-  line.
-* U+1FA70–U+1FAF8 (Unicode 12 and later) was left OUT of the table for a
-  while, so it measured one column, on the reasoning that this terminal's font
-  predated the block — that is what made 🪟 leave a phantom character beside
-  it. **That exclusion is gone**: the range now runs to U+1FBFF, 🪫 U+1FAAB is
-  in the layout on the strength of it, and the 2026-09-08 probe measured
-  U+1FA70 U+1FA90 U+1FAA3 U+1FAE0 at two columns each in **both** JediTerm and
-  Ghostty. The bullet is kept because the reasoning was sound and the
-  conclusion was not, which is the argument for measuring rather than
-  reasoning, made against this documentation itself.
-* U+1F300–U+1FBFF being one range makes U+1F900 wide, and the standard calls
-  that codepoint Neutral. Measured 2026-09-08: **Ghostty advances one, JediTerm
-  advances two.** No entry is right for both, this one is right for the
-  terminal the layout is tuned to, and it costs nothing because no glyph here
-  sits in U+1F900–U+1F90B. It is the reason to keep choosing glyphs from
-  outside that band.
+## Why `vis_width` is not a correct Unicode implementation
 
-`unicodedata` would get all three wrong. It ships UCD 13 on Python 3.9 and
-answers what the standard says, which is a different question from what this
-terminal does.
+`vis_width` counts per codepoint, with no grapheme clustering, using the
+hand-maintained `EAW_WIDE` table instead of `unicodedata`. Both look like bugs
+and both are deliberate: **replacing it with `wcwidth`, `unicodedata`, or any
+standards-correct implementation misaligns every row.** The standard answers
+what the character *should* do; the table records what the terminal *does*.
+Python 3.9's `unicodedata` also ships Unicode 13, older than several glyphs in
+conversation text.
 
-**Keep `EAW_WIDE` sorted.** The scan stops at the first range starting above
-the codepoint, so an entry out of order is an entry never read.
+`EAW_WIDE` started as a generated East Asian Width table and was corrected
+against the probe:
 
-## The glyph constants are the single source of truth
+| Range | Correction |
+|---|---|
+| U+1F1E6–U+1F202 (127462–127490) | Regional indicators are two columns **each**, so a flag measures four. JediTerm does not cluster them. |
+| U+1F300–U+1FBFF (127744–130047) | One range instead of a dozen with gaps. Every pictograph probed there advanced two, including ones the standard calls Neutral for defaulting to text presentation (🗑 🛢 🗓 🎟 🌡), which appear in conversation. This includes the Unicode 12+ block U+1FA70 onwards, where 🪫 lives. |
 
-Characters are referenced everywhere by `E_*` name, never by literal, because
-`tests/probe-advance.sh` derives what to measure by parsing those names out of
-the program. A glyph left inline in a renderer is a glyph nobody measures —
-which is how the probe's list drifted from the layout three times in two hours.
+Two known imprecisions are left in on purpose:
 
+- **U+1F900–U+1F90B** is Neutral in the standard. Ghostty advances one;
+  JediTerm advances two. The table sides with JediTerm, and no glyph in the
+  layout lives in that band.
+- **U+26EA–U+270B** (9962–9995) mixes narrow dingbats (✀) and wide emoji (✅).
+  No single entry is right for both. It costs nothing because chat text has
+  the U+2190–U+2BFF block replaced before it is measured.
+
+**Keep `EAW_WIDE` sorted.** The lookup stops at the first range starting above
+the codepoint, so an out-of-order entry is never read.
+
+## Terminal profiles
+
+`term_profile` picks one of four profiles from the environment, in this order:
+
+| Profile | Detected by |
+|---|---|
+| `tmux` | `TMUX` set |
+| `jediterm` | `TERMINAL_EMULATOR=JetBrains-JediTerm` |
+| `iterm` | `TERM_PROGRAM=iTerm.app` |
+| `unknown` | anything else |
+
+`widths_for` gives each profile its overrides: codepoints that advance one
+where the table says two, codepoints that advance two where it says one, and
+whether the terminal clusters graphemes. JediTerm does not cluster at all
+(measured: skin-tone sequence 4 columns, ZWJ sequence 5, flag 4, keycap 3,
+VS16 adds 1).
+
+The override entries that remain are for glyphs that have since left the
+layout (⏱ U+23F1, 🕰 U+1F570). Against the current glyph set the probe emits
+empty override tables in every profile; the entries are kept as a record of
+how those terminals behave.
+
+`tmux` is checked first on the evidence that tmux over iTerm2 measured the
+same as bare iTerm2. tmux inside JediTerm has never been measured. If you run
+that combination, `--selftest` in it settles whether the `tmux` profile is
+right there: a non-zero delta on any row means it needs its own profile.
+
+## Measurements on record
+
+`--selftest` and `probe-advance.sh` have been run in:
+
+| Terminal | Result |
+|---|---|
+| Rider / JediTerm | every `--selftest` specimen row delta 0; every glyph in the layout advances as the table says |
+| Ghostty under tmux | the same; 🤏 advances two; U+1F900 advances one |
+| Ghostty, no tmux | 👥 advances two |
+| iTerm2 under tmux | the same as bare iTerm2, except one keycap sequence |
+
+That covers every mark on the readout, including 🎤 💯 💳 🎮 👥 🤏, ▴ ▾, the
+`|` rule, and the subscript digits `E_SUB_DIGITS`.

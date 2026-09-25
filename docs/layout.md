@@ -1,771 +1,486 @@
 # Layout and rendering
 
-How the grid is built, why every figure has a fixed width, and what each
-colour and mark on it means.
+The reference for everything the program draws: the three-row status line,
+the Stop-hook cost line, and the agent-panel rows. Each section opens with a
+real render, then says what every cell is. The [glyph legend](#glyph-legend)
+at the end lists every mark on all three readouts.
 
-## The layout rule
+All examples below are the program's own output against the test fixtures
+(clock pinned to 2026-08-16 02:23:20 UTC), with colour stripped. Colour and
+brightness carry meaning of their own — see
+[Colour and brightness](#colour-and-brightness).
 
-Every value is formatted to a fixed number of columns (significant digits,
-never decimal places — see `humanize`) and every segment occupies a reserved
-width whether or not it has content (see `seg`). A group of segments is
-therefore a constant width regardless of session, and right-aligning that
-constant puts each metric on a fixed screen column.
+- [The status line](#the-status-line)
+  - [The grid](#the-grid)
+  - [Column by column](#column-by-column)
+  - [Fixed widths](#fixed-widths)
+  - [Column rules](#column-rules)
+  - [Narrow and unknown widths](#narrow-and-unknown-widths)
+- [Colour and brightness](#colour-and-brightness)
+- [The cost line](#the-cost-line)
+- [Agent-panel rows](#agent-panel-rows)
+- [Glyph legend](#glyph-legend)
 
-That is the whole point: **switching tabs must not move the numbers.**
+## The status line
 
-A fixed width only holds if every figure has somewhere to go when it grows, so
-each one carries a **unit** rather than more digits: `1.2k`, `4.5M`, `1.5h`,
-`1.4M` months. 💰 was the exception until 2026-09-03 — it wrote $1235 as
-`1235`, four characters jammed against the emoji on the status line and one
-column too many on the cost line, where only the totals row ever carries the
-big figure, so the two rows came out different widths and stopped stacking. It
-now climbs the same ladder as everything else: `29.8`, `123`, `1.2k`, `12k`,
-`1.2M`. The cost line is one column wider for the unit, which `place` takes
-out of the label and never out of the numbers.
-
-The cost line's two rows share one grid, and `place_stacked` — not `place` —
-is what keeps them sharing it. It takes the layout decision ONCE, against the
-tightest row, and shifts every row by its own chrome. Deciding per row is what
-broke the stacking before: the rows do not get the same room, so as a window
-narrows the first row crosses into the truncation path while the second is
-still comfortably right-aligning, and every column below stops matching the one
-above it. A row that has to cut its label now takes the others with it. All
-short together beats one aligned and one not.
-
-## Rules between the columns
-
-The five right-hand columns are divided by a faint vertical rule at wide
-enough widths:
+At 170 columns:
 
 ```
-👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
-🤖💬 Two separate things, and the second one is …  | 🧩▴ 23M ▾837k  | 📖 🎤 61٪ 🎮 45٪  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
-📦repo  📁~/Workbench/…/marbled-godwit             | 🛫200/s 🎯98٪  | 📝 🎤 15٪ 🎮 20٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
-They are **on by default** and off with `--no-column-rules`.
+### The grid
 
-**It costs no width.** `SEG_GAP` is four columns and the grid spends them
-either way; the rule is painted into them, two columns after the cell on its
-left and one before the cell on its right. So a ruled row and an unruled one
-are the same width to the column, which is what makes it safe to switch the
-rules off by width without anything moving.
+The readout has a left half that flows and a right half that does not.
 
-**Why off-centre.** Four columns do not divide in two, and the eye does not
-want them to here. A cell on this grid ends on a digit or a `٪` hard against
-its right edge — `seg` puts the slack on the far side — and begins with an
-emoji, which carries its own side bearing inside its two columns. One column
-of air before an emoji looks like two before a digit.
+**Left:** the last prompt (👤💬) and the last reply (🤖💬), each on one line
+with newlines shown as `¶`, then where the session is working: 📦 project,
+📁 current directory, 🌿 branch. The two chat rows swap while the model is
+answering, so the newer message is always on the second row; the metrics
+beside them stay put.
 
-**Why a rule at all**, when the columns already have gaps. Four blanks is a
-gap next to `💰115` and an expanse next to column 4's thirty-three, and white
-space of a width that changes with its neighbours has to be re-measured on
-every row before it reads as a division. A stroke on a fixed column does not.
-The grid was always a grid — five columns then, six for one day, and five again since the evening of 2026-09-16; this is the first thing that says so.
+**Right:** five fixed-width columns, three rows each.
 
-**ASCII `|`, not `│` (U+2502).** The box-drawing character is the better glyph
-by a distance — it is designed to join vertically, so a stack of three reads as
-one line where three `|` read as three ticks — and it is
-`east_asian_width` **Ambiguous**, which means a terminal may advance two
-columns for it and be correct to. Two columns here does not cost a rule, it
-costs every alignment to its right on all three rows. `--selftest` measures
-glyphs against the live terminal; if it ever measures U+2502 at one column,
-`SEG_RULE` is the one line to change.
+| | Column 1 | Column 2 | Column 3 | Column 4 | Column 5 |
+|---|---|---|---|---|---|
+| **Row 1** | 🎨 output style | 🤖 model · 💰 cost | 🧠 context | ⌛ where the time went | 📅 date |
+| **Row 2** | 🔀 PR number | 🧩 tokens | 📖 re-read share | 🔋 5-hour window | 🕐 time |
+| **Row 3** | — | 🛫 token rate · 🎯 cache hits | 📝 cache-write share | 🪫 weekly window | 💾 diff |
 
-**The ink is `F_SUM`'s**, the grey measured out of the SOON arrow's own bitmap
-— 2.2:1 against the chat rows' background, far under any legibility threshold,
-which is the specification rather than a compromise. A divider that has to be
-read is louder than the readings it divides. What carries it is repetition: one
-faint stroke is nothing, three stacked on one column for the height of the
-readout is a line. Rules and receding marks are bound to one constant on
-purpose — they are the same kind of thing, and two greys a few units apart
-would read as an accident.
-
-**When they are dropped** — `--no-column-rules` switches them off outright,
-and `rules_on` drops them where the row cannot carry them. Any one of these is
-enough:
-
-| Condition | Why |
-| --- | --- |
-| `--no-mark-spacing` | The tight layout exists for terminals that cannot afford the readout at its designed width, and it pays for that by closing the blank inside every column-4 field. A layout just asked to give up space inside its own fields is not one to hand chrome to. |
-| width below `RULE_MIN` (170) | Line 3 owes 123 columns before a single name is drawn — 105 of grid, the right margin, the gap, and the where-group's chrome. At 170 the project, path and branch share the 47 left, against the 22 `allocate_left` cuts them to at the floor. They are being trimmed there already; the threshold is not about avoiding the trim but about there being enough left after it. Below, the row closes on that floor. |
-| width unknown | The fallback path flows line 3 leftwards with only `MIN_GAP` and estimates the pwd rather than fitting it — the shape the readout takes when it has run out of room. Guessing generous costs a rule drawn into a row that is already overrunning. |
-| `--no-column-rules` | Asked for. `--column-rules` is the default and is accepted so a settings file can name what it wants. |
-
-The flag is the ASK and `rules_on` is the ROOM, and they are separate on
-purpose: asking never overrides a width that cannot hold them, so
-`--column-rules` on a ninety-column terminal is a request that is not granted
-rather than a row that overruns. The veto runs one way only. And because the
-rules never take a column, the flag is ink and nothing else — `norules-01@196`
-and `norules-04@196` pin exactly that, byte-identical to the ruled goldens once
-the bars are turned back into spaces.
-
-Dropping them buys no width back, because they never took any. The test is
-what the row can carry: a divider earns its ink by separating things that have
-room to be separate, and on a row cutting its names to stubs it is one more
-thing between the reader and the readings.
-
-The decision is taken once, in `render_status`, and passed to all three
-`grid_row` calls. Three rows of one readout must agree — a rule on line 1 and
-none on line 3 is worse than either — so the width is read where the readout is
-assembled and not inside `grid_row`, which defaults to plain gaps for callers
-outside that assembly (`--selftest` builds one).
-
-There is deliberately **no rule between the chat text and column 1**. That
-boundary is a computed pad, not a fixed gap, and a rule there would have to be
-paid for in width rather than found inside it.
-
-## Column 2
+Column 1 is empty unless the session has a non-default output style or an
+open PR:
 
 ```
-           col 2
-  row 1    🤖 model 💰 cost
-  row 2    🧩 tokens
-  row 3    🛫 rate 🎯cache
+👤💬 Why does the elapsed row report two durations when the …  🎨 expl      | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …  🔀 4211      | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
-The session's own figures: what it is running and what it has cost, over
-two two-value metrics in one shape — a mark, a five-column first field, a
-six-column second — so `▴`'s figure sits over the token rate and `▾`'s over
-the 🎯. The first row is two short cells side by side: 🤖 with the model's
-initial, its major version in superscript and the effort's glyph against it
-— `O⁵🏃`, `H⁴🔥`, the cell the agent rows have — held at `W_MOD` past the
-icon whether or not the glyph is drawn, so the coin does not move with the
-effort; then one space; then 💰 with the cost as three characters and a unit
-column, `💰115 `, `💰1.2k`. The money holds humanize's blank unit column
-under a thousand dollars, so its digits stack under digits and its `k`, when
-it comes, lands where every other `k` on the readout does. The cost line
-keeps `money_fmt`'s four digits, `12.3`, because there a decimal point has a
-column reserved to stack in. With the icons' iTerm pad the pair is one
-column wider than the two-value rows and the column takes the wider; without
-it the three rows are exactly one width.
+### Column by column
 
-**Rearranged again on the evening of 2026-09-16**, from six columns to
-five. Until then the model and the cost were two rows of a column of their
-own, over an empty third, and this column read 🧩 🛫 🧠 top to bottom. They
-went side by side at the top of this column, the tokens and the rate each
-dropped a row under them, and their column went with them — seven of cell
-and a gap, one back for the wider row, ten columns off the grid, which
-`RULE_MIN` and `LINE3_RESERVED` follow down. 🧠 left for the top of [column
-3](#column-3-is-the-context-over-where-the-money-went), over the two
-cache-share rows, and the ⌛ row went to the head of [column
-4](#column-4-is-a-grid-of-its-own), over the two limit rows. What it costs
-is the stacking the 2026-09-13 arrangement bought the context row, its size
-under 🧩's tokens; what it buys is a readout with no reserved cells left —
-every column three rows deep, every row full, and the first row reading what
-the session is, how full it is and how long it has run. The rate still sits
-under the total it is the slope of.
+**Column 2 — what the session is and what it has cost.**
 
-**Rearranged 2026-09-13**, in steps over one evening. Until then column 2
-was the two-value column with the model and its 📏 window on its third row,
-and column 3 read 🎯 💰 ⚡ top to bottom. The cache rate moved in beside the
-new 🛫 token rate — two readings of the one stream of requests, how fast it
-runs and how much of it the cache served — the cost moved up beside the
-tokens it is the price of, and the model took the cost's old cell without
-the window, which is a constant the 🧠 percentage already divides by, and
-with its name cut to the agent rows' two characters. The context row went
-to the bottom, so the rate sits directly under the total it is the slope of,
-and its two fields swapped so the size stacks under 🧩's tokens. The effort
-cell went, its glyph moving against the model spec: `⚡🏃hi` had spent a
-cell on a fixed mark, a picture and a word, and the picture alone now does
-the job, at the cost of the word that told 🚶 from 🔥. Then the two columns
-changed places — the short cells first, the two-value column against the
-limits — and last the model and the cost swapped rows, configuration above
-spend. The third row of that column was empty, and reserved, until the
-rearrangement above spent it.
+- `🤖O⁵🏃`: the model as its family initial and superscript major version
+  (`O⁵` Opus 5, `S⁵` Sonnet 5, `H⁴` Haiku 4.5), then the reasoning effort as
+  a glyph: 🐢 low, 🚶 medium, 🏃 high, 🚀 xhigh, 🔥 max.
+- `💰115`: the session's cost in dollars, as Claude Code reports it.
+- `🧩▴2.7M ▾841k`: tokens in and out, including every subagent's. ▴ is
+  billable-equivalent input — fresh input, plus cache writes at 2× and cache
+  reads at 0.1× — and ▾ is output.
+- `🛫200/s`: how fast 🧩's total is climbing, taken over the last 16
+  samples, which are at least 5 seconds apart. It jumps by a request's whole prompt
+  at each request and rests while a tool runs, so it measures pace, not
+  generation speed. `0/s` between turns; blank on a session's first render,
+  when there is only one sample.
+- `🎯98٪`: prompt-cache hit rate — cache reads as a share of all input.
 
-**🛫 is tokens per second**, and on this row it is the program's own reading.
-The agent panel hands its rows sixteen samples of a token count at a
-five-second tick; the status line is handed one total and no history, so it
-keeps the history itself — `session_rate`, a per-session file in `TMPDIR`
-beside the published context window, appended to every `RATE_TICK_S` and cut
-to `RATE_SAMPLES` — and takes the rise over the recorded span. What it
-measures is what 🧩 counts, the billable-equivalent total of every request
-the session and its agents made, so it climbs by a request's whole prompt at
-each request and rests while a tool runs: a reading of pace and of life, as
-the panel's is, and not a generation rate. Between turns it reads `0/s` and
-means it. The field is blank for the first five seconds of a session, when
-there is one sample and no slope, and that blank is what every golden file
-records — the goldens pin the clock, so every render is a first tick.
-`tests/rate.py` is where the slope is checked.
+**Column 3 — how full the context is, and where the money went.**
 
-**The superscript version** is the one part of the cell whose width is a
-reading from a sibling rather than from itself. ⁰ and ⁵–⁹ are
-East_Asian_Width Neutral; ¹ ² ³ ⁴ are Ambiguous — the same split as the
-subscript digits `--subscript-decimals` draws, which both terminals advanced
-one column on 2026-09-08. Haiku's ⁴ is the Ambiguous one in live use. Not yet
-probed; see the TODO in [Development](development.md).
+- `🧠 115k 11٪`: the main thread's context size and its share of the model's
+  window. Subagents are excluded: this is the number that decides when *this*
+  window needs compacting.
+- `📖 🎤 34٪ 🎮 32٪`: the share of the bill spent re-reading the
+  conversation (cache reads) — for 🎤 the last turn, for 🎮 the whole
+  session. This is the part `/compact` or `/clear` can reclaim.
+- `📝 🎤 7٪ 🎮 7٪`: the share spent caching new material (cache writes),
+  which compacting does not reclaim.
 
-## Column 3 is the context over where the money went
+A high 📖 says compacting would pay; a high 📝 says it would not, however
+large 🧠 looks. The session figure sums every turn's dollars before
+dividing, so a large turn outweighs a small one. Both are whole percentages
+of dollars, not of a plan window.
 
-```
-🧠   115k    11٪
-📖 🎤 61٪ 🎮 45٪
-📝 🎤 15٪ 🎮 20٪
-```
+**Column 4 — time and plan windows**, on a shared four-field grid.
 
-**🧠 heads it**, since the evening of 2026-09-16, and stacks with the two
-rows under it: size first, then percentage, and each field is read from the
-share rows' geometry rather than fixed — the size ends on the column the
-🎤 figures' `٪` ends on, so its `k` lands under theirs, and the percentage
-ends on the column's right edge, where the 🎮 figures end. Both edges hold
-with or without the mark spacing and in either icon profile. The cost
-line's 🧠 cell keeps the other order, change in level then change in size,
-and the two readouts differ there. The size dims under a hundred thousand
-tokens like every count on the readout and the percentage never dims — see
-[Brightness as magnitude](#brightness-as-magnitude-everywhere-else). Until
-that evening the cell closed column 2, its size under 🧩's tokens.
+The ⌛ row splits the session's age three ways that add up exactly:
 
-**The two share rows** were added that morning, to the left of the limits
-and in their shape, over an empty third row that 🧠 has since taken:
+| Field | Meaning |
+|---|---|
+| 🔧 | time inside a tool call, on the main thread or in any agent |
+| 🤖 | time waiting on the model, with tool time removed |
+| 👤 | time waiting on you — to type, or to answer a question the session asked |
+| Σ | the session's age, wall clock since it started |
 
-📖 is the share of a bill that went on re-reading the conversation so far —
-`cache_read`, the one component `/compact` reclaims — and 📝 the share that
-went on caching what was added — `cache_creation`, which it does not. The
-cost line has printed this pair for the prompt just answered since
-2026-09-03, in the half-cell its 🎤 row had spare; see [Where one prompt's
-money went](#where-one-prompts-money-went) for what the pair is for and why
-it is a share of the cost rather than of a window. What the status line adds
-is the **second scope**: 🎤 is that same turn, off `turn_shares` and — like
-column 4's 🎤 — the same turn `_with_shares` picks, so the two readouts can
-never describe different prompts; 🎮 is the session, every turn's dollars
-summed *before* dividing (`session_cache_shares`), so a hundred-token turn
-does not weigh as much as a hundred-thousand-token one. The cost line's
-totals row could not carry that figure, because the half-cell it would go in
-is spent on 💳.
+Tool spans from the main thread and every agent are unioned, so overlapping
+work counts once. `AskUserQuestion` and `ExitPlanMode` are tool calls in the
+transcript but are counted as 👤, because their duration is a person
+reading. A permission prompt is not moved: nothing in the transcript marks
+one, and a tool that waited for approval did stall the turn.
 
-**Two fields, not four.** There is no account-wide bill on this machine to
-take a share of, and a share has no horizon to count down to, so the column
-stops at the session. It is shaped like its neighbour on purpose — mark,
-`MARK_SP`, a whole percent right-aligned in a field its widest reading fills
-— and sits to the left of it so the 🎤 🎮 sequence runs once across both
-columns: a reader who has learned "narrow, then wide" on column 4 reads
-column 3 without being taught, and meets 💳 and 🔜 as additions rather than
-as a second arrangement.
+The 🔋 (5-hour) and 🪫 (weekly) rows each show three widening scopes, then a
+countdown:
 
-**Three columns per figure, not four.** `SHARE_FIG_W` is 3 where `LIM_FIG_W`
-is 4, because the fourth column on the limit rows exists for `.01٪`, a
-sub-1 reading these shares never take: a fraction of a percent of one
-prompt's cost is not a figure anyone acts on, and rounding it to `0٪` says the
-same thing. `99٪` is the widest that is spelled; at or over 99.5 the figure
-is drawn 💯 in the same three, on the threshold `limit_cell` and
-`render_limit` share, so no readout can disagree about what a full share
-looks like. It is reachable here in a way it is not on the limit rows: a turn
-whose only cost was re-reading rounds to it.
+| Field | Meaning |
+|---|---|
+| 🎤 | this window's share spent by the last turn |
+| 🎮 | this window's share spent by this session |
+| 💳 | the whole account's consumption of the window, as the plan reports it |
+| 🔜 | time until the window resets |
 
-**One colour, and brightness for the rest.** Both rows paint their figures
-`F_SHARE`, the amber the cost line's `share_half` already uses for this pair,
-because a quantity should keep its ink across the readouts as it keeps its
-glyph. Not one hue per row as the limits have: their hue answers *which window
-is this?*, a question 📖 and 📝 answer by being different pictures. What the
-column has to say inside itself rides on brightness, as on the limit rows:
-each scope's pair — 📖 and 📝 together — is dim when that scope's 📖 share is
-under `MAG_SHARE_READ` (67٪) and full strength at or over it. Off 📖 alone,
-because it is the figure the column exists for, and as a pair, so two figures
-about one scope never sit on different sides of a cut. A bright 🎤 therefore
-says one thing: two dollars in three of this prompt went on re-reading, and
-shrinking the context would pay.
+🎤 and 🎮 are estimates: the program prices the session's transcript and
+divides by a calibrated dollars-per-percent figure (see
+[Accounting](accounting.md)). `?` means no calibration exists yet. 💳 is read
+from the configured [usage source](usage-sources.md) and can include use from
+other machines, the web and the phone. A full window draws `💯٪`. With no
+plan reading at all, the rows are blank.
 
-A percentage would ordinarily be left alone by the magnitude rule — 100 is
-its edge, and the reader knows it. This one is not, because 100 is not the
-edge anyone holds it against: measured on 2026-09-16 over 275 sessions and
-6,002 turns on the machine this was written on, the *median* turn spends 73٪
-of its bill re-reading and the median session 56٪. Re-reading is normally the
-majority of a prompt's cost, so "high" sits well above the half and has to be
-said. Two thirds lights 60٪ of turns and 26٪ of sessions — a bright 🎤 and a
-dim one are both ordinary, and a bright 🎮 is news — and divides by what
-matters: turns at or over it sat on a median context of 311k, turns under it
-on 137k. The half would have lit three quarters of everything; three quarters
-would have lit one session in nine. One number for both scopes, unlike the
-limit rows' two cuts, because there the turn and the session are different
-fractions of a week and here each is a share of its own bill. See
-`cache_dims`.
+**Column 5 — date, time and diff.** `💾 +3.4k - 214` is the lines added and
+removed in the session, as Claude Code reports them.
 
-**What is drawn when there is nothing.** A scope with no figure — a turn with
-no cost to divide — draws `?` as column 4 does; a session with no transcript
-draws nothing on either row, so the column goes blank rather than printing
-two question marks about a bill that does not exist — and 🧠 goes with it,
-since there is no context to read either.
-
-**What it cost.** Sixteen columns of cell and four of gap, so line 3 owed 20
-more before a name is drawn: `LINE3_RESERVED` went to 129 with the spacing on
-and 123 without (`--no-mark-spacing` closes this column's two fields with
-column 4's four), and `RULE_MIN` moved from 160 to 180 by exactly the
-column's width, so the 47 columns it leaves the names at the threshold are
-the 47 it left them before. The evening's rearrangement gave ten of those
-back — 119 and 113, and 170 — by the same arithmetic.
-
-## Column 4 is a grid of its own
-
-The three rows beside the stamp share a four-field sub-grid, 33 columns
-wide, and it is the widest thing on the readout:
+**Line 3's left side.** A dirty working tree turns 🌿 into 🍂 and adds `✱`:
 
 ```
-⌛ 🔧  47m 🤖   6h 👤  6d Σ  5.8d
-🔋 🎤 .98٪ 🎮 2.5٪ 💳 44٪ 🔜 2.4h
-🪫 🎤 .09٪ 🎮 2.6٪ 💳 51٪ 🔜 4.6d
+👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo-dirty  📁…atusline-fixture/deep/tree  🍂golden-dirty ✱               | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
-The ⌛ row heads it since the evening of 2026-09-16; it closed the column
-until then, and the prose below that has the limit rows "above" it was
-written that way round.
+In a linked git worktree 📦 names the main repository, since 🌿 already
+names the worktree's branch.
 
-`--no-mark-spacing` closes the blank after every mark, which is four columns —
-one per field — and leaves the widest reading in each field touching the mark
-that labels it:
+**With no transcript**, every transcript-derived cell blanks rather than
+printing zero, and the session scopes print `?`:
 
 ```
-⌛ 🔧 47m 🤖  6h 👤 6d Σ 5.8d
-🔋 🎤.98٪ 🎮2.5٪ 💳44٪ 🔜2.4h
-🪫 🎤.09٪ 🎮2.6٪ 💳51٪ 🔜4.6d
+👤💬 (no prompt yet)                                                        | 🤖O⁵🏃 💰115   |                   |                                    | 📅  2026-08-16
+🤖💬 (no reply yet)                                                         |                |                   | 🔋 🎤    ? 🎮    ? 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                |                |                   | 🪫 🎤    ? 🎮    ? 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
-The switch is a literal space and not a wider field, which is the other way to
-open the gap and the worse one: a wider field would put the slack inside the
-alignment, where a short reading swallows it and the gap comes and goes with
-the value. It also drags `LINE3_RESERVED` with it, and so how much of the pwd
-survives when the terminal will not report a width — see `set_mark_spacing`.
+### Fixed widths
 
-On the two limit rows, fields 0 to 2 are three scopes that widen left to
-right — 🎤 the turn just answered, 🎮 this session, 💳 the account — each
-a mark and a value right-aligned in `LIM_FIG_W`, divided from the next by a
-single space. Field 3 is a duration and its mark says which kind: 🔜 time
-until this window resets, Σ time since the session opened.
+Every value is formatted to a fixed number of columns and every cell
+reserves its width whether or not it has content. The right half is
+therefore the same width in every session, and right-aligning it puts each
+metric on the same screen column in every terminal tab. Switching tabs never
+moves a number.
 
-The ⌛ row spends the same three fields on a **partition** rather than a
-scope sequence: 🔧 the seconds spent inside a tool, 🤖 the seconds spent
-waiting on the model, 👤 the seconds spent waiting for a person — to type,
-or to answer a question the session put to them.
-They add up to the Σ in field 3 exactly, and no second is in two of them.
-The order is the machine's work first and the person's wait last, so the two
-figures a reader compares — tooling against thinking — sit next to each other,
-and the remainder falls immediately before the Σ it completes.
+To stay fixed as values grow, figures carry a unit instead of more digits:
+`1.2k`, `4.5M`, `1.5h`, `2.4d`. Money follows the same ladder: `29.8`, `123`,
+`1.2k`. Within a column, values are right-aligned so units stack: in column
+4, every `٪` sits over the `m`/`h`/`d` of the durations below it.
 
-**🔧 came from the 🎤 that stood in field 0 until 2026-09-25**, which held
-how long the turn the rows below report the cost of actually took. That field
-was scoped where nothing else on its row is; it bought scale for the 🎤
-percentages under it at the price of the row's one structural claim, that
-every figure on it is about the same session over the same age. The turn's
-duration is still printed on the cost line's own 🎤 row, beside the cost it
-qualifies.
+Percentages use the Arabic percent sign `٪` (U+066A) because it is reliably
+one column wide; see [Glyphs and terminals](glyphs-and-terminals.md). Limit
+percentages take three characters at every magnitude — `5.4`, `.38`, `12` —
+and `--subscript-decimals` draws sub-1 readings with subscript digits
+instead (`0₀₁٪`).
 
-**🤖 changed meaning with it.** It was every second spent answering, tool
-seconds included; it is now every second spent answering with the tool
-seconds taken out — the model thinking, and nothing else. Nested, 🔧 would
-have been a footnote to 🤖; partitioned, the two say different things and a
-session changes which one is large. An hour of dispatching agents and waiting
-on builds now reads as an hour of 🔧 beside minutes of 🤖, where before
-both cells simply said an hour.
+`--no-mark-spacing` removes the blank between each mark and its value in
+columns 3 and 4, saving six columns:
 
-**Where the tool seconds come from.** A tool's clock starts on the assistant
-record that asks for it and stops on the `tool_result` that answers it,
-matched by `tool_use_id` and never by adjacency — four calls issued at once
-land in any order. The spans of the main thread and of every agent file are
-**unioned**, as 🤖's already are, which makes the fold recursive for free: a
-Task's span covers its agent's entire run, so that agent's own tools are
-already inside it and counting them again changes nothing. What the union
-catches that the nesting does not is a **background** agent, whose tool result
-comes back at once while it keeps working — its tools run outside every span
-its parent recorded, and are counted there. `scan_tool_spans` and
-`agent_tool_spans` in the program.
+```
+👤💬 Why does the elapsed row report two durations when the sessio…                 🤖O⁵🏃 💰115     🧠  115k   11٪    ⌛ 🔧 58m 🤖  3h 👤 6h Σ 9.3h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you spent.…                 🧩▴2.7M ▾841k    📖 🎤34٪ 🎮32٪    🔋 🎤1.2٪ 🎮3.8٪ 💳15٪ 🔜6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                        🛫200/s 🎯98٪    📝 🎤 7٪ 🎮 7٪    🪫 🎤1.6٪ 🎮8.4٪ 💳87٪ 🔜1.9d    💾 +3.4k - 214
+```
 
-**A question put to the reader is not tool time**, though the transcript
-records it as a tool call like any other. `AskUserQuestion` and
-`ExitPlanMode` return when the person answers, so their span is the person
-reading — and 🔧 was reporting the reader's own deliberation back to them
-as machine work. Those seconds come out of 🔧 and out of 🤖, and go to 👤,
-which already means *waiting for a person*; the three still sum to Σ.
-`BLOCKING_TOOLS` is the set, matched **by name**, because the name is the
-only thing in the record that says so.
+### Column rules
 
-A **permission prompt** has the same shape — a tool whose result arrives
-whenever someone gets round to approving it — and is deliberately **not**
-excluded. Nothing in the record marks one, any tool can sit on one, and a
-`Bash` call that waited two minutes for approval did stall the turn somewhere
-the reader can act on. What the set can name is the tools that are a question
-and nothing else.
+The faint `|` between columns is drawn inside the four-column gap that
+separates them, so it costs no width: a ruled row and an unruled one are the
+same width, column for column.
 
-The subtraction is of two **measures**, not of intervals: the blocking spans
-are a subset of the tool spans, so `union(all) - union(blocked)` is exactly
-the measure of what is left, whatever either one overlaps — which matters,
-because a question asked on the main thread can run straight through an
-agent's tool call and those two have to come out as one second each rather
-than two. `net_tool_seconds`.
+Rules are on by default. They are dropped when any of these holds:
 
-**Why the duration goes last.** It led the column until 2026-08-28, and the
-argument for that was a real one: a countdown asks the same question as the ⌛
-directly below it, and the two share `RST_W`. They still do, and the three
-durations still stack — they stack on the other edge of the column. What
-leading cost was the arrangement's opening. Fields 0 to 2 are one sequence, a
-scope widening a step at a time, and a reader met it a field in from the
-column's edge with a figure of an entirely different kind standing in front of
-it. Now the column opens on the narrowest scope, widens twice, and closes on
-the one reading that is not a scope at all — the horizon those three are being
-spent against.
+| Condition | Reason |
+|---|---|
+| `--no-column-rules` | Asked for. |
+| `--no-mark-spacing` | That layout is for terminals short on room; it gets no extra chrome. |
+| Width under 170 columns | Below that, the project, path and branch are already being cut hard; the row has no room to spare for chrome. |
+| Width unknown | The fallback layout (below) already overruns. |
 
-**Every field is exactly as wide as its own widest reading**, which is what
-makes this a grid rather than three rows of labelled numbers. Right-alignment
-lands the last character of every value on one terminal column, so a ٪ sits
-directly above the `m`/`h`/`d` of the duration below it — a units rule down the
-column. Nothing is spent holding a mark off its figure: when a value is full
-width it touches the mark that labels it, and a leading blank appears only on a
-short reading, where it is the alignment and not a separator. The single space
-between fields is the only real gap.
+`--column-rules` never overrides a width that cannot hold them. The rule is
+ASCII `|` rather than the box-drawing `│`, because `│` is East Asian
+Ambiguous width and some terminals draw it two columns wide, which would
+shift everything to its right.
 
-Three widths pay for that. The ⌛ row asks `dur_fmt` for two digits rather than
-three — `6h`, not `6.4h` — everywhere except Σ, which keeps three because
-field 3 is a column wider and the session's own age is the one duration here
-read as a fact rather than as scale for something else. Σ is one column and 🔜
-is two, so `S_SUM` pads Σ to two and the two marks stack. And field 2 alone is
-`LIM_ACCT_W`, one narrower than the rest: the account percentage is a whole
-number at both sources, so 0 to 99 needs two characters and 100 is not printed
-at all — 💯 draws it.
+### Narrow and unknown widths
 
-**Σ is painted the colour 🔜 already is.** Not matched by eye: Apple Color
-Emoji keeps 🔜 as a PNG in its `sbix` table, and the alpha-weighted mean of
-its ink is `rgb(76,76,76)` at every strike from 20ppem to 160 — a flat neutral
-grey with no hue in it at all, which is not what a glyph named SOON looks like
-it should be. `F_SUM` is that value.
+The right half never shrinks. As the terminal narrows, the left half gives
+way:
 
-The mark takes it and the figure does not. On the two rows above, the
-countdown's figure carries the row's colour while 🔜 paints itself this same
-grey; the ⌛ row painted both halves periwinkle and was the one row where the
-mark competed with the thing it labels. Now all three read the same way down
-the column — a receding mark, a figure that carries the row — and Σ stacks
-under 🔜 in ink as well as in position. It is dim, and measurably so: 2.2:1
-against the chat rows' background. But that is the 🔜's own contrast, and this
-only stops Σ from being the exception to it.
+1. The chat text is cut first, down to a bare `…`.
+2. The project, path and branch share what is left, in proportion. The path
+   is cut first and from the left (`…deep/tree`); the branch is cut last.
+3. When not even minimal names fit — below about 135 columns — line 3 falls
+   back to flowing left to right with a two-column gap, and overruns the
+   terminal.
 
-## One colour per limit row, and brightness for the rest
+At 140 columns:
 
-Hue on the 🔋 and 🪫 rows answers exactly one question — *which window is
-this?* — and answers it the same way in every frame. 🔋 is green because it is
-the battery, 🪫 red because it is the low one. Neither moves with what the
-figures say.
+```
+👤💬 Why does the elapsed row …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h    📅  2026-08-16
+🤖💬 Two figures, because one …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁…deep/tree  🌿golden…                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
+```
 
-Everything a row distinguishes inside itself rides on brightness instead:
+The same fallback applies when the terminal will not report its width
+(`--cols 0` forces it); the path is then trimmed to fit an assumed 165-column
+row. Four columns are always left empty at the right edge, because Claude
+Code draws the status line into a box a few columns narrower than the
+terminal.
 
-| | 🎤 turn | 🎮 session | 💳 account | 🔜 reset |
-|---|---|---|---|---|
-| 🔋 5-hour | bright | bright | dim | bright under an hour, else dim |
-| 🪫 weekly | bright | bright | bright | bright under an hour, else dim |
+## Colour and brightness
 
-The 5-hour row dims its account figure and leaves the two this session owns at
-full strength — those are what a reader can act on, and the account total is
-context for them. The weekly row keeps all three bright, because by then the
-total *is* the news.
+Hue says *what* a figure is; brightness says *whether it is worth looking
+at*.
 
-**What this replaced.** Two hue ladders, on 2026-08-28. `limit_color` tiered
-the 🔋 row green / amber / red on the account's consumption, and
-`F_RST_FAR`/`MID`/`NEAR` ran the countdown down three shades of slate by its
-unit. Between them a single row could carry three unrelated hues, none of them
-the row's own — and because 🪫 was pinned red regardless, the same colour meant
-"this is the weekly window" on one row and "over 90٪" on the other. A colour
-that has to be decoded before it can be read is not doing the job colour is
-for.
+**Hue is identity and never changes with the value.** Each quantity keeps
+its colour on every readout: 🔋 is always green and 🪫 always red, whatever
+their figures say. The one exception is 🎯 (below).
 
-**What it cost.** The alarm. A 5-hour window at 95٪ now looks like one at 5٪,
-because `limit_color`'s thresholds were the only thing that said otherwise —
-`LIMIT_WARN` and `LIMIT_CRIT` went with the function that used them. The
-figures still say it in digits, two fields to the left.
+**Brightness is magnitude.** A figure with no natural ceiling is dim under a
+fixed cut and full strength at or over it:
 
-**Why two brightness levels and not three.** The reset ladder had three, so
-one of its distinctions had to go. Hours-against-days went: a window that
-resets tomorrow and one that resets this afternoon are the same news — not yet
-— while one resetting inside the hour is the only reading on that field a
-person acts on. Bright means that and nothing else.
-
-### Brightness as magnitude, everywhere else
-
-Since 2026-09-14 every figure on the status line and the agent rows that has
-**no ceiling of its own** is dim under a fixed cut and full strength at or over
-it. A percentage says what high is by being one — 100 is the window, and a
-reader knows it without being told — and 🎯 has its tiers. A token count, a
-rate, a cost, a duration and a diff have no such edge: `841k` and `8.4k` sat in
-the same ink and the same four columns, and the unit had to be parsed before
-one could be told from the other. Now the ink says it first.
-
-| kind | cut | where |
+| Kind | Cut | Where |
 |---|---|---|
-| tokens | 100k | 🧩 ▴ and ▾ each on its own, 🧠's size — both readouts |
-| rate | 1k/s | 🛫, both readouts |
-| cost | $1 | 💰, both readouts |
-| duration | 10 min | ⌛ 🔧 🤖 👤 Σ each on its own; an agent's 🔧 and 🤖 |
-| diff | 100 lines | 💾 each half on its own |
+| tokens | 100k | 🧩 ▴ and ▾ each, 🧠's size — status line and agent rows |
+| rate | 1k/s | 🛫 |
+| cost | $1 | 💰 |
+| duration | 10 min | ⌛ 🔧 🤖 👤 Σ each; an agent's 🔧 and 🤖 |
+| diff | 100 lines | 💾, each half |
 
-`MAG_TOK`, `MAG_RATE`, `MAG_COST`, `MAG_DUR_S`, `MAG_DIFF` in the program, and
-`mag_dim` applies them.
+The cuts are fixed rather than relative to the session, so the same
+brightness means the same thing on every row and in every frame.
 
-**One cut per kind, fixed, and the same wherever that kind is drawn.** Not
-"high for this session" and not "high against the other rows on the panel". A
-relative cut would make the same brightness mean a different thing in every
-frame — the fault hue was cured of on the limit rows, one section up — where a
-static one lets an agent row be read against the status line above it and
-against yesterday's, and lets the flip itself be read as an event: ▾ has come
-to a hundred thousand; that agent has run ten minutes.
+**Shares have cuts of their own.** Plan-window shares are measured against
+the week, since 100٪ of a window is not the edge anyone compares a turn to:
 
-**Where the cuts sit** is where a reading becomes worth noticing, not at a unit
-boundary. A hundred thousand tokens is half a standard window, the size at
-which a context becomes a compaction question, and the band that divides light
-agents from heavy ones; 🧩's ▴ passes it inside a few turns, ▾ in a long
-session. A thousand a second is the `k` of `1k/s`, about what the main thread
-runs at with a full window and a request every ten seconds, against `0/s`
-between turns. A dollar is the line a person draws without help; a session
-crosses it early, an agent that crosses it is a heavy one. Ten minutes is the
-turn or the agent a reader looks up for — the session's own age and its 👤 🤖
-split pass it early and stay bright, which is the right reading of them. A
-hundred lines is where an uncommitted diff is work rather than a tweak.
+| Figure | Dim when |
+|---|---|
+| 🎤 on 🔋 and 🪫 | the turn is under 1٪ of the week |
+| 🎮 on 🔋 and 🪫 | the session is under 5٪ of the week |
+| an agent's 🔋 🪫 pair | the agent is under 0.2٪ of the week |
+| column 3's 🎤 pair, 🎮 pair | that scope's 📖 is under 67٪ of its bill |
 
-**The shares take a cut of their own kind.** A 🎤 or 🎮 share is a
-percentage, but of a window it will never fill, so 100 is not the edge a
-reader holds it against; the question is whether this turn, this session,
-this agent is a real part of the *week*, and the weekly share answers it for
-both rows at once. Since 2026-09-14: 🎤 dims on both limit rows when the
-turn's weekly share is under 1٪ (`MAG_SHARE_TURN`), 🎮 on both rows when the
-session's weekly share is under 5٪ (`MAG_SHARE_SESS`), and an agent's 🔋 🪫
-pair dims together when its weekly share is under 0.2٪ (`MAG_SHARE_AGENT`) —
-an agent is a fraction of a turn, and the turn's cut would dim nearly every
-row of the panel; this one keeps the agent that did the turn's work bright
-and dims the ones that ran an errand. The 5-hour share of the same spend is
-always the larger figure and would put the two rows on different sides of the
-cut for the same turn, so it is never consulted: the pair flips together, off
-the week alone (`share_dims`). A share that could not be derived draws `?`
-and was dim already.
+Each pair dims together, so two figures about one scope never disagree. The
+67٪ cut for 📖 is set high because re-reading is normally most of a turn's
+cost: across 6,002 measured turns the median was 73٪.
 
-**What it does not touch.** The limit percentages themselves; 🎯, which has a rule of its own (below); column 3's shares, which take a cut of their own kind for a reason of their own — see [Column 3](#column-3-is-the-context-over-where-the-money-went); 🧠's percentage, whose window is its ceiling — so `🧠   115k    11٪`
-of a 1M window reads bright-dim and says exactly that, a lot of context and a
-small part of the room; the 🔜 countdown, which `reset_dim` already dims the
-*other* way, since for a time-until it is the small figure that matters (the
-⌛ row directly under it dims small figures — the two rows agree on what bright
-means, the figure worth looking up for, and differ on which end of the scale
-that is because the scales run opposite ways); the 5-hour row's 💳, dimmed as
-context and not as a magnitude; and the cost line, a different readout with a
-stacking of its own. `DIM` is never a hue: on every figure it means one thing,
-and the same thing every frame.
+**Always dim or always bright, whatever the value:**
 
-**🎯's own rule.** The hit rate keeps its three tiers — red at or under 50٪,
-amber at or under 80٪, green above — and since 2026-09-14 the green tier is
-dim as well as green. A high hit rate is the state nothing has to be done
-about, and the figure that asks for nothing should not be the one the eye
-lands on; amber and red mean something invalidated the cached prefix, and
-stay full strength. It is the magnitude rule read from the other end: there
-the small figure is the quiet one, here the large one is. The `DIM` is for
-the figure only — the 🎯 is drawn ahead of the colour on both readouts, so
-the mark stays bright and the cell still reads as a cell.
+- The 5-hour row's 💳 is dim — context for the session's own figures. The
+  weekly row's 💳 is bright.
+- 🔜 is bright only when the reset is under an hour away.
+- Limit percentages and 🧠's percentage are never dimmed by magnitude;
+  100٪ is their ceiling and the reader knows it.
 
-**Why the turn figure is there.** Before it the row could say a session had
-spent 2.5٪ of a window without saying whether that was one expensive turn or
-forty cheap ones. It is the same quantity the cost line's 🎤 row prints, off
-the same derivation and — see `_with_shares` — deliberately the same turn:
-`prompts[-1]`, the last turn that made calls and was not a compaction or the
-synthetic late-agents turn, which is character for character the selection
-`render_cost_line` makes. Taking `turns[-1]` instead would let the two rows
-describe different turns whenever the last thing that happened was a
-compaction, or an agent finishing after its turn.
+**🎯 uses tiers**, because a low hit rate is the problem: red at or under
+50٪, amber at or under 80٪, and dim green above. A cache collapse means the
+prefix was invalidated and the same work now bills at full price.
 
-**Why the marks and not a separator.** Two figures divided by `" / "` read as
-"mine out of everyone's". Three do not divide that way, and once each figure
-carries a mark the slashes are six columns spent repeating what the marks
-already say. The marks also do something a separator cannot: they give the ⌛
-row somewhere to stack. Without them the three rows want different field
-widths — the limit rows carry no glyph inside a field and the ⌛ row's halves
-carried two columns of one — so they could not be given one field width and
-could not stack at all.
+## The cost line
 
-🎤 replaced 💬 here, on two grounds. 💬 was already spoken for: `E_HUMAN`
-and `E_BOT` are the literals `👤💬` and `🤖💬`, so one picture meant "a line of
-chat" on the left of the row and "the last turn" on the right, and nothing else
-on the readout has two meanings. It is also a bright white blob sitting beside
-a figure it is only there to label. A microphone still says what 💬 said —
-what was just spoken — so the reading survives the move, on a glyph that is
-dark-bodied and unclaimed.
-
-🎮 replaced 🧮 for the session. An abacus said "summed", which is true of
-every figure on the readout and so distinguished nothing; a controller says a
-session is a thing you are *at* — it began when you sat down, and the figure
-beside it is what this sitting has spent. It also clears the glyph bar more
-cleanly than the mark it replaces: `U+1F3AE` is Unicode 6.0, where 🧮
-(`U+1F9EE`) is Unicode 11 and was the one mark on these rows relying on a
-terminal's newer tables.
-
-🎤 and 🎮 are `E_ROW_PROMPT` and `E_ROW_TOTAL`, aliased rather than copied so
-one quantity keeps one glyph wherever it is printed — which is why swapping
-either mark moves the cost line's matching row with it. 💳 is the only addition. It names what
-the figure actually is — the subscription, drawn down — and in doing so states
-the caveat `calibration()` spells out: the account figure is not bounded by
-this machine, because the scan can only see transcripts that sit on it while
-the percentage it divides into counts a phone and the web app too.
-
-A globe stood here first, on the argument that 💳 sits two fields from 💰 in
-column 2 and two money pictures on one row invite the misread that retired 📆.
-Overruled deliberately: 💰 is dollars this session and 💳 is percent of a plan
-window, so the two are never confusable as figures, and the reading the card
-buys is worth more than the separation the globe bought.
-
-**100 is drawn, not spelled.** A limit figure that reaches 100 renders as 💯
-instead of `100٪`. It is the one reading of that field which means the window
-is gone, and a number is a weak way to say it when every other reading is also
-a number; the glyph carries the percent sign inside it, so `E_PCT` is dropped
-rather than doubled and nothing on the row moves.
-
-It narrows exactly one field, and did not at first. `LIM_FIG_W` could not
-follow it down, because `limit_pct` spends three characters at every magnitude
--- `5.4` and `.38` as much as `100` -- so retiring the hundreds case left the
-widest percentage where it was. What changed is `LIM_ACCT_W`, the account
-field alone: that figure is a whole number at both sources, so with 100 drawn
-rather than spelled its widest reading is `99٪`, three columns. The glyph is
-what makes that one field a column narrower than the two beside it. ⚠ was
-considered alongside 💯 and is unusable -- U+26A0 is East_Asian_Width Neutral
-and needs U+FE0F to draw as an emoji at all, the two-codepoint shape rule 2
-exists to keep out.
-
-**The cost line draws it too, and had to.** The second figure in a totals-row
-🔋 or 🪫 cell and the figure beside the status line's 💳 are the
-same reading from the same source. Until it did, the two readouts disagreed at
-the one moment either of them matters: the status line drew 💯 and the cost
-row printed `99٪` — not a rounding, but `pct`'s clamp, which is to say a figure
-that was never true. That half of the cell is three columns and cannot hold
-`100٪`, so the glyph is what makes the honest reading fit in both places. Both
-now test the same threshold, `>= 99.5`, which is `limit_pct`'s own rather than
-a round 100: one test, so the glyph and the string can never disagree about
-where a window ends.
-
-Nothing in the cost corpus went near 99.5, which is why the clamp sat there
-being wrong without a failing case. `plan-full-01` is that case now.
-
-**What it cost.** The limits column went from 23 columns to 33, so the left half of
-line 3 lost 10 — `LINE3_RESERVED` was 109 with the spacing on and 105 with it
-off, until the share column took 20 more and the evening's rearrangement gave ten back; it is measured rather than estimated, so it
-has to be re-measured whenever a column moves.
-
-The ⌛ row's fields are positional rather than scoped, and have been since
-before this change. 🔧, 🤖 and 👤 partition the age that Σ states, and
-there is no account-wide time to put under 💳 — so the two rows share a grid
-and not a vocabulary.
-
-## Where one prompt's money went
-
-A per-prompt 🔋 or 🪫 cell reserves the same width as the totals-row cell it
-stacks on, so that the two emoji land in one column. The back half of that
-reservation — the seven columns the row below spends on `💳 99٪` — was seven
-blanks until 2026-09-03. It now carries where the prompt's money actually
-went:
+The Stop hook prints what the prompt just answered cost, over what the
+session has cost so far. Installed as the README suggests
+(`--no-usage-text --force-newline`), Claude Code shows the rows right-aligned
+under the prompt. Rendered here with `--no-right-align`, and with the text
+labels on:
 
 ```
-🔋+ 0.61٪ 📖 61٪          📖  re-reading the conversation so far   (cache_read, 0.1x)
-🪫+ 0.04٪ 📝 15٪          📝  caching what this turn added         (cache_creation, 2x)
-🔋  1.27٪ 💳 78٪          the totals row underneath, unchanged
-🪫  0.18٪ 💳 16٪
+📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪
+
+📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  5m  📅 2026-08-16
+📊 🎮 Usage: Session (total) 🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖  10m  🕐   02:23:20
 ```
 
-Since 2026-09-16 the status line prints the same pair in [column
-3](#column-3-is-the-context-over-where-the-money-went), for this turn and for the session —
-the scope the totals row here cannot carry, because that half of its cell is
-💳's.
-
-**These are shares of the turn, not of the window**, even though the glyph
-that opens the cell is a window's. That is the only form the field can hold:
-the largest re-read on record cost \$1.46, which is 0.25٪ of a 5-hour window
-and 0.08٪ of a weekly one, and this field is 💳's three *whole* columns —
-both would draw `0٪`. Two decimals need eight columns where `C_LIM_TOT` has
-seven, and widening it would unstack the two rows, which is the one alignment
-this readout exists to hold.
-
-**What the pair is for.** `/compact` and `/clear` reclaim 📖 and nothing else.
-📝 is this turn's own new material — tool results, files read, the prefix the
-next request will re-read — and shrinking the context does not touch it; what
-neither accounts for is output, which cannot be reclaimed at all. So a turn
-reading `📖 61٪` is one where compacting would pay, and `📝 55٪` is one where
-it would save almost nothing however large 🧠 looks. Measured across this
-program's own sessions the read share swings from 8٪ to 57٪, and the two most
-expensive turns of one session sat at opposite ends of that spread — which is
-the case for spending the columns.
-
-It does **not** choose between `/compact` and `/clear`. Both shrink the
-prefix; the difference is what is left (a summary, or the system prompt and
-tool schemas) and what you are willing to lose. Nor does it carry the one-time
-price of compacting — but the cost line already prints a compaction on its own
-row, so both halves of the break-even are on screen.
-
-A compaction issues no request of its own, so there is no cost to take a share
-of and both cells go blank — the full seven columns, not an empty string. See
-`share_half` for why that distinction matters: `seg` pads the cost row on the
-**left**, so a short cell is not a gap at the end of a row but a whole cell
-pushed right, off the column it has to stack on.
-
-## The column after a cost-line mark
-
-Every cell on the cost row is emoji, one column, then the value. What sits in
-that one column is not the same thing twice, and the difference is why
-`--no-mark-spacing` reaches two of the seven cells and not the rest.
-
-On 🧠 💰 🔋 🪫 and ⌛🤖 it is a **sign**: `+` on the per-prompt row, a blank
-on the totals row directly beneath it. Every figure on the upper row is what
-one prompt added to the reading below it, and the blank underneath is what
-lets the two stack digit under digit. That is content. Close it and the rows
-come apart, which is the one alignment this readout exists to hold.
-
-On 🧩 and 🎯 there was nothing in it at all, so those two follow the status
-line's `MARK_SP` and give the column back under `--no-mark-spacing`. So does
-the 💳 that divides the two halves of a totals-row limit cell, which is a
-mark like any other. 📅 and 🕐 carry `S_DATE`/`S_TIME`'s hard space — the
-status line's own column 5 constants — and so were already spaced on both
-readouts.
-
-**The account half is marked, not slashed.** A totals-row 🔋 or 🪫 carries
-two figures about one window: what this session spent, and what the window has
-consumed altogether. The second is the reading the status line puts beside 💳,
-so it now carries 💳 here:
+After a compaction:
 
 ```
-🔋  0.07٪ 💳 41٪          🔋  0.07٪ 💳  💯
+📊 🤏 🧩 ▴ 29k ▾  4k  🎯 99٪                  💰+  0.2   🔋+ 0.05٪ 📖 59٪  🪫+ 0.06٪ 📝  0٪  ⌛🤖+ 41s
+
+📊 🎤 🧩 ▴ 12k ▾800   🎯 98٪  🧠-19.5٪ -195k  💰+  0.1   🔋+ 0.01٪ 📖 61٪  🪫+ 0.02٪ 📝 14٪  ⌛🤖+  1m  📅 2026-08-16
+📊 🎮 🧩 ▴ 76k ▾  6k  🎯 99٪  🧠  9.7٪   97k  💰   0.5   🔋  0.1٪  💳 41٪  🪫  0.13٪ 💳 63٪  ⌛🤖 3.7m  🕐   02:23:20
 ```
 
-It was a spaced `/` until 2026-08-27, and the note in the code claimed the
-slash as *"the status line's idiom for exactly this pair"*. It never was one:
-column 4 divides its four fields with marks and carries no slash anywhere. A
-slash is also the one divider that says nothing about which half is which, and
-it reads as "out of" — wrong twice over here, since the share is a percentage
-of the same window rather than a part of the total beside it. `render_diff`
-dropped its own slash on the same argument, that *"the signs already say which
-half is which, so the slash was a column spent repeating them"*. The cost here
-is one column with the spacing on and none without it: tight, `💳41٪` is the
-same six columns `/ 41٪` spent.
+### Rows
 
-The block's note read *"no separator between them: a two-cell glyph divides
-itself from what follows better than a space does"* until 2026-08-27. Five of
-the seven cells already disproved it; the sign column has been there as long as
-the rows have stacked. The status line spent that day deciding the same
-question the other way, and one readout arguing for the tight form while the
-other defaults to the spaced one is the inconsistency — not either form.
+| Row | What it reports |
+|---|---|
+| 🎤 Prompt | the prompt just answered |
+| 🎮 Session | the whole session, including every row above it |
+| 🤏 Compact | a compaction since the last report — `/compact` fires no Stop hook of its own, so it is reported here, once |
+| 👥 Agents | agent spend the 🎤 row cannot carry: a background agent that finished after its turn printed, or a turn that shared its Stop with a later one |
 
-## `"Stop says: "`, and the eleven columns
+🤏 and 👥 rows print above the 🎤 row, separated by a blank line. See
+[Accounting](accounting.md) for how turns and agents are attributed.
 
-A `systemMessage` is not printed bare. Claude Code draws it in a bordered box
-that indents content five columns (`"  ⎿  "`) and prefixes `"Stop says: "` —
-sixteen columns that appear nowhere in the hook payload and cannot be measured
-from inside the program. Both figures were read off a pasted row by counting
-how far its 📊 sat from the screen's left edge.
+### Cost-line cells
 
-Two consequences, and they are the two things most likely to be broken by an
-innocent-looking edit:
+| Cell | 🎤 🤏 👥 rows | 🎮 row |
+|---|---|---|
+| 🧩 | tokens in and out, as on the status line | the session's |
+| 🎯 | cache hit rate | the session's |
+| 🧠 | change in context: share of the window, then tokens | context at the end: share, then tokens |
+| 💰 | what this row cost | what the session cost |
+| 🔋 | share of the 5-hour window, then 📖 re-read share of this row's bill | the session's share, then 💳 the account's |
+| 🪫 | share of the weekly window, then 📝 cache-write share | the session's share, then 💳 the account's |
+| ⌛🤖 | time the model spent answering | summed over every prompt |
+| 📅 / 🕐 | date the row was printed | time it was printed |
 
-1. **Without subtracting the chrome the row overruns, and the CLI *wraps* the
-   tail onto a second line rather than truncating it.** The symptom to watch
-   for is a second line, not a trailing ellipsis.
-2. **`"Stop says: "` is printed against the FIRST line only.** Continuation
-   lines get the five-column indent alone. So all the rows must ship as ONE
-   `systemMessage` joined by `"\n"` — emitted as two messages the second gets
-   the full sixteen columns and misaligns by eleven.
+The 🧠 cell reads percentage first, the reverse of the status line's.
+🧠 and 📅 are blank on 🤏 and 👥 rows, and ⌛🤖 is blank on 👥: a
+compaction or a batch of agents has no context change of its own, agent time
+is already counted on the rows that spawned it, and the print time is not
+when the event happened.
 
-`--force-newline` is the eleven columns turned into a feature. Open the message
-with a newline and that first line is spent on the prefix alone; every row
-printed is then a continuation line, laid out against the smaller chrome, and
-the block gets its eleven columns back for one blank line.
+**The sign column.** On the per-row lines, 🧠 💰 🔋 🪫 and ⌛🤖 carry a `+`
+(or `-` for a context that shrank) in the column after the mark; the 🎮 row
+has a blank there. Each upper figure is what one event added to the figure
+beneath it, and the blank keeps the two stacking digit under digit.
+`--no-mark-spacing` removes the space after 🧩, 🎯 and 💳 but never the sign
+column.
 
-The program also does this **on its own, without being asked**, when the window
-is too narrow to afford them — precisely when the block would have to cut its
-labels with the prefix and would not have to without it. A window too narrow
-either way keeps its first line: there the newline buys a slightly longer label
-at the price of a whole row, and the label says the same thing every turn.
+**📖 and 📝 on the upper rows** are shares of that row's bill, not of the
+window whose mark opens the cell. They sit in the half-cell that 💳 fills on
+the 🎮 row, so the two rows stack.
 
+The rows are laid out as one block: the placement is decided once for the
+tightest row, so every row's columns line up. When there is not room for the
+labels, the labels are cut, never the metrics.
+
+### "Stop says:" and `--force-newline`
+
+Claude Code shows a hook's `systemMessage` in a box that indents each line
+five columns and prefixes the first line with `Stop says: `, sixteen columns
+in all. Neither figure appears in the hook payload; the program subtracts
+them as constants. Two consequences:
+
+- If a row is too wide, Claude Code wraps its tail onto a second line rather
+  than truncating it. A wrapped cost line means the chrome figures are wrong.
+- All rows go out as a single `systemMessage` joined by newlines. As separate
+  messages, each would get the sixteen-column prefix.
+
+`--force-newline` starts the message with a newline, so `Stop says: ` sits
+alone on the first line and every row is laid out against the five-column
+indent, gaining eleven columns. The program does this unaided when the
+window is too narrow for the labels with the prefix but wide enough without
+it.
+
+## Agent-panel rows
+
+While agents run, `--mode subagent` replaces each row of Claude Code's agent
+panel. At 170 columns, with a running agent, its nested child, a finished
+agent and a shell:
+
+```
+◯  🔧🟢 a1b2c3d4e… Port the renderer Editing claude_render.py        🤖O⁵🏃  🔧  4m  🤖8.6m  💰0.4   🧠124k  🧩▴ 66k ▾3.6k  🛫266/s  🎯93٪  🔋.08٪  🪫.10٪  💾 +  48 -   9
+├ ◯  🔍🟢 c7d8e9f0a… Find every caller of seg() Searching for seg(   🤖S⁵🚶  🔧  1m  🤖7.3m  💰0.1   🧠 48k  🧩▴ 24k ▾  1k  🛫 80/s  🎯90٪  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯  📐🔵 f3e4d5c6b… Plan the docs rewrite                             🤖O⁵🏃          🤖  4m  💰0.2   🧠 42k  🧩▴ 26k ▾2.9k           🎯85٪  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯  🐚🟢 b1         npm test npm test --watch                                         🤖 13m
+```
+
+The leading `◯` and `├` are the panel's own chrome, drawn by Claude Code;
+everything after them is this program's.
+
+### Agent-row cells
+
+Left to right:
+
+| Cell | Meaning |
+|---|---|
+| kind | the agent type, as a glyph (table below) |
+| state | 🟢 running, 🟡 pending, 🔵 completed, 🔴 failed, ⚫ killed |
+| id | the task id, cut to ten columns |
+| name | the task's name, or its description; then what it is doing now |
+| 🤖 | model and effort, as on the status line |
+| 🔧 | time inside tools — this agent's and every agent it spawned, unioned |
+| 🤖 | time thinking: the run so far, minus the 🔧 time. Stops at the agent's last record once it finishes |
+| 💰 | cost, from the agent's own transcript, each request priced at its own model |
+| 🧠 | the agent's context size (its last request's input) |
+| 🧩 | tokens in and out |
+| 🛫 | token rate, from the panel's own samples; running agents only |
+| 🎯 | cache hit rate |
+| 🔋 🪫 | the agent's share of each plan window |
+| 💾 | lines added and removed by the agent's own edits and writes |
+
+The right-hand group is fixed width and ends on the same column on every
+row. The name takes what is left: the activity is cut first, then the name.
+A label that only repeats the description is not drawn.
+
+| Kind glyph | Agent type |
+|---|---|
+| 🔧 | general-purpose |
+| 🎩 | claude |
+| 🔍 | Explore |
+| 📐 | Plan |
+| 📚 | claude-code-guide |
+| 📟 | statusline-setup |
+| 🍴 | fork |
+| 🔗 | workflow |
+| 🐚 | shell |
+| 🌐 | remote agent |
+| 🎎 | in-process teammate |
+| 👥 | any other type, including custom agents |
+
+### Nesting
+
+An agent spawned by another agent is drawn by the panel under its parent,
+with one `├ ` per level of nesting. The program reads each agent's depth
+from the `spawnDepth` in its sidecar file and shortens the row by two
+columns per level, so a child's right-hand group lands on the same columns
+as its parent's. A task with no sidecar — a shell, a remote agent — is
+treated as top level.
+
+A parent's 🔧 includes its descendants' tool time; its 💰, 🧩 and 💾 are
+its own transcript only. In the example, the parent's `🔧 4m` is its own
+three minutes plus its child's one.
+
+### Blank cells
+
+A task with no transcript — a shell or a remote agent — shows only its name,
+activity and run time; there is nothing else to measure, and a zero would
+read as a measurement. 🔧 is blank at zero for the same reason. 💾 is drawn
+even at `+ 0 - 0` for any agent with a transcript, since writing nothing is a
+fact about it. 🔋 and 🪫 are blank without a plan reading, and `?` without a
+calibration.
+
+## Glyph legend
+
+Every mark, on every readout. Some glyphs appear in more than one place;
+their position tells them apart.
+
+| Glyph | Where | Meaning |
+|---|---|---|
+| 👤💬 | status line | your last prompt |
+| 🤖💬 | status line | the model's last reply |
+| ¶ | status line | a newline inside a chat row |
+| 📦 | status line | project (the main repository, in a worktree) |
+| 📁 | status line | current directory |
+| 🌿 | status line | branch, clean tree |
+| 🍂 ✱ | status line | branch, uncommitted changes |
+| 🎨 | status line | output style, when not the default |
+| 🔀 | status line | pull request number |
+| 🤖 `O⁵` | status line, agent rows | model: family initial and major version |
+| 🐢 🚶 🏃 🚀 🔥 | status line, agent rows | effort: low, medium, high, xhigh, max |
+| 💰 | all | cost in dollars |
+| 🧩 ▴ ▾ | all | tokens: billable-equivalent input, output |
+| 🛫 | status line, agent rows | token rate, per second |
+| 🎯 | all | prompt-cache hit rate |
+| 🧠 | all | context: size and share of the window, or its change |
+| 📖 | status line, cost line | share of the bill spent re-reading the conversation |
+| 📝 | status line, cost line | share of the bill spent caching new material |
+| ⌛ | status line | the time row |
+| 🔧 | status line, agent rows | time inside tools |
+| 🤖 | status line, agent rows | time waiting on the model |
+| 👤 | status line | time waiting on you |
+| Σ | status line | the session's age |
+| ⌛🤖 | cost line | time the model spent answering |
+| 🔋 | all | the 5-hour plan window |
+| 🪫 | all | the weekly plan window |
+| 🎤 | status line, cost line | scope: the last turn; the prompt row |
+| 🎮 | status line, cost line | scope: this session; the session row |
+| 💳 | status line, cost line | scope: the whole account |
+| 🔜 | status line | time until a window resets |
+| 💯 | status line, cost line, agent rows | a full 100٪ |
+| `?` | status line, agent rows | a share that cannot be derived yet |
+| 📅 🕐 | status line, cost line | date and time |
+| 💾 | status line, agent rows | lines added and removed |
+| 📊 | cost line | marks a cost-line row |
+| 🤏 | cost line | compaction row |
+| 👥 | cost line | late agent-spend row |
+| 🔧 🎩 🔍 📐 📚 📟 🍴 🔗 🐚 🌐 🎎 👥 | agent rows | agent kind — see [Agent-row cells](#agent-row-cells) |
+| 🟢 🟡 🔵 🔴 ⚫ | agent rows | running, pending, completed, failed, killed |

@@ -35,10 +35,10 @@ which is short there:
     codepoint with a hand-maintained table.  Both look like bugs and both are
     deliberate.  Swapping in wcwidth or unicodedata.east_asian_width breaks
     the alignment of every row; it is tempting and has been attempted before.
-  * docs/layout.md, "The layout rule" — fixed field widths, fixed segment
+  * docs/layout.md, "Fixed widths" — fixed field widths, fixed segment
     reservations, one right-aligned constant.  Switching tabs must not move
     the numbers.
-  * The same file, '"Stop says: ", and the eleven columns' — the chrome the
+  * The same file, '"Stop says:" and --force-newline' — the chrome the
     cost line is laid out against, and why its rows ship as ONE
     systemMessage.
 

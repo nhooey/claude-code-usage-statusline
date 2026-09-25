@@ -1,174 +1,190 @@
 # Development
 
-## Reading the code
+`coding-agent-usage-line.py` is a thin launcher: it puts its own directory on
+`sys.path` and calls `coding_agent_usage_line.cli.main`. Everything else is
+the `coding_agent_usage_line/` package beside it. Keep the two together. There
+is nothing to install: the package uses only the standard library and runs on
+Python 3.9, the interpreter macOS's Command Line Tools ship as
+`/usr/bin/python3`.
 
-The executable is a thin checkout launcher. Keep it beside the
-`coding_agent_usage_line/` package; no package installation is required.
+## How the code is laid out
 
-| module | responsibility |
+```
+coding-agent-usage-line.py        launcher
+└─ cli.py                         parse and validate flags, pick the agent
+   ├─ claude.py                   Claude orchestration: read, prepare, print
+   │  ├─ claude_records.py        payloads, transcripts, prices, turn/agent accounting
+   │  ├─ claude_sources.py        a usage-source reading, projected for the Claude rows
+   │  ├─ claude_render.py         status-line cells and grid           (pure)
+   │  ├─ claude_cost_render.py    Stop-hook cost rows                  (pure)
+   │  └─ claude_subagent_render.py  agent-panel rows                   (pure)
+   ├─ codex.py                    Codex rollout parsing and accounting
+   ├─ render.py                   Codex status, history and Stop text  (pure)
+   ├─ sources.py                  usage-source selection and collectors
+   └─ state.py                    private on-disk cache, locks, report claims
+
+shared by all of the above:
+   formatting.py                  glyphs, widths, palette, number formats, terminal geometry
+   models.py                      immutable, vendor-neutral token/request records
+```
+
+Every module above lives in `coding_agent_usage_line/`.
+
+| module | owns |
 |---|---|
-| `cli.py` | validate agent/source/options, prepare Codex reports, dispatch to the selected adapter |
-| `formatting.py` | shared glyphs, measured widths, ANSI palette, number formatting and terminal geometry |
-| `models.py` | immutable token/request records, with missing categories distinguished from zero |
-| `sources.py` | source selection, grouped quota normalization, command/app-server/HTTP collection and refresh policy |
-| `state.py` | private scoped source cache, refresh locks and atomic Codex report claims |
-| `codex.py` | rollout records, thread identity, descendant discovery, request deduplication and turn attribution |
-| `render.py` | prepared Codex status/history/Stop text and separate account-period rows |
-| `claude_records.py` | Claude payload/transcript records, usage parsing, model prices and turn/agent accounting primitives |
-| `claude.py` | Claude orchestration: read inputs, prepare accounting/cache snapshots, serialize status/Stop/panel output |
-| `claude_sources.py` | shared source reading to Claude's established default-window display bridge |
-| `claude_render.py` | prepared Claude status cells and fixed-column grid |
-| `claude_cost_render.py` | prepared Claude cost-row placement, palette and layout |
-| `claude_subagent_render.py` | prepared Claude task rows, without transcript or source reads |
+| `cli.py` | The public flag set and usage text. Validates everything before reading stdin, then runs the Codex path itself or hands Claude to `claude.main`. |
+| `claude.py` | Claude's three modes (`status`, `cost`, `subagent`) and `--selftest`: reads the hook payload and transcripts, takes one usage-source snapshot, derives calibration and window shares, keeps the per-session context and rate files, and prints. |
+| `claude_records.py` | Claude JSONL interpretation: payload fields, request deduplication, per-model prices, turns, tool spans, agent files. No terminal output. |
+| `claude_sources.py` | Turns a normalised usage-source reading into the `Limits` pair (5-hour and weekly) the Claude rows draw. |
+| `claude_render.py` | Every status-line cell and the three-row grid. |
+| `claude_cost_render.py` | Placement and stacking of the cost rows. |
+| `claude_subagent_render.py` | One agent-panel row per task. |
+| `codex.py` | Codex rollout records: thread identity, child discovery, request deduplication, turn attribution. Read-only. |
+| `render.py` | Codex status, history and Stop reports, and account-period rows. |
+| `sources.py` | `--usage-source` selection, the version-1 custom-command contract, the HTTP and app-server collectors, refresh policy. See [Usage sources](usage-sources.md). |
+| `state.py` | The private state directory: scoped source cache, refresh locks, atomic claims so a Codex Stop reports each request once. |
+| `formatting.py` | Glyph constants (`E_*`, `S_*`), width tables and `vis_width`, the ANSI palette, `humanize` and the other fixed-width formatters, terminal-width detection, and the two display switches. |
+| `models.py` | `TokenUsage` and `UsageRequest`. A missing token category is `None`, not `0`. |
 
-The accepted portability scope and remaining module-boundary criteria are in
-[the agent-agnostic implementation plan](agent-agnostic-plan.md).
+The comments in the code are dense on purpose. These documents cover what is
+worth knowing before you open a file; a detail that matters only at one line
+— a single field's width, one function's failure mode — lives in the comment
+at that line and is not repeated here.
 
-The substantial Claude sections retain their original comments and formatting
-algorithms. Shared formatters do not select sources or read vendor histories;
-rendering receives prepared readings. A named quota bucket is not squeezed
-into the legacy default five-hour/weekly pair: its identity and nested windows
-remain in the generic account output.
+## Boundaries
 
-The code comments are deliberately dense, and these documents duplicate the
-parts of them that are worth knowing before you open the file rather than
-while you are standing at one line of it. Where a comment is the better place
-for a detail — a single field's width, one function's failure mode — it stays
-there, and docs/ does not repeat it.
+These hold across the package. Most bugs that reach the goldens come from
+breaking one of them.
+
+- **Renderers are pure.** The four `*render*` modules take prepared values
+  and return strings. They do not read transcripts, call usage sources, touch
+  the cache or read the clock on their own. File reads, subprocesses, HTTP,
+  cache writes and report claims belong to the orchestration, source and
+  state layers.
+- **One snapshot per process.** A process is one render. The usage source is
+  read once, before rendering, so no two cells can disagree about the
+  reading. Agent files are read once and passed down: `read_transcript`,
+  `read_turns` and `_with_shares` all take an `agents` argument instead of
+  re-reading or memoising in a module global.
+- **Missing is not zero.** An absent metric, token category or quota window
+  stays absent and renders blank or `?`. It is never printed as `0`.
+- **Display switches are set once, then read through the module.**
+  `set_mark_spacing` and `set_subscript_decimals` rebind globals in
+  `formatting.py` (`MARK_SP`, `RIGHT_GRID`, `LINE3_RESERVED`, the `C_*`
+  cost-line widths, `SUB_DEC`) before anything renders. Code elsewhere must
+  read those as `fmt.NAME`. A `from .formatting import *` copy is taken at
+  import time and never sees the change.
+- **Quota buckets keep their shape.** A reading is a set of named buckets,
+  each with its own windows. A bucket that is not the default one is not
+  squeezed into the 5-hour/weekly pair; it keeps its identity through the
+  cache, diagnostics and the generic account output.
+- **Estimates stay labelled as estimates.** Claude's turn, session and agent
+  shares of a plan window are calibrated estimates (see
+  [Accounting](accounting.md)). Nothing converts Codex subscription tokens
+  to API dollars or apportions an account percentage to a Codex child thread.
+
+For Codex, a request ID deduplicates history copied into a fork, a thread ID
+identifies a child, and an explicit root-turn link attributes a child's usage
+to a turn. None of them can stand in for the shared session ID. Stop claims
+remember each request's origin turn, so usage from a child that finishes late
+prints once and is not charged to the latest turn. `--all` reads history
+without consuming claims. See [Codex](codex.md).
+
+## Where to make a change
+
+| change | where | then |
+|---|---|---|
+| A status-line cell | `claude_render.py`; its width in `RIGHT_GRID` / `LINE3_RESERVED` / `RULE_MIN` in `formatting.py` | Regenerate the status goldens and read the diff; update [Layout](layout.md). |
+| A cost-line cell | `claude_cost_render.py`, and the group builders in `claude.py` | Regenerate the cost goldens; update [Layout](layout.md). |
+| An agent-panel cell | `claude_subagent_render.py` | Update the row shape asserted in `tests/subagent.py`. |
+| A glyph | An `E_*` constant in `formatting.py` | Follow [Glyphs and terminals](glyphs-and-terminals.md); run `tests/probe-advance.sh` in a real terminal. |
+| A flag | `_CLAUDE_FLAGS` / `_COMMON_FLAGS` and `USAGE` in `cli.py`; read it in `claude.main` or `codex_main` | Update [Options](options.md); add a case to `tests/port-cli.py`, the public-CLI suite. |
+| Claude accounting (prices, turns, agents) | `claude_records.py`; window shares and calibration in `claude.py` | `tests/agents.py`, the cost goldens; update [Accounting](accounting.md). |
+| A usage source | `sources.py`, and `validate_source` for its spec | `tests/sources-v1.py` and friends; update [Usage sources](usage-sources.md). |
+| Codex accounting | `codex.py`, rendering in `render.py` | `tests/codex.py`. |
+
+## Verifying a change
+
+[Tests](tests.md) lists every suite and what it covers. The short version:
+
+```sh
+bash tests/golden.sh           # status line, byte for byte
+bash tests/golden-cost.sh      # Stop-hook cost line
+python3 tests/agents.py        # agent spend and tool time
+python3 tests/subagent.py      # agent-panel rows
+python3 tests/rate.py          # 🛫 and the brightness cuts
+```
+
+CI runs these plus the source, Codex, CLI and Python 3.9 floor suites.
+
+A layout change is supposed to fail the goldens. Rerun the suite with
+`--regen`, read the diff of `tests/golden/`, and commit the new files only if
+every changed byte is one you meant to change.
+
+Glyph widths cannot be checked in CI: they depend on the terminal drawing
+them. `--selftest` and `tests/probe-advance.sh` need a real terminal tab.
 
 ## Style
 
-Prefer pure rendering functions over immutable records and prepared snapshots.
-Keep file reads, subprocesses, HTTP, cache writes and report claiming in the
-adapter/source/state layers. A missing observation is not an observed zero.
+- Prefer pure functions over immutable records and prepared snapshots.
+- Name glyphs as `E_*` constants in `formatting.py` and use the constant.
+  The probe finds glyphs by that prefix; a literal elsewhere is invisible to
+  it.
+- A fixed-width field carries a unit (`1.2k`, `4.5M`, `1.5h`), never more
+  digits. See [Layout](layout.md).
+- Explain a non-obvious choice in a comment at the line that makes it, with
+  the evidence (a measurement, a failing case). Keep history in commit
+  messages, not in comments or docs.
 
-The agent files are read once per process and handed to every reader that
-needs them — `read_transcript`, `read_turns`, `_with_shares` all take an
-`agents` argument — rather than memoised in a module name. Same rule: a
-process is one render, and the reading is an input to it.
+## Open issues
 
-The display knobs for mark spacing and subscript decimals are set before
-rendering. Code outside `formatting.py` reads dependent mutable widths through
-the module, not copied imports. Source selection happens before rendering, so
-cells and rows cannot independently refresh or disagree about the reading.
+**Glyph widths not yet measured in a real terminal.** Each needs a run of
+`tests/probe-advance.sh` in JediTerm and in Ghostty, with the result recorded
+in [Glyphs and terminals](glyphs-and-terminals.md).
 
-Codex account quotas and request tokens are different records. A request ID
-deduplicates copied fork history; a thread ID identifies a child; an explicit
-root-turn link attributes child usage. Do not substitute the shared session ID
-for any of these. Atomic session-wide claims retain origin turns so late child
-usage can print once without being charged to the latest turn. Historical
-`--all` reports are read-only and do not consume those claims.
+- The agent-panel type marks and state circles in `KIND_MARK` and
+  `STATE_MARK` (`claude_subagent_render.py`): 🎩 🔍 📐 📚 📟 🍴 🐚 🔗 🌐 🎎 and
+  🟢 🟡 🔵 🔴 ⚫. Unlike 🔧 and 👥, which are also `E_*` constants, they are
+  literals in those tables, so the probe does not see them until it is taught
+  to read the tables. 🟢 and 🟡 are Unicode 12, newer
+  than any other glyph on either readout. A wrong width here shifts one panel
+  row.
+- 🛫 `E_RATE` and the superscript digits `E_SUP_DIGITS` (the `⁵` in `O⁵`).
+  Both are `E_*` constants, so the next probe run covers them. ¹ ² ³ ⁴ are
+  East Asian Width Ambiguous; ⁴ appears on every Haiku 4.x row. A two-column
+  ⁴ would push the effort glyph one column into the gap after it.
 
-Claude's turn/session/child quota shares are calibrated estimates. There is no
-Codex conversion from a child's tokens to its share of a subscription bucket,
-and no API-price fallback for subscription usage. Preserve unavailable values.
+**Terminal profiles not measured.**
 
+- Bare Ghostty (outside tmux) gets the `unknown` profile. Whether it wants
+  the icon padding `_PAD` gives `iterm` and `tmux` is untested; only
+  `--selftest`'s drawn rows can show it.
+- tmux over JediTerm has never been measured. `term_profile` checks `TMUX`
+  first, on evidence from tmux over iTerm2 only. Running
+  `coding-agent-usage-line.py --agent claude --selftest` in tmux inside Rider
+  settles it: a non-zero delta on any row means the combination needs its
+  own branch.
 
-## TODO
+**Column 1 is usually empty.** It shows the output style or the PR number,
+and on a default-style session with no open PR it is eleven columns of
+nothing. Reclaiming it moves `render_status` and every status golden, and
+nothing else needs the width yet, so it stays.
 
-Known and deliberate, rather than discovered by a reader. Entries leave this
-list when they are done; git history is the record of what was.
+## Direction
 
-**Measured 2026-09-08, and closed.** `--selftest` and
-`tests/probe-advance.sh` were run in Rider/JediTerm and in Ghostty under tmux,
-twice — the second time after `SUB_DIGITS` was renamed `E_SUB_DIGITS`, which is
-what put the subscript digits in front of the probe at all. Every specimen row
-came back delta 0 in both terminals, and both probes emitted empty override
-tables. 🎤 💯 💳 🎮 📖 📝 advance two, ▴ U+25B4 and ▾ U+25BE advance one, 🤏
-U+1F90F advances two, `U+2080`–`U+2089` advance one, and the `|` column rule
-draws in a gap the grid already spends.
+Intentions, not designs:
 
-Nothing in the layout is inferred from a width table any more. What the runs
-found instead is recorded where it belongs: a stale claim about U+1FA70 and a
-real Ghostty/JediTerm disagreement at U+1F900, both under *Glyphs, terminals,
-and the naughty ones*; and a saving that never existed, under
-`--subscript-decimals` in *Options*.
+1. More agent adapters and usage sources, behind the same boundaries.
+2. A terminal diagnostic tool, in its own repository: drive each terminal and
+   multiplexer combination and record which glyphs each one draws at which
+   width. `tests/probe-advance.sh` is its seed.
+3. A terminal output filter in the same repository, so a program need not
+   carry per-terminal width knowledge itself.
 
-**Measured 2026-09-12, and closed.** 👥 `E_ROW_AGENTS`, U+1F465, the label
-glyph of the late-agents cost row added 2026-09-11, went through
-`tests/probe-advance.sh` in Rider/JediTerm and in Ghostty, both outside tmux:
-`advance=2` in each. Its two columns are a reading now, recorded beside 🤏's
-under *Glyphs, terminals, and the naughty ones*.
-
-**Unverified — needs a real terminal tab, so no runner and no agent can close
-it**
-
-0. The seventeen glyphs of the subagent row added 2026-09-13: the eleven
-   type marks in `_KIND_MARK` — 🔧 🎩 🔍 📐 📚 📟 🍴 🐚 🔗 🌐 🎎 — the five
-   state circles in `_STATE_MARK` — 🟢 🟡 🔵 🔴 ⚫ — and 🛫 U+1F6EB, the
-   token rate. Each holds to the glyph rules — single codepoint,
-   Emoji_Presentation=Yes, inside `EAW_WIDE` — except that 🟢 U+1F7E2 and 🟡 U+1F7E1 are Unicode 12, past the Unicode 9
-   line the rules prefer and the first glyphs on either readout to be. None
-   has been through `probe-advance.sh` or drawn by `--selftest` in either
-   terminal. The probe derives its list from the `E_*` constants and will
-   not see these until they are named that way or it is taught to read the
-   two tables; do that, run it, and record the result under *Glyphs,
-   terminals, and the naughty ones*. 🛫 replaced ✈️ U+2708 U+FE0F within
-   the hour: the airplane with the variation selector broke the rules on
-   both counts, and in JediTerm a digit was seen painted over the slash of
-   its cell. The row's one live glyph bug so far, and it went the way the
-   rules predict. The type marks and the circles appear on the panel rows
-   only, so a wrong width there shifts one row of the panel and nothing on
-   the status line; 🛫 is on the status line too since the evening of the
-   same day, in column 2, where a wrong width shifts row 3 to the right of
-   it. The row's width is no longer a guess: the panel's `columns` is
-   already net of its chrome, measured on screen 2026-09-13.
-
-0a. The superscript digits `E_SUP_DIGITS`, U+2070 U+00B9 U+00B2 U+00B3
-   U+2074–2079, added 2026-09-13 for the model's major version — `O⁵`,
-   `H⁴` — on the status line's column 2 and the panel rows both. Six are
-   East_Asian_Width Neutral and four (¹ ² ³ ⁴) Ambiguous, the split of the
-   subscript block, which both terminals advanced one column on 2026-09-08;
-   ⁴ is the Ambiguous one in live use, on every Haiku and Sonnet row. Not
-   probed. `probe-advance.sh` reads `E_*` constants, so it will see these
-   on its next run; record the result beside the subscripts' under *Glyphs,
-   terminals, and the naughty ones*. A two-column ⁴ would push 🤖H⁴🔥's
-   effort glyph one column into the gap and nothing else, since the cell
-   fills its column exactly.
-
-1. Bare Ghostty — outside tmux — falls to the `unknown` profile, and its
-   width behaviour is measured only as far as the probe above went: 👥
-   advanced two there on 2026-09-12, which is the first bare-Ghostty reading
-   of anything. `term_profile` checks `TMUX` first, so the two full Ghostty
-   runs of 2026-09-08 measured the `tmux` profile and say nothing about
-   Ghostty on its own. The width tables would be empty either way; what is
-   untested is the paint room `_PAD` gives the icons under `iterm`/`tmux` and
-   withholds under JediTerm, which only `--selftest`'s drawn rows can show.
-
-**Cleanup**
-
-2. Column 1 of the status line renders empty on a default-style session with
-   no open PR, which is the common case. It is reserved width showing
-   nothing. Left as-is deliberately: reclaiming it is a layout change that
-   moves `render_status` and re-blesses both golden suites, and the width is
-   not needed by anything else at present.
-
-## Where this is going
-
-Vague on purpose — these are the intentions, not a design:
-
-1. **Additional agent adapters and intake methods**, following the boundaries
-   and capability differences in the [portability plan](agent-agnostic-plan.md).
-2. **A terminal diagnostic program**, in a repo of its own: drive every
-   terminal-and-multiplexer combination, read back screenshots, and work out
-   what each one gets wrong with which emoji. `tests/probe-advance.sh` is the
-   seed of it.
-3. **A terminal output filter**, in the same repo as (2): normalise output
-   across terminals from the active combination, so a program does not have to
-   carry the per-terminal knowledge itself.
-
-Until (3) exists, the terminal-specific logic stays here — the width tables,
-the profiles, and the naughty-glyph rules in [Glyphs, terminals, and the
-naughty ones](glyphs-and-terminals.md). That is the part to lift out first
-when the filter arrives.
+Until (3) exists, the width tables, terminal profiles and glyph rules stay in
+`formatting.py`. They are the first thing to move out when it does.
 
 ## License
 
-MIT — the full text is in [`LICENSE`](../LICENSE). The SPDX identifier is
-`MIT` and the canonical text is published at
-<https://opensource.org/license/mit>.
-
-`LICENSE` held a *reference* to the text rather than the text until
-2026-08-28, which was tidier and wrong: automated licence detection, GitHub's
-included, reads the text and not a pointer to it, so the repository showed as
-unlicensed. The text is pasted in, unmodified.
+MIT. The full text is in [`LICENSE`](../LICENSE), pasted in whole so that
+licence detection (GitHub's included) recognises it.
