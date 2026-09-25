@@ -74,7 +74,7 @@ glyph against it (`O⁵🏃`, `H⁴🔥`; the ladder is 🐢 🚶 🏃 🚀 🔥
 status line's cell is the same since the same day), then 🔧 🤖 — the
 seconds this agent spent inside a tool and the seconds it spent waiting on
 the model, which together are its whole run; the 🔧 counts every agent it
-spawned as well, and the 🤖 was an ⌛ until 2026-09-25, when the mark
+spawned as well and leaves out a tool that is a question put to the user, and the 🤖 was an ⌛ until 2026-09-25, when the mark
 stopped restating the `m`/`h`/`d` the figure beside it already carries —
 💰 🧠 what it
 has spent and the window it is holding, 🧩 tokens, 🛫 the token rate in tokens

@@ -66,7 +66,7 @@ def prompt(before, text):
 
 
 def answer(before, rid, fresh, cw, cr, out, text=None, sidechain=False,
-           tool=None):
+           tool=None, ask=None):
     """An assistant record carrying billed usage, and optionally text.
 
     requestId is what dedups a repeat, so it has to be distinct per record and
@@ -76,10 +76,17 @@ def answer(before, rid, fresh, cw, cr, out, text=None, sidechain=False,
     tool_done below stops it.  It rides an existing billed record rather than
     adding one of its own, so the token sums in every golden stay what they
     were and only the duration moves.
+
+    `ask` does the same for a tool that is a QUESTION put to the user, which
+    is the case ⌛'s 🔧 hands to 👤 rather than counting: see
+    BLOCKING_TOOLS in the program.
     """
     blocks = [{"type": "text", "text": text}] if text is not None else []
     if tool:
         blocks.append({"type": "tool_use", "id": tool, "name": "Bash"})
+    if ask:
+        blocks.append({"type": "tool_use", "id": ask,
+                       "name": "AskUserQuestion"})
     return {"type": "assistant", "requestId": rid, "timestamp": iso(before),
             "isSidechain": sidechain,
             "message": {"id": rid, "content": blocks, "usage": {
@@ -160,10 +167,22 @@ def main_session():
             # 13,800 answering seconds are spent inside a tool, which is what
             # ⌛'s 🔧 reports and what its 🤖 no longer counts.
             recs.append(answer(at, "req-%03d" % n, 3, 1800, 155000, 6000,
-                               tool=("tu-%d" % ti) if i == 0 else None))
+                               tool=("tu-%d" % ti) if i == 0 else None,
+                               ask="ask-1" if (ti, i) == (2, 30) else None))
             if i == 0:
                 recs.append(tool_result(at))
                 recs.append(tool_done(at - span // 4, "tu-%d" % ti))
+            # And one question, once, halfway through the third turn: a
+            # tool by the transcript's reckoning, 300 seconds of somebody
+            # reading by anyone else's.  It sits clear of that turn's Bash
+            # call, so the case is the plain one — 🔧 unmoved at 58m, and
+            # the 300 seconds off 🤖 and onto 👤, which takes that field
+            # from 5h to 6h.  The overlapping case, where a question runs
+            # THROUGH a tool and net_tool_seconds has to subtract one union
+            # from another, is pinned in tests/agents.py where it can be
+            # read as arithmetic.
+            if (ti, i) == (2, 30):
+                recs.append(tool_done(at - 300, "ask-1"))
         if ti == 1:
             # The same requestId twice.  Claude Code writes a repeat when a
             # request is retried, and counting it twice would inflate every

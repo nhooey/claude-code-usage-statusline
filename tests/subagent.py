@@ -126,6 +126,14 @@ def agent_call(minute, rid, tid, second=0):
     return r
 
 
+def agent_ask(minute, rid, tid, second=0):
+    """A question, which an agent has nobody to put — but the reader reads
+    every file the same way rather than assuming that."""
+    r = agent_call(minute, rid, tid, second)
+    r["message"]["content"][0]["name"] = "AskUserQuestion"
+    return r
+
+
 def agent_result(minute, tid, second=0):
     """And the result that answers it, which is where the tool's clock stops."""
     return {"type": "user", "isSidechain": True, "timestamp": ts(minute, second),
@@ -340,6 +348,18 @@ def run(tmp):
               sl.agent_tool_spans(sl.agent_file_for(tt, "k"))) / 60), 8)
     check("a task with no transcript — a shell — has none",
           sl.agent_tool_spans(""), [])
+    bt = session(tmp, "blocking", agents=[
+        ("agent-q", [agent_user(10), agent_call(11, "r1", "t1"),
+                     agent_result(16, "t1"), agent_ask(20, "r2", "q1"),
+                     agent_result(27, "q1")], {"agentType": "Explore"}),
+    ])
+    blocked = []
+    spans = sl.agent_tool_spans(sl.agent_file_for(bt, "q"), blocked)
+    check("a question is read as the tool call it is and then taken back "
+          "out, so the row reports the five minutes and not the twelve",
+          (round(sl.union_seconds(spans) / 60),
+           round(sl.net_tool_seconds(spans, blocked) / 60)),
+          (5 + 7, 5))
     check("the two cells split the agent's life: the clock is its run less "
           "its tools, and \U0001F527 blanks at nothing rather than drawing a zero",
           [ANSI.sub("", x) for x in (

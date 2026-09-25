@@ -276,6 +276,16 @@ reads:
   outside every span its parent recorded. ⌛'s 🤖 is then the busy clock
   with these seconds taken out, which is what makes 🔧 🤖 👤 a partition
   of Σ rather than three overlapping readings of it.
+
+  A third list holds the **blocking prompts** — `AskUserQuestion`,
+  `ExitPlanMode`, the tools whose result is the user's own answer. They are
+  tool calls in the transcript and a person reading in fact, so they come out
+  of 🔧 and out of 🤖 and go to 👤. The subtraction is `union(all) -
+  union(blocked)`, exact because the second is a subset of the first, so a
+  question that runs through an agent's tool call is charged once rather than
+  twice. A permission prompt is NOT in the set: nothing in the record marks
+  one, any tool can sit on one, and a call that waited for approval did stall
+  the turn. `BLOCKING_TOOLS`, `net_tool_seconds`.
 * **`_window_costs`** scans them for the 💳 unit. This one mattered most: the
   unit is machine spend over the plan reading, the reading is Anthropic's and
   includes every agent, and a numerator without them was short by the agent

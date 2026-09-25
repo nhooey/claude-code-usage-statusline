@@ -14,7 +14,7 @@ footer).
 Three rows, redrawn continuously under the prompt:
 
 ```
-👤💬 Why does the elapsed row report two durations when the session age is o…  | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  5h Σ  9.3h  | 📅  2026-08-16
+👤💬 Why does the elapsed row report two durations when the session age is o…  | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you spent.¶ ¶ The se…  | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
 📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                   | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
@@ -54,7 +54,8 @@ What you can read off it at a glance:
   turn printed — gets a 👥 row of its own, the way a compaction gets 🤏
 * ⌛ where the time went, split three ways that add up to the session's
   age: 🔧 inside a tool, 🤖 waiting on the model, 👤 waiting on you —
-  and the same 🔧 🤖 pair on each agent's row, splitting its run.
+  and a tool that is a question put to you counts under 👤, not 🔧.
+  The same 🔧 🤖 pair sits on each agent's row, splitting its run.
   💾 the working diff, 🌿 the branch, 🤖 the model as
   its initial and version with the effort's glyph against it — `O⁵🏃`, `H⁴🔥`
 * on an agent's row: its type as a glyph (🔍 Explore, 📐 Plan, 🔧

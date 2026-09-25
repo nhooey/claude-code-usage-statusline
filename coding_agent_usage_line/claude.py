@@ -1832,8 +1832,14 @@ def _children_by_parent(directory: str) -> Dict[str, List[str]]:
     return kids
 
 
-def agent_tool_spans(path: str) -> List[Tuple[float, float]]:
+def agent_tool_spans(path: str, blocked: Optional[list] = None
+                     ) -> List[Tuple[float, float]]:
     """(start, end) for every tool call this agent ran, its descendants' in.
+
+    `blocked` is the out-parameter scan_tool_spans fills with the
+    blocking-prompt subset.  An agent has nobody to put a question to, so it
+    is normally empty and is read rather than assumed; net_tool_seconds takes
+    the two and hands back what the machine actually spent.
 
     The recursion is over `parentAgentId` in the sidecars, which is the only
     place the tree is written down: an agent an agent spawned sits in the
@@ -1861,7 +1867,7 @@ def agent_tool_spans(path: str) -> List[Tuple[float, float]]:
         if cur in seen:
             continue
         seen.add(cur)
-        out.extend(tool_spans(list(_records(cur))))
+        out.extend(tool_spans(list(_records(cur)), blocked))
         queue.extend(kids.get(_agent_id(cur), ()))
     return out
 
@@ -2022,8 +2028,10 @@ def prepare_subagent_tasks(pay: dict):
             continue
         try:
             path = agent_file_for(transcript, str(task["id"]))
+            blocked = []
             usage = read_agent_usage(path)._replace(
-                tool_s=union_seconds(agent_tool_spans(path)))
+                tool_s=net_tool_seconds(agent_tool_spans(path, blocked),
+                                        blocked))
             prepared.append((task, usage, agent_meta(path),
                              agent_window_shares(usage)))
         except Exception:
@@ -2110,16 +2118,17 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     # The agent files are walked ONCE here and handed to both readers.  Each
     # would otherwise walk them itself, and a session that has run many
     # agents has as many bytes there as in its own transcript.  The same walk
-    # fills `spans` — when each agent was working, for ⌛🤖 — and `tools` —
-    # when each was inside a tool, for ⌛🔧 — so neither clock costs a second
-    # read.
+    # fills `spans` — when each agent was working, for ⌛🤖 — `tools` — when
+    # each was inside a tool, for ⌛🔧 — and `blocked`, the blocking-prompt
+    # subset of those, so none of the three clocks costs a second read.
     have_tr = bool(pay.transcript) and os.path.isfile(pay.transcript)
     spans = []
     tools = []
-    agents = (agent_records(pay.transcript, spans=spans, tools=tools)
-              if have_tr else ())
-    tr = (read_transcript(pay.transcript, agents, spans, tools) if have_tr
-          else EMPTY_TRANSCRIPT)
+    blocked = []
+    agents = (agent_records(pay.transcript, spans=spans, tools=tools,
+                            blocked=blocked) if have_tr else ())
+    tr = (read_transcript(pay.transcript, agents, spans, tools, blocked)
+          if have_tr else EMPTY_TRANSCRIPT)
     # Offline transcript reports have no hook workspace.  Do not silently use
     # this command's cwd (nor run its potentially expensive dirty-tree probe)
     # as though it were the recorded session's project.

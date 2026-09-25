@@ -38,7 +38,7 @@ The five right-hand columns are divided by a faint vertical rule at wide
 enough widths:
 
 ```
-👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  5h Σ  9.3h  | 📅  2026-08-16
+👤💬 Why did the "Prompt Usage" line not stack …   | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
 🤖💬 Two separate things, and the second one is …  | 🧩▴ 23M ▾837k  | 📖 🎤 61٪ 🎮 45٪  | 🔋 🎤 .13٪ 🎮 6.1٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
 📦repo  📁~/Workbench/…/marbled-godwit             | 🛫200/s 🎯98٪  | 📝 🎤 15٪ 🎮 20٪  | 🪫 🎤 .18٪ 🎮  33٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
@@ -334,7 +334,8 @@ until this window resets, Σ time since the session opened.
 
 The ⌛ row spends the same three fields on a **partition** rather than a
 scope sequence: 🔧 the seconds spent inside a tool, 🤖 the seconds spent
-waiting on the model, 👤 the seconds spent waiting for a person to type.
+waiting on the model, 👤 the seconds spent waiting for a person — to type,
+or to answer a question the session put to them.
 They add up to the Σ in field 3 exactly, and no second is in two of them.
 The order is the machine's work first and the person's wait last, so the two
 figures a reader compares — tooling against thinking — sit next to each other,
@@ -367,6 +368,29 @@ catches that the nesting does not is a **background** agent, whose tool result
 comes back at once while it keeps working — its tools run outside every span
 its parent recorded, and are counted there. `scan_tool_spans` and
 `agent_tool_spans` in the program.
+
+**A question put to the reader is not tool time**, though the transcript
+records it as a tool call like any other. `AskUserQuestion` and
+`ExitPlanMode` return when the person answers, so their span is the person
+reading — and 🔧 was reporting the reader's own deliberation back to them
+as machine work. Those seconds come out of 🔧 and out of 🤖, and go to 👤,
+which already means *waiting for a person*; the three still sum to Σ.
+`BLOCKING_TOOLS` is the set, matched **by name**, because the name is the
+only thing in the record that says so.
+
+A **permission prompt** has the same shape — a tool whose result arrives
+whenever someone gets round to approving it — and is deliberately **not**
+excluded. Nothing in the record marks one, any tool can sit on one, and a
+`Bash` call that waited two minutes for approval did stall the turn somewhere
+the reader can act on. What the set can name is the tools that are a question
+and nothing else.
+
+The subtraction is of two **measures**, not of intervals: the blocking spans
+are a subset of the tool spans, so `union(all) - union(blocked)` is exactly
+the measure of what is left, whatever either one overlaps — which matters,
+because a question asked on the main thread can run straight through an
+agent's tool call and those two have to come out as one second each rather
+than two. `net_tool_seconds`.
 
 **Why the duration goes last.** It led the column until 2026-08-28, and the
 argument for that was a real one: a countdown asks the same question as the ⌛

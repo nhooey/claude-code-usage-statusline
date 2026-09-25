@@ -556,7 +556,8 @@ def render_date(now: Optional[float] = None) -> str:
 
 
 def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
-                   now: Optional[float] = None) -> str:
+                   now: Optional[float] = None,
+                   blocked_s: float = 0.0) -> str:
     """The session's clock, in the four fields the two rows below it use.
 
     It heads the column since the evening of 2026-09-16, to Neil's spec,
@@ -586,6 +587,15 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
 
     "1.9h of work inside 19h, and 1.2h of the work was a shell" is a fact
     about how a day went that no one of the three states alone.
+
+    A TOOL WHOSE RESULT IS THE USER'S ANSWER CROSSES THE LINE.  The
+    transcript records a question put to the reader as a tool call like any
+    other, and its span is the time they took to answer — so 🔧 counted the
+    reader's own deliberation and reported it back to them as machine work.
+    `blocked_s` is that subset, and this row gives it to 👤, which already
+    means "waiting for a person".  It comes out of the busy clock in the same
+    move, so the three still sum to Σ.  Which tools those are, and why a
+    PERMISSION prompt is not one of them, is BLOCKING_TOOLS.
 
     🔧 IS TAKEN OUT OF 🤖 rather than nested inside it, and the difference
     is the question the row answers.  Nested, 🤖 stays "how much of the day
@@ -645,13 +655,21 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
         return ""
     t = time.time() if now is None else now
     age = t - start_s if t > start_s else 0.0
-    idle = age - busy_s if age > busy_s else 0.0
+    # A blocking prompt is answering time to the transcript and waiting time
+    # to a reader, so it moves from one side of this line to the other: out
+    # of the busy clock, into the idle one.  Clamped at the age because the
+    # two clocks are read off different walks and a stray span must not make
+    # the three fields sum to more than the whole they partition.
+    wait = min(max(0.0, blocked_s), busy_s)
+    idle = age - busy_s + wait if age > busy_s else wait
+    idle = min(idle, age)
     # The tool clock is a subset of the busy clock by construction — a tool
     # result is `is_work`, so its span lies inside the turn that asked for
     # it — and the max() is there for the case construction does not cover:
     # a background agent whose tools outlive the span its own file recorded.
     # A negative 🤖 would break the partition the row is drawn to state.
-    model_s = busy_s - tool_s if busy_s > tool_s else 0.0
+    model_s = busy_s - wait - tool_s
+    model_s = model_s if model_s > 0.0 else 0.0
 
     def fig(mark: str, v: float, w: int = LIM_FIG_W) -> str:
         return "%s%s%s%s%s" % (mark, fmt.MARK_SP, mag_dim(v, MAG_DUR_S) + F_PRW,
@@ -874,7 +892,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         render_style(pay.output_style),
         render_model_cost(pay.model, pay.effort, pay.cost_usd),
         render_ctx(ctx_pct, tr.ctx_tokens),
-        render_elapsed(tr.busy_s, tr.start_s, tr.tool_s, now),
+        render_elapsed(tr.busy_s, tr.start_s, tr.tool_s, now, tr.blocked_s),
         render_date(now),
     ), rule=rule)
     limits_row = grid_row((

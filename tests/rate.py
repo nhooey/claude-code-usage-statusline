@@ -311,6 +311,16 @@ def run(sl, sr, scratch):
           [d for d, _ in dims(sl.render_elapsed(
               5 * 3600, NOW - 9 * 3600, 599.0, NOW)) if _ != "Σ"],
           [True, False, False, False])
+    # 🔧 🤖 👤 partition Σ, and a blocking prompt moves seconds from
+    # 🤖 to 👤 without touching 🔧 or the total.  Two hours, one busy,
+    # a quarter of it inside a tool; then ten minutes of that busy hour
+    # spent waiting for somebody to answer a question.
+    figs = lambda blocked: [v for _, v in dims(sl.render_elapsed(
+        3600.0, NOW - 7200.0, 900.0, NOW, blocked)) if v != "Σ"]
+    check("⌛ row: the three fields partition Σ, and a blocking prompt "
+          "moves seconds from 🤖 to 👤 and nowhere else",
+          [figs(0.0), figs(600.0)],
+          [["15m", "45m", "1h", "2h"], ["15m", "35m", "1h", "2h"]])
     check("💾: a hundred lines, each half on its own count",
           dims(sl.render_diff("100", "99")),
           [(False, "+ 100"), (True, "-  99")])

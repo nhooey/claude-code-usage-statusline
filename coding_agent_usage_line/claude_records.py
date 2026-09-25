@@ -96,9 +96,15 @@ class Transcript(NamedTuple):
     busy_s: float           # seconds spent answering, summed over every turn
     start_s: float          # epoch of the first STAMPED record, 0 if none
     tool_s: float = 0.0     # of that answering, the part spent inside a tool —
-                            # this thread's and every agent's, unioned.  See
-                            # tool_spans.  Defaulted so EMPTY_TRANSCRIPT and
-                            # the fixtures that predate it still build.
+                            # this thread's and every agent's, unioned, LESS
+                            # the blocking prompts below.  See tool_spans.
+                            # Defaulted so EMPTY_TRANSCRIPT and the fixtures
+                            # that predate it still build.
+    blocked_s: float = 0.0  # and the part spent inside a tool that was a
+                            # question put to the user.  It is answering time
+                            # by the transcript's reckoning and waiting time
+                            # by any reader's, so the row hands it to 👤 —
+                            # see BLOCKING_TOOLS and render_elapsed.
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -394,7 +400,8 @@ def agent_files(transcript: str) -> List[str]:
 
 def agent_records(transcript: str, seen: Optional[set] = None,
                   spans: Optional[list] = None,
-                  tools: Optional[list] = None) -> Tuple[AgentRec, ...]:
+                  tools: Optional[list] = None,
+                  blocked: Optional[list] = None) -> Tuple[AgentRec, ...]:
     """Every billed request an agent of this session made, in stamp order.
 
     Nothing an agent bills is in the session's own transcript.  The main file
@@ -443,6 +450,9 @@ def agent_records(transcript: str, seen: Optional[set] = None,
     again.  An agent that spawned agents of its own needs no special case —
     its Task span already covers the child's whole run, and the child's own
     spans are appended here too, so the union counts the nesting once.
+    `blocked` takes the blocking-prompt subset of those, which for an agent
+    file is normally empty — an agent has nobody to ask — and is read anyway
+    rather than assumed.
     """
     seen = set() if seen is None else seen
     out = []
@@ -465,7 +475,7 @@ def agent_records(transcript: str, seen: Optional[set] = None,
                 if not isinstance(r, dict):
                     continue
                 if tools is not None:
-                    scan_tool_spans(r, pending, tools)
+                    scan_tool_spans(r, pending, tools, blocked)
                 if spans is not None:
                     t = ts_epoch(r.get("timestamp") or "")
                     if t is not None:
@@ -720,8 +730,32 @@ def union_seconds(spans: Sequence[Tuple[float, float]]) -> float:
     return total + (cur[1] - cur[0] if cur else 0.0)
 
 
-def scan_tool_spans(r: dict, pending: Dict[str, float],
-                    out: List[Tuple[float, float]]) -> None:
+# Tools whose result IS the user's answer, so their whole span is a person
+# thinking rather than a machine working.
+#
+# These are counted as tools by every other reader — they are tool calls, and
+# the transcript records them as tool calls — and they are taken out of 🔧
+# and given to 👤 because of what the cell is read for.  🔧 answers "how
+# much of the working time was the machine waiting on a shell, a file, a
+# subagent"; a dialog that sat open for ninety seconds while someone chose
+# between two options is not that, and charging it to 🔧 made the cell
+# report the reader's own deliberation back at them.  👤 is already "time
+# the session spent waiting for a person", which is exactly what this is.
+#
+# BY NAME, and only by name, because the name is the only thing in the
+# transcript that says so.  A permission prompt has the same shape — a tool
+# whose result arrives whenever the person gets round to approving it — and
+# is NOT excluded: any tool can sit on one, nothing in the record marks it,
+# and a Bash call that waited two minutes for approval did stall the turn
+# somewhere the reader can act on.  What this set can name is the tools that
+# are a question and nothing else.
+BLOCKING_TOOLS = frozenset({"AskUserQuestion", "ExitPlanMode"})
+
+
+def scan_tool_spans(r: dict, pending: Dict[str, Tuple[float, str]],
+                    out: List[Tuple[float, float]],
+                    blocked: Optional[List[Tuple[float, float]]] = None
+                    ) -> None:
     """Fold one record into a running scan for (start, end) of every tool call.
 
     A tool's clock starts on the ASSISTANT record that asked for it and stops
@@ -742,7 +776,11 @@ def scan_tool_spans(r: dict, pending: Dict[str, float],
     minutes once, whether they are read here or off the agent's own file.
 
     `pending` and `out` are the caller's, so one walk of a file can feed this
-    and the billing scan beside it; see agent_records.
+    and the billing scan beside it; see agent_records.  `blocked` is the
+    caller's too and takes the SUBSET of `out` whose tool is in
+    BLOCKING_TOOLS — a subset and not a partition, so a reader that wants
+    the machine's tool time alone subtracts one union from the other and
+    needs no interval arithmetic of its own; see net_tool_seconds.
     """
     t = ts_epoch(r.get("timestamp") or "")
     if t is None:
@@ -756,25 +794,44 @@ def scan_tool_spans(r: dict, pending: Dict[str, float],
         kind = b.get("type")
         if kind == "tool_use":
             if b.get("id"):
-                pending[str(b["id"])] = t
+                pending[str(b["id"])] = (t, str(b.get("name") or ""))
         elif kind == "tool_result":
-            t0 = pending.pop(str(b.get("tool_use_id") or ""), None)
-            if t0 is not None and t > t0:
-                out.append((t0, t))
+            hit = pending.pop(str(b.get("tool_use_id") or ""), None)
+            if hit is not None and t > hit[0]:
+                out.append((hit[0], t))
+                if blocked is not None and hit[1] in BLOCKING_TOOLS:
+                    blocked.append((hit[0], t))
 
 
-def tool_spans(records: Sequence[dict]) -> List[Tuple[float, float]]:
+def tool_spans(records: Sequence[dict],
+               blocked: Optional[List[Tuple[float, float]]] = None
+               ) -> List[Tuple[float, float]]:
     """Every tool call in `records`, as (start, end).  See scan_tool_spans."""
-    pending: Dict[str, float] = {}
+    pending: Dict[str, Tuple[float, str]] = {}
     out: List[Tuple[float, float]] = []
     for r in records:
-        scan_tool_spans(r, pending, out)
+        scan_tool_spans(r, pending, out, blocked)
     return out
+
+
+def net_tool_seconds(spans: Sequence[Tuple[float, float]],
+                     blocked: Sequence[Tuple[float, float]]) -> float:
+    """Seconds inside a tool that were not a blocking prompt.
+
+    A subtraction of two unions rather than an interval difference, and it is
+    exact because `blocked` is a SUBSET of `spans`: the measure of a set less
+    the measure of a subset is the measure of what is left, whatever either
+    one overlaps.  Which matters — a question asked on the main thread can
+    run straight through an agent's tool call, and those two spans have to
+    come out as one second each, not two.
+    """
+    return max(0.0, union_seconds(spans) - union_seconds(blocked))
 
 
 def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
                     agent_spans: Sequence[Tuple[float, float]] = (),
-                    agent_tools: Sequence[Tuple[float, float]] = ()
+                    agent_tools: Sequence[Tuple[float, float]] = (),
+                    agent_blocked: Sequence[Tuple[float, float]] = ()
                     ) -> Transcript:
     """One pass for the status line: totals, cache rate, context, last texts.
 
@@ -797,11 +854,14 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     Tool time counts them the same way, and for the same reason — `agent_tools`
     beside `agent_spans`, off the one walk.  It is the part of the busy clock
     the session spent inside a tool rather than waiting on a model, and it is
-    a SUBSET of 🤖 rather than a slice taken out of it: 🤖 still reports every
-    second of answering, tool seconds included, so the pair reads as a
-    nesting — 🔧 ≤ 🤖 ≤ Σ — and not as a third share of the age.  Unioned like
-    the rest, which is what makes an agent's tools inside a Task's own span
-    count once instead of twice; see scan_tool_spans.
+    a partition with them rather than a share of them: 🔧 what the tools took,
+    🤖 what is left of the answering, 👤 the wait.  Unioned like the rest,
+    which is what makes an agent's tools inside a Task's own span count once
+    instead of twice; see scan_tool_spans.
+
+    A tool whose result is the USER'S answer comes out of 🔧 again and is
+    reported separately as `blocked_s`, which render_elapsed gives to 👤.
+    See BLOCKING_TOOLS for why by name and why not permission prompts.
 
     Context size does NOT.  It is a reading of THIS window — the one 🧠 is
     watched to decide when to compact — and every agent runs a window of its
@@ -823,9 +883,12 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     if agents is None:                  # no caller-supplied walk: do it here,
         own = []                        # and take both clocks off it too
         own_tools = []
-        agents = agent_records(path, spans=own, tools=own_tools)
+        own_blocked = []
+        agents = agent_records(path, spans=own, tools=own_tools,
+                               blocked=own_blocked)
         agent_spans = tuple(agent_spans) + tuple(own)
         agent_tools = tuple(agent_tools) + tuple(own_tools)
+        agent_blocked = tuple(agent_blocked) + tuple(own_blocked)
     for a in agents:
         fresh += a.fresh
         cwrite += a.cache_write
@@ -871,10 +934,11 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     # session says something neither number says alone.
     spans = []
     tools = []
+    blocked = []
     pending = {}
     first = open_at = prev = None
     for r in records:
-        scan_tool_spans(r, pending, tools)
+        scan_tool_spans(r, pending, tools, blocked)
         t = ts_epoch(r.get("timestamp") or "")
         if t is None:
             continue
@@ -889,7 +953,10 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     if open_at is not None and prev > open_at:
         spans.append((open_at, prev))
     busy = union_seconds(spans + list(agent_spans))
-    tool = union_seconds(tools + list(agent_tools))
+    all_tools = tools + list(agent_tools)
+    all_blocked = blocked + list(agent_blocked)
+    tool = net_tool_seconds(all_tools, all_blocked)
+    blocked_s = union_seconds(all_blocked)
 
     return Transcript(
         busy_s=busy,
@@ -909,6 +976,7 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         asst_ts=asst_ts,
         asst_text=squash(asst_text),
         tool_s=tool,
+        blocked_s=blocked_s,
     )
 
 

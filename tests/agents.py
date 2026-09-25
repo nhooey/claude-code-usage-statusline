@@ -139,6 +139,15 @@ def calls(minute, rid, *ids, **kw):
     return r
 
 
+def asks(minute, rid, *ids, **kw):
+    """The same, for a tool that is a QUESTION put to the user.  Its span is
+    somebody reading, which is why \U0001F527 does not want it."""
+    r = calls(minute, rid, *ids, **kw)
+    for b in r["message"]["content"]:
+        b["name"] = "AskUserQuestion"
+    return r
+
+
 def result(minute, *ids, **kw):
     """The results that answer them, by id.  A turn ends on one of these, so
     the shape is the tool_result shape is_work already knows: a LIST."""
@@ -371,6 +380,36 @@ def run(tmp):
     check("and tool time never outruns the busy clock it is a part of",
           (lambda t: t.tool_s <= t.busy_s)(sl.read_transcript(nest)), True)
     check("no transcript, no tool time", sl.EMPTY_TRANSCRIPT.tool_s, 0.0)
+
+    # A question put to the user is a tool call in the transcript and a
+    # person reading in fact.  It comes out of \U0001F527 and, at the row, out of
+    # \U0001F916 and into \U0001F464 -- see BLOCKING_TOOLS.
+    ask = session(tmp, "ask", [
+        prompt(10, "go", "p1"),
+        calls(11, "m1", "t1"),
+        result(15, "t1"),                   # a real tool: four minutes
+        asks(20, "m2", "q1"),
+        result(29, "q1"),                   # a question: nine, and not \U0001F527's
+        calls(40, "m3", "t2"),
+        asks(41, "m4", "q2"),               # a question INSIDE a tool span,
+        result(44, "q2"),                   #   which is what the subtraction
+        result(50, "t2"),                   #   of two unions is for: 40-50
+    ])
+    t = sl.read_transcript(ask)
+    check("the question is not tool time; the two real calls are, and the "
+          "one a question ran through keeps only the rest of itself",
+          round(t.tool_s / 60), 4 + (10 - 3))
+    check("and both questions are reported on their own, in whole",
+          round(t.blocked_s / 60), 9 + 3)
+    check("a blocking prompt is still work to every other reader, so the "
+          "busy clock keeps it", round(t.busy_s / 60), 40)
+    check("no blocking prompt, nothing to report",
+          sl.read_transcript(nest).blocked_s, 0.0)
+    check("net_tool_seconds subtracts measures, not intervals: a subset "
+          "that straddles two spans still comes out once",
+          sl.net_tool_seconds(((0, 10), (20, 30)), ((5, 8),)), 17.0)
+    check("and never goes below zero",
+          sl.net_tool_seconds(((0, 1),), ((0, 9),)), 0.0)
 
     print("--- the fallback ---")
     # No promptId anywhere on the main side: the stamp decides, and a
