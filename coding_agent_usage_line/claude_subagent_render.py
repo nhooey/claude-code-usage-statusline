@@ -32,7 +32,7 @@ A_TREE_ROOM = 40
 # and two figures of four.  The status line's own cell, unnarrowed — the
 # pair means the same thing on both readouts and reads as one shape.
 A_DIFF_W = vis_width(S_DIFF) + 11
-KIND_MARK = {"general-purpose":"🔧", "claude":"🎩", "Explore":"🔍", "Plan":"📐",
+KIND_MARK = {"general-purpose":"🔩", "claude":"🎩", "Explore":"🔍", "Plan":"📐",
              "claude-code-guide":"📚", "statusline-setup":"📟", "fork":"🍴",
              "local_agent":"👥", "local_bash":"🐚", "local_workflow":"🔗",
              "remote_agent":"🌐", "in_process_teammate":"🎎"}

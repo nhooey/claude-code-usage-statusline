@@ -36,7 +36,7 @@ One row per subagent or shell in Claude Code's agent panel, indented under the
 agent that started it. Installed as `subagentStatusLine`.
 
 ```
-⏺  🔧🟢🤖 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+⏺  🔩🟢🤖 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
 └ ◯  🔍🟢🔧     c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
 ◯  📐⚫✅     f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
 ◯  🐚🟢       b1         npm test --watch         ◯                                                             ⌛ 13m
@@ -203,7 +203,7 @@ stands for; `other` covers every other type, custom agents included.
 
 | Glyph | Name | Glyph | Name |
 |---|---|---|---|
-| 🔧 | general-purpose | 🍴 | fork |
+| 🔩 | general-purpose | 🍴 | fork |
 | 🎩 | claude | 🔗 | workflow |
 | 🔍 | Explore | 🐚 | shell |
 | 📐 | Plan | 🌐 | remote |
