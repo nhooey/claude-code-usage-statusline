@@ -134,12 +134,12 @@ own (`02`, `10`) quote that cached reading — `💳 15٪` and `87٪`.
 | `01-plain` | several ordinary turns |
 | `02-compaction` | an automatic compaction, reported on its own 🤏 row |
 | `03-single-turn` | one turn, nothing earlier to subtract |
-| `04-tool-result` | a turn ending on a tool result |
+| `04-tool-result` | a turn ending on a tool result, whose Bash call is 🔧 and not ⌛🤖 |
 | `05-sidechain` | a sidechain that is billed but is not the context reading |
 | `06-interrupted` | an interrupted request with all-zero usage |
 | `07-empty` | an empty file |
 | `08-woken` | turns opened by messages nobody typed (task notifications, peer messages), including a batch where only the second message is answered |
-| `09-agents` | agent files beside the transcript, and a 👥 row for spend the 🎤 row cannot carry |
+| `09-agents` | agent files beside the transcript, and a 👥 row for spend the 🎤 row cannot carry; an `Agent` call the first turn waits on, which is in neither ⌛🤖 nor 🔧, and a Bash call in the second |
 
 Each renders at 196, 150, 120, 92 and unknown (45 goldens), then:
 
@@ -165,7 +165,9 @@ These pin values rather than rows, so they assert instead of comparing files.
   folding agent spend into the turn that spawned it, the 👥 row for spend that
   lands after its turn printed, and the ⌛ partition of the main thread's own
   time (agents' work stays on their rows; a question, or an Agent call, is
-  waiting; a call still running counts to now on a live session).
+  waiting; a call still running counts to now on a live session), and the
+  same partition per turn, which the receipt's ⌛🤖 and 🔧 draw and which sums
+  to the status line's.
 - **`subagent.py`** — `--mode subagent`: finding an agent's file (directly
   under `subagents/`, or under `subagents/workflows/*/`), deduplicating
   requests, lines written, the agent's own ⌛ 🤖 🔧 🚦 split (a coordinator

@@ -435,6 +435,59 @@ def run(tmp):
     check("and never goes below zero",
           sl.net_tool_seconds(((0, 1),), ((0, 9),)), 0.0)
 
+    print("--- the receipt splits each turn by the same rule ---")
+    # The receipt's ⌛🤖 and 🔧 are the status line's 🤖 and 🔧 read over
+    # one turn: a shell is 🔧, a question or an agent the turn sat on is
+    # neither, and 🤖 is what the span has left.  Summed over the turns they
+    # are the status line's own figures for the same file.
+    rc = session(tmp, "receipt", [
+        prompt(10, "go", "p1"),
+        calls(11, "m1", "t1"), result(15, "t1"),        # a shell: four
+        asks(16, "m2", "q1"), result(19, "q1"),         # a question: three
+        answer(20, "m3", 1, 0, 0, 1),                   # 10-20: 🤖 three
+        prompt(30, "again", "p2"),
+        delegates(31, "m4", "a1"), result(40, "a1"),    # an agent: nine
+        calls(41, "m5", "t2"), result(43, "t2"),        # a shell: two
+        answer(45, "m6", 1, 0, 0, 1),                   # 30-45: 🤖 four
+    ])
+    t1, t2 = sl.read_turns(rc)
+    check("each turn's 🤖, 🔧 and waiting, in minutes",
+          [tuple(round(x / 60) for x in (sl.turn_model_s(t), t.tool_s,
+                                         t.blocked_s)) for t in (t1, t2)],
+          [(3, 4, 3), (4, 2, 9)])
+    st = sl.read_transcript(rc)
+    check("and summed, they are the status line's",
+          tuple(round(sum(f(t) for t in (t1, t2)))
+                for f in (sl.turn_model_s, lambda t: t.tool_s,
+                          lambda t: t.blocked_s)),
+          (round(st.busy_s - st.tool_s - st.blocked_s), round(st.tool_s),
+           round(st.blocked_s)))
+    row = sl.cost_group(t2, {}, 200000, sl.PLAIN_INK, sl.ts_epoch(ts(50)))
+    check("the 🎤 row draws the two figures in their signed cells",
+          "⌛🤖+  4m  🔧+  2m" in row, True)
+    tot = sl.cost_totals_group((t1, t2), {}, 200000, sl.PLAIN_INK,
+                               sl.ts_epoch(ts(50)))
+    check("and the 🎮 row their sums, a blank where the sign was",
+          "⌛🤖   7m  🔧   6m" in tot, True)
+    check("the two rows are one width, so the cells stack",
+          sl.vis_width(row), sl.vis_width(tot))
+    check("turn_clock clips a call to the turn it returned in: the seconds "
+          "before the prompt are nobody's",
+          sl.turn_clock(((0.0, 10.0),), (), 5.0, 20.0), (5.0, 0.0))
+    cp = sl.read_turns(session(tmp, "receipt-compact", [
+        prompt(10, "go", "p1"),
+        answer(11, "m1", 1, 0, 1000, 1),
+        boundary(12, 292645, 41000),
+        calls(13, "m2", "t1"), result(16, "t1"),        # the answer's tail
+    ]))
+    check("a compaction is its summariser's 41s and no tool time, even with "
+          "a call in the answer it landed in",
+          [(t.compact, round(t.tool_s), round(sl.turn_model_s(t)))
+           for t in cp], [(False, 0, 60), (True, 0, 41)])
+    check("both blank on the 👥 row, as ⌛🤖 always was",
+          [m in sl.cost_group(late, {}, 200000, sl.PLAIN_INK)
+           for m in ("⌛🤖", "🔧")], [False, False])
+
     print("--- the fallback ---")
     # No promptId anywhere on the main side: the stamp decides, and a
     # compaction turn open at that stamp is skipped for the prompt before it.

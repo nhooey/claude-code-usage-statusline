@@ -56,8 +56,8 @@ Printed once each prompt finishes, what the prompt cost over the session's
 running total. Installed as the `Stop` hook.
 
 ```
-📊 🎤    🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  5m  📅 2026-08-16
-📊 🎮    🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖  10m  🕐   02:23:20
+📊 🎤    🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  2m  🔧+  3m  📅 2026-08-16
+📊 🎮    🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖   5m  🔧   3m  🕐   02:23:20
 ```
 
 A `+` marks what the prompt added to the total below it.
@@ -159,10 +159,10 @@ readout, the table says so.
 | ⌛ | Elapsed | the time row; on the tree, the agent's age | ✓ | ✓ | |
 | ⛳ | ETA | time the answer or agent says it has left | ✓ | ✓ | |
 | 🤖 | Thinking | time with the model | ✓ | ✓ | |
-| 🔧 | Tools | time inside tools | ✓ | ✓ | |
+| 🔧 | Tools | time inside tools | ✓ | ✓ | ✓ |
 | 🚦 | Waiting | time waiting on you, or on agents it started | ✓ | ✓ | |
 | ⠄ ⠆ ⠦ ⠶ | Gauge | that figure's share of ⌛ | | ✓ | |
-| ⌛🤖 | Answering | time the model spent answering | | | ✓ |
+| ⌛🤖 | Answering | time with the model, per prompt | | | ✓ |
 
 * **🤖 🔧 🚦 add up to ⌛.** The status line prints them as durations. The tree
   prints them as gauges with eight dots between the three, so
@@ -170,6 +170,9 @@ readout, the table says so.
 * **Each row counts its own thread.** A parent waiting on the agents it
   started reads that time as 🚦. So do `AskUserQuestion`, `ExitPlanMode` and
   `Agent` calls.
+* **The receipt splits each prompt the same way.** Its ⌛🤖 and 🔧 are the
+  status line's 🤖 and 🔧 over that one prompt, and the 🎮 row sums them. It
+  prints no 🚦: what a prompt waited on is in neither figure.
 * **⛳ comes from a skill.** Agents report their time left through the
   [`coding-agent-usage-line-report-eta`](skills/coding-agent-usage-line-report-eta/SKILL.md)
   skill (see [ETA](docs/layout.md#eta)). ⛳ reads `?` until a report

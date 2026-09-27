@@ -1260,13 +1260,21 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
             share_half(E_WRITE, wr, ink) if acct else "")
             if tsh.get("week") is not None else "", left=False),
         # "+" as on 💰, 🔋 and 📆 beside it: every figure on this row is what
-        # ONE prompt added to the reading directly beneath it, and this one is
-        # the time it took.  The totals row prints a space in the column.
-        # Blank on the agents row: that row is not an answer, and the
-        # agents ran in parallel with answers already timed on their own
-        # rows, so "+0s" would be wrong and any other figure double-counted.
+        # ONE prompt added to the reading directly beneath it, and these two
+        # are how its time went — ⌛🤖 the model thinking, 🔧 inside a tool,
+        # split by the rule the status line's ⌛ row splits the session by;
+        # see turn_clock.  A question put to the reader, or an agent the turn
+        # sat waiting on, is in neither.  The totals row prints a space in
+        # the column.  Both blank on the agents row: that row is not an
+        # answer, and the agents ran in parallel with answers already timed
+        # on their own rows, so "+0s" would be wrong and any other figure
+        # double-counted.
         seg(C_ELAPSED, "%s%s+%s%s" % (S_WORK, ink.crm,
-                                      pad_val(4, dur_fmt(t.dur_s)), ink.r)
+                                      pad_val(4, dur_fmt(turn_model_s(t))),
+                                      ink.r)
+            if not t.agent else "", left=False),
+        seg(C_TOOL, "%s%s+%s%s" % (E_TOOL, ink.crm,
+                                   pad_val(4, dur_fmt(t.tool_s)), ink.r)
             if not t.agent else "", left=False),
         # Blank on a compaction, and the CELL is kept so the columns to its
         # left still stack.  The stamp is `now` — when this line is being
@@ -1477,13 +1485,14 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     calib = calib if isinstance(calib, dict) else {"sess": None, "week": None}
     mine = session_shares(turns, calib)
     stamp = time.localtime(now) if now is not None else time.localtime()
-    # Every turn's answering time, summed — the total of the figure directly
-    # above it, which is what every other cell on this row is.  It is NOT the
-    # session's age: an age counts the hours the session sat waiting for
-    # someone to type, and no per-prompt row can add up to that.  The status
-    # line is where the age belongs, and it has it, next to this same total
-    # and to the difference between them.
-    work_s = sum(t.dur_s for t in turns)
+    # Every turn's thinking and tool time, summed — the totals of the figures
+    # directly above them, which is what every other cell on this row is.
+    # Neither is the session's age: an age counts the hours the session sat
+    # waiting for someone to type, and no per-prompt row can add up to that.
+    # The status line is where the age belongs, and it has it, beside these
+    # same two totals and the 🚦 that is the rest of it.
+    work_s = sum(turn_model_s(t) for t in turns)
+    tool_s = sum(t.tool_s for t in turns)
     lim_w = fmt.C_SESS if acct else fmt.C_SESS - fmt.C_LIM_TOT
     cells = [
         seg(fmt.C_TOK, "%s%s%s%s%s%s" % (
@@ -1520,6 +1529,9 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
         # is what a line printed at 00:03 needs and a bare clock cannot give.
         seg(C_ELAPSED, "%s%s %s%s" % (S_WORK, ink.crm,
                                       pad_val(4, dur_fmt(work_s)), ink.r),
+            left=False),
+        seg(C_TOOL, "%s%s %s%s" % (E_TOOL, ink.crm,
+                                   pad_val(4, dur_fmt(tool_s)), ink.r),
             left=False),
         seg(C_STAMP, "%s%s%s%s" % (
             S_TIME, ink.crm,

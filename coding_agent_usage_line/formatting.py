@@ -877,7 +877,7 @@ SI_UNITS = ((G, "G"), (M, "M"), (K, "k"))
 # then the value field.
 #
 # That middle column is not the same thing on every cell, and the difference is
-# why MARK_SP reaches some of them and not others.  On 🧠 💰 🔋 🪫 and ⌛🤖
+# why MARK_SP reaches some of them and not others.  On 🧠 💰 🔋 🪫 ⌛🤖 and 🔧
 # it holds a SIGN -- "+" on the per-prompt row, a blank on the totals row
 # directly beneath it -- and that is content, not spacing: close it and the two
 # rows stop stacking digit under digit, which is the one alignment this readout
@@ -901,8 +901,17 @@ C_ELAPSED = 9  # ⌛🤖 + a duration.  BOTH rows are robot time: this prompt's
                # and was the wrong total for the row it was on — everything
                # else here totals what the prompts above it did, and an age
                # totals what the clock did.  The 🤖 says which of the two
-               # this is, against the status line's ⌛ Σ 🚦 🤖, where all
-               # three are on show and only one of them is this one.
+               # this is, against the status line's ⌛ 🤖 🔧 🚦, where all
+               # three are on show and two of them are these.  It is the
+               # status line's 🤖 over the turn: tool and waiting seconds out.
+C_TOOL = 7     # 🔧 + a sign column + a duration: what the ⌛🤖 beside it
+               # leaves out for time inside a tool, per prompt above and
+               # summed beneath.  Its own cell and not a second field in
+               # C_ELAPSED, so the gap before it is the row's C_SEG_GAP and
+               # the ⌛ stays a mark on 🤖 alone.  No 🚦 beside it: the
+               # remainder of a turn is a question or an agent it waited on,
+               # and the receipt reports what the prompt did, not what it
+               # waited for.
 C_STAMP = 13   # 📅 + "2026-08-22" above 🕐 + a clock padded to the same ten,
                # so the date and the time it belongs to share a right edge
 C_TOK_TIGHT = 13       # 🧩 + "▴627k ▾627k" with MARK_SP empty

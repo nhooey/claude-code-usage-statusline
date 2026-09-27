@@ -116,7 +116,7 @@ default   🧩 ▴9.6k ▾3.4k  🎯 98٪  🧠+ 8.0٪ + 16k  💰+  0.1   🔋+
 tight     🧩▴9.6k ▾3.4k  🎯98٪  🧠+ 8.0٪ + 16k  💰+  0.1   🔋+ 0.02٪ 📖29٪
 ```
 
-The column after 🧠, 💰, 🔋, 🪫 and ⌛🤖 holds a `+` on the prompt row and a
+The column after 🧠, 💰, 🔋, 🪫, ⌛🤖 and 🔧 holds a `+` on the prompt row and a
 blank on the totals row beneath it. That column is what keeps the two rows
 stacked digit under digit, so it stays. The agent panel's rows have no mark
 spacing to close and don't change.
