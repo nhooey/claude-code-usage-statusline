@@ -274,17 +274,17 @@ labels on:
 ```
 📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪
 
-📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  5m  📅 2026-08-16
-📊 🎮 Usage: Session (total) 🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖  10m  🕐   02:23:20
+📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  2m  🔧+  3m  📅 2026-08-16
+📊 🎮 Usage: Session (total) 🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖   5m  🔧   3m  🕐   02:23:20
 ```
 
 After a compaction:
 
 ```
-📊 🤏 🧩 ▴ 29k ▾  4k  🎯 99٪                  💰+  0.2   🔋+ 0.05٪ 📖 59٪  🪫+ 0.06٪ 📝  0٪  ⌛🤖+ 41s
+📊 🤏 🧩 ▴ 29k ▾  4k  🎯 99٪                  💰+  0.2   🔋+ 0.05٪ 📖 59٪  🪫+ 0.06٪ 📝  0٪  ⌛🤖+ 41s  🔧+  0s
 
-📊 🎤 🧩 ▴ 12k ▾800   🎯 98٪  🧠-19.5٪ -195k  💰+  0.1   🔋+ 0.01٪ 📖 61٪  🪫+ 0.02٪ 📝 14٪  ⌛🤖+  1m  📅 2026-08-16
-📊 🎮 🧩 ▴ 76k ▾  6k  🎯 99٪  🧠  9.7٪   97k  💰   0.5   🔋  0.1٪  💳 41٪  🪫  0.13٪ 💳 63٪  ⌛🤖 3.7m  🕐   02:23:20
+📊 🎤 🧩 ▴ 12k ▾800   🎯 98٪  🧠-19.5٪ -195k  💰+  0.1   🔋+ 0.01٪ 📖 61٪  🪫+ 0.02٪ 📝 14٪  ⌛🤖+  1m  🔧+  0s  📅 2026-08-16
+📊 🎮 🧩 ▴ 76k ▾  6k  🎯 99٪  🧠  9.7٪   97k  💰   0.5   🔋  0.1٪  💳 41٪  🪫  0.13٪ 💳 63٪  ⌛🤖 3.7m  🔧   0s  🕐   02:23:20
 ```
 
 ### Rows
@@ -306,16 +306,24 @@ later one.
 | 💰 | what this row cost | what the session cost |
 | 🔋 | share of the 5-hour window, then 📖 re-read share of this row's bill | the session's share, then 💳 the account's |
 | 🪫 | share of the weekly window, then 📝 cache-write share | the session's share, then 💳 the account's |
-| ⌛🤖 | time the model spent answering | summed over every prompt |
+| ⌛🤖 | time with the model: the row's span less its 🔧 and its waiting | summed over every prompt |
+| 🔧 | time inside tools, as the status line's 🔧 counts it | summed over every prompt |
 | 📅 / 🕐 | date the row was printed | time it was printed |
 
 The 🧠 cell reads percentage first, the reverse of the status line's.
-🧠 and 📅 are blank on 🤏 and 👥 rows, and ⌛🤖 is blank on 👥: a
+🧠 and 📅 are blank on 🤏 and 👥 rows, and ⌛🤖 and 🔧 are blank on 👥: a
 compaction or a batch of agents has no context change of its own, agent time
 is already counted on the rows that spawned it, and the print time is not
-when the event happened.
+when the event happened. A 🤏 row's 🔧 is always `0s`: the summariser runs no
+tool.
 
-**The sign column.** On the per-row lines, 🧠 💰 🔋 🪫 and ⌛🤖 carry a `+`
+⌛🤖 and 🔧 split each turn by the status line's rule (see
+[Time](accounting.md#time)), so on the 🎮 row they are the status line's 🤖
+and 🔧 for the same transcript. What the turn spent waiting — on a question
+to you, or on an agent it dispatched — is in neither, and the receipt has no
+cell for it.
+
+**The sign column.** On the per-row lines, 🧠 💰 🔋 🪫 ⌛🤖 and 🔧 carry a `+`
 (or `-` for a context that shrank) in the column after the mark; the 🎮 row
 has a blank there. Each upper figure is what one event added to the figure
 beneath it, and the blank keeps the two stacking digit under digit.

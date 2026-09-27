@@ -37,19 +37,27 @@ def prompt(minute, text):
             "timestamp": ts(minute), "message": {"content": text}}
 
 
-def answer(minute, rid, fresh, cw, cr, out, sidechain=False):
+def answer(minute, rid, fresh, cw, cr, out, sidechain=False, tool=None):
     """An assistant record carrying billed usage.
 
     requestId is what dedups repeats, so it has to be distinct per record and
     stable across runs — hence a passed-in string rather than a counter.
+
+    `tool` is (id, name), a tool_use block that starts a tool's clock;
+    tool_result with the same id stops it.  It rides a billed record rather
+    than adding one, so the tokens and dollars stay what they were and only
+    the two time cells move.
     """
+    msg = {"id": rid, "usage": {
+        "input_tokens": fresh,
+        "cache_creation_input_tokens": cw,
+        "cache_read_input_tokens": cr,
+        "output_tokens": out}}
+    if tool:
+        msg["content"] = [{"type": "tool_use", "id": tool[0],
+                           "name": tool[1]}]
     return {"type": "assistant", "requestId": rid, "timestamp": ts(minute),
-            "isSidechain": sidechain,
-            "message": {"id": rid, "usage": {
-                "input_tokens": fresh,
-                "cache_creation_input_tokens": cw,
-                "cache_read_input_tokens": cr,
-                "output_tokens": out}}}
+            "isSidechain": sidechain, "message": msg}
 
 
 def wake(minute, text, meta=True):
@@ -75,11 +83,15 @@ TASK = ('<task-notification>\n<task-id>%s</task-id>\n'
         '<status>completed</status>\n</task-notification>')
 
 
-def tool_result(minute):
+def tool_result(minute, tid=None):
     """A turn that ended on a tool result.  It is `type: user` like a prompt,
-    and what keeps it out of opens_turn() is that its content is a LIST."""
+    and what keeps it out of opens_turn() is that its content is a LIST.
+    `tid` pairs it with the call that asked for it, by `tool_use_id`."""
+    block = {"type": "tool_result", "content": "ok"}
+    if tid:
+        block["tool_use_id"] = tid
     return {"type": "user", "userType": "external", "timestamp": ts(minute),
-            "message": {"content": [{"type": "tool_result", "content": "ok"}]}}
+            "message": {"content": [block]}}
 
 
 def boundary(minute, pre, ms, trigger="auto"):
@@ -167,11 +179,13 @@ CASES = {
     ],
 
     # A turn whose last record is a tool result.  It ends at the result, not
-    # at the last billed request, so the elapsed figure has to count it.
+    # at the last billed request, so the elapsed figure has to count it.  The
+    # three minutes between are a Bash call, so they are 🔧's and not 🤖's:
+    # four minutes of turn, one of them the model's.
     "04-tool-result": [
         prompt(10, "Run the probe and tell me what it said."),
-        answer(11, "req-g1", 7, 1500, 33000, 450),
-        tool_result(14),
+        answer(11, "req-g1", 7, 1500, 33000, 450, tool=("tu-g1", "Bash")),
+        tool_result(14, "tu-g1"),
     ],
 
     # Sidechain records are billed but are NOT a reading of this window, so
@@ -235,15 +249,21 @@ CASES = {
     # Sonnet subagent, so the 🎤 row's 💰 is two models' prices summed per
     # record and not one model's over the token sums.  The agent files are
     # in AGENTS below, beside this transcript where Claude Code puts them.
+    #
+    # And the two kinds of tool call.  The fork is an Agent call the first
+    # turn sat on for two minutes, which is waiting -- neither ⌛🤖 nor 🔧 --
+    # and the second turn runs a three-minute Bash call while the subagent
+    # works, which is 🔧.  So the 🎤 row reads 2m and 3m of a five-minute
+    # turn, and the 🎮 row 5m and 3m of ten.
     "09-agents": [
         with_pid(prompt(10, "Fork off and check the two exhibits."), "p1"),
-        answer(11, "req-k1", 14, 2000, 45000, 800),
-        with_pid(tool_result(13), "p1"),
+        answer(11, "req-k1", 14, 2000, 45000, 800, tool=("tu-k1", "Agent")),
+        with_pid(tool_result(13, "tu-k1"), "p1"),
         answer(14, "req-k2", 6, 400, 47000, 1200),
         stop(15),
         with_pid(prompt(20, "Now have a subagent read the strategy."), "p2"),
-        answer(21, "req-k3", 9, 1500, 52000, 900),
-        with_pid(tool_result(24), "p2"),
+        answer(21, "req-k3", 9, 1500, 52000, 900, tool=("tu-k3", "Bash")),
+        with_pid(tool_result(24, "tu-k3"), "p2"),
         answer(25, "req-k4", 3, 200, 54000, 700),
     ],
 }

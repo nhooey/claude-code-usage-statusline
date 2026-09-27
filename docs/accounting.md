@@ -22,7 +22,7 @@ Claude sections come first; [Codex](#codex) is at the end.
 | 🔜 reset | status | The usage source's reset time for that window. | — |
 | ⌛ 🤖 🔧 🚦 | status | Timestamps in the main thread's own transcript. See [time](#time). | no: an agent's time is on its row |
 | ⛳ | status, panel | The last ETA the main thread reported in the current answer, or the agent's last, pushed out to the latest of any running descendant's. See [ETA](layout.md#eta). | yes, descendants |
-| ⌛🤖 | cost | The turn's wall-clock answering time, tool calls included. The totals row sums the turns. | no |
+| ⌛🤖 🔧 | cost | The status line's 🤖 and 🔧, over each turn's span. The totals row sums the turns. See [time](#time). | no |
 | ⌛ 🤖 🔧 🚦 | panel | ⌛ is the agent's age. 🤖 🔧 🚦 are gauges of its share, by the status line's rule. See [time](#time). | no |
 | 💾 diff | status | Claude Code's `cost.total_lines_added` / `total_lines_removed`. | as Claude Code reports it |
 | 💾 diff | panel | Lines in the agent's own Edit patches and new-file Writes. | the agent's own |
@@ -186,8 +186,8 @@ so it errs towards reporting a request at most once.
 ```
 📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪
 
-📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  5m  📅 2026-08-16
-📊 🎮 Usage: Session (total) 🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖  10m  🕐   02:23:20
+📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  2m  🔧+  3m  📅 2026-08-16
+📊 🎮 Usage: Session (total) 🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖   5m  🔧   3m  🕐   02:23:20
 ```
 
 The 👥 row is not a per-agent breakdown (that is the agent panel). It is the
@@ -242,10 +242,21 @@ and a share of at least 1% always gets a dot. The figures come off records
 and ⌛ off the clock as well, so they can overrun it by a moment. The shares
 are then of their sum.
 
-The cost line's ⌛🤖 is simpler: the turn's span from opener to last answer
-record, tool calls included, and on the totals row the sum of the turns' spans.
-It does not include agent time or subtract tool time, so it does not equal the
-status line's 🤖.
+**The cost line** splits each turn by the same rule (`turn_clock`), over the
+turn's span from opener to last answer record rather than over the age. 🔧 is
+the turn's tool calls less its waiting calls, and ⌛🤖 is the span less both,
+so it is the status line's 🤖 over that turn. Each call is filed under the turn
+its result arrives in and clipped to that turn's span. The totals row sums the
+turns, and for a transcript whose calls all returned it equals the status
+line's 🤖 and 🔧. The turn's waiting seconds are in neither figure, and the
+cost line has no 🚦: they are time the prompt waited on something, not time it
+spent.
+
+Two cases differ from the status line. A compaction's ⌛🤖 is the
+`durationMs` its boundary records, and its 🔧 is zero, since the summariser
+runs no tool. The rest of the answer an auto compaction lands in is billed to
+the 🤏 row but timed on neither row. A call still running when the Stop hook
+reads the transcript is not counted, as on an offline status-line read.
 
 ## Plan-window shares
 
@@ -346,10 +357,10 @@ transcript with no such records falls back to reporting the compactions
 between the previous prompt and the current one.
 
 ```
-📊 🤏 Usage: Compact (last)  🧩 ▴ 29k ▾  4k  🎯 99٪                  💰+  0.2   🔋+ 0.05٪ 📖 59٪  🪫+ 0.06٪ 📝  0٪  ⌛🤖+ 41s
+📊 🤏 Usage: Compact (last)  🧩 ▴ 29k ▾  4k  🎯 99٪                  💰+  0.2   🔋+ 0.05٪ 📖 59٪  🪫+ 0.06٪ 📝  0٪  ⌛🤖+ 41s  🔧+  0s
 
-📊 🎤 Usage: Prompt (last)   🧩 ▴ 12k ▾800   🎯 98٪  🧠-19.5٪ -195k  💰+  0.1   🔋+ 0.01٪ 📖 61٪  🪫+ 0.02٪ 📝 14٪  ⌛🤖+  1m  📅 2026-08-16
-📊 🎮 Usage: Session (total) 🧩 ▴ 76k ▾  6k  🎯 99٪  🧠  9.7٪   97k  💰   0.5   🔋  0.1٪  💳 41٪  🪫  0.13٪ 💳 63٪  ⌛🤖 3.7m  🕐   02:23:20
+📊 🎤 Usage: Prompt (last)   🧩 ▴ 12k ▾800   🎯 98٪  🧠-19.5٪ -195k  💰+  0.1   🔋+ 0.01٪ 📖 61٪  🪫+ 0.02٪ 📝 14٪  ⌛🤖+  1m  🔧+  0s  📅 2026-08-16
+📊 🎮 Usage: Session (total) 🧩 ▴ 76k ▾  6k  🎯 99٪  🧠  9.7٪   97k  💰   0.5   🔋  0.1٪  💳 41٪  🪫  0.13٪ 💳 63٪  ⌛🤖 3.7m  🔧   0s  🕐   02:23:20
 ```
 
 The prompt after a compaction reports the drop in context across it (`🧠-19.5٪

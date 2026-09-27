@@ -240,6 +240,14 @@ class Turn(NamedTuple):
                             # `calls` is 0, which keeps it out of every
                             # selection of "the prompt to report" and out of
                             # the settle wait.  See late_agent_turn.
+    tool_s: float = 0.0     # of dur_s, the part spent inside a tool, less
+                            # the waiting calls below — the status line's 🔧,
+                            # read over this turn's span alone.  See
+                            # turn_clock.
+    blocked_s: float = 0.0  # and the part spent inside a WAITING_TOOLS call:
+                            # a question put to the user, or an agent this
+                            # thread dispatched and sat on.  Neither 🤖 nor
+                            # 🔧; the status line's 🚦.
 
 
 class AgentRec(NamedTuple):
@@ -932,6 +940,48 @@ def thread_clock(work: Sequence[Tuple[float, float]],
             net_tool_seconds(tools, waiting), union_seconds(waiting))
 
 
+def turn_clock(tools: Sequence[Tuple[float, float]],
+               waiting: Sequence[Tuple[float, float]],
+               t0: Optional[float], t1: Optional[float]
+               ) -> Tuple[float, float]:
+    """One turn's (tool, waiting) seconds: thread_clock's two, over its span.
+
+    The receipt's ⌛🤖 and 🔧 are the status line's 🤖 and 🔧 read over one
+    turn rather than the whole session, and they come off the same scan —
+    `tools` and `waiting` are what scan_tool_spans collected while this turn
+    was open — so a session's 🎮 row and its status line agree second for
+    second wherever every call returns inside the turn that made it and no
+    compaction lands mid-answer; see read_turns for why a compaction's turn
+    carries no tool time.
+
+    Clipped to [t0, t1], because the turn's own span is what dur_s measures
+    and what 🤖 is the remainder of.  A tool_result is `is_work`, so a call
+    already ends inside the turn it returns in; the clip is for one that did
+    not START there — asked for before the prompt its result arrived after —
+    whose earlier seconds are in no turn's dur_s and would otherwise come
+    out of this one's 🤖.
+    """
+    if t0 is None or t1 is None or t1 <= t0:
+        return 0.0, 0.0
+
+    def clip(spans: Sequence[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        return [(max(lo, t0), min(hi, t1)) for lo, hi in spans]
+
+    tc, wc = clip(tools), clip(waiting)
+    return net_tool_seconds(tc, wc), union_seconds(wc)
+
+
+def turn_model_s(t: Turn) -> float:
+    """The receipt's ⌛🤖: the turn's span less its tool and waiting seconds.
+
+    The status line's 🤖, over one turn — the model thinking, and nothing a
+    shell, a question or a dispatched agent held it up for.  Clamped at zero
+    for the reason render_elapsed clamps its own: a negative would say the
+    three add up to more than the span they split.
+    """
+    return max(0.0, t.dur_s - t.tool_s - t.blocked_s)
+
+
 # The skill that has an agent report its ETA, and the line it has it write:
 #
 #     🏁 skills/coding-agent-usage-line-report-eta: ETA 4m
@@ -1378,7 +1428,8 @@ def _new_turn(ts: str, text: str) -> dict:
     return {"ts": ts, "text": text,
             "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0, "n": 0,
             "usd": [0.0, 0.0, 0.0, 0.0], "an": 0, "aids": [],
-            "t0": ts_epoch(ts), "t1": None, "parts": []}
+            "t0": ts_epoch(ts), "t1": None, "parts": [],
+            "tools": [], "waits": []}
 
 
 def _add_usd(cur: dict, epoch: Optional[float], model: Optional[str],
@@ -1522,7 +1573,16 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
     seen = set()
     by_pid = {}     # promptId → the turn open when a record carrying it was read
     last_stop = None    # epoch of the last Stop record, for late_agent_turn
+    pending = {}        # tool calls asked for and not yet answered; see below
     for r in _records(path):
+        # Every tool call, onto the turn open when its RESULT arrives: the
+        # scan read_transcript makes for the status line's 🔧, so the two
+        # readouts count the same calls by the same rule.  `pending` spans
+        # turns, as it spans the file there.  A record before the first
+        # prompt still has to be scanned — its call can be answered inside
+        # a turn — and its own spans go nowhere, as its billing does.
+        scan_tool_spans(r, pending, cur["tools"] if cur else [],
+                        cur["waits"] if cur else [])
         pid = r.get("promptId")
         text = turn_start_text(r)
         if text is not None:
@@ -1691,6 +1751,14 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
     for t in turns:
         dctx = (t["ctx"] - prev["ctx"]
                 if prev is not None and t["ctx"] else None)
+        # A compaction's time is its durationMs, the summariser's, and the
+        # summariser runs no tool.  The rest of an answer an auto compaction
+        # lands in is billed to its turn but timed by neither figure — dur_s
+        # has never counted it — and giving it tool seconds alone would put
+        # a 🔧 beside a ⌛🤖 that does not contain it.
+        tool_s, blocked_s = ((0.0, 0.0) if t.get("compact") else
+                             turn_clock(t["tools"], t["waits"],
+                                        t["t0"], t["t1"]))
         out.append(Turn(ts=t["ts"], text=t["text"], fresh=t["fresh"],
                         cache_write=t["cw"], cache_read=t["cr"], out=t["out"],
                         ctx=t["ctx"], calls=t["n"], dctx=dctx,
@@ -1703,7 +1771,8 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
                         dur_s=(t["dur"] if t.get("dur") else
                                (t["t1"] - t["t0"]
                                 if t["t0"] and t["t1"] and t["t1"] > t["t0"]
-                                else 0.0))))
+                                else 0.0)),
+                        tool_s=tool_s, blocked_s=blocked_s))
         if t["ctx"]:
             prev = t
     if late is not None:
