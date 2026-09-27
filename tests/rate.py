@@ -307,20 +307,30 @@ def run(sl, sr, scratch):
     check("💰: a dollar is the line, on the status line and the agent rows",
           [dims(sl.render_cost(v))[0][0] for v in ("0.99", "1.0", "115")],
           [True, False, False])
-    check("⌛ row: ten minutes, each figure on its own, Σ included",
+    check("⌛ row: ten minutes, each figure on its own; ⛳ with no ETA is a "
+          "dim ?",
           [d for d, _ in dims(sl.render_elapsed(
               5 * 3600, NOW - 9 * 3600, 599.0, NOW)) if _ != "Σ"],
-          [True, False, False, False])
-    # 🔧 🤖 👤 partition Σ, and a blocking prompt moves seconds from
-    # 🤖 to 👤 without touching 🔧 or the total.  Two hours, one busy,
+          [True, False, True, False])    # ⛳ ? 🤖 🔧 🚦: only 🔧 is under
+    # 🤖 🔧 🚦 partition the age, and a blocking prompt moves seconds from
+    # 🤖 to 🚦 without touching 🔧 or the total.  Two hours, one busy,
     # a quarter of it inside a tool; then ten minutes of that busy hour
     # spent waiting for somebody to answer a question.
     figs = lambda blocked: [v for _, v in dims(sl.render_elapsed(
         3600.0, NOW - 7200.0, 900.0, NOW, blocked)) if v != "Σ"]
-    check("⌛ row: the three fields partition Σ, and a blocking prompt "
-          "moves seconds from 🤖 to 👤 and nowhere else",
+    check("⌛ row: the three fields partition the age, and a blocking "
+          "prompt moves seconds from 🤖 to 🚦 and nowhere else",
           [figs(0.0), figs(600.0)],
-          [["15m", "45m", "1h", "2h"], ["15m", "35m", "1h", "2h"]])
+          [["?", "45m", "15m", "1h"], ["?", "35m", "15m", "1.2h"]])
+    # Five minutes into a turn that reported, a minute ago, four minutes
+    # left: an estimated run of eight, five gone, three to go.
+    check("⌛ row: ⛳ counts the turn's ETA down, with no bar: that is the "
+          "agent rows' alone",
+          re.sub(r"\s+", " ", ANSI.sub("", sl.render_elapsed(
+              3600.0, NOW - 7200.0, 900.0, NOW, 0.0, (NOW - 60, 240.0),
+              NOW - 300))),
+          "\u231B \u26F3 3m \U0001F916 45m "
+          "\U0001F527 15m \U0001F6A6 1h")
     check("💾: a hundred lines, each half on its own count",
           dims(sl.render_diff("100", "99")),
           [(False, "+ 100"), (True, "-  99")])
@@ -336,13 +346,16 @@ def run(sl, sr, scratch):
           dims(sl.render_cache_share(sl.S_READ, None, 100, sl.F_SHARE, False, False)),
           [(True, "?"), (False, "💯٪")])
     check("the agent row's ⌛ 🛫 🧠 take the same cuts",
-          [dims(sr.render_agent_clock(1000 * (NOW - 599), NOW))[0][0],
-           dims(sr.render_agent_clock(1000 * (NOW - 600), NOW))[0][0],
+          [dims(sr.render_agent_elapsed(1000 * (NOW - 599), NOW))[0][0],
+           dims(sr.render_agent_elapsed(1000 * (NOW - 600), NOW))[0][0],
            dims(sr.render_agent_rate(999.0))[0][0],
            dims(sr.render_agent_rate(1000.0))[0][0],
            dims(sr.render_agent_ctx(sl.MAG_TOK - 1))[0][0],
            dims(sr.render_agent_ctx(sl.MAG_TOK))[0][0]],
           [True, False, True, False, True, False])
+    check("and each 🤖 🔧 🚦 gauge dims on its own seconds, not its share",
+          [d for d, _ in dims(sr.render_agent_split(1800.0, 599.0, 601.0))],
+          [True, False, False])
 
 
 if __name__ == "__main__":

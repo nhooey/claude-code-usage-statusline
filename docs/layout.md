@@ -1,34 +1,33 @@
 # Layout and rendering
 
-The reference for everything the program draws: the three-row status line,
-the Stop-hook cost line, and the agent-panel rows. Each section opens with a
-real render, then says what every cell is. The [glyph legend](#glyph-legend)
-at the end lists every mark on all three readouts.
+The reference for everything the program draws: the session status line, the
+agent tree and the prompt receipt. Each section opens with a real render, then
+says what every cell is. The [legend](../README.md#legend) in the README names
+every glyph on all three readouts.
 
 All examples below are the program's own output against the test fixtures
 (clock pinned to 2026-08-16 02:23:20 UTC), with colour stripped. Colour and
 brightness carry meaning of their own — see
 [Colour and brightness](#colour-and-brightness).
 
-- [The status line](#the-status-line)
+- [The session status line](#the-session-status-line)
   - [The grid](#the-grid)
   - [Column by column](#column-by-column)
   - [Fixed widths](#fixed-widths)
   - [Column rules](#column-rules)
   - [Narrow and unknown widths](#narrow-and-unknown-widths)
 - [Colour and brightness](#colour-and-brightness)
-- [The cost line](#the-cost-line)
-- [Agent-panel rows](#agent-panel-rows)
-- [Glyph legend](#glyph-legend)
+- [The prompt receipt](#the-prompt-receipt)
+- [The agent tree](#the-agent-tree)
 
-## The status line
+## The session status line
 
 At 170 columns:
 
 ```
-👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### The grid
@@ -41,21 +40,16 @@ with newlines shown as `¶`, then where the session is working: 📦 project,
 answering, so the newer message is always on the second row; the metrics
 beside them stay put.
 
-**Right:** five fixed-width columns, three rows each.
-
-| | Column 1 | Column 2 | Column 3 | Column 4 | Column 5 |
-|---|---|---|---|---|---|
-| **Row 1** | 🎨 output style | 🤖 model · 💰 cost | 🧠 context | ⌛ where the time went | 📅 date |
-| **Row 2** | 🔀 PR number | 🧩 tokens | 📖 re-read share | 🔋 5-hour window | 🕐 time |
-| **Row 3** | — | 🛫 token rate · 🎯 cache hits | 📝 cache-write share | 🪫 weekly window | 💾 diff |
+**Right:** five fixed-width columns, three rows each, laid out as the
+[README's grid](../README.md#session-status-line) shows.
 
 Column 1 is empty unless the session has a non-default output style or an
 open PR:
 
 ```
-👤💬 Why does the elapsed row report two durations when the …  🎨 expl      | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you …  🔀 4211      | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …  🎨 expl        🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …  🔀 4211        🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### Column by column
@@ -94,30 +88,20 @@ of dollars, not of a plan window.
 
 **Column 4 — time and plan windows**, on a shared four-field grid.
 
-The ⌛ row splits the session's age three ways that add up exactly:
+The ⌛ row starts with ⛳, the current answer's ETA (see [ETA](#eta)), then
+splits the session's age into 🤖 model time, 🔧 tool time and 🚦 wait time,
+which add up exactly.
 
-| Field | Meaning |
-|---|---|
-| 🔧 | time inside a tool call, on the main thread or in any agent |
-| 🤖 | time waiting on the model, with tool time removed |
-| 👤 | time waiting on you — to type, or to answer a question the session asked |
-| Σ | the session's age, wall clock since it started |
-
-Tool spans from the main thread and every agent are unioned, so overlapping
-work counts once. `AskUserQuestion` and `ExitPlanMode` are tool calls in the
-transcript but are counted as 👤, because their duration is a person
-reading. A permission prompt is not moved: nothing in the transcript marks
+The three are the main thread's own, read by the same rule as each agent
+row's (see [time](accounting.md#time)): an agent's work shows on its row, and
+the main thread waiting on it is 🚦. `AskUserQuestion` and `ExitPlanMode`
+are tool calls in the transcript but are counted as 🚦, because their
+duration is a person reading, and so are `Agent` calls. A permission prompt is not moved: nothing in the transcript marks
 one, and a tool that waited for approval did stall the turn.
 
-The 🔋 (5-hour) and 🪫 (weekly) rows each show three widening scopes, then a
-countdown:
-
-| Field | Meaning |
-|---|---|
-| 🎤 | this window's share spent by the last turn |
-| 🎮 | this window's share spent by this session |
-| 💳 | the whole account's consumption of the window, as the plan reports it |
-| 🔜 | time until the window resets |
+The 🔋 (5-hour) and 🪫 (weekly) rows each show three widening scopes, 🎤 the
+last turn, 🎮 the session and 💳 the account, then 🔜, the time until the
+window resets.
 
 🎤 and 🎮 are estimates: the program prices the session's transcript and
 divides by a calibrated dollars-per-percent figure (see
@@ -132,9 +116,9 @@ removed in the session, as Claude Code reports them.
 **Line 3's left side.** A dirty working tree turns 🌿 into 🍂 and adds `✱`:
 
 ```
-👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h  | 📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
-📦repo-dirty  📁…atusline-fixture/deep/tree  🍂golden-dirty ✱               | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
+📦repo-dirty  📁…atusline-fixture/deep/tree  🍂golden-dirty ✱                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 In a linked git worktree 📦 names the main repository, since 🌿 already
@@ -144,9 +128,9 @@ names the worktree's branch.
 printing zero, and the session scopes print `?`:
 
 ```
-👤💬 (no prompt yet)                                                        | 🤖O⁵🏃 💰115   |                   |                                    | 📅  2026-08-16
-🤖💬 (no reply yet)                                                         |                |                   | 🔋 🎤    ? 🎮    ? 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                |                |                   | 🪫 🎤    ? 🎮    ? 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
+👤💬 (no prompt yet)                                                          🤖O⁵🏃 💰115                                                              📅  2026-08-16
+🤖💬 (no reply yet)                                                                                                🔋 🎤    ? 🎮    ? 💳 15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                                                       🪫 🎤    ? 🎮    ? 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### Fixed widths
@@ -172,7 +156,7 @@ instead (`0₀₁٪`).
 columns 3 and 4, saving six columns:
 
 ```
-👤💬 Why does the elapsed row report two durations when the sessio…                 🤖O⁵🏃 💰115     🧠  115k   11٪    ⌛ 🔧 58m 🤖  3h 👤 6h Σ 9.3h    📅  2026-08-16
+👤💬 Why does the elapsed row report two durations when the sessio…                 🤖O⁵🏃 💰115     🧠  115k   11٪    ⌛ ⛳   ? 🤖  3h 🔧58m 🚦5.5h    📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you spent.…                 🧩▴2.7M ▾841k    📖 🎤34٪ 🎮32٪    🔋 🎤1.2٪ 🎮3.8٪ 💳15٪ 🔜6.7m    🕐    02:23:20
 📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                        🛫200/s 🎯98٪    📝 🎤 7٪ 🎮 7٪    🪫 🎤1.6٪ 🎮8.4٪ 💳87٪ 🔜1.9d    💾 +3.4k - 214
 ```
@@ -181,13 +165,20 @@ columns 3 and 4, saving six columns:
 
 The faint `|` between columns is drawn inside the four-column gap that
 separates them, so it costs no width: a ruled row and an unruled one are the
-same width, column for column.
+same width, column for column. At 170 columns, with `--column-rules`:
 
-Rules are on by default. They are dropped when any of these holds:
+```
+👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h  | 📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
+```
+
+Rules are off by default, and `--column-rules` asks for them. Even then they
+are dropped when any of these holds:
 
 | Condition | Reason |
 |---|---|
-| `--no-column-rules` | Asked for. |
+| `--no-column-rules` | Asked for; it wins over `--column-rules`. |
 | `--no-mark-spacing` | That layout is for terminals short on room; it gets no extra chrome. |
 | Width under 170 columns | Below that, the project, path and branch are already being cut hard; the row has no room to spare for chrome. |
 | Width unknown | The fallback layout (below) already overruns. |
@@ -212,7 +203,7 @@ way:
 At 140 columns:
 
 ```
-👤💬 Why does the elapsed row …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h    📅  2026-08-16
+👤💬 Why does the elapsed row …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
 🤖💬 Two figures, because one …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
 📦repo  📁…deep/tree  🌿golden…                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
@@ -237,10 +228,10 @@ fixed cut and full strength at or over it:
 
 | Kind | Cut | Where |
 |---|---|---|
-| tokens | 100k | 🧩 ▴ and ▾ each, 🧠's size — status line and agent rows |
+| tokens | 100k | 🧩 ▴ and ▾ each, 🧠's size — status line and tree rows |
 | rate | 1k/s | 🛫 |
 | cost | $1 | 💰 |
-| duration | 10 min | ⌛ 🔧 🤖 👤 Σ each; an agent's 🔧 and 🤖 |
+| duration | 10 min | ⛳ 🤖 🔧 🚦 each on the status line; ⌛ and each gauge's own seconds on the tree rows |
 | diff | 100 lines | 💾, each half |
 
 The cuts are fixed rather than relative to the session, so the same
@@ -272,7 +263,7 @@ cost: across 6,002 measured turns the median was 73٪.
 50٪, amber at or under 80٪, and dim green above. A cache collapse means the
 prefix was invalidated and the same work now bills at full price.
 
-## The cost line
+## The prompt receipt
 
 The Stop hook prints what the prompt just answered cost, over what the
 session has cost so far. Installed as the README suggests
@@ -298,17 +289,14 @@ After a compaction:
 
 ### Rows
 
-| Row | What it reports |
-|---|---|
-| 🎤 Prompt | the prompt just answered |
-| 🎮 Session | the whole session, including every row above it |
-| 🤏 Compact | a compaction since the last report — `/compact` fires no Stop hook of its own, so it is reported here, once |
-| 👥 Agents | agent spend the 🎤 row cannot carry: a background agent that finished after its turn printed, or a turn that shared its Stop with a later one |
+The [legend](../README.md#receipt-rows) names each row. The 🎮 row includes
+every row above it. The 👥 row also carries a turn that shared its Stop with a
+later one.
 
 🤏 and 👥 rows print above the 🎤 row, separated by a blank line. See
 [Accounting](accounting.md) for how turns and agents are attributed.
 
-### Cost-line cells
+### Receipt cells
 
 | Cell | 🎤 🤏 👥 rows | 🎮 row |
 |---|---|---|
@@ -350,7 +338,7 @@ in all. Neither figure appears in the hook payload; the program subtracts
 them as constants. Two consequences:
 
 - If a row is too wide, Claude Code wraps its tail onto a second line rather
-  than truncating it. A wrapped cost line means the chrome figures are wrong.
+  than truncating it. A wrapped prompt receipt means the chrome figures are wrong.
 - All rows go out as a single `systemMessage` joined by newlines. As separate
   messages, each would get the sixteen-column prefix.
 
@@ -360,127 +348,188 @@ indent, gaining eleven columns. The program does this unaided when the
 window is too narrow for the labels with the prefix but wide enough without
 it.
 
-## Agent-panel rows
+## The agent tree
 
 While agents run, `--mode subagent` replaces each row of Claude Code's agent
-panel. At 170 columns, with a running agent, its nested child, a finished
+panel. At 180 columns, with a running agent, its nested child, a finished
 agent and a shell:
 
 ```
-◯  🔧🟢 a1b2c3d4e… Port the renderer Editing claude_render.py        🤖O⁵🏃  🔧  4m  🤖8.6m  💰0.4   🧠124k  🧩▴ 66k ▾3.6k  🛫266/s  🎯93٪  🔋.08٪  🪫.10٪  💾 +  48 -   9
-├ ◯  🔍🟢 c7d8e9f0a… Find every caller of seg() Searching for seg(   🤖S⁵🚶  🔧  1m  🤖7.3m  💰0.1   🧠 48k  🧩▴ 24k ▾  1k  🛫 80/s  🎯90٪  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯  📐🔵 f3e4d5c6b… Plan the docs rewrite                             🤖O⁵🏃          🤖  4m  💰0.2   🧠 42k  🧩▴ 26k ▾2.9k           🎯85٪  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯  🐚🟢 b1         npm test npm test --watch                                         🤖 13m
+⏺  🔧🟢🤖 👶🏻1 a1b2c3d4e… Port the renderer Editing claude…  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  🔍🟢🔧     c7d8e9f0a… Find every caller of seg()       └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯  📐⚫✅     f3e4d5c6b… Plan the docs rewrite              ◯   🤖O⁵🏃  💰 0.2   🧠  42k  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯  🐚🟢       b1         npm test npm test --watch          ◯                                                             ⌛ 13m
 ```
 
-The leading `◯` and `├` are the panel's own chrome, drawn by Claude Code;
-everything after them is this program's.
+The leading `◯`, `⏺` and `└` are the panel's own chrome, drawn by Claude Code;
+everything after them is this program's, including the copy of that tree
+where the figures start (see [Nesting](#nesting)).
 
-### Agent-row cells
+### Tree cells
 
 Left to right:
 
 | Cell | Meaning |
 |---|---|
 | kind | the agent type, as a glyph (table below) |
-| state | 🟢 running, 🟡 pending, 🔵 completed, 🔴 failed, ⚫ killed |
+| state | the phase, 🟢 running, 🟡 paused or ⚫ ended, then what the agent is doing in it. See [State](#state) |
+| 👶🏻 | how many rows hang directly under it on the panel, finished or not. The cell is there on every row once any row has children |
 | id | the task id, cut to ten columns |
 | name | the task's name, or its description; then what it is doing now |
-| 🤖 | model and effort, as on the status line |
-| 🔧 | time inside tools — this agent's and every agent it spawned, unioned |
-| 🤖 | time thinking: the run so far, minus the 🔧 time. Stops at the agent's last record once it finishes |
+| tree | the panel's tree, drawn again beside the figures, in a wide window |
+| 🤖 | model and effort, as on the status line, right before the 💰 they priced |
 | 💰 | cost, from the agent's own transcript, each request priced at its own model |
 | 🧠 | the agent's context size (its last request's input) |
 | 🧩 | tokens in and out |
 | 🛫 | token rate, from the panel's own samples; running agents only |
 | 🎯 | cache hit rate |
-| 🔋 🪫 | the agent's share of each plan window |
+| ⌛ | the agent's age: from its first record, or its `startTime` if that is earlier, to now, or to its last record once it has finished. A completed agent still parked on its children keeps counting. Not the `startTime` alone, which Claude Code restarts when it resumes an agent |
+| ⛳ | the time the agent says it has left. `?` until it reports. See [ETA](#eta) |
+| 🤖 ⠶⠄ | share of ⌛ spent thinking: the agent's working spans off its transcript, minus its own tool calls |
+| 🔧 ⠆⠀ | share of ⌛ spent inside its own tools; its children's are on their rows |
+| 🚦 ⠄⠀ | share of ⌛ spent waiting: on a question put to you, on an agent it started, or parked until something woke it |
+| 🔋 🪫 | the agent's share of each plan window, right after the time it spent |
 | 💾 | lines added and removed by the agent's own edits and writes |
 
 The right-hand group is fixed width and ends on the same column on every
 row. The name takes what is left: the activity is cut first, then the name.
-A label that only repeats the description is not drawn.
+A label that only repeats the description is not drawn. The kind glyphs are in
+the [README legend](../README.md#agent-kind).
 
-| Kind glyph | Agent type |
-|---|---|
-| 🔧 | general-purpose |
-| 🎩 | claude |
-| 🔍 | Explore |
-| 📐 | Plan |
-| 📚 | claude-code-guide |
-| 📟 | statusline-setup |
-| 🍴 | fork |
-| 🔗 | workflow |
-| 🐚 | shell |
-| 🌐 | remote agent |
-| 🎎 | in-process teammate |
-| 👥 | any other type, including custom agents |
+### State
+
+Claude Code gives a task one of five statuses, and `completed` covers two
+different things: an agent that has finished, and one that ended its turn to
+wait on work it started, which Claude Code keeps alive until that work ends.
+The row reads the phase off everything it knows, and puts what the agent is
+doing in that phase after the circle.
+
+| Phase | Mark | When |
+|---|---|---|
+| 🟢 running | 🤖 | the model has the floor: no tool call is waiting on its result |
+| | 🔧 | a tool call is waiting on its result |
+| | 🚦 | the call it waits on is a question to you or an agent it started |
+| | (none) | a task with no transcript to say, such as a shell |
+| 🟡 paused | 💤 | completed, with an agent under it still running or not started |
+| | 💻 | completed, with a background shell it has not heard the end of |
+| | 📡 | completed, with a Monitor it has not heard the end of |
+| | ⛳ | completed, with nothing it can name but a live ETA in its last message |
+| | 🥚 | Claude Code's `pending`: not started |
+| ⚫ ended | ✅ ❌ 🛑 | completed and waiting on nothing, failed, killed |
+
+A paused agent shows the first of its reasons in that order. A background
+task opens on the tool result that hands back its id: `backgroundTaskId` for a
+Bash, whether run in the background or moved there by its timeout, and
+`taskId` with `timeoutMs` for a Monitor. It closes on a `<task-notification>`
+for that id that carries a `<status>` (a Monitor's events carry none), on
+TaskStop's result, or on a TaskOutput that reads it finished. A status never
+seen is two amber letters and no mark.
+
+Some limits are Claude Code's and no setting changes them. The panel shows
+five rows at a time and scrolls with the cursor. It hides a finished
+background agent that waits on nothing, and removes any other finished task
+30 seconds after it ends, unless you have opened it.
 
 ### Nesting
 
 An agent spawned by another agent is drawn by the panel under its parent,
-with one `├ ` per level of nesting. The program reads each agent's depth
-from the `spawnDepth` in its sidecar file and shortens the row by two
-columns per level, so a child's right-hand group lands on the same columns
-as its parent's. A task with no sidecar — a shell, a remote agent — is
-treated as top level.
+with a `├ ` or `└ ` per level of nesting. The program reads each agent's
+parent from the `parentAgentId` in its sidecar file and resolves it the way
+the panel does:
 
-A parent's 🔧 includes its descendants' tool time; its 💰, 🧩 and 💾 are
-its own transcript only. In the example, the parent's `🔧 4m` is its own
-three minutes plus its child's one.
+- An ancestor that has finished and waits on nothing is stepped over. The
+  panel drops such an agent and hangs its children from its parent. The
+  panel's own test reads state the payload doesn't carry, so the program
+  takes "completed and not paused" for it (see [State](#state)). An agent
+  paused on a child still running keeps its children.
+- An ancestor missing from the payload ends the walk, and the row is top
+  level. The payload lists every agent the panel can show.
+- A task with no sidecar — a shell, a remote agent — is top level.
+
+The depth is the number of ancestors left. The program shortens the row by
+two columns per level below the first, so a child's right-hand group lands
+on the same columns as its parent's. The panel's indent also pushes a
+child's left-hand cells two columns right of its parent's, so every row
+opens with two blank columns per level it sits above the deepest row, and
+the kind, state, 👶🏻, id and name start on one column at every depth.
+
+In a wide window the panel's tree is far from the figures, so the row draws
+it again where the figures start: `◯` for an agent, `├ ◯` or `└ ◯` for a child, with
+a `│` running down an ancestor's column while its siblings continue. That
+shows which rows are parents, whose 🚦 includes the time their children
+ran, and which are leaves. The row builds the copy from those resolved parents, and orders siblings
+by `startTime`, as the panel does. The panel shows a row's
+children only when that row is expanded, and only the selected row is, so a
+row with a child showing gets the filled `⏺`, as the panel draws it. The
+panel's `❯` sits in the gutter left of its tree, and the copy doesn't draw
+it. The copy is padded to the deepest row's width, so the right group
+stays aligned. The row draws it only when the name keeps at least 40
+columns; in a narrower window the row leaves it out and gives the columns to
+the activity.
+
+A parent's figures are its own transcript only: its children's tool time,
+cost, tokens and diff are on their rows. Time it spends waiting on a child is
+its 🚦.
+
+### ETA
+
+An agent reports how long it has left by writing a line of its own:
+
+```
+🏁 skills/coding-agent-usage-line-report-eta: ETA 4m
+```
+
+The `coding-agent-usage-line-report-eta` skill, in `skills/` in this
+repository, tells it when: once it has a plan, after each milestone, and
+whenever the estimate moves by a quarter or more. The row reads the last such
+line from the text of the agent's own messages, so a tool result that quotes
+one isn't counted. The skill's path is the part matched; the 🏁 is there so
+a person scrolling the transcript notices the line, and may be left off. The
+readout draws the time left under ⛳, not 🏁.
+
+A report is an estimate of the whole run: the time already gone when it was
+written, plus the time it said was left. The row counts it down between
+reports. ⛳'s figure is what is left of that total. Past the estimate it
+turns amber, with a `+` for how late the agent is. The cell is `?`
+whenever there is no live estimate: no report yet, a last report of zero
+(the skill's sign-off), or an answer that ended its turn after its last
+report. The exception is a report in the message that ends the turn, which
+stays live. That is an agent parking on background work, and Claude Code
+marks it completed while it waits; the row shows it 🟡 paused. A killed or failed agent is read at
+its last record and stops there.
+
+**Inherited up the tree.** A parent isn't done until the children it is
+waiting on are, so a row counts to the latest finish among its own estimate
+and those of its running descendants, recursively. Its own wins when its own
+plan runs longer, and a finished child counts for nothing. Each agent
+reports its own conceptual ETA for its whole task, including rounds of
+subagents it plans to start later, which only it knows about. It doesn't add
+up its children's reports; the maximum here keeps its row from finishing
+before any of them.
+
+The status line's ⌛ row carries the same cell for the main thread, as the
+root of that tree: its last report in the answer to the current prompt,
+counted from that prompt, pushed out to the latest finish of any agent still
+answering. An agent that has written nothing for half an hour is taken for
+dead rather than late. A new prompt clears the main thread's own report, and
+so does the answer ending, so an idle session with no agents running reads
+`?`. Both readouts run their times ⛳ 🤖 🔧 🚦: the status line prints
+figures for the last three, and the tree rows, which put ⌛ first, print
+each one's share of it.
+
+An agent that hasn't reported shows `⛳ ?`, since saying nothing is not the
+same as having nothing left. The skill reaches an agent only if it is
+loaded: `skills: [coding-agent-usage-line-report-eta]` in an agent type's
+frontmatter preloads it, and a line in `CLAUDE.md` reaches the main session
+and the general-purpose agents. The built-in Explore agents don't read
+`CLAUDE.md`, so they usually stay at `?`.
 
 ### Blank cells
 
 A task with no transcript — a shell or a remote agent — shows only its name,
 activity and run time; there is nothing else to measure, and a zero would
-read as a measurement. 🔧 is blank at zero for the same reason. 💾 is drawn
+read as a measurement. 🔧 is blank at zero for the same reason, and ⛳ is
+blank there too: a task with no transcript has nowhere to write a report. 💾 is drawn
 even at `+ 0 - 0` for any agent with a transcript, since writing nothing is a
 fact about it. 🔋 and 🪫 are blank without a plan reading, and `?` without a
 calibration.
-
-## Glyph legend
-
-Every mark, on every readout. Some glyphs appear in more than one place;
-their position tells them apart.
-
-| Glyph | Where | Meaning |
-|---|---|---|
-| 👤💬 | status line | your last prompt |
-| 🤖💬 | status line | the model's last reply |
-| ¶ | status line | a newline inside a chat row |
-| 📦 | status line | project (the main repository, in a worktree) |
-| 📁 | status line | current directory |
-| 🌿 | status line | branch, clean tree |
-| 🍂 ✱ | status line | branch, uncommitted changes |
-| 🎨 | status line | output style, when not the default |
-| 🔀 | status line | pull request number |
-| 🤖 `O⁵` | status line, agent rows | model: family initial and major version |
-| 🐢 🚶 🏃 🚀 🔥 | status line, agent rows | effort: low, medium, high, xhigh, max |
-| 💰 | all | cost in dollars |
-| 🧩 ▴ ▾ | all | tokens: billable-equivalent input, output |
-| 🛫 | status line, agent rows | token rate, per second |
-| 🎯 | all | prompt-cache hit rate |
-| 🧠 | all | context: size and share of the window, or its change |
-| 📖 | status line, cost line | share of the bill spent re-reading the conversation |
-| 📝 | status line, cost line | share of the bill spent caching new material |
-| ⌛ | status line | the time row |
-| 🔧 | status line, agent rows | time inside tools |
-| 🤖 | status line, agent rows | time waiting on the model |
-| 👤 | status line | time waiting on you |
-| Σ | status line | the session's age |
-| ⌛🤖 | cost line | time the model spent answering |
-| 🔋 | all | the 5-hour plan window |
-| 🪫 | all | the weekly plan window |
-| 🎤 | status line, cost line | scope: the last turn; the prompt row |
-| 🎮 | status line, cost line | scope: this session; the session row |
-| 💳 | status line, cost line | scope: the whole account |
-| 🔜 | status line | time until a window resets |
-| 💯 | status line, cost line, agent rows | a full 100٪ |
-| `?` | status line, agent rows | a share that cannot be derived yet |
-| 📅 🕐 | status line, cost line | date and time |
-| 💾 | status line, agent rows | lines added and removed |
-| 📊 | cost line | marks a cost-line row |
-| 🤏 | cost line | compaction row |
-| 👥 | cost line | late agent-spend row |
-| 🔧 🎩 🔍 📐 📚 📟 🍴 🔗 🐚 🌐 🎎 👥 | agent rows | agent kind — see [Agent-row cells](#agent-row-cells) |
-| 🟢 🟡 🔵 🔴 ⚫ | agent rows | running, pending, completed, failed, killed |

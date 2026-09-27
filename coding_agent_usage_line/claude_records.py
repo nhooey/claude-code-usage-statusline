@@ -93,18 +93,28 @@ class Transcript(NamedTuple):
     user_text: str
     asst_ts: str
     asst_text: str
-    busy_s: float           # seconds spent answering, summed over every turn
+    busy_s: float           # seconds this thread spent answering, its own
+                            # tool calls in — see thread_clock
     start_s: float          # epoch of the first STAMPED record, 0 if none
     tool_s: float = 0.0     # of that answering, the part spent inside a tool —
-                            # this thread's and every agent's, unioned, LESS
-                            # the blocking prompts below.  See tool_spans.
+                            # this thread's own, LESS the waiting spans
+                            # below.  See tool_spans.
                             # Defaulted so EMPTY_TRANSCRIPT and the fixtures
                             # that predate it still build.
-    blocked_s: float = 0.0  # and the part spent inside a tool that was a
-                            # question put to the user.  It is answering time
-                            # by the transcript's reckoning and waiting time
-                            # by any reader's, so the row hands it to 👤 —
-                            # see BLOCKING_TOOLS and render_elapsed.
+    blocked_s: float = 0.0  # and the part spent inside a tool that was
+                            # waiting: a question put to the user, or an
+                            # agent it dispatched.  It is answering time by
+                            # the transcript's reckoning and waiting time by
+                            # any reader's, so the row hands it to 🚦 — see
+                            # WAITING_TOOLS and render_elapsed.
+    turn_s: float = 0.0     # epoch of the prompt the current turn opened on
+    eta: Tuple[float, ...] = ()  # (epoch, seconds left) off the last ETA the
+                            # main thread reported IN THAT TURN, while it is
+                            # still answering; () otherwise.  See eta_report.
+    agent_etas: Tuple[Tuple[float, Optional[float]], ...] = ()
+                            # (finish epoch, last record epoch) for every
+                            # agent still answering with a live ETA: what the
+                            # main thread's ⛳ inherits.  See agent_records.
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -399,9 +409,7 @@ def agent_files(transcript: str) -> List[str]:
 
 
 def agent_records(transcript: str, seen: Optional[set] = None,
-                  spans: Optional[list] = None,
-                  tools: Optional[list] = None,
-                  blocked: Optional[list] = None) -> Tuple[AgentRec, ...]:
+                  etas: Optional[list] = None) -> Tuple[AgentRec, ...]:
     """Every billed request an agent of this session made, in stamp order.
 
     Nothing an agent bills is in the session's own transcript.  The main file
@@ -436,30 +444,20 @@ def agent_records(transcript: str, seen: Optional[set] = None,
     see agent_offsets — and it is bytes rather than a stamp because files
     that flush on their own schedules share no clock.
 
-    `spans` is an out-parameter, and it is one because this walk already
-    parses every line of every agent file: pass a list and each agent's
-    WORKING spans are appended to it — the same segmentation read_transcript
-    does on the main thread, an agent's prompt to the last record its answer
-    produced — so the one read serves both the token totals and the clock.
-    An agent resumed by a later SendMessage opens a second span rather than
-    one long one, so the hours it spent waiting to be resumed are not
-    charged to it.
+    It fed the status line's clocks as well until 2026-09-27, when ⌛ became
+    the main thread's own — see thread_clock — and an agent's time moved to
+    its row alone.
 
-    `tools` is the second out-parameter of the same kind, for ⌛'s 🔧: pass a
-    list and every agent's TOOL spans are appended to it, off the same read
-    again.  An agent that spawned agents of its own needs no special case —
-    its Task span already covers the child's whole run, and the child's own
-    spans are appended here too, so the union counts the nesting once.
-    `blocked` takes the blocking-prompt subset of those, which for an agent
-    file is normally empty — an agent has nobody to ask — and is read anyway
-    rather than assumed.
+    `etas` is an out-parameter, because this walk already parses every
+    line: for every agent still answering with a live ETA, (finish epoch,
+    its last record's epoch) — see live_eta — which the status line's ⛳
+    takes the latest of.
     """
     seen = set() if seen is None else seen
     out = []
     for path in agent_files(transcript):
         pid = ""
-        open_at = prev = None
-        pending = {}
+        eta_state = new_eta_state()
         try:
             fh = open(path, "rb")
         except OSError:
@@ -474,17 +472,8 @@ def agent_records(transcript: str, seen: Optional[set] = None,
                     continue
                 if not isinstance(r, dict):
                     continue
-                if tools is not None:
-                    scan_tool_spans(r, pending, tools, blocked)
-                if spans is not None:
-                    t = ts_epoch(r.get("timestamp") or "")
-                    if t is not None:
-                        if turn_start_text(r) is not None:
-                            if open_at is not None and prev > open_at:
-                                spans.append((open_at, prev))
-                            open_at = prev = t
-                        elif open_at is not None and is_work(r):
-                            prev = t
+                if etas is not None:
+                    live_eta(r, eta_state)
                 if r.get("type") == "user":
                     pid = r.get("promptId") or pid
                     continue
@@ -507,8 +496,8 @@ def agent_records(transcript: str, seen: Optional[set] = None,
                 out.append(AgentRec(ts_epoch(r.get("timestamp") or ""), pid,
                                     m.get("model"), fresh, cw, cr, o, k,
                                     path, pos))
-        if spans is not None and open_at is not None and prev > open_at:
-            spans.append((open_at, prev))
+        if etas is not None and eta_state[0] and not eta_state[1]:
+            etas.append((eta_finish(eta_state[0]), eta_state[2]))
     # Stamp order across files, unparseable stamps last: the fold-in walks
     # turns forward and a record that cannot be placed in time is handed to
     # the last turn rather than the first.
@@ -714,7 +703,7 @@ def union_seconds(spans: Sequence[Tuple[float, float]]) -> float:
     Overlapping spans are merged rather than added, which is the whole reason
     this is not a sum: five agents working the same ten minutes is ten minutes
     of the session's clock, not fifty.  The alternative — summing — makes 🤖
-    exceed Σ the moment anything runs in parallel and turns 👤 into a
+    exceed Σ the moment anything runs in parallel and turns 🚦 into a
     permanent zero, and the pair's only claim is that it splits the age.
     """
     total = 0.0
@@ -735,11 +724,11 @@ def union_seconds(spans: Sequence[Tuple[float, float]]) -> float:
 #
 # These are counted as tools by every other reader — they are tool calls, and
 # the transcript records them as tool calls — and they are taken out of 🔧
-# and given to 👤 because of what the cell is read for.  🔧 answers "how
-# much of the working time was the machine waiting on a shell, a file, a
-# subagent"; a dialog that sat open for ninety seconds while someone chose
+# and given to 🚦 because of what the cell is read for.  🔧 answers "how
+# much of the working time was the machine waiting on a shell or a file";
+# a dialog that sat open for ninety seconds while someone chose
 # between two options is not that, and charging it to 🔧 made the cell
-# report the reader's own deliberation back at them.  👤 is already "time
+# report the reader's own deliberation back at them.  🚦 is already "time
 # the session spent waiting for a person", which is exactly what this is.
 #
 # BY NAME, and only by name, because the name is the only thing in the
@@ -750,6 +739,18 @@ def union_seconds(spans: Sequence[Tuple[float, float]]) -> float:
 # somewhere the reader can act on.  What this set can name is the tools that
 # are a question and nothing else.
 BLOCKING_TOOLS = frozenset({"AskUserQuestion", "ExitPlanMode"})
+
+# Tools whose span is ANOTHER AGENT's work: the thread that called one is
+# waiting on the agent, not running a tool, and that agent's time is on its
+# own row.  Both names, because Claude Code renamed Task to Agent and older
+# transcripts still say Task.  A background dispatch returns at once, so its
+# span is a second or two either way; a foreground one is the child's whole
+# run, and without this it was the caller's 🔧.  See thread_clock.
+DELEGATING_TOOLS = frozenset({"Agent", "Task"})
+
+# What a thread's 🚦 takes out of its tool spans: a person answering, or
+# another agent working.  Neither is this thread's machine doing anything.
+WAITING_TOOLS = BLOCKING_TOOLS | DELEGATING_TOOLS
 
 
 def scan_tool_spans(r: dict, pending: Dict[str, Tuple[float, str]],
@@ -778,7 +779,7 @@ def scan_tool_spans(r: dict, pending: Dict[str, Tuple[float, str]],
     `pending` and `out` are the caller's, so one walk of a file can feed this
     and the billing scan beside it; see agent_records.  `blocked` is the
     caller's too and takes the SUBSET of `out` whose tool is in
-    BLOCKING_TOOLS — a subset and not a partition, so a reader that wants
+    WAITING_TOOLS — a subset and not a partition, so a reader that wants
     the machine's tool time alone subtracts one union from the other and
     needs no interval arithmetic of its own; see net_tool_seconds.
     """
@@ -799,7 +800,7 @@ def scan_tool_spans(r: dict, pending: Dict[str, Tuple[float, str]],
             hit = pending.pop(str(b.get("tool_use_id") or ""), None)
             if hit is not None and t > hit[0]:
                 out.append((hit[0], t))
-                if blocked is not None and hit[1] in BLOCKING_TOOLS:
+                if blocked is not None and hit[1] in WAITING_TOOLS:
                     blocked.append((hit[0], t))
 
 
@@ -814,9 +815,63 @@ def tool_spans(records: Sequence[dict],
     return out
 
 
+# The terminal states a TaskOutput reading can report for the task it read.
+TASK_ENDED = frozenset({"completed", "failed", "killed", "stopped"})
+
+
+def notification_text(r: dict) -> str:
+    """The `<task-notification>` a record delivers, or "".
+
+    An agent's file holds one as a `queued_command` attachment; a thread
+    Claude Code woke with it holds a plain user record whose content is the
+    notification itself.
+    """
+    a = r.get("attachment") or {}
+    c = a.get("prompt") if a.get("type") == "queued_command" else (
+        (r.get("message") or {}).get("content") if r.get("type") == "user"
+        else None)
+    if isinstance(c, list):
+        c = "".join(b.get("text") or "" for b in c if isinstance(b, dict))
+    return c if isinstance(c, str) and "<task-notification>" in c else ""
+
+
+def scan_background(r: dict, open_: Dict[str, str]) -> None:
+    """Fold one record into `open_`, {task id: "bash" or "monitor"}, the
+    background tasks a thread started and has not heard the end of.
+
+    These are what keep an agent that ended its turn alive while it waits:
+    Claude Code parks it on `bash:<id>` or `monitor:<id>` and marks it
+    completed, and the payload carries neither.  A task opens on the tool
+    result that hands back its id — a Bash run in the background, or one
+    that outran its timeout and was moved there, says `backgroundTaskId`,
+    and a Monitor says `taskId` beside its `timeoutMs`.  It closes on a
+    `<task-notification>` for that id that carries a `<status>`: a Monitor
+    sends one per event with no status, and a last one with it when its
+    stream ends.  Or on the thread ending it itself — TaskStop's result, or
+    TaskOutput reading it finished, which Claude Code counts as delivered
+    and sends no notification for.
+    """
+    res = r.get("toolUseResult")
+    if isinstance(res, dict):
+        if res.get("backgroundTaskId"):
+            open_[str(res["backgroundTaskId"])] = "bash"
+        elif res.get("taskId") and "timeoutMs" in res:
+            open_[str(res["taskId"])] = "monitor"
+        elif res.get("task_id") and "message" in res:
+            open_.pop(str(res["task_id"]), None)
+        task = res.get("task")
+        if isinstance(task, dict) and task.get("status") in TASK_ENDED:
+            open_.pop(str(task.get("task_id") or ""), None)
+    text = notification_text(r)
+    if text and "<status>" in text:
+        m = re.search(r"<task-id>([^<]+)</task-id>", text)
+        if m:
+            open_.pop(m.group(1).strip(), None)
+
+
 def net_tool_seconds(spans: Sequence[Tuple[float, float]],
                      blocked: Sequence[Tuple[float, float]]) -> float:
-    """Seconds inside a tool that were not a blocking prompt.
+    """Seconds inside a tool that were not waiting on someone else.
 
     A subtraction of two unions rather than an interval difference, and it is
     exact because `blocked` is a SUBSET of `spans`: the measure of a set less
@@ -828,11 +883,204 @@ def net_tool_seconds(spans: Sequence[Tuple[float, float]],
     return max(0.0, union_seconds(spans) - union_seconds(blocked))
 
 
+def open_tool_spans(pending: Dict[str, Tuple[float, str]], now: float,
+                    tools: List[Tuple[float, float]],
+                    waiting: List[Tuple[float, float]]) -> None:
+    """Run every tool call still waiting on its result on to `now`.
+
+    `pending` is what scan_tool_spans has left unanswered at the end of a
+    file: a Bash call still running, an agent still working in the
+    foreground.  Its seconds are 🔧's — or 🚦's, for a WAITING_TOOLS call —
+    as they happen, and not only once the result lands; left out, they sat
+    in 🚦 as the remainder until then, so a thread ten minutes into a test
+    run read as ten minutes waiting.  The caller passes a `now` only for a
+    thread that is live: a finished one's unanswered calls were interrupted.
+    """
+    for t, name in pending.values():
+        if now > t:
+            tools.append((t, now))
+            if name in WAITING_TOOLS:
+                waiting.append((t, now))
+
+
+def thread_clock(work: Sequence[Tuple[float, float]],
+                 tools: Sequence[Tuple[float, float]],
+                 waiting: Sequence[Tuple[float, float]]
+                 ) -> Tuple[float, float, float]:
+    """One thread's (busy, tool, waiting) seconds, off its OWN file alone.
+
+    The status line reads the main thread through this and each agent row
+    reads its agent, so ⌛ 🤖 🔧 🚦 mean the same thing on both: what THIS
+    thread did with its time.  `work` is its working spans, `tools` every
+    tool call it made and `waiting` the WAITING_TOOLS subset of those.
+
+      busy     the union of its work and its tools
+      tool     its tool spans, less the ones that were waiting
+      waiting  the waiting spans
+
+    so that busy - tool - waiting is 🤖, the model thinking, and the age less
+    busy, plus waiting, is 🚦.  The three partition the age exactly: 🤖 holds
+    no tool second, 🔧 no waiting one, and 🚦 is the rest by construction.
+
+    OWN FILE ALONE, since 2026-09-27.  The status line unioned every agent's
+    spans into its busy clock until then, and an agent row added its
+    children's tools to its 🔧, so a coordinator parked on five background
+    agents read as busy the whole time it sat waiting on them.  Waiting on an
+    agent is 🚦 now, on either readout, and the agent's work is on its row.
+    """
+    return (union_seconds(list(work) + list(tools)),
+            net_tool_seconds(tools, waiting), union_seconds(waiting))
+
+
+# The skill that has an agent report its ETA, and the line it has it write:
+#
+#     🏁 skills/coding-agent-usage-line-report-eta: ETA 4m
+#
+# The skill's path is the part matched, so the line says where it comes from
+# to anyone who searches for it; the flag is for the eye and may be missing.
+# Backticks and bold around the line are forgiven, since a model shown the
+# line in a code block will sometimes write it back in one.  The skill's own
+# text writes `<number>` where the figure goes, so loading it into a
+# transcript never matches.  The skill asks for one figure and one unit,
+# and an agent with hours left writes `6h30m` all the same; read as the
+# skill's form alone, that line matched nothing and the row kept counting
+# down an older report, so a run of figure-and-unit pairs is one figure.
+ETA_SKILL = "coding-agent-usage-line-report-eta"
+ETA_PART = r"\d+(?:\.\d+)? ?[smh]"
+ETA_LINE = re.compile(
+    r"^[ \t`*]*(?:%s[ \t]*)?skills/%s: ETA (%s(?:[ \t]*%s)*)[ \t`*]*$"
+    % (E_ETA_REPORT, re.escape(ETA_SKILL), ETA_PART, ETA_PART), re.MULTILINE)
+ETA_SPLIT = re.compile(r"(\d+(?:\.\d+)?) ?([smh])")
+ETA_UNIT_S = {"s": 1.0, "m": 60.0, "h": 3600.0}
+
+
+def eta_report(records: Sequence[dict]) -> Tuple[float, ...]:
+    """(epoch, seconds left) off the LAST ETA report in `records`, or ().
+
+    The agent panel reads an agent's whole file with this; the status line
+    reads the main thread's current turn (read_transcript).  Only what the
+    agent itself wrote counts: the text blocks of assistant
+    records.  A tool result that quotes the line — a grep of this very
+    file, say — or the skill's text arriving as a user message is not a
+    report, and matching the raw JSONL would take either for one.  The
+    epoch is the record's own stamp, which is what lets the row count the
+    estimate down between reports.
+    """
+    last: Tuple[float, ...] = ()
+    for r in records:
+        if not isinstance(r, dict) or r.get("type") != "assistant":
+            continue
+        content = (r.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "text":
+                continue
+            hits = ETA_LINE.findall(str(block.get("text") or ""))
+            epoch = ts_epoch(r.get("timestamp") or "")
+            if hits and epoch is not None:
+                last = (epoch, sum(float(n) * ETA_UNIT_S[unit]
+                                   for n, unit in ETA_SPLIT.findall(hits[-1])))
+    return last
+
+
+def eta_finish(eta: Tuple[float, ...]) -> Optional[float]:
+    """When an ETA says its run ends: the report's epoch plus the time it said
+    was left.  None for no estimate, and for a report of zero, which is the
+    skill's sign-off rather than an estimate."""
+    if not eta or not eta[1] > 0:
+        return None
+    return eta[0] + eta[1]
+
+
+def ends_turn(r: dict) -> bool:
+    """True for an assistant record that ends its answer."""
+    return (r.get("type") == "assistant" and
+            (r.get("message") or {}).get("stop_reason") == "end_turn")
+
+
+def new_eta_state() -> list:
+    """A fresh `state` for live_eta: no report, not done, no stamp, no
+    message."""
+    return [(), False, None, None]
+
+
+def live_eta(r: dict, state: list) -> None:
+    """Fold one record into `state`, [eta, done, last epoch, report's
+    message id], for one thread.
+
+    The ETA belongs to the answer it was written in: a new prompt clears it,
+    and so does the answer finishing — an assistant record that ends its
+    turn, with no work after it.  A report from an answer that is over is
+    not an estimate of anything still running.
+
+    Unless the message that ends the turn is the one that carries the report.
+    That is an agent PARKING rather than finishing: it has ended its turn to
+    wait on a background task, whose notification will wake it, and says in
+    the same breath how long it expects the rest to take.  Claude Code
+    marks such an agent completed; the report is the only thing that says
+    it is not.  The skill has a finished agent sign off with 0s, and one
+    that ends without a line in its last message reads as finished too.  A
+    message is split over several records, one per block, so the test is on
+    the message id and not on the record.
+    """
+    if turn_start_text(r) is not None:
+        state[0], state[1], state[3] = (), False, None
+    elif is_work(r):
+        report = eta_report([r])
+        mid = (r.get("message") or {}).get("id")
+        if report:
+            state[0], state[3] = report, mid
+        state[1] = ends_turn(r) and not (
+            report or (mid is not None and mid == state[3]))
+    t = ts_epoch(r.get("timestamp") or "")
+    if t is not None:
+        state[2] = t
+
+
+def agent_span(r: dict, state: list, spans: list) -> None:
+    """Fold one record of an AGENT's file into its working spans.
+
+    `state` is [opened at, last work], both None between spans; a span is
+    appended to `spans` as it closes, and the caller closes the last one —
+    see close_agent_span.  A span runs from the record that opens it to the
+    last record its answer produced, as read_transcript's turns do.
+
+    What differs from the main thread is what opens and closes one.  An
+    agent's resumptions are not prompts: a message SendMessage delivers to
+    a finished agent, or a background task's notification waking a parked
+    one, is written as a plain user record that turn_start_text does not
+    recognise.  Read the main thread's way, a resumed agent's file was one
+    span from its spawn to now, and every hour it sat finished or parked
+    was charged to it as work.  So an answer that ENDS its turn closes the
+    span, and whatever comes next opens the following one.  A prompt still
+    closes and reopens it, for a file that has one.
+    """
+    t = ts_epoch(r.get("timestamp") or "")
+    if t is None:
+        return
+    if state[0] is not None and turn_start_text(r) is not None:
+        close_agent_span(state, spans)
+    if state[0] is None:
+        if r.get("type") not in ("user", "assistant"):
+            return
+        state[0] = state[1] = t
+    elif is_work(r):
+        state[1] = max(state[1], t)
+    if ends_turn(r):
+        close_agent_span(state, spans)
+
+
+def close_agent_span(state: list, spans: list) -> None:
+    """Append agent_span's open span, if it has any length, and clear it."""
+    if state[0] is not None and state[1] > state[0]:
+        spans.append((state[0], state[1]))
+    state[0] = state[1] = None
+
+
 def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
-                    agent_spans: Sequence[Tuple[float, float]] = (),
-                    agent_tools: Sequence[Tuple[float, float]] = (),
-                    agent_blocked: Sequence[Tuple[float, float]] = ()
-                    ) -> Transcript:
+                    agent_etas: Sequence[Tuple[float, Optional[float]]] = (),
+                    now: Optional[float] = None) -> Transcript:
     """One pass for the status line: totals, cache rate, context, last texts.
 
     The token totals and the cache rate count what the session's AGENTS
@@ -841,27 +1089,13 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     a 🧩 that reports the main thread alone is short by whatever the forks
     and workflows spent, which in the sessions that use them is most of it.
 
-    Busy time counts them too — `agent_spans`, which agent_records fills as
-    it walks the same files.  An agent is the session working, and on the
-    sessions here it is MOST of the working: a main thread that dispatches
-    six agents and waits sits idle in its own file, so a 🤖 read off that
-    file alone said 14% of a day where the machine was busy for 97% of it.
-    Measured over the eight most recent sessions with agents on this
-    machine, folding them in roughly doubles the figure.  The two clocks are
-    UNIONED, never summed — see union_seconds — so 👤 and 🤖 still split Σ
-    exactly, which is the one thing that pair promises.
-
-    Tool time counts them the same way, and for the same reason — `agent_tools`
-    beside `agent_spans`, off the one walk.  It is the part of the busy clock
-    the session spent inside a tool rather than waiting on a model, and it is
-    a partition with them rather than a share of them: 🔧 what the tools took,
-    🤖 what is left of the answering, 👤 the wait.  Unioned like the rest,
-    which is what makes an agent's tools inside a Task's own span count once
-    instead of twice; see scan_tool_spans.
-
-    A tool whose result is the USER'S answer comes out of 🔧 again and is
-    reported separately as `blocked_s`, which render_elapsed gives to 👤.
-    See BLOCKING_TOOLS for why by name and why not permission prompts.
+    Time does NOT, since 2026-09-27: busy, tool and waiting time are this
+    thread's own, off this file alone — see thread_clock, which an agent row
+    reads its agent through too.  A main thread that dispatches six agents
+    and waits is waiting, and says so in 🚦; the agents' work is on their
+    rows.  The clocks unioned every agent's spans in until then, which read
+    a coordinator parked on its agents as the busiest thread in the session.
+    With a `now`, a tool call still running counts to it; see open_tool_spans.
 
     Context size does NOT.  It is a reading of THIS window — the one 🧠 is
     watched to decide when to compact — and every agent runs a window of its
@@ -881,14 +1115,9 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         cread += u.get("cache_read_input_tokens") or 0
         down += u.get("output_tokens") or 0
     if agents is None:                  # no caller-supplied walk: do it here,
-        own = []                        # and take both clocks off it too
-        own_tools = []
-        own_blocked = []
-        agents = agent_records(path, spans=own, tools=own_tools,
-                               blocked=own_blocked)
-        agent_spans = tuple(agent_spans) + tuple(own)
-        agent_tools = tuple(agent_tools) + tuple(own_tools)
-        agent_blocked = tuple(agent_blocked) + tuple(own_blocked)
+        own_etas = []                   # and take the agents' ETAs off it too
+        agents = agent_records(path, etas=own_etas)
+        agent_etas = tuple(agent_etas) + tuple(own_etas)
     for a in agents:
         fresh += a.fresh
         cwrite += a.cache_write
@@ -937,8 +1166,15 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     blocked = []
     pending = {}
     first = open_at = prev = None
+    # The ETA belongs to the turn it was written in: a new prompt clears it,
+    # and so does the answer finishing — an assistant record that ends its
+    # turn, with no work after it.  A report from a turn that is over is not
+    # an estimate of anything still running.
+    eta_state = new_eta_state()
     for r in records:
         scan_tool_spans(r, pending, tools, blocked)
+        if r.get("isSidechain") is not True:
+            live_eta(r, eta_state)
         t = ts_epoch(r.get("timestamp") or "")
         if t is None:
             continue
@@ -952,11 +1188,9 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
             prev = t
     if open_at is not None and prev > open_at:
         spans.append((open_at, prev))
-    busy = union_seconds(spans + list(agent_spans))
-    all_tools = tools + list(agent_tools)
-    all_blocked = blocked + list(agent_blocked)
-    tool = net_tool_seconds(all_tools, all_blocked)
-    blocked_s = union_seconds(all_blocked)
+    if now is not None:
+        open_tool_spans(pending, now, tools, blocked)
+    busy, tool, blocked_s = thread_clock(spans, tools, blocked)
 
     return Transcript(
         busy_s=busy,
@@ -977,6 +1211,9 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         asst_text=squash(asst_text),
         tool_s=tool,
         blocked_s=blocked_s,
+        turn_s=open_at or 0.0,
+        eta=() if eta_state[1] else eta_state[0],
+        agent_etas=tuple(agent_etas),
     )
 
 

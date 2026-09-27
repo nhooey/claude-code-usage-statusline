@@ -6,7 +6,7 @@
 #
 # 16 payloads x 6 widths in a clean repo, plus two source-freshness cases,
 # plus one payload x 6 widths in a dirty one, plus two payloads x 3 widths
-# under --no-mark-spacing and two under --no-column-rules, plus two cases
+# under --no-mark-spacing and two under --column-rules, plus two cases
 # about a window boundary -- one that falls inside a turn and one whose
 # reading is too coarse to divide by -- against files under golden/.
 # Byte-identical stdout is the gate, as it was for the differential test this
@@ -154,20 +154,21 @@ for c in 196 92 ""; do
         "$c" "$SCRATCH/repo" --no-mark-spacing
 done
 
-# ── --no-column-rules ───────────────────────────────────────────────────────
+# ── --column-rules ──────────────────────────────────────────────────────────
 #
-# The rules are painted INTO SEG_GAP and take no column, so the switch is
-# ink-only and these cases must come out byte-identical to the same payload at
-# a width below RULE_MIN -- which is the property worth pinning, because the
-# failure mode of a divider is that it costs a column and shifts the grid.
-# Only at 196: it is the one width in this corpus that carries the rules at
-# all, so every other width would test nothing.  Two payloads, for the two
-# shapes of the first gap: 01 leaves column 1 empty, 04 fills it.
-echo "--- --no-column-rules ---"
-check "norules-01@196" "$CORPUS/01-baseline.json" 196 "$SCRATCH/repo" \
-      --no-column-rules
-check "norules-04@196" "$CORPUS/04-pr-and-style.json" 196 "$SCRATCH/repo" \
-      --no-column-rules
+# The rules are opt-in, so every other golden is unruled.  They are painted
+# INTO SEG_GAP and take no column, so the switch is ink-only and these cases
+# must come out byte-identical to the unruled goldens once the `|` are spaces
+# -- which is the property worth pinning, because the failure mode of a
+# divider is that it costs a column and shifts the grid.  Only at 196: it is
+# the one width in this corpus that carries the rules at all, so every other
+# width would test nothing.  Two payloads, for the two shapes of the first
+# gap: 01 leaves column 1 empty, 04 fills it.
+echo "--- --column-rules ---"
+check "rules-01@196" "$CORPUS/01-baseline.json" 196 "$SCRATCH/repo" \
+      --column-rules
+check "rules-04@196" "$CORPUS/04-pr-and-style.json" 196 "$SCRATCH/repo" \
+      --column-rules
 
 # ── a window that opens INSIDE the last turn ────────────────────────────────
 #

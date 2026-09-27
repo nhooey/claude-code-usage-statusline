@@ -1721,6 +1721,16 @@ def _flag(argv: Sequence[str], name: str, default: str = "") -> str:
         return default
 
 
+def column_rules(argv: Sequence[str]) -> bool:
+    """Whether `--mode status` was asked to rule its columns.
+
+    Off unless `--column-rules` is given, and `--no-column-rules` wins over
+    it, as `--no-mark-spacing` wins over `--mark-spacing`.  This is the ASK
+    only; rules_on still decides whether the width has room for them.
+    """
+    return "--column-rules" in argv and "--no-column-rules" not in argv
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # The subagent rows — `--mode subagent`.
 #
@@ -1772,14 +1782,38 @@ class AgentUsage(NamedTuple):
     # agent that only read.  See agent_diff.
     lines_added: int = 0
     lines_removed: int = 0
-    tool_s: float = 0.0     # seconds inside a tool, this agent's own and
-                            # every agent it spawned.  Filled by the caller,
-                            # not by read_agent_usage: it is the one figure on
-                            # the row that needs files other than this one.
-                            # See agent_tool_spans.
+    tool_s: float = 0.0     # the 🔧 figure: seconds inside its own tools,
+                            # less the waiting ones.  Filled by the caller,
+                            # with the model_s below; see agent_clock.
+    eta: Optional[Tuple[float, ...]] = None   # (epoch, seconds left) off the
+                            # agent's last ETA report; () where its transcript
+                            # has none yet, and None where there is no
+                            # transcript to hold one — a shell, a remote
+                            # agent.  See agent_eta.
+    work: Tuple[Tuple[float, float], ...] = ()   # the agent's working spans,
+                            # off agent_span; the open one closed at its last
+                            # record for now
+    open_at: Optional[float] = None   # where the span still open began, or
+                            # None when the agent's last answer ended its
+                            # turn or it is waiting on a tool's result
+    tools: Tuple[Tuple[float, float], ...] = ()  # this agent's OWN tool
+                            # calls, (start, end), without its descendants'
+    model_s: Optional[float] = None   # the 🤖 figure: working time outside
+                            # its own tools.  Filled by the caller, which has
+                            # the task's status and the clock; None where
+                            # there is no transcript to read it off.
+    waiting: Tuple[Tuple[float, float], ...] = ()  # the WAITING_TOOLS subset
+                            # of `tools`: a question, or an agent it started
+    pending: Tuple[Tuple[float, str], ...] = ()  # (start, name) of each tool
+                            # call still waiting on its result
+    background: Tuple[Tuple[str, str], ...] = ()  # (task id, "bash" or
+                            # "monitor") of each background task it started
+                            # and has not heard the end of; see
+                            # scan_background
 
 
 NO_AGENT_USAGE = AgentUsage(None, 0, -1, 0, 0.0, (), "", "", 0, None)
+
 
 
 def agent_file_for(transcript: str, task_id: str) -> str:
@@ -1798,78 +1832,6 @@ def agent_file_for(transcript: str, task_id: str) -> str:
     hits = glob.glob(os.path.join(d, "workflows", "*", "agent-%s.jsonl"
                                   % task_id))
     return hits[0] if hits else ""
-
-
-_KIDS: Dict[str, Dict[str, List[str]]] = {}
-
-
-def _agent_id(path: str) -> str:
-    """The agent id in `<dir>/agent-<id>.jsonl`, or "" for anything else."""
-    base = os.path.basename(path)
-    if not base.startswith("agent-") or not base.endswith(".jsonl"):
-        return ""
-    return base[len("agent-"):-len(".jsonl")]
-
-
-def _children_by_parent(directory: str) -> Dict[str, List[str]]:
-    """Every agent transcript under `directory`, grouped by the agent that
-    spawned it.
-
-    Built once per directory and memoised for the life of the process, which
-    is one render: a session with 86 agents would otherwise read 86 sidecars
-    per row and 7,396 in total, and this is a status line.
-    """
-    hit = _KIDS.get(directory)
-    if hit is not None:
-        return hit
-    kids: Dict[str, List[str]] = {}
-    for f in sorted(glob.glob(os.path.join(directory, "**", "agent-*.jsonl"),
-                              recursive=True)):
-        parent = agent_meta(f).get("parentAgentId")
-        if parent:
-            kids.setdefault(str(parent), []).append(f)
-    _KIDS[directory] = kids
-    return kids
-
-
-def agent_tool_spans(path: str, blocked: Optional[list] = None
-                     ) -> List[Tuple[float, float]]:
-    """(start, end) for every tool call this agent ran, its descendants' in.
-
-    `blocked` is the out-parameter scan_tool_spans fills with the
-    blocking-prompt subset.  An agent has nobody to put a question to, so it
-    is normally empty and is read rather than assumed; net_tool_seconds takes
-    the two and hands back what the machine actually spent.
-
-    The recursion is over `parentAgentId` in the sidecars, which is the only
-    place the tree is written down: an agent an agent spawned sits in the
-    same `subagents/` directory as its parent and is told apart from a
-    sibling by that field alone.
-
-    It is belt-and-braces rather than the mechanism.  A child's whole run is
-    already inside the parent's own Task span, so the union would come out
-    the same for an agent that waited on its children — which is the usual
-    case, and the reason scan_tool_spans can call itself recursive for free.
-    What this catches is the case where it is not: an agent dispatched in the
-    BACKGROUND returns its tool result at once and keeps working, and its
-    tools then run outside every span its parent recorded.  Unioned, so the
-    ordinary case is not counted twice.
-    """
-    if not path:
-        return []
-    directory = os.path.dirname(path)
-    kids = _children_by_parent(directory) if directory else {}
-    out: List[Tuple[float, float]] = []
-    seen = set()
-    queue = [path]
-    while queue:
-        cur = queue.pop()
-        if cur in seen:
-            continue
-        seen.add(cur)
-        out.extend(tool_spans(list(_records(cur)), blocked))
-        queue.extend(kids.get(_agent_id(cur), ()))
-    return out
 
 
 def agent_meta(path: str) -> dict:
@@ -1946,6 +1908,24 @@ def read_agent_usage(path: str) -> AgentUsage:
     if not path:
         return NO_AGENT_USAGE
     recs = list(_records(path))
+    eta_state = new_eta_state()
+    span_state = [None, None]
+    work = []
+    pending = {}
+    tools = []
+    waiting = []
+    background = {}
+    for r in recs:
+        live_eta(r, eta_state)
+        agent_span(r, span_state, work)
+        scan_tool_spans(r, pending, tools, waiting)
+        scan_background(r, background)
+    eta = () if eta_state[1] else eta_state[0]
+    # The open span runs on to now only while the model has the floor: a
+    # tool still waiting on its result is tool time, and runs to now as 🔧
+    # or 🚦 instead; see open_tool_spans.
+    open_at = None if pending else span_state[0]
+    close_agent_span(span_state, work)
     reqs = _dedupe_usage(recs)
     fresh = cwrite = cread = down = 0
     ctx = 0
@@ -1977,12 +1957,46 @@ def read_agent_usage(path: str) -> AgentUsage:
         effort = r.get("effort") or effort
     in_all = fresh + cwrite + cread
     if not parts:
-        return NO_AGENT_USAGE
+        return NO_AGENT_USAGE._replace(eta=eta, work=tuple(work),
+                                       open_at=open_at, tools=tuple(tools),
+                                       waiting=tuple(waiting),
+                                       pending=tuple(pending.values()),
+                                       background=tuple(background.items()))
     return AgentUsage(
         int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread), down,
         int(100 * cread / in_all) if in_all > 0 else -1,
         ctx, cost, tuple(parts), model, effort, len(parts), last,
-        *agent_diff(recs))
+        *agent_diff(recs), eta=eta, work=tuple(work), open_at=open_at,
+        tools=tuple(tools), waiting=tuple(waiting),
+        pending=tuple(pending.values()), background=tuple(background.items()))
+
+
+def agent_clock(usage: AgentUsage, running: bool,
+                now: Optional[float] = None) -> Tuple[float, float]:
+    """The agent's 🤖 and 🔧 seconds, off its own transcript: thread_clock,
+    which the status line reads its main thread through as well.
+
+    Its working spans are agent_span's, so the time it sat finished or
+    parked is in neither figure, and the row's 🚦 takes it.  Read off the
+    transcript rather than its task's `startTime`, because Claude Code sets
+    that afresh when it resumes an agent.  A RUNNING agent's open span runs
+    on to now, and so does every tool call still waiting on its result —
+    see open_tool_spans; a finished one's stop where its file does.
+
+    Only its OWN tool calls, where 🔧 counted its descendants' too until
+    2026-09-27.  A child's tools are on the child's row; this agent waiting
+    on one, in the foreground or the background, is its 🚦.
+    """
+    t = time.time() if now is None else now
+    work = list(usage.work)
+    tools = list(usage.tools)
+    waiting = list(usage.waiting)
+    if running:
+        if usage.open_at is not None:
+            work.append((usage.open_at, t))
+        open_tool_spans(dict(enumerate(usage.pending)), t, tools, waiting)
+    busy, tool, wait = thread_clock(work, tools, waiting)
+    return max(0.0, busy - tool - wait), tool
 
 
 def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
@@ -2014,12 +2028,14 @@ def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
 
 
 
-def prepare_subagent_tasks(pay: dict):
+def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
     """Read every task sidecar once and return renderer-ready task facts.
 
     The agent-panel renderer receives only these immutable-ish snapshots.  In
     particular it never opens a transcript while composing a row, which keeps
-    panel layout safe to reuse by another coding-agent adapter.
+    panel layout safe to reuse by another coding-agent adapter.  `now` is the
+    renderer's, for the figures read here that run on to it: a running
+    agent's 🤖 and 🔧 (agent_clock).
     """
     transcript = str(pay.get("transcript_path") or "")
     prepared = []
@@ -2028,10 +2044,11 @@ def prepare_subagent_tasks(pay: dict):
             continue
         try:
             path = agent_file_for(transcript, str(task["id"]))
-            blocked = []
-            usage = read_agent_usage(path)._replace(
-                tool_s=net_tool_seconds(agent_tool_spans(path, blocked),
-                                        blocked))
+            usage = read_agent_usage(path)
+            if path:
+                model_s, tool_s = agent_clock(
+                    usage, str(task.get("status") or "") == "running", now)
+                usage = usage._replace(model_s=model_s, tool_s=tool_s)
             prepared.append((task, usage, agent_meta(path),
                              agent_window_shares(usage)))
         except Exception:
@@ -2097,8 +2114,9 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
         emit_source_diagnose(source_spec, prepared)
     # Panel stdout is JSONL task rows only; account scope is intentionally not
     # appended here because it would be mistaken for a panel task.
-    sys.stdout.write(render_subagent(prepare_subagent_tasks(pay), cols, lim,
-                                     frozen_now()))
+    now = frozen_now()
+    sys.stdout.write(render_subagent(prepare_subagent_tasks(pay, now), cols,
+                                     lim, now))
     return 0
 
 
@@ -2118,16 +2136,14 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     # The agent files are walked ONCE here and handed to both readers.  Each
     # would otherwise walk them itself, and a session that has run many
     # agents has as many bytes there as in its own transcript.  The same walk
-    # fills `spans` — when each agent was working, for ⌛🤖 — `tools` — when
-    # each was inside a tool, for ⌛🔧 — and `blocked`, the blocking-prompt
-    # subset of those, so none of the three clocks costs a second read.
+    # collects every live agent's ETA, for ⌛⛳, so that costs no second read.
     have_tr = bool(pay.transcript) and os.path.isfile(pay.transcript)
-    spans = []
-    tools = []
-    blocked = []
-    agents = (agent_records(pay.transcript, spans=spans, tools=tools,
-                            blocked=blocked) if have_tr else ())
-    tr = (read_transcript(pay.transcript, agents, spans, tools, blocked)
+    etas = []
+    agents = (agent_records(pay.transcript, etas=etas) if have_tr else ())
+    # A tool call still running counts to now, but only on a live session: an
+    # offline read of a transcript was not running anything when it stopped.
+    live = None if transcript else (frozen_now() or time.time())
+    tr = (read_transcript(pay.transcript, agents, etas, live)
           if have_tr else EMPTY_TRANSCRIPT)
     # Offline transcript reports have no hook workspace.  Do not silently use
     # this command's cwd (nor run its potentially expensive dirty-tree probe)
@@ -2188,8 +2204,7 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
     rate = session_rate(pay.session_id, tokens, frozen_now())
     output = render_status(pay, tr, git, lim, cols, frozen_now(),
-                           "--no-column-rules" not in argv, ctx_window, rate,
-                           cache)
+                           column_rules(argv), ctx_window, rate, cache)
     account_data = prepared.reading.get("account")
     has_account = (isinstance(account_data, dict) and
                    any(account_data.get(key) is not None
@@ -2376,14 +2391,13 @@ options (all modes):
                                  stdout, using the versioned source contract
 
 options (--mode status):
-  --no-column-rules  drop the faint "|" borders between the five right-hand
-                     columns, leaving the plain gaps they are painted into.
-                     They take no width either way, so this changes nothing
-                     but the ink.  --column-rules is the default and is
-                     accepted so a settings file can say which it wants.
-                     Note the rules are ALREADY off below 180 columns, at an
-                     unknown width, and under --no-mark-spacing; this switches
-                     them off at the widths that would otherwise carry them.
+  --column-rules     draw faint "|" borders between the five right-hand
+                     columns, in the plain gaps that separate them.  They take
+                     no width either way, so this changes nothing but the ink.
+                     --no-column-rules is the default and is accepted so a
+                     settings file can say which it wants.  The rules stay off
+                     below 170 columns, at an unknown width, and under
+                     --no-mark-spacing, even when asked for.
 
 options (--mode cost):
   --transcript PATH  read this transcript instead of the payload's

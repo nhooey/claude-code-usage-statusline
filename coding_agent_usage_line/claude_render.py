@@ -4,12 +4,13 @@ All data and precomputed state arrive as arguments.  This module deliberately
 does not inspect transcripts, source caches, hook stdin/stdout, or rate state.
 """
 import os
-from typing import Optional
+import time
+from typing import Optional, Sequence, Tuple
 
 from . import formatting as fmt
 from .formatting import *
 from .claude_records import (CacheShares, Git, Limits, NO_CACHE_SHARES,
-                             Payload, Transcript)
+                             Payload, Transcript, eta_finish)
 
 def project_name(git: Git, project_dir: str) -> str:
     """The project name: basename of the MAIN repo root inside a repo, and the
@@ -555,9 +556,100 @@ def render_date(now: Optional[float] = None) -> str:
                          pad_val(11, time.strftime("%Y-%m-%d", t)), R)
 
 
+def eta_reading(eta, start_ms, now, status="running", end=None):
+    """(share done, seconds left) off the latest ETA and the elapsed time.
+
+    `eta` is (epoch, seconds left) off the last report — see eta_report — and
+    the reading counts it down from there rather than waiting for the next
+    one, which could be minutes off.  The report is an estimate of the WHOLE
+    run: the time already gone when it was written plus the time it said
+    was left.  The share done is the elapsed time over that total, and what
+    is left is the total less the elapsed time — negative once the run goes
+    past it.  `start_ms` is when the run began, in milliseconds: an agent's
+    task start, or the prompt the main thread's turn opened on.
+
+    () where there is no live estimate, which every reader draws as "?":
+    nothing reported yet, or a last report of zero — the skill's sign-off.
+    Whether a run that ended its answer is over is the transcript's call and
+    not the status's: live_eta clears the report of an answer that finished,
+    and keeps the one written in the very message that ended it, which is an
+    agent parking on background work while Claude Code calls it completed.
+    So a completed run with a report left counts down like a running one.  A
+    killed or failed run is read at its last record, and stops there.  None
+    where there is no transcript to report in at all (a shell, a remote
+    agent).
+    """
+    if eta is None:
+        return None
+    if not eta or not eta[1] > 0:
+        return ()
+    t = time.time() if now is None else now
+    if end is not None and status in ("killed", "failed"):
+        t = min(t, end)
+    try: t0 = float(start_ms) / 1000.0
+    except (TypeError, ValueError): t0 = None
+    at, said = eta
+    # A report older than the start is an agent Claude Code resumed after
+    # it wrote one, which restarts its startTime: the run is read from the
+    # report instead, or what is left would come out at more than it said.
+    if t0 is not None: t0 = min(t0, at)
+    total = said + (at - t0 if t0 is not None else 0.0)
+    gone = t - (t0 if t0 is not None else at)
+    return (min(1.0, max(0.0, gone / total)), total - gone)
+
+
+# An agent whose file has been silent this long no longer holds the status
+# line's ⛳ open.  A killed agent writes no end to its answer, and without
+# this its last estimate would count the session as late forever; half an
+# hour outlasts any tool call an agent is likely to be waiting inside.
+ETA_LIVE_S = 1800.0
+
+
+def inherit_eta(own: Tuple[float, ...], finishes: Sequence[float],
+                start_s: Optional[float]) -> Tuple[float, ...]:
+    """`own` ETA, pushed out to the latest of the descendants' `finishes`.
+
+    A task is not done until the children it is waiting on are, so its
+    finish is the MAXIMUM of its own and theirs — and its own wins when its
+    own work runs longer than any child's.  Each agent reports only its own
+    work (the skill says so); this is where the tree is summed.  Returned in
+    the (epoch, seconds left) shape eta_reading reads, measured from
+    `start_s` so the run's total comes out as finish less start.  `own` comes
+    back untouched when no descendant has an estimate, so its "?" and its
+    None survive.
+    """
+    ends = [f for f in finishes if f is not None]
+    mine = eta_finish(own) if own else None
+    if mine is not None:
+        ends.append(mine)
+    if not ends or (mine is not None and len(ends) == 1):
+        return own
+    at = start_s if start_s else (own[0] if own else max(ends))
+    return (at, max(ends) - at)
+
+
+def eta_fig(reading, w: int, digits: int = 3) -> str:
+    """⛳ and the time left, in a field of `w`: "?" with no live estimate,
+    an amber "+" past it, and nothing where there is no transcript at all.
+    See eta_reading for which is which."""
+    if reading is None:
+        return ""
+    if not reading:
+        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, DIM + F_CRM, pad_val(w, "?"), R)
+    left = reading[1]
+    if left < 0:
+        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, F_AMB,
+                               pad_val(w, "+" + dur_fmt(-left, digits)), R)
+    return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, mag_dim(left, MAG_DUR_S) + F_PRW,
+                           pad_val(w, dur_fmt(left, digits)), R)
+
+
 def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
                    now: Optional[float] = None,
-                   blocked_s: float = 0.0) -> str:
+                   blocked_s: float = 0.0, eta: Tuple[float, ...] = (),
+                   turn_s: float = 0.0,
+                   agent_etas: Sequence[Tuple[float, Optional[float]]] = ()
+                   ) -> str:
     """The session's clock, in the four fields the two rows below it use.
 
     It heads the column since the evening of 2026-09-16, to Neil's spec,
@@ -565,25 +657,31 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     and the marks are unchanged, and everything below that says "above"
     of the limit rows now means below.
 
-    THREE FIELDS THAT PARTITION THE WHOLE, then the whole.  🔧 is the part
-    spent inside a tool, 🤖 what answering is left once those seconds come
-    out — the machine actually thinking — and 👤 the part spent waiting for
-    someone to type.  They sum to Σ and none of them overlaps another, so
-    every second of the session is in exactly one of the three.  Σ closes the
-    row in the column 🔜 takes on the two rows below — the same kind of mark,
-    one that says what the figure after it measures rather than naming a
-    metric.  There is no account-wide time to put under 💳, which is why this
-    row does not carry that row's scopes.
+    ⛳ 🤖 🔧 🚦, to Neil's spec of 2026-09-26: the time the current turn
+    says it has left, then THREE FIELDS THAT PARTITION THE SESSION.  🤖 is what answering is
+    left once the tool seconds come out — the machine actually thinking — 🔧
+    the part spent inside a tool, and 🚦 the part spent waiting for someone
+    to type.  None overlaps another, so every second of the session is in
+    exactly one of the three.  The agent rows split an agent's ⌛ the same
+    three ways and in the same order, as Braille shares rather than figures:
+    see render_agent_split.  🚦 was 👤 until 2026-09-27, when the agent rows
+    took it too — an agent waits on more than a person.
 
-    THE ORDER IS THE MACHINE'S WORK FIRST AND THE PERSON'S WAIT LAST, which
-    is the order a reader asks for them: 🔧 then 🤖 are the two halves of
-    the same question — what was this session doing — and they belong beside
-    each other, where the pair can be read as a ratio without the wait
-    standing between them.  👤 is then the remainder, and it falls where a
-    remainder should: immediately before the Σ it completes.  The two limit
-    rows under it widen left to right instead, 🎤 to 🎮 to 💳, and the
-    columns do not have to agree about that — each row is one sequence and
-    only field 3, the duration, stacks across all three.
+    Σ, the session's age, closed the row until then.  It is the three summed,
+    so it said nothing the row does not; 🚦 took its field, the last, which
+    stacks over 🔜 below and is one column wider than a scope field.
+
+    ⛳ IS THE MAIN THREAD'S ETA for the turn it is answering — see
+    eta_reading and read_transcript, which clears it at a new prompt and
+    when the answer ends, so an idle session reads "?" rather than a stale
+    countdown or a made-up zero.  It counts from the prompt the turn
+    opened on (`turn_s`).  It is
+    INHERITED: the session is not done until every agent it has running is,
+    so the finish it counts to is the latest of the main thread's own and
+    every live agent's (`agent_etas`) — see inherit_eta.  An agent that
+    wrote nothing for ETA_LIVE_S is taken for dead rather than late.  The
+    FIELD widths stay by position: the third is LIM_ACCT_W so it stacks
+    over 💳 below, whichever mark it holds.
 
     "1.9h of work inside 19h, and 1.2h of the work was a shell" is a fact
     about how a day went that no one of the three states alone.
@@ -592,20 +690,21 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     transcript records a question put to the reader as a tool call like any
     other, and its span is the time they took to answer — so 🔧 counted the
     reader's own deliberation and reported it back to them as machine work.
-    `blocked_s` is that subset, and this row gives it to 👤, which already
-    means "waiting for a person".  It comes out of the busy clock in the same
-    move, so the three still sum to Σ.  Which tools those are, and why a
-    PERMISSION prompt is not one of them, is BLOCKING_TOOLS.
+    `blocked_s` is that subset, and this row gives it to 🚦, which already
+    means "waiting".  So is an Agent call, whose span is another agent
+    working.  It comes out of the busy clock in the same move, so the three
+    still partition the age.  Which tools those are, and why a PERMISSION
+    prompt is not one of them, is WAITING_TOOLS.
 
     🔧 IS TAKEN OUT OF 🤖 rather than nested inside it, and the difference
     is the question the row answers.  Nested, 🤖 stays "how much of the day
     was the machine busy" and 🔧 is a footnote to it.  Partitioned, 🤖
     becomes "how much of the day was the MODEL busy" — a different figure,
     and the one that moves when a session changes character: an hour of
-    dispatching agents and waiting on builds now reads as an hour of 🔧 and
-    a few minutes of 🤖, where before both cells simply said an hour.  The
-    tool seconds are this thread's and every agent's, nested tools counted
-    once; see scan_tool_spans.
+    waiting on builds now reads as an hour of 🔧 and a few minutes of 🤖,
+    where before both cells simply said an hour.  The seconds are this
+    thread's own, by the rule every agent row reads its agent by, and an
+    hour of waiting on agents is 🚦; see thread_clock.
 
     WHAT IT REPLACED.  🎤 stood in 🔧's field until 2026-09-25, holding how
     long the turn those rows report the cost of actually took.  It was scoped
@@ -615,7 +714,7 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     duration is still printed, on the cost line's own 🎤 row, next to the
     cost it qualifies, which is where it was always read from anyway.
 
-    THE THREE SCOPE FIGURES SPEND TWO DIGITS, Σ SPENDS THREE.  dur_fmt's
+    THE FIRST THREE FIGURES SPEND TWO DIGITS, 🚦 SPENDS THREE.  dur_fmt's
     digits=2 forbids the decimal outright, so 1.9h renders "2h" and 5.5d
     renders "6d" — a real loss of precision below ten, and the reason the
     argument is passed explicitly rather than inferred.  It is paid for
@@ -627,15 +726,11 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     that turn long?", "how much of the day was waiting?" — questions a
     rounded answer settles.
 
-    Σ keeps three digits because the last field is one column wider than a
-    scope field and can hold them, and because the session's own age is the one
-    duration on the row that gets read as a fact in its own right rather than
-    as scale for something else.  Its mark is padded to two columns by S_SUM
-    so it stacks over the 🔜 below it, and painted F_SUM — the grey that emoji
-    paints itself — rather than the row's own colour, so the mark recedes and
-    the figure carries the row, which is what the two rows below already do.
+    🚦 keeps three digits because the last field is one column wider than a
+    scope field and can hold them.  Its mark is two columns, as 🔜 below it
+    is, so the field is one shape on all three rows.
 
-    All three fields draw their zeros, 🔧 included: a session that has run
+    All three partition fields draw their zeros, 🔧 included: a session that has run
     no tool spent no time in one, and in a partition a zero IS the
     measurement.  (🎤 blanked instead, mark and all, because a turn that was
     never found is not a turn that took no time — the field had two empty
@@ -644,8 +739,8 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     Every figure on the row dims under MAG_DUR_S, ten minutes, and each on
     its own: 🔧 and 🤖 are the fields that flip in practice — ten minutes
     in tools, or ten minutes of thinking, is a session that has done
-    something — while Σ and 👤 pass the cut in the session's first minutes
-    and stay bright.  The 🔜 directly above
+    something — while 🚦 passes the cut in the session's first minutes and
+    stays bright.  The 🔜 directly above
     dims the other way, and deliberately: for a time-until it is the SMALL
     figure that matters (reset_dim).  The two rows agree on what bright
     means — the figure worth looking up for — and differ on which end of
@@ -671,16 +766,18 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     model_s = busy_s - wait - tool_s
     model_s = model_s if model_s > 0.0 else 0.0
 
-    def fig(mark: str, v: float, w: int = LIM_FIG_W) -> str:
+    def fig(mark: str, v: float, w: int = LIM_FIG_W, digits: int = 2) -> str:
         return "%s%s%s%s%s" % (mark, fmt.MARK_SP, mag_dim(v, MAG_DUR_S) + F_PRW,
-                               pad_val(w, dur_fmt(v, 2)), R)
+                               pad_val(w, dur_fmt(v, digits)), R)
 
-    return "%s%s %s %s %s%s%s%s%s%s%s" % (
-        S_IDLE, fig(E_TOOL, tool_s), fig(E_WORK, model_s),
-        fig(E_WAIT, idle, LIM_ACCT_W),
-        F_SUM, S_SUM, R, fmt.MARK_SP,
-        mag_dim(age, MAG_DUR_S) + F_PRW,
-        pad_val(RST_W - vis_width(S_SUM), dur_fmt(age)), R)
+    reading = eta_reading(inherit_eta(eta, [
+        f for f, last in agent_etas
+        if last is not None and t - last <= ETA_LIVE_S], turn_s),
+        turn_s * 1000.0 if turn_s else None, t)
+    return "%s%s %s %s %s" % (
+        S_IDLE, eta_fig(reading, LIM_FIG_W, 2),
+        fig(E_WORK, model_s), fig(E_TOOL, tool_s, LIM_ACCT_W),
+        fig(E_WAIT, idle, RST_W - vis_width(E_WAIT), 3))
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -892,7 +989,8 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         render_style(pay.output_style),
         render_model_cost(pay.model, pay.effort, pay.cost_usd),
         render_ctx(ctx_pct, tr.ctx_tokens),
-        render_elapsed(tr.busy_s, tr.start_s, tr.tool_s, now, tr.blocked_s),
+        render_elapsed(tr.busy_s, tr.start_s, tr.tool_s, now, tr.blocked_s,
+                       tr.eta, tr.turn_s, tr.agent_etas),
         render_date(now),
     ), rule=rule)
     limits_row = grid_row((

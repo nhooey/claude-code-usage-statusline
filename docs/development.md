@@ -142,13 +142,17 @@ them. `--selftest` and `tests/probe-advance.sh` need a real terminal tab.
 `tests/probe-advance.sh` in JediTerm and in Ghostty, with the result recorded
 in [Glyphs and terminals](glyphs-and-terminals.md).
 
-- The agent-panel type marks and state circles in `KIND_MARK` and
-  `STATE_MARK` (`claude_subagent_render.py`): 🎩 🔍 📐 📚 📟 🍴 🐚 🔗 🌐 🎎 and
-  🟢 🟡 🔵 🔴 ⚫. Unlike 🔧 and 👥, which are also `E_*` constants, they are
-  literals in those tables, so the probe does not see them until it is taught
-  to read the tables. 🟢 and 🟡 are Unicode 12, newer
-  than any other glyph on either readout. A wrong width here shifts one panel
-  row.
+- The agent-panel type marks in `KIND_MARK` (`claude_subagent_render.py`):
+  🎩 🔍 📐 📚 📟 🍴 🐚 🔗 🌐 🎎. Unlike 🔧 and 👥, which are also `E_*`
+  constants, they are literals in that table, so the probe does not see them
+  until it is taught to read it. A wrong width here shifts one panel row.
+- The agent-row state marks and 👶🏻, `E_PHASE_*`, `E_MODE_*` and `E_KIDS`:
+  🟢 🟡 ⚫, 💤 💻 📡 🥚 ✅ ❌ 🛑 and 👶🏻. They are `E_*` constants, so the next
+  probe run covers them. 🟢 and 🟡 are Unicode 12, newer than any other glyph
+  on either readout. 👶🏻 is a base and a skin-tone modifier, two codepoints:
+  two columns where the terminal folds clusters and four in JediTerm, which
+  `vis_width` already counts; an unprobed terminal that folds them is off by
+  two.
 - 🛫 `E_RATE` and the superscript digits `E_SUP_DIGITS` (the `⁵` in `O⁵`).
   Both are `E_*` constants, so the next probe run covers them. ¹ ² ³ ⁴ are
   East Asian Width Ambiguous; ⁴ appears on every Haiku 4.x row. A two-column

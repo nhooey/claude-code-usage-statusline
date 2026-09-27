@@ -1,0 +1,19 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode status --mark-spacing"
+  },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode subagent --mark-spacing"
+  },
+  "hooks": {
+    "Stop": [
+      { "hooks": [ {
+          "type": "command",
+          "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode cost --no-usage-text --force-newline --mark-spacing",
+          "timeout": 20
+      } ] }
+    ]
+  }
+}

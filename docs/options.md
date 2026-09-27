@@ -9,13 +9,14 @@ coding-agent-usage-line.py --selftest
 without it. Flags are validated before stdin is read, so a malformed hook
 command fails at once (exit 2) instead of waiting for input.
 
-A bare invocation draws everything. Every Claude display switch either removes
-something or changes spacing, so you only add flags to take things away.
+A bare invocation draws everything but the column rules. Every other Claude
+display switch either removes something or changes spacing, so apart from
+`--column-rules` you only add flags to take things away.
 
 | I want to… | Use |
 |---|---|
 | read a saved transcript by hand | `--transcript PATH`, plus `--mode cost --all` for every prompt |
-| plain gaps instead of the faint `\|` rules | `--no-column-rules` |
+| faint `\|` rules between the columns | `--column-rules` |
 | a tighter readout on a narrow terminal | `--no-mark-spacing` |
 | shorter cost-line labels | `--no-usage-text` |
 | see why a plan figure is blank | `--diagnose` |
@@ -75,7 +76,7 @@ used unless `--cols` is given.
 
 | Option | Modes | Effect |
 |---|---|---|
-| `--no-column-rules` | status | Drop the faint `\|` rules between the columns. Nothing moves. |
+| `--column-rules` | status | Draw faint `\|` rules between the columns. Nothing moves. |
 | `--no-mark-spacing` | all | Close the blank between a mark and its value. |
 | `--subscript-decimals` | all | Write fractions as subscript digits: `1.2٪` becomes `1₂٪`. |
 | `--color` | cost | Colour the rows. Off by default because the Stop hook's message is shown as plain text. |
@@ -88,7 +89,7 @@ used unless `--cols` is given.
 | `--prefix TEXT` | cost | The mark at the start of each row. Default `📊`. |
 | `--label TEXT` | cost | The label of the prompt row. Default `🎤 Usage: Prompt (last)`, or `🎤` with `--no-usage-text`. |
 
-`--column-rules` and `--mark-spacing` are the defaults and are accepted so a
+`--no-column-rules` and `--mark-spacing` are the defaults and are accepted so a
 settings file can say explicitly what it wants. A flag given for a mode it
 doesn't apply to is accepted and ignored. With `--agent codex` these flags are
 rejected as unknown options (exit 2), except `--prefix` and `--label`, which
@@ -101,9 +102,9 @@ narrow for the full readout. On the status line this narrows column 4 by four
 columns and column 3 by two:
 
 ```
-default   ⌛ 🔧  58m 🤖   3h 👤  6h Σ  9.3h
+default   ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h
           🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m
-tight     ⌛ 🔧 58m 🤖  3h 👤 6h Σ 9.3h
+tight     ⌛ ⛳   ? 🤖  3h 🔧58m 🚦5.5h
           🔋 🎤1.2٪ 🎮3.8٪ 💳15٪ 🔜6.7m
 ```
 
@@ -120,15 +121,15 @@ blank on the totals row beneath it. That column is what keeps the two rows
 stacked digit under digit, so it stays. The agent panel's rows have no mark
 spacing to close and don't change.
 
-It also turns off the column rules. See
+It also keeps the column rules off, even under `--column-rules`. See
 [Column rules](layout.md#column-rules).
 
-### `--no-column-rules`
+### `--column-rules`
 
-The rules are painted into gaps the grid leaves anyway, so turning them off
-changes the ink and nothing else. They are already off below 170 columns, when
-the width is unknown, and under `--no-mark-spacing`; the flag turns them off at
-the widths that would otherwise draw them.
+The rules are painted into gaps the grid leaves anyway, so turning them on
+changes the ink and nothing else. They stay off below 170 columns, when the
+width is unknown, and under `--no-mark-spacing`, even when asked for.
+`--no-column-rules` wins if both are given.
 
 ### `--subscript-decimals`
 
@@ -162,15 +163,15 @@ out keeps the panel's own row. What each cell means is covered in
 
 The payload carries each task's name, type, status, start time, model, effort
 and a running token count. Everything else — tokens, cache rate, context,
-cost, time inside tools, lines written and the plan-window shares — comes
-from the agent's own transcript,
+cost, time inside tools, lines written, the plan-window shares and the ETA
+the agent reported — comes from the agent's own transcript,
 `<session>/subagents/agent-<id>.jsonl`, with workflow agents one directory
 further down. A task with no transcript (a shell, a remote agent) shows only
 what the payload gives.
 
 The payload's `columns` is already net of the panel's own chrome: the `◯ `
 pointer before the row and two columns of padding after it. An agent started
-by another agent is drawn one level deeper, with `├ ` before its pointer. The
+by another agent is drawn one level deeper, with `├ ` or `└ ` before its pointer. The
 payload doesn't count those two columns, so the row makes itself two columns
 narrower for each level below the first (the depth is `spawnDepth` in the
 agent's `.meta.json` sidecar). That keeps every row's right-hand cells on the

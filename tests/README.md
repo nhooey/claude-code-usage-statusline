@@ -81,8 +81,8 @@ reaches by accident:
   real reading;
 - a repeated `requestId`, which must be counted once;
 - a question put to the user (`AskUserQuestion`) inside a turn, whose span
-  counts under 👤 rather than 🔧;
-- timestamps chosen so the ⌛ row's 🔧 🤖 👤 partition reads `58m 3h 6h` over
+  counts under 🚦 rather than 🔧;
+- timestamps chosen so the ⌛ row's 🔧 🤖 🚦 partition reads `58m 3h 6h` over
   a 9.3-hour session.
 
 ## Status cases
@@ -112,14 +112,14 @@ unknown (108 goldens), then:
 | `dirty-01@*` | `01-baseline` inside the dirty repo: 🍂 and `✱` |
 | `stale-plan-*@196` | an explicitly selected `cmd:` source replaces the native reading the main loop left in the cache |
 | `tight-*@*` | `--no-mark-spacing` |
-| `norules-*@196` | `--no-column-rules`; byte-identical to the ruled goldens once the `\|` are spaces |
+| `rules-*@196` | `--column-rules`; the same text as the unruled goldens once the `\|` are spaces |
 | `straddle-02@196` | a 5-hour window that opened inside the last turn |
 | `uncalibrated-02@196` | a reading too coarse to calibrate window shares from |
 | `subdec-*@*` | `--subscript-decimals` |
 | `model-fable@196`, `model-mythos@196` | model families other than Opus, Sonnet and Haiku in the 🤖 cell |
 
-Only 196 is wide enough for the column rules (the cut-off is 170), so every
-ruled golden is an `@196`.
+The column rules are opt-in, and only 196 is wide enough for them (the cut-off
+is 170), so the two `rules-*@196` goldens are the only ruled ones.
 
 The main loop runs with `--usage-source auto`. `01-baseline` carries native
 `rate_limits`, which are cached for 60 seconds, so later payloads without their
@@ -163,18 +163,19 @@ These pin values rather than rows, so they assert instead of comparing files.
 
 - **`agents.py`** — reading agent files, pricing each request at its own model,
   folding agent spend into the turn that spawned it, the 👥 row for spend that
-  lands after its turn printed, and the ⌛ partition across main thread and
-  agents (a question asked on the main thread that overlaps an agent's tool
-  call counts once).
+  lands after its turn printed, and the ⌛ partition of the main thread's own
+  time (agents' work stays on their rows; a question, or an Agent call, is
+  waiting; a call still running counts to now on a live session).
 - **`subagent.py`** — `--mode subagent`: finding an agent's file (directly
   under `subagents/`, or under `subagents/workflows/*/`), deduplicating
-  requests, lines written, tool time including descendants, 5-hour and weekly
-  shares, and the row's shape as stripped text. It checks that a nested row
+  requests, lines written, the agent's own ⌛ 🤖 🔧 🚦 split (a coordinator
+  parked on its agents keeps its ⌛ running and reads the wait as 🚦), 5-hour
+  and weekly shares, and the row's shape as stripped text. It checks that a nested row
   pays two columns per level for the `├ ` the panel draws, so every depth ends
   on the same column.
 - **`rate.py`** — the 🛫 sampler against a stepped clock (tick, history
   depth, a damaged history file) and its cell; column 3's 📖 📝 shares and
-  🧠's alignment; the per-kind brightness cuts; and the ⌛ row's 🔧 🤖 👤
+  🧠's alignment; the per-kind brightness cuts; and the ⌛ row's 🔧 🤖 🚦
   partition of Σ, with and without a blocking question.
 - **`usage-source.py`** — the Claude Usage Tracker reader, `cmd:` sources,
   normalization, and the scoped cache. Its fixture store is the tracker's

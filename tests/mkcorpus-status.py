@@ -48,7 +48,7 @@ import time
 PIN_NOW = 1786847000
 
 # The session's whole span, and how much of it was spent answering.  Both are
-# READINGS on the ⌛ row -- Σ 9.3h against 🤖 3.8h and 👤 5.5h -- so they are
+# READINGS on the ⌛ row -- Σ 9.3h against 🤖 3.8h and 🚦 5.5h -- so they are
 # picked to be three visibly different numbers rather than three that could be
 # confused for each other if the row ever lost a field.
 AGE_S = 33480          # 9.3h: the first record's distance before PIN_NOW
@@ -78,7 +78,7 @@ def answer(before, rid, fresh, cw, cr, out, text=None, sidechain=False,
     were and only the duration moves.
 
     `ask` does the same for a tool that is a QUESTION put to the user, which
-    is the case ⌛'s 🔧 hands to 👤 rather than counting: see
+    is the case ⌛'s 🔧 hands to 🚦 rather than counting: see
     BLOCKING_TOOLS in the program.
     """
     blocks = [{"type": "text", "text": text}] if text is not None else []
@@ -176,7 +176,7 @@ def main_session():
             # tool by the transcript's reckoning, 300 seconds of somebody
             # reading by anyone else's.  It sits clear of that turn's Bash
             # call, so the case is the plain one — 🔧 unmoved at 58m, and
-            # the 300 seconds off 🤖 and onto 👤, which takes that field
+            # the 300 seconds off 🤖 and onto 🚦, which takes that field
             # from 5h to 6h.  The overlapping case, where a question runs
             # THROUGH a tool and net_tool_seconds has to subtract one union
             # from another, is pinned in tests/agents.py where it can be
@@ -259,10 +259,9 @@ AGENT_FILES = {
             dict(answer(2800, "req-fk1", 40, 6000, 80000, 2000,
                         tool="tu-fk"),
                  isSidechain=True),
-            # The fork's own tool, 2800 -> 2700.  It runs INSIDE the 3000 ->
-            # 2400 span its Task already claimed on the main thread, so the
-            # union must still read 600 seconds and not 700: see
-            # scan_tool_spans on why the recursion needs no special case.
+            # The fork's own tool, 2800 -> 2700.  It is the fork's time and
+            # not the main thread's, which reads its own file alone (see
+            # thread_clock), so ⌛'s 🔧 reads 58m with or without it.
             {"type": "user", "isSidechain": True, "timestamp": iso(2700),
              "message": {"content": [{"type": "tool_result",
                                       "tool_use_id": "tu-fk",

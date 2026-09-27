@@ -148,6 +148,15 @@ def asks(minute, rid, *ids, **kw):
     return r
 
 
+def delegates(minute, rid, *ids, **kw):
+    """The same, for a tool that starts an AGENT.  Its span is another
+    thread working, which is the caller's \U0001F6A6 and not its \U0001F527."""
+    r = calls(minute, rid, *ids, **kw)
+    for b in r["message"]["content"]:
+        b["name"] = "Agent"
+    return r
+
+
 def result(minute, *ids, **kw):
     """The results that answer them, by id.  A turn ends on one of these, so
     the shape is the tool_result shape is_work already knows: a LIST."""
@@ -300,10 +309,10 @@ def run(tmp):
           (int(2300 + 0.1 * (50000 + 60000 + 3000)), 1030))
     check("status 🧠 does not", st.ctx_tokens, 61000)
 
-    print("--- the clock counts the agents too ---")
+    print("--- the clock is the main thread's own ---")
     # The main thread answers for a minute and then waits: everything after
-    # is the agents working, and a 🤖 read off the main file alone would call
-    # that hour idle.
+    # is the agents working, on their own rows, and the main thread waiting
+    # on them, which is its \U0001F6A6.
     busy = session(tmp, "busy", [prompt(10, "go", "p1"),
                                  answer(11, "m1", 10, 0, 0, 10),
                                  tool_result(11, "p1")], agents=[
@@ -316,17 +325,10 @@ def run(tmp):
                       agent_user(57, "p2"),            # resumed by a later
                       agent_answer(59, "b-a4", 10, 0, 0, 10)]), # turn
     ])
-    check("the main thread alone is its one minute",
-          round(sl.read_transcript(busy, ()).busy_s), 60)
-    check("with the agents it is the union of every working span, never "
-          "their sum: 10-50 ran together, then 52-55 and 57-59",
-          round(sl.read_transcript(busy).busy_s), (40 + 3 + 2) * 60)
-    check("the walk hands back the spans it saw, one per agent TURN, so a "
-          "resumed agent is not charged for the wait between them",
-          (lambda sp: (sl.agent_records(busy, spans=sp),
-                       (len(sp), sorted(round((b - a) / 60) for a, b in sp))))(
-              [])[1],
-          (4, [2, 3, 29, 30]))
+    check("its busy clock is its one minute, whether or not the agents' "
+          "files are read: their work is on their rows",
+          [round(sl.read_transcript(busy, a).busy_s) for a in (None, ())],
+          [60, 60])
     check("overlapping spans merge and disjoint ones add",
           (sl.union_seconds(((0, 10), (5, 20), (30, 40))),
            sl.union_seconds(()), sl.union_seconds(((7, 7), (9, 3)))),
@@ -371,19 +373,17 @@ def run(tmp):
                       result(58, "u2"),
                       agent_answer(59, "c2", 10, 0, 0, 10)]),
     ])
-    check("the agent that its Task waited on adds nothing — its tools ran "
-          "inside the span the Task already claimed — and the background "
-          "one, which ran after its result came back, adds all of its own",
-          round(sl.read_transcript(nest).tool_s / 60), 29 + 8)
-    check("the main thread alone sees only what its own file pairs",
-          round(sl.read_transcript(nest, ()).tool_s / 60), 29)
+    check("an agent's tools are on its row, foreground or background: the "
+          "main thread's \U0001F527 is what its own file pairs",
+          [round(sl.read_transcript(nest, a).tool_s / 60) for a in (None, ())],
+          [29, 29])
     check("and tool time never outruns the busy clock it is a part of",
           (lambda t: t.tool_s <= t.busy_s)(sl.read_transcript(nest)), True)
     check("no transcript, no tool time", sl.EMPTY_TRANSCRIPT.tool_s, 0.0)
 
     # A question put to the user is a tool call in the transcript and a
     # person reading in fact.  It comes out of \U0001F527 and, at the row, out of
-    # \U0001F916 and into \U0001F464 -- see BLOCKING_TOOLS.
+    # \U0001F916 and into \U0001F6A6 -- see BLOCKING_TOOLS.
     ask = session(tmp, "ask", [
         prompt(10, "go", "p1"),
         calls(11, "m1", "t1"),
@@ -405,6 +405,30 @@ def run(tmp):
           "busy clock keeps it", round(t.busy_s / 60), 40)
     check("no blocking prompt, nothing to report",
           sl.read_transcript(nest).blocked_s, 0.0)
+
+    # An Agent call is the caller waiting on another thread: out of
+    # \U0001F527 and into the waiting subset, as a question is.
+    dl = session(tmp, "delegate", [
+        prompt(10, "go", "p1"),
+        calls(11, "m1", "t1"),
+        result(15, "t1"),                   # a real tool: four minutes
+        delegates(20, "m2", "a1"),
+        result(50, "a1"),                   # an agent: thirty, and waiting
+    ])
+    t = sl.read_transcript(dl)
+    check("an agent the thread started is waiting, not tool time, and the "
+          "busy clock still holds both",
+          (round(t.tool_s / 60), round(t.blocked_s / 60), round(t.busy_s / 60)),
+          (4, 30, 40))
+    live = session(tmp, "inflight", [
+        prompt(10, "go", "p1"), calls(11, "m1", "t1"), delegates(12, "m2", "a1")])
+    check("a call still waiting on its result runs to now on a live session, "
+          "and not on an offline read; where the two overlap, waiting wins, "
+          "as a question inside a tool does",
+          [(round(x.tool_s / 60), round(x.blocked_s / 60)) for x in (
+              sl.read_transcript(live, (), now=sl.ts_epoch(ts(20))),
+              sl.read_transcript(live, ()))],
+          [(1, 8), (0, 0)])
     check("net_tool_seconds subtracts measures, not intervals: a subset "
           "that straddles two spans still comes out once",
           sl.net_tool_seconds(((0, 10), (20, 30)), ((5, 8),)), 17.0)

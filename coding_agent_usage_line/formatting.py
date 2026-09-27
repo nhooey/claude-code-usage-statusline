@@ -134,15 +134,22 @@ E_STY = "🎨"           # output style
 E_SUM = "\u03a3"       # Greek capital sigma, ONE column — the n-ary summation
                        # U+2211 sits inside the 2190-2BFF range this file
                        # treats as unmeasurable, and the column matters here
-E_WAIT = "👤"          # time the session spent waiting for a person
+E_WAIT = "🚦"          # time spent waiting: on the status line, for a
+                       # person; on an agent row, for anything that is
+                       # neither the model nor a tool.  A light held at red
+                       # says "stopped, not by choice" without saying on
+                       # whom, which 👤 did and an agent's wait is not.
+                       # It was 👤 until 2026-09-27.  U+1F6A6, Unicode 6.0,
+                       # one codepoint, Emoji_Presentation=Yes, EAW W.
 E_WORK = "🤖"          # time it spent answering
 E_TOOL = "🔧"          # of that answering, the part spent inside a
                        # tool rather than waiting on a model.  A spanner is
                        # the picture every harness already uses for the
                        # things a model can reach for, and it is the ONE
                        # glyph on the ⌛ row that names a mechanism rather
-                       # than a party: 👤 and 🤖 say WHO the seconds
-                       # belonged to, 🔧 says what they were spent doing.
+                       # than a party or a state: 🤖 says WHO had the
+                       # seconds and 🚦 that nobody did, 🔧 says what they
+                       # were spent doing.
                        #
                        # It is read as a subset of the 🤖 beside it, never
                        # as a third slice of Σ — see read_transcript — so
@@ -168,7 +175,8 @@ E_TIME = "🕐"          # wall clock.
                        # across the row went wrong too, which corroborates it.
                        # Neither symptom is a width error, so neither shows up
                        # in the probe: the only detector is the eye.
-E_IDLE = "⌛"          # time since either side last wrote.  An hourglass reads
+E_IDLE = "⌛"          # the ⌛ row's head, and on an agent row the agent's
+                       # age, which its 🤖 🔧 🚦 gauges split.  An hourglass reads
                        # as elapsed time as plainly as the ⏱ it replaced, and
                        # advances two columns where ⏱ advances one — which
                        # retired the last EAW_NARROW entry the layout depended
@@ -695,9 +703,9 @@ RST_W = 6              # the countdown/elapsed field — column 4's LAST, shared
                        # by 🔋 📆 ⌛ so the three durations line up down it.
                        # Two columns of mark and four of figure, dur_fmt's
                        # widest at the default three digits ("5.8d").  🔜
-                       # measures two; Σ measures one and is padded to two by
-                       # S_SUM, so the field is one shape on all three rows and
-                       # begins on one column.
+                       # and 🚦, which holds it on the ⌛ row since Σ left it
+                       # on 2026-09-26, both measure two, so the field is one
+                       # shape on all three rows and begins on one column.
                        #
                        # It led the column until 2026-08-28.  The argument for
                        # that was real — a countdown asks the same question as
@@ -832,7 +840,7 @@ CACHE_WARN, CACHE_CRIT = 80, 50    # cache hit %: ≤ WARN amber, ≤ CRIT red
 MAG_TOK = 100000       # 🧩's ▴ and ▾, 🧠's size, both readouts
 MAG_RATE = 1000.0      # 🛫 tokens per second
 MAG_COST = 1.0         # 💰 dollars
-MAG_DUR_S = 600.0      # ⌛ seconds: 🎤 👤 🤖 Σ, and an agent's clock
+MAG_DUR_S = 600.0      # ⌛ seconds: 🎤 🚦 🤖 Σ, and an agent's ⌛ and gauges
 MAG_DIFF = 100         # 💾 lines, each half on its own
 MAG_SHARE_TURN = 1.0   # ٪ of the WEEK: 🎤 on both limit rows
 MAG_SHARE_SESS = 5.0   # ٪ of the WEEK: 🎮 on both limit rows
@@ -893,7 +901,7 @@ C_ELAPSED = 9  # ⌛🤖 + a duration.  BOTH rows are robot time: this prompt's
                # and was the wrong total for the row it was on — everything
                # else here totals what the prompts above it did, and an age
                # totals what the clock did.  The 🤖 says which of the two
-               # this is, against the status line's ⌛ Σ 👤 🤖, where all
+               # this is, against the status line's ⌛ Σ 🚦 🤖, where all
                # three are on show and only one of them is this one.
 C_STAMP = 13   # 📅 + "2026-08-22" above 🕐 + a clock padded to the same ten,
                # so the date and the time it belongs to share a right edge
@@ -1026,6 +1034,67 @@ _LABEL_W = max(len(x) for x in _LABELS)
 E_ROW_PROMPT = E_TURN         # 🎤  the prompt just answered
 E_ROW_TOTAL = E_SESSION       # 🎮  the session tally
 E_ROW_COMPACT = "\U0001F90F"  # 🤏  the compaction
+# The agent panel's tree, drawn again beside an agent row's right group.
+# These break rule 2 in docs/glyphs-and-terminals.md on purpose: they are
+# Ambiguous, and they are the panel's own glyphs. Claude Code draws them
+# one column wide at the left edge of every agent row, and tree_cols
+# already bets on that. A copy in different glyphs would read as a second
+# tree and not the same one.  Named E_* so probe-advance.sh measures them.
+E_TREE_NODE = "◯"        # ◯  an agent
+E_TREE_OPEN = "⏺"        # ⏺  an agent whose children are showing: the
+                         #    panel expands only the selected row
+E_TREE_MID = "├"         # ├  a child with a sibling after it
+E_TREE_END = "└"         # └  the last child
+E_TREE_BAR = "│"         # │  an ancestor whose siblings go on below
+# An agent row's state, in two marks: a circle for its phase and a mark for
+# what it is doing in it.  Claude Code's own status says completed for an
+# agent that has finished and for one that ended its turn to wait on
+# something, and the one question a person asks of a row is which.  Every
+# mark here is one codepoint, Emoji_Presentation=Yes, EAW W.
+E_PHASE_RUN = "🟢"       # 🟢  running: it has the floor
+E_PHASE_PAUSE = "🟡"     # 🟡  paused: not started yet, or waiting to resume
+E_PHASE_END = "⚫"       # ⚫  ended, and waiting on nothing
+# Running, the ⌛ split's own marks: E_WORK, E_TOOL, E_WAIT.
+E_MODE_AGENTS = "💤"     # 💤  paused on agents it started
+E_MODE_SHELL = "💻"      # 💻  paused on a background shell; not 🐚, which
+                         #    a shell's own row wears as its kind
+E_MODE_MONITOR = "📡"    # 📡  paused on a Monitor
+E_MODE_QUEUED = "🥚"     # 🥚  not started: Claude Code's pending
+E_MODE_DONE = "✅"       # ✅  completed
+E_MODE_FAILED = "❌"     # ❌  failed
+E_MODE_KILLED = "🛑"     # 🛑  killed
+E_KIDS = "\U0001F476\U0001F3FB"  # 👶🏻  how many agents hang under it on the
+                         #    panel.  The light tone, for its contrast on a
+                         #    dark background, and so the one mark here that
+                         #    is TWO codepoints, against rule 2 in
+                         #    docs/glyphs-and-terminals.md: a terminal that
+                         #    folds clusters (tmux, iTerm2, Ghostty) draws one
+                         #    baby in two columns; JediTerm draws 👶 and a
+                         #    swatch in four.  vis_width counts each by its
+                         #    profile, so the columns hold on both; an
+                         #    unprobed terminal is counted as four.
+E_ETA = "\u26F3"         # ⛳  how long an agent says it has LEFT, off the
+                         #    last report the coding-agent-usage-line-report-eta
+                         #    skill had it write.  That report opens with 🏁
+                         #    (E_ETA_REPORT); the readout draws the golf flag,
+                         #    at Neil's ask of 2026-09-27.  U+26F3, Unicode
+                         #    5.2, one codepoint, Emoji_Presentation=Yes, EAW W.
+E_ETA_REPORT = "\U0001F3C1"  # 🏁  the flag the skill's report line opens with,
+                         #    which ETA_LINE forgives the absence of
+E_MODE_ETA = E_ETA       # ⛳  paused on nothing it can name, but its last
+                         #    message said how long it has left
+# The gauge after each of an agent row's 🤖 🔧 🚦: that mark's share of the
+# agent's ⌛, as a bar of GAUGE_W Braille cells that uses only the middle
+# two dot rows — two dots a column, 4 * GAUGE_W dots in all.  The top and
+# bottom rows stay empty, so a gauge never touches the one on the row above
+# or below it; the full 2x4 cells that held this slot before the ▰▰▰▱ bar
+# ran into each other down the panel.  E_GAUGE is one cell's steps, 0 to 4
+# dots: each column fills its lower dot, then its upper, left column first.
+# Braille is Neutral and breaks rule 2 in docs/glyphs-and-terminals.md the
+# way the tree glyphs do, but it has no emoji form for a terminal to widen,
+# and U+2800, the empty cell, keeps the gauge's width at a zero share.
+E_GAUGE = "⠀⠄⠆⠦⠶"
+GAUGE_W = 2
 E_ROW_AGENTS = "\U0001F465"   # 👥  agent spend the 🎤 row cannot carry.
                               # Emoji_Presentation=Yes and a single code
                               # point, chosen for that.  Measured 2026-09-12
@@ -1411,7 +1480,7 @@ S_SUM = E_SUM + " "
 #
 # The two limit rows fill all three scopes.  The ⌛ row fills 🎤 with the
 # turn's own wall-clock time, and its other two scope fields are positional
-# rather than scoped: 👤 and 🤖 split the session age that field 3 states,
+# rather than scoped: 🚦 and 🤖 split the session age that field 3 states,
 # and there is no account-wide time to put under 💳.  That is the same
 # compromise the row made before this change, one field wider.
 #

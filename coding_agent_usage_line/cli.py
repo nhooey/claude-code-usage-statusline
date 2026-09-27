@@ -33,7 +33,7 @@ Shared options:
   --diagnose             Redacted source/coverage diagnostics on stderr.
 
 Claude display options:
-  --color, --no-column-rules, --no-totals, --no-right-align,
+  --color, --column-rules, --no-totals, --no-right-align,
   --no-account-totals, --no-datetime, --no-usage-text, --force-newline,
   --mark-spacing/--no-mark-spacing, --subscript-decimals.
 

@@ -20,9 +20,10 @@ Claude sections come first; [Codex](#codex) is at the end.
 | 🔋 🪫 🎤 🎮 window shares | status, cost, panel | Estimated: cost spent inside the window, divided by a calibrated dollars-per-percent. See [plan-window shares](#plan-window-shares). | yes |
 | 💳 account % | status, cost | The usage source's plan reading. See [usage sources](usage-sources.md). | — |
 | 🔜 reset | status | The usage source's reset time for that window. | — |
-| ⌛ 🔧 🤖 👤 Σ | status | Timestamps in the transcript and agent files. See [time](#time). | yes |
+| ⌛ 🤖 🔧 🚦 | status | Timestamps in the main thread's own transcript. See [time](#time). | no: an agent's time is on its row |
+| ⛳ | status, panel | The last ETA the main thread reported in the current answer, or the agent's last, pushed out to the latest of any running descendant's. See [ETA](layout.md#eta). | yes, descendants |
 | ⌛🤖 | cost | The turn's wall-clock answering time, tool calls included. The totals row sums the turns. | no |
-| 🔧 🤖 | panel | The agent's time inside tools (its descendants' included), and the rest of its run. | yes, descendants |
+| ⌛ 🤖 🔧 🚦 | panel | ⌛ is the agent's age. 🤖 🔧 🚦 are gauges of its share, by the status line's rule. See [time](#time). | no |
 | 💾 diff | status | Claude Code's `cost.total_lines_added` / `total_lines_removed`. | as Claude Code reports it |
 | 💾 diff | panel | Lines in the agent's own Edit patches and new-file Writes. | the agent's own |
 
@@ -154,11 +155,8 @@ not change the turn's 🧠 reading or its end time, because agents have their
 own windows and run in parallel with the answer.
 
 **Agent-panel rows** read one agent's own transcript: its tokens, cost,
-context, cache rate and diff are its own and do not include its children. The
-exception is 🔧, which follows `parentAgentId` down the tree and includes
-every descendant's tool time (unioned, so a child waited on inside its
-parent's Task call counts once). The row's 🤖 is the agent's run time minus
-that 🔧.
+context, cache rate, diff and time are its own and do not include its
+children. See [time](#time) for how the row splits ⌛.
 
 ### The 👥 row
 
@@ -197,33 +195,52 @@ agent spend the 🎤 row cannot carry, so the rows above 🎮 add up to it.
 
 ## Time
 
-The status line's ⌛ row splits the session's age, Σ, into three parts that
-do not overlap and add up to Σ:
+The status line's ⌛ row and every agent row split one thread's age by the
+same rule (`thread_clock`), reading that thread's own transcript alone:
 
 | Mark | Meaning | How it is measured |
 |---|---|---|
-| 🔧 | inside a tool | Every tool call's span, from the assistant record that asks for it to the `tool_result` with the matching `tool_use_id`. |
-| 🤖 | waiting on the model | Busy time minus 🔧. |
-| 👤 | waiting on you | Σ minus busy time, plus the time spent in questions put to you. |
-| Σ | session age | Now minus the first timestamped record. |
+| 🤖 | the model thinking | Its working spans, minus every tool call it made. |
+| 🔧 | inside a tool | Its tool calls, from the assistant record that asks for one to the `tool_result` with the matching `tool_use_id`, minus the waiting calls below. |
+| 🚦 | waiting | Everything else: on you to type or to answer, on an agent it started, or parked until something wakes it. |
 
-**Busy time** is the union of every turn's span (opener to last answer record)
-on the main thread and in every agent file. Spans are unioned, never summed:
-five agents working the same ten minutes are ten minutes of the session. An
-agent resumed later by `SendMessage` contributes two spans, not one long one.
-Folding agent spans in matters because a main thread that dispatches agents
-and waits writes nothing to its own file while they work.
+The three do not overlap and add up to the age exactly. **The thread's age**
+is now minus its first timestamped record. For an agent it is the earlier of
+its first record and the task's `startTime`, because Claude Code restarts
+`startTime` when it resumes an agent. It runs to now while the agent is
+running or parked, and stops at its last record once it has finished.
+**Parked** means Claude Code marks the agent completed, but its last message
+still carries a live ETA, or an agent under it on the panel is still running.
 
-**Tool spans** are unioned the same way. An agent's own tool calls already fall
-inside its parent's Task span; a background agent's do not, because its Task
-call returns at once, so its tools are counted from its own file.
+**Working spans** run from the record that opens an answer to the last
+record it produced. An agent's span closes when its answer ends its turn, so
+one resumed later by `SendMessage` contributes two spans, and the wait
+between them is 🚦. Spans are unioned, never summed.
 
-**Questions put to you** are tool calls whose result is your answer:
-`AskUserQuestion` and `ExitPlanMode` (`BLOCKING_TOOLS`, matched by name).
-Their spans move from 🔧 and 🤖 to 👤. The subtraction is
-`union(all tool spans) − union(blocking spans)`, which is exact because the
-blocking spans are a subset. Permission prompts are not moved: nothing in the
-transcript marks one, and a tool that waited for approval did hold up the turn.
+**Waiting calls** are tool calls whose span is someone else's time
+(`WAITING_TOOLS`, matched by name). `AskUserQuestion` and `ExitPlanMode` are
+you reading. `Agent` and `Task` are another agent working, whose time is on
+its own row. The subtraction is `union(all tool spans) − union(waiting
+spans)`, which is exact because the waiting spans are a subset. Where a
+waiting call overlaps an ordinary one, the overlap is waiting. Permission
+prompts are not moved: nothing in the transcript marks one, and a tool that
+waited for approval did hold up the thread.
+
+**A call still running** counts to now: a running agent's, and the main
+thread's on a live status line. An offline `--transcript` read counts only
+calls that returned, as does an agent that has finished.
+
+**Why its own thread alone.** Until 2026-09-27 the status line unioned every
+agent's spans into its busy clock, and an agent row added its children's
+tool time to its 🔧. A coordinator parked on five background agents then read
+as fully busy the whole time it sat waiting on them. Waiting on an agent is
+now 🚦 on both readouts, and the agent's work shows on its own row.
+
+On an agent row the split is drawn as three Braille gauges of ⌛ rather than
+as figures. They hold eight dots between them, shared by largest remainder,
+and a share of at least 1% always gets a dot. The figures come off records
+and ⌛ off the clock as well, so they can overrun it by a moment. The shares
+are then of their sum.
 
 The cost line's ⌛🤖 is simpler: the turn's span from opener to last answer
 record, tool calls included, and on the totals row the sum of the turns' spans.
