@@ -156,7 +156,7 @@ def agent_says(minute, text, second=0):
     return r
 
 
-ETA = "\U0001F3C1 skills/coding-agent-usage-line-report-eta: ETA "
+ETA = "\u26F3 skills/coding-agent-usage-line-report-eta: ETA "
 
 
 def write_jsonl(path, records):
@@ -553,6 +553,12 @@ def run(tmp):
                                "skills/coding-agent-usage-line-report-eta: ETA "
                                + d}]}}])[1:] for d in ("6h30m", "1h 5m", "2m30s")],
           [(23400.0,), (3900.0,), (150.0,)])
+    check("the 🏁 the skill asked for before ⛳ is still read",
+          sl.eta_report([{"type": "assistant", "timestamp": ts(11),
+                          "message": {"content": [{"type": "text", "text":
+                              "\U0001F3C1 skills/coding-agent-usage-line-"
+                              "report-eta: ETA 4m"}]}}])[1:],
+          (240.0,))
     check("no report is (), and no transcript is None",
           (sl.read_agent_usage(sl.agent_file_for(et, "n")).eta,
            sl.read_agent_usage("").eta),

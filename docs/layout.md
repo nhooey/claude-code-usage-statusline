@@ -484,16 +484,17 @@ its 🚦.
 An agent reports how long it has left by writing a line of its own:
 
 ```
-🏁 skills/coding-agent-usage-line-report-eta: ETA 4m
+⛳ skills/coding-agent-usage-line-report-eta: ETA 4m
 ```
 
 The `coding-agent-usage-line-report-eta` skill, in `skills/` in this
 repository, tells it when: once it has a plan, after each milestone, and
 whenever the estimate moves by a quarter or more. The row reads the last such
 line from the text of the agent's own messages, so a tool result that quotes
-one isn't counted. The skill's path is the part matched; the 🏁 is there so
+one isn't counted. The skill's path is the part matched; the ⛳ is there so
 a person scrolling the transcript notices the line, and may be left off. The
-readout draws the time left under ⛳, not 🏁.
+🏁 the skill asked for before ⛳ is read as well. The readout draws the time
+left under the same ⛳.
 
 A report is an estimate of the whole run: the time already gone when it was
 written, plus the time it said was left. The row counts it down between

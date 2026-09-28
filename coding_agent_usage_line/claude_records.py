@@ -984,10 +984,11 @@ def turn_model_s(t: Turn) -> float:
 
 # The skill that has an agent report its ETA, and the line it has it write:
 #
-#     🏁 skills/coding-agent-usage-line-report-eta: ETA 4m
+#     ⛳ skills/coding-agent-usage-line-report-eta: ETA 4m
 #
 # The skill's path is the part matched, so the line says where it comes from
-# to anyone who searches for it; the flag is for the eye and may be missing.
+# to anyone who searches for it; the flag is for the eye and may be missing,
+# and the 🏁 the skill had it write before ⛳ is read as well.
 # Backticks and bold around the line are forgiven, since a model shown the
 # line in a code block will sometimes write it back in one.  The skill's own
 # text writes `<number>` where the figure goes, so loading it into a
@@ -998,8 +999,8 @@ def turn_model_s(t: Turn) -> float:
 ETA_SKILL = "coding-agent-usage-line-report-eta"
 ETA_PART = r"\d+(?:\.\d+)? ?[smh]"
 ETA_LINE = re.compile(
-    r"^[ \t`*]*(?:%s[ \t]*)?skills/%s: ETA (%s(?:[ \t]*%s)*)[ \t`*]*$"
-    % (E_ETA_REPORT, re.escape(ETA_SKILL), ETA_PART, ETA_PART), re.MULTILINE)
+    r"^[ \t`*]*(?:[%s%s][ \t]*)?skills/%s: ETA (%s(?:[ \t]*%s)*)[ \t`*]*$"
+    % (E_ETA_REPORT, E_ETA_REPORT_OLD, re.escape(ETA_SKILL), ETA_PART, ETA_PART), re.MULTILINE)
 ETA_SPLIT = re.compile(r"(\d+(?:\.\d+)?) ?([smh])")
 ETA_UNIT_S = {"s": 1.0, "m": 60.0, "h": 3600.0}
 

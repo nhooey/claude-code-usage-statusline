@@ -1084,12 +1084,16 @@ E_KIDS = "\U0001F476\U0001F3FB"  # 👶🏻  how many agents hang under it on th
                          #    unprobed terminal is counted as four.
 E_ETA = "\u26F3"         # ⛳  how long an agent says it has LEFT, off the
                          #    last report the coding-agent-usage-line-report-eta
-                         #    skill had it write.  That report opens with 🏁
-                         #    (E_ETA_REPORT); the readout draws the golf flag,
-                         #    at Neil's ask of 2026-09-27.  U+26F3, Unicode
-                         #    5.2, one codepoint, Emoji_Presentation=Yes, EAW W.
-E_ETA_REPORT = "\U0001F3C1"  # 🏁  the flag the skill's report line opens with,
+                         #    skill had it write.  The readout draws the golf
+                         #    flag, at Neil's ask of 2026-09-27, and the report
+                         #    opens with it too, at his ask of 2026-09-28.
+                         #    U+26F3, Unicode 5.2, one codepoint,
+                         #    Emoji_Presentation=Yes, EAW W.
+E_ETA_REPORT = E_ETA     # ⛳  the flag the skill's report line opens with,
                          #    which ETA_LINE forgives the absence of
+E_ETA_REPORT_OLD = "\U0001F3C1"  # 🏁  the flag it opened with before
+                         #    2026-09-28, still read, so an agent that loaded
+                         #    the skill earlier keeps its row counting down
 E_MODE_ETA = E_ETA       # ⛳  paused on nothing it can name, but its last
                          #    message said how long it has left
 # The gauge after each of an agent row's 🤖 🔧 🚦: that mark's share of the

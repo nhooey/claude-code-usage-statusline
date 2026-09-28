@@ -8,7 +8,7 @@ description: Report a running ETA while working on any task expected to take mor
 Say how long your task has left by writing this line on its own, outside any
 code block or quote:
 
-    🏁 skills/coding-agent-usage-line-report-eta: ETA <number><s|m|h>
+    ⛳ skills/coding-agent-usage-line-report-eta: ETA <number><s|m|h>
 
 For example, a task with about four minutes to go gets a line with `ETA 4m`.
 
