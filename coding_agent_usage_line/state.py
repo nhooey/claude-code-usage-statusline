@@ -51,6 +51,11 @@ def _read(path):
         return {}
 
 
+def _strings(value):
+    """String members of a journal list; a corrupt non-list is empty."""
+    return set(x for x in value if isinstance(x, str)) if isinstance(value, list) else set()
+
+
 def load(agent, source, account, period_start):
     try: value = _read(_path(agent, source, account, period_start))
     except OSError: return {}
@@ -155,7 +160,7 @@ def unreported_requests(session_id, turn_id, request_ids, consume=True):
     except OSError:
         return []
     try:
-        seen = set(x for x in _read(path).get("request_ids", []) if isinstance(x, str))
+        seen = _strings(_read(path).get("request_ids"))
         fresh = [x for x in unique if x not in seen]
         if consume and fresh:
             _atomic_json(path, {"request_ids": sorted(seen | set(fresh))})
@@ -206,13 +211,13 @@ def claim_reportable_requests(session_id, current_turn, request_origins, consume
         return []
     try:
         state = _read(path)
-        seen = set(x for x in state.get("request_ids", []) if isinstance(x, str))
-        reported_turns = set(x for x in state.get("turn_ids", []) if isinstance(x, str))
+        seen = _strings(state.get("request_ids"))
+        reported_turns = _strings(state.get("turn_ids"))
         # A safe, one-way migration of exact legacy turn journals.
         for origin in set(origin for _, origin in items):
             legacy_digest = hashlib.sha256((str(session_id) + "\0" + origin).encode()).hexdigest()
             legacy = _read(os.path.join(state_dir(), "reported-" + legacy_digest + ".json"))
-            legacy_ids = set(x for x in legacy.get("request_ids", []) if isinstance(x, str))
+            legacy_ids = _strings(legacy.get("request_ids"))
             if legacy_ids:
                 seen.update(legacy_ids)
                 reported_turns.add(origin)

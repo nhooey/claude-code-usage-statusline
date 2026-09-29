@@ -10,6 +10,13 @@ def reading(pct, as_of):
 
 with tempfile.TemporaryDirectory() as tmp:
     os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = tmp
+    # A corrupt report journal (non-list IDs) reads as empty, not a crash.
+    import hashlib, json
+    digest=hashlib.sha256(b"s\0t").hexdigest()
+    with open(os.path.join(tmp, "reported-" + digest + ".json"), "w") as fh: json.dump({"request_ids":5}, fh)
+    assert state.unreported_requests("s", "t", ["a"]) == ["a"]
+    with open(state._report_path("s2"), "w") as fh: json.dump({"request_ids":None, "turn_ids":1}, fh)
+    assert state.claim_reportable_requests("s2", "t", [("a", "t")]) == ["a"]
     calls=[]
     old_command, old_app = sources.command_reading, sources.codex_app_server
     sources.command_reading=lambda path, context: calls.append(path) or {}
