@@ -10,6 +10,9 @@ assert f.vis_width("🎯") == 2
 assert f.pad_val(4, "🎯") == "  🎯"
 assert f.humanize(1234) == "1.2k"
 assert f.humanize(632) == "632 "
+# Rounding must roll into the next unit, never print "60m" or "24h".
+assert f.dur_fmt(3569) == "59m" and f.dur_fmt(3570) == "1h" and f.dur_fmt(3599, 2) == "1h"
+assert f.dur_fmt(84599) == "23h" and f.dur_fmt(86399) == "1d"
 f.set_mark_spacing(False)
 assert f.MARK_SP == "" and f.C_TOK == f.C_TOK_TIGHT
 f.set_mark_spacing(True)

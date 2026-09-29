@@ -2294,9 +2294,13 @@ def dur_fmt(d: float, digits: int = 3) -> str:
     """
     if d < 60:
         return "%ds" % d
-    if d < 3600:
+    # The minute and hour cuts sit half a unit early, where "%.0f" below
+    # would ROUND UP into the next unit -- humanize's cut, for the same
+    # reason.  At 3600 and 86400 the band 3570s to 3599s drew "60m" and
+    # 84600s to 86399s drew "24h", each a figure the next unit says as "1".
+    if d < 3570:
         v, u = d / 60.0, "m"
-    elif d < 86400:
+    elif d < 84600:
         v, u = d / 3600.0, "h"
     elif d < MONTH_S:
         v, u = d / 86400.0, "d"
