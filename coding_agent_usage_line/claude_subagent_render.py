@@ -401,7 +401,13 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     gap=" " * A_GAP
     billed=bool(getattr(usage,"parts",()))
     live=status == "running" or parked(status, getattr(usage,"eta",None), waiting_on, getattr(usage,"background",()))
-    end=None if live else getattr(usage,"last_epoch",None)
+    # A finished row stops at its last billed stamp, else at its last working
+    # span.  With neither, a finished shell or an agent killed before it
+    # billed, there is nothing to stop at, and ⌛ is blank rather than a clock
+    # counting a finished task up to now.
+    end=None if live else (getattr(usage,"last_epoch",None)
+                           or max((w[1] for w in getattr(usage,"work",()) or ()), default=None))
+    clocked=live or end is not None
     # Where its transcript starts: its first working span, or the one still
     # open when it has closed none.  See agent_elapsed.
     firsts=[w[0] for w in (getattr(usage,"work",()) or ())[:1]]
@@ -421,9 +427,9 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
         # left, and how the run split — the status line's ⌛ row in the same
         # order, with shares where it has figures.
         (A_CLOCK_W + A_ETA_W + A_SPLIT_W + 2,
-         seg(A_CLOCK_W, render_agent_elapsed(task.get("startTime"), now, end, first)) + " "
+         seg(A_CLOCK_W, render_agent_elapsed(task.get("startTime"), now, end, first) if clocked else "") + " "
          + seg(A_ETA_W, render_agent_eta(*eta_args)) + " "
-         + render_agent_split(agent_elapsed(task.get("startTime"), now, end, first),
+         + render_agent_split(agent_elapsed(task.get("startTime"), now, end, first) if clocked else None,
                               getattr(usage,"model_s",None), getattr(usage,"tool_s",0.0))),
         (A_LIMIT_W, render_agent_limit(E_SESS, limits.session_pct, shares.get("sess"), F_LIM_SESS, billed, light)),
         (A_LIMIT_W, render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), F_LIM_WEEK, billed, light)),
