@@ -37,7 +37,7 @@ the program and is not.
 | `python3 tests/claude-sources.py` | a normalized reading projected onto Claude's limit rows | `ok …` |
 | `python3 tests/codex.py` | Codex rollout accounting, child threads, Stop report state | `ok …` |
 | `python3 tests/formatting.py` | shared width and formatting helpers, display switches | `ok …` |
-| `python3 tests/port-cli.py` | the public CLI end to end, including held-open stdin and concurrent Stops | unittest `OK` (14 tests) |
+| `python3 tests/port-cli.py` | the public CLI end to end, including held-open stdin and concurrent Stops | unittest `OK` (15 tests) |
 | `python3 tests/agents.py` | agent spend: reading agent files, folding them into turns, the 👥 row, the tool-time partition, and the receipt's per-turn share of it with its agents' | `pass 65   fail 0` |
 | `python3 tests/subagent.py` | the agent-panel rows: finding an agent's file, billing, window shares, nesting, the reported ETA and its inheritance, row shape | `pass 94   fail 0` |
 | `python3 tests/claude-subagent-render.py` | panel row rendering with no file or source reads | `ok …` |

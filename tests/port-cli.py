@@ -321,6 +321,20 @@ class PublicPortTests(unittest.TestCase):
         self.assertEqual([line["id"] for line in lines], ["shell-fixture"])
         self.assertTrue(all(isinstance(line["content"], str) for line in lines))
 
+    def test_malformed_payload_values_render_instead_of_raising(self):
+        # Each of these took the status line down with a traceback: a list
+        # where the reset stamp goes, a line count json reads as infinity,
+        # and a cost json reads as NaN.
+        for payload in (
+                {"session_id": "odd", "rate_limits": {"five_hour": {
+                    "used_percentage": 10, "resets_at": [1900000000]}}},
+                {"session_id": "odd", "cost": {"total_lines_added": float("inf"),
+                                               "total_lines_removed": 0}},
+                {"session_id": "odd", "cost": {"total_cost_usd": float("nan")}}):
+            out = self.run_cli("--agent", "claude", "--mode", "status",
+                               "--usage-source", "auto", payload=payload)
+            self.assertNotIn("nan", out)
+
     def test_failed_claude_source_is_not_retried_through_legacy_intake(self):
         command = self.home / "unavailable.sh"
         attempts = self.home / "attempts.txt"

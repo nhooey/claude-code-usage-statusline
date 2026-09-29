@@ -3,6 +3,7 @@
 All data and precomputed state arrive as arguments.  This module deliberately
 does not inspect transcripts, source caches, hook stdin/stdout, or rate state.
 """
+import math
 import os
 import time
 from typing import Optional, Sequence, Tuple
@@ -168,6 +169,8 @@ def render_cost(cost_usd: str) -> str:
     try:
         c = float(cost_usd)
     except ValueError:
+        return ""
+    if not math.isfinite(c):            # json reads NaN and 1e400 as floats
         return ""
     return "%s%s%s%s" % (S_COST, mag_dim(c, MAG_COST) + F_YEL,
                          pad_val(4, money_fig(c)), R)
@@ -416,7 +419,7 @@ def render_diff(added: str, removed: str) -> str:
     def n(v: str) -> Optional[int]:
         try:
             return int(float(v))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):    # "inf" as well
             return None
 
     def half(sign: str, v: Optional[int], col: str) -> str:
