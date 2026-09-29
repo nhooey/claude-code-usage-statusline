@@ -690,6 +690,13 @@ def run(tmp):
     near("week: main + agent + workflow, retry and aged file excluded",
          week, 3000 * OPUS[1])
     near("session window splits per record", sess, 2000 * OPUS[1])
+    # Just after a weekly reset the week opens INSIDE the 5-hour window, and
+    # the 5-hour cost still counts from its own start.
+    sess, week = sl._window_costs(datetime(2026, 8, 16, 1, 10, 30),
+                                  datetime(2026, 8, 16, 1, 11, 30))
+    near("a week that reset inside the 5-hour window does not clip it",
+         sess, 3000 * OPUS[1])
+    near("and the week still counts from its own start", week, 2000 * OPUS[1])
 
     print()
     print("pass %d   fail %d" % (pass_n, fail_n))

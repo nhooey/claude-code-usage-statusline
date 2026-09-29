@@ -952,12 +952,23 @@ def _window_costs(sess_start: Optional[datetime],
     that changed with which sessions had been running forks.  Measured
     2026-09-11 with the eight-day cutoff: 42 agent files admitted of 2,134,
     0.49 s on top of the main files' 2.34 s.
+
+    Each window is bounded by its OWN start, and the scan by the earlier of
+    the two.  The week usually opened days before the 5-hour window, and
+    this used to skip everything before the week's start for both figures.
+    In the hours after a weekly reset the order flips, and the 5-hour cost
+    lost everything spent between its own start and the reset.  The unit came
+    out small, and a session's 🔋 share came out above the account's own
+    reading: 💯 seconds after a reset, and 14٪ of a window reading 10٪ six
+    minutes later.
     """
     sess = week = 0.0
     seen = set()
+    starts = [s for s in (sess_start, week_start) if s is not None]
+    earliest = min(starts) if starts else None
     cutoff = None
-    if week_start is not None:
-        cutoff = (week_start - timedelta(days=1)).timestamp()
+    if earliest is not None:
+        cutoff = (earliest - timedelta(days=1)).timestamp()
     files = (glob.glob(os.path.join(PROJECTS_DIR, "*", "*.jsonl"))
              + glob.glob(os.path.join(PROJECTS_DIR, "*", "*", "subagents",
                                       "**", "agent-*.jsonl"), recursive=True))
@@ -982,13 +993,14 @@ def _window_costs(sess_start: Optional[datetime],
             t = _local_naive(ts)
             if t is None:
                 continue
-            if week_start and t < week_start:
+            if earliest and t < earliest:
                 continue
             pi, po, pr, pw = _price((r.get("message") or {}).get("model"))
             c = (u.get("input_tokens", 0) * pi + u.get("output_tokens", 0) * po
                  + u.get("cache_read_input_tokens", 0) * pr
                  + u.get("cache_creation_input_tokens", 0) * pw)
-            week += c
+            if not week_start or t >= week_start:
+                week += c
             if sess_start and t >= sess_start:
                 sess += c
     return sess, week
