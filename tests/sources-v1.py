@@ -71,4 +71,7 @@ with tempfile.TemporaryDirectory() as tmp:
         raise AssertionError("command child survived cleanup")
     except ProcessLookupError:
         pass
+# An unhashable reset stamp reads as unknown instead of raising.
+odd=native_reading("claude", {"rate_limits": {"five_hour": {"used_percentage": 10, "resets_at": [1]}}, "as_of": 1.9e9})
+assert [(w["used_percent"], w["resets_at"]) for w in odd["buckets"][0]["windows"]] == [(10.0, None)], odd
 print("ok source timestamp and whitelist")

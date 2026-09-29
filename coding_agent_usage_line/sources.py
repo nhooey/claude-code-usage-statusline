@@ -504,7 +504,9 @@ def _native_windows(value):
     unique = []
     seen = set()
     for item in windows:
-        key = (item.get("bucket_id"), item["id"], item.get("duration_seconds"), item.get("resets_at"))
+        # Keyed on the values normalise will keep, which always hash: a list
+        # in `resets_at` raised TypeError here and took the line down.
+        key = (item.get("bucket_id"), item["id"], _number(item.get("duration_seconds")), epoch(item.get("resets_at")))
         if key not in seen:
             seen.add(key); unique.append(item)
     return unique
@@ -692,7 +694,7 @@ def codex_app_server(executable="codex", timeout=5):
                 item = snapshot.get(slot)
                 if not isinstance(item, dict): continue
                 ident = "%s:%s" % (limit_id, slot)
-                key = (ident, item.get("resetsAt"), item.get("windowDurationMins"))
+                key = (ident, epoch(item.get("resetsAt")), _number(item.get("windowDurationMins")))
                 if key in seen: continue
                 seen.add(key)
                 windows.append({"id": slot,
