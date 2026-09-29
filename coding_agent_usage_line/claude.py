@@ -1209,6 +1209,7 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
     # sums the same split over every turn, which is what lets these deltas
     # total the figure beneath them across a reset as well as within one.
     tsh = window_shares(t, calib)
+    model_s, tool_s = turn_times(t)
     stamp = time.localtime(now) if now is not None else time.localtime()
     lim_w = fmt.C_SESS if acct else fmt.C_SESS - fmt.C_LIM_TOT
     cells = [
@@ -1263,19 +1264,17 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
         # ONE prompt added to the reading directly beneath it, and these two
         # are how its time went — ⌛🤖 the model thinking, 🔧 inside a tool,
         # split by the rule the status line's ⌛ row splits the session by;
-        # see turn_clock.  A question put to the reader, or an agent the turn
-        # sat waiting on, is in neither.  The totals row prints a space in
-        # the column.  Both blank on the agents row: that row is not an
-        # answer, and the agents ran in parallel with answers already timed
-        # on their own rows, so "+0s" would be wrong and any other figure
-        # double-counted.
+        # see turn_clock.  They count the agents whose tokens this row
+        # counts, off each agent's own clock, which is what fills them on
+        # the agents row; see turn_times.  A question put to the reader, or
+        # the main thread sitting on an agent, is in neither, so an agent's
+        # run is counted once.  The totals row prints a space in the column.
         seg(C_ELAPSED, "%s%s+%s%s" % (S_WORK, ink.crm,
-                                      pad_val(4, dur_fmt(turn_model_s(t))),
-                                      ink.r)
-            if not t.agent else "", left=False),
+                                      pad_val(4, dur_fmt(model_s)), ink.r),
+            left=False),
         seg(C_TOOL, "%s%s+%s%s" % (E_TOOL, ink.crm,
-                                   pad_val(4, dur_fmt(t.tool_s)), ink.r)
-            if not t.agent else "", left=False),
+                                   pad_val(4, dur_fmt(tool_s)), ink.r),
+            left=False),
         # Blank on a compaction, and the CELL is kept so the columns to its
         # left still stack.  The stamp is `now` — when this line is being
         # drawn — which is honest for the prompt just answered and a lie for
@@ -1489,10 +1488,11 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     # directly above them, which is what every other cell on this row is.
     # Neither is the session's age: an age counts the hours the session sat
     # waiting for someone to type, and no per-prompt row can add up to that.
-    # The status line is where the age belongs, and it has it, beside these
-    # same two totals and the 🚦 that is the rest of it.
-    work_s = sum(turn_model_s(t) for t in turns)
-    tool_s = sum(t.tool_s for t in turns)
+    # The status line is where the age belongs, and it has it, beside its
+    # own 🤖 and 🔧 and the 🚦 that is the rest of it.  Those two are the
+    # main thread's; these add every agent's, as 🧩 and 💰 do.
+    work_s = sum(turn_times(t)[0] for t in turns)
+    tool_s = sum(turn_times(t)[1] for t in turns)
     lim_w = fmt.C_SESS if acct else fmt.C_SESS - fmt.C_LIM_TOT
     cells = [
         seg(fmt.C_TOK, "%s%s%s%s%s%s" % (

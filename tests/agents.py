@@ -484,9 +484,51 @@ def run(tmp):
           "a call in the answer it landed in",
           [(t.compact, round(t.tool_s), round(sl.turn_model_s(t)))
            for t in cp], [(False, 0, 60), (True, 0, 41)])
-    check("both blank on the 👥 row, as ⌛🤖 always was",
-          [m in sl.cost_group(late, {}, 200000, sl.PLAIN_INK)
-           for m in ("⌛🤖", "🔧")], [False, False])
+    check("the 👥 row times its agents as the 🎤 row does: a2's ten "
+          "minutes since a1, none of them in a tool",
+          "⌛🤖+ 10m  🔧+  0s" in sl.cost_group(late, {}, 200000,
+                                               sl.PLAIN_INK), True)
+
+    print("--- agent time goes where its tokens go ---")
+    # An agent's 🤖 and 🔧 are cut at each of its billed requests and filed
+    # with that request, so a row's time counts the agents its tokens do.
+    # The main thread's wait on the Agent call is in neither figure, so the
+    # agent's run is counted once, off its own file.
+    check("split_clock cuts 🤖 (work less tools) and 🔧 (tools less "
+          "waiting) at each cut, and past the last cut is nobody's yet",
+          sl.split_clock(((0, 100),), ((20, 50), (60, 90)), ((60, 90),),
+                         (30, 70)),
+          [(20.0, 10.0), (10.0, 20.0)])
+    check("so a stretch past it is billed once, by the request after it",
+          [sl.split_clock(((0, 100),), ((40, 60),), (), cuts)
+           for cuts in ((30,), (30, 100))],
+          [[(30.0, 0.0)], [(30.0, 0.0), (50.0, 20.0)]])
+    check("no cuts, no pairs", sl.split_clock(((0, 1),), (), (), ()), [])
+    at = session(tmp, "agent-time", [
+        prompt(10, "go", "p1"),
+        delegates(11, "m1", "a1"), result(20, "a1"),   # nine minutes waiting
+        answer(21, "m2", 1, 0, 0, 1),                  # 10-21: 🤖 two
+    ], agents=[("agent-t", [
+        agent_user(11, "p1"),
+        calls(12, "t1", "b1"), result(15, "b1"),       # a shell: three
+        agent_answer(17, "t2", 1, 0, 0, 1),            # 11-17: 🤖 three
+    ])])
+    recs = sl.agent_records(at)
+    check("each request carries the agent's time since the one before it, "
+          "in minutes",
+          [(r.request_id, round(r.model_s / 60), round(r.tool_s / 60))
+           for r in recs], [("t1", 1, 0), ("t2", 2, 3)])
+    check("and they add up to the agent's own clock",
+          tuple(round(sum(f(r) for r in recs) / 60)
+                for f in (lambda r: r.model_s, lambda r: r.tool_s)),
+          tuple(round(x / 60) for x in sl.agent_clock(sl.read_agent_usage(
+              recs[0].path), False)))
+    (tt,) = sl.read_turns(at, recs)
+    check("the turn's own split leaves the agent out, as the status line's "
+          "does", (round(sl.turn_model_s(tt) / 60), round(tt.tool_s / 60),
+                   round(tt.blocked_s / 60)), (2, 0, 9))
+    check("and the row adds it: 🤖 two and three, 🔧 three",
+          tuple(round(x / 60) for x in sl.turn_times(tt)), (5, 3))
 
     print("--- the fallback ---")
     # No promptId anywhere on the main side: the stamp decides, and a
@@ -615,8 +657,8 @@ def run(tmp):
     calib = {"sess": 5.5, "week": 4.1}
     row = sl.strip_ansi(sl.cost_group(late, calib, sl.CTX_1M, sl.PLAIN_INK,
                                       1786847000.0))
-    check("agents row blanks its clock and date",
-          (sl.S_WORK + "+" in row, "2026-08-16" in row), (False, False))
+    check("agents row times its agents and blanks its date",
+          (sl.S_WORK + "+ 10m" in row, "2026-08-16" in row), (True, False))
     opts = sl.CostOpts(prefix="P", label="L", totals_label="T", cols=0,
                        colour=False, totals=True, right_align=False,
                        agents_label="A")

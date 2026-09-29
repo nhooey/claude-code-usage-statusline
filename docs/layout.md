@@ -306,22 +306,22 @@ later one.
 | 💰 | what this row cost | what the session cost |
 | 🔋 | share of the 5-hour window, then 📖 re-read share of this row's bill | the session's share, then 💳 the account's |
 | 🪫 | share of the weekly window, then 📝 cache-write share | the session's share, then 💳 the account's |
-| ⌛🤖 | time with the model: the row's span less its 🔧 and its waiting | summed over every prompt |
-| 🔧 | time inside tools, as the status line's 🔧 counts it | summed over every prompt |
+| ⌛🤖 | time with the model: the row's span less its 🔧 and its waiting, plus its agents' | summed over every row |
+| 🔧 | time inside tools, as the status line's 🔧 counts it, plus its agents' | summed over every row |
 | 📅 / 🕐 | date the row was printed | time it was printed |
 
 The 🧠 cell reads percentage first, the reverse of the status line's.
-🧠 and 📅 are blank on 🤏 and 👥 rows, and ⌛🤖 and 🔧 are blank on 👥: a
-compaction or a batch of agents has no context change of its own, agent time
-is already counted on the rows that spawned it, and the print time is not
-when the event happened. A 🤏 row's 🔧 is always `0s`: the summariser runs no
-tool.
+🧠 and 📅 are blank on 🤏 and 👥 rows: a compaction or a batch of agents has
+no context change of its own, and the print time is not when the event
+happened. A 👥 row's ⌛🤖 and 🔧 are its agents' own time. A 🤏 row's 🔧 is
+always `0s`: the summariser runs no tool.
 
 ⌛🤖 and 🔧 split each turn by the status line's rule (see
-[Time](accounting.md#time)), so on the 🎮 row they are the status line's 🤖
-and 🔧 for the same transcript. What the turn spent waiting — on a question
-to you, or on an agent it dispatched — is in neither, and the receipt has no
-cell for it.
+[Time](accounting.md#time)), and add the time of the agents the row bills, off
+each agent's own clock. On the 🎮 row they are the status line's 🤖 and 🔧 for
+the same transcript plus every agent's. What the turn spent waiting — on a
+question to you, or on an agent it dispatched — is in neither, and the
+receipt has no cell for it.
 
 **The sign column.** On the per-row lines, 🧠 💰 🔋 🪫 ⌛🤖 and 🔧 carry a `+`
 (or `-` for a context that shrank) in the column after the mark; the 🎮 row

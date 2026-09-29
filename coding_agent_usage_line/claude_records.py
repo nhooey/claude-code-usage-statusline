@@ -249,6 +249,13 @@ class Turn(NamedTuple):
                             # a question put to the user, or an agent this
                             # thread dispatched and sat on.  Neither 🤖 nor
                             # 🔧; the status line's 🚦.
+    agent_model_s: float = 0.0
+    agent_tool_s: float = 0.0
+                            # the 🤖 and 🔧 of the agent requests folded in
+                            # above, by each agent's own clock.  Not part of
+                            # dur_s: agents run beside the answer, so these
+                            # are agent-seconds and can outrun it.  See
+                            # turn_times.
 
 
 class AgentRec(NamedTuple):
@@ -265,6 +272,9 @@ class AgentRec(NamedTuple):
     request_id: str
     path: str               # the agent file, for the offsets the Stop hook
     offset: int             # keeps — see agent_offsets
+    model_s: float = 0.0    # the agent's 🤖 and 🔧 since its previous billed
+    tool_s: float = 0.0     # request, so each second is filed where this
+                            # request's tokens are; see split_clock
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -455,7 +465,11 @@ def agent_records(transcript: str, seen: Optional[set] = None,
 
     It fed the status line's clocks as well until 2026-09-27, when ⌛ became
     the main thread's own — see thread_clock — and an agent's time moved to
-    its row alone.
+    its row alone.  The receipt still wants it, so each record carries the
+    agent's 🤖 and 🔧 since the one before it, by thread_clock's rule; see
+    split_clock.  For a finished agent they add up to its own clock, and
+    each second is filed with the request after it.  A
+    record deduped away hands its time on to the next one this file keeps.
 
     `etas` is an out-parameter, because this walk already parses every
     line: for every agent still answering with a live ETA, (finish epoch,
@@ -467,6 +481,12 @@ def agent_records(transcript: str, seen: Optional[set] = None,
     for path in agent_files(transcript):
         pid = ""
         eta_state = new_eta_state()
+        span_state: list = [None, None]
+        work: List[Tuple[float, float]] = []
+        pending: Dict[str, Tuple[float, str]] = {}
+        tools: List[Tuple[float, float]] = []
+        waiting: List[Tuple[float, float]] = []
+        first = len(out)
         try:
             fh = open(path, "rb")
         except OSError:
@@ -483,6 +503,8 @@ def agent_records(transcript: str, seen: Optional[set] = None,
                     continue
                 if etas is not None:
                     live_eta(r, eta_state)
+                agent_span(r, span_state, work)
+                scan_tool_spans(r, pending, tools, waiting)
                 if r.get("type") == "user":
                     pid = r.get("promptId") or pid
                     continue
@@ -507,6 +529,13 @@ def agent_records(transcript: str, seen: Optional[set] = None,
                                     path, pos))
         if etas is not None and eta_state[0] and not eta_state[1]:
             etas.append((eta_finish(eta_state[0]), eta_state[2]))
+        close_agent_span(span_state, work)
+        cuts, cut = [], float("-inf")
+        for a in out[first:]:
+            cut = max(cut, a.epoch) if a.epoch is not None else cut
+            cuts.append(cut)
+        for i, (m, tl) in enumerate(split_clock(work, tools, waiting, cuts)):
+            out[first + i] = out[first + i]._replace(model_s=m, tool_s=tl)
     # Stamp order across files, unparseable stamps last: the fold-in walks
     # turns forward and a record that cannot be placed in time is handed to
     # the last turn rather than the first.
@@ -946,6 +975,56 @@ def thread_clock(work: Sequence[Tuple[float, float]],
             net_tool_seconds(tools, waiting), union_seconds(waiting))
 
 
+def split_clock(work: Sequence[Tuple[float, float]],
+                tools: Sequence[Tuple[float, float]],
+                waiting: Sequence[Tuple[float, float]],
+                cuts: Sequence[float]) -> List[Tuple[float, float]]:
+    """thread_clock's 🤖 and 🔧, cut into one (model, tool) pair per cut.
+
+    Pair i is the time after cut i-1 and up to cut i.  Nothing after the
+    last cut is in any pair: agent_records cuts an agent's clock at each
+    billed request, so its seconds can be filed under a turn the way its
+    tokens are, and a stretch past the last request is time the NEXT one
+    will bill.  Handed to the last one instead, it printed on that request's
+    row at one Stop and on the next request's at the following Stop.  A
+    finished agent's clock ends on its last request, so its pairs add up to
+    thread_clock's `busy - tool - waiting` and `tool`; an interrupted one's
+    tail is in none, as an unanswered call is in no offline read.  `cuts`
+    must be in order.
+
+    A sweep rather than thread_clock per cut: 🤖 is the work spans less the
+    tool spans, and 🔧 the tool spans less the waiting ones, so each stretch
+    between two span ends is one or the other or neither by what is open
+    across it.
+    """
+    out = [[0.0, 0.0] for _ in cuts]
+    if not cuts:
+        return []
+    ev = sorted((edge, k, d)
+                for k, spans in enumerate((work, tools, waiting))
+                for lo, hi in spans if hi > lo
+                for edge, d in ((lo, 1), (hi, -1)))
+    live = [0, 0, 0]
+    prev = None
+    j = 0
+    for t, k, d in ev:
+        lo = prev if prev is not None else t
+        while lo < t:
+            while j < len(cuts) - 1 and cuts[j] <= lo:
+                j += 1
+            if cuts[j] <= lo:
+                break
+            hi = min(t, cuts[j])
+            if live[1] and not live[2]:
+                out[j][1] += hi - lo
+            elif live[0] and not live[1]:
+                out[j][0] += hi - lo
+            lo = hi
+        live[k] += d
+        prev = t
+    return [(m, tl) for m, tl in out]
+
+
 def turn_clock(tools: Sequence[Tuple[float, float]],
                waiting: Sequence[Tuple[float, float]],
                t0: Optional[float], t1: Optional[float]
@@ -986,6 +1065,20 @@ def turn_model_s(t: Turn) -> float:
     three add up to more than the span they split.
     """
     return max(0.0, t.dur_s - t.tool_s - t.blocked_s)
+
+
+def turn_times(t: Turn) -> Tuple[float, float]:
+    """The receipt's ⌛🤖 and 🔧 for a row: the main thread's, plus its agents'.
+
+    A row's tokens and dollars count the agent requests filed under it, so
+    its time does too, by the same filing; see split_clock.  The waiting
+    calls stay out of both, so an agent's run is counted once, off its own
+    file, and not a second time as the thread that dispatched it sitting on
+    it.  Agents run beside each other and beside the answer, so these are
+    agent-seconds rather than wall-clock: a row can read more than its turn
+    took, and the 🎮 total is the status line's 🤖 and 🔧 plus every agent's.
+    """
+    return (turn_model_s(t) + t.agent_model_s, t.tool_s + t.agent_tool_s)
 
 
 # The skill that has an agent report its ETA, and the line it has it write:
@@ -1436,7 +1529,7 @@ def _new_turn(ts: str, text: str) -> dict:
             "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0, "n": 0,
             "usd": [0.0, 0.0, 0.0, 0.0], "an": 0, "aids": [],
             "t0": ts_epoch(ts), "t1": None, "parts": [],
-            "tools": [], "waits": []}
+            "tools": [], "waits": [], "am": 0.0, "at": 0.0}
 
 
 def _add_usd(cur: dict, epoch: Optional[float], model: Optional[str],
@@ -1544,6 +1637,8 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
         cur["out"] += a.out
         cur["an"] += 1
         cur["aids"].append(a.request_id)
+        cur["am"] += a.model_s
+        cur["at"] += a.tool_s
         _add_usd(cur, a.epoch, a.model, a.fresh, a.cache_write, a.cache_read,
                  a.out)
     return late
@@ -1779,7 +1874,8 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
                                (t["t1"] - t["t0"]
                                 if t["t0"] and t["t1"] and t["t1"] > t["t0"]
                                 else 0.0)),
-                        tool_s=tool_s, blocked_s=blocked_s))
+                        tool_s=tool_s, blocked_s=blocked_s,
+                        agent_model_s=t["am"], agent_tool_s=t["at"]))
         if t["ctx"]:
             prev = t
     if late is not None:
@@ -1804,7 +1900,8 @@ def late_agent_turn(t: dict) -> Turn:
                 usd_in=t["usd"][0], usd_out=t["usd"][1],
                 usd_cr=t["usd"][2], usd_cw=t["usd"][3],
                 parts=tuple(t["parts"]), agent_calls=t["an"],
-                agent_ids=tuple(t["aids"]), agent=True)
+                agent_ids=tuple(t["aids"]), agent=True,
+                agent_model_s=t["am"], agent_tool_s=t["at"])
 
 
 # How long the Stop hook waits for the turn it is about to report to appear in
