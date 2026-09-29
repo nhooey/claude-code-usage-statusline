@@ -4,6 +4,7 @@
 This module owns Claude-specific JSONL interpretation and price accounting.
 It deliberately has no terminal rendering or hook stdin/stdout orchestration.
 """
+import functools
 import glob
 import hashlib
 import json
@@ -625,12 +626,17 @@ def squash(s: str, fold: str = E_FOLD) -> str:
     return re.sub(" +", " ", t)
 
 
+@functools.lru_cache(maxsize=256)
 def ts_epoch(ts: str) -> Optional[float]:
     """A transcript timestamp as a Unix epoch, or None if it is not one.
 
     Transcript stamps are UTC with a trailing "Z", which 3.9's fromisoformat
     rejects outright — hence strptime on a stripped string with the zone
     reattached, the same dance elapsed_short does.
+
+    Cached, because one walk hands each record's stamp to several scans in a
+    row (its ETA, its span, its tool calls, its bill), and strptime was most
+    of agent_records' own time.
     """
     if not ts:
         return None
