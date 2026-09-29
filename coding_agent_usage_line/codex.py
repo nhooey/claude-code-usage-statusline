@@ -288,7 +288,10 @@ def requests_from_records(records, session_id="", diagnostics=None):
         # fresh baseline for every turn.  Keeping this scope lets a resumed
         # or upgraded recording contribute its later delta.
         counter_key = thread or sid
-        before = prior.get(counter_key); prior[counter_key] = now
+        # A quota-only snapshot (`info: null`) carries no counter; it must not
+        # replace the baseline, or the next cumulative total counts in full.
+        before = prior.get(counter_key)
+        if _nonempty(now): prior[counter_key] = now
         mixed = key in response_turns
         if before is None:
             # Current legacy snapshots carry the just-completed request. This

@@ -64,6 +64,12 @@ try:
         {"type":"event_msg", "payload":{"type":"token_count", "info":{"total_token_usage":{"input_tokens":8,"output_tokens":3}}}},
     ]
     check("legacy reset establishes baseline", totals(requests_from_records(reset)), (13, None, 4, None))
+    quota_only = [
+        {"type":"event_msg", "payload":{"type":"token_count", "info":{"total_token_usage":{"input_tokens":100,"output_tokens":10}, "last_token_usage":{"input_tokens":100,"output_tokens":10}}}},
+        {"type":"event_msg", "payload":{"type":"token_count", "info":None, "rate_limits":{"primary":{"used_percent":1}}}},
+        {"type":"event_msg", "payload":{"type":"token_count", "info":{"total_token_usage":{"input_tokens":250,"output_tokens":30}}}},
+    ]
+    check("quota-only snapshot keeps legacy baseline", totals(requests_from_records(quota_only)), (250, None, 30, None))
 finally: os.unlink(path)
 
 fd, path = tempfile.mkstemp(); os.close(fd)
