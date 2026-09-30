@@ -116,6 +116,10 @@ class Transcript(NamedTuple):
                             # (finish epoch, last record epoch) for every
                             # agent still answering with a live ETA: what the
                             # main thread's ⛳ inherits.  See agent_records.
+    queued: int = 0         # messages waiting for this thread's next turn;
+                            # see queue_step
+    compactions: int = 0    # how often this window has been compacted; see
+                            # is_compaction
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -1321,7 +1325,10 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     # turn, with no work after it.  A report from a turn that is over is not
     # an estimate of anything still running.
     eta_state = new_eta_state()
+    queued = compactions = 0
     for r in records:
+        queued = max(0, queued + queue_step(r))
+        compactions += is_compaction(r)
         scan_tool_spans(r, pending, tools, blocked)
         if r.get("isSidechain") is not True:
             live_eta(r, eta_state)
@@ -1364,6 +1371,8 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         turn_s=open_at or 0.0,
         eta=() if eta_state[1] else eta_state[0],
         agent_etas=tuple(agent_etas),
+        queued=queued,
+        compactions=compactions,
     )
 
 
@@ -1481,6 +1490,164 @@ def queued_text(r: dict) -> Optional[str]:
     # queue too, and every one of them opens with '<'.
     return c if isinstance(c, str) and len(c) > 0 and not c.startswith("<") \
         else None
+
+
+def queue_step(r: dict) -> int:
+    """+1 for a message put on this thread's queue, -1 for one handed over.
+
+    The running sum, never below zero, is how many messages are waiting for
+    the thread's next turn: prompts typed while it was busy, task
+    notifications, and what agents sent it with SendMessage, which answers
+    them "Message queued for the main conversation's next turn."  Every
+    enqueue is matched by one QUEUE_DELIVERED record (see there), so the sum
+    of a finished session is zero.
+    """
+    if r.get("type") != "queue-operation":
+        return 0
+    op = r.get("operation")
+    return 1 if op == "enqueue" else -1 if op in QUEUE_DELIVERED else 0
+
+
+def is_compaction(r: dict) -> bool:
+    """True for the marker a compaction writes, /compact's or the automatic
+    one's: `type: system`, `subtype: compact_boundary`."""
+    return r.get("type") == "system" and r.get("subtype") == "compact_boundary"
+
+
+# What SendMessage answers when the agent it names is busy: the message waits
+# in that agent's inbox until its next tool round, and Claude Code's panel
+# counts it on the agent's row as "1 queued".  The payload the panel hands
+# the subagent status line carries no such count, so inbox_counts rebuilds it
+# from the two ends.  Read out of Claude Code 2.1.284 on 2026-09-30; 261 of
+# 261 SendMessage results to an agent over six days read this way.
+SEND_QUEUED_RE = re.compile(r"queued for delivery to (\S+) at its next tool round")
+SEND_QUEUED_MARK = b"queued for delivery to"
+# The origins inbox_delivery counts: tighter than `"queued_command"`, which
+# every task notification carries too, and the value alone, so the search
+# holds whether or not the JSON is spaced.
+INBOX_MARKS = (b'"coordinator"', b'"peer"')
+
+
+def queued_send(r: dict) -> str:
+    """The agent id a SendMessage result says its message is waiting for, or ""."""
+    res = r.get("toolUseResult")
+    msg = res.get("message") if isinstance(res, dict) else None
+    m = SEND_QUEUED_RE.search(msg) if isinstance(msg, str) else None
+    return m.group(1) if m else ""
+
+
+def inbox_delivery(r: dict) -> bool:
+    """True for a SendMessage delivery taken off this agent's inbox.
+
+    Claude Code writes one in the agent's own file in either of two shapes:
+    a `queued_command` attachment, or a `type: user` record reading "The
+    coordinator sent a message while you were working: …", and both are
+    current.  Their `origin` — the attachment's, or the record's own — says
+    who sent it: `coordinator` for the main thread and `peer` for another
+    agent, both through SendMessage.  A peer message marked `handback` is a
+    subagent's final report to its caller, not a send, and a `human` one was
+    typed into the agent's pane, which leaves no trace on the sending side;
+    a record with no origin is a task notification.
+    """
+    a = r.get("attachment")
+    if isinstance(a, dict) and a.get("type") == "queued_command":
+        o = a.get("origin")
+    elif r.get("type") == "user":
+        o = r.get("origin")
+    else:
+        return False
+    if not isinstance(o, dict):
+        return False
+    kind = o.get("kind")
+    return kind == "coordinator" or (kind == "peer" and not o.get("handback"))
+
+
+def marked_records(path: str, marks: Sequence[bytes]):
+    """Parse only the lines of `path` that hold one of `marks`, in file order.
+
+    For a scan of the main transcript on every panel tick, where _records
+    would parse a file that can run to 200MB to find a handful of lines: a
+    byte search finds them in a fifth of a second.  A line that will not
+    parse is skipped, as _records skips it.
+    """
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read()
+    except OSError:
+        return []
+    starts = set()
+    for mark in marks:
+        i = data.find(mark)
+        while i >= 0:
+            s = data.rfind(b"\n", 0, i) + 1
+            starts.add(s)
+            e = data.find(b"\n", i)
+            i = data.find(mark, e) if e >= 0 else -1
+    out = []
+    for s in sorted(starts):
+        e = data.find(b"\n", s)
+        try:
+            out.append(json.loads(data[s:e if e >= 0 else len(data)]
+                                  .decode("utf-8", "replace")))
+        except Exception:
+            continue
+    return out
+
+
+def inbox_sends(path: str) -> List[Tuple[float, str]]:
+    """(epoch, target id) for each message this file queued for an agent."""
+    out = []
+    for r in marked_records(path, (SEND_QUEUED_MARK,)):
+        t, target = ts_epoch(r.get("timestamp") or ""), queued_send(r)
+        if t is not None and target:
+            out.append((t, target))
+    return out
+
+
+def inbox_deliveries(path: str) -> List[float]:
+    """The epoch of each SendMessage delivery in this agent's file."""
+    return [t for t in (ts_epoch(r.get("timestamp") or "")
+                        for r in marked_records(path, INBOX_MARKS)
+                        if inbox_delivery(r)) if t is not None]
+
+
+def inbox_counts(files: Sequence[str], targets: Dict[str, str],
+                 since: Optional[float] = None) -> Dict[str, int]:
+    """How many messages wait in each agent's inbox: `{agent id: count}`.
+
+    `files` is every transcript that can send — the main thread's and each
+    agent's — and `targets` maps each agent on the panel to its own file.
+    The two ends are matched by time, not by text: a send raises the count,
+    a delivery lowers it, and the count never goes below zero, so a delivery
+    with no queued send behind it — a message that woke a stopped agent and
+    was never queued — takes nothing from a later one.
+
+    `since`, the earliest any target started, skips every file last written
+    before it, which cannot hold a send to an agent that did not exist yet.
+    A long session's agent files run to hundreds of megabytes, nearly all of
+    them finished long before anything now on the panel started.
+    """
+    sent: Dict[str, List[float]] = {}
+    for f in files:
+        try:
+            if since is not None and os.path.getmtime(f) < since:
+                continue
+        except OSError:
+            continue
+        for t, target in inbox_sends(f):
+            if target in targets:
+                sent.setdefault(target, []).append(t)
+    out = {}
+    for aid, times in sent.items():
+        # A send and its delivery stamped alike: the send first.
+        events = sorted([(t, 0, 1) for t in times]
+                        + [(t, 1, -1) for t in inbox_deliveries(targets[aid])])
+        n = 0
+        for _, _, step in events:
+            n = max(0, n + step)
+        if n:
+            out[aid] = n
+    return out
 
 
 def turn_start_text(r: dict) -> Optional[str]:

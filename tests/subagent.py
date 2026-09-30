@@ -758,7 +758,8 @@ def run(tmp):
         "\U0001F916O\u2075\U0001F3C3",  # model and effort, before 💰, open it
         sl.seg(sl.vis_width(sl.S_COST) + 4,
                "\U0001F4B0" + sl.pad_val(4, sl.money_fig(u.cost))),
-        "\U0001F9E0 41k",
+        # 🧠, then its share of the 200k window the payload gives.
+        "\U0001F9E0 41k  20\u066A",
         sl.seg(sl.vis_width(sl.S_TOK) + sl.VAL_W + sl.VAL2_W,
                ANSI.sub("", sl.render_tokens(u.tok_up, u.tok_down))),
         "\U0001F6EB200/s",
@@ -771,8 +772,10 @@ def run(tmp):
         "\U0001F50B" + sl.pad_val(4, pct(want)),
         "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0)),
         ANSI.sub("", sl.render_diff("12", "4"))))
-    # 🟢 running, and 🤖: no tool call is waiting on its result.
-    head = "\U0001F50D\U0001F7E2\U0001F916 a1         "
+    # 🟢 running, and 🤖: no tool call is waiting on its result.  Then 🔇,
+    # a cell only some panels draw: it has written nothing since 01:10, and
+    # the clock is pinned 1.2h after.
+    head = "\U0001F50D\U0001F7E2\U0001F916 \U0001F5071.2h a1         "
     tree = sl.E_TREE_NODE + " "         # no nesting: the tree is one ◯ wide
     check("an agent's row: the left group, the name, the panel's tree drawn "
           "again, then the right group, filling the payload's columns exactly",
@@ -785,7 +788,8 @@ def run(tmp):
           len({sl.vis_width(r) for r in (rows["a1"], rows["a2"])}), 1)
     check("no sidecar: the task's kind, and the transcript's model where "
           "the payload has none",
-          (rows["a2"].startswith("\U0001F465\u26AB\u2705 "),
+          # Then the blank a1's 🔇 keeps on every row.
+          (rows["a2"].startswith("\U0001F465\u26AB\u2705 " + " " * (sr.A_SILENT_W + 1)),
            "\U0001F916O\u2075" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
@@ -799,7 +803,8 @@ def run(tmp):
     check("an unnamed task takes its description for a name, then its "
           "label for what it is doing; a shell shows nothing it did not bill",
           re.sub(r" {2,}", "  ", rows["bash-1"]),
-          # 🟢 and no mode: a shell has no transcript to say who has the floor.
+          # 🟢 and no mode: a shell has no transcript to say who has the
+          # floor.  Then the blank 🔇 cell.
           "\U0001F41A\U0001F7E2  bash-1  npm test npm test --watch  "
           "\u25EF  \u231B 13m")
     check("a name and its activity, and a label that only repeats the "
@@ -828,13 +833,15 @@ def run(tmp):
           [200, 200, 200])
     check("👶🏻 counts the rows under each one, and every row keeps a cell for it "
           "once any row has one",
-          [ANSI.sub("", rows_n[t])[:ANSI.sub("", rows_n[t]).index(t) + 2].lstrip()
-           for t in ("a1", "a3", "a4")],
-          # E_KIDS is two codepoints, and its width the terminal's: see it.
-          ["\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 a1",
-           "\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 a3",
-           "\U0001F50D\U0001F7E2\U0001F916 "
-           + " " * (sl.vis_width(sl.E_KIDS) + 1) + " a4"])
+          # Past each row's lead, the blank a shallower row opens with.
+          [ANSI.sub("", rows_n[t])[sr.A_TREE_W * (3 - d):ANSI.sub("", rows_n[t]).index(t) + 2]
+           for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
+          # The cells only some panels draw follow the kind and state, 👶🏻
+          # first.  E_KIDS is two codepoints, and its width the terminal's.
+          ["\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a1",
+           "\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a3",
+           "\U0001F50D\U0001F7E2\U0001F916 " + " " * (sl.vis_width(sl.E_KIDS) + 1)
+           + " \U0001F5071.2h a4"])
     at_head = lambda r: sl.vis_width(r[:r.index("\U0001F50D")])
     check("and its cells start on one column at every depth: a shallower row "
           "opens with the blank the deeper ones spend on the panel's `├ `",
@@ -896,24 +903,24 @@ def run(tmp):
     check("the name takes what the metrics leave, and gives way first",
           (render(sl, dict(wide, columns=400))[1]["a1"].count(long),
            re.search(r"Review the plan, [^…]*…  \U0001F916",
-                     # 154 and not the 130 it was: the right group grew by the
-                     # 🔧 cell and then ⛳ and its bar, each with its gap, the
-                     # state cell by the mode mark after its circle, and this
-                     # case is about a width that squeezes the NAME, not one
-                     # that squeezes it away.
-                     render(sl, dict(wide, columns=154))[1]["a1"]) is not None,
+                     # 166 and not the 130 it was: the right group grew by the
+                     # 🔧 cell and then ⛳ and its bar, each with its gap, and
+                     # by 🧠's share; the state cell by the mode mark after its
+                     # circle; the head by 🔇.  This case is about a width that
+                     # squeezes the NAME, not one that squeezes it away.
+                     render(sl, dict(wide, columns=166))[1]["a1"]) is not None,
            render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
            .count(long[:sr.A_NAME_MIN - 1] + "…")),
           (1, True, 1))
     check("a window too narrow to leave the name A_TREE_ROOM draws no copy "
           "of the tree, and one wide enough does",
           ["\u25EF" in render(sl, dict(wide, columns=c))[1]["a1"]
-           for c in (152, 400)],
+           for c in (164, 400)],
           [False, True])
 
     edge = [sum("\u25EF" in r or "\u23FA" in r[40:] for r in
                 render(sl, dict(nested, columns=c))[1].values())
-            for c in range(150, 200)]
+            for c in range(162, 212)]
     check("the copy of the tree is on every row or on none, at every width: "
           "a nested row decides on its parent's room, not its own",
           sorted(set(edge)), [0, 3])
@@ -929,6 +936,145 @@ def run(tmp):
             sys.stdout = old
         check("bad input %r: exit 0 and nothing printed, so the panel's "
               "own rows stand" % raw, (rc, buf.getvalue()), (0, ""))
+
+    print("--- the inbox, the silence, the compactions, the API error ---")
+    def send(minute, target, second=0):
+        """A SendMessage result: the message waits for `target`'s next round."""
+        return {"type": "user", "timestamp": ts(minute, second),
+                "message": {"content": [{"type": "tool_result",
+                                         "tool_use_id": "sm%d%s" % (minute, target)}]},
+                "toolUseResult": {"success": True, "message":
+                                  "Message queued for delivery to %s at its "
+                                  "next tool round." % target,
+                                  "pin": {"id": target}}}
+    def delivered(minute, kind="coordinator", **origin):
+        return {"type": "attachment", "isSidechain": True, "timestamp": ts(minute),
+                "attachment": {"type": "queued_command", "prompt": "hello",
+                               "origin": dict(origin, kind=kind)}}
+    ibox = os.path.join(tmp, "inbox")
+    itr = session(ibox, "s2", agents=[
+        ("agent-b1", [delivered(5),                        # woke it: queued
+                      agent_user(10), agent_answer(11, "b", 10, 0, 0, 10),  # by nobody
+                      delivered(12),                       # the 01:11 send
+                      delivered(20, "peer", handback=True),  # a report home
+                      delivered(21, "human"),              # typed in its pane
+                      {"type": "user", "isSidechain": True, "isMeta": True,
+                       "timestamp": ts(37), "origin": {"kind": "coordinator"},
+                       "message": {"content": "The coordinator sent a message "
+                                   "while you were working:\nhello"}},  # 01:35's
+                      {"type": "system", "subtype": "compact_boundary",
+                       "timestamp": ts(22)}],
+         {"agentType": "Explore"}),
+        ("agent-b2", [agent_user(10), send(30, "b1"),     # b2 sends b1 one
+                      agent_answer(40, "c", 10, 0, 0, 10)], {"agentType": "Plan"}),
+    ])
+    write_jsonl(itr, [{"type": "user", "userType": "external",
+                       "timestamp": ts(1), "message": {"content": "go"}},
+                      send(11, "b1"), send(35, "b1"), send(36, "gone")])
+    b1 = sl.agent_file_for(itr, "b1")
+    check("sends matched to deliveries by time, in both shapes a delivery "
+          "takes: two delivered, a peer's still waiting; a delivery with "
+          "nothing queued before it, a hand-back and a typed message take none "
+          "away, and a send to an agent not on the panel counts for nothing",
+          sl.inbox_counts([itr, sl.agent_file_for(itr, "b2")], {"b1": b1}),
+          {"b1": 1})
+    check("a compaction is counted, and the last record of any kind is when "
+          "it was last heard from",
+          (sl.read_agent_usage(b1).compactions, sl.read_agent_usage(b1).last_seen),
+          (1, sl.ts_epoch(ts(22))))
+    ipay = {"session_id": "s2", "transcript_path": itr, "columns": 220, "cwd": ibox,
+            "tasks": [task("b1"), task("b2", contextWindowSize=None,
+                                       status="completed")]}
+    irows = render(sl, ipay)[1]
+    check("📨 and 🤏 on the row that has them, and a blank of their width on "
+          "the row that does not, so the columns after them hold",
+          ("\U0001F4E81 " in irows["b1"], "\U0001F90F1" in irows["b1"],
+           sl.vis_width(irows["b1"][:irows["b1"].index("b1")])
+           == sl.vis_width(irows["b2"][:irows["b2"].index("b2")]),
+           sl.vis_width(irows["b1"][:irows["b1"].index("⌛")])
+           == sl.vis_width(irows["b2"][:irows["b2"].index("⌛")])),
+          (True, True, True, True))
+    wide = {"silent": sr.A_SILENT_W, "inbox": 3, "compact": 3}
+    plain, padded = (ANSI.sub("", sr.render_agent_row(task("x"), sl.NO_AGENT_USAGE, {}, {},
+                                                     sl.NO_LIMITS, now=NOW, kids_w=kw,
+                                                     widths=w))
+                     for kw, w in ((0, {}), (3, wide)))
+    at = plain.index(" x ") + 1                 # where the id starts
+    check("the cells only some panels draw follow the kind and state: on a "
+          "row that draws none of them they are one blank there, and the row "
+          "either side of it is the row a panel without them draws",
+          padded, plain[:at] + " " * (3 + 1 + 3 + 1 + 3 + 1 + sr.A_SILENT_W + 1) + plain[at:])
+    check("🧠's share is blank where the payload gives no window",
+          re.search("\U0001F9E0 *\\S+ +(\\S+)", irows["b2"]).group(1)[0], "\U0001F9E9")
+    nothing = sl.NO_AGENT_USAGE
+    check("none of the three costs a column on a panel where no row has one",
+          sr.panel_widths([(task("x"), nothing, {}, None)], NOW),
+          {"silent": 0, "inbox": 0, "compact": 0})
+    quiet = nothing._replace(last_seen=NOW - 90)
+    check("🔇 once a running agent has written nothing for a minute, amber at "
+          "ten, and not while it waits on an agent or a question, which its 🚦 "
+          "already says, nor once it has stopped",
+          [ANSI.sub("", sr.render_silence(sr.silence(st, u, NOW))) for st, u in (
+              ("running", quiet), ("running", nothing._replace(last_seen=NOW - 30)),
+              ("running", nothing._replace(last_seen=NOW - 700)),
+              ("running", quiet._replace(pending=((NOW - 90, "Agent"),))),
+              ("running", quiet._replace(pending=((NOW - 90, "Bash"),))),
+              ("completed", quiet))],
+          ["\U0001F5071.5m", "", "\U0001F507 12m", "", "\U0001F5071.5m", ""])
+    check("and it is amber from ten minutes",
+          (sl.F_AMB in sr.render_silence(700.0), sl.F_AMB in sr.render_silence(90.0)),
+          (True, False))
+    died = nothing._replace(api_error=True)
+    check("💥: an agent whose last answer died on an API error, ended or "
+          "parked; a killed one is still 🛑, and a running one is running",
+          [sr.render_state(st, u, w) for st, u, w in (
+              ("completed", died, False), ("completed", died, True),
+              ("failed", died, False), ("killed", died, False),
+              ("running", died, False))],
+          ["⚫\U0001F4A5", "\U0001F7E1\U0001F4A5", "⚫\U0001F4A5",
+           "⚫\U0001F6D1", "\U0001F7E2"])
+    check("read off its last assistant record: an error it answered past "
+          "is forgotten",
+          [sl.read_agent_usage(write_jsonl(os.path.join(tmp, "e%d.jsonl" % i), recs)
+                               or os.path.join(tmp, "e%d.jsonl" % i)).api_error
+           for i, recs in enumerate((
+               [agent_answer(11, "a", 1, 0, 0, 1),
+                dict(agent_answer(12, "b", 0, 0, 0, 0), isApiErrorMessage=True)],
+               [dict(agent_answer(11, "a", 0, 0, 0, 0), isApiErrorMessage=True),
+                agent_answer(12, "b", 1, 0, 0, 1)]))],
+          [True, False])
+
+    print("--- the worktree an agent works in ---")
+    def checkout(path, head, linked=False):
+        os.makedirs(path, exist_ok=True)
+        gitdir = os.path.join(path, ".git")
+        if linked:
+            gitdir = os.path.join(tmp, "gitdirs", os.path.basename(path))
+            os.makedirs(gitdir, exist_ok=True)
+            with open(os.path.join(path, ".git"), "w") as fh:
+                fh.write("gitdir: %s\n" % gitdir)
+        else:
+            os.makedirs(gitdir, exist_ok=True)
+        with open(os.path.join(gitdir, "HEAD"), "w") as fh:
+            fh.write(head + "\n")
+    repo = os.path.join(tmp, "repo")
+    wt = os.path.join(repo, ".claude", "worktrees", "agent-x")
+    checkout(repo, "ref: refs/heads/master")
+    checkout(wt, "ref: refs/heads/fix-inbox", linked=True)
+    checkout(os.path.join(tmp, "detached"), "0123456789abcdef")
+    os.makedirs(os.path.join(repo, "src"), exist_ok=True)
+    check("a linked worktree's branch, even under the session's checkout; "
+          "nothing for the session's own checkout or no checkout at all; a "
+          "detached HEAD by its commit",
+          [sl.worktree_branch(c, repo) for c in (
+              wt, os.path.join(repo, "src"), "", os.path.join(tmp, "detached"))],
+          ["fix-inbox", "", "", "0123456"])
+    check("🌿 and the branch after the name, drawn whole or not at all, "
+          "ahead of the activity",
+          [ANSI.sub("", sr.render_who("Marigold", "Reading", w, "fix-inbox"))
+           for w in (40, 25, 12)],
+          ["Marigold \U0001F33Ffix-inbox Reading",
+           "Marigold \U0001F33Ffix-inbox", "Marigold"])
 
     rc, rows = render(sl, pay, ["--usage-source", "native"])
     check("no plan reading: the 🔋 and 🪫 cells are blank, the rest stands",

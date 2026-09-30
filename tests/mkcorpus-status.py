@@ -273,8 +273,32 @@ AGENT_FILES = {
 }
 
 
+def queue_session():
+    """The main session, compacted once, with two messages still waiting.
+
+    Appended after the last answer, where Claude Code writes them: a prompt
+    typed while the assistant was busy and a background task's notification,
+    each an enqueue with no removal yet, and one compaction marker.  The
+    enqueues bill nothing and open no turn.  The compaction is a turn of its
+    own, priced off its preTokens as read_turns prices every compaction, so
+    the 🎮 shares read a little above 01-baseline's; every other cell but
+    column 1's third row reads as that case's.
+    """
+    return main_session() + [
+        {"type": "system", "subtype": "compact_boundary", "timestamp": iso(150),
+         "compactMetadata": {"trigger": "auto", "preTokens": 900000}},
+        {"type": "queue-operation", "operation": "enqueue", "timestamp": iso(120),
+         "content": "And the docs, once the code is in."},
+        {"type": "queue-operation", "operation": "enqueue", "timestamp": iso(60),
+         "content": "<task-notification>\n<task-id>b1</task-id>\n"
+                    "<status>completed</status>\n</task-notification>"},
+    ]
+
+
 TRANSCRIPTS = {
     "main": main_session(),
+    # Two messages waiting and one compaction; see the builder.
+    "queue": queue_session(),
     # A fork's spend beside the transcript; see the builder.
     "agents": agent_session(),
     # The ▾ field one step under a round million; see the builder.
@@ -400,6 +424,9 @@ def payloads(corpus):
         # 🧠 does not, and the 🔋/🪫 session shares are priced with it.
         "18-agents": case(
             transcript_path=os.path.join(corpus, "agents.jsonl")),
+        # 📨 and 🤏 in column 1's third row, the one cell nothing else uses.
+        "19-queue-and-compact": case(
+            transcript_path=os.path.join(corpus, "queue.jsonl")),
     }
     # The cost fields of 06 are dropped, not set to None; case() cannot spell
     # that inside a nested dict, so it is done here.

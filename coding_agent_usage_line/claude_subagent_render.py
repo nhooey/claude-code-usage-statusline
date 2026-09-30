@@ -32,6 +32,17 @@ A_TREE_ROOM = 40
 # and two figures of four.  The status line's own cell, unnarrowed — the
 # pair means the same thing on both readouts and reads as one shape.
 A_DIFF_W = vis_width(S_DIFF) + 11
+# 🧠's two fields, the size and its share of the agent's window: the status
+# line's cell, "🧠 124k 12٪", with its widest share, "100٪".
+A_CTX_PCT_W = 4
+A_CTX_W = vis_width(S_CTX) + 4 + 1 + A_CTX_PCT_W
+# 🔇 draws once a running agent has written nothing for A_SILENT_S, and turns
+# amber at A_SILENT_WARN_S: long enough that no tool round or request it is
+# still waiting on explains it by itself.
+A_SILENT_S, A_SILENT_WARN_S = 60.0, 600.0
+A_SILENT_W = vis_width(E_SILENT) + 4
+# The most a worktree's branch spends of the name's room, 🌿 not counted.
+A_BRANCH_W = 16
 KIND_MARK = {"general-purpose":"🔩", "claude":"🎩", "Explore":"🔍", "Plan":"📐",
              "claude-code-guide":"📚", "statusline-setup":"📟", "fork":"🍴",
              "local_agent":"👥", "local_bash":"🐚", "local_workflow":"🔗",
@@ -63,7 +74,8 @@ def agent_state(status, usage=None, waiting_on=False):
     Paused, it is what the agent waits on, in the order it is likeliest to
     be the thing that wakes it: 💤 its agents, then 💻 a background shell,
     📡 a Monitor, ⛳ only the ETA it gave (see parked); 🥚 is a task not
-    started.  Ended, it is how: ✅ ❌ 🛑.
+    started.  Ended, it is how: ✅ ❌ 🛑.  💥, paused or ended, is an agent
+    whose last answer died on an API error.
     """
     if status == "running":
         names = [n for _, n in (getattr(usage, "pending", ()) or ())]
@@ -73,6 +85,13 @@ def agent_state(status, usage=None, waiting_on=False):
         return E_PHASE_RUN, mode
     if status == "pending":
         return E_PHASE_PAUSE, E_MODE_QUEUED
+    if getattr(usage, "api_error", False) and status in ("completed", "failed"):
+        # Claude Code calls an agent whose last request failed for good
+        # completed, as if it had answered.  Paused or ended as it otherwise
+        # is, but the mark says why it stopped.
+        return (E_PHASE_PAUSE if parked(status, getattr(usage, "eta", None), waiting_on,
+                                        getattr(usage, "background", ())) else E_PHASE_END,
+                E_MODE_API_ERROR)
     if parked(status, getattr(usage, "eta", None), waiting_on, getattr(usage, "background", ())):
         kinds = [k for _, k in getattr(usage, "background", ()) or ()]
         return E_PHASE_PAUSE, (E_MODE_AGENTS if waiting_on else
@@ -99,8 +118,36 @@ def render_agent_model(model_id, effort):
 def render_agent_cache(cache_pct):
     if cache_pct is None or cache_pct < 0: return ""
     return "%s%s%s%s%s" % (E_CACHE, cache_color(cache_pct), E_HUNDRED if cache_pct >= 100 else pad_val(2, "%d" % cache_pct), E_PCT, R)
-def render_agent_ctx(ctx_tokens):
-    return "" if ctx_tokens <= 0 else "%s%s%s%s" % (S_CTX, mag_dim(ctx_tokens, MAG_TOK) + F_PNK, pad_val(4, humanize(ctx_tokens)), R)
+def render_agent_ctx(ctx_tokens, window=0):
+    """🧠, the agent's context size and its share of its own window, as the
+    status line's cell draws the main thread's.  The share is blank where the
+    payload gives no window; its column stays, so the cells after it hold."""
+    if ctx_tokens <= 0: return ""
+    pct = "%d%s" % (int(ctx_tokens * 100 / window), E_PCT) if window > 0 else ""
+    return "%s%s%s%s %s%s%s" % (S_CTX, mag_dim(ctx_tokens, MAG_TOK) + F_PNK, pad_val(4, humanize(ctx_tokens)), R,
+                                F_PNK, pad_val(A_CTX_PCT_W, pct), R)
+def render_compactions(n):
+    """🤏 and how often the agent's window has been compacted; "" for never."""
+    return "" if not n else "%s%s%d%s" % (E_ROW_COMPACT, F_PNK, n, R)
+def render_inbox(n):
+    """📨 and how many messages wait for the agent's next tool round."""
+    return "" if not n else "%s%s%d%s" % (E_INBOX, F_CYN, n, R)
+def silence(status, usage, now):
+    """Seconds a running agent has written nothing, once that is A_SILENT_S
+    or more; None otherwise.  A tool round, a request, a progress line: any
+    stamped record ends a silence.  Not while it waits on a question or an
+    agent it started, the 🚦 its state already shows: that wait writes
+    nothing for as long as it lasts, and is not the agent stalling."""
+    last = getattr(usage, "last_seen", None)
+    if status != "running" or last is None: return None
+    if any(n in WAITING_TOOLS for _, n in getattr(usage, "pending", ()) or ()): return None
+    quiet = (time.time() if now is None else now) - last
+    return quiet if quiet >= A_SILENT_S else None
+def render_silence(quiet):
+    """🔇 and how long; dim until A_SILENT_WARN_S, amber from there."""
+    if quiet is None: return ""
+    return "%s%s%s%s" % (E_SILENT, F_AMB if quiet >= A_SILENT_WARN_S else DIM + F_CRM,
+                         pad_val(A_SILENT_W - vis_width(E_SILENT), dur_fmt(quiet)), R)
 def render_agent_diff(usage):
     """The agent's own +adds/-removes, in the status line's 💾 cell.
 
@@ -233,16 +280,28 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None):
     left = got[1]
     if left < 0:
         return "%s%s%s%s" % (E_ETA, F_AMB, pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)), R)
-    return "%s%s%s%s" % (E_ETA, mag_dim(left, MAG_DUR_S) + F_PRW,
+    return "%s%s%s%s" % (E_ETA, mag_dim(left, MAG_DUR_S) + F_ETA,
                          pad_val(A_ETA_FIG_W, dur_fmt(left)), R)
 def render_agent_rate(rate):
     return "" if rate is None else "%s%s%s/s%s" % (E_RATE, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(3, rate_fig(rate)), R)
-def render_who(name, act, room):
-    if not name and not act: return ""
-    if not name: return "%s%s%s" % (F_CHAT_B, fit_cols(act, room), R)
-    left=room-vis_width(name)-A_HEAD_GAP
-    if act and left >= A_ACT_MIN: return "%s%s%s%s%s%s%s" % (F_BLU, name, R, " " * A_HEAD_GAP, F_CHAT_B, fit_cols(act, left), R)
-    return "%s%s%s" % (F_BLU, fit_cols(name, room), R)
+def render_who(name, act, room, branch=""):
+    """The name, then 🌿 and the branch of a worktree the agent works in
+    apart from the session's, then what it is doing, in that order of claim
+    on `room`.  The first is cut to fit; the branch is drawn whole or not at
+    all; the activity needs A_ACT_MIN."""
+    tag = E_GIT_OK + fit_cols(branch, A_BRANCH_W) if branch else ""
+    out, left = [], room
+    for col, text, least in ((F_BLU, name, 0), (F_GRN, tag, None), (F_CHAT_B, act, A_ACT_MIN)):
+        if not text: continue
+        have = left - (A_HEAD_GAP if out else 0)
+        if not out: text = fit_cols(text, have)
+        elif least is None:
+            if have < vis_width(text): continue
+        elif have < least: continue
+        else: text = fit_cols(text, have)
+        out.append("%s%s%s" % (col, text, R))
+        left = have - vis_width(text)
+    return (" " * A_HEAD_GAP).join(out)
 
 def tree_cols(task, meta, depth=None):
     """The columns the panel spends before a NESTED row, which `cols` is not net of.
@@ -378,7 +437,8 @@ def inherited_etas(prepared_tasks):
     return out
 
 def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tree="", tree_w=0,
-                     eta=False, waiting_on=False, depth=None, kids=0, kids_w=0, lead=0):
+                     eta=False, waiting_on=False, depth=None, kids=0, kids_w=0, lead=0,
+                     widths=None):
     """Render one fully prepared task; it performs no reads or accounting.
 
     `tree` is this row's copy of the panel's tree and `tree_w` the widest
@@ -391,9 +451,10 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     `kids` is how many rows hang under it, and `kids_w` the widest 👶🏻 cell
     on the panel, 0 where no row has any, which drops the cell from all.
     `lead` is the blank a row opens with so that its cells start where the
-    deepest row's do; see render_task_rows.
+    deepest row's do; see render_task_rows.  `widths` holds the panel's
+    widest 🔇, 📨 and 🤏 cells, as `kids_w` does 👶🏻's; see panel_widths.
     """
-    task, meta, shares = task or {}, meta or {}, shares or {}
+    task, meta, shares, widths = task or {}, meta or {}, shares or {}, widths or {}
     if cols: cols = max(0, cols - tree_cols(task, meta, depth) - lead)
     tid, status, kind = str(task.get("id") or ""), str(task.get("status") or ""), str(task.get("type") or "")
     model = str(task.get("model") or "") or getattr(usage, "model", "") or str(meta.get("model") or "")
@@ -418,7 +479,7 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
         # The model and effort, right before the 💰 they priced.
         (6, render_agent_model(model, str(task.get("effort") or "") or getattr(usage,"effort", ""))),
         (vis_width(S_COST)+4, render_cost("%.4f" % getattr(usage,"cost",0)) if billed else ""),
-        (vis_width(S_CTX)+4, render_agent_ctx(getattr(usage,"ctx_tokens",0))),
+        (A_CTX_W, render_agent_ctx(getattr(usage,"ctx_tokens",0), getattr(usage,"ctx_window",0))),
         (vis_width(S_TOK)+VAL_W+VAL2_W, render_tokens(getattr(usage,"tok_up",None), getattr(usage,"tok_down",0))),
         (A_RATE_W, render_agent_rate(token_rate(task.get("tokenSamples"),status))),
         (5, render_agent_cache(getattr(usage,"cache_pct",-1))),
@@ -433,12 +494,23 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
                               getattr(usage,"model_s",None), getattr(usage,"tool_s",0.0))),
         (A_LIMIT_W, render_agent_limit(E_SESS, limits.session_pct, shares.get("sess"), F_LIM_SESS, billed, light)),
         (A_LIMIT_W, render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), F_LIM_WEEK, billed, light)),
-        (A_DIFF_W, render_agent_diff(usage) if billed else "")))
+        (A_DIFF_W, render_agent_diff(usage) if billed else "")) if w)
     desc=squash(str(task.get("description") or "")); name=str(task.get("name") or "") or desc; act=squash(str(task.get("label") or ""))
     if act == desc: act=""
+    # The cells a panel draws only while some row needs one sit together,
+    # right after the kind and state, which keep their column however many
+    # of them the panel draws; what comes and goes moves only the id, the
+    # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
+    # stay once they come, 📨 and 🔇 do not — so the passing ones shift the
+    # fewest.
     head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_KIND_W+A_STATE_W, render_kind(str(meta.get("agentType") or ""),kind)+render_state(status, usage, waiting_on)),
-                                                     (kids_w, render_kids(kids)), (A_ID_W, DIM+F_BLU2+fit_cols(tid,A_ID_W)+R)) if w)
+                                                     (kids_w, render_kids(kids)),
+                                                     (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
+                                                     (widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0))),
+                                                     (widths.get("silent", 0), render_silence(silence(status, usage, now))),
+                                                     (A_ID_W, DIM+F_BLU2+fit_cols(tid,A_ID_W)+R)) if w)
     room=A_NAME_MIN if not cols else max(A_NAME_MIN, cols-vis_width(strip_ansi(head))-A_HEAD_GAP-vis_width(strip_ansi(right))-A_GAP)
+    branch=str(getattr(usage,"branch","") or "")
     # Decided on the room a row would have with neither the panel's indent
     # nor the lead: those add up to the same on every row, and deciding on
     # its own room would drop the copy from some rows alone in a window a
@@ -446,7 +518,21 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     if tree and room + tree_cols(task, meta, depth) + lead - tree_w - A_HEAD_GAP >= A_TREE_ROOM:
         room -= tree_w + A_HEAD_GAP
         right = seg(tree_w, DIM + tree + R) + " " * A_HEAD_GAP + right
-    return (" "*lead+head+" "*A_HEAD_GAP+seg(room,render_who(name,act,room))+gap+right).rstrip()
+    return (" "*lead+head+" "*A_HEAD_GAP+seg(room,render_who(name,act,room,branch))+gap+right).rstrip()
+
+def panel_widths(prepared_tasks, now=None):
+    """The widest 🔇, 📨 and 🤏 cell on the panel, each 0 where no row draws one.
+
+    As 👶🏻's: a cell that no row needs costs no row a column, and one that
+    any row needs is kept on every row, so the columns after it hold.
+    """
+    live = [(str(t.get("status") or ""), u) for t, u, _, _ in prepared_tasks
+            if isinstance(t, dict) and t.get("id")]
+    return {"silent": A_SILENT_W if any(silence(st, u, now) is not None for st, u in live) else 0,
+            "inbox": max([vis_width(E_INBOX) + len(str(getattr(u, "inbox", 0)))
+                          for _, u in live if getattr(u, "inbox", 0)] or [0]),
+            "compact": max([vis_width(E_ROW_COMPACT) + len(str(getattr(u, "compactions", 0)))
+                            for _, u in live if getattr(u, "compactions", 0)] or [0])}
 
 def render_task_rows(prepared_tasks, limits, cols=None, now=None):
     """Return `(task_id, row)` pairs for prepared `(task, usage, meta, shares)` facts."""
@@ -470,8 +556,9 @@ def render_task_rows(prepared_tasks, limits, cols=None, now=None):
     # the blank the deepest row spends on its tree, less its own, and every
     # row's cells start on one column, as its right group's end on one.
     deep=max([d for _, d in shape.values()] or [1])
+    widths=panel_widths(prepared_tasks, now)
     for task, usage, meta, shares in prepared_tasks:
         if isinstance(task, dict) and task.get("id"):
             tid=str(task["id"])
-            rows.append((tid, render_agent_row(task, usage, meta, shares, limits, cols, now, trees.get(tid, ""), tree_w, etas.get(tid, False), tid in busy, shape[tid][1], kids.get(tid, 0), kids_w, A_TREE_W * (deep - shape[tid][1]))))
+            rows.append((tid, render_agent_row(task, usage, meta, shares, limits, cols, now, trees.get(tid, ""), tree_w, etas.get(tid, False), tid in busy, shape[tid][1], kids.get(tid, 0), kids_w, A_TREE_W * (deep - shape[tid][1]), widths)))
     return rows

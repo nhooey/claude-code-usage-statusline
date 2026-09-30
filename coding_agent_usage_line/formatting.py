@@ -461,6 +461,16 @@ F_PRW = "\033[38;2;140;150;255m"           # periwinkle  — the ⌛ row.  It wa
                                            #  of the row.  L* 65 against the
                                            #  orange's 72, so the row keeps
                                            #  roughly the weight it read at.
+F_ETA = "\033[38;2;255;77;255m"            # magenta     — ⛳ time left.  It was
+                                           #  F_PRW, the ⌛ beside it, and the
+                                           #  two figures read as one.  Picked
+                                           #  as the cool hue furthest from
+                                           #  every other F_ colour here: 36 ΔE
+                                           #  from the nearest, F_PUR (🤖), and
+                                           #  62 from F_PRW.  Not warm, for the
+                                           #  reason F_PRW gives; the late "+"
+                                           #  stays F_AMB.  L* 65, as F_PRW's,
+                                           #  so the ⌛ row keeps its weight.
 F_CHAT_U = "\033[38;2;166;170;158m"        # warm grey   — user chat row
 F_CHAT_B = "\033[38;2;112;126;140m"        # cool slate  — assistant chat row
 B_DRK = "\033[48;2;12;14;18m"              # near-black background, chat rows
@@ -1072,6 +1082,15 @@ E_MODE_QUEUED = "🥚"     # 🥚  not started: Claude Code's pending
 E_MODE_DONE = "✅"       # ✅  completed
 E_MODE_FAILED = "❌"     # ❌  failed
 E_MODE_KILLED = "🛑"     # 🛑  killed
+E_MODE_API_ERROR = "\U0001F4A5"  # 💥  its last answer died on an API
+                         #    error, which Claude Code writes only once its
+                         #    retries are spent; the status alone says ✅
+E_INBOX = "\U0001F4E8"   # 📨  messages sent to it and not yet delivered:
+                         #    the panel's own "N queued".  On the status
+                         #    line, the ones waiting for the main thread
+E_SILENT = "\U0001F507"  # 🔇  how long a running agent has written nothing.
+                         #    U+1F507, Unicode 6.0, one codepoint,
+                         #    Emoji_Presentation=Yes, EAW W
 E_KIDS = "\U0001F476\U0001F3FB"  # 👶🏻  how many agents hang under it on the
                          #    panel.  The light tone, for its contrast on a
                          #    dark background, and so the one mark here that

@@ -521,6 +521,25 @@ def effort_glyph(effort: str) -> str:
     }.get(effort, E_EFF_MED)
 
 
+def render_queue(queued: int, compactions: int) -> str:
+    """📨 the messages waiting for the main thread's next turn, then 🤏 how
+    often its window has been compacted — "📨 2 🤏 1".
+
+    Column 1's third row, under 🎨 and 🔀, which nothing else wanted.  🤏
+    belongs beside 🧠, whose share it explains, and column 3 has no room for
+    it next to a "100٪".  Each half keeps its columns when the other is zero,
+    so 🤏 does not move as the queue drains; a count past 99 reads 99.
+    """
+    def half(mark: str, n: int, col: str) -> str:
+        if not n:
+            return " " * (vis_width(mark) + 2)
+        return "%s%s%s%s" % (mark, col, pad_val(2, str(min(n, 99))), R)
+    if not queued and not compactions:
+        return ""
+    return (half(E_INBOX, queued, F_CYN) + " "
+            + half(E_ROW_COMPACT, compactions, F_PNK)).rstrip()
+
+
 def render_style(style: str) -> str:
     """The output style, when it is not the default one."""
     if not style or style in ("default", "null"):
@@ -643,7 +662,7 @@ def eta_fig(reading, w: int, digits: int = 3) -> str:
     if left < 0:
         return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, F_AMB,
                                pad_val(w, "+" + dur_fmt(-left, digits)), R)
-    return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, mag_dim(left, MAG_DUR_S) + F_PRW,
+    return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, mag_dim(left, MAG_DUR_S) + F_ETA,
                            pad_val(w, dur_fmt(left, digits)), R)
 
 
@@ -1007,7 +1026,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         render_time(now),
     ), rule=rule)
     right = grid_row((
-        "",
+        render_queue(tr.queued, tr.compactions),
         render_rate_cache(rate, tr.cache_pct),
         render_cache_share(S_WRITE, cache.turn_write, cache.sess_write,
                            F_SHARE, dim_rd_turn, dim_rd_sess),

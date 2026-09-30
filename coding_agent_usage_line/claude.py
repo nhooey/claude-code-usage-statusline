@@ -1834,6 +1834,20 @@ class AgentUsage(NamedTuple):
                             # "monitor") of each background task it started
                             # and has not heard the end of; see
                             # scan_background
+    compactions: int = 0    # how often its window has been compacted
+    last_seen: Optional[float] = None   # its last stamped record of any
+                            # kind: how long a running agent has been silent
+    api_error: bool = False # its last answer ended on an API error, which
+                            # Claude Code writes only once its retries are
+                            # spent; see agent_state
+    cwd: str = ""           # the directory its last record was written in
+    # Filled by prepare_subagent_tasks, off the other files and the payload.
+    inbox: int = 0          # messages waiting for its next tool round; see
+                            # inbox_counts
+    ctx_window: int = 0     # its model's window, the payload's
+                            # contextWindowSize; 0 where it gives none
+    branch: str = ""        # the branch of a worktree it works in apart
+                            # from the session's; see worktree_branch
 
 
 NO_AGENT_USAGE = AgentUsage(None, 0, -1, 0, 0.0, (), "", "", 0, None)
@@ -1939,7 +1953,17 @@ def read_agent_usage(path: str) -> AgentUsage:
     tools = []
     waiting = []
     background = {}
+    compactions = 0
+    last_seen = None
+    api_error = False
+    cwd = ""
     for r in recs:
+        compactions += is_compaction(r)
+        t = ts_epoch(r.get("timestamp") or "")
+        last_seen = t if t is not None else last_seen
+        if r.get("type") == "assistant":
+            api_error = bool(r.get("isApiErrorMessage"))
+        cwd = r.get("cwd") if isinstance(r.get("cwd"), str) and r.get("cwd") else cwd
         live_eta(r, eta_state)
         agent_span(r, span_state, work)
         scan_tool_spans(r, pending, tools, waiting)
@@ -1980,19 +2004,23 @@ def read_agent_usage(path: str) -> AgentUsage:
         model = m.get("model") or model
         effort = r.get("effort") or effort
     in_all = fresh + cwrite + cread
+    signals = dict(compactions=compactions, last_seen=last_seen,
+                   api_error=api_error, cwd=cwd)
     if not parts:
         return NO_AGENT_USAGE._replace(eta=eta, work=tuple(work),
                                        open_at=open_at, tools=tuple(tools),
                                        waiting=tuple(waiting),
                                        pending=tuple(pending.values()),
-                                       background=tuple(background.items()))
+                                       background=tuple(background.items()),
+                                       **signals)
     return AgentUsage(
         int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread), down,
         int(100 * cread / in_all) if in_all > 0 else -1,
         ctx, cost, tuple(parts), model, effort, len(parts), last,
         *agent_diff(recs), eta=eta, work=tuple(work), open_at=open_at,
         tools=tuple(tools), waiting=tuple(waiting),
-        pending=tuple(pending.values()), background=tuple(background.items()))
+        pending=tuple(pending.values()), background=tuple(background.items()),
+        **signals)
 
 
 def agent_clock(usage: AgentUsage, running: bool,
@@ -2052,6 +2080,53 @@ def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
 
 
 
+def git_head(path: str) -> Tuple[str, str]:
+    """`(root, branch)` of the git checkout holding `path`, off its files alone.
+
+    The panel runs every few seconds, once per row, so this reads `.git`
+    rather than starting git: a directory in a main checkout, a `gitdir:`
+    file in a linked worktree, and HEAD beside either.  A detached HEAD is
+    its commit's first seven digits.  ("", "") outside a checkout.
+    """
+    d = os.path.abspath(path) if path else ""
+    while d:
+        dot = os.path.join(d, ".git")
+        try:
+            if os.path.isdir(dot):
+                gitdir = dot
+            elif os.path.isfile(dot):
+                with open(dot, "r", encoding="utf-8") as fh:
+                    line = fh.readline().strip()
+                if not line.startswith("gitdir:"):
+                    return "", ""
+                gitdir = os.path.join(d, line[len("gitdir:"):].strip())
+            else:
+                up = os.path.dirname(d)
+                d = "" if up == d else up
+                continue
+            with open(os.path.join(gitdir, "HEAD"), "r", encoding="utf-8") as fh:
+                head = fh.readline().strip()
+        except OSError:
+            return "", ""
+        ref = "ref: refs/heads/"
+        return d, head[len(ref):] if head.startswith(ref) else head[:7]
+    return "", ""
+
+
+def worktree_branch(cwd: str, session_cwd: str) -> str:
+    """The branch an agent works on, when it is not in the session's checkout.
+
+    An agent started with worktree isolation, or one that entered a worktree
+    itself, edits a branch the status line's 🌿 does not name, and the panel
+    says nothing of it.  "" where the two share a checkout, or either is in
+    none.
+    """
+    if not cwd:
+        return ""
+    root, branch = git_head(cwd)
+    return branch if root and root != git_head(session_cwd)[0] else ""
+
+
 def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
     """Read every task sidecar once and return renderer-ready task facts.
 
@@ -2062,6 +2137,7 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
     agent's 🤖 and 🔧 (agent_clock).
     """
     transcript = str(pay.get("transcript_path") or "")
+    session_cwd = str(pay.get("cwd") or "")
     prepared = []
     for task in pay.get("tasks") or ():
         if not isinstance(task, dict) or not task.get("id"):
@@ -2073,13 +2149,34 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
                 model_s, tool_s = agent_clock(
                     usage, str(task.get("status") or "") == "running", now)
                 usage = usage._replace(model_s=model_s, tool_s=tool_s)
+            win = task.get("contextWindowSize")
+            usage = usage._replace(
+                ctx_window=int(win) if isinstance(win, (int, float)) and win > 0 else 0,
+                branch=worktree_branch(usage.cwd or str(task.get("cwd") or ""),
+                                       session_cwd))
             prepared.append((task, usage, agent_meta(path),
                              agent_window_shares(usage)))
         except Exception:
             # A malformed or concurrently replaced sidecar must leave the
             # panel's own task row intact rather than break every task.
             continue
-    return tuple(prepared)
+    # A killed or failed agent's inbox is dropped with it, and a shell has
+    # none.  The rest are counted in one pass over every file that can send.
+    targets = {str(t["id"]): agent_file_for(transcript, str(t["id"]))
+               for t, _, _, _ in prepared
+               if str(t.get("status") or "") not in ("killed", "failed")}
+    targets = {k: v for k, v in targets.items() if v}
+    firsts = [min([w[0] for w in u.work[:1]] + [e for e in (u.open_at, u.last_seen)
+                                                if e is not None])
+              for t, u, _, _ in prepared if str(t["id"]) in targets
+              and (u.work or u.open_at is not None or u.last_seen is not None)]
+    try:
+        inbox = inbox_counts([transcript] + agent_files(transcript), targets,
+                             min(firsts) if firsts else None) if targets else {}
+    except Exception:
+        inbox = {}
+    return tuple((t, u._replace(inbox=inbox.get(str(t["id"]), 0)), m, sh)
+                 for t, u, m, sh in prepared)
 
 
 def render_subagent(prepared_tasks, cols: Optional[int], lim: Limits,

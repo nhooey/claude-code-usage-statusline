@@ -28,7 +28,7 @@ Read these three first:
 |---|---|---|---|---|---|
 | **Row 1** | 👤💬 Prompt · 🎨 Style | 🤖 Model · 💰 Cost | 🧠 Context | ⌛ Elapsed | 📅 Date |
 | **Row 2** | 🤖💬 Reply · 🔀 PR | 🧩 Tokens | 📖 Rereads | 🔋 5-hour | 🕐 Clock |
-| **Row 3** | 📦 Project · 📁 Directory · 🌿 Branch | 🛫 Rate · 🎯 Hits | 📝 Caching | 🪫 Weekly | 💾 Diff |
+| **Row 3** | 📦 Project · 📁 Directory · 🌿 Branch · 📨 Queue · 🤏 Compactions | 🛫 Rate · 🎯 Hits | 📝 Caching | 🪫 Weekly | 💾 Diff |
 
 ## Agent tree
 
@@ -36,15 +36,15 @@ One row per subagent or shell in Claude Code's agent panel, indented under the
 agent that started it. Installed as `subagentStatusLine`.
 
 ```
-⏺  🔩🟢🤖 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  🔍🟢🔧     c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯  📐⚫✅     f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯  🐚🟢       b1         npm test --watch         ◯                                                             ⌛ 13m
+⏺  🔩🟢🤖 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  🔍🟢🔧     c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯  📐⚫✅     f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯  🐚🟢       b1         npm test --watch         ◯                                                                  ⌛ 13m
 ```
 
 | Side | Cells, left to right |
 |---|---|
-| **Left** | Kind · State · 👶🏻 Children · ID · Name and activity |
+| **Left** | Kind · State · 👶🏻 Children · 🤏 Compactions · 📨 Queue · 🔇 Silent · ID · Name, 🌿 worktree branch and activity |
 | **Right** | Tree · 🤖 Model · 💰 Cost · 🧠 Context · 🧩 Tokens · 🛫 Rate · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools · 🚦 Waiting · 🔋 5-hour · 🪫 Weekly · 💾 Diff |
 
 The right side uses the session status line's cells, for that one agent. A
@@ -108,9 +108,10 @@ readout, the table says so.
 | ¶ | Newline | a newline inside a chat row | ✓ | | |
 | 🎨 | Style | output style, when not the default | ✓ | | |
 | 🔀 | PR | pull request number | ✓ | | |
+| 📨 | Queue | messages waiting: on the status line, for the main thread's next turn; on the tree, sent to the agent and not yet delivered, Claude Code's "N queued" | ✓ | ✓ | |
 | 📦 | Project | the project; in a worktree, the main repository | ✓ | | |
 | 📁 | Directory | current directory | ✓ | | |
-| 🌿 | Branch | branch, clean tree | ✓ | | |
+| 🌿 | Branch | branch, clean tree; on the tree, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | |
 | 🍂 ✱ | Dirty | branch, uncommitted changes | ✓ | | |
 | 💾 | Diff | lines added and removed | ✓ | ✓ | |
 | 📅 | Date | today's date; on the receipt, when it printed | ✓ | | ✓ |
@@ -145,6 +146,7 @@ readout, the table says so.
 | 🧠 | Context | context size and share of the window; on the receipt, its change | ✓ | ✓ | ✓ |
 | 📖 | Rereads | share of the bill spent re-reading the conversation | ✓ | | ✓ |
 | 📝 | Caching | share of the bill spent caching new material | ✓ | | ✓ |
+| 🤏 | Compactions | how often the window has been compacted; on the receipt, a compaction's own row | ✓ | ✓ | ✓ |
 
 * 📖 is the part of the bill that `/compact` or `/clear` can reduce. A bright
   📖 🎤 means at least two thirds of the last prompt's cost went on
@@ -162,6 +164,7 @@ readout, the table says so.
 | 🔧 | Tools | time inside tools | ✓ | ✓ | ✓ |
 | 🚦 | Waiting | time waiting on you, or on agents it started | ✓ | ✓ | |
 | ⠄ ⠆ ⠦ ⠶ | Gauge | that figure's share of ⌛ | | ✓ | |
+| 🔇 | Silent | how long a running agent has written nothing, from a minute; amber from ten. Not while it waits on a question or an agent | | ✓ | |
 | ⌛🤖 | Answering | time with the model, per prompt and its agents | | | ✓ |
 
 * **🤖 🔧 🚦 add up to ⌛.** The status line prints them as durations. The tree
@@ -239,6 +242,7 @@ These glyphs fill the tree's second cell: a phase, then an activity within it.
 | ⚫ | ✅ | Completed | finished, and waiting on nothing |
 | ⚫ | ❌ | Failed | ended with an error |
 | ⚫ | 🛑 | Killed | stopped |
+| ⚫ 🟡 | 💥 | API error | its last answer died on an API error once Claude Code's retries ran out; paused or ended as it otherwise would be |
 
 Claude Code calls an agent completed both when it has finished and when it has
 ended its turn to wait. The row reads the agent's transcript and its children

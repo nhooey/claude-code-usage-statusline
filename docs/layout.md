@@ -43,8 +43,12 @@ beside them stay put.
 **Right:** five fixed-width columns, three rows each, laid out as the
 [README's grid](../README.md#session-status-line) shows.
 
-Column 1 is empty unless the session has a non-default output style or an
-open PR:
+Column 1 is empty unless the session has a non-default output style, an
+open PR, messages waiting or a compaction behind it. Row 3 holds the last
+two: `📨 2` messages waiting for the main thread's next turn — prompts typed
+while it was busy, task notifications, and what agents sent it — and `🤏 1`,
+how often this window has been compacted. Each half keeps its columns while
+the other is blank. Row 1 and row 2 hold the style and the PR:
 
 ```
 👤💬 Why does the elapsed row report two durations when the …  🎨 expl        🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
@@ -363,10 +367,10 @@ panel. At 180 columns, with a running agent, its nested child, a finished
 agent and a shell:
 
 ```
-⏺  🔩🟢🤖 👶🏻1 a1b2c3d4e… Port the renderer Editing claude…  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  🔍🟢🔧     c7d8e9f0a… Find every caller of seg()       └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯  📐⚫✅     f3e4d5c6b… Plan the docs rewrite              ◯   🤖O⁵🏃  💰 0.2   🧠  42k  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯  🐚🟢       b1         npm test npm test --watch          ◯                                                             ⌛ 13m
+⏺  🔩🟢🤖 👶🏻1 a1b2c3d4e… Port the renderer Editing c…  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  🔍🟢🔧     c7d8e9f0a… Find every caller of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯  📐⚫✅     f3e4d5c6b… Plan the docs rewrite         ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯  🐚🟢       b1         npm test npm test --watch     ◯                                                                  ⌛ 13m
 ```
 
 The leading `◯`, `⏺` and `└` are the panel's own chrome, drawn by Claude Code;
@@ -375,19 +379,28 @@ where the figures start (see [Nesting](#nesting)).
 
 ### Tree cells
 
-Left to right:
+Left to right. 👶🏻, 🤏, 📨 and 🔇 are drawn only while some row on the
+panel needs them, so they sit together right after the kind and state:
+those keep their column however many of the four the panel draws, and one
+coming or going moves only the id and the name, never the right group. The
+ones that stay once they come, 👶🏻 and 🤏, sit furthest left, so 📨 and 🔇
+coming and going move the fewest cells. On a panel where no row needs one,
+a cell takes no columns at all.
 
 | Cell | Meaning |
 |---|---|
 | kind | the agent type, as a glyph (table below) |
 | state | the phase, 🟢 running, 🟡 paused or ⚫ ended, then what the agent is doing in it. See [State](#state) |
 | 👶🏻 | how many rows hang directly under it on the panel, finished or not. The cell is there on every row once any row has children |
+| 🤏 | how often its window has been compacted. On every row once any row has one |
+| 📨 | messages sent to it with SendMessage and not yet delivered: Claude Code's own "N queued". See [Inbox](#inbox). On every row once any row has one |
+| 🔇 | how long a running agent has written nothing, from a minute, amber from ten. Blank while it waits on a question or an agent it started, which its 🚦 already says. The cell is there on every row once any row draws one |
 | id | the task id, cut to ten columns |
-| name | the task's name, or its description; then what it is doing now |
+| name | the task's name, or its description; then 🌿 and the branch of a worktree it works in apart from the session's; then what it is doing now |
 | tree | the panel's tree, drawn again beside the figures, in a wide window |
 | 🤖 | model and effort, as on the status line, right before the 💰 they priced |
 | 💰 | cost, from the agent's own transcript, each request priced at its own model |
-| 🧠 | the agent's context size (its last request's input) |
+| 🧠 | the agent's context size (its last request's input), and its share of the window the payload gives for its model |
 | 🧩 | tokens in and out |
 | 🛫 | token rate, from the panel's own samples; running agents only |
 | 🎯 | cache hit rate |
@@ -424,6 +437,7 @@ doing in that phase after the circle.
 | | ⛳ | completed, with nothing it can name but a live ETA in its last message |
 | | 🥚 | Claude Code's `pending`: not started |
 | ⚫ ended | ✅ ❌ 🛑 | completed and waiting on nothing, failed, killed |
+| 🟡 or ⚫ | 💥 | completed or failed, and its last answer died on an API error: Claude Code writes one only once its retries are spent, and still calls the agent completed |
 
 A paused agent shows the first of its reasons in that order. A background
 task opens on the tool result that hands back its id: `backgroundTaskId` for a
@@ -437,6 +451,23 @@ Some limits are Claude Code's and no setting changes them. The panel shows
 five rows at a time and scrolls with the cursor. It hides a finished
 background agent that waits on nothing, and removes any other finished task
 30 seconds after it ends, unless you have opened it.
+
+### Inbox
+
+A message SendMessage cannot hand over at once waits in the agent's inbox
+until its next tool round, and Claude Code's own row says `1 queued`. The
+payload carries no such count, so 📨 rebuilds it from the two ends. The
+sender's transcript — the main thread's or another agent's — gets a result
+reading `Message queued for delivery to <id> at its next tool round.` The
+agent's own file gets the delivery, as a `queued_command` attachment or a
+`type: user` record, with an `origin` of `coordinator` for the main thread or
+`peer` for an agent. The two are matched by time: a send adds one, a
+delivery takes one away, and the count never drops below zero. A peer
+`handback` is a report home and is not counted, and nor is a message typed
+into the agent's pane, which leaves nothing on the sending side, so 📨 can
+read lower than Claude Code's count. A killed or failed agent's inbox is
+dropped. Files last written before the earliest agent on the panel started
+are not read.
 
 ### Nesting
 
@@ -459,7 +490,7 @@ two columns per level below the first, so a child's right-hand group lands
 on the same columns as its parent's. The panel's indent also pushes a
 child's left-hand cells two columns right of its parent's, so every row
 opens with two blank columns per level it sits above the deepest row, and
-the kind, state, 👶🏻, id and name start on one column at every depth.
+the kind, state, 👶🏻, 🤏, 📨, 🔇, id and name start on one column at every depth.
 
 In a wide window the panel's tree is far from the figures, so the row draws
 it again where the figures start: `◯` for an agent, `├ ◯` or `└ ◯` for a child, with
