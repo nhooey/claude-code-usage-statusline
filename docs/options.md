@@ -102,10 +102,10 @@ narrow for the full readout. On the status line this narrows column 4 by four
 columns and column 3 by two:
 
 ```
-default   ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h
-          🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m
-tight     ⌛ ⛳   ? 🤖  3h 🔧58m 🚦5.5h
-          🔋 🎤1.2٪ 🎮3.8٪ 💳15٪ 🔜6.7m
+default   ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h
+          🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m
+tight     ⌛ ⛳   ? 🤖2.8h 🔧 58m 🚦5.5h
+          🔋 🎤1.2٪ 🎮3.8٪ 💳 15٪ 🔜6.7m
 ```
 
 On the cost line it reaches only the marks with nothing after them — 🧩, 🎯,
@@ -137,8 +137,8 @@ Writes the digits after a decimal point as subscripts (U+2080–U+2089), so the
 point takes no column:
 
 ```
-off   🧩▴2.7M ▾841k    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m
-on    🧩▴ 2₇M ▾841k    🔋 🎤  1₂٪ 🎮  3₈٪ 💳 15٪ 🔜  6₇m
+off   🧩▴2.7M ▾841k    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m
+on    🧩▴ 2₇M ▾841k    🔋 🎤  1₂٪ 🎮  3₈٪ 💳  15٪ 🔜  6₇m
 ```
 
 (Two cells from the status line's second row.)

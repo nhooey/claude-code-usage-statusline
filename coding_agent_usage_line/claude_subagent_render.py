@@ -266,17 +266,18 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None):
     """⛳ and how long the agent says it has left; see eta_reading.
 
     Past its estimate the figure turns amber with a "+": the agent is late by
-    that much and has not said so.  With no live estimate the cell is "?" —
-    no report yet, a last report of zero, or a run that completed — and never
-    a manufactured "0s": an agent that has not said is not an agent with
-    nothing left.  A task with no transcript to say it in draws nothing, the
+    that much and has not said so.  A last report of zero reads 0s, then
+    turns amber the same way while the agent keeps going.  With no live
+    estimate the cell is "?" — no report yet, or a run that completed — and
+    never a manufactured "0s": an agent that has not said is not an agent
+    with nothing left.  A task with no transcript to say it in draws nothing, the
     way every other cell on its row does.
     """
     got = eta_reading(eta, start_ms, now, status, end)
     if got is None:
         return ""
     if not got:
-        return "%s%s%s%s" % (E_ETA, DIM + F_CRM, pad_val(A_ETA_FIG_W, "?"), R)
+        return "%s%s%s%s" % (E_ETA, DIM + F_ETA, pad_val(A_ETA_FIG_W, "?"), R)
     left = got[1]
     if left < 0:
         return "%s%s%s%s" % (E_ETA, F_AMB, pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)), R)

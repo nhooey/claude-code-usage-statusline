@@ -1140,9 +1140,10 @@ def eta_report(records: Sequence[dict]) -> Tuple[float, ...]:
 
 def eta_finish(eta: Tuple[float, ...]) -> Optional[float]:
     """When an ETA says its run ends: the report's epoch plus the time it said
-    was left.  None for no estimate, and for a report of zero, which is the
-    skill's sign-off rather than an estimate."""
-    if not eta or not eta[1] > 0:
+    was left.  None only for no report.  A report of zero is the skill's
+    sign-off, and says the run ends at the report: a run still going after
+    it is late, the same as one past any other estimate."""
+    if not eta:
         return None
     return eta[0] + eta[1]
 
@@ -1173,8 +1174,10 @@ def live_eta(r: dict, state: list) -> None:
     wait on a background task, whose notification will wake it, and says in
     the same breath how long it expects the rest to take.  Claude Code
     marks such an agent completed; the report is the only thing that says
-    it is not.  The skill has a finished agent sign off with 0s, and one
-    that ends without a line in its last message reads as finished too.  A
+    it is not.  The skill has a finished agent sign off with 0s, so a 0s in
+    the message that ends the turn is finishing, not parking; and one that
+    ends without a line in its last message reads as finished too.  A 0s
+    written mid-answer stays live, so work after it reads as late.  A
     message is split over several records, one per block, so the test is on
     the message id and not on the record.
     """
@@ -1185,8 +1188,9 @@ def live_eta(r: dict, state: list) -> None:
         mid = (r.get("message") or {}).get("id")
         if report:
             state[0], state[3] = report, mid
-        state[1] = ends_turn(r) and not (
-            report or (mid is not None and mid == state[3]))
+        parked = bool(state[0]) and state[0][1] > 0 and (
+            bool(report) or (mid is not None and mid == state[3]))
+        state[1] = ends_turn(r) and not parked
     t = ts_epoch(r.get("timestamp") or "")
     if t is not None:
         state[2] = t

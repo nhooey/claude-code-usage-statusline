@@ -25,9 +25,9 @@ brightness carry meaning of their own — see
 At 170 columns:
 
 ```
-👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### The grid
@@ -51,9 +51,9 @@ how often this window has been compacted. Each half keeps its columns while
 the other is blank. Row 1 and row 2 hold the style and the PR:
 
 ```
-👤💬 Why does the elapsed row report two durations when the …  🎨 expl        🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you …  🔀 4211        🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …  🎨 expl        🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …  🔀 4211        🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### Column by column
@@ -120,9 +120,9 @@ removed in the session, as Claude Code reports them.
 **Line 3's left side.** A dirty working tree turns 🌿 into 🍂 and adds `✱`:
 
 ```
-👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
-📦repo-dirty  📁…atusline-fixture/deep/tree  🍂golden-dirty ✱                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
+📦repo-dirty  📁…atusline-fixture/deep/tree  🍂golden-dirty ✱                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 In a linked git worktree 📦 names the main repository, since 🌿 already
@@ -133,8 +133,8 @@ printing zero, and the session scopes print `?`:
 
 ```
 👤💬 (no prompt yet)                                                          🤖O⁵🏃 💰115                                                              📅  2026-08-16
-🤖💬 (no reply yet)                                                                                                🔋 🎤    ? 🎮    ? 💳 15٪ 🔜 6.7m    🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                                                       🪫 🎤    ? 🎮    ? 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
+🤖💬 (no reply yet)                                                                                                🔋 🎤    ? 🎮    ? 💳  15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                                                       🪫 🎤    ? 🎮    ? 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### Fixed widths
@@ -160,9 +160,9 @@ instead (`0₀₁٪`).
 columns 3 and 4, saving six columns:
 
 ```
-👤💬 Why does the elapsed row report two durations when the sessio…                 🤖O⁵🏃 💰115     🧠  115k   11٪    ⌛ ⛳   ? 🤖  3h 🔧58m 🚦5.5h    📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you spent.…                 🧩▴2.7M ▾841k    📖 🎤34٪ 🎮32٪    🔋 🎤1.2٪ 🎮3.8٪ 💳15٪ 🔜6.7m    🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                        🛫200/s 🎯98٪    📝 🎤 7٪ 🎮 7٪    🪫 🎤1.6٪ 🎮8.4٪ 💳87٪ 🔜1.9d    💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the sessio…                 🤖O⁵🏃 💰115     🧠  115k   11٪    ⌛ ⛳   ? 🤖2.8h 🔧 58m 🚦5.5h    📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you spent.…                 🧩▴2.7M ▾841k    📖 🎤34٪ 🎮32٪    🔋 🎤1.2٪ 🎮3.8٪ 💳 15٪ 🔜6.7m    🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                        🛫200/s 🎯98٪    📝 🎤 7٪ 🎮 7٪    🪫 🎤1.6٪ 🎮8.4٪ 💳 87٪ 🔜1.9d    💾 +3.4k - 214
 ```
 
 ### Column rules
@@ -172,9 +172,9 @@ separates them, so it costs no width: a ruled row and an unruled one are the
 same width, column for column. At 170 columns, with `--column-rules`:
 
 ```
-👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h  | 📅  2026-08-16
-🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m  | 🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d  | 💾 +3.4k - 214
+👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h  | 📅  2026-08-16
+🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m  | 🕐    02:23:20
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
 Rules are off by default, and `--column-rules` asks for them. Even then they
@@ -207,9 +207,9 @@ way:
 At 140 columns:
 
 ```
-👤💬 Why does the elapsed row …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
-🤖💬 Two figures, because one …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
-📦repo  📁…deep/tree  🌿golden…                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
+👤💬 Why does the elapsed row …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two figures, because one …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
+📦repo  📁…deep/tree  🌿golden…                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 The same fallback applies when the terminal will not report its width
@@ -530,11 +530,13 @@ left under the same ⛳.
 A report is an estimate of the whole run: the time already gone when it was
 written, plus the time it said was left. The row counts it down between
 reports. ⛳'s figure is what is left of that total. Past the estimate it
-turns amber, with a `+` for how late the agent is. The cell is `?`
-whenever there is no live estimate: no report yet, a last report of zero
-(the skill's sign-off), or an answer that ended its turn after its last
-report. The exception is a report in the message that ends the turn, which
-stays live. That is an agent parking on background work, and Claude Code
+turns amber, with a `+` for how late the agent is. A report of zero is the
+skill's sign-off, an agent saying it ends now: it reads `0s`, and if the
+agent keeps going it turns amber at once and counts up how late it is. The
+cell is `?` only when there is no live estimate: no report yet, or an
+answer that ended its turn after its last report. The exception is a
+report in the message that ends the turn, which stays live, unless it is
+the `0s` sign-off, which finishes the answer. That is an agent parking on background work, and Claude Code
 marks it completed while it waits; the row shows it 🟡 paused. A killed or failed agent is read at
 its last record and stops there.
 

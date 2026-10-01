@@ -572,13 +572,18 @@ def run(tmp):
     check("an agent that has not reported is ?, and a task with nothing to "
           "report in draws nothing",
           (eta((), start, NOW), eta(None, start, NOW)), ("\u26F3    ?", ""))
-    check("? and never a made-up 0 for a last report of zero; a completed "
-          "agent with a report left is parked and counts down to now; a "
-          "killed one is read at its last record, as its clock is",
-          (eta((NOW - 60, 0.0), start, NOW),
+    check("a last report of zero is the sign-off, not a missing estimate: 0s "
+          "as it is written, then late by however long the agent keeps going; "
+          "a completed agent with a report left is parked and counts down to "
+          "now; a killed one is read at its last record, as its clock is",
+          (eta((NOW, 0.0), start, NOW),
+           eta((NOW - 60, 0.0), start, NOW),
            eta((NOW - 300, 900.0), start, NOW, "completed", NOW - 200),
            eta((NOW - 300, 300.0), start, NOW, "killed", NOW - 300)),
-          ("\u26F3    ?", "\u26F3  10m", "\u26F3   5m"))
+          ("\u26F3   0s", "\u26F3  +1m", "\u26F3  10m", "\u26F3   5m"))
+    check("a run whose sign-off lands the moment it starts is all done, not "
+          "a division by zero",
+          sr.eta_reading((NOW, 0.0), int(NOW * 1000), NOW), (1.0, 0.0))
     check("a report older than the start, from an agent resumed after it "
           "wrote one, counts down from the report and not from the start",
           eta((NOW - 600, 900.0), int((NOW - 60) * 1000), NOW),
@@ -647,21 +652,33 @@ def run(tmp):
           "that is a thread parked on background work, not finished",
           sl.read_transcript(main, agents=()).eta,
           (sl.ts_epoch(ts(23)), 360.0))
-    parts = [agent_says(12, ETA + "5m"), ended(agent_says(12, "Standing by."))]
+    signs = []
+    for tail in ([ended(agent_says(23, "Done.\n" + ETA + "0s"))],
+                 [agent_says(23, ETA + "0s"), agent_says(24, "One more fix.")]):
+        write_jsonl(main, [dict(r, isSidechain=False) for r in turn + tail])
+        signs.append(sl.read_transcript(main, agents=()).eta)
+    check("but a 0s there is the sign-off, and finishes the answer; a 0s "
+          "written while it keeps working stays live, so the work after it "
+          "reads as late",
+          signs, [(), (sl.ts_epoch(ts(23)), 0.0)])
+    parts =[agent_says(12, ETA + "5m"), ended(agent_says(12, "Standing by."))]
     pk = session(tmp, "parked", agents=[
         ("agent-f", [agent_user(10), agent_says(11, ETA + "10m"),
                      ended(agent_says(12, "Done."))], None),
         ("agent-g", [agent_user(10), ended(agent_says(12, ETA + "5m"))], None),
         ("agent-h", [agent_user(10)] + parts, None),
         ("agent-i", [agent_user(10)] + parts + [
-            agent_user(14), ended(agent_says(15, "All done."))], None)])
+            agent_user(14), ended(agent_says(15, "All done."))], None),
+        ("agent-j", [agent_user(10), agent_says(12, ETA + "0s"),
+                     ended(agent_says(12, "All done."))], None)])
     check("an agent's row reads the same: a report in the message that ends "
           "its turn stays live, whichever of the message's records holds "
-          "it, while one that ends later without a line is finished",
+          "it, while one that ends later without a line is finished, and so "
+          "is one that signs off with 0s as it ends",
           [sl.read_agent_usage(sl.agent_file_for(pk, a)).eta
-           for a in ("f", "g", "h", "i")],
+           for a in ("f", "g", "h", "i", "j")],
           [(), (sl.ts_epoch(ts(12)), 300.0), (sl.ts_epoch(ts(12)), 300.0),
-           ()])
+           (), ()])
 
     print("--- the plan windows ---")
     sh = sl.agent_window_shares(u)

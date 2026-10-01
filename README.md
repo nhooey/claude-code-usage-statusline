@@ -12,9 +12,9 @@ so you can switch tabs and compare sessions at a glance.
 Redrawn under the prompt as the session changes. Installed as `statusLine`.
 
 ```
-👤💬 Why is the build slow?         🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳   4m 🤖   3h 🔧 58m 🚦 5.5h    📅  2026-08-16
-🤖💬 The test step takes 80٪ of…    🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳 15٪ 🔜 6.7m    🕐    02:23:20
-📦app  📁~/src/app  🌿main          🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳 87٪ 🔜 1.9d    💾 +3.4k - 214
+👤💬 Why is the build slow?         🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳   4m 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
+🤖💬 The test step takes 80٪ of…    🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
+📦app  📁~/src/app  🌿main          🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 Read these three first:

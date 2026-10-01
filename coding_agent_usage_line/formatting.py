@@ -646,7 +646,7 @@ LIM_PCT_W = 4          # the widest a limit percentage draws: three characters
 LIM_FIG_W = 4          # the field each of the three marks right-aligns its
                        # value in, on all three rows of column 4.  EXACTLY as
                        # wide as the widest thing that can land in one —
-                       # LIM_PCT_W above, and dur_fmt's three at digits=2 — so
+                       # LIM_PCT_W above, and dur_fmt's four at digits=3 — so
                        # a full-width value touches its mark and nothing is
                        # spent holding it off.
                        #
@@ -678,9 +678,12 @@ LIM_FIG_W = 4          # the field each of the three marks right-aligns its
                        # figures that happen to start together.  The cost is a
                        # leading blank on short readings ("💳 44٪"), which is
                        # the alignment, not slack.
-LIM_ACCT_W = 3         # field 2 only — 💳 the account, and 🤖 below it.  One
-                       # narrower than the fields on either side of it, and it
-                       # is the one field that can afford to be.
+LIM_ACCT_W = 4         # field 3 only — 💳 the account, and 🔧 above it.
+                       # Four, as wide as the fields beside it, for 🔧: a
+                       # duration below ten spends four with its decimal,
+                       # "1.9h", and at three 🔧 rounded it to "2h" while ⛳,
+                       # 🤖 and 🚦 kept theirs.  It was three until
+                       # 2026-09-30, which 💳 alone could afford:
                        #
                        # A percentage there spends two characters because the
                        # account figure is a WHOLE NUMBER at both sources: the
@@ -688,13 +691,10 @@ LIM_ACCT_W = 3         # field 2 only — 💳 the account, and 🤖 below it.  
                        # has only ever been observed at whole values (see
                        # limit_pct).  0 to 99 is two characters exactly, and
                        # 100 is not printed at all — E_HUNDRED draws it.  So
-                       # the column is given up for nothing, unlike 🎤 and 🎮,
+                       # the column was given up for nothing, unlike 🎤 and 🎮,
                        # whose figures are ratios this program computes and are
-                       # fractional for real.
-                       #
-                       # 🤖 fits because the ⌛ row's scope figures now ask
-                       # dur_fmt for two digits: "12h" is three columns, and a
-                       # unit still lands under a ٪.
+                       # fractional for real.  💳 keeps its two digits and
+                       # right-aligns, so its ٪ still lands under 🔧's unit.
 SHARE_FIG_W = 3        # column 3's two fields, 🎤 and 🎮 ahead of a 📖 or 📝
                        # share.  Three, because the figure is a whole percent
                        # of a bill: turn_shares rounds it once and the cost

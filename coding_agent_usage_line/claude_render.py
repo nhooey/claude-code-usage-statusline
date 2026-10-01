@@ -293,8 +293,7 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
         # The colour wrapper stays because DIM still reaches a pictograph even
         # where the foreground colour does not.
         # The threshold is limit_pct's own, not a round 100: it renders
-        # 99.6 as "100", and in LIM_ACCT_W that is one column more than the
-        # field holds.  One test, so the glyph and the string can never
+        # 99.6 as "100".  One test, so the glyph and the string can never
         # disagree about where the window ends.
         if v >= 99.5:
             return "%s%s%s%s%s" % (mark, fmt.MARK_SP, col,
@@ -591,8 +590,9 @@ def eta_reading(eta, start_ms, now, status="running", end=None):
     task start, or the prompt the main thread's turn opened on.
 
     () where there is no live estimate, which every reader draws as "?":
-    nothing reported yet, or a last report of zero — the skill's sign-off.
-    Whether a run that ended its answer is over is the transcript's call and
+    nothing reported yet.  A report of zero is not that: it is the skill's
+    sign-off, a run that says it ends now, so it reads 0s and then counts
+    up as late for as long as the run keeps going.  Whether a run that ended its answer is over is the transcript's call and
     not the status's: live_eta clears the report of an answer that finished,
     and keeps the one written in the very message that ended it, which is an
     agent parking on background work while Claude Code calls it completed.
@@ -603,7 +603,7 @@ def eta_reading(eta, start_ms, now, status="running", end=None):
     """
     if eta is None:
         return None
-    if not eta or not eta[1] > 0:
+    if not eta:
         return ()
     t = time.time() if now is None else now
     if end is not None and status in ("killed", "failed"):
@@ -617,7 +617,8 @@ def eta_reading(eta, start_ms, now, status="running", end=None):
     if t0 is not None: t0 = min(t0, at)
     total = said + (at - t0 if t0 is not None else 0.0)
     gone = t - (t0 if t0 is not None else at)
-    return (min(1.0, max(0.0, gone / total)), total - gone)
+    share = gone / total if total > 0 else 1.0
+    return (min(1.0, max(0.0, share)), total - gone)
 
 
 # An agent whose file has been silent this long no longer holds the status
@@ -657,11 +658,13 @@ def eta_fig(reading, w: int, digits: int = 3) -> str:
     if reading is None:
         return ""
     if not reading:
-        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, DIM + F_CRM, pad_val(w, "?"), R)
+        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, DIM + F_ETA, pad_val(w, "?"), R)
     left = reading[1]
     if left < 0:
+        # The "+" takes a column, so an overrun gets no decimal: "+9.3h"
+        # would not fit the four a "9.3h" left does.
         return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, F_AMB,
-                               pad_val(w, "+" + dur_fmt(-left, digits)), R)
+                               pad_val(w, "+" + dur_fmt(-left, min(digits, w - 2))), R)
     return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, mag_dim(left, MAG_DUR_S) + F_ETA,
                            pad_val(w, dur_fmt(left, digits)), R)
 
@@ -736,17 +739,12 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     duration is still printed, on the cost line's own 🎤 row, next to the
     cost it qualifies, which is where it was always read from anyway.
 
-    THE FIRST THREE FIGURES SPEND TWO DIGITS, 🚦 SPENDS THREE.  dur_fmt's
-    digits=2 forbids the decimal outright, so 1.9h renders "2h" and 5.5d
-    renders "6d" — a real loss of precision below ten, and the reason the
-    argument is passed explicitly rather than inferred.  It is paid for
-    twice over.  The field it buys is LIM_FIG_W, shared with the two limit
-    rows below, and those cannot go below four columns because a percentage
-    spends three characters and a ٪; two digits and a unit fit that field
-    with the unit landing under the ٪, which is the whole point of the
-    column.  And these three are context for the figures below them — "was
-    that turn long?", "how much of the day was waiting?" — questions a
-    rounded answer settles.
+    EVERY FIGURE KEEPS ITS DECIMAL BELOW TEN.  ⛳, 🤖 and 🔧 asked dur_fmt
+    for two digits until 2026-09-30, which forbids the decimal outright, so
+    1.9h rendered "2h" and a row read "🤖 9h 🔧 6h 🚦 2.9d".  Their fields
+    are four columns, LIM_FIG_W over 🎤 and 🎮 and LIM_ACCT_W over 💳, and
+    "1.9h" fits four exactly with its unit under the ٪ below.  ⛳'s overrun
+    keeps two digits, since its "+" takes the fourth column; see eta_fig.
 
     🚦 keeps three digits because the last field is one column wider than a
     scope field and can hold them.  Its mark is two columns, as 🔜 below it
@@ -797,8 +795,8 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
         if last is not None and t - last <= ETA_LIVE_S], turn_s),
         turn_s * 1000.0 if turn_s else None, t)
     return "%s%s %s %s %s" % (
-        S_IDLE, eta_fig(reading, LIM_FIG_W, 2),
-        fig(E_WORK, model_s), fig(E_TOOL, tool_s, LIM_ACCT_W),
+        S_IDLE, eta_fig(reading, LIM_FIG_W),
+        fig(E_WORK, model_s, LIM_FIG_W, 3), fig(E_TOOL, tool_s, LIM_ACCT_W, 3),
         fig(E_WAIT, idle, RST_W - vis_width(E_WAIT), 3))
 
 
