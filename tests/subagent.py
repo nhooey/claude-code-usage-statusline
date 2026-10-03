@@ -692,6 +692,29 @@ def run(tmp):
          0.1)
     check("no records, no share", sl.agent_window_shares(sl.NO_AGENT_USAGE),
           {"sess": None, "week": None})
+    # The panel never runs the scan: Claude Code kills its command at five
+    # seconds, which a cold scan can outlast.  It divides by a cached scan
+    # of these windows however old, and with none draws "?".
+    calib_path = os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE"]
+    with open(calib_path) as fh:
+        planted = fh.read()
+    scans = []
+    scan = sl._window_costs
+    sl._window_costs = lambda *a: scans.append(a) or (0.0, 0.0)
+    key = "%s|%s" % sl._window_starts()
+    with open(calib_path, "w") as fh:
+        json.dump({"windows": key, "sess_cost": 41.0, "week_cost": 630.0,
+                   "sess_pct": 41, "week_pct": 63}, fh)
+    os.utime(calib_path, (NOW - 3600, NOW - 3600))
+    sh = sl.agent_window_shares(u)
+    near("an hour-old scan of these windows still prices the panel's share",
+         sh["sess"], want)
+    os.remove(calib_path)
+    check("with no scan cached the panel draws ? and does not scan",
+          (sl.agent_window_shares(u), scans), ({"sess": None, "week": None}, []))
+    sl._window_costs = scan
+    with open(calib_path, "w") as fh:
+        fh.write(planted)
 
     print("--- the small formatters ---")
     check("model ids and aliases become display names",

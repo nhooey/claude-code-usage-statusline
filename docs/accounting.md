@@ -292,13 +292,29 @@ model. Agent files are included because the account percentage includes agent
 use. Files last modified more than a day before the weekly window opened are
 skipped, which bounds the scan by window length rather than history.
 
-**Caching.** The scan takes about a second, too slow for every redraw. Its two
-costs are cached together with the two percentages read at the same moment,
-keyed by the source, account, period and window boundaries, for 300 seconds.
-The division is redone on each render against the cached pair. Dividing a
-cached cost by a live percentage is wrong right after a reset, when the cost
-is seconds old and the percentage is climbing, and can make a turn's share
-larger than the account's.
+**Caching.** The scan's two costs are cached together with the two
+percentages read at the same moment, keyed by the source, account, period and
+window boundaries, for 300 seconds. The division is redone on each render
+against the cached pair. Dividing a cached cost by a live percentage is wrong
+right after a reset, when the cost is seconds old and the percentage is
+climbing, and can make a turn's share larger than the account's.
+
+Each file's priced requests are kept between scans in
+`claude-window-costs.cache` in private state, with the offset of the last
+complete line read and a digest of the 4 KiB before it. A scan reads only what
+was appended since. A file that shrank, or whose bytes before the offset
+changed, is read again from the start. Reading everything took 6.2 seconds on
+a week of 836 MB; a scan from the cache takes a tenth of a second. The cache
+is keyed to the program's source, so an upgrade starts it cold, and while it
+fills it is saved every second: Claude Code kills a status line when the next
+refresh starts, and a killed scan leaves the next one only the files it had
+not reached.
+
+The agent panel never runs the scan. Claude Code kills its command after five
+seconds and puts its own rows back, so a panel tick that started a cold scan
+showed stock rows and left the scan for the next tick. It divides by the
+cached scan for the current windows however old, and shows `?` when there is
+none; the status line and the Stop hook keep it filled.
 
 **Too small to divide by.** Percentages arrive as whole numbers, so a reading
 of 1% means anywhere from 0.5% to 1.5%. Below 2% (`CALIB_MIN_PCT`) no rate is

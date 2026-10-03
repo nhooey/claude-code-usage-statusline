@@ -698,6 +698,66 @@ def run(tmp):
          sess, 3000 * OPUS[1])
     near("and the week still counts from its own start", week, 2000 * OPUS[1])
 
+    print("--- the calibration scan's cache ---")
+    # Every scan above kept each file's priced records.  A scan of files
+    # that have not changed parses no line at all; one that has grown parses
+    # only what was appended.
+    parsed = []
+    priced = sl._priced_record
+    sl._priced_record = lambda line: parsed.append(line) or priced(line)
+    windows = (datetime(2026, 8, 16, 1, 11, 30), datetime(2026, 8, 1))
+    sess, week = sl._window_costs(*windows)
+    check("an unchanged tree is read from the cache, line for line none",
+          (len(parsed), round(week / OPUS[1])), (0, 3000))
+    main_tr = os.path.join(proj, "s1.jsonl")
+    with open(main_tr, "a") as fh:
+        fh.write(json.dumps(answer(13, "m2", 0, 0, 0, 1000)) + "\n")
+    sess, week = sl._window_costs(*windows)
+    check("an appended record is the only line parsed, and it counts",
+          (len(parsed), round(week / OPUS[1]), round(sess / OPUS[1])),
+          (1, 4000, 3000))
+    # A last line with no newline may be half written: billed if it parses,
+    # but read again whole next time rather than kept.
+    with open(main_tr, "a") as fh:
+        fh.write(json.dumps(answer(14, "m3", 0, 0, 0, 1000)))
+    del parsed[:]
+    first = sl._window_costs(*windows)[1]
+    second = sl._window_costs(*windows)[1]
+    check("a line still being written counts, once, and is not kept",
+          (round(first / OPUS[1]), round(second / OPUS[1]), len(parsed)),
+          (5000, 5000, 2))
+    # A file rewritten shorter, or with different bytes before where the
+    # last scan stopped, is read again from the start.
+    write_jsonl(main_tr, [prompt(10, "x"), answer(11, "m1", 0, 0, 0, 2000)])
+    del parsed[:]
+    week = sl._window_costs(*windows)[1]
+    check("a rewritten file is read again from its start",
+          (len(parsed), round(week / OPUS[1])), (2, 4000))
+    # A scan killed part way, as Claude Code kills a status line the next
+    # refresh overtakes, keeps what it had read: the next scan reads only
+    # the files it had not reached.
+    os.remove(os.path.join(os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"],
+                           "claude-window-costs.cache"))
+    every, sl.COST_SAVE_EVERY_S = sl.COST_SAVE_EVERY_S, -1.0
+
+    def killed(line):
+        if b'"w"' in line:
+            raise KeyboardInterrupt
+        return priced(line)
+    sl._priced_record = killed
+    try:
+        sl._window_costs(*windows)
+    except KeyboardInterrupt:
+        pass
+    sl._priced_record = lambda line: parsed.append(line) or priced(line)
+    sl.COST_SAVE_EVERY_S = every
+    del parsed[:]
+    week = sl._window_costs(*windows)[1]
+    check("a killed scan's files are kept, and the next reads only the "
+          "workflow file's two lines it had not reached",
+          (len(parsed), round(week / OPUS[1])), (2, 4000))
+    sl._priced_record = priced
+
     print()
     print("pass %d   fail %d" % (pass_n, fail_n))
     return 1 if fail_n else 0

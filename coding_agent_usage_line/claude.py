@@ -961,6 +961,17 @@ def _window_costs(sess_start: Optional[datetime],
     out small, and a session's 🔋 share came out above the account's own
     reading: 💯 seconds after a reset, and 14٪ of a window reading 10٪ six
     minutes later.
+
+    Each file's priced records are kept between scans by _file_costs, and a
+    scan reads only the bytes appended since the last one.  Reading them all
+    took 6.2 s on 2026-10-01, 836 MB in 372 files, which is past the agent
+    panel's five-second timeout: Claude Code killed the panel's command, put
+    its stock rows back, and the next tick started the same scan again.
+
+    A cold scan, after an upgrade changes the cache's version, still reads
+    everything, and the status line is killed too when the next refresh
+    starts.  So the cache is saved every COST_SAVE_EVERY_S while it fills,
+    and a killed scan leaves the next one only the files it had not reached.
     """
     sess = week = 0.0
     seen = set()
@@ -969,44 +980,194 @@ def _window_costs(sess_start: Optional[datetime],
     cutoff = None
     if earliest is not None:
         cutoff = (earliest - timedelta(days=1)).timestamp()
+    # Epochs on both sides: the records are kept as epochs, and a naive
+    # local start's .timestamp() is the instant _local_naive compared with.
+    early_e = earliest.timestamp() if earliest is not None else None
+    week_e = week_start.timestamp() if week_start is not None else None
+    sess_e = sess_start.timestamp() if sess_start is not None else None
     files = (glob.glob(os.path.join(PROJECTS_DIR, "*", "*.jsonl"))
              + glob.glob(os.path.join(PROJECTS_DIR, "*", "*", "subagents",
                                       "**", "agent-*.jsonl"), recursive=True))
+    cache = _CostCache()
+    saved = time.monotonic()
     for fp in files:
+        if time.monotonic() - saved > COST_SAVE_EVERY_S:
+            cache.save(final=False)
+            saved = time.monotonic()
         if cutoff is not None:
             try:
                 if os.path.getmtime(fp) < cutoff:
                     continue
             except OSError:
                 continue
-        for r in _records(fp):
-            if r.get("type") != "assistant":
-                continue
-            u = (r.get("message") or {}).get("usage")
-            ts = r.get("timestamp")
-            if not u or not ts:
-                continue
-            k = r.get("requestId") or (r.get("message") or {}).get("id")
+        for t, k, c in cache.records(fp):
             if k in seen:
                 continue
             seen.add(k)
-            t = _local_naive(ts)
             if t is None:
                 continue
-            if earliest and t < earliest:
+            if early_e is not None and t < early_e:
                 continue
-            pi, po, pr, pw = _price((r.get("message") or {}).get("model"))
-            c = (u.get("input_tokens", 0) * pi + u.get("output_tokens", 0) * po
-                 + u.get("cache_read_input_tokens", 0) * pr
-                 + u.get("cache_creation_input_tokens", 0) * pw)
-            if not week_start or t >= week_start:
+            if week_e is None or t >= week_e:
                 week += c
-            if sess_start and t >= sess_start:
+            if sess_e is not None and t >= sess_e:
                 sess += c
+    cache.save()
     return sess, week
 
 
-def calibration() -> Dict[str, Optional[float]]:
+def _priced_record(line: bytes) -> Optional[Tuple[Optional[float], Optional[str], float]]:
+    """One transcript line as (epoch, request id, list-price cost), or None.
+
+    None for anything _window_costs does not bill: a line that will not
+    parse, a record that is not an assistant's, or one with no usage or no
+    stamp.  The epoch is None for a stamp that will not parse, which still
+    claims its request id, as it always has.
+    """
+    try:
+        r = json.loads(line.decode("utf-8", "replace"))
+    except Exception:
+        return None
+    if not isinstance(r, dict) or r.get("type") != "assistant":
+        return None
+    m = r.get("message") or {}
+    u = m.get("usage")
+    ts = r.get("timestamp")
+    if not u or not ts:
+        return None
+    pi, po, pr, pw = _price(m.get("model"))
+    c = (u.get("input_tokens", 0) * pi + u.get("output_tokens", 0) * po
+         + u.get("cache_read_input_tokens", 0) * pr
+         + u.get("cache_creation_input_tokens", 0) * pw)
+    return ts_epoch(ts), r.get("requestId") or m.get("id"), c
+
+
+# How much of a file, ending where the last scan stopped, has to read the
+# same for the scan to trust that the file was only appended to since.
+COST_TAIL_BYTES = 4096
+# How often a scan that is still reading saves what it has; see _window_costs.
+COST_SAVE_EVERY_S = 1.0
+
+
+class _CostCache:
+    """Every scanned file's priced records, kept from one scan to the next.
+
+    A transcript is only ever appended to, so what a file held at the last
+    scan is still at its head, and only the lines after it need reading.
+    The cache keeps, per file, the offset of the last complete line it read,
+    a digest of the bytes just before it, and the records up to it.  A file
+    that has shrunk, or whose bytes before the offset no longer match, was
+    rewritten, and is read again from the start.
+
+    Within one file a request id after its first record is dropped when the
+    file is read: _window_costs keeps the first, and a later record in the
+    same file can never come before it.  That leaves one record per request
+    and keeps the cache to about a quarter of the lines.
+
+    A last line with no newline yet may be half written.  It is billed if it
+    parses, but not kept, and is read again whole on the next scan.
+
+    Keyed by a digest of the package's source, like the agent-file cache,
+    since the prices and the rules for what counts are both in it.  Not a
+    .json file: state.find_compatible reads every .json in the directory as
+    a usage cache.
+    """
+
+    def __init__(self) -> None:
+        self.path = os.path.join(state.state_dir(), "claude-window-costs.cache")
+        self.kept: dict = {}
+        self.keep: dict = {}
+        self.dirty = False
+        try:
+            with open(self.path, "r") as fh:
+                d = json.load(fh)
+            if isinstance(d, dict) and d.get("version") == _source_digest():
+                self.kept = d.get("files") or {}
+        except (OSError, ValueError):
+            pass
+
+    def records(self, path: str) -> list:
+        try:
+            fh = open(path, "rb")
+        except OSError:
+            return []
+        with fh:
+            got = self.kept.get(path)
+            off, recs, reused = 0, [], False
+            if isinstance(got, dict) and _tail_digest(fh, got.get("off", -1)) == got.get("tail"):
+                off, recs, reused = got["off"], got["recs"], True
+            fh.seek(off)
+            new, seen, partial = [], {k for _, k, _ in recs}, None
+            for line in fh:
+                if not line.endswith(b"\n"):
+                    partial = _priced_record(line)
+                    break
+                off += len(line)
+                rec = _priced_record(line)
+                if rec is None or rec[1] in seen:
+                    continue
+                seen.add(rec[1])
+                new.append(list(rec))
+            if new or not reused or got.get("off") != off:
+                recs = recs + new
+                self.dirty = True
+            self.keep[path] = {"off": off, "tail": _tail_digest(fh, off),
+                               "recs": recs}
+        if partial is not None and partial[1] not in seen:
+            return recs + [list(partial)]
+        return recs
+
+    def save(self, final: bool = True) -> None:
+        """Write the cache back if it changed.  A save before the scan has
+        finished keeps the files it has not reached yet; the final one
+        drops every file this scan did not read, which has aged out."""
+        if final and not (self.dirty or set(self.kept) != set(self.keep)):
+            return
+        if not final and not self.dirty:
+            return
+        files = self.keep if final else dict(self.kept, **self.keep)
+        try:
+            os.makedirs(os.path.dirname(self.path), mode=0o700, exist_ok=True)
+            tmp = "%s.%d" % (self.path, os.getpid())
+            with open(tmp, "w") as fh:
+                json.dump({"version": _source_digest(), "files": files},
+                          fh, separators=(",", ":"))
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, self.path)
+            self.dirty = False
+        except OSError:
+            pass
+
+
+def _tail_digest(fh, off: int) -> Optional[str]:
+    """A digest of the COST_TAIL_BYTES before `off`, or None past the end."""
+    if not isinstance(off, int) or off < 0:
+        return None
+    start = max(0, off - COST_TAIL_BYTES)
+    fh.seek(start)
+    data = fh.read(off - start)
+    if len(data) != off - start:
+        return None
+    return hashlib.sha256(data).hexdigest()
+
+
+@functools.lru_cache(maxsize=1)
+def _source_digest() -> str:
+    """A digest of this package's source, so records priced by one version
+    are never served to another."""
+    h = hashlib.sha256()
+    d = os.path.dirname(os.path.abspath(__file__))
+    for name in sorted(os.listdir(d)):
+        if name.endswith(".py"):
+            try:
+                with open(os.path.join(d, name), "rb") as fh:
+                    h.update(name.encode("utf-8") + b"\0" + fh.read())
+            except OSError:
+                pass
+    return h.hexdigest()
+
+
+def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     """Dollars per one percent of each plan window.
 
     The plist exposes only aggregate percentages, never a per-prompt or
@@ -1059,12 +1220,21 @@ def calibration() -> Dict[str, Optional[float]]:
     Written via a temp file and os.replace: the path is shared by every
     session on the machine, and two hooks finishing together were previously
     able to interleave a write.
+
+    `scan=False` never runs the scan.  It takes the cached one for these
+    windows however old, and with none returns no units, which draws "?".
+    The agent panel passes it: Claude Code kills the panel's command at five
+    seconds and puts its stock rows back, a cold scan can take longer than
+    that, and a killed scan never reaches the cache, so the next tick paid
+    for it again.  The status line and the Stop hook keep the cache filled.
     """
     snap = limits_snapshot()
     ss, ws = _window_starts()
     out = {"sess": None, "week": None}
     sp, wp = snap.get("session_pct"), snap.get("weekly_pct")
     cached = _read_calib_cache("%s|%s" % (ss, ws))
+    if cached is None and not scan:
+        cached = _read_calib_cache("%s|%s" % (ss, ws), ttl=None)
     if cached is not None and "windows" not in cached:
         # A planted fixture, which states the two UNITS directly and holds
         # them still.  The goldens need that: the real form is keyed by
@@ -1095,7 +1265,7 @@ def calibration() -> Dict[str, Optional[float]]:
         # window key still holds them to this window.
         sc, wc = cached.get("sess_cost"), cached.get("week_cost")
         sp, wp = cached.get("sess_pct"), cached.get("week_pct")
-    elif ss is None and ws is None:
+    elif (ss is None and ws is None) or not scan:
         return out
     else:
         sc, wc = _window_costs(ss, ws)
@@ -1114,8 +1284,11 @@ def calibration() -> Dict[str, Optional[float]]:
     return out
 
 
-def _read_calib_cache(windows: str) -> Optional[dict]:
+def _read_calib_cache(windows: str, ttl: Optional[float] = CALIB_TTL
+                      ) -> Optional[dict]:
     """The cached scan, if it is fresh AND measured over these windows.
+
+    Fresh is younger than `ttl` seconds; a `ttl` of None takes any age.
 
     A dict with no "windows" key is a planted fixture and is returned as-is
     for the caller to read as units; anything else has to match, because a
@@ -1123,7 +1296,7 @@ def _read_calib_cache(windows: str) -> Optional[dict]:
     """
     path = calibration_cache_path(windows)
     try:
-        if os.path.getmtime(path) <= time.time() - CALIB_TTL:
+        if ttl is not None and os.path.getmtime(path) <= time.time() - ttl:
             return None
         with open(path) as fh:
             d = json.load(fh)
@@ -2057,14 +2230,15 @@ def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
     turn_cost_since for a record list rather than a Turn: the same
     boundaries (_window_starts), the same unit (calibration), the same rule
     for an unstamped record — it counts IN.  None where either is missing,
-    which render_agent_limit draws as "?".
+    which render_agent_limit draws as "?".  The unit is the cached one only:
+    see calibration's `scan`.
     """
     out = {"sess": None, "week": None}
     if not u.parts:
         return out
     try:
         starts = dict(zip(("sess", "week"), _window_starts()))
-        calib = calibration()
+        calib = calibration(scan=False)
     except Exception:
         return out
     for key, start in starts.items():
