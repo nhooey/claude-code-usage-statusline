@@ -18,6 +18,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -168,6 +169,27 @@ def run(sl, sr, scratch):
           (sl.vis_width(cell(200.0, 98)),
            sl.vis_width(ANSI.sub("", sl.render_tokens(2700000, 841000)))),
           (sl.RIGHT_GRID[1], sl.RIGHT_GRID[1]))
+    # The padded profile, where each mark takes a column of air: the
+    # profile is read at import, so it is a process of its own.
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("TMUX", "TERMINAL_EMULATOR")}
+    env["TERM_PROGRAM"] = "iTerm.app"
+    padded = subprocess.run([sys.executable, "-c", (
+        "import re, sys; sys.path.insert(0, %r)\n"
+        "from coding_agent_usage_line import claude as sl\n"
+        "A = lambda s: re.sub(r'\\x1b\\[[0-9;]*m', '', s)\n"
+        "for c in (sl.render_model_cost('Opus 5', 'medium', '5100'),\n"
+        "          sl.render_tokens(1.6e9, 6.2e6, sl.COL2_VAL2_W),\n"
+        "          sl.render_rate_cache(234.0, 96)):\n"
+        "    print(A(c))") % root],
+        env=env, capture_output=True, text=True).stdout.splitlines()
+    check("padded, column 2's first fields start one column past their "
+          "marks and the second figures end on its right edge, 15 wide",
+          (padded, [sl.vis_width(r) for r in padded]),
+          (["\U0001F916 O⁵\U0001F6B6  \U0001F4B05.1k",
+            "\U0001F9E9 ▴1.6G  ▾6.2M",
+            "\U0001F6EB 234/s \U0001F3AF 96٪"], [15, 15, 15]))
     ctx = lambda: ANSI.sub("", sl.render_ctx(11, 115000))
     share = lambda mark, t, s_: ANSI.sub("", sl.render_cache_share(mark, t, s_))
     # Where a figure ENDS: the columns up to and including its last glyph.

@@ -1358,7 +1358,9 @@ WIDTHS = widths_for(PROFILE)
 # 🤖 and 💰 lost the pad for an hour on 2026-09-14 and have it back: the
 # value against the icon was asked for and then unasked.  The agent rows'
 # 🤖 never had it (render_agent_model), and that row's 💰 borrows this cell
-# and follows it.
+# and follows it.  The status line's own 💰 touches its figure again since
+# 2026-10-02, as ▾ does, so the column's second figures end together; see
+# render_model_cost.
 _PAD = " " if PROFILE in ("iterm", "tmux") else ""
 
 # Status-mode glyph forms.  The ones written with a literal " " carry it in
@@ -1380,6 +1382,10 @@ S_RATE = E_RATE + _PAD
 S_CACHE = E_CACHE + _PAD
 S_COST = E_COST + _PAD
 S_HUMAN = E_HUMAN + " "
+# Column 2's second field on the status line: the column, less a mark and its
+# pad and VAL_W, so 💰's, ▾'s and 🎯's figures all end on the column's right
+# edge, in either profile.  The agent rows keep VAL2_W.
+COL2_VAL2_W = VAL2_W + len(_PAD)
 S_BOT = E_BOT + " "
 S_TIME = E_TIME + " "
 S_DATE = E_DATE + " "

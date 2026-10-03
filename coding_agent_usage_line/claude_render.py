@@ -37,7 +37,7 @@ def project_name(git: Git, project_dir: str) -> str:
 # function that set those globals grew every time a renderer wanted something.
 # ════════════════════════════════════════════════════════════════════════════
 
-def render_tokens(up: Optional[int], down: int) -> str:
+def render_tokens(up: Optional[int], down: int, down_w: int = VAL2_W) -> str:
     """The ▴/▾ billable-equivalent token totals.
 
     Each figure gets four columns of its own — three characters and a unit, the
@@ -49,6 +49,9 @@ def render_tokens(up: Optional[int], down: int) -> str:
     Each half is bright from MAG_TOK up and dim under it, arrow included —
     the arrow is the figure's, not the cell's — and each is reset on its
     own, so a dim ▴ never dims the ▾ after it.
+
+    `down_w` is the ▾ field's width: the status line passes COL2_VAL2_W, so
+    the ▾ figure ends on column 2's right edge with 💰's and 🎯's.
     """
     if up is None:
         return ""
@@ -56,7 +59,7 @@ def render_tokens(up: Optional[int], down: int) -> str:
         S_TOK, mag_dim(up, MAG_TOK) + F_TUP,
         pad_val(VAL_W, E_UP + pad_val(4, humanize(up)), True), R,
         mag_dim(down, MAG_TOK) + F_TDN,
-        pad_val(VAL2_W, E_DOWN + pad_val(4, humanize(down))), R)
+        pad_val(down_w, E_DOWN + pad_val(4, humanize(down))), R)
 
 
 def render_rate_cache(rate: Optional[float], cache_pct: int) -> str:
@@ -90,9 +93,12 @@ def render_rate_cache(rate: Optional[float], cache_pct: int) -> str:
     if cache_pct is None or cache_pct < 0:
         return ""
     fig = "" if rate is None else rate_fig(rate) + "/s"
+    # 🎯 takes its pad, where 💰 and ▾ touch their figures: the percentage
+    # is three wide, and the pad makes it the four theirs are, so the three
+    # end together on the column's edge — "🎯 96٪" under "▾6.2M".
     return "%s%s%s%s%s" % (
         S_RATE, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(VAL_W, fig), R,
-        pad_val(VAL2_W, E_CACHE + cache_color(cache_pct)
+        pad_val(COL2_VAL2_W, S_CACHE + cache_color(cache_pct)
                 + pad_val(3, pct2(cache_pct) + E_PCT) + R))
 
 
@@ -159,11 +165,12 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
         F_PNK, pad_val(pct_w, "%d%s" % (ctx_pct, E_PCT)), R)
 
 
-def render_cost(cost_usd: str) -> str:
+def render_cost(cost_usd: str, mark: str = S_COST) -> str:
     """The session cost, "💰115 ": money_fig's three characters and a unit
     column.  Always yellow — no value tiering — and
     dim under MAG_COST, a dollar; the agent rows borrow the cell, so a heavy
-    agent's 💰 is the bright one down the panel."""
+    agent's 💰 is the bright one down the panel.  The status line passes the
+    bare E_COST as `mark`: see render_model_cost."""
     if not cost_usd or cost_usd == "null":
         return ""
     try:
@@ -172,7 +179,7 @@ def render_cost(cost_usd: str) -> str:
         return ""
     if not math.isfinite(c):            # json reads NaN and 1e400 as floats
         return ""
-    return "%s%s%s%s" % (S_COST, mag_dim(c, MAG_COST) + F_YEL,
+    return "%s%s%s%s" % (mark, mag_dim(c, MAG_COST) + F_YEL,
                          pad_val(4, money_fig(c)), R)
 
 
@@ -187,12 +194,18 @@ def render_model_cost(model: str, effort: str, cost_usd: str) -> str:
     drawn, so the 💰 does not shift with the effort; one space between,
     so the glyph and the coin are not two emoji touching.  Either half
     absent draws blank in its place, and both absent draws nothing.
+
+    Since 2026-10-02, to Neil's spec, the two halves are the column's two
+    fields: the model in VAL_W, over ▴'s figure and the rate, and 💰 with
+    its figure right-aligned in COL2_VAL2_W, so the cost ends on the
+    column's edge with ▾'s and 🎯's figures — "🤖 O⁵🚶  💰5.1k".  💰 touches
+    its figure as ▾ does, and the agent rows' 💰 keeps its pad.
     """
     mod = render_model(model, effort)
-    cost = render_cost(cost_usd)
+    cost = render_cost(cost_usd, E_COST)
     if not mod and not cost:
         return ""
-    return seg(vis_width(S_MOD) + W_MOD, mod) + " " + cost
+    return seg(vis_width(S_MOD) + VAL_W, mod) + (pad_val(COL2_VAL2_W, cost) if cost else "")
 
 
 def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
@@ -1040,7 +1053,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     ), rule=rule)
     limits_row = grid_row((
         render_pr(pay.pr_number),
-        render_tokens(tr.tok_up, tr.tok_down),
+        render_tokens(tr.tok_up, tr.tok_down, COL2_VAL2_W),
         render_cache_share(S_READ, cache.turn_read, cache.sess_read,
                            F_SHARE, dim_rd_turn, dim_rd_sess),
         render_limit(S_SESS, lim.session_pct, lim.session_share,
