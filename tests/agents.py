@@ -468,6 +468,46 @@ def run(tmp):
     check("and never goes below zero",
           sl.net_tool_seconds(((0, 1),), ((0, 9),)), 0.0)
 
+    # \U0001F4BB and \U0001F4E1: the shells and Monitors the main thread
+    # started and has not heard the end of, as an agent row counts its own.
+    def started(minute, **res):
+        return {"type": "user", "timestamp": ts(minute), "toolUseResult": res,
+                "message": {"content": [{"type": "tool_result", "content": "ok"}]}}
+    def notice(minute, tid, status=True):
+        return {"type": "user", "timestamp": ts(minute), "message": {"content":
+            "<task-notification><task-id>%s</task-id>%s</task-notification>"
+            % (tid, "<status>completed</status>" if status else "<event>line</event>")}}
+    bgt = session(tmp, "background", [
+        prompt(10, "go", "p1"),
+        started(11, taskId="m1", timeoutMs=600000),
+        started(12, taskId="m2", timeoutMs=600000),
+        started(13, backgroundTaskId="b1"),
+        started(13, backgroundTaskId="b2"),
+        started(13, backgroundTaskId="b3"),
+        dict(started(14, taskId="m3", timeoutMs=600000), isSidechain=True),
+        notice(15, "m1", status=False),     # an event, not the end
+        notice(16, "m2"),                   # its stream ended
+        notice(17, "b3"),                   # finished
+    ])
+    t = sl.read_transcript(bgt, ())
+    check("\U0001F4BB counts the shells still open and \U0001F4E1 a Monitor "
+          "whose events carry no status; not a task that ended, or an agent's",
+          ((t.shells, t.monitors),
+           (sl.EMPTY_TRANSCRIPT.shells, sl.EMPTY_TRANSCRIPT.monitors)),
+          ((2, 1), (0, 0)))
+    check("drawn shells first, each only while it has one",
+          [sl.strip_ansi(sl.render_thread_background(*n)).replace(" ", "")
+           for n in ((2, 1), (0, 3), (4, 0), (0, 0))],
+          ["\U0001F4BB2\U0001F4E11", "\U0001F4E13", "\U0001F4BB4", ""])
+    git = sl.Git(True, "main", False, "", "", False)
+    plain = [sl.strip_ansi(sl.render_where_group(
+        "p", "~/x", "main", git, sl.render_thread_background(*n)))
+             for n in ((0, 0), (2, 1))]
+    check("on the end of row 3's left half, after the branch",
+          (plain[1][:len(plain[0])] == plain[0],
+           plain[1][len(plain[0]):].replace(" ", "")),
+          (True, "\U0001F4BB2\U0001F4E11"))
+
     print("--- the receipt splits each turn by the same rule ---")
     # The receipt's ⌛🤖 and 🔧 are the status line's 🤖 and 🔧 read over
     # one turn: a shell is 🔧, a question or an agent the turn sat on is

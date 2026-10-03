@@ -36,7 +36,13 @@ The readout has a left half that flows and a right half that does not.
 
 **Left:** the last prompt (👤💬) and the last reply (🤖💬), each on one line
 with newlines shown as `¶`, then where the session is working: 📦 project,
-📁 current directory, 🌿 branch. The two chat rows swap while the model is
+📁 current directory, 🌿 branch. While the main thread has a background shell
+or a Monitor running, `💻 2 📡 1` follows the branch: how many of each it
+started and has not heard the end of, read as the [tree reads an
+agent's](#state), each drawn only while it has one. Claude Code says the same
+in words, and the panel gives a shell a row of its own; the counts are here
+so the main thread reads as its agents' rows do. They take their columns from
+the directory, and only while something runs. The two chat rows swap while the model is
 answering, so the newer message is always on the second row; the metrics
 beside them stay put.
 
@@ -379,12 +385,13 @@ where the figures start (see [Nesting](#nesting)).
 
 ### Tree cells
 
-Left to right. 👶🏻, 🤏, 📨 and 🔇 are drawn only while some row on the
+Left to right. 👶🏻, 🤏, 💻, 📡, 📨 and 🔇 are drawn only while some row on the
 panel needs them, so they sit together right after the kind and state:
-those keep their column however many of the four the panel draws, and one
+those keep their column however many of the six the panel draws, and one
 coming or going moves only the id and the name, never the right group. The
-ones that stay once they come, 👶🏻 and 🤏, sit furthest left, so 📨 and 🔇
-coming and going move the fewest cells. On a panel where no row needs one,
+ones that stay once they come, 👶🏻 and 🤏, sit furthest left, then 💻 and 📡,
+which last as long as a shell or a Monitor runs, so 📨 and 🔇 coming and going
+move the fewest cells. On a panel where no row needs one,
 a cell takes no columns at all.
 
 | Cell | Meaning |
@@ -393,6 +400,8 @@ a cell takes no columns at all.
 | state | the phase, 🟢 running, 🟡 paused or ⚫ ended, then what the agent is doing in it. See [State](#state) |
 | 👶🏻 | how many rows hang directly under it on the panel, finished or not. The cell is there on every row once any row has children |
 | 🤏 | how often its window has been compacted. On every row once any row has one |
+| 💻 | how many background shells it started and has not heard the end of, while it runs or is paused; not once it has failed or been killed. Paused, the 💻 after 🟡 says it waits on one; this says how many. On every row once any row has one |
+| 📡 | the same for its Monitors |
 | 📨 | messages sent to it with SendMessage and not yet delivered: Claude Code's own "N queued". See [Inbox](#inbox). On every row once any row has one |
 | 🔇 | how long a running agent has written nothing, from a minute, amber from ten. Blank while it waits on a question or an agent it started, which its 🚦 already says. The cell is there on every row once any row draws one |
 | id | the task id, cut to ten columns |
@@ -490,7 +499,7 @@ two columns per level below the first, so a child's right-hand group lands
 on the same columns as its parent's. The panel's indent also pushes a
 child's left-hand cells two columns right of its parent's, so every row
 opens with two blank columns per level it sits above the deepest row, and
-the kind, state, 👶🏻, 🤏, 📨, 🔇, id and name start on one column at every depth.
+the kind, state, 👶🏻, 🤏, 💻, 📡, 📨, 🔇, id and name start on one column at every depth.
 
 In a wide window the panel's tree is far from the figures, so the row draws
 it again where the figures start: `◯` for an agent, `├ ◯` or `└ ◯` for a child, with

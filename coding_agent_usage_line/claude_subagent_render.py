@@ -132,6 +132,17 @@ def render_compactions(n):
 def render_inbox(n):
     """📨 and how many messages wait for the agent's next tool round."""
     return "" if not n else "%s%s%d%s" % (E_INBOX, F_CYN, n, R)
+def background_count(status, usage, kind):
+    """How many background tasks of `kind`, "bash" or "monitor", the agent
+    started and has not heard the end of; 0 once it failed or was killed,
+    whose tasks Claude Code stops with it and sends no word of."""
+    if status in ("failed", "killed"): return 0
+    return sum(1 for _, k in getattr(usage, "background", ()) or () if k == kind)
+def render_background(mark, n):
+    """💻 or 📡 and how many shells or Monitors it has running; "" for none.
+    The paused mark says which one wakes it; this says how many there are,
+    and says it while the agent is still running too."""
+    return "" if not n else "%s%s%d%s" % (mark, F_CRM, n, R)
 def silence(status, usage, now):
     """Seconds a running agent has written nothing, once that is A_SILENT_S
     or more; None otherwise.  A tool round, a request, a progress line: any
@@ -453,7 +464,7 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     on the panel, 0 where no row has any, which drops the cell from all.
     `lead` is the blank a row opens with so that its cells start where the
     deepest row's do; see render_task_rows.  `widths` holds the panel's
-    widest 🔇, 📨 and 🤏 cells, as `kids_w` does 👶🏻's; see panel_widths.
+    widest 🔇, 📨, 📡, 💻 and 🤏 cells, as `kids_w` does 👶🏻's; see panel_widths.
     """
     task, meta, shares, widths = task or {}, meta or {}, shares or {}, widths or {}
     if cols: cols = max(0, cols - tree_cols(task, meta, depth) - lead)
@@ -502,11 +513,13 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # right after the kind and state, which keep their column however many
     # of them the panel draws; what comes and goes moves only the id, the
     # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
-    # stay once they come, 📨 and 🔇 do not — so the passing ones shift the
-    # fewest.
+    # stay once they come; 💻 and 📡 last as long as a shell or a Monitor
+    # runs; 📨 and 🔇 pass quickest — so the passing ones shift the fewest.
     head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_KIND_W+A_STATE_W, render_kind(str(meta.get("agentType") or ""),kind)+render_state(status, usage, waiting_on)),
                                                      (kids_w, render_kids(kids)),
                                                      (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
+                                                     (widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),
+                                                     (widths.get("monitors", 0), render_background(E_MODE_MONITOR, background_count(status, usage, "monitor"))),
                                                      (widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0))),
                                                      (widths.get("silent", 0), render_silence(silence(status, usage, now))),
                                                      (A_ID_W, DIM+F_BLU2+fit_cols(tid,A_ID_W)+R)) if w)
@@ -522,7 +535,8 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     return (" "*lead+head+" "*A_HEAD_GAP+seg(room,render_who(name,act,room,branch))+gap+right).rstrip()
 
 def panel_widths(prepared_tasks, now=None):
-    """The widest 🔇, 📨 and 🤏 cell on the panel, each 0 where no row draws one.
+    """The widest 🔇, 📨, 📡, 💻 and 🤏 cell on the panel, each 0 where no row
+    draws one.
 
     As 👶🏻's: a cell that no row needs costs no row a column, and one that
     any row needs is kept on every row, so the columns after it hold.
@@ -533,7 +547,11 @@ def panel_widths(prepared_tasks, now=None):
             "inbox": max([vis_width(E_INBOX) + len(str(getattr(u, "inbox", 0)))
                           for _, u in live if getattr(u, "inbox", 0)] or [0]),
             "compact": max([vis_width(E_ROW_COMPACT) + len(str(getattr(u, "compactions", 0)))
-                            for _, u in live if getattr(u, "compactions", 0)] or [0])}
+                            for _, u in live if getattr(u, "compactions", 0)] or [0]),
+            "shells": max([vis_width(E_MODE_SHELL) + len(str(background_count(st, u, "bash")))
+                           for st, u in live if background_count(st, u, "bash")] or [0]),
+            "monitors": max([vis_width(E_MODE_MONITOR) + len(str(background_count(st, u, "monitor")))
+                             for st, u in live if background_count(st, u, "monitor")] or [0])}
 
 def render_task_rows(prepared_tasks, limits, cols=None, now=None):
     """Return `(task_id, row)` pairs for prepared `(task, usage, meta, shares)` facts."""

@@ -120,6 +120,9 @@ class Transcript(NamedTuple):
                             # see queue_step
     compactions: int = 0    # how often this window has been compacted; see
                             # is_compaction
+    shells: int = 0         # background shells this thread started and has
+                            # not heard the end of; see scan_background
+    monitors: int = 0       # and Monitors, likewise
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -1469,12 +1472,14 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     # an estimate of anything still running.
     eta_state = new_eta_state()
     queued = compactions = 0
+    background = {}
     for r in records:
         queued = max(0, queued + queue_step(r))
         compactions += is_compaction(r)
         scan_tool_spans(r, pending, tools, blocked)
         if r.get("isSidechain") is not True:
             live_eta(r, eta_state)
+            scan_background(r, background)
         t = ts_epoch(r.get("timestamp") or "")
         if t is None:
             continue
@@ -1516,6 +1521,8 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         agent_etas=tuple(agent_etas),
         queued=queued,
         compactions=compactions,
+        shells=sum(1 for k in background.values() if k == "bash"),
+        monitors=sum(1 for k in background.values() if k == "monitor"),
     )
 
 

@@ -1076,8 +1076,10 @@ E_PHASE_END = "⚫"       # ⚫  ended, and waiting on nothing
 # Running, the ⌛ split's own marks: E_WORK, E_TOOL, E_WAIT.
 E_MODE_AGENTS = "💤"     # 💤  paused on agents it started
 E_MODE_SHELL = "💻"      # 💻  paused on a background shell; not 🐚, which
-                         #    a shell's own row wears as its kind
-E_MODE_MONITOR = "📡"    # 📡  paused on a Monitor
+                         #    a shell's own row wears as its kind.  With a
+                         #    figure, how many it has open, and on the
+                         #    status line the main thread's
+E_MODE_MONITOR = "📡"    # 📡  paused on a Monitor; with a figure, likewise
 E_MODE_QUEUED = "🥚"     # 🥚  not started: Claude Code's pending
 E_MODE_DONE = "✅"       # ✅  completed
 E_MODE_FAILED = "❌"     # ❌  failed

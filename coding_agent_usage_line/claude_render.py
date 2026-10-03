@@ -873,8 +873,22 @@ def allocate_left(budget: int, nat_branch: int, nat_proj: int,
     return got[0], got[1], got[2]
 
 
-def render_where_group(proj: str, path: str, branch: str, git: Git) -> str:
-    """The project / pwd / branch group — the flush-left half of line 3.
+def render_thread_background(shells: int, monitors: int) -> str:
+    """💻 the background shells and 📡 the Monitors the main thread started
+    and has not heard the end of — "💻 2 📡 1" — each only while it has one,
+    and "" for neither.  The agent rows count their own the same way.
+    Claude Code says as much in words, and the panel gives a shell a row of
+    its own; these are here so the main thread reads as its agents do."""
+    return " ".join("%s%s%s%d%s" % (mark, fmt.MARK_SP, F_CRM, n, R)
+                    for mark, n in ((E_MODE_SHELL, shells),
+                                    (E_MODE_MONITOR, monitors)) if n)
+
+
+def render_where_group(proj: str, path: str, branch: str, git: Git,
+                       background: str = "") -> str:
+    """The project / pwd / branch group — the flush-left half of line 3,
+    then `background`, render_thread_background's 💻 and 📡, while the main
+    thread has a shell or a Monitor running.
 
     All three names arrive PRE-FITTED rather than being read from state,
     because the caller has to size them against whatever the right half leaves
@@ -885,7 +899,9 @@ def render_where_group(proj: str, path: str, branch: str, git: Git) -> str:
     Whether the branch segment exists at all is a property of the SESSION —
     git.branch — not of the text passed in, which is empty on the measuring
     call.  Keying it off the session is what makes that call return the true
-    chrome width.
+    chrome width.  💻 and 📡 go on the end of this half rather than in
+    column 1, whose row 3 📨 and 🤏 fill: here they cost the pwd its columns
+    only while a shell or a Monitor runs, and the fixed grid none.
     """
     out = ["%s%s%s%s" % (E_PROJ, F_BLU, proj, R),
            "%s%s%s%s%s" % (" " * LEFT_GAP, E_DIR, F_BLU2, path, R)]
@@ -895,6 +911,8 @@ def render_where_group(proj: str, path: str, branch: str, git: Git) -> str:
             out.append("%s%s%s %s%s" % (E_GIT_BAD, F_AMB, branch, E_DIRTY, R))
         else:
             out.append("%s%s%s%s" % (E_GIT_OK, F_GRN, branch, R))
+    if background:
+        out.append(" " * LEFT_GAP + background)
     return "".join(out)
 
 
@@ -1044,6 +1062,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         pwd_display = "~" + pwd_display[len(home):]
     proj_display = project_name(git, pay.project_dir)
     branch_display = git.branch
+    background = render_thread_background(tr.shells, tr.monitors)
 
     right_w = vis_width(strip_ansi(right))
     if cols:
@@ -1053,7 +1072,8 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         # from rendering the group with all three names empty, so the emoji,
         # the separators and the dirty marker are measured rather than
         # estimated — and it stays correct if the punctuation ever changes.
-        chrome_w = vis_width(strip_ansi(render_where_group("", "", "", git)))
+        chrome_w = vis_width(strip_ansi(render_where_group("", "", "", git,
+                                                           background)))
         budget = cols - RIGHT_MARGIN - right_w - MIN_GAP - chrome_w
         if budget < LMIN_PROJ + LMIN_PATH:
             cols = None                # too narrow to lay out at all
@@ -1067,7 +1087,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
 
     if cols:
         left = render_where_group(proj_display, pwd_display, branch_display,
-                                  git)
+                                  git, background)
         pad = cols - RIGHT_MARGIN - right_w - vis_width(strip_ansi(left))
         if pad < MIN_GAP:
             pad = MIN_GAP
@@ -1075,8 +1095,9 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     else:
         # No usable width, or too little of it to divide: fall back to the
         # left-flowing row, with only the path trimmed and only by estimate.
+        bg_w = LEFT_GAP + vis_width(strip_ansi(background)) if background else 0
         line3 = render_where_group(
-            proj_display, fit_path(pwd_display, fmt.PWD_MAX_FALLBACK),
-            branch_display, git) + " " * MIN_GAP + right
+            proj_display, fit_path(pwd_display, fmt.PWD_MAX_FALLBACK - bg_w),
+            branch_display, git, background) + " " * MIN_GAP + right
 
     return "%s\n%s\n%s%s%s\n" % (row1, row2, LINE_CLEAR, line3, EOL_CLEAR)

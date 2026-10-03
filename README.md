@@ -28,7 +28,7 @@ Read these three first:
 |---|---|---|---|---|---|
 | **Row 1** | 👤💬 Prompt · 🎨 Style | 🤖 Model · 💰 Cost | 🧠 Context | ⌛ Elapsed | 📅 Date |
 | **Row 2** | 🤖💬 Reply · 🔀 PR | 🧩 Tokens | 📖 Rereads | 🔋 5-hour | 🕐 Clock |
-| **Row 3** | 📦 Project · 📁 Directory · 🌿 Branch · 📨 Queue · 🤏 Compactions | 🛫 Rate · 🎯 Hits | 📝 Caching | 🪫 Weekly | 💾 Diff |
+| **Row 3** | 📦 Project · 📁 Directory · 🌿 Branch · 💻 Shells · 📡 Monitors · 📨 Queue · 🤏 Compactions | 🛫 Rate · 🎯 Hits | 📝 Caching | 🪫 Weekly | 💾 Diff |
 
 ## Agent tree
 
@@ -44,7 +44,7 @@ agent that started it. Installed as `subagentStatusLine`.
 
 | Side | Cells, left to right |
 |---|---|
-| **Left** | Kind · State · 👶🏻 Children · 🤏 Compactions · 📨 Queue · 🔇 Silent · ID · Name, 🌿 worktree branch and activity |
+| **Left** | Kind · State · 👶🏻 Children · 🤏 Compactions · 💻 Shells · 📡 Monitors · 📨 Queue · 🔇 Silent · ID · Name, 🌿 worktree branch and activity |
 | **Right** | Tree · 🤖 Model · 💰 Cost · 🧠 Context · 🧩 Tokens · 🛫 Rate · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools · 🚦 Waiting · 🔋 5-hour · 🪫 Weekly · 💾 Diff |
 
 The right side uses the session status line's cells, for that one agent. A
@@ -204,6 +204,17 @@ readout, the table says so.
 * **💳 is the plan's own figure.** It comes from Claude Code or another
   [usage source](docs/usage-sources.md).
 * **On the tree**, 🔋 and 🪫 are the agent's own share of each window.
+
+### Background tasks
+
+| Glyph | Name | Meaning | Status | Tree | Receipt |
+|---|---|---|:-:|:-:|:-:|
+| 💻 | Shells | background shells it started and has not heard the end of; on the status line, the main thread's | ✓ | ✓ | |
+| 📡 | Monitors | Monitors it started and has not heard the end of; on the status line, the main thread's | ✓ | ✓ | |
+
+On the tree, both are drawn while the agent runs and while it is paused, and
+not once it has failed or been killed. Paused, the state mark after 🟡 still
+says which one it waits on; the count says how many.
 
 ### Agent kind
 

@@ -1047,9 +1047,27 @@ def run(tmp):
     check("🧠's share is blank where the payload gives no window",
           re.search("\U0001F9E0 *\\S+ +(\\S+)", irows["b2"]).group(1)[0], "\U0001F9E9")
     nothing = sl.NO_AGENT_USAGE
-    check("none of the three costs a column on a panel where no row has one",
+    check("none of the five costs a column on a panel where no row has one",
           sr.panel_widths([(task("x"), nothing, {}, None)], NOW),
-          {"silent": 0, "inbox": 0, "compact": 0})
+          {"silent": 0, "inbox": 0, "compact": 0, "shells": 0, "monitors": 0})
+    bg = nothing._replace(background=(("s1", "bash"), ("s2", "bash"), ("m1", "monitor")))
+    check("💻 and 📡 count its open shells and Monitors while it runs and while "
+          "it is paused on them, and not once it failed or was killed",
+          [(ANSI.sub("", sr.render_background(sr.E_MODE_SHELL, sr.background_count(st, bg, "bash"))),
+            ANSI.sub("", sr.render_background(sr.E_MODE_MONITOR, sr.background_count(st, bg, "monitor"))))
+           for st in ("running", "completed", "failed", "killed")],
+          [("\U0001F4BB2", "\U0001F4E11"), ("\U0001F4BB2", "\U0001F4E11"),
+           ("", ""), ("", "")])
+    check("each kept on every row once any row has one, as wide as the widest",
+          sr.panel_widths([(task("x"), bg, {}, None),
+                           (task("y"), nothing._replace(background=tuple(
+                               ("s%d" % i, "bash") for i in range(12))), {}, None),
+                           (task("z", status="killed"), bg, {}, None)], NOW),
+          {"silent": 0, "inbox": 0, "compact": 0, "shells": 4, "monitors": 3})
+    bgrow = ANSI.sub("", sr.render_agent_row(task("x"), bg, {}, {}, sl.NO_LIMITS, now=NOW,
+                                             widths={"shells": 3, "monitors": 3}))
+    check("on the row after 🤏's place and before 📨's, right of the state",
+          bgrow[:bgrow.index(" x ")].split()[-2:], ["\U0001F4BB2", "\U0001F4E11"])
     quiet = nothing._replace(last_seen=NOW - 90)
     check("🔇 once a running agent has written nothing for a minute, amber at "
           "ten, and not while it waits on an agent or a question, which its 🚦 "
