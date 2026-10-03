@@ -812,10 +812,10 @@ def run(tmp):
         "\U0001F50B" + sl.pad_val(4, pct(want)),
         "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0)),
         ANSI.sub("", sl.render_diff("12", "4"))))
-    # 🟢 running, and 🤖: no tool call is waiting on its result.  Then 🔇,
-    # a cell only some panels draw: it has written nothing since 01:10, and
-    # the clock is pinned 1.2h after.
-    head = "\U0001F50D\U0001F7E2\U0001F916 \U0001F5071.2h a1         "
+    # The spinner's first frame, for a transcript with no text or tool call
+    # in it; 🟢 running, and 🤖: no tool call is waiting on its result.  Then 🔇, a cell only some panels draw: it has written nothing
+    # since 01:10, and the clock is pinned 1.2h after.
+    head = "\u00B7\U0001F50D\U0001F7E2\U0001F916 \U0001F5071.2h a1         "
     tree = sl.E_TREE_NODE + " "         # no nesting: the tree is one ◯ wide
     check("an agent's row: the left group, the name, the panel's tree drawn "
           "again, then the right group, filling the payload's columns exactly",
@@ -828,8 +828,9 @@ def run(tmp):
           len({sl.vis_width(r) for r in (rows["a1"], rows["a2"])}), 1)
     check("no sidecar: the task's kind, and the transcript's model where "
           "the payload has none",
-          # Then the blank a1's 🔇 keeps on every row.
-          (rows["a2"].startswith("\U0001F465\u26AB\u2705 " + " " * (sr.A_SILENT_W + 1)),
+          # The blank spinner of a row not running, then the blank a1's 🔇
+          # keeps on every row.
+          (rows["a2"].startswith(" \U0001F465\u26AB\u2705 " + " " * (sr.A_SILENT_W + 1)),
            "\U0001F916O\u2075" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
@@ -843,9 +844,9 @@ def run(tmp):
     check("an unnamed task takes its description for a name, then its "
           "label for what it is doing; a shell shows nothing it did not bill",
           re.sub(r" {2,}", "  ", rows["bash-1"]),
-          # 🟢 and no mode: a shell has no transcript to say who has the
-          # floor.  Then the blank 🔇 cell.
-          "\U0001F41A\U0001F7E2  bash-1  npm test npm test --watch  "
+          # No spinner, 🟢 and no mode: a shell has no transcript to count
+          # in or to say who has the floor.  Then the blank 🔇 cell.
+          " \U0001F41A\U0001F7E2  bash-1  npm test npm test --watch  "
           "\u25EF  \u231B 13m")
     check("a name and its activity, and a label that only repeats the "
           "description is not drawn",
@@ -864,13 +865,15 @@ def run(tmp):
               {"spawnDepth": 1}, {"spawnDepth": 2}, {"spawnDepth": 3}, {},
               {"spawnDepth": "two"})],
           [0, 2, 4, 0, 0])
-    nested = dict(pay, tasks=[task("a1"), task("a3"), task("a4")])
+    # 201 and not 200: the spinner's column took the one that left the
+    # deepest name A_TREE_ROOM beside the tree's copy.
+    nested = dict(pay, columns=201, tasks=[task("a1"), task("a3"), task("a4")])
     rows_n = render(sl, nested)[1]
     check("a nested row pays for the `├ ` the panel draws before it, so the "
           "panel's own chrome plus the row is one width at every depth",
           [sl.vis_width(rows_n[t]) + 2 * (d - 1)
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
-          [200, 200, 200])
+          [201, 201, 201])
     check("👶🏻 counts the rows under each one, and every row keeps a cell for it "
           "once any row has one",
           # Past each row's lead, the blank a shallower row opens with.
@@ -878,16 +881,33 @@ def run(tmp):
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
           # The cells only some panels draw follow the kind and state, 👶🏻
           # first.  E_KIDS is two codepoints, and its width the terminal's.
-          ["\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a1",
-           "\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a3",
-           "\U0001F50D\U0001F7E2\U0001F916 " + " " * (sl.vis_width(sl.E_KIDS) + 1)
+          ["\u00B7\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a1",
+           "\u00B7\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a3",
+           "\u00B7\U0001F50D\U0001F7E2\U0001F916 " + " " * (sl.vis_width(sl.E_KIDS) + 1)
            + " \U0001F5071.2h a4"])
-    at_head = lambda r: sl.vis_width(r[:r.index("\U0001F50D")])
+    spun = os.path.join(tmp, "spin.jsonl")
+    tool = agent_says(12, "")
+    tool["message"]["content"] = [{"type": "thinking", "thinking": "hm"},
+                                  {"type": "text", "text": "  "},
+                                  {"type": "tool_use", "id": "t1", "name": "Read",
+                                   "input": {}}]
+    write_jsonl(spun, [agent_says(10, "Plan."), agent_says(11, "Go."), tool])
+    spin = lambda st, eta, n: ANSI.sub("", sr.render_spin(st, NS(eta=eta, blocks=n)))
+    check("a running agent's spinner steps one frame for each ⏺ it has "
+          "written, a text or tool-call block and not a thought or a blank, "
+          "forward through Claude Code's glyphs and back; a row not running, "
+          "or with no transcript, draws none",
+          (sl.read_agent_usage(spun).blocks,
+           [spin("running", (), n) for n in (0, 1, 5, 6, 11, 12)],
+           spin("completed", (), 3), spin("running", None, 3)),
+          (3, ["·", "✢", "✽", "✽", "·", "·"],
+           "", ""))
+    at_head = lambda r: sl.vis_width(r[:r.index("\U0001F50D")])   # past the spinner
     check("and its cells start on one column at every depth: a shallower row "
           "opens with the blank the deeper ones spend on the panel's `├ `",
           [at_head(rows_n[t]) + 2 * (d - 1)
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
-          [4, 4, 4])
+          [5, 5, 5])
     at_clock = lambda r: sl.vis_width(r[:r.index("\u231B")])
     check("and the right group is what holds its column: the name gives",
           [at_clock(rows_n[t]) + 2 * (d - 1)
@@ -943,12 +963,12 @@ def run(tmp):
     check("the name takes what the metrics leave, and gives way first",
           (render(sl, dict(wide, columns=400))[1]["a1"].count(long),
            re.search(r"Review the plan, [^…]*…  \U0001F916",
-                     # 166 and not the 130 it was: the right group grew by the
+                     # 167 and not the 130 it was: the right group grew by the
                      # 🔧 cell and then ⛳ and its bar, each with its gap, and
                      # by 🧠's share; the state cell by the mode mark after its
-                     # circle; the head by 🔇.  This case is about a width that
+                     # circle and the spinner after that; the head by 🔇.  This case is about a width that
                      # squeezes the NAME, not one that squeezes it away.
-                     render(sl, dict(wide, columns=166))[1]["a1"]) is not None,
+                     render(sl, dict(wide, columns=167))[1]["a1"]) is not None,
            render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
            .count(long[:sr.A_NAME_MIN - 1] + "…")),
           (1, True, 1))

@@ -373,10 +373,10 @@ panel. At 180 columns, with a running agent, its nested child, a finished
 agent and a shell:
 
 ```
-⏺  🔩🟢🤖 👶🏻1 a1b2c3d4e… Port the renderer Editing c…  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  🔍🟢🔧     c7d8e9f0a… Find every caller of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯  📐⚫✅     f3e4d5c6b… Plan the docs rewrite         ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯  🐚🟢       b1         npm test npm test --watch     ◯                                                                  ⌛ 13m
+⏺  ✶🔩🟢🤖 👶🏻1 a1b2c3d4e… Port the renderer Editing …  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  ✢🔍🟢🔧     c7d8e9f0a… Find every caller of seg…  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯   📐⚫✅     f3e4d5c6b… Plan the docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯   🐚🟢       b1         npm test npm test --watch    ◯                                                                  ⌛ 13m
 ```
 
 The leading `◯`, `⏺` and `└` are the panel's own chrome, drawn by Claude Code;
@@ -396,6 +396,7 @@ a cell takes no columns at all.
 
 | Cell | Meaning |
 |---|---|
+| spinner | a running agent's activity, first on the row: Claude Code's own spinner, `· ✢ ✳ ✶ ✻ ✽` and back, in red. It steps one frame for each ⏺ the agent writes, a text or tool-call block, so it moves when the agent does and stands still when it stalls. Blank on any other row, and on a shell, which has no transcript to count in |
 | kind | the agent type, as a glyph (table below) |
 | state | the phase, 🟢 running, 🟡 paused or ⚫ ended, then what the agent is doing in it. See [State](#state) |
 | 👶🏻 | how many rows hang directly under it on the panel, finished or not. The cell is there on every row once any row has children |

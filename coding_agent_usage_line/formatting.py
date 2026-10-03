@@ -471,6 +471,7 @@ F_ETA = "\033[38;2;255;77;255m"            # magenta     — ⛳ time left.  It 
                                            #  reason F_PRW gives; the late "+"
                                            #  stays F_AMB.  L* 65, as F_PRW's,
                                            #  so the ⌛ row keeps its weight.
+F_SPIN = F_RED                             # the agent row's E_SPIN spinner
 F_CHAT_U = "\033[38;2;166;170;158m"        # warm grey   — user chat row
 F_CHAT_B = "\033[38;2;112;126;140m"        # cool slate  — assistant chat row
 B_DRK = "\033[48;2;12;14;18m"              # near-black background, chat rows
@@ -1128,6 +1129,14 @@ E_MODE_ETA = E_ETA       # ⛳  paused on nothing it can name, but its last
 # way the tree glyphs do, but it has no emoji form for a terminal to widen,
 # and U+2800, the empty cell, keeps the gauge's width at a zero share.
 E_GAUGE = "⠀⠄⠆⠦⠶"
+# A running agent row's spinner, the first of its cells: Claude Code's own
+# spinner glyphs, which it plays forward and then back.  The row steps it
+# one frame for each ⏺ in the agent's transcript, a text or tool-call block,
+# so it moves when the agent does and stops when it stalls.  Ambiguous and
+# Neutral, so they break rule 2 the way the tree glyphs do, and for the same
+# reason: Claude Code draws them one column wide in the same terminal, and a
+# different set would not read as Claude working.
+E_SPIN = "·✢✳✶✻✽"
 GAUGE_W = 2
 E_ROW_AGENTS = "\U0001F465"   # 👥  agent spend the 🎤 row cannot carry.
                               # Emoji_Presentation=Yes and a single code

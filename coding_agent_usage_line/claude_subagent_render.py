@@ -23,6 +23,7 @@ A_LIMIT_W, A_TREE_W = 2 + LIM_FIG_W, 2
 # spends one more on its "+".
 A_ETA_FIG_W = 5
 A_ETA_W = vis_width(E_ETA) + A_ETA_FIG_W
+A_SPIN_W = 1
 # The name room a row must still have after paying for the tree beside its
 # right group.  The copy is for a wide window, where the panel's own tree is
 # far from the figures; in a narrow one the two are close, and the activity
@@ -109,6 +110,14 @@ def render_state(status, usage=None, waiting_on=False):
     is doing in it.  A status never seen is two amber letters and no mark.
     """
     return "".join(agent_state(status, usage, waiting_on))
+def render_spin(status, usage=None):
+    """A running agent's spinner, one frame on for each ⏺ it has written; see E_SPIN.
+
+    Blank on any other row, and on one with no transcript to count in.
+    """
+    if status != "running" or getattr(usage, "eta", None) is None: return ""
+    frames = E_SPIN + E_SPIN[::-1]
+    return "%s%s%s" % (F_SPIN, frames[(getattr(usage, "blocks", 0) or 0) % len(frames)], R)
 def render_kids(n):
     """👶🏻 and how many agents hang under this row on the panel; see render_task_rows."""
     return "" if not n else "%s%s%d%s" % (E_KIDS, F_CRM, n, R)
@@ -515,7 +524,7 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
     # stay once they come; 💻 and 📡 last as long as a shell or a Monitor
     # runs; 📨 and 🔇 pass quickest — so the passing ones shift the fewest.
-    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_KIND_W+A_STATE_W, render_kind(str(meta.get("agentType") or ""),kind)+render_state(status, usage, waiting_on)),
+    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+render_state(status, usage, waiting_on)),
                                                      (kids_w, render_kids(kids)),
                                                      (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
                                                      (widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),

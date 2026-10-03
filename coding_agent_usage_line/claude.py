@@ -2014,6 +2014,8 @@ class AgentUsage(NamedTuple):
                             # Claude Code writes only once its retries are
                             # spent; see agent_state
     cwd: str = ""           # the directory its last record was written in
+    blocks: int = 0         # its text and tool-call blocks, each a ⏺ in
+                            # Claude Code; what steps the row's spinner
     # Filled by prepare_subagent_tasks, off the other files and the payload.
     inbox: int = 0          # messages waiting for its next tool round; see
                             # inbox_counts
@@ -2130,12 +2132,16 @@ def read_agent_usage(path: str) -> AgentUsage:
     last_seen = None
     api_error = False
     cwd = ""
+    blocks = 0
     for r in recs:
         compactions += is_compaction(r)
         t = ts_epoch(r.get("timestamp") or "")
         last_seen = t if t is not None else last_seen
         if r.get("type") == "assistant":
             api_error = bool(r.get("isApiErrorMessage"))
+            blocks += sum(1 for b in ((r.get("message") or {}).get("content") or ())
+                          if isinstance(b, dict) and (b.get("type") == "tool_use" or
+                                                      b.get("type") == "text" and (b.get("text") or "").strip()))
         cwd = r.get("cwd") if isinstance(r.get("cwd"), str) and r.get("cwd") else cwd
         live_eta(r, eta_state)
         agent_span(r, span_state, work)
@@ -2178,7 +2184,7 @@ def read_agent_usage(path: str) -> AgentUsage:
         effort = r.get("effort") or effort
     in_all = fresh + cwrite + cread
     signals = dict(compactions=compactions, last_seen=last_seen,
-                   api_error=api_error, cwd=cwd)
+                   api_error=api_error, cwd=cwd, blocks=blocks)
     if not parts:
         return NO_AGENT_USAGE._replace(eta=eta, work=tuple(work),
                                        open_at=open_at, tools=tuple(tools),
