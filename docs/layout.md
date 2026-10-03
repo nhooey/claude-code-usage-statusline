@@ -206,9 +206,12 @@ way:
 1. The chat text is cut first, down to a bare `…`.
 2. The project, path and branch share what is left, in proportion. The path
    is cut first and from the left (`…deep/tree`); the branch is cut last.
-3. When not even minimal names fit — below about 135 columns — line 3 falls
-   back to flowing left to right with a two-column gap, and overruns the
-   terminal.
+3. When not even minimal names fit beside the grid — below about 135
+   columns — the project, path and branch move down to a fourth line of
+   their own, where they get the whole width. Line 3 keeps the grid's third
+   row, starting where rows 1 and 2 start theirs, so the columns still
+   stack. The grid itself never shrinks, so below about 150 columns it
+   overruns the terminal on all three of its rows.
 
 At 140 columns:
 
@@ -218,9 +221,18 @@ At 140 columns:
 📦repo  📁…deep/tree  🌿golden…                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
-The same fallback applies when the terminal will not report its width
-(`--cols 0` forces it); the path is then trimmed to fit an assumed 165-column
-row. Four columns are always left empty at the right edge, because Claude
+At 120 columns:
+
+```
+👤💬 Why …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
+🤖💬 Two …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
+                           🛫      🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean
+```
+
+When the terminal will not report its width (`--cols 0` forces it), line 3
+instead flows left to right with a two-column gap, and the path is trimmed
+to fit an assumed 165-column row. Four columns are always left empty at the right edge, because Claude
 Code draws the status line into a box a few columns narrower than the
 terminal.
 

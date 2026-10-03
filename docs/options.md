@@ -26,7 +26,7 @@ display switch either removes something or changes spacing, so apart from
 
 | Mode | Reads on stdin | Prints | Agents |
 |---|---|---|---|
-| `status` (default) | the status-line JSON payload | three rows (Claude); a summary and quota lines (Codex) | both |
+| `status` (default) | the status-line JSON payload | three rows, or four on a narrow terminal (Claude); a summary and quota lines (Codex) | both |
 | `cost` | the Stop-hook JSON payload | `{"systemMessage": "..."}`, or `{}` when there is nothing to report | both |
 | `subagent` | the agent panel's task list | one `{"id": ..., "content": ...}` line per task | Claude only |
 | `--selftest` | nothing | specimen rows drawn on the terminal, and a report of where the cursor landed | — |

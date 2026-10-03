@@ -5,7 +5,7 @@
 Two readouts, two modes, one set of facts:
 
     --mode status   stdin: the status-line JSON payload
-                    stdout: three rows, redrawn continuously
+                    stdout: three rows (four when narrow), redrawn continuously
     --mode cost     stdin: the Stop-hook JSON payload
                     stdout: {"systemMessage": "<two rows>"}, once per turn
     --mode subagent stdin: the agent panel's task list

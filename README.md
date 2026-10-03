@@ -292,8 +292,9 @@ to tell the two apart.
   needs compacting. Each row of the agent tree counts its own agent alone.
 
 The session status line is designed for terminals 170 columns or wider. On a
-narrower terminal the chat text is shortened first. [Layout](docs/layout.md)
-covers every cell in detail.
+narrower terminal the chat text is shortened first, and below about 135
+columns the project, path and branch move to a fourth line of their own.
+[Layout](docs/layout.md) covers every cell in detail.
 
 ## Customizing
 

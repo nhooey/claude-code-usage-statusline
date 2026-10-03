@@ -36,7 +36,7 @@ Every module above lives in `coding_agent_usage_line/`.
 | `claude.py` | Claude's three modes (`status`, `cost`, `subagent`) and `--selftest`: reads the hook payload and transcripts, takes one usage-source snapshot, derives calibration and window shares, keeps the per-session context and rate files, and prints. |
 | `claude_records.py` | Claude JSONL interpretation: payload fields, request deduplication, per-model prices, turns, tool spans, agent files. No terminal output. |
 | `claude_sources.py` | Turns a normalised usage-source reading into the `Limits` pair (5-hour and weekly) the Claude rows draw. |
-| `claude_render.py` | Every status-line cell and the three-row grid. |
+| `claude_render.py` | Every status-line cell and the three-row grid, with its fourth line on a narrow terminal. |
 | `claude_cost_render.py` | Placement and stacking of the cost rows. |
 | `claude_subagent_render.py` | One agent-panel row per task. |
 | `codex.py` | Codex rollout records: thread identity, child discovery, request deduplication, turn attribution. Read-only. |

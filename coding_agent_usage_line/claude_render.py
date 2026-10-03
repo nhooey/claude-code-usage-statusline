@@ -1010,7 +1010,8 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
                   rules: bool = True,
                   ctx_window: int = 0, rate: Optional[float] = None,
                   cache: CacheShares = NO_CACHE_SHARES) -> str:
-    """The whole three-row readout, as one string ending in a newline.
+    """The whole readout, as one string ending in a newline: three rows, or
+    four when the terminal is too narrow for line 3 to hold both halves.
 
     Line 3 reads as two halves.  Flush left: where the work is happening.
     Flush right, in the order they were already in: what has changed, how the
@@ -1085,6 +1086,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     background = render_thread_background(tr.shells, tr.monitors)
 
     right_w = vis_width(strip_ansi(right))
+    split = False
     if cols:
         # What the three left-hand names have to share: the row, less the
         # margin, less the constant-width right group, less the gap between the
@@ -1096,14 +1098,36 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
                                                            background)))
         budget = cols - RIGHT_MARGIN - right_w - MIN_GAP - chrome_w
         if budget < LMIN_PROJ + LMIN_PATH:
-            cols = None                # too narrow to lay out at all
-        else:
-            a_branch, a_proj, a_path = allocate_left(
-                budget, len(branch_display), len(proj_display),
-                len(pwd_display))
-            branch_display = fit_head(branch_display, a_branch)
-            proj_display = fit_head(proj_display, a_proj)
-            pwd_display = fit_path(pwd_display, a_path)
+            # Too narrow to share line 3: the names move down to a line 4
+            # of their own, and get the whole row less the margin.  The grid
+            # keeps its three rows together on lines 1 to 3, so 🛫 still sits
+            # under 🧩 — a where-group squeezed between them would break the
+            # columns the eye reads down.  The floor keeps a terminal too
+            # narrow even for that drawing minimal names rather than none.
+            split = True
+            budget = max(cols - RIGHT_MARGIN - chrome_w,
+                         LMIN_PROJ + LMIN_PATH)
+        a_branch, a_proj, a_path = allocate_left(
+            budget, len(branch_display), len(proj_display),
+            len(pwd_display))
+        branch_display = fit_head(branch_display, a_branch)
+        proj_display = fit_head(proj_display, a_proj)
+        pwd_display = fit_path(pwd_display, a_path)
+
+    if split:
+        left = render_where_group(proj_display, pwd_display, branch_display,
+                                  git, background)
+        # Line 3 starts where rows 1 and 2 put their tails, not where the
+        # margin says it should: below about 150 columns the grid alone
+        # overruns, the chat text has been cut to its floor, and the tails
+        # sit just past the prompt instead — line 3 has to follow them there
+        # to keep the columns stacked.
+        # The clears are not SGR, so strip_ansi leaves them; drop them first.
+        bare = row1.replace(LINE_CLEAR, "").replace(EOL_CLEAR, "")
+        pad = vis_width(strip_ansi(bare)) - vis_width(strip_ansi(usage))
+        return "%s\n%s\n%s%s%s%s\n%s%s%s\n" % (
+            row1, row2, LINE_CLEAR, " " * pad, right, EOL_CLEAR,
+            LINE_CLEAR, left, EOL_CLEAR)
 
     if cols:
         left = render_where_group(proj_display, pwd_display, branch_display,
