@@ -1152,6 +1152,17 @@ E_ROW_AGENTS = "\U0001F465"   # 👥  agent spend the 🎤 row cannot carry.
                               # by tests/probe-advance.sh: advance=2 in
                               # JediTerm and in bare Ghostty, neither under
                               # tmux -- a reading, like the other three.
+E_TURN_ID = "\U0001F516"      # 🔖  the receipt's turn tag: which turn the
+                              # rows below it bill.  Wide, one code point,
+                              # Unicode 6.
+E_TURN_PAST = "\U0001F53A"    # 🔺  before 🔖: the turn ABOVE, the one that has
+                              # already happened, not the one being typed.
+                              # Wide, one code point, Emoji_Presentation=Yes,
+                              # Unicode 6, as 🔖 is.  Not ↑, ⇧ or ▲: all
+                              # three are Ambiguous, the class E_UP's note
+                              # retired ↑ from the token field for.
+TURN_ID_HEX = 8               # how much of the promptId 🔖 prints: a UUID's
+                              # first group, enough to grep the transcript.
 # The emoji is padded ahead of the text, never inside it: ljust counts
 # CHARACTERS and the glyph is two columns, so padding the joined string would
 # make the three labels agree on length and disagree on width.

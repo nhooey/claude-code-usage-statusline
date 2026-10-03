@@ -276,6 +276,7 @@ to tell the two apart.
 | 🎮 | Session | the session so far |
 | 🤏 | Compaction | a compaction, which fires no `Stop` hook of its own |
 | 👥 | Late | agents that finished after their prompt's row had printed |
+| 🔺🔖 | Turn | the turn the 🎤 row bills, already answered: the first 8 characters of its `promptId`, then Claude Code's turn index |
 
 ## Three rules the display follows
 

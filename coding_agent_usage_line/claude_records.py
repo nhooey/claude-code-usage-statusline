@@ -263,6 +263,18 @@ class Turn(NamedTuple):
                             # dur_s: agents run beside the answer, so these
                             # are agent-seconds and can outrun it.  See
                             # turn_times.
+    prompt_id: str = ""     # the promptId Claude Code stamps on every user
+                            # record of the turn, and the receipt's 🔖 prints
+                            # the head of.  Empty on a compaction, a late
+                            # agent turn, and a transcript too old to carry it.
+    turn_index: Optional[int] = None
+                            # turnPosition.turnIndex off the same records:
+                            # Claude Code's own count of the session's turns,
+                            # printed beside it.  None where it is not
+                            # written; never counted here instead, because a
+                            # count of THIS file's turns restarts on a resume
+                            # and would name a different turn than Claude
+                            # Code does.
 
 
 class AgentRec(NamedTuple):
@@ -1846,7 +1858,21 @@ def _new_turn(ts: str, text: str) -> dict:
             "fresh": 0, "cw": 0, "cr": 0, "out": 0, "ctx": 0, "n": 0,
             "usd": [0.0, 0.0, 0.0, 0.0], "an": 0, "aids": [],
             "t0": ts_epoch(ts), "t1": None, "parts": [],
-            "tools": [], "waits": [], "am": 0.0, "at": 0.0}
+            "tools": [], "waits": [], "am": 0.0, "at": 0.0,
+            "pid": "", "tidx": None}
+
+
+def _stamp_turn_id(cur: dict, r: dict) -> None:
+    """Take the turn's promptId and turnIndex off `r`, where the turn has
+    none yet.  First one wins: every user record of a turn carries the same
+    promptId, and a turn a queue-operation record opened gets its id from
+    the first tool result instead of from its opener."""
+    pid = r.get("promptId")
+    if pid and not cur["pid"]:
+        cur["pid"] = str(pid)
+    idx = (r.get("turnPosition") or {}).get("turnIndex")
+    if cur["tidx"] is None and isinstance(idx, int) and not isinstance(idx, bool):
+        cur["tidx"] = idx
 
 
 def _add_usd(cur: dict, epoch: Optional[float], model: Optional[str],
@@ -2018,6 +2044,7 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
             else:
                 cur = _new_turn(r.get("timestamp") or "", text)
                 turns.append(cur)
+            _stamp_turn_id(cur, r)
             if pid:
                 by_pid[pid] = cur
             continue
@@ -2028,6 +2055,7 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
         # and is indexed through its tool results instead.
         if pid and cur is not None and not cur.get("compact"):
             by_pid.setdefault(pid, cur)
+            _stamp_turn_id(cur, r)
         if r.get("subtype") == "compact_boundary":
             # A compaction is the one expensive operation that leaves NO usage
             # record anywhere — the request that summarises the conversation
@@ -2192,7 +2220,9 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
                                 if t["t0"] and t["t1"] and t["t1"] > t["t0"]
                                 else 0.0)),
                         tool_s=tool_s, blocked_s=blocked_s,
-                        agent_model_s=t["am"], agent_tool_s=t["at"]))
+                        agent_model_s=t["am"], agent_tool_s=t["at"],
+                        prompt_id="" if t.get("compact") else t["pid"],
+                        turn_index=None if t.get("compact") else t["tidx"]))
         if t["ctx"]:
             prev = t
     if late is not None:

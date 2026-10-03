@@ -739,7 +739,11 @@ def run(tmp):
                                               1786847000.0))
     check("the agents row is labelled and leads the block",
           [l.strip()[:3] for l in lines.split("\n")],
-          ["P A", "", "P L", "P T"])
+          ["🔺🔖 ", "P A", "", "P L", "P T"])
+    # With no width to right-align against, the turn tag takes the first
+    # line, and names the turn the 🎤 row bills.
+    check("the turn tag leads, on a line of its own",
+          lines.split("\n")[0], sl.E_TURN_PAST + sl.E_TURN_ID + " p2")
 
     print("--- the calibration scan ---")
     # A scratch projects tree: one main file, one agent beside it, one

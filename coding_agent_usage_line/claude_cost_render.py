@@ -10,7 +10,8 @@ from typing import Callable, Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 from . import formatting as fmt
 from .formatting import (BOLD, C_CHROME_CONT, C_CHROME_LEFT, C_MIN_GAP,
-                         C_RIGHT_MARGIN, R, UNBOLD, trunc, vis_width)
+                         C_RIGHT_MARGIN, E_TURN_ID, E_TURN_PAST, R,
+                         TURN_ID_HEX, UNBOLD, trunc, vis_width)
 
 
 class CostOpts(NamedTuple):
@@ -101,6 +102,20 @@ def place_stacked(rows: Sequence[Tuple[str, str, int]], opts: CostOpts) -> List[
     return output
 
 
+def turn_tag(turn: object, ink: Ink) -> str:
+    """🔺🔖 8f37748e #12: the turn the 🎤 row bills, by the head of its
+    promptId and Claude Code's turn index.  Each half is drawn only where the
+    transcript wrote it, and the tag not at all where it wrote neither."""
+    idx = getattr(turn, "turn_index", None)
+    pid = getattr(turn, "prompt_id", "")
+    parts = ([pid[:TURN_ID_HEX]] if pid else []) + (
+        ["#%d" % idx] if idx is not None else [])
+    if not parts:
+        return ""
+    return "%s%s %s%s%s" % (E_TURN_PAST, E_TURN_ID, ink.crm, " ".join(parts),
+                            ink.r)
+
+
 def render_cost_line(
         turns: Sequence[object], opts: CostOpts, win: int,
         calib: Dict[str, Optional[float]], plan_totals: Dict[str, Optional[float]],
@@ -148,10 +163,28 @@ def render_cost_line(
     if not lead_newline and opts.cols and opts.right_align:
         flat = [(group, label, C_CHROME_CONT) for group, label, _ in spec]
         lead_newline = stack_metrics(spec, opts)[2] < 0 <= stack_metrics(flat, opts)[2]
-    if lead_newline:
-        spec = [(group, label, C_CHROME_CONT) for group, label, _ in spec]
-    rows = [row.rstrip() for row in place_stacked(spec, opts)]
     lead = len(pending) + (1 if getattr(last, "compact", False) else 0)
-    if lead and len(rows) > lead:
-        rows.insert(lead, "")
-    return ("\n" if lead_newline else "") + "\n".join(rows)
+
+    def laid_out(own_line: bool) -> List[str]:
+        flat = spec
+        if own_line:
+            flat = [(group, label, C_CHROME_CONT) for group, label, _ in spec]
+        rows = [row.rstrip() for row in place_stacked(flat, opts)]
+        if lead and len(rows) > lead:
+            rows.insert(lead, "")
+        return rows
+
+    tag = "" if getattr(last, "compact", False) else turn_tag(last, ink)
+    if not tag:
+        rows = laid_out(lead_newline)
+        return ("\n" if lead_newline else "") + "\n".join(rows)
+    # The tag takes the first line, the one beside Claude Code's chrome, so
+    # the rows below it are all continuation lines, and its 🔖 stands over
+    # the first row's 📊 with 🔺 just left of it.  The first line starts
+    # C_CHROME_LEFT - C_CHROME_CONT columns further right than the rows, so
+    # that much comes off the pad.  Where the rows flow left there is no pad
+    # to take it from, and the tag starts the line.
+    rows = laid_out(True)
+    chart = len(rows[0]) - len(rows[0].lstrip(" "))
+    pad = chart - (C_CHROME_LEFT - C_CHROME_CONT) - vis_width(E_TURN_PAST)
+    return " " * max(0, pad) + tag + "\n" + "\n".join(rows)

@@ -125,6 +125,15 @@ def with_pid(r, pid):
     return r
 
 
+def with_turn(r, pid, index):
+    """with_pid, plus the turnPosition Claude Code writes on a turn's opener.
+    Together they are what the receipt's 🔖 tag prints: the index whole and
+    the promptId's first group."""
+    r = with_pid(r, pid)
+    r["turnPosition"] = {"promptIndex": index, "turnIndex": index}
+    return r
+
+
 def agent_user(minute, pid):
     """An agent's opening record.  It is the one place the spawning turn's
     promptId is written on the agent's side; the assistant records that
@@ -140,6 +149,11 @@ def agent_answer(minute, rid, fresh, cw, cr, out, model="claude-opus-5",
     r["message"]["model"] = model
     return r
 
+
+# 09-agents' two promptIds, in the UUID shape Claude Code writes, since the
+# receipt prints the head of the last one.
+PID_K1 = "3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11"
+PID_K2 = "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22"
 
 CASES = {
     # Three answered prompts, each larger than the last, with a Stop between
@@ -256,15 +270,42 @@ CASES = {
     # works, which is 🔧.  So the 🎤 row reads 2m and 3m of a five-minute
     # turn, and the 🎮 row 5m and 3m of ten.
     "09-agents": [
-        with_pid(prompt(10, "Fork off and check the two exhibits."), "p1"),
+        with_pid(prompt(10, "Fork off and check the two exhibits."), PID_K1),
         answer(11, "req-k1", 14, 2000, 45000, 800, tool=("tu-k1", "Agent")),
-        with_pid(tool_result(13, "tu-k1"), "p1"),
+        with_pid(tool_result(13, "tu-k1"), PID_K1),
         answer(14, "req-k2", 6, 400, 47000, 1200),
         stop(15),
-        with_pid(prompt(20, "Now have a subagent read the strategy."), "p2"),
+        with_pid(prompt(20, "Now have a subagent read the strategy."), PID_K2),
         answer(21, "req-k3", 9, 1500, 52000, 900, tool=("tu-k3", "Bash")),
-        with_pid(tool_result(24, "tu-k3"), "p2"),
+        with_pid(tool_result(24, "tu-k3"), PID_K2),
         answer(25, "req-k4", 3, 200, 54000, 700),
+    ],
+
+    # The turn tag, both halves: a real promptId's shape and a turnIndex past
+    # 9, so the tag is as wide as a long session's.  The first turn's ids
+    # must not leak onto the second's row.
+    "10-turn-id": [
+        with_turn(prompt(10, "Which turn was that?"),
+                  "1b2c3d4e-0000-4000-8000-000000000001", 11),
+        answer(11, "req-t1", 12, 2400, 40000, 900),
+        stop(12),
+        with_turn(prompt(20, "And this one?"),
+                  "8f37748e-47ff-492b-888b-0163beb40189", 12),
+        answer(21, "req-t2", 8, 1800, 61000, 2100, tool=("tu-t2", "Bash")),
+        with_pid(tool_result(22, "tu-t2"),
+                 "8f37748e-47ff-492b-888b-0163beb40189"),
+        answer(23, "req-t3", 5, 900, 63000, 1400),
+    ],
+
+    # An opener with no ids on it, as a queue-operation record has: the
+    # promptId comes off the turn's tool result, and no turnIndex is
+    # written anywhere, so the tag prints the hash alone.
+    "11-turn-id-late": [
+        prompt(10, "Run the probe."),
+        answer(11, "req-u1", 12, 2400, 40000, 900, tool=("tu-u1", "Bash")),
+        with_pid(tool_result(12, "tu-u1"),
+                 "c0ffee00-1111-4222-8333-444444444444"),
+        answer(13, "req-u2", 5, 900, 43000, 1400),
     ],
 }
 
@@ -274,13 +315,13 @@ CASES = {
 AGENTS = {
     "09-agents": {
         "agent-fork1.jsonl": [
-            agent_user(11, "p1"),
+            agent_user(11, PID_K1),
             agent_answer(12, "req-f1", 20, 3000, 61000, 2200),
             agent_answer(12, "req-f2", 5, 500, 64000, 1800, second=40),
             agent_answer(17, "req-f3", 4, 300, 66000, 900),   # after stop(15)
         ],
         "workflows/wf_9/agent-sub1.jsonl": [
-            agent_user(21, "p2"),
+            agent_user(21, PID_K2),
             agent_answer(22, "req-s1", 30, 4000, 20000, 3000,
                          model="claude-sonnet-5"),
             agent_answer(23, "req-s2", 8, 600, 24000, 2500,

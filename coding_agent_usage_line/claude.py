@@ -78,7 +78,8 @@ from .claude_records import (_agent_dir, _dedupe_usage, _num, _price,
                              _records, _stamp_utc, _usd, ts_epoch)
 from .claude_render import *
 from .claude_cost_render import (COLOUR_INK, PLAIN_INK, CostOpts, Ink,
-                                 place, render_cost_line as _pure_cost_render)
+                                 place, render_cost_line as _pure_cost_render,
+                                 turn_tag)
 from .claude_sources import prepare_claude_reading
 from . import claude_subagent_render as subagent_render
 
@@ -1832,6 +1833,11 @@ def selftest() -> int:
             Turn("", "", 40000, 8000, 900000, 3000, 640000, 3, 142000, None,
                  *_usd(None, 40000, 8000, 900000, 3000)),
             {"sess": 0.5, "week": 2.0}, CTX_1M, COLOUR_INK)),
+        # The receipt's turn tag: 🔺 and 🔖, two wide emoji.
+        ("turn-tag", turn_tag(
+            Turn("", "", 0, 0, 0, 0, 0, 1, 0.0, None, 0.0, 0.0, 0.0, 0.0,
+                 prompt_id="8f37748e-47ff-492b-888b-0163beb40189",
+                 turn_index=12), COLOUR_INK)),
         # The TOTALS row, which the per-prompt specimen above cannot stand in
         # for.  It used to be the WIDER of the two — 🔋 and 🪫 carried a
         # second figure each where the row above them carried blanks — and

@@ -27,7 +27,7 @@ the program and is not.
 | Command | Checks | Result line |
 |---|---|---|
 | `bash tests/golden.sh` | `--mode status` output, byte for byte, against 141 golden files | `pass 141   fail 0   missing 0` |
-| `bash tests/golden-cost.sh` | `--mode cost` output against 77 golden files | `pass 77   fail 0   missing 0` |
+| `bash tests/golden-cost.sh` | `--mode cost` output against 87 golden files | `pass 87   fail 0   missing 0` |
 | `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 37   fail 0   missing 0` |
 | `python3 tests/usage-source.py` | the Claude Usage Tracker reader, `cmd:` sources, and the scoped source cache | `pass 39   fail 0   missing 0` |
 | `python3 tests/sources-v1.py` | the normalized v1 reading: schema, timestamps, separate quota buckets | `ok …` |
@@ -38,7 +38,7 @@ the program and is not.
 | `python3 tests/codex.py` | Codex rollout accounting, child threads, Stop report state | `ok …` |
 | `python3 tests/formatting.py` | shared width and formatting helpers, display switches | `ok …` |
 | `python3 tests/port-cli.py` | the public CLI end to end, including held-open stdin and concurrent Stops | unittest `OK` (15 tests) |
-| `python3 tests/agents.py` | agent spend: reading agent files, folding them into turns, the 👥 row, the tool-time partition, the receipt's per-turn share of it with its agents', the cache of each agent file's reading, and the calibration scan's cache of each file's priced requests, and the main thread's open shells and Monitors | `pass 78   fail 0` |
+| `python3 tests/agents.py` | agent spend: reading agent files, folding them into turns, the 👥 row, the tool-time partition, the receipt's per-turn share of it with its agents', the cache of each agent file's reading, and the calibration scan's cache of each file's priced requests, and the main thread's open shells and Monitors, and the receipt's turn tag | `pass 79   fail 0` |
 | `python3 tests/subagent.py` | the agent-panel rows: finding an agent's file, billing, window shares, nesting, the reported ETA and its inheritance, the inbox, silence, compactions, open shells and Monitors, API errors and worktree branch, a window share that never starts the calibration scan, row shape | `pass 116   fail 0` |
 | `python3 tests/claude-subagent-render.py` | panel row rendering with no file or source reads | `ok …` |
 | `python3 tests/rate.py` | the 🛫 token-rate sampler and cell, column 2 in the padded profile, and the brightness-as-magnitude cuts | `pass 54   fail 0` |

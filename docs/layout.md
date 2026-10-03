@@ -294,6 +294,7 @@ under the prompt. Rendered here with `--no-right-align`, and with the text
 labels on:
 
 ```
+🔺🔖 5e1f0a77
 📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪
 
 📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  2m  🔧+  3m  📅 2026-08-16
@@ -307,6 +308,29 @@ After a compaction:
 
 📊 🎤 🧩 ▴ 12k ▾800   🎯 98٪  🧠-19.5٪ -195k  💰+  0.1   🔋+ 0.01٪ 📖 61٪  🪫+ 0.02٪ 📝 14٪  ⌛🤖+  1m  🔧+  0s  📅 2026-08-16
 📊 🎮 🧩 ▴ 76k ▾  6k  🎯 99٪  🧠  9.7٪   97k  💰   0.5   🔋  0.1٪  💳 41٪  🪫  0.13٪ 💳 63٪  ⌛🤖 3.7m  🔧   0s  🕐   02:23:20
+```
+
+### The turn tag
+
+`🔺🔖 8f37748e #12` names the turn the 🎤 row bills: 🔺 because it is the turn
+just answered, not the one being typed. `8f37748e` is the first group of the
+turn's `promptId`, the UUID on every user record of the turn, so it can be
+grepped in the transcript, and `#12` is Claude Code's own
+`turnPosition.turnIndex`. Each half is drawn only when the transcript records
+it, and the tag is left off entirely when it records neither, or when the
+receipt reports a compaction alone.
+
+The tag takes the receipt's first line, beside Claude Code's `Stop says:`
+chrome, and every receipt row moves down to a continuation line. When the
+rows are right-aligned, the tag is padded so that its 🔖 stands over the first
+row's 📊, with 🔺 just left of it; the pad allows for the eleven columns the
+chrome adds to the first line. When the rows reach too far left for that, or
+are not right-aligned, the tag starts the line:
+
+```
+🔺🔖 8f37748e #12
+📊    🧩 ▴ 18k ▾3.5k  🎯 97٪  🧠+10.7٪ + 21k  💰+  0.2   🔋+ 0.03٪ 📖 35٪  🪫+ 0.04٪ 📝 15٪  ⌛🤖+  2m  🔧+  1m  📅 2026-08-16
+📊    🧩 ▴ 27k ▾4.4k  🎯 96٪  🧠 32.0٪   64k  💰   0.2   🔋  0.04٪ 💳 41٪  🪫  0.06٪ 💳 63٪  ⌛🤖   4m  🔧   1m  🕐   02:23:20
 ```
 
 ### Rows
