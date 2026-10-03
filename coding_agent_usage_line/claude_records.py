@@ -479,72 +479,211 @@ def agent_records(transcript: str, seen: Optional[set] = None,
     line: for every agent still answering with a live ETA, (finish epoch,
     its last record's epoch) — see live_eta — which the status line's ⛳
     takes the latest of.
+
+    Each file's own part of this is _read_agent_file's, and is kept between
+    renders by _agent_file_readings; the dedup and the clock cut above are
+    redone on every call, since what one file keeps depends on the others.
     """
     seen = set() if seen is None else seen
     out = []
-    for path in agent_files(transcript):
-        pid = ""
-        eta_state = new_eta_state()
-        span_state: list = [None, None]
-        work: List[Tuple[float, float]] = []
-        pending: Dict[str, Tuple[float, str]] = {}
-        tools: List[Tuple[float, float]] = []
-        waiting: List[Tuple[float, float]] = []
+    files = _agent_file_readings(transcript)
+    for path, got in files:
         first = len(out)
-        try:
-            fh = open(path, "rb")
-        except OSError:
-            continue
-        with fh:
-            pos = 0
-            for line in fh:
-                pos += len(line)
-                try:
-                    r = json.loads(line)
-                except Exception:
-                    continue
-                if not isinstance(r, dict):
-                    continue
-                if etas is not None:
-                    live_eta(r, eta_state)
-                agent_span(r, span_state, work)
-                scan_tool_spans(r, pending, tools, waiting)
-                if r.get("type") == "user":
-                    pid = r.get("promptId") or pid
-                    continue
-                if r.get("type") != "assistant":
-                    continue
-                m = r.get("message") or {}
-                u = m.get("usage")
-                if not u:
-                    continue
-                k = r.get("requestId") or m.get("id") or "?"
-                if k in seen:
-                    continue
-                seen.add(k)
-                fresh = u.get("input_tokens") or 0
-                cw = u.get("cache_creation_input_tokens") or 0
-                cr = u.get("cache_read_input_tokens") or 0
-                o = u.get("output_tokens") or 0
-                if not (fresh or cw or cr or o):
-                    continue
-                out.append(AgentRec(ts_epoch(r.get("timestamp") or ""), pid,
-                                    m.get("model"), fresh, cw, cr, o, k,
-                                    path, pos))
-        if etas is not None and eta_state[0] and not eta_state[1]:
-            etas.append((eta_finish(eta_state[0]), eta_state[2]))
-        close_agent_span(span_state, work)
+        for epoch, pid, model, fresh, cw, cr, o, k, pos in got["recs"]:
+            if k in seen:
+                continue
+            seen.add(k)
+            if not (fresh or cw or cr or o):
+                continue
+            out.append(AgentRec(epoch, pid, model, fresh, cw, cr, o, k,
+                                path, pos))
+        if etas is not None and got["eta"] is not None:
+            etas.append(tuple(got["eta"]))
         cuts, cut = [], float("-inf")
         for a in out[first:]:
             cut = max(cut, a.epoch) if a.epoch is not None else cut
             cuts.append(cut)
-        for i, (m, tl) in enumerate(split_clock(work, tools, waiting, cuts)):
+        for i, (m, tl) in enumerate(split_clock(got["work"], got["tools"],
+                                                got["waiting"], cuts)):
             out[first + i] = out[first + i]._replace(model_s=m, tool_s=tl)
     # Stamp order across files, unparseable stamps last: the fold-in walks
     # turns forward and a record that cannot be placed in time is handed to
     # the last turn rather than the first.
     out.sort(key=lambda a: (a.epoch is None, a.epoch or 0.0))
     return tuple(out)
+
+
+def _read_agent_file(path: str) -> Optional[dict]:
+    """One agent file's part of agent_records, read from it alone.
+
+    Everything here depends on this file's bytes and nothing else, which is
+    what lets _agent_file_readings keep it from one render to the next.  So
+    it stops short of the two steps that look across files: `recs` holds
+    every record that carries usage, zero bills and repeated requestIds
+    included, as (epoch, promptId, model, fresh, cache write, cache read,
+    out, requestId, offset), and agent_records dedupes them against the
+    session and cuts the clock at the ones it keeps.  `work`, `tools` and
+    `waiting` are that clock's spans, and `eta` is the file's live ETA as
+    agent_records hands it on, or None.  None for a file that will not open.
+    """
+    pid = ""
+    eta_state = new_eta_state()
+    span_state: list = [None, None]
+    work: List[Tuple[float, float]] = []
+    pending: Dict[str, Tuple[float, str]] = {}
+    tools: List[Tuple[float, float]] = []
+    waiting: List[Tuple[float, float]] = []
+    recs = []
+    try:
+        fh = open(path, "rb")
+    except OSError:
+        return None
+    with fh:
+        pos = 0
+        for line in fh:
+            pos += len(line)
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if not isinstance(r, dict):
+                continue
+            live_eta(r, eta_state)
+            agent_span(r, span_state, work)
+            scan_tool_spans(r, pending, tools, waiting)
+            if r.get("type") == "user":
+                pid = r.get("promptId") or pid
+                continue
+            if r.get("type") != "assistant":
+                continue
+            m = r.get("message") or {}
+            u = m.get("usage")
+            if not u:
+                continue
+            recs.append((ts_epoch(r.get("timestamp") or ""), pid,
+                         m.get("model"), u.get("input_tokens") or 0,
+                         u.get("cache_creation_input_tokens") or 0,
+                         u.get("cache_read_input_tokens") or 0,
+                         u.get("output_tokens") or 0,
+                         r.get("requestId") or m.get("id") or "?", pos))
+    close_agent_span(span_state, work)
+    eta = None
+    if eta_state[0] and not eta_state[1]:
+        eta = (eta_finish(eta_state[0]), eta_state[2])
+    return {"recs": recs, "work": work, "tools": tools, "waiting": waiting,
+            "eta": eta}
+
+
+# A file last written this long ago is SETTLED, and only a settled file's
+# reading is kept.  Size and mtime are the whole test for a kept reading
+# being current, and a file rewritten within the clock's granularity — a
+# few milliseconds on Linux, whose mtime is the coarse clock — can come
+# back the same size with the same stamp.  Git's index has the same race
+# and the same cure: a stamp the writer may still share is not trusted.
+# A live agent's file is never settled while it runs, and is read afresh.
+AGENT_CACHE_SETTLE_S = 2.0
+
+
+def _agent_cache_path(transcript: str) -> str:
+    """Where agent_records keeps its readings of this session's agent files.
+
+    Not .json: state.find_compatible reads every .json in the directory as
+    a usage cache, and this one holds megabytes on a long session.
+    """
+    sid = os.path.basename(transcript)
+    if sid.endswith(".jsonl"):
+        sid = sid[:-len(".jsonl")]
+    digest = hashlib.sha256(("claude-agent-files\0" + sid).encode("utf-8")).hexdigest()
+    return os.path.join(state.state_dir(), "claude-agent-files-" + digest + ".cache")
+
+
+@functools.lru_cache(maxsize=1)
+def _agent_cache_version() -> str:
+    """A digest of this package's source, so a reading kept by one version
+    of the parsing is never served to another.  Every rule _read_agent_file
+    leans on — live_eta's, agent_span's, scan_tool_spans' — lives in it, and
+    a hand-bumped number would be forgotten the first time one changed."""
+    h = hashlib.sha256()
+    d = os.path.dirname(os.path.abspath(__file__))
+    for name in sorted(os.listdir(d)):
+        if name.endswith(".py"):
+            try:
+                with open(os.path.join(d, name), "rb") as fh:
+                    h.update(name.encode("utf-8") + b"\0" + fh.read())
+            except OSError:
+                pass
+    return h.hexdigest()
+
+
+def _agent_file_readings(transcript: str) -> List[Tuple[str, dict]]:
+    """_read_agent_file for every agent file, in agent_files' order, from
+    the cache where a file has not changed since it was kept.
+
+    Without it, every render parsed every agent file the session ever ran.
+    A session with 611 of them, 768 MB, took six seconds a render, longer
+    than Claude Code's five-second refresh, and its status line stopped at
+    the last frame that finished: on 2026-10-01 it held a 98٪ weekly figure
+    for hours after the week had reset to 1٪.  A finished agent's file
+    never changes, so a render now reads only the files that grew.
+
+    A reading is current while the file's size and mtime match the ones
+    stamped when it was read; see AGENT_CACHE_SETTLE_S for why only a
+    settled file is kept.  The file is written back only when a reading was
+    added or a file went away, so a session with nothing new costs one read.
+    """
+    paths = agent_files(transcript)
+    if not paths:
+        return []
+    cpath = _agent_cache_path(transcript)
+    version = _agent_cache_version()
+    kept: dict = {}
+    try:
+        with open(cpath, "r") as fh:
+            d = json.load(fh)
+        if isinstance(d, dict) and d.get("version") == version:
+            kept = d.get("files") or {}
+    except (OSError, ValueError):
+        pass
+    settled = time.time() - AGENT_CACHE_SETTLE_S
+    out = []
+    keep = {}
+    dirty = False
+    for path in paths:
+        try:
+            st = os.stat(path)
+        except OSError:
+            continue
+        stamp = [st.st_size, st.st_mtime_ns]
+        got = kept.get(path)
+        if isinstance(got, dict) and got.get("stamp") == stamp:
+            got = {"recs": [tuple(r) for r in got["recs"]],
+                   "work": [tuple(w) for w in got["work"]],
+                   "tools": [tuple(t) for t in got["tools"]],
+                   "waiting": [tuple(w) for w in got["waiting"]],
+                   "eta": got["eta"]}
+            keep[path] = kept[path]
+        else:
+            # Stamped before the read: a file that grows during it comes
+            # back with a newer stamp next time, and is read again.
+            got = _read_agent_file(path)
+            if got is None:
+                continue
+            if st.st_mtime < settled:
+                keep[path] = dict(got, stamp=stamp)
+                dirty = True
+        out.append((path, got))
+    if dirty or set(kept) != set(keep):
+        try:
+            os.makedirs(os.path.dirname(cpath), mode=0o700, exist_ok=True)
+            tmp = "%s.%d" % (cpath, os.getpid())
+            with open(tmp, "w") as fh:
+                json.dump({"version": version, "files": keep}, fh,
+                          separators=(",", ":"))
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, cpath)
+        except OSError:
+            pass
+    return out
 
 
 def _usd(model: Optional[str], fresh: int, cw: int, cr: int, out: int

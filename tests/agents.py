@@ -23,6 +23,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
@@ -256,6 +257,38 @@ def run(tmp):
           sl.agent_records(session(tmp, "bare", [prompt(10, "x")])), ())
     check("read_turns takes the reading it is handed",
           sl.read_turns(tr, recs)[0].agent_calls, 3)
+
+    print("--- the reader's cache ---")
+    from coding_agent_usage_line import claude_records as cr
+    old = time.time() - 60
+    for p in sl.agent_files(tr):
+        os.utime(p, (old, old))
+    first = sl.agent_records(tr)
+    with open(cr._agent_cache_path(tr)) as fh:
+        kept = sorted(json.load(fh)["files"])
+    check("settled files are kept, and a kept reading is the reading",
+          (kept, sl.agent_records(tr), first),
+          (sl.agent_files(tr), recs, recs))
+    a1 = os.path.join(tmp, "reader", "subagents", "agent-a1.jsonl")
+    with open(a1, "a") as fh:
+        fh.write(json.dumps(agent_answer(30, "a1-r3", 1, 1, 1, 1),
+                            sort_keys=True) + "\n")
+    os.utime(a1, (old + 30, old + 30))
+    check("a file that changed since it was kept is read again",
+          [r.request_id for r in sl.agent_records(tr)],
+          ["a1-r1", "w1-r1", "a1-r2", "a1-r3"])
+    live = session(tmp, "live", [prompt(10, "go", "p1")], agents=[
+        ("agent-b1", [agent_user(10, "p1"),
+                      agent_answer(11, "b1-r1", 1, 1, 1, 1)])])
+    b1 = sl.agent_files(live)[0]
+    sl.agent_records(live)
+    stamp = os.stat(b1).st_mtime_ns
+    write_jsonl(b1, [agent_user(10, "p1"),
+                     agent_answer(11, "b1-r2", 1, 1, 1, 1)])
+    os.utime(b1, ns=(stamp, stamp))
+    check("a file written moments ago is not kept: a rewrite of the same "
+          "size inside the clock's granularity still reads",
+          [r.request_id for r in sl.agent_records(live)], ["b1-r2"])
 
     print("--- the fold-in ---")
     # Two prompts.  An agent under the first, resolved through the TOOL
