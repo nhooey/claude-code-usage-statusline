@@ -651,10 +651,12 @@ def inherit_eta(own: Tuple[float, ...], finishes: Sequence[float],
     return (at, max(ends) - at)
 
 
-def eta_fig(reading, w: int, digits: int = 3) -> str:
+def eta_fig(reading, w: int, digits: int = 3, signed_off: bool = False) -> str:
     """⛳ and the time left, in a field of `w`: "?" with no live estimate,
     an amber "+" past it, and nothing where there is no transcript at all.
-    See eta_reading for which is which."""
+    See eta_reading for which is which.  The "+" is bright red instead when
+    `signed_off`: the finish it counts to is a report of zero, so the run
+    said it was done and is running over."""
     if reading is None:
         return ""
     if not reading:
@@ -663,7 +665,7 @@ def eta_fig(reading, w: int, digits: int = 3) -> str:
     if left < 0:
         # The "+" takes a column, so an overrun gets no decimal: "+9.3h"
         # would not fit the four a "9.3h" left does.
-        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, F_AMB,
+        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, F_OVER if signed_off else F_AMB,
                                pad_val(w, "+" + dur_fmt(-left, min(digits, w - 2))), R)
     return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, mag_dim(left, MAG_DUR_S) + F_ETA,
                            pad_val(w, dur_fmt(left, digits)), R)
@@ -790,12 +792,17 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
         return "%s%s%s%s%s" % (mark, fmt.MARK_SP, mag_dim(v, MAG_DUR_S) + F_PRW,
                                pad_val(w, dur_fmt(v, digits)), R)
 
-    reading = eta_reading(inherit_eta(eta, [
+    shown = inherit_eta(eta, [
         f for f, last in agent_etas
-        if last is not None and t - last <= ETA_LIVE_S], turn_s),
-        turn_s * 1000.0 if turn_s else None, t)
+        if last is not None and t - last <= ETA_LIVE_S], turn_s)
+    reading = eta_reading(shown, turn_s * 1000.0 if turn_s else None, t)
+    # Signed off: the main thread's own report is zero and no live agent
+    # pushed the finish past it.  An agent's later finish makes the overrun
+    # the agent's, which its panel row reports, so it stays amber here.
+    signed_off = (bool(eta) and eta[1] == 0 and bool(shown)
+                  and eta_finish(shown) <= eta_finish(eta) + 1e-6)
     return "%s%s %s %s %s" % (
-        S_IDLE, eta_fig(reading, LIM_FIG_W),
+        S_IDLE, eta_fig(reading, LIM_FIG_W, signed_off=signed_off),
         fig(E_WORK, model_s, LIM_FIG_W, 3), fig(E_TOOL, tool_s, LIM_ACCT_W, 3),
         fig(E_WAIT, idle, RST_W - vis_width(E_WAIT), 3))
 

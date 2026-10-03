@@ -471,6 +471,14 @@ F_ETA = "\033[38;2;255;77;255m"            # magenta     — ⛳ time left.  It 
                                            #  reason F_PRW gives; the late "+"
                                            #  stays F_AMB.  L* 65, as F_PRW's,
                                            #  so the ⌛ row keeps its weight.
+F_OVER = "\033[38;2;255;40;40m"            # bright red  — an agent row's ⛳
+                                           #  past a report of ZERO.  An
+                                           #  estimate that ran out is amber:
+                                           #  the agent guessed short.  This
+                                           #  one said it was finished and is
+                                           #  still going, which is the louder
+                                           #  fact, so it is redder than F_RED
+                                           #  and not that row hue itself.
 F_SPIN = F_RED                             # the agent row's E_SPIN spinner
 F_CHAT_U = "\033[38;2;166;170;158m"        # warm grey   — user chat row
 F_CHAT_B = "\033[38;2;112;126;140m"        # cool slate  — assistant chat row

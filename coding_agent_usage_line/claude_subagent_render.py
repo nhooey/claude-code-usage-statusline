@@ -282,12 +282,14 @@ def running_parents(prepared_tasks):
                 out.add(up)
                 up = parent.get(up, "")
     return out
-def render_agent_eta(eta, start_ms, now, status="running", end=None):
+def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=False):
     """⛳ and how long the agent says it has left; see eta_reading.
 
     Past its estimate the figure turns amber with a "+": the agent is late by
     that much and has not said so.  A last report of zero reads 0s, then
-    turns amber the same way while the agent keeps going.  With no live
+    counts up late the same way while the agent keeps going, but in bright
+    red: `signed_off` says the zero is the finish the figure counts to, so
+    the agent said it was done and is running over.  With no live
     estimate the cell is "?" — no report yet, or a run that completed — and
     never a manufactured "0s": an agent that has not said is not an agent
     with nothing left.  A task with no transcript to say it in draws nothing, the
@@ -300,7 +302,8 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None):
         return "%s%s%s%s" % (E_ETA, DIM + F_ETA, pad_val(A_ETA_FIG_W, "?"), R)
     left = got[1]
     if left < 0:
-        return "%s%s%s%s" % (E_ETA, F_AMB, pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)), R)
+        return "%s%s%s%s" % (E_ETA, F_OVER if signed_off else F_AMB,
+                             pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)), R)
     return "%s%s%s%s" % (E_ETA, mag_dim(left, MAG_DUR_S) + F_ETA,
                          pad_val(A_ETA_FIG_W, dur_fmt(left)), R)
 def render_agent_rate(rate):
@@ -495,7 +498,12 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     firsts=[w[0] for w in (getattr(usage,"work",()) or ())[:1]]
     if getattr(usage,"open_at",None) is not None: firsts.append(usage.open_at)
     first=min(firsts) if firsts else None
-    eta_args=(getattr(usage,"eta",None) if eta is False else eta, task.get("startTime"), now, status, getattr(usage,"last_epoch",None))
+    own_eta=getattr(usage,"eta",None)
+    shown_eta=own_eta if eta is False else eta
+    # Signed off: its own last report is zero and no descendant pushed the
+    # finish past it, so the zero is what the figure counts to.
+    signed_off=bool(own_eta) and own_eta[1] == 0 and bool(shown_eta) and eta_finish(shown_eta) <= eta_finish(own_eta) + 1e-6
+    eta_args=(shown_eta, task.get("startTime"), now, status, getattr(usage,"last_epoch",None), signed_off)
     right=gap.join(seg(w,c) for w,c in (
         # The model and effort, right before the 💰 they priced.
         (6, render_agent_model(model, str(task.get("effort") or "") or getattr(usage,"effort", ""))),

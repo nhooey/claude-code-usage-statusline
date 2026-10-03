@@ -542,7 +542,10 @@ written, plus the time it said was left. The row counts it down between
 reports. ⛳'s figure is what is left of that total. Past the estimate it
 turns amber, with a `+` for how late the agent is. A report of zero is the
 skill's sign-off, an agent saying it ends now: it reads `0s`, and if the
-agent keeps going it turns amber at once and counts up how late it is. The
+agent keeps going it counts up how late it is at once, in bright red rather
+than amber: the agent said it was done and is running over, which is louder
+than an estimate that ran short. A child whose later finish the row inherits
+takes that back to amber, since the overrun is then the child's. The
 cell is `?` only when there is no live estimate: no report yet, or an
 answer that ended its turn after its last report. The exception is a
 report in the message that ends the turn, which stays live, unless it is
@@ -565,7 +568,10 @@ counted from that prompt, pushed out to the latest finish of any agent still
 answering. An agent that has written nothing for half an hour is taken for
 dead rather than late. A new prompt clears the main thread's own report, and
 so does the answer ending, so an idle session with no agents running reads
-`?`. Both readouts run their times ⛳ 🤖 🔧 🚦: the status line prints
+`?`. Its late `+` follows the same colour rule as a row's: bright red past
+the main thread's own `0s` sign-off, amber past an estimate, and amber
+again when a live agent's later finish is the one it ran past. Both
+readouts run their times ⛳ 🤖 🔧 🚦: the status line prints
 figures for the last three, and the tree rows, which put ⌛ first, print
 each one's share of it.
 

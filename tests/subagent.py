@@ -581,6 +581,16 @@ def run(tmp):
            eta((NOW - 300, 900.0), start, NOW, "completed", NOW - 200),
            eta((NOW - 300, 300.0), start, NOW, "killed", NOW - 300)),
           ("\u26F3   0s", "\u26F3  +1m", "\u26F3  10m", "\u26F3   5m"))
+    from types import SimpleNamespace as NS
+    over = lambda own, shown=False: [
+        c in sr.render_agent_row(task("o", startTime=start), NS(eta=own), {},
+                                 {}, sl.NO_LIMITS, now=NOW, eta=shown)
+        for c in (sl.F_OVER, sl.F_AMB)]
+    check("late past a sign-off is bright red, late past an estimate amber, "
+          "and a sign-off a child's later finish overruns is amber too",
+          (over((NOW - 60, 0.0)), over((NOW - 300, 60.0)),
+           over((NOW - 120, 0.0), (NOW - 600, 500.0))),
+          ([True, False], [False, True], [False, True]))
     check("a run whose sign-off lands the moment it starts is all done, not "
           "a division by zero",
           sr.eta_reading((NOW, 0.0), int(NOW * 1000), NOW), (1.0, 0.0))
@@ -593,7 +603,6 @@ def run(tmp):
           sorted(sl.read_transcript(et).agent_etas),
           sorted([(sl.ts_epoch(ts(12)) + 90.0, sl.ts_epoch(ts(16))),
                   (sl.ts_epoch(ts(11)) + 5400.0, sl.ts_epoch(ts(11)))]))
-    from types import SimpleNamespace as NS
     left = lambda e, st: sr.eta_reading(e, int(st * 1000), NOW)[1]
     fam = lambda own_p: [
         (task("p", startTime=int((NOW - 600) * 1000)), NS(eta=own_p), {}, {}),
@@ -628,6 +637,15 @@ def run(tmp):
            ((), ((NOW + 600, NOW - 5),), ((NOW + 600, NOW - 4000),))],
           ["\u231B \u26F3 3m", "\u231B \u26F3 10m",
            "\u231B \u26F3 3m"])
+    flag = lambda own, *agents: [c in sl.render_elapsed(
+        3600.0, NOW - 7200.0, 900.0, NOW, 0.0, own, NOW - 300, agents)
+        for c in (sl.F_OVER, sl.F_AMB)]
+    check("the status line's \u26F3 late past the main thread's sign-off is "
+          "bright red, past its estimate amber, and amber too when a live "
+          "agent's later finish is what it overran",
+          (flag((NOW - 120, 0.0)), flag((NOW - 240, 60.0)),
+           flag((NOW - 120, 0.0), (NOW - 60, NOW - 5))),
+          ([True, False], [False, True], [False, True]))
     main = os.path.join(tmp, "eta-main.jsonl")
     prompt = lambda m, text: {"type": "user", "userType": "external",
                               "timestamp": ts(m), "message": {"content": text}}
