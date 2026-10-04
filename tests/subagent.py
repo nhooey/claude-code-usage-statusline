@@ -820,9 +820,6 @@ def run(tmp):
         "\U0001F9E0 41k  20\u066A",
         sl.seg(sl.vis_width(sl.S_TOK) + sl.VAL_W + sl.VAL2_W,
                ANSI.sub("", sl.render_tokens(u.tok_up, u.tok_down))),
-        # 🤖 in the rate's field: no call waiting on its result, and
-        # nothing written for 1.2h, so the quiet time rather than the rate.
-        "\U0001F9161.2h ",
         "\U0001F3AF%d%s" % (u.cache_pct, sl.E_PCT),
         # Then the time, before the 5h and 1w: ⌛ runs from its first record; ⛳ is ? because a1 has reported
         # no ETA; and it has been working since 01:10 with no tool paired
@@ -833,9 +830,10 @@ def run(tmp):
         "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0)),
         ANSI.sub("", sl.render_diff("12", "4"))))
     # The spinner's first frame, for a transcript with no text or tool call
-    # in it; then 🟢 running, the phase alone: what it is doing is in the
-    # rate's field, with how long.
-    head = "\u00B7\U0001F50D\U0001F7E2 a1         "
+    # in it; then 🟢 running, and the Doing field after it: 🤖, no call
+    # waiting on its result, and nothing written for 1.2h, so the quiet
+    # time rather than the rate.
+    head = "\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  a1         "
     tree = sl.E_TREE_NODE + " "         # no nesting: the tree is one ◯ wide
     check("an agent's row: the left group, the name, the panel's tree drawn "
           "again, then the right group, filling the payload's columns exactly",
@@ -848,9 +846,9 @@ def run(tmp):
           len({sl.vis_width(r) for r in (rows["a1"], rows["a2"])}), 1)
     check("no sidecar: the task's kind, and the transcript's model where "
           "the payload has none",
-          # The blank spinner of a row not running, then ⚫ alone: its ✅ is
-          # in the rate's field.
-          (rows["a2"].startswith(" \U0001F465\u26AB a2"),
+          # The blank spinner of a row not running, then ⚫ and its ✅ with
+          # the time since it finished, a minute after its last record.
+          (rows["a2"].startswith(" \U0001F465\u26AB\u2705"),
            "\U0001F916O\u2075" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
@@ -866,7 +864,7 @@ def run(tmp):
           re.sub(r" {2,}", "  ", rows["bash-1"]),
           # No spinner, 🟢 and no mode: a shell has no transcript to count
           # in or to say who has the floor.
-          " \U0001F41A\U0001F7E2 bash-1  npm test npm test --watch  "
+          " \U0001F41A\U0001F7E2  bash-1  npm test npm test --watch  "
           "\u25EF  \u231B 13m")
     check("a name and its activity, and a label that only repeats the "
           "description is not drawn",
@@ -901,9 +899,9 @@ def run(tmp):
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
           # The cells only some panels draw follow the kind and state, 👶🏻
           # first.  E_KIDS is two codepoints, and its width the terminal's.
-          ["\u00B7\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 a1",
-           "\u00B7\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 a3",
-           "\u00B7\U0001F50D\U0001F7E2 " + " " * (sl.vis_width(sl.E_KIDS) + 1)
+          ["\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  " + sl.E_KIDS + "1 a1",
+           "\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  " + sl.E_KIDS + "1 a3",
+           "\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  " + " " * (sl.vis_width(sl.E_KIDS) + 1)
            + " a4"])
     spun = os.path.join(tmp, "spin.jsonl")
     tool = agent_says(12, "")
@@ -1111,7 +1109,7 @@ def run(tmp):
     doing = lambda st, u, w=False, rate=None, t=None: ANSI.sub(
         "", sr.render_doing(st, u, w, rate, NOW, t))
     quiet = nothing._replace(eta=(), last_seen=NOW - 90)
-    check("the rate's field says what a running agent is doing and for how "
+    check("the Doing cell says what a running agent is doing and for how "
           "long: 🔧 or 🚦 since the oldest call of its kind, the unit where "
           "the rate's / stands",
           [doing("running", quiet._replace(pending=p)) for p in (

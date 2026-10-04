@@ -432,10 +432,10 @@ panel. At 180 columns, with a running agent, its nested child, a finished
 agent and a shell:
 
 ```
-⏺  ✶🔩🟢 👶🏻1 a1b2c3d4e… Port the renderer Editing …  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🤖266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  ✢🔍🟢     c7d8e9f0a… Find every caller of seg…  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🔧 42s   🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯   📐⚫     f3e4d5c6b… Plan the docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k  ✅ 4m   🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯   🐚🟢     b1         npm test npm test --watch    ◯                                                                  ⌛ 13m
+⏺  ✶🔩🟢🤖266/s 👶🏻1 a1b2c3d4e… Port the renderer Editing …  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  ✢🔍🟢🔧 42s      c7d8e9f0a… Find every caller of seg…  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯   📐⚫✅ 4m       f3e4d5c6b… Plan the docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k  🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯   🐚🟢            b1         npm test npm test --watch    ◯                                                                  ⌛ 13m
 ```
 
 The leading `◯`, `⏺` and `└` are the panel's own chrome, drawn by Claude Code;
@@ -445,7 +445,7 @@ where the figures start (see [Nesting](#nesting)).
 ### Tree cells
 
 Left to right. 👶🏻, 🤏, 💻, 📡 and 📨 are drawn only while some row on the
-panel needs them, so they sit together right after the kind and state:
+panel needs them, so they sit together right after the kind, state and doing:
 those keep their column however many of the five the panel draws, and one
 coming or going moves only the id and the name, never the right group. The
 ones that stay once they come, 👶🏻 and 🤏, sit furthest left, then 💻 and 📡,
@@ -457,7 +457,8 @@ a cell takes no columns at all.
 |---|---|
 | spinner | a running agent's activity, first on the row: Claude Code's own spinner, `· ✢ ✳ ✶ ✻ ✽` and back, in red. It steps one frame for each ⏺ the agent writes, a text or tool-call block, so it moves when the agent does and stands still when it stalls. Blank on any other row, and on a shell, which has no transcript to count in |
 | kind | the agent type, as a glyph (table below) |
-| state | the phase: 🟢 running, 🟡 paused or ⚫ ended. What the agent is doing in it is in the 🛫 field. See [State](#state) |
+| state | the phase: 🟢 running, 🟡 paused or ⚫ ended. See [State](#state) |
+| doing | what the agent is doing in that phase, and for how long: its state's mark, then the time it has been in that state, its unit where a rate's `/` would be so the figures stack down the panel. 🤖 shows the token rate from the panel's own samples while records keep landing, and how long the agent has written nothing once that is a minute, amber from ten. A shell keeps 🛫 and its rate. See [State](#state) |
 | 👶🏻 | how many rows hang directly under it on the panel, finished or not. The cell is there on every row once any row has children |
 | 🤏 | how often its window has been compacted. On every row once any row has one |
 | 💻 | how many background shells it started and has not heard the end of, while it runs or is paused; not once it has failed or been killed. Paused, the 💻 after 🟡 says it waits on one; this says how many. On every row once any row has one |
@@ -470,7 +471,6 @@ a cell takes no columns at all.
 | 💰 | cost, from the agent's own transcript, each request priced at its own model |
 | 🧠 | the agent's context size (its last request's input), and its share of the window the payload gives for its model |
 | 🧩 | tokens in and out |
-| 🛫 | what the agent is doing, and for how long: its state's mark, then the time it has been in that state, its unit where a rate's `/` would be so the figures stack. 🤖 shows the token rate from the panel's own samples while records keep landing, and how long the agent has written nothing once that is a minute, amber from ten. A shell keeps 🛫 and its rate. See [State](#state) |
 | 🎯 | cache hit rate |
 | ⌛ | the agent's age: from its first record, or its `startTime` if that is earlier, to now, or to its last record once it has finished. A completed agent still parked on its children keeps counting. Not the `startTime` alone, which Claude Code restarts when it resumes an agent |
 | ⛳ | the time the agent says it has left. `?` until it reports. See [ETA](#eta) |
@@ -491,8 +491,8 @@ Claude Code gives a task one of five statuses, and `completed` covers two
 different things: an agent that has finished, and one that ended its turn to
 wait on work it started, which Claude Code keeps alive until that work ends.
 The row reads the phase off everything it knows, and puts the circle in the
-state cell. What the agent is doing in that phase goes in the 🛫 field, with
-how long it has been doing it:
+state cell. What the agent is doing in that phase goes in the doing cell right
+after it, with how long it has been doing it:
 
 - 🤖: since its last record, once it has written nothing for a minute; the
   token rate before that.
@@ -566,7 +566,7 @@ two columns per level below the first, so a child's right-hand group lands
 on the same columns as its parent's. The panel's indent also pushes a
 child's left-hand cells two columns right of its parent's, so every row
 opens with two blank columns per level it sits above the deepest row, and
-the kind, state, 👶🏻, 🤏, 💻, 📡, 📨, id and name start on one column at every depth.
+the kind, state, doing, 👶🏻, 🤏, 💻, 📡, 📨, id and name start on one column at every depth.
 
 In a wide window the panel's tree is far from the figures, so the row draws
 it again where the figures start: `◯` for an agent, `├ ◯` or `└ ◯` for a child, with

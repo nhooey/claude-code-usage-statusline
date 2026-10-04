@@ -111,8 +111,8 @@ def render_state(status, usage=None, waiting_on=False):
     """
     return "".join(agent_state(status, usage, waiting_on))
 def render_phase(status, usage=None, waiting_on=False):
-    """The phase circle alone, for the head: the mode after it is the 🛫
-    field's now, beside how long the agent has been in it; see render_doing."""
+    """The phase circle alone: the mode after it is the Doing cell's now,
+    beside how long the agent has been in it; see render_doing."""
     return agent_state(status, usage, waiting_on)[0]
 def render_spin(status, usage=None):
     """A running agent's spinner, one frame on for each ⏺ it has written; see E_SPIN.
@@ -327,8 +327,8 @@ def state_since(status, usage, phase, mode, task=None):
     return None
 def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None):
     """What the agent is doing, and for how long: the mode mark agent_state
-    reads, then the time since state_since, in the rate's field — "🔧 42s "
-    where a rate reads "🛫200/s".  The unit stands where the rate's "/" does,
+    reads, then the time since state_since: the Doing cell, in the head right
+    after the phase circle — "🟢🔧 42s " where a rate reads "🛫200/s".  The unit stands where the rate's "/" does,
     so the figures stack down the panel.
 
     🤖 keeps the rate while the agent's records keep landing: the figure
@@ -554,7 +554,6 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
         (vis_width(S_COST)+4, render_cost("%.4f" % getattr(usage,"cost",0)) if billed else ""),
         (A_CTX_W, render_agent_ctx(getattr(usage,"ctx_tokens",0), getattr(usage,"ctx_window",0))),
         (vis_width(S_TOK)+VAL_W+VAL2_W, render_tokens(getattr(usage,"tok_up",None), getattr(usage,"tok_down",0))),
-        (A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task)),
         (5, render_agent_cache(getattr(usage,"cache_pct",-1))),
         # ⌛ ⛳ 🤖 🔧 🚦, one space apart as one segment, right before the
         # 5h and 1w it spent: how long it has run, how long it says it has
@@ -576,7 +575,8 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
     # stay once they come; 💻 and 📡 last as long as a shell or a Monitor
     # runs; 📨 passes quickest — so the passing ones shift the fewest.
-    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+render_phase(status, usage, waiting_on)),
+    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W+A_RATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+render_phase(status, usage, waiting_on)
+                                                      +seg(A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task))),
                                                      (kids_w, render_kids(kids)),
                                                      (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
                                                      (widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),
