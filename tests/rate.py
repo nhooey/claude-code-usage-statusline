@@ -147,6 +147,52 @@ def run(sl, sr, scratch):
     check("a full cache clamps at 99 like the cell it replaced",
           cell(0.0, 100), "\U0001F6EB  0/s \U0001F3AF99٪")
     check("no usage at all: no cell", cell(50.0, -1), "")
+    tcell = lambda t: ANSI.sub("", sl.render_rate_cache(200.0, 98, t))
+    check("a tool running: 🔧 and its age in place of 🛫 and the rate, the "
+          "unit where the rate's / stood so the figures stack, still 13",
+          ([tcell(t) for t in (5, 42, 90, 754)], sl.vis_width(tcell(42))),
+          (["\U0001F527  5s  \U0001F3AF98٪", "\U0001F527 42s  \U0001F3AF98٪",
+            "\U0001F5271.5m  \U0001F3AF98٪", "\U0001F527 13m  \U0001F3AF98٪"], 13))
+    check("the figure ends where the rate's does",
+          tcell(42).index("2s"), cell(200.0, 98).index("0/s"))
+    # tool_at: the oldest call of the open turn still waiting on its result.
+    def stamp(sec):
+        return "2026-10-04T12:%02d:%02d.000Z" % (sec // 60, sec % 60)
+    def rec(sec, kind, blocks):
+        return {"type": kind, "timestamp": stamp(sec),
+                "message": {"role": kind, "content": blocks}}
+    use = lambda i, n: {"type": "tool_use", "id": i, "name": n, "input": {}}
+    res = lambda i: {"type": "tool_result", "tool_use_id": i, "content": ""}
+    prompt = lambda sec, txt: {"type": "user", "userType": "external",
+                               "timestamp": stamp(sec),
+                               "message": {"role": "user", "content": txt}}
+    def tool_at(recs, now):
+        p = os.path.join(scratch, "t.jsonl")
+        with open(p, "w") as fh:
+            fh.write("".join(json.dumps(r) + "\n" for r in recs))
+        tr = sl.read_transcript(p, (), (), now)
+        return tr.tool_at - sl.ts_epoch(stamp(0)) if tr.tool_at else 0.0
+    base = sl.ts_epoch(stamp(0))
+    run1 = [prompt(0, "go"), rec(2, "assistant", [use("a", "Bash")])]
+    check("a Bash call with no result yet: its start",
+          tool_at(run1, base + 60), 2.0)
+    check("an offline read (no now) reports none",
+          tool_at(run1, None), 0.0)
+    check("answered: none",
+          tool_at(run1 + [rec(9, "user", [res("a")])], base + 60), 0.0)
+    check("a question to the user is not a tool running",
+          tool_at([prompt(0, "go"),
+                   rec(2, "assistant", [use("q", "AskUserQuestion")])],
+                  base + 60), 0.0)
+    check("nor is a foreground agent",
+          tool_at([prompt(0, "go"), rec(2, "assistant", [use("g", "Agent")])],
+                  base + 60), 0.0)
+    check("two at once: the older",
+          tool_at([prompt(0, "go"), rec(2, "assistant", [use("a", "Bash")]),
+                   rec(3, "assistant", [use("b", "Read")]),
+                   rec(4, "user", [res("b")])], base + 60), 2.0)
+    check("a call a previous turn left unanswered was cut off: none",
+          tool_at(run1 + [prompt(30, "next")], base + 60), 0.0)
     check("the model: 🤖, the two-character spec with its superscript "
           "version, and the effort's glyph against it",
           [ANSI.sub("", sl.render_model(m, e)) for m, e in

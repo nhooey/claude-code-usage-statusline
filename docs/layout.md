@@ -77,7 +77,11 @@ the other is blank. Row 1 and row 2 hold the style and the PR:
   samples, which are at least 5 seconds apart. It jumps by a request's whole prompt
   at each request and rests while a tool runs, so it measures pace, not
   generation speed. `0/s` between turns; blank on a session's first render,
-  when there is only one sample.
+  when there is only one sample. While the main thread is inside a tool, the
+  rate has nothing to say, so the field shows `🔧 42s ` instead: how long the
+  oldest running call of this turn has been going. The unit sits where the
+  rate's `/` sits, so the two figures stack. A question to the user or a
+  foreground agent doesn't count as a running tool.
 - `🎯98٪`: prompt-cache hit rate — cache reads as a share of all input.
 
 **Column 3 — how full the context is, and where the money went.**

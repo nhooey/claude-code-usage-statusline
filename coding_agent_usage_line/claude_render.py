@@ -62,7 +62,8 @@ def render_tokens(up: Optional[int], down: int, down_w: int = VAL2_W) -> str:
         pad_val(down_w, E_DOWN + pad_val(4, humanize(down))), R)
 
 
-def render_rate_cache(rate: Optional[float], cache_pct: int) -> str:
+def render_rate_cache(rate: Optional[float], cache_pct: int,
+                      tool_s: Optional[float] = None) -> str:
     """🛫 the token rate and 🎯 the cache hit rate in one cell: "🛫200/s 🎯98٪".
 
     Two readings of the one stream of requests — how fast it is running and
@@ -89,15 +90,30 @@ def render_rate_cache(rate: Optional[float], cache_pct: int) -> str:
     The tier's colour goes on after the 🎯 rather than around it: the green
     tier carries a DIM of its own (cache_color), and that is for the figure,
     not the mark — the same shape as every magnitude cell.
+
+    While the main thread is inside a tool (`tool_s`, the seconds since the
+    oldest running call started) the rate has nothing to say — the total
+    rests until the result goes back — so the field says how long the tool
+    has been running instead, under 🔧 in place of 🛫: "🔧 42s " where the
+    rate read "🛫200/s".  The unit stands where the rate's "/" stood, so the
+    figures of the two end in the same column and stack the way every other
+    figure in column 2 does; the spare column is the "s" of "/s".
     """
     if cache_pct is None or cache_pct < 0:
         return ""
-    fig = "" if rate is None else rate_fig(rate) + "/s"
+    if tool_s is not None:
+        head = "%s%s%s%s" % (S_TOOL,
+                             mag_dim(tool_s, MAG_DUR_S) + F_PRW,
+                             pad_val(VAL_W - 1, dur_fmt(tool_s, 3)) + " ", R)
+    else:
+        fig = "" if rate is None else rate_fig(rate) + "/s"
+        head = "%s%s%s%s" % (S_RATE, mag_dim(rate, MAG_RATE) + F_RATE,
+                             pad_val(VAL_W, fig), R)
     # 🎯 takes its pad, where 💰 and ▾ touch their figures: the percentage
     # is three wide, and the pad makes it the four theirs are, so the three
     # end together on the column's edge — "🎯 96٪" under "▾6.2M".
-    return "%s%s%s%s%s" % (
-        S_RATE, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(VAL_W, fig), R,
+    return "%s%s" % (
+        head,
         pad_val(COL2_VAL2_W, S_CACHE + cache_color(cache_pct)
                 + pad_val(3, pct2(cache_pct) + E_PCT) + R))
 
@@ -1064,7 +1080,9 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     ), rule=rule)
     right = grid_row((
         render_queue(tr.queued, tr.compactions),
-        render_rate_cache(rate, tr.cache_pct),
+        render_rate_cache(rate, tr.cache_pct, (
+            max(0.0, (time.time() if now is None else now) - tr.tool_at)
+            if tr.tool_at else None)),
         render_cache_share(S_WRITE, cache.turn_write, cache.sess_write,
                            F_SHARE, dim_rd_turn, dim_rd_sess),
         render_limit(S_WEEK, lim.weekly_pct, lim.weekly_share,

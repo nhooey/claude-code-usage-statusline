@@ -1390,6 +1390,7 @@ S_TOK = E_TOK + _PAD
 S_CTX = E_CTX + _PAD
 S_MOD = E_MOD + _PAD
 S_RATE = E_RATE + _PAD
+S_TOOL = E_TOOL + _PAD  # 🛫's stand-in while a tool runs; see render_rate_cache
 S_CACHE = E_CACHE + _PAD
 S_COST = E_COST + _PAD
 S_HUMAN = E_HUMAN + " "

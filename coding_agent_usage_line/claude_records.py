@@ -123,6 +123,11 @@ class Transcript(NamedTuple):
     shells: int = 0         # background shells this thread started and has
                             # not heard the end of; see scan_background
     monitors: int = 0       # and Monitors, likewise
+    tool_at: float = 0.0    # epoch the oldest tool call of the current turn
+                            # still waiting on its result started, on a live
+                            # read; 0 if none.  WAITING_TOOLS are left out:
+                            # a question or an agent is not a tool running.
+                            # The 🛫 cell shows its age; see render_rate_cache.
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -1505,6 +1510,10 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
             prev = t
     if open_at is not None and prev > open_at:
         spans.append((open_at, prev))
+    # The oldest call still running, for the 🛫 cell: only one asked for in
+    # the turn still open, since an older one left unanswered was cut off.
+    running = [t for t, name in pending.values()
+               if name not in WAITING_TOOLS and open_at and t >= open_at]
     if now is not None:
         open_tool_spans(pending, now, tools, blocked)
     busy, tool, blocked_s = thread_clock(spans, tools, blocked)
@@ -1535,6 +1544,7 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         compactions=compactions,
         shells=sum(1 for k in background.values() if k == "bash"),
         monitors=sum(1 for k in background.values() if k == "monitor"),
+        tool_at=min(running) if now is not None and running else 0.0,
     )
 
 
