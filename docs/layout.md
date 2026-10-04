@@ -27,7 +27,7 @@ At 170 columns:
 ```
 👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🤖200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### The grid
@@ -59,7 +59,7 @@ the other is blank. Row 1 and row 2 hold the style and the PR:
 ```
 👤💬 Why does the elapsed row report two durations when the …  🎨 expl        🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you …  🔀 4211        🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                  🤖200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 ### Column by column
@@ -73,15 +73,20 @@ the other is blank. Row 1 and row 2 hold the style and the PR:
 - `🧩▴2.7M ▾841k`: tokens in and out, including every subagent's. ▴ is
   billable-equivalent input — fresh input, plus cache writes at 2× and cache
   reads at 0.1× — and ▾ is output.
-- `🛫200/s`: how fast 🧩's total is climbing, taken over the last 16
-  samples, which are at least 5 seconds apart. It jumps by a request's whole prompt
-  at each request and rests while a tool runs, so it measures pace, not
-  generation speed. `0/s` between turns; blank on a session's first render,
-  when there is only one sample. While the main thread is inside a tool, the
-  rate has nothing to say, so the field shows `🔧 42s ` instead: how long the
-  oldest running call of this turn has been going. The unit sits where the
-  rate's `/` sits, so the two figures stack. A question to the user or a
-  foreground agent doesn't count as a running tool.
+- `🤖200/s`, `🔧 42s `, `🚦 3m  `: Doing — what the main thread is doing,
+  and for how long, the same states as an agent row's Doing cell. The unit
+  of a time sits where a rate's `/` sits, so the figures stack.
+  - 🔧: inside a tool, since the oldest call of this turn still running.
+  - 🚦: waiting on a question to you or a foreground agent, since it was
+    asked; or between turns, since the answer ended. The ⌛ row counts that
+    time under 🚦 too.
+  - 🤖: the model has the floor. While records keep landing it shows how
+    fast 🧩's total is climbing, taken over the last 16 samples at least 5
+    seconds apart; that jumps by a request's whole prompt at each request,
+    so it measures pace, not generation speed. Once nothing has been written
+    for a minute it shows how long instead, amber from ten.
+  - 🛫 and the rate, as before, on an offline read of a transcript, which
+    has no now to time anything against.
 - `🎯98٪`: prompt-cache hit rate — cache reads as a share of all input.
 
 **Column 3 — how full the context is, and where the money went.**
@@ -132,7 +137,7 @@ removed in the session, as Claude Code reports them.
 ```
 👤💬 Why does the elapsed row report two durations when the …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
-📦repo-dirty  📁…atusline-fixture/deep/tree  🍂golden-dirty ✱                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
+📦repo-dirty  📁…atusline-fixture/deep/tree  🍂golden-dirty ✱                 🤖200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 In a linked git worktree 📦 names the main repository, since 🌿 already
@@ -172,7 +177,7 @@ columns 3 and 4, saving six columns:
 ```
 👤💬 Why does the elapsed row report two durations when the sessio…                 🤖O⁵🏃 💰115     🧠  115k   11٪    ⌛ ⛳   ? 🤖2.8h 🔧 58m 🚦5.5h    📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you spent.…                 🧩▴2.7M ▾841k    📖 🎤34٪ 🎮32٪    🔋 🎤1.2٪ 🎮3.8٪ 💳 15٪ 🔜6.7m    🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                        🛫200/s 🎯98٪    📝 🎤 7٪ 🎮 7٪    🪫 🎤1.6٪ 🎮8.4٪ 💳 87٪ 🔜1.9d    💾 +3.4k - 214
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                        🤖200/s 🎯98٪    📝 🎤 7٪ 🎮 7٪    🪫 🎤1.6٪ 🎮8.4٪ 💳 87٪ 🔜1.9d    💾 +3.4k - 214
 ```
 
 ### Column rules
@@ -184,7 +189,7 @@ same width, column for column. At 170 columns, with `--column-rules`:
 ```
 👤💬 Why does the elapsed row report two durations when the …               | 🤖O⁵🏃 💰115   | 🧠   115k    11٪  | ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h  | 📅  2026-08-16
 🤖💬 Two figures, because one of them is not a duration you …               | 🧩▴2.7M ▾841k  | 📖 🎤 34٪ 🎮 32٪  | 🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m  | 🕐    02:23:20
-📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🛫200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d  | 💾 +3.4k - 214
+📦repo  📁~/src/statusline-fixture/deep/tree  🌿golden-clean                | 🤖200/s 🎯98٪  | 📝 🎤  7٪ 🎮  7٪  | 🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d  | 💾 +3.4k - 214
 ```
 
 Rules are off by default, and `--column-rules` asks for them. Even then they
@@ -222,7 +227,7 @@ At 140 columns:
 ```
 👤💬 Why does the elapsed row …                 🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳    ? 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
 🤖💬 Two figures, because one …                 🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
-📦repo  📁…deep/tree  🌿golden…                 🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
+📦repo  📁…deep/tree  🌿golden…                 🤖200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 At 120 columns:

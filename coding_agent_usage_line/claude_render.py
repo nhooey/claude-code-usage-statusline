@@ -62,52 +62,70 @@ def render_tokens(up: Optional[int], down: int, down_w: int = VAL2_W) -> str:
         pad_val(down_w, E_DOWN + pad_val(4, humanize(down))), R)
 
 
-def render_rate_cache(rate: Optional[float], cache_pct: int,
-                      tool_s: Optional[float] = None) -> str:
-    """🛫 the token rate and 🎯 the cache hit rate in one cell: "🛫200/s 🎯98٪".
+def main_doing(tr: Transcript) -> Tuple[str, float]:
+    """What the main thread is doing, as the Doing mark and the epoch it
+    started doing it; ("", 0.0) on an offline read, which has no now.
 
-    Two readings of the one stream of requests — how fast it is running and
-    how much of each request the cache served — and the column-2 shape: the
-    mark, a VAL_W first field, a VAL2_W second, so "200/s" stacks under ▴'s
-    figure and the 🎯 with its percentage right-aligns under ▾'s.  The
-    cache figure carries its own mark inside the second field the way the
-    window carried 📏, because the field is a different quantity from the
-    first and a reader should not have to know the layout to tell which.
+    The agent rows' states, read off the main transcript: 🔧 a tool running,
+    🚦 a question to the user or a foreground agent, and 🚦 too between
+    turns — the ⌛ row counts that wait under 🚦 as well — and otherwise
+    🤖, the model, since the last record.  See render_doing.
+    """
+    if tr.tool_at:
+        return E_TOOL, tr.tool_at
+    if tr.wait_at:
+        return E_WAIT, tr.wait_at
+    if tr.idle_at:
+        return E_WAIT, tr.idle_at
+    if tr.last_seen:
+        return E_WORK, tr.last_seen
+    return "", 0.0
+
+
+def render_rate_cache(rate: Optional[float], cache_pct: int,
+                      mark: str = "", secs: Optional[float] = None) -> str:
+    """The Doing figure and 🎯 the cache hit rate in one cell:
+    "🔧 42s  🎯98٪", "🤖200/s 🎯98٪".
+
+    The first field is what the main thread is doing, and for how long:
+    `mark` from main_doing, and `secs` the time since.  The unit stands
+    where a rate's "/" stands, so the figures stack the way every other
+    figure in column 2 does; the spare column is the "s" of "/s".  🤖 shows
+    the token rate instead while records keep landing — the total climbs
+    then, and how fast says the model is moving — and how long it has
+    written nothing once that is QUIET_S, amber from QUIET_WARN_S.  With
+    no mark, an offline read, the field is 🛫 and the rate as before.
 
     The rate is session_rate's and the figure is rate_fig's three characters
     with the "/s" that makes them five: the same cell as the agent rows',
     for the same quantity read on the main thread.  Blank — the mark still
     drawn, the field empty — while there is no slope to report, which is the
-    first tick of a session and nothing else; a rate of nothing between
-    turns is "  0/s" and is meant to be read.
+    first tick of a session and nothing else.
 
     Nothing at all when there has been no usage, as the cache cell was on
     its own: no requests is no rate and no hit rate, and a cell of two blank
     fields would be a row saying something where there is nothing to say.
 
-    The rate dims under MAG_RATE — a trickle against full flight — and is
-    reset before the 🎯, which keeps its tiers and must not inherit the DIM.
-    The tier's colour goes on after the 🎯 rather than around it: the green
-    tier carries a DIM of its own (cache_color), and that is for the figure,
-    not the mark — the same shape as every magnitude cell.
-
-    While the main thread is inside a tool (`tool_s`, the seconds since the
-    oldest running call started) the rate has nothing to say — the total
-    rests until the result goes back — so the field says how long the tool
-    has been running instead, under 🔧 in place of 🛫: "🔧 42s " where the
-    rate read "🛫200/s".  The unit stands where the rate's "/" stood, so the
-    figures of the two end in the same column and stack the way every other
-    figure in column 2 does; the spare column is the "s" of "/s".
+    The figure dims under its magnitude cut — MAG_RATE for a rate, MAG_DUR_S
+    for a time — and is reset before the 🎯, which keeps its tiers and must
+    not inherit the DIM.  The tier's colour goes on after the 🎯 rather than
+    around it: the green tier carries a DIM of its own (cache_color), and
+    that is for the figure, not the mark — the same shape as every
+    magnitude cell.
     """
     if cache_pct is None or cache_pct < 0:
         return ""
-    if tool_s is not None:
-        head = "%s%s%s%s" % (S_TOOL,
-                             mag_dim(tool_s, MAG_DUR_S) + F_PRW,
-                             pad_val(VAL_W - 1, dur_fmt(tool_s, 3)) + " ", R)
+    show_rate = not mark or (mark == E_WORK and rate is not None
+                             and (secs is None or secs < QUIET_S))
+    if not show_rate and secs is not None:
+        ink = (F_AMB if mark == E_WORK and secs >= QUIET_WARN_S
+               else mag_dim(secs, MAG_DUR_S) + F_PRW)
+        head = "%s%s%s%s%s" % (mark, DOING_PAD, ink,
+                               pad_val(VAL_W - 1, dur_fmt(secs)) + " ", R)
     else:
         fig = "" if rate is None else rate_fig(rate) + "/s"
-        head = "%s%s%s%s" % (S_RATE, mag_dim(rate, MAG_RATE) + F_RATE,
+        head = "%s%s%s%s" % ((mark + DOING_PAD) if mark else S_RATE,
+                             mag_dim(rate, MAG_RATE) + F_RATE,
                              pad_val(VAL_W, fig), R)
     # 🎯 takes its pad, where 💰 and ▾ touch their figures: the percentage
     # is three wide, and the pad makes it the four theirs are, so the three
@@ -1078,11 +1096,12 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
                      now, dim_turn, dim_sess),
         render_time(now),
     ), rule=rule)
+    doing = main_doing(tr)
     right = grid_row((
         render_queue(tr.queued, tr.compactions),
-        render_rate_cache(rate, tr.cache_pct, (
-            max(0.0, (time.time() if now is None else now) - tr.tool_at)
-            if tr.tool_at else None)),
+        render_rate_cache(rate, tr.cache_pct, doing[0], (
+            max(0.0, (time.time() if now is None else now) - doing[1])
+            if doing[0] else None)),
         render_cache_share(S_WRITE, cache.turn_write, cache.sess_write,
                            F_SHARE, dim_rd_turn, dim_rd_sess),
         render_limit(S_WEEK, lim.weekly_pct, lim.weekly_share,

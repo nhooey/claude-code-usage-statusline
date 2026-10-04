@@ -128,6 +128,11 @@ class Transcript(NamedTuple):
                             # read; 0 if none.  WAITING_TOOLS are left out:
                             # a question or an agent is not a tool running.
                             # The 🛫 cell shows its age; see render_rate_cache.
+    wait_at: float = 0.0    # likewise for the oldest WAITING_TOOLS call: a
+                            # question to the user or a foreground agent
+    idle_at: float = 0.0    # epoch the last answer ended, while no new turn
+                            # has opened since; 0 while one is open
+    last_seen: float = 0.0  # its last stamped record of any kind
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -1490,6 +1495,7 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     eta_state = new_eta_state()
     queued = compactions = 0
     background = {}
+    idle_at = last_seen = 0.0
     for r in records:
         queued = max(0, queued + queue_step(r))
         compactions += is_compaction(r)
@@ -1502,6 +1508,18 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
             continue
         if first is None:
             first = t
+        if r.get("isSidechain") is not True:
+            last_seen = t
+            # The answer ending opens the idle; the next request or tool
+            # result, or a prompt, closes it.  Not any work record: Claude
+            # Code writes system records after the end, and they are not
+            # the assistant answering.
+            if ends_turn(r):
+                idle_at = t
+            elif (r.get("type") == "assistant" or turn_start_text(r) is not None
+                  or (r.get("type") == "user" and isinstance(
+                      (r.get("message") or {}).get("content"), list))):
+                idle_at = 0.0
         if turn_start_text(r) is not None:
             if open_at is not None and prev > open_at:
                 spans.append((open_at, prev))
@@ -1514,6 +1532,8 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     # the turn still open, since an older one left unanswered was cut off.
     running = [t for t, name in pending.values()
                if name not in WAITING_TOOLS and open_at and t >= open_at]
+    waits = [t for t, name in pending.values()
+             if name in WAITING_TOOLS and open_at and t >= open_at]
     if now is not None:
         open_tool_spans(pending, now, tools, blocked)
     busy, tool, blocked_s = thread_clock(spans, tools, blocked)
@@ -1545,6 +1565,9 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         shells=sum(1 for k in background.values() if k == "bash"),
         monitors=sum(1 for k in background.values() if k == "monitor"),
         tool_at=min(running) if now is not None and running else 0.0,
+        wait_at=min(waits) if now is not None and waits else 0.0,
+        idle_at=idle_at if now is not None else 0.0,
+        last_seen=last_seen if now is not None else 0.0,
     )
 
 

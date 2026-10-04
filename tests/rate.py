@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """The status line's 🛫: the sampler behind it and the cell it fills.
 
-The goldens cannot show this figure.  They pin the clock, so every render of
+The goldens cannot show the rate.  They pin the clock, so every render of
 a case sees the same second and the sampler takes one reading and reports no
-slope — which is the correct blank for a session's first tick, and it is
-what every golden records.  The slope itself, the tick, the depth of the
+slope — the correct blank for a session's first tick — and the Doing figure
+they record is 🤖 and how long the corpus has been quiet.  The slope itself, the tick, the depth of the
 history and what a damaged file costs are pinned here, against a scratch
 TMPDIR, with the clock stepped by hand.  The brightness-as-magnitude rule
 (MAG_TOK and mag_dim) is pinned here too, as a rule rather than as escapes.
@@ -147,7 +147,7 @@ def run(sl, sr, scratch):
     check("a full cache clamps at 99 like the cell it replaced",
           cell(0.0, 100), "\U0001F6EB  0/s \U0001F3AF99٪")
     check("no usage at all: no cell", cell(50.0, -1), "")
-    tcell = lambda t: ANSI.sub("", sl.render_rate_cache(200.0, 98, t))
+    tcell = lambda t, m=sl.E_TOOL, r=200.0: ANSI.sub("", sl.render_rate_cache(r, 98, m, t))
     check("a tool running: 🔧 and its age in place of 🛫 and the rate, the "
           "unit where the rate's / stood so the figures stack, still 13",
           ([tcell(t) for t in (5, 42, 90, 754)], sl.vis_width(tcell(42))),
@@ -155,6 +155,17 @@ def run(sl, sr, scratch):
             "\U0001F5271.5m  \U0001F3AF98٪", "\U0001F527 13m  \U0001F3AF98٪"], 13))
     check("the figure ends where the rate's does",
           tcell(42).index("2s"), cell(200.0, 98).index("0/s"))
+    check("🚦 waiting, the same shape; 🤖 keeps the rate under a minute "
+          "quiet, then how long, amber from ten; with no rate yet, the time",
+          [tcell(42, sl.E_WAIT), tcell(30, sl.E_WORK), tcell(90, sl.E_WORK),
+           tcell(30, sl.E_WORK, None)],
+          ["\U0001F6A6 42s  \U0001F3AF98٪", "\U0001F916200/s \U0001F3AF98٪",
+           "\U0001F9161.5m  \U0001F3AF98٪", "\U0001F916 30s  \U0001F3AF98٪"])
+    check("amber from ten minutes quiet, and only for 🤖",
+          (sl.F_AMB in sl.render_rate_cache(200.0, 98, sl.E_WORK, 700),
+           sl.F_AMB in sl.render_rate_cache(200.0, 98, sl.E_WORK, 90),
+           sl.F_AMB in sl.render_rate_cache(200.0, 98, sl.E_TOOL, 700)),
+          (True, False, False))
     # tool_at: the oldest call of the open turn still waiting on its result.
     def stamp(sec):
         return "2026-10-04T12:%02d:%02d.000Z" % (sec // 60, sec % 60)
@@ -166,11 +177,13 @@ def run(sl, sr, scratch):
     prompt = lambda sec, txt: {"type": "user", "userType": "external",
                                "timestamp": stamp(sec),
                                "message": {"role": "user", "content": txt}}
-    def tool_at(recs, now):
+    def reading(recs, now):
         p = os.path.join(scratch, "t.jsonl")
         with open(p, "w") as fh:
             fh.write("".join(json.dumps(r) + "\n" for r in recs))
-        tr = sl.read_transcript(p, (), (), now)
+        return sl.read_transcript(p, (), (), now)
+    def tool_at(recs, now):
+        tr = reading(recs, now)
         return tr.tool_at - sl.ts_epoch(stamp(0)) if tr.tool_at else 0.0
     base = sl.ts_epoch(stamp(0))
     run1 = [prompt(0, "go"), rec(2, "assistant", [use("a", "Bash")])]
@@ -193,6 +206,23 @@ def run(sl, sr, scratch):
                    rec(4, "user", [res("b")])], base + 60), 2.0)
     check("a call a previous turn left unanswered was cut off: none",
           tool_at(run1 + [prompt(30, "next")], base + 60), 0.0)
+    done = dict(rec(20, "assistant", [{"type": "text", "text": "ok"}]))
+    done["message"]["stop_reason"] = "end_turn"
+    hook = {"type": "system", "subtype": "stop_hook_summary",
+            "timestamp": stamp(21)}
+    doing = lambda recs: (lambda m, t: (m, t - base if t else 0.0))(
+        *sl.main_doing(reading(recs, base + 60)))
+    check("main_doing: 🔧 a tool, 🚦 a question, 🚦 between turns from the "
+          "answer's end through the system records after it, 🤖 since the "
+          "last record otherwise, and nothing offline",
+          [doing(run1),
+           doing([prompt(0, "go"), rec(2, "assistant", [use("q", "AskUserQuestion")])]),
+           doing(run1 + [rec(9, "user", [res("a")]), done, hook]),
+           doing(run1 + [rec(9, "user", [res("a")])]),
+           doing(run1 + [rec(9, "user", [res("a")]), done, prompt(30, "next")]),
+           sl.main_doing(reading(run1, None))],
+          [(sl.E_TOOL, 2.0), (sl.E_WAIT, 2.0), (sl.E_WAIT, 20.0),
+           (sl.E_WORK, 9.0), (sl.E_WORK, 30.0), ("", 0.0)])
     check("the model: 🤖, the two-character spec with its superscript "
           "version, and the effort's glyph against it",
           [ANSI.sub("", sl.render_model(m, e)) for m, e in

@@ -860,6 +860,11 @@ MAG_TOK = 100000       # 🧩's ▴ and ▾, 🧠's size, both readouts
 MAG_RATE = 1000.0      # 🛫 tokens per second
 MAG_COST = 1.0         # 💰 dollars
 MAG_DUR_S = 600.0      # ⌛ seconds: 🎤 🚦 🤖 Σ, and an agent's ⌛ and gauges
+# A thread that has written nothing for QUIET_S has its 🤖 state show how
+# long, in place of the token rate, amber from QUIET_WARN_S: long enough
+# that no tool round or request it is still waiting on explains it by
+# itself.  The status line's Doing figure and an agent row's alike.
+QUIET_S, QUIET_WARN_S = 60.0, 600.0
 MAG_DIFF = 100         # 💾 lines, each half on its own
 MAG_SHARE_TURN = 1.0   # ٪ of the WEEK: 🎤 on both limit rows
 MAG_SHARE_SESS = 5.0   # ٪ of the WEEK: 🎮 on both limit rows
@@ -1389,7 +1394,7 @@ S_TOK = E_TOK + _PAD
 S_CTX = E_CTX + _PAD
 S_MOD = E_MOD + _PAD
 S_RATE = E_RATE + _PAD
-S_TOOL = E_TOOL + _PAD  # 🛫's stand-in while a tool runs; see render_rate_cache
+DOING_PAD = _PAD  # after the status line's Doing mark; see render_rate_cache
 S_CACHE = E_CACHE + _PAD
 S_COST = E_COST + _PAD
 S_HUMAN = E_HUMAN + " "

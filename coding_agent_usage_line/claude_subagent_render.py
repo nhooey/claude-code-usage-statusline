@@ -41,7 +41,7 @@ A_CTX_W = vis_width(S_CTX) + 4 + 1 + A_CTX_PCT_W
 # once that is A_SILENT_S, and turns amber at A_SILENT_WARN_S: long enough
 # that no tool round or request it is still waiting on explains it by itself.
 # See render_doing.
-A_SILENT_S, A_SILENT_WARN_S = 60.0, 600.0
+A_SILENT_S, A_SILENT_WARN_S = QUIET_S, QUIET_WARN_S
 # The most a worktree's branch spends of the name's room, 🌿 not counted.
 A_BRANCH_W = 16
 KIND_MARK = {"general-purpose":"🔩", "claude":"🎩", "Explore":"🔍", "Plan":"📐",

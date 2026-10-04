@@ -14,7 +14,7 @@ Redrawn under the prompt as the session changes. Installed as `statusLine`.
 ```
 👤💬 Why is the build slow?         🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳   4m 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
 🤖💬 The test step takes 80٪ of…    🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
-📦app  📁~/src/app  🌿main          🛫200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
+📦app  📁~/src/app  🌿main          🤖200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
 ```
 
 Read these three first:
@@ -28,7 +28,7 @@ Read these three first:
 |---|---|---|---|---|---|
 | **Row 1** | 👤💬 Prompt · 🎨 Style | 🤖 Model · 💰 Cost | 🧠 Context | ⌛ Elapsed | 📅 Date |
 | **Row 2** | 🤖💬 Reply · 🔀 PR | 🧩 Tokens | 📖 Rereads | 🔋 5-hour | 🕐 Clock |
-| **Row 3** | 📦 Project · 📁 Directory · 🌿 Branch · 💻 Shells · 📡 Monitors · 📨 Queue · 🤏 Compactions | 🛫 Rate · 🎯 Hits | 📝 Caching | 🪫 Weekly | 💾 Diff |
+| **Row 3** | 📦 Project · 📁 Directory · 🌿 Branch · 💻 Shells · 📡 Monitors · 📨 Queue · 🤏 Compactions | Doing · 🎯 Hits | 📝 Caching | 🪫 Weekly | 💾 Diff |
 
 ## Agent tree
 
@@ -136,7 +136,8 @@ readout, the table says so.
 | 🧩 | Tokens | tokens in and out | ✓ | ✓ | ✓ |
 | ▴ | Input | billable-equivalent input tokens | ✓ | ✓ | ✓ |
 | ▾ | Output | output tokens | ✓ | ✓ | ✓ |
-| 🛫 | Rate | tokens per second. On the status line, 🔧 and the time while a tool runs; on the tree, the Doing cell after the state circle: the agent's state mark and how long it has been in it, with 🤖 keeping the rate until it has written nothing for a minute (amber from ten) | ✓ | ✓ | |
+| 🛫 | Rate | tokens per second, where no state applies: an offline read, a shell | ✓ | ✓ | |
+| 🔧 🚦 🤖 … | Doing | what the thread is doing and for how long: 🔧 a tool, 🚦 waiting on you or an agent (or between turns), 🤖 the model, which shows the token rate until it has written nothing for a minute (amber from ten). On the tree, the cell after the state circle, with the paused and ended marks too | ✓ | ✓ | |
 | 🎯 | Hits | prompt-cache hit rate | ✓ | ✓ | ✓ |
 
 ### Context

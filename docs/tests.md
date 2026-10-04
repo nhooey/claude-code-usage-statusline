@@ -41,11 +41,12 @@ the program and is not.
 | `python3 tests/agents.py` | agent spend: reading agent files, folding them into turns, the 👥 row, the tool-time partition, the receipt's per-turn share of it with its agents', the cache of each agent file's reading, and the calibration scan's cache of each file's priced requests, and the main thread's open shells and Monitors, and the receipt's turn tag | `pass 79   fail 0` |
 | `python3 tests/subagent.py` | the agent-panel rows: finding an agent's file, billing, window shares, nesting, the reported ETA and its inheritance, the inbox, silence, compactions, open shells and Monitors, API errors and worktree branch, a window share that never starts the calibration scan, row shape | `pass 116   fail 0` |
 | `python3 tests/claude-subagent-render.py` | panel row rendering with no file or source reads | `ok …` |
-| `python3 tests/rate.py` | the 🛫 token-rate sampler and cell, column 2 in the padded profile, and the brightness-as-magnitude cuts | `pass 54   fail 0` |
+| `python3 tests/rate.py` | the 🛫 token-rate sampler, the Doing cell and the main thread's states, column 2 in the padded profile, and the brightness-as-magnitude cuts | `pass 66   fail 0` |
 
-The goldens pin the clock, so every render is the rate sampler's first tick and
-🛫 is blank in every golden file. `rate.py` exists to check what the goldens
-cannot: it steps the clock itself.
+The goldens pin the clock, so every render is the rate sampler's first tick
+and there is no rate to show: the Doing figure is 🤖 and how long the corpus
+transcript has been quiet. `rate.py` exists to check what the goldens cannot:
+it steps the clock itself.
 
 ## What CI runs
 
