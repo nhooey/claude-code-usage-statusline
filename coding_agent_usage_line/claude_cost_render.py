@@ -11,7 +11,7 @@ from typing import Callable, Dict, List, NamedTuple, Optional, Sequence, Tuple
 from . import formatting as fmt
 from .formatting import (BOLD, C_CHROME_CONT, C_CHROME_LEFT, C_MIN_GAP,
                          C_RIGHT_MARGIN, E_TURN_ID, E_TURN_PAST, R,
-                         TURN_ID_HEX, UNBOLD, trunc, vis_width)
+                         TURN_ID_HEX, UNBOLD, fit_cols, trunc, vis_width)
 
 
 class CostOpts(NamedTuple):
@@ -116,6 +116,26 @@ def turn_tag(turn: object, ink: Ink) -> str:
                             ink.r)
 
 
+# The agent id on a 👥 row, cut as the agent panel cuts it, and the fewest
+# columns of its name worth drawing after it.
+AGENT_ID_W, AGENT_NAME_MIN = 10, 6
+
+
+def agent_tag(turn: object, ink: Ink, room: int) -> str:
+    """The id and name of the agent a 👥 row bills, in at most `room`
+    columns: the id whole or nothing, then as much of the name as fits."""
+    aid = getattr(turn, "agent_id", "")
+    if not aid:
+        return ""
+    aid = fit_cols(aid, AGENT_ID_W)
+    if vis_width(aid) > room:
+        return ""
+    name = getattr(turn, "agent_name", "")
+    left = room - vis_width(aid) - 1
+    name = trunc(name, left) if name and left >= AGENT_NAME_MIN else ""
+    return "%s%s%s" % (ink.crm, aid, ink.r) + (" " + name if name else "")
+
+
 def render_cost_line(
         turns: Sequence[object], opts: CostOpts, win: int,
         calib: Dict[str, Optional[float]], plan_totals: Dict[str, Optional[float]],
@@ -170,6 +190,23 @@ def render_cost_line(
         if own_line:
             flat = [(group, label, C_CHROME_CONT) for group, label, _ in spec]
         rows = [row.rstrip() for row in place_stacked(flat, opts)]
+        # Each 👥 row bills one agent, and names it in its pad, C_MIN_GAP
+        # left of its 📊 the way the turn tag sits on the 🎤 row.
+        for index, turn in enumerate(pending):
+            if not getattr(turn, "agent", False):
+                continue
+            row = rows[index]
+            if not (opts.cols and opts.right_align):
+                # Flush left there is no pad, and no column to keep: the
+                # tag leads the row.
+                tag = agent_tag(turn, ink, AGENT_ID_W + 1 + 40)
+                rows[index] = tag + " " + row if tag else row
+                continue
+            chart = len(row) - len(row.lstrip(" "))
+            tag = agent_tag(turn, ink, chart - C_MIN_GAP)
+            if tag:
+                rows[index] = (" " * (chart - C_MIN_GAP - vis_width(tag)) + tag
+                               + " " * C_MIN_GAP + row.lstrip(" "))
         if lead and len(rows) > lead:
             rows.insert(lead, "")
         return rows

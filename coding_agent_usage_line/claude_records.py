@@ -273,6 +273,10 @@ class Turn(NamedTuple):
                             # dur_s: agents run beside the answer, so these
                             # are agent-seconds and can outrun it.  See
                             # turn_times.
+    agent_id: str = ""      # on a late agent turn: the agent's id, off its
+    agent_name: str = ""    # file's name, and its description, off the
+                            # .meta.json beside it.  One such turn per agent,
+                            # so the receipt names each.  See late_agent_turn.
     prompt_id: str = ""     # the promptId Claude Code stamps on every user
                             # record of the turn, and the receipt's 🔖 prints
                             # the head of.  Empty on a compaction, a late
@@ -1920,7 +1924,7 @@ def _add_usd(cur: dict, epoch: Optional[float], model: Optional[str],
 def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
                  agents: Sequence[AgentRec],
                  last_stop: Optional[float] = None,
-                 offsets: Optional[Dict[str, int]] = None) -> Optional[dict]:
+                 offsets: Optional[Dict[str, int]] = None) -> Dict[str, dict]:
     """File every agent record under a turn of the main transcript.
 
     By promptId where a main record carried it — the turn that spawned the
@@ -1958,9 +1962,9 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
     under a stream of task notifications it is nearly all of them.  Filing
     the spend on such a turn counts it in the totals and prints it on no
     row, which is what happened to compactions before they got a row of
-    their own.  Those records go into one turn of their own instead,
-    returned here for read_turns to freeze, and print on the 👥 row at the
-    next Stop.  The spawning turn does NOT get them — the totals sum every
+    their own.  Those records go into a turn of their own instead, one per
+    agent file, returned here by path for read_turns to freeze, and each
+    prints on a 👥 row of its own at the next Stop.  The spawning turn does NOT get them — the totals sum every
     turn, and a record in two of them is billed twice.
 
     WHAT "not in the file when that happened" means is the delicate part.
@@ -1976,7 +1980,7 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
     Stop of a session and for a fixture.
     """
     if not agents or not turns:
-        return None
+        return {}
     stamped = [(t["t0"], t) for t in turns
                if t["t0"] is not None and not t.get("compact")]
     # The turn the 🎤 row will be about: the same selection render_cost_line
@@ -1987,7 +1991,7 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
     for t in turns:
         if t["n"] and not t.get("compact"):
             prompt = t
-    late = None
+    late: Dict[str, dict] = {}
     for a in agents:
         cur = by_pid.get(a.prompt_id) if a.prompt_id else None
         if cur is None:
@@ -2004,9 +2008,9 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
                 new = (last_stop is None
                        or (a.epoch is not None and a.epoch > last_stop))
             if new:
-                if late is None:
-                    late = _new_turn(_stamp_utc(a.epoch), "agents (other)")
-                cur = late
+                if a.path not in late:
+                    late[a.path] = _new_turn(_stamp_utc(a.epoch), "agents (other)")
+                cur = late[a.path]
         cur["fresh"] += a.fresh
         cur["cw"] += a.cache_write
         cur["cr"] += a.cache_read
@@ -2258,13 +2262,30 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
                         turn_index=None if t.get("compact") else t["tidx"]))
         if t["ctx"]:
             prev = t
-    if late is not None:
-        out.append(late_agent_turn(late))
+    if late:
+        out.extend(late_agent_turn(t, path) for path, t in late.items())
         out.sort(key=lambda t: t.ts)
     return tuple(out)
 
 
-def late_agent_turn(t: dict) -> Turn:
+def agent_label(path: str) -> Tuple[str, str]:
+    """An agent file's id and name: the id off `agent-<id>.jsonl`, and the
+    description its `.meta.json` sidecar gives, else its agentType, else ""."""
+    base = os.path.basename(path)
+    aid = base[len("agent-"):-len(".jsonl")] if (
+        base.startswith("agent-") and base.endswith(".jsonl")) else ""
+    name = ""
+    try:
+        with open(path[:-len(".jsonl")] + ".meta.json", encoding="utf-8") as fh:
+            meta = json.load(fh)
+        if isinstance(meta, dict):
+            name = str(meta.get("description") or meta.get("agentType") or "")
+    except (OSError, ValueError):
+        pass
+    return aid, name
+
+
+def late_agent_turn(t: dict, path: str = "") -> Turn:
     """Freeze the synthetic turn _fold_agents built for late agent records.
 
     `calls` is 0 and `agent` is set, which between them keep it out of every
@@ -2281,7 +2302,8 @@ def late_agent_turn(t: dict) -> Turn:
                 usd_cr=t["usd"][2], usd_cw=t["usd"][3],
                 parts=tuple(t["parts"]), agent_calls=t["an"],
                 agent_ids=tuple(t["aids"]), agent=True,
-                agent_model_s=t["am"], agent_tool_s=t["at"])
+                agent_model_s=t["am"], agent_tool_s=t["at"],
+                **dict(zip(("agent_id", "agent_name"), agent_label(path))))
 
 
 # How long the Stop hook waits for the turn it is about to report to appear in

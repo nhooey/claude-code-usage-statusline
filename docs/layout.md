@@ -303,9 +303,8 @@ under the prompt. Rendered here with `--no-right-align`, and with the text
 labels on:
 
 ```
+fork1 fork 📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪
 🔺🔖 5e1f0a77
-📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪
-
 📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  2m  🔧+  3m  📅 2026-08-16
 📊 🎮 Usage: Session (total) 🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖   5m  🔧   3m  🕐   02:23:20
 ```
@@ -337,7 +336,7 @@ and the receipt takes no extra line. With `--force-newline` the line beside
 the chrome stays blank either way:
 
 ```
-                        📊 👥 Usage: Agents (other)     🧩 ▴7.2k ▾900   …
+          fork1 fork    📊 👥 Usage: Agents (other)     🧩 ▴7.2k ▾900   …
 
                   🔺🔖 5e1f0a77    📊 🎤 Usage: Prompt (last)      🧩 ▴ 28k ▾7.1k  …
                                    📊 🎮 Usage: Session (total)    🧩 ▴ 68k ▾ 14k  …
@@ -364,8 +363,9 @@ are not right-aligned, the tag starts the line:
 ### Rows
 
 The [legend](../README.md#receipt-rows) names each row. The 🎮 row includes
-every row above it. The 👥 row also carries a turn that shared its Stop with a
-later one.
+every row above it. There is a 👥 row for each agent that finished after its
+turn's row printed, or whose turn shared its Stop with a later one, led by the
+agent's id and name.
 
 🤏 and 👥 rows print above the 🎤 row, separated by a blank line. See
 [Accounting](accounting.md) for how turns and agents are attributed.

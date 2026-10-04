@@ -684,6 +684,32 @@ def run(tmp):
     late = turns[2]
     sl.publish_agent_offsets(tr, recs)
 
+    # Two agents late at one Stop: a 👥 row each, not one row for both.
+    b_first = [agent_user(11, "p1")]
+    b_all = b_first + [agent_answer(21, "b2", 200, 0, 2000, 20, second=40)]
+    tr2 = session(tmp, "late2", main[:2],
+                  agents=[("agent-a", agent[:2]), ("agent-b", b_first)])
+    sl.publish_agent_offsets(tr2, sl.agent_records(tr2))
+    with open(os.path.join(tmp, "late2", "subagents", "agent-b.meta.json"), "w") as fh:
+        json.dump({"agentType": "Explore", "description": "Find the callers"}, fh)
+    tr2 = session(tmp, "late2", main[:5],
+                  agents=[("agent-a", agent), ("agent-b", b_all)])
+    with open(os.path.join(tmp, "late2", "subagents", "agent-b.meta.json"), "w") as fh:
+        json.dump({"agentType": "Explore", "description": "Find the callers"}, fh)
+    two = sl.read_turns(tr2)
+    check("each late agent is a turn of its own, with its id and its "
+          "description, or its type where it has none",
+          [(t.agent_id, t.agent_name, t.agent_calls, t.out)
+           for t in two if t.agent],
+          [("a", "general-purpose", 1, 10), ("b", "Find the callers", 1, 20)])
+    wide2 = sl.CostOpts(prefix="P", label="L", totals_label="T", cols=196,
+                        colour=False, totals=True, right_align=True,
+                        agents_label="A")
+    out2 = sl.strip_ansi(sl.render_cost_line(two, wide2, 1786847000.0)).split("\n")
+    check("and a 👥 row each, the id and name C_MIN_GAP left of its 📊",
+          [l.strip().split(" " * sl.C_MIN_GAP + "P ")[0] for l in out2[:2]],
+          ["a general-purpose", "b Find the callers"])
+
     tr = session(tmp, "late", main[:8], agents=[("agent-a", agent)])
     turns = sl.read_turns(tr)
     check("third Stop: reported once, now back on its turn for the totals",
@@ -737,9 +763,11 @@ def run(tmp):
                        agents_label="A")
     lines = sl.strip_ansi(sl.render_cost_line(sl.read_turns(tr), opts,
                                               1786847000.0))
-    check("the agents row is labelled and leads the block",
-          [l.strip()[:3] for l in lines.split("\n")],
-          ["P A", "🔺🔖 ", "P L", "P T"])
+    check("the agents row is labelled, leads the block, and opens with the "
+          "id and name of the agent it bills",
+          ([l.strip()[:3] for l in lines.split("\n")],
+           lines.split("\n")[0].startswith("a general-purpose P A")),
+          (["a g", "🔺🔖 ", "P L", "P T"], True))
     # With no width to right-align against, the turn tag takes a line of
     # its own directly above the 🎤 row it names, in place of the blank.
     check("the turn tag stands over the 🎤 row, not at the top",
@@ -754,11 +782,11 @@ def run(tmp):
             check("--force-newline: the chrome's line stays blank", out[0], "")
             out = out[1:]
         check("%s --force-newline: the tag sits in the 🎤 row's pad, "
-              "C_MIN_GAP left of its mark, and the 👥 row has none" % name,
+              "C_MIN_GAP left of its mark; the 👥 row has its agent's id" % name,
               ([l.strip()[:3] for l in out],
                out[2].lstrip().startswith(sl.E_TURN_PAST + sl.E_TURN_ID
                                           + " p2" + " " * sl.C_MIN_GAP + "P L")),
-              (["P A", "", "🔺🔖 ", "P T"], True))
+              (["a g", "", "🔺🔖 ", "P T"], True))
 
     print("--- the calibration scan ---")
     # A scratch projects tree: one main file, one agent beside it, one

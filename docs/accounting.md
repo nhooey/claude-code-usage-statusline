@@ -170,8 +170,8 @@ happens in two ways:
   but the run's single Stop reports only the last of them.
 
 Such a request, if no earlier Stop has seen it, goes into a separate
-**agents** turn instead of its own, and prints on the 👥 row above the 🎤 row
-at the next Stop. It is not also added to the turn that spawned it, which would
+**agents** turn instead of its own, one for each agent file, and prints on
+that agent's 👥 row above the 🎤 row at the next Stop. It is not also added to the turn that spawned it, which would
 bill it twice.
 
 "Not seen by an earlier Stop" is measured in bytes. After rendering, the Stop
@@ -192,14 +192,17 @@ can leave both unchanged. Requests are deduped across files after the cache,
 on every render, so a kept reading never changes which requests are counted.
 
 ```
-📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪  ⌛🤖+4.3m  🔧+  0s
+fork1 fork 📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪  ⌛🤖+4.3m  🔧+  0s
 
 📊 🎤 Usage: Prompt (last)   🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  4m  🔧+  3m  📅 2026-08-16
 📊 🎮 Usage: Session (total) 🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖  13m  🔧   3m  🕐   02:23:20
 ```
 
-The 👥 row is not a per-agent breakdown (that is the agent panel). It is the
-agent spend the 🎤 row cannot carry, so the rows above 🎮 add up to it.
+Each 👥 row is one agent: its id, cut to ten columns as the agent panel cuts
+it, and its name — the description in its `.meta.json`, or its type — lead
+the row, in its pad C_MIN_GAP columns left of the 📊 where the rows are
+right-aligned and the pad has room for the id. The rows are the agent spend
+the 🎤 row cannot carry, so the rows above 🎮 add up to it.
 
 ## Time
 
