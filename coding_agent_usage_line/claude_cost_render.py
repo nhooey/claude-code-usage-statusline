@@ -122,18 +122,19 @@ AGENT_ID_W, AGENT_NAME_MIN = 10, 6
 
 
 def agent_tag(turn: object, ink: Ink, room: int) -> str:
-    """The id and name of the agent a 👥 row bills, in at most `room`
-    columns: the id whole or nothing, then as much of the name as fits."""
+    """The name and id of the agent a 👥 row bills, in at most `room`
+    columns: as much of the name as fits, then the id padded to AGENT_ID_W,
+    so the ids of a block of 👥 rows stand in one column beside their 📊s.
+    The id whole or nothing."""
     aid = getattr(turn, "agent_id", "")
-    if not aid:
+    if not aid or room < AGENT_ID_W:
         return ""
-    aid = fit_cols(aid, AGENT_ID_W)
-    if vis_width(aid) > room:
-        return ""
+    aid = "%s%s%s" % (ink.crm, fit_cols(aid, AGENT_ID_W), ink.r)
+    aid += " " * (AGENT_ID_W - vis_width(aid))
     name = getattr(turn, "agent_name", "")
-    left = room - vis_width(aid) - 1
+    left = room - AGENT_ID_W - 1
     name = trunc(name, left) if name and left >= AGENT_NAME_MIN else ""
-    return "%s%s%s" % (ink.crm, aid, ink.r) + (" " + name if name else "")
+    return (name + " " if name else "") + aid
 
 
 def render_cost_line(

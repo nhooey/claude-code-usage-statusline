@@ -706,9 +706,15 @@ def run(tmp):
                         colour=False, totals=True, right_align=True,
                         agents_label="A")
     out2 = sl.strip_ansi(sl.render_cost_line(two, wide2, 1786847000.0)).split("\n")
-    check("and a 👥 row each, the id and name C_MIN_GAP left of its 📊",
-          [l.strip().split(" " * sl.C_MIN_GAP + "P ")[0] for l in out2[:2]],
-          ["a general-purpose", "b Find the callers"])
+    check("and a 👥 row each, the name and then the id, padded to ten, "
+          "C_MIN_GAP left of its 📊, so the ids stand in one column",
+          ([l.strip()[:l.strip().index(" P ") + 1 - sl.C_MIN_GAP].rstrip() for l in out2[:2]],
+           # The first line sits beside Claude Code's chrome, which takes
+           # C_CHROME_LEFT - C_CHROME_CONT columns more than a continuation
+           # line's, so on screen the two ids start together.
+           len({out2[0].index(" a ") + sl.C_CHROME_LEFT - sl.C_CHROME_CONT,
+                out2[1].index(" b ")})),
+          (["general-purpose a", "Find the callers b"], 1))
 
     tr = session(tmp, "late", main[:8], agents=[("agent-a", agent)])
     turns = sl.read_turns(tr)
@@ -764,10 +770,10 @@ def run(tmp):
     lines = sl.strip_ansi(sl.render_cost_line(sl.read_turns(tr), opts,
                                               1786847000.0))
     check("the agents row is labelled, leads the block, and opens with the "
-          "id and name of the agent it bills",
+          "name and id of the agent it bills",
           ([l.strip()[:3] for l in lines.split("\n")],
-           lines.split("\n")[0].startswith("a general-purpose P A")),
-          (["a g", "🔺🔖 ", "P L", "P T"], True))
+           lines.split("\n")[0].startswith("general-purpose a" + " " * 10 + "P A")),
+          (["gen", "🔺🔖 ", "P L", "P T"], True))
     # With no width to right-align against, the turn tag takes a line of
     # its own directly above the 🎤 row it names, in place of the blank.
     check("the turn tag stands over the 🎤 row, not at the top",
@@ -786,7 +792,7 @@ def run(tmp):
               ([l.strip()[:3] for l in out],
                out[2].lstrip().startswith(sl.E_TURN_PAST + sl.E_TURN_ID
                                           + " p2" + " " * sl.C_MIN_GAP + "P L")),
-              (["a g", "", "🔺🔖 ", "P T"], True))
+              (["gen", "", "🔺🔖 ", "P T"], True))
 
     print("--- the calibration scan ---")
     # A scratch projects tree: one main file, one agent beside it, one
