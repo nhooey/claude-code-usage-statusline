@@ -434,7 +434,7 @@ agent and a shell:
 ```
 ⏺  ✶🔩🟢 👶🏻1 a1b2c3d4e… Port the renderer Editing …  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🤖266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
 └ ◯  ✢🔍🟢     c7d8e9f0a… Find every caller of seg…  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🔧 42s   🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯   📐⚫     f3e4d5c6b… Plan the docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k  ✅       🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯   📐⚫     f3e4d5c6b… Plan the docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k  ✅ 4m   🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
 ◯   🐚🟢     b1         npm test npm test --watch    ◯                                                                  ⌛ 13m
 ```
 
@@ -499,7 +499,7 @@ how long it has been doing it:
 - 🔧 and 🚦: since the oldest call of that kind still waiting on its result.
 - 🟡 paused: since its last record, the end of the turn it ended to wait.
 - 🥚: since the task's `startTime`.
-- ⚫ ended: the mark alone.
+- ⚫ ended: since its last record, how long ago it finished.
 
 | Phase | Mark | When |
 |---|---|---|

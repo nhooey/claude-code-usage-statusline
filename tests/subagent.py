@@ -1127,15 +1127,15 @@ def run(tmp):
                                        False, 200.0, NOW),
            sl.F_AMB in sr.render_doing("running", quiet, False, 200.0, NOW)),
           (["\U0001F916200/s", "\U0001F9161.5m ", "\U0001F916 12m "], True, False))
-    check("paused, since its last record; not started, since its startTime; "
-          "ended, the mark alone; a shell keeps 🛫 and its rate",
+    check("paused or ended, since its last record; not started, since its "
+          "startTime; a shell keeps 🛫 and its rate",
           [doing("completed", quiet._replace(background=(("b1", "bash"),))),
            doing("completed", quiet, True),
            doing("pending", nothing, t={"startTime": int((NOW - 20) * 1000)}),
            doing("completed", quiet), doing("killed", quiet),
            doing("running", nothing, rate=80.0), doing("running", nothing)],
           ["\U0001F4BB1.5m ", "\U0001F4A41.5m ", "\U0001F95A 20s ",
-           "\u2705", "\U0001F6D1", "\U0001F6EB 80/s", ""])
+           "\u27051.5m ", "\U0001F6D11.5m ", "\U0001F6EB 80/s", ""])
     died = nothing._replace(api_error=True)
     check("💥: an agent whose last answer died on an API error, ended or "
           "parked; a killed one is still 🛑, and a running one is running",

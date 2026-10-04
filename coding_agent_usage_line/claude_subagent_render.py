@@ -302,9 +302,9 @@ def state_since(status, usage, phase, mode, task=None):
     Running, it is the oldest call it is waiting on, for 🚦 among the
     WAITING_TOOLS and for 🔧 among the rest, and its last record for 🤖:
     the request it has out went after it.  Paused, it is its last record,
-    the end of the turn it ended to wait.  Not started, it is the task's
-    startTime.  None where the row has no transcript to say, and on an
-    ended row, which has nothing still going on to time.
+    the end of the turn it ended to wait, and ended, likewise: how long ago
+    it finished, which says how stale the row is.  Not started, it is the
+    task's startTime.  None where the row has no transcript to say.
     """
     pending = getattr(usage, "pending", ()) or ()
     if status == "running":
@@ -321,8 +321,9 @@ def state_since(status, usage, phase, mode, task=None):
     if status == "pending":
         try: return float((task or {}).get("startTime")) / 1000.0
         except (TypeError, ValueError): return None
-    if phase == E_PHASE_PAUSE:
-        return getattr(usage, "last_seen", None)
+    if phase in (E_PHASE_PAUSE, E_PHASE_END):
+        return (getattr(usage, "last_seen", None)
+                or getattr(usage, "last_epoch", None))
     return None
 def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None):
     """What the agent is doing, and for how long: the mode mark agent_state
@@ -334,8 +335,7 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
     says it is moving and how fast.  Once it has written nothing for
     A_SILENT_S the figure is how long it has been quiet instead, amber from
     A_SILENT_WARN_S — the reading 🔇 drew in a cell of its own until
-    2026-10-05.  A row with no mode, a shell, keeps the rate under 🛫; an
-    ended row draws its mark alone.
+    2026-10-05.  A row with no mode, a shell, keeps the rate under 🛫.
     """
     phase, mode = agent_state(status, usage, waiting_on)
     if not mode:
