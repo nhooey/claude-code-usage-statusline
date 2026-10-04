@@ -324,10 +324,11 @@ grepped in the transcript, and `#12` is Claude Code's own
 it, and the tag is left off entirely when it records neither, or when the
 receipt reports a compaction alone.
 
-When the terminal is wide enough that the first row's pad, beside Claude
-Code's `Stop says:` chrome, holds the tag and four spaces more, the tag goes
-in that pad, four spaces left of the row's 📊, and the receipt takes no extra
-line:
+When the terminal is wide enough that the first row's pad holds the tag and
+four spaces more, the tag goes in that pad, four spaces left of the row's 📊,
+and the receipt takes no extra line. With `--force-newline` the first row is
+on a continuation line and the line beside Claude Code's `Stop says:` chrome
+stays blank; the tag still goes in the first row's pad:
 
 ```
    🔺🔖 8f37748e #12    📊 🎤 Usage: Prompt (last)      🧩 ▴ 18k ▾3.5k  …

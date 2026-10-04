@@ -744,6 +744,20 @@ def run(tmp):
     # line, and names the turn the 🎤 row bills.
     check("the turn tag leads, on a line of its own",
           lines.split("\n")[0], sl.E_TURN_PAST + sl.E_TURN_ID + " p2")
+    # --force-newline leaves the line beside Claude Code's chrome blank:
+    # the tag goes in the first row's pad, as it does without the flag.
+    wide = opts._replace(cols=196, right_align=True)
+    for name, o in (("without", wide), ("with", wide._replace(force_newline=True))):
+        out = sl.strip_ansi(sl.render_cost_line(sl.read_turns(tr), o,
+                                                1786847000.0)).split("\n")
+        if name == "with":
+            check("--force-newline: the chrome's line stays blank", out[0], "")
+            out = out[1:]
+        check("%s --force-newline: the tag sits in the first row's pad, "
+              "C_MIN_GAP left of its mark" % name,
+              out[0].lstrip().startswith(sl.E_TURN_PAST + sl.E_TURN_ID
+                                         + " p2" + " " * sl.C_MIN_GAP + "P A"),
+              True)
 
     print("--- the calibration scan ---")
     # A scratch projects tree: one main file, one agent beside it, one
