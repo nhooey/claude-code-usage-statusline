@@ -14,7 +14,7 @@ from .claude_render import (render_cost, render_diff, render_tokens, model_spec,
                             inherit_eta)
 from .claude_records import Limits, squash, eta_finish, WAITING_TOOLS
 
-A_KIND_W, A_ID_W, A_STATE_W = 2, 10, 4
+A_KIND_W, A_ID_W, A_STATE_W = 2, 10, 2
 A_HEAD_GAP, A_NAME_MIN, A_ACT_MIN, A_CLOCK_W, A_RATE_W, A_GAP, A_TICK_S = 1, 8, 8, 6, 7, 2, 5.0
 # 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 A_SPLIT_W = 3 * (2 + GAUGE_W) + 2
@@ -37,11 +37,11 @@ A_DIFF_W = vis_width(S_DIFF) + 11
 # line's cell, "🧠 124k 12٪", with its widest share, "100٪".
 A_CTX_PCT_W = 4
 A_CTX_W = vis_width(S_CTX) + 4 + 1 + A_CTX_PCT_W
-# 🔇 draws once a running agent has written nothing for A_SILENT_S, and turns
-# amber at A_SILENT_WARN_S: long enough that no tool round or request it is
-# still waiting on explains it by itself.
+# The 🤖 state trades its rate for how long the agent has written nothing
+# once that is A_SILENT_S, and turns amber at A_SILENT_WARN_S: long enough
+# that no tool round or request it is still waiting on explains it by itself.
+# See render_doing.
 A_SILENT_S, A_SILENT_WARN_S = 60.0, 600.0
-A_SILENT_W = vis_width(E_SILENT) + 4
 # The most a worktree's branch spends of the name's room, 🌿 not counted.
 A_BRANCH_W = 16
 KIND_MARK = {"general-purpose":"🔩", "claude":"🎩", "Explore":"🔍", "Plan":"📐",
@@ -110,6 +110,10 @@ def render_state(status, usage=None, waiting_on=False):
     is doing in it.  A status never seen is two amber letters and no mark.
     """
     return "".join(agent_state(status, usage, waiting_on))
+def render_phase(status, usage=None, waiting_on=False):
+    """The phase circle alone, for the head: the mode after it is the 🛫
+    field's now, beside how long the agent has been in it; see render_doing."""
+    return agent_state(status, usage, waiting_on)[0]
 def render_spin(status, usage=None):
     """A running agent's spinner, one frame on for each ⏺ it has written; see E_SPIN.
 
@@ -152,22 +156,6 @@ def render_background(mark, n):
     The paused mark says which one wakes it; this says how many there are,
     and says it while the agent is still running too."""
     return "" if not n else "%s%s%d%s" % (mark, F_CRM, n, R)
-def silence(status, usage, now):
-    """Seconds a running agent has written nothing, once that is A_SILENT_S
-    or more; None otherwise.  A tool round, a request, a progress line: any
-    stamped record ends a silence.  Not while it waits on a question or an
-    agent it started, the 🚦 its state already shows: that wait writes
-    nothing for as long as it lasts, and is not the agent stalling."""
-    last = getattr(usage, "last_seen", None)
-    if status != "running" or last is None: return None
-    if any(n in WAITING_TOOLS for _, n in getattr(usage, "pending", ()) or ()): return None
-    quiet = (time.time() if now is None else now) - last
-    return quiet if quiet >= A_SILENT_S else None
-def render_silence(quiet):
-    """🔇 and how long; dim until A_SILENT_WARN_S, amber from there."""
-    if quiet is None: return ""
-    return "%s%s%s%s" % (E_SILENT, F_AMB if quiet >= A_SILENT_WARN_S else DIM + F_CRM,
-                         pad_val(A_SILENT_W - vis_width(E_SILENT), dur_fmt(quiet)), R)
 def render_agent_diff(usage):
     """The agent's own +adds/-removes, in the status line's 💾 cell.
 
@@ -306,8 +294,64 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
                              pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)), R)
     return "%s%s%s%s" % (E_ETA, mag_dim(left, MAG_DUR_S) + F_ETA,
                          pad_val(A_ETA_FIG_W, dur_fmt(left)), R)
-def render_agent_rate(rate):
-    return "" if rate is None else "%s%s%s/s%s" % (E_RATE, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(3, rate_fig(rate)), R)
+def render_agent_rate(rate, mark=E_RATE):
+    return "" if rate is None else "%s%s%s/s%s" % (mark, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(3, rate_fig(rate)), R)
+def state_since(status, usage, phase, mode, task=None):
+    """The epoch the agent entered the state `mode` names, or None.
+
+    Running, it is the oldest call it is waiting on, for 🚦 among the
+    WAITING_TOOLS and for 🔧 among the rest, and its last record for 🤖:
+    the request it has out went after it.  Paused, it is its last record,
+    the end of the turn it ended to wait.  Not started, it is the task's
+    startTime.  None where the row has no transcript to say, and on an
+    ended row, which has nothing still going on to time.
+    """
+    pending = getattr(usage, "pending", ()) or ()
+    if status == "running":
+        if mode == E_WAIT:
+            starts = [t for t, n in pending if n in WAITING_TOOLS]
+        elif mode == E_TOOL:
+            starts = [t for t, n in pending if n not in WAITING_TOOLS]
+        elif mode == E_WORK:
+            starts = [getattr(usage, "last_seen", None)]
+        else:
+            starts = []
+        starts = [t for t in starts if t is not None]
+        return min(starts) if starts else None
+    if status == "pending":
+        try: return float((task or {}).get("startTime")) / 1000.0
+        except (TypeError, ValueError): return None
+    if phase == E_PHASE_PAUSE:
+        return getattr(usage, "last_seen", None)
+    return None
+def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None):
+    """What the agent is doing, and for how long: the mode mark agent_state
+    reads, then the time since state_since, in the rate's field — "🔧 42s "
+    where a rate reads "🛫200/s".  The unit stands where the rate's "/" does,
+    so the figures stack down the panel.
+
+    🤖 keeps the rate while the agent's records keep landing: the figure
+    says it is moving and how fast.  Once it has written nothing for
+    A_SILENT_S the figure is how long it has been quiet instead, amber from
+    A_SILENT_WARN_S — the reading 🔇 drew in a cell of its own until
+    2026-10-05.  A row with no mode, a shell, keeps the rate under 🛫; an
+    ended row draws its mark alone.
+    """
+    phase, mode = agent_state(status, usage, waiting_on)
+    if not mode:
+        return render_agent_rate(rate)
+    t = time.time() if now is None else now
+    since = state_since(status, usage, phase, mode, task)
+    secs = None if since is None else max(0.0, t - since)
+    fig_w = A_RATE_W - vis_width(mode) - 1
+    if mode == E_WORK and status == "running" and rate is not None and (
+            secs is None or secs < A_SILENT_S):
+        return render_agent_rate(rate, mode)
+    if secs is None:
+        return mode
+    ink = (F_AMB if mode == E_WORK and secs >= A_SILENT_WARN_S
+           else mag_dim(secs, MAG_DUR_S) + F_PRW)
+    return "%s%s%s %s" % (mode, ink, pad_val(fig_w, dur_fmt(secs)), R)
 def render_who(name, act, room, branch=""):
     """The name, then 🌿 and the branch of a worktree the agent works in
     apart from the session's, then what it is doing, in that order of claim
@@ -476,7 +520,7 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     on the panel, 0 where no row has any, which drops the cell from all.
     `lead` is the blank a row opens with so that its cells start where the
     deepest row's do; see render_task_rows.  `widths` holds the panel's
-    widest 🔇, 📨, 📡, 💻 and 🤏 cells, as `kids_w` does 👶🏻's; see panel_widths.
+    widest 📨, 📡, 💻 and 🤏 cells, as `kids_w` does 👶🏻's; see panel_widths.
     """
     task, meta, shares, widths = task or {}, meta or {}, shares or {}, widths or {}
     if cols: cols = max(0, cols - tree_cols(task, meta, depth) - lead)
@@ -510,7 +554,7 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
         (vis_width(S_COST)+4, render_cost("%.4f" % getattr(usage,"cost",0)) if billed else ""),
         (A_CTX_W, render_agent_ctx(getattr(usage,"ctx_tokens",0), getattr(usage,"ctx_window",0))),
         (vis_width(S_TOK)+VAL_W+VAL2_W, render_tokens(getattr(usage,"tok_up",None), getattr(usage,"tok_down",0))),
-        (A_RATE_W, render_agent_rate(token_rate(task.get("tokenSamples"),status))),
+        (A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task)),
         (5, render_agent_cache(getattr(usage,"cache_pct",-1))),
         # ⌛ ⛳ 🤖 🔧 🚦, one space apart as one segment, right before the
         # 5h and 1w it spent: how long it has run, how long it says it has
@@ -531,14 +575,13 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # of them the panel draws; what comes and goes moves only the id, the
     # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
     # stay once they come; 💻 and 📡 last as long as a shell or a Monitor
-    # runs; 📨 and 🔇 pass quickest — so the passing ones shift the fewest.
-    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+render_state(status, usage, waiting_on)),
+    # runs; 📨 passes quickest — so the passing ones shift the fewest.
+    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+render_phase(status, usage, waiting_on)),
                                                      (kids_w, render_kids(kids)),
                                                      (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
                                                      (widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),
                                                      (widths.get("monitors", 0), render_background(E_MODE_MONITOR, background_count(status, usage, "monitor"))),
                                                      (widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0))),
-                                                     (widths.get("silent", 0), render_silence(silence(status, usage, now))),
                                                      (A_ID_W, DIM+F_BLU2+fit_cols(tid,A_ID_W)+R)) if w)
     room=A_NAME_MIN if not cols else max(A_NAME_MIN, cols-vis_width(strip_ansi(head))-A_HEAD_GAP-vis_width(strip_ansi(right))-A_GAP)
     branch=str(getattr(usage,"branch","") or "")
@@ -552,7 +595,7 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     return (" "*lead+head+" "*A_HEAD_GAP+seg(room,render_who(name,act,room,branch))+gap+right).rstrip()
 
 def panel_widths(prepared_tasks, now=None):
-    """The widest 🔇, 📨, 📡, 💻 and 🤏 cell on the panel, each 0 where no row
+    """The widest 📨, 📡, 💻 and 🤏 cell on the panel, each 0 where no row
     draws one.
 
     As 👶🏻's: a cell that no row needs costs no row a column, and one that
@@ -560,8 +603,7 @@ def panel_widths(prepared_tasks, now=None):
     """
     live = [(str(t.get("status") or ""), u) for t, u, _, _ in prepared_tasks
             if isinstance(t, dict) and t.get("id")]
-    return {"silent": A_SILENT_W if any(silence(st, u, now) is not None for st, u in live) else 0,
-            "inbox": max([vis_width(E_INBOX) + len(str(getattr(u, "inbox", 0)))
+    return {"inbox": max([vis_width(E_INBOX) + len(str(getattr(u, "inbox", 0)))
                           for _, u in live if getattr(u, "inbox", 0)] or [0]),
             "compact": max([vis_width(E_ROW_COMPACT) + len(str(getattr(u, "compactions", 0)))
                             for _, u in live if getattr(u, "compactions", 0)] or [0]),

@@ -820,7 +820,9 @@ def run(tmp):
         "\U0001F9E0 41k  20\u066A",
         sl.seg(sl.vis_width(sl.S_TOK) + sl.VAL_W + sl.VAL2_W,
                ANSI.sub("", sl.render_tokens(u.tok_up, u.tok_down))),
-        "\U0001F6EB200/s",
+        # 🤖 in the rate's field: no call waiting on its result, and
+        # nothing written for 1.2h, so the quiet time rather than the rate.
+        "\U0001F9161.2h ",
         "\U0001F3AF%d%s" % (u.cache_pct, sl.E_PCT),
         # Then the time, before the 5h and 1w: ⌛ runs from its first record; ⛳ is ? because a1 has reported
         # no ETA; and it has been working since 01:10 with no tool paired
@@ -831,9 +833,9 @@ def run(tmp):
         "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0)),
         ANSI.sub("", sl.render_diff("12", "4"))))
     # The spinner's first frame, for a transcript with no text or tool call
-    # in it; 🟢 running, and 🤖: no tool call is waiting on its result.  Then 🔇, a cell only some panels draw: it has written nothing
-    # since 01:10, and the clock is pinned 1.2h after.
-    head = "\u00B7\U0001F50D\U0001F7E2\U0001F916 \U0001F5071.2h a1         "
+    # in it; then 🟢 running, the phase alone: what it is doing is in the
+    # rate's field, with how long.
+    head = "\u00B7\U0001F50D\U0001F7E2 a1         "
     tree = sl.E_TREE_NODE + " "         # no nesting: the tree is one ◯ wide
     check("an agent's row: the left group, the name, the panel's tree drawn "
           "again, then the right group, filling the payload's columns exactly",
@@ -846,9 +848,9 @@ def run(tmp):
           len({sl.vis_width(r) for r in (rows["a1"], rows["a2"])}), 1)
     check("no sidecar: the task's kind, and the transcript's model where "
           "the payload has none",
-          # The blank spinner of a row not running, then the blank a1's 🔇
-          # keeps on every row.
-          (rows["a2"].startswith(" \U0001F465\u26AB\u2705 " + " " * (sr.A_SILENT_W + 1)),
+          # The blank spinner of a row not running, then ⚫ alone: its ✅ is
+          # in the rate's field.
+          (rows["a2"].startswith(" \U0001F465\u26AB a2"),
            "\U0001F916O\u2075" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
@@ -863,8 +865,8 @@ def run(tmp):
           "label for what it is doing; a shell shows nothing it did not bill",
           re.sub(r" {2,}", "  ", rows["bash-1"]),
           # No spinner, 🟢 and no mode: a shell has no transcript to count
-          # in or to say who has the floor.  Then the blank 🔇 cell.
-          " \U0001F41A\U0001F7E2  bash-1  npm test npm test --watch  "
+          # in or to say who has the floor.
+          " \U0001F41A\U0001F7E2 bash-1  npm test npm test --watch  "
           "\u25EF  \u231B 13m")
     check("a name and its activity, and a label that only repeats the "
           "description is not drawn",
@@ -899,10 +901,10 @@ def run(tmp):
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
           # The cells only some panels draw follow the kind and state, 👶🏻
           # first.  E_KIDS is two codepoints, and its width the terminal's.
-          ["\u00B7\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a1",
-           "\u00B7\U0001F50D\U0001F7E2\U0001F916 " + sl.E_KIDS + "1 \U0001F5071.2h a3",
-           "\u00B7\U0001F50D\U0001F7E2\U0001F916 " + " " * (sl.vis_width(sl.E_KIDS) + 1)
-           + " \U0001F5071.2h a4"])
+          ["\u00B7\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 a1",
+           "\u00B7\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 a3",
+           "\u00B7\U0001F50D\U0001F7E2 " + " " * (sl.vis_width(sl.E_KIDS) + 1)
+           + " a4"])
     spun = os.path.join(tmp, "spin.jsonl")
     tool = agent_says(12, "")
     tool["message"]["content"] = [{"type": "thinking", "thinking": "hm"},
@@ -984,7 +986,7 @@ def run(tmp):
                      # 167 and not the 130 it was: the right group grew by the
                      # 🔧 cell and then ⛳ and its bar, each with its gap, and
                      # by 🧠's share; the state cell by the mode mark after its
-                     # circle and the spinner after that; the head by 🔇.  This case is about a width that
+                     # circle and the spinner after that.  This case is about a width that
                      # squeezes the NAME, not one that squeezes it away.
                      render(sl, dict(wide, columns=167))[1]["a1"]) is not None,
            render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
@@ -1072,7 +1074,7 @@ def run(tmp):
            sl.vis_width(irows["b1"][:irows["b1"].index("⌛")])
            == sl.vis_width(irows["b2"][:irows["b2"].index("⌛")])),
           (True, True, True, True))
-    wide = {"silent": sr.A_SILENT_W, "inbox": 3, "compact": 3}
+    wide = {"inbox": 3, "compact": 3}
     plain, padded = (ANSI.sub("", sr.render_agent_row(task("x"), sl.NO_AGENT_USAGE, {}, {},
                                                      sl.NO_LIMITS, now=NOW, kids_w=kw,
                                                      widths=w))
@@ -1081,13 +1083,13 @@ def run(tmp):
     check("the cells only some panels draw follow the kind and state: on a "
           "row that draws none of them they are one blank there, and the row "
           "either side of it is the row a panel without them draws",
-          padded, plain[:at] + " " * (3 + 1 + 3 + 1 + 3 + 1 + sr.A_SILENT_W + 1) + plain[at:])
+          padded, plain[:at] + " " * (3 + 1 + 3 + 1 + 3 + 1) + plain[at:])
     check("🧠's share is blank where the payload gives no window",
           re.search("\U0001F9E0 *\\S+ +(\\S+)", irows["b2"]).group(1)[0], "\U0001F9E9")
     nothing = sl.NO_AGENT_USAGE
-    check("none of the five costs a column on a panel where no row has one",
+    check("none of the four costs a column on a panel where no row has one",
           sr.panel_widths([(task("x"), nothing, {}, None)], NOW),
-          {"silent": 0, "inbox": 0, "compact": 0, "shells": 0, "monitors": 0})
+          {"inbox": 0, "compact": 0, "shells": 0, "monitors": 0})
     bg = nothing._replace(background=(("s1", "bash"), ("s2", "bash"), ("m1", "monitor")))
     check("💻 and 📡 count its open shells and Monitors while it runs and while "
           "it is paused on them, and not once it failed or was killed",
@@ -1101,25 +1103,39 @@ def run(tmp):
                            (task("y"), nothing._replace(background=tuple(
                                ("s%d" % i, "bash") for i in range(12))), {}, None),
                            (task("z", status="killed"), bg, {}, None)], NOW),
-          {"silent": 0, "inbox": 0, "compact": 0, "shells": 4, "monitors": 3})
+          {"inbox": 0, "compact": 0, "shells": 4, "monitors": 3})
     bgrow = ANSI.sub("", sr.render_agent_row(task("x"), bg, {}, {}, sl.NO_LIMITS, now=NOW,
                                              widths={"shells": 3, "monitors": 3}))
     check("on the row after 🤏's place and before 📨's, right of the state",
           bgrow[:bgrow.index(" x ")].split()[-2:], ["\U0001F4BB2", "\U0001F4E11"])
-    quiet = nothing._replace(last_seen=NOW - 90)
-    check("🔇 once a running agent has written nothing for a minute, amber at "
-          "ten, and not while it waits on an agent or a question, which its 🚦 "
-          "already says, nor once it has stopped",
-          [ANSI.sub("", sr.render_silence(sr.silence(st, u, NOW))) for st, u in (
-              ("running", quiet), ("running", nothing._replace(last_seen=NOW - 30)),
-              ("running", nothing._replace(last_seen=NOW - 700)),
-              ("running", quiet._replace(pending=((NOW - 90, "Agent"),))),
-              ("running", quiet._replace(pending=((NOW - 90, "Bash"),))),
-              ("completed", quiet))],
-          ["\U0001F5071.5m", "", "\U0001F507 12m", "", "\U0001F5071.5m", ""])
-    check("and it is amber from ten minutes",
-          (sl.F_AMB in sr.render_silence(700.0), sl.F_AMB in sr.render_silence(90.0)),
-          (True, False))
+    doing = lambda st, u, w=False, rate=None, t=None: ANSI.sub(
+        "", sr.render_doing(st, u, w, rate, NOW, t))
+    quiet = nothing._replace(eta=(), last_seen=NOW - 90)
+    check("the rate's field says what a running agent is doing and for how "
+          "long: 🔧 or 🚦 since the oldest call of its kind, the unit where "
+          "the rate's / stands",
+          [doing("running", quiet._replace(pending=p)) for p in (
+              ((NOW - 42, "Bash"), (NOW - 5, "Read")),
+              ((NOW - 90, "Agent"), (NOW - 5, "Bash")),
+              ((NOW - 700, "AskUserQuestion"),))],
+          ["\U0001F527 42s ", "\U0001F6A61.5m ", "\U0001F6A6 12m "])
+    check("🤖 keeps the rate while it writes, and trades it for how long it "
+          "has written nothing from a minute, amber from ten",
+          ([doing("running", nothing._replace(eta=(), last_seen=NOW - q), rate=200.0)
+            for q in (30, 90, 700)],
+           sl.F_AMB in sr.render_doing("running", nothing._replace(eta=(), last_seen=NOW - 700),
+                                       False, 200.0, NOW),
+           sl.F_AMB in sr.render_doing("running", quiet, False, 200.0, NOW)),
+          (["\U0001F916200/s", "\U0001F9161.5m ", "\U0001F916 12m "], True, False))
+    check("paused, since its last record; not started, since its startTime; "
+          "ended, the mark alone; a shell keeps 🛫 and its rate",
+          [doing("completed", quiet._replace(background=(("b1", "bash"),))),
+           doing("completed", quiet, True),
+           doing("pending", nothing, t={"startTime": int((NOW - 20) * 1000)}),
+           doing("completed", quiet), doing("killed", quiet),
+           doing("running", nothing, rate=80.0), doing("running", nothing)],
+          ["\U0001F4BB1.5m ", "\U0001F4A41.5m ", "\U0001F95A 20s ",
+           "\u2705", "\U0001F6D1", "\U0001F6EB 80/s", ""])
     died = nothing._replace(api_error=True)
     check("💥: an agent whose last answer died on an API error, ended or "
           "parked; a killed one is still 🛑, and a running one is running",

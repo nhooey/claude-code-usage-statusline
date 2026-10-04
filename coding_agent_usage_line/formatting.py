@@ -1099,9 +1099,8 @@ E_MODE_API_ERROR = "\U0001F4A5"  # 💥  its last answer died on an API
 E_INBOX = "\U0001F4E8"   # 📨  messages sent to it and not yet delivered:
                          #    the panel's own "N queued".  On the status
                          #    line, the ones waiting for the main thread
-E_SILENT = "\U0001F507"  # 🔇  how long a running agent has written nothing.
-                         #    U+1F507, Unicode 6.0, one codepoint,
-                         #    Emoji_Presentation=Yes, EAW W
+# 🔇 U+1F507, how long a running agent had written nothing, left the panel's
+# head on 2026-10-05: the 🤖 state in the rate's field says it now.
 E_KIDS = "\U0001F476\U0001F3FB"  # 👶🏻  how many agents hang under it on the
                          #    panel.  The light tone, for its contrast on a
                          #    dark background, and so the one mark here that

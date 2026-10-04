@@ -36,16 +36,16 @@ One row per subagent or shell in Claude Code's agent panel, indented under the
 agent that started it. Installed as `subagentStatusLine`.
 
 ```
-⏺  🔩🟢🤖 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🛫266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  🔍🟢🔧     c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🛫 80/s  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯  📐⚫✅     f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k           🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯  🐚🟢       b1         npm test --watch         ◯                                                                  ⌛ 13m
+⏺  🔩🟢 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🤖266/s  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  🔍🟢     c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🔧 42s   🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯  📐⚫     f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k  ✅       🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯  🐚🟢     b1         npm test --watch         ◯                                                                  ⌛ 13m
 ```
 
 | Side | Cells, left to right |
 |---|---|
-| **Left** | Kind · State · 👶🏻 Children · 🤏 Compactions · 💻 Shells · 📡 Monitors · 📨 Queue · 🔇 Silent · ID · Name, 🌿 worktree branch and activity |
-| **Right** | Tree · 🤖 Model · 💰 Cost · 🧠 Context · 🧩 Tokens · 🛫 Rate · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools · 🚦 Waiting · 🔋 5-hour · 🪫 Weekly · 💾 Diff |
+| **Left** | Kind · State · 👶🏻 Children · 🤏 Compactions · 💻 Shells · 📡 Monitors · 📨 Queue · ID · Name, 🌿 worktree branch and activity |
+| **Right** | Tree · 🤖 Model · 💰 Cost · 🧠 Context · 🧩 Tokens · 🛫 Doing · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools · 🚦 Waiting · 🔋 5-hour · 🪫 Weekly · 💾 Diff |
 
 The right side uses the session status line's cells, for that one agent. A
 shell has no transcript, so its row shows only how long it has run.
@@ -136,7 +136,7 @@ readout, the table says so.
 | 🧩 | Tokens | tokens in and out | ✓ | ✓ | ✓ |
 | ▴ | Input | billable-equivalent input tokens | ✓ | ✓ | ✓ |
 | ▾ | Output | output tokens | ✓ | ✓ | ✓ |
-| 🛫 | Rate | tokens per second | ✓ | ✓ | |
+| 🛫 | Rate | tokens per second. On the status line, 🔧 and the time while a tool runs; on the tree, the agent's state mark and how long it has been in it, with 🤖 keeping the rate until it has written nothing for a minute (amber from ten) | ✓ | ✓ | |
 | 🎯 | Hits | prompt-cache hit rate | ✓ | ✓ | ✓ |
 
 ### Context
@@ -164,7 +164,6 @@ readout, the table says so.
 | 🔧 | Tools | time inside tools | ✓ | ✓ | ✓ |
 | 🚦 | Waiting | time waiting on you, or on agents it started | ✓ | ✓ | |
 | ⠄ ⠆ ⠦ ⠶ | Gauge | that figure's share of ⌛ | | ✓ | |
-| 🔇 | Silent | how long a running agent has written nothing, from a minute; amber from ten. Not while it waits on a question or an agent | | ✓ | |
 | ⌛🤖 | Answering | time with the model, per prompt and its agents | | | ✓ |
 
 * **🤖 🔧 🚦 add up to ⌛.** The status line prints them as durations. The tree
