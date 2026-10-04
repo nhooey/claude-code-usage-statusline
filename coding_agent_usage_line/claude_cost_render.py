@@ -178,7 +178,18 @@ def render_cost_line(
     if not tag:
         rows = laid_out(lead_newline)
         return ("\n" if lead_newline else "") + "\n".join(rows)
-    # The tag takes the first line, the one beside Claude Code's chrome, so
+    # Where the first row sits beside Claude Code's chrome with room to spare
+    # in its pad, the tag goes in the pad, C_MIN_GAP columns left of its 📊,
+    # and the receipt keeps the lines it has without one.
+    if not lead_newline:
+        rows = laid_out(False)
+        chart = len(rows[0]) - len(rows[0].lstrip(" "))
+        room = chart - vis_width(tag) - C_MIN_GAP
+        if room >= 0:
+            rows[0] = (" " * room + tag + " " * C_MIN_GAP
+                       + rows[0].lstrip(" "))
+            return "\n".join(rows)
+    # Otherwise the tag takes the first line, the one beside Claude Code's chrome, so
     # the rows below it are all continuation lines, and its 🔖 stands over
     # the first row's 📊 with 🔺 just left of it.  The first line starts
     # C_CHROME_LEFT - C_CHROME_CONT columns further right than the rows, so

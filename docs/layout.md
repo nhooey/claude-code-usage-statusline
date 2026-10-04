@@ -320,8 +320,18 @@ grepped in the transcript, and `#12` is Claude Code's own
 it, and the tag is left off entirely when it records neither, or when the
 receipt reports a compaction alone.
 
-The tag takes the receipt's first line, beside Claude Code's `Stop says:`
-chrome, and every receipt row moves down to a continuation line. When the
+When the terminal is wide enough that the first row's pad, beside Claude
+Code's `Stop says:` chrome, holds the tag and four spaces more, the tag goes
+in that pad, four spaces left of the row's 📊, and the receipt takes no extra
+line:
+
+```
+   🔺🔖 8f37748e #12    📊 🎤 Usage: Prompt (last)      🧩 ▴ 18k ▾3.5k  …
+                                   📊 🎮 Usage: Session (total)    🧩 ▴ 27k ▾4.4k  …
+```
+
+Otherwise the tag takes the receipt's first line, beside the chrome, and
+every receipt row moves down to a continuation line. When the
 rows are right-aligned, the tag is padded so that its 🔖 stands over the first
 row's 📊, with 🔺 just left of it; the pad allows for the eleven columns the
 chrome adds to the first line. When the rows reach too far left for that, or
