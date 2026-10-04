@@ -178,24 +178,31 @@ def render_cost_line(
     if not tag:
         rows = laid_out(lead_newline)
         return ("\n" if lead_newline else "") + "\n".join(rows)
-    # Where the first row has room to spare in its pad, the tag goes in the
-    # pad, C_MIN_GAP columns left of its 📊, and the receipt keeps the lines
-    # it has without one.  That holds for a receipt that opens on a blank
-    # line too (--force-newline): the tag goes beside the first row, not on
-    # the blank line beside Claude Code's chrome.
+    # The tag names the turn the 🎤 row bills, so it goes on that row and on
+    # no other: in its pad, C_MIN_GAP columns left of its 📊, where the pad
+    # has room.  The 🎤 row follows the 👥 and compaction rows and the blank
+    # line laid_out puts under them, when there are any.  With
+    # --force-newline the line beside Claude Code's chrome stays blank.
     rows = laid_out(lead_newline)
-    chart = len(rows[0]) - len(rows[0].lstrip(" "))
+    at = lead + 1 if lead and len(rows) > lead else 0
+    chart = len(rows[at]) - len(rows[at].lstrip(" "))
     room = chart - vis_width(tag) - C_MIN_GAP
     if room >= 0:
-        rows[0] = (" " * room + tag + " " * C_MIN_GAP
-                   + rows[0].lstrip(" "))
+        rows[at] = (" " * room + tag + " " * C_MIN_GAP
+                    + rows[at].lstrip(" "))
         return ("\n" if lead_newline else "") + "\n".join(rows)
-    # Otherwise the tag takes the first line, the one beside Claude Code's chrome, so
-    # the rows below it are all continuation lines, and its 🔖 stands over
-    # the first row's 📊 with 🔺 just left of it.  The first line starts
-    # C_CHROME_LEFT - C_CHROME_CONT columns further right than the rows, so
-    # that much comes off the pad.  Where the rows flow left there is no pad
-    # to take it from, and the tag starts the line.
+    # No room: the tag takes a line of its own directly above the 🎤 row,
+    # its 🔖 over the row's 📊 with 🔺 just left of it.  Under 👥 or
+    # compaction rows that is the blank line between them and the 🎤 row,
+    # a continuation line like the row itself.
+    if at:
+        rows[at - 1] = " " * max(0, chart - vis_width(E_TURN_PAST)) + tag
+        return ("\n" if lead_newline else "") + "\n".join(rows)
+    # With the 🎤 row first, it is the first line, the one beside Claude
+    # Code's chrome, so the rows below it are all continuation lines.  The
+    # first line starts C_CHROME_LEFT - C_CHROME_CONT columns further right
+    # than the rows, so that much comes off the pad.  Where the rows flow
+    # left there is no pad to take it from, and the tag starts the line.
     rows = laid_out(True)
     chart = len(rows[0]) - len(rows[0].lstrip(" "))
     pad = chart - (C_CHROME_LEFT - C_CHROME_CONT) - vis_width(E_TURN_PAST)

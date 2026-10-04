@@ -324,16 +324,24 @@ grepped in the transcript, and `#12` is Claude Code's own
 it, and the tag is left off entirely when it records neither, or when the
 receipt reports a compaction alone.
 
-When the terminal is wide enough that the first row's pad holds the tag and
+The tag names the turn the 🎤 row bills, so it goes on the 🎤 row and on no
+other — not on a 👥 or compaction row above it, and not on the line beside
+Claude Code's `Stop says:` chrome. When the 🎤 row's pad holds the tag and
 four spaces more, the tag goes in that pad, four spaces left of the row's 📊,
-and the receipt takes no extra line. With `--force-newline` the first row is
-on a continuation line and the line beside Claude Code's `Stop says:` chrome
-stays blank; the tag still goes in the first row's pad:
+and the receipt takes no extra line. With `--force-newline` the line beside
+the chrome stays blank either way:
 
 ```
-   🔺🔖 8f37748e #12    📊 🎤 Usage: Prompt (last)      🧩 ▴ 18k ▾3.5k  …
-                                   📊 🎮 Usage: Session (total)    🧩 ▴ 27k ▾4.4k  …
+                        📊 👥 Usage: Agents (other)     🧩 ▴7.2k ▾900   …
+
+                  🔺🔖 5e1f0a77    📊 🎤 Usage: Prompt (last)      🧩 ▴ 28k ▾7.1k  …
+                                   📊 🎮 Usage: Session (total)    🧩 ▴ 68k ▾ 14k  …
 ```
+
+When the pad is too small and 👥 or compaction rows come first, the tag
+takes the blank line between them and the 🎤 row, its 🔖 over the 🎤 row's
+📊. When the 🎤 row comes first, the tag takes the receipt's first line,
+beside the chrome, as below.
 
 Otherwise the tag takes the receipt's first line, beside the chrome, and
 every receipt row moves down to a continuation line. When the
