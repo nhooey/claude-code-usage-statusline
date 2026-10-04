@@ -833,7 +833,7 @@ def run(tmp):
     # in it; then 🟢 running, and the Doing field after it: 🤖, no call
     # waiting on its result, and nothing written for 1.2h, so the quiet
     # time rather than the rate.
-    head = "\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  a1         "
+    head = "\u00B7\U0001F50D\U0001F7E2 \U0001F9161.2h  a1         "
     tree = sl.E_TREE_NODE + " "         # no nesting: the tree is one ◯ wide
     check("an agent's row: the left group, the name, the panel's tree drawn "
           "again, then the right group, filling the payload's columns exactly",
@@ -848,7 +848,7 @@ def run(tmp):
           "the payload has none",
           # The blank spinner of a row not running, then ⚫ and its ✅ with
           # the time since it finished, a minute after its last record.
-          (rows["a2"].startswith(" \U0001F465\u26AB\u2705"),
+          (rows["a2"].startswith(" \U0001F465\u26AB \u2705"),
            "\U0001F916O\u2075" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
@@ -899,9 +899,9 @@ def run(tmp):
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
           # The cells only some panels draw follow the kind and state, 👶🏻
           # first.  E_KIDS is two codepoints, and its width the terminal's.
-          ["\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  " + sl.E_KIDS + "1 a1",
-           "\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  " + sl.E_KIDS + "1 a3",
-           "\u00B7\U0001F50D\U0001F7E2\U0001F9161.2h  " + " " * (sl.vis_width(sl.E_KIDS) + 1)
+          ["\u00B7\U0001F50D\U0001F7E2 \U0001F9161.2h  " + sl.E_KIDS + "1 a1",
+           "\u00B7\U0001F50D\U0001F7E2 \U0001F9161.2h  " + sl.E_KIDS + "1 a3",
+           "\u00B7\U0001F50D\U0001F7E2 \U0001F9161.2h  " + " " * (sl.vis_width(sl.E_KIDS) + 1)
            + " a4"])
     spun = os.path.join(tmp, "spin.jsonl")
     tool = agent_says(12, "")

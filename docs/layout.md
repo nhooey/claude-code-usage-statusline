@@ -437,10 +437,10 @@ panel. At 180 columns, with a running agent, its nested child, a finished
 agent and a shell:
 
 ```
-⏺  ✶🔩🟢🤖266/s 👶🏻1 a1b2c3d4e… Port the renderer Editing …  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  ✢🔍🟢🔧 42s      c7d8e9f0a… Find every caller of seg…  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯   📐⚫✅ 4m       f3e4d5c6b… Plan the docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k  🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯   🐚🟢            b1         npm test npm test --watch    ◯                                                                  ⌛ 13m
+⏺  ✶🔩🟢 🤖266/s 👶🏻1 a1b2c3d4e… Port the renderer Editing …  ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  ✢🔍🟢 🔧 42s      c7d8e9f0a… Find every caller of seg…  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳    ? 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯   📐⚫ ✅ 4m       f3e4d5c6b… Plan the docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k  🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯   🐚🟢             b1         npm test npm test --watch    ◯                                                                  ⌛ 13m
 ```
 
 The leading `◯`, `⏺` and `└` are the panel's own chrome, drawn by Claude Code;

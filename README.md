@@ -36,10 +36,10 @@ One row per subagent or shell in Claude Code's agent panel, indented under the
 agent that started it. Installed as `subagentStatusLine`.
 
 ```
-⏺  🔩🟢🤖266/s 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  🔍🟢🔧 42s      c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯  📐⚫✅ 4m       f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k   🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯  🐚🟢            b1         npm test --watch         ◯                                                                  ⌛ 13m
+⏺  🔩🟢 🤖266/s 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
+└ ◯  🔍🟢 🔧 42s      c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
+◯  📐⚫ ✅ 4m       f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k   🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
+◯  🐚🟢             b1         npm test --watch         ◯                                                                  ⌛ 13m
 ```
 
 | Side | Cells, left to right |

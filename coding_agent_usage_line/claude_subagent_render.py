@@ -328,7 +328,7 @@ def state_since(status, usage, phase, mode, task=None):
 def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None):
     """What the agent is doing, and for how long: the mode mark agent_state
     reads, then the time since state_since: the Doing cell, in the head right
-    after the phase circle — "🟢🔧 42s " where a rate reads "🛫200/s".  The unit stands where the rate's "/" does,
+    after the phase circle and a space — "🟢 🔧 42s " where a rate reads "🛫200/s".  The unit stands where the rate's "/" does,
     so the figures stack down the panel.
 
     🤖 keeps the rate while the agent's records keep landing: the figure
@@ -575,8 +575,8 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
     # stay once they come; 💻 and 📡 last as long as a shell or a Monitor
     # runs; 📨 passes quickest — so the passing ones shift the fewest.
-    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W+A_RATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+render_phase(status, usage, waiting_on)
-                                                      +seg(A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task))),
+    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W+1+A_RATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+seg(A_STATE_W, render_phase(status, usage, waiting_on))
+                                                      +" "+seg(A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task))),
                                                      (kids_w, render_kids(kids)),
                                                      (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
                                                      (widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),
