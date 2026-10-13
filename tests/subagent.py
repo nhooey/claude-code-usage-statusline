@@ -553,6 +553,15 @@ def run(tmp):
                                "skills/coding-agent-usage-line-report-eta: ETA "
                                + d}]}}])[1:] for d in ("6h30m", "1h 5m", "2m30s")],
           [(23400.0,), (3900.0,), (150.0,)])
+    check("words after the figure, past a dash, say what is left and are "
+          "not read; the figure must still come first",
+          [sl.eta_report([{"type": "assistant", "timestamp": ts(11),
+                           "message": {"content": [{"type": "text", "text":
+                               "skills/coding-agent-usage-line-report-eta: ETA "
+                               + d}]}}])[1:]
+           for d in ("4m \u2014 two lanes left", "1h 5m - the e2e runs",
+                     "several hours", "done")],
+          [(240.0,), (3900.0,), (), ()])
     check("the 🏁 the skill asked for before ⛳ is still read",
           sl.eta_report([{"type": "assistant", "timestamp": ts(11),
                           "message": {"content": [{"type": "text", "text":

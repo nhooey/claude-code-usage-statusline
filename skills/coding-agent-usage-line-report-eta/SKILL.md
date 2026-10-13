@@ -26,7 +26,10 @@ For example, a task with about four minutes to go gets a line with `ETA 4m`.
 - Write one last line with an ETA of 0s when you finish.
 - If you end your turn to wait on background work, put the line in that
   last message. A turn that ends without one reads as finished.
-- Never write the line for any other reason, and don't explain it.
+- Never write the line for any other reason.
+- The figure always comes first. A few words after it, following ` — `, may
+  say what is left: `ETA 5h — 3 CI-speed lanes`. Anything else in place of
+  the figure, such as `done` or `several hours`, is not read as a report.
 
 ## When told to `recurse`
 

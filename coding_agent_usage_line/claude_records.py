@@ -1267,10 +1267,13 @@ def turn_times(t: Turn) -> Tuple[float, float]:
 # and an agent with hours left writes `6h30m` all the same; read as the
 # skill's form alone, that line matched nothing and the row kept counting
 # down an older report, so a run of figure-and-unit pairs is one figure.
+# The figure comes first; a few words on what is left may follow it after a
+# dash, `ETA 5h — 3 CI lanes`, and are not read.
 ETA_SKILL = "coding-agent-usage-line-report-eta"
 ETA_PART = r"\d+(?:\.\d+)? ?[smh]"
 ETA_LINE = re.compile(
-    r"^[ \t`*]*(?:[%s%s][ \t]*)?skills/%s: ETA (%s(?:[ \t]*%s)*)[ \t`*]*$"
+    r"^[ \t`*]*(?:[%s%s][ \t]*)?skills/%s: ETA (%s(?:[ \t]*%s)*)"
+    r"(?:[ \t]+[\u2014\u2013-][ \t][^\n]*?)?[ \t`*]*$"
     % (E_ETA_REPORT, E_ETA_REPORT_OLD, re.escape(ETA_SKILL), ETA_PART, ETA_PART), re.MULTILINE)
 ETA_SPLIT = re.compile(r"(\d+(?:\.\d+)?) ?([smh])")
 ETA_UNIT_S = {"s": 1.0, "m": 60.0, "h": 3600.0}
