@@ -363,9 +363,10 @@ are not right-aligned, the tag starts the line:
 ### Rows
 
 The [legend](../README.md#receipt-rows) names each row. The 🎮 row includes
-every row above it. There is a 👥 row for each agent that finished after its
-turn's row printed, or whose turn shared its Stop with a later one, led by the
-agent's name and id, the ids in one column.
+every row above it. There is a 👥 row for each agent that finished since the last
+Stop and billed after its turn's row printed, or whose turn shared its Stop
+with a later one, led by the agent's name and id, the ids in one column. An
+agent still running gets its row at the Stop after it ends.
 
 🤏 and 👥 rows print above the 🎤 row, separated by a blank line. See
 [Accounting](accounting.md) for how turns and agents are attributed.

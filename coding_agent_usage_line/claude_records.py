@@ -885,7 +885,8 @@ def agent_offsets(transcript: str) -> Optional[Dict[str, int]]:
 
 
 def publish_agent_offsets(transcript: str,
-                          agents: Sequence[AgentRec]) -> None:
+                          agents: Sequence[AgentRec],
+                          held: Optional[Dict[str, int]] = None) -> None:
     """Record, after a Stop has rendered, how far into each agent file the
     records it folded in reached.
 
@@ -895,9 +896,16 @@ def publish_agent_offsets(transcript: str,
     extent.  A file that grew between the read and this write is reported
     next time from where this reading stopped, which is the whole point.
     Files with no billed record yet are absent, and absent reads as 0.
+
+    `held` is what read_turns held back from a still-running agent, {path:
+    the first such record's offset}: those records and the file's later
+    ones are not reported yet, so the extent stops short of them.
     """
+    held = held or {}
     ext = {}
     for a in agents:
+        if a.offset >= held.get(a.path, a.offset + 1):
+            continue
         if a.offset > ext.get(a.path, 0):
             ext[a.path] = a.offset
     path = _agent_state_path(transcript)
@@ -1082,6 +1090,32 @@ def scan_background(r: dict, open_: Dict[str, str]) -> None:
         m = re.search(r"<task-id>([^<]+)</task-id>", text)
         if m:
             open_.pop(m.group(1).strip(), None)
+
+
+def scan_agent_end(r: dict, ends: Dict[str, float]) -> None:
+    """Fold one main-transcript record into `ends`, {agent id: the epoch of
+    the latest record saying that agent finished}.
+
+    A background agent finishes on a `<task-notification>` for its id that
+    carries a `<status>`; a foreground one on the Agent call's result,
+    whose toolUseResult names its agentId beside a terminal status.  The
+    LATEST end is kept, because an agent resumed by SendMessage finishes
+    again, and what it bills between the two ends belongs to the second.
+    """
+    res = r.get("toolUseResult")
+    if (isinstance(res, dict) and res.get("agentId")
+            and res.get("status") in TASK_ENDED):
+        aid = str(res["agentId"])
+    else:
+        text = notification_text(r)
+        m = (re.search(r"<task-id>([^<]+)</task-id>", text)
+             if "<status>" in text else None)
+        if not m:
+            return
+        aid = m.group(1).strip()
+    t = ts_epoch(r.get("timestamp") or "")
+    if t is not None and t > ends.get(aid, float("-inf")):
+        ends[aid] = t
 
 
 def net_tool_seconds(spans: Sequence[Tuple[float, float]],
@@ -1927,7 +1961,9 @@ def _add_usd(cur: dict, epoch: Optional[float], model: Optional[str],
 def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
                  agents: Sequence[AgentRec],
                  last_stop: Optional[float] = None,
-                 offsets: Optional[Dict[str, int]] = None) -> Dict[str, dict]:
+                 offsets: Optional[Dict[str, int]] = None,
+                 ends: Optional[Dict[str, float]] = None,
+                 held: Optional[Dict[str, int]] = None) -> Dict[str, dict]:
     """File every agent record under a turn of the main transcript.
 
     By promptId where a main record carried it — the turn that spawned the
@@ -1981,6 +2017,13 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
     this machine, about 1% of late-eligible records sit inside that window.
     The offsets exist to close it; the stamp is the fallback for the first
     Stop of a session and for a fixture.
+
+    A new record gets a 👥 row only once its agent has FINISHED — `ends`,
+    see scan_agent_end — so each Stop lists the agents that ended since the
+    last, not every agent that billed since: a running agent would
+    otherwise print a row at every Stop it outlives.  Until it ends its
+    records stay on their spawning turn, counted in the totals, and go
+    into `held` so the Stop does not mark them reported.
     """
     if not agents or not turns:
         return {}
@@ -2010,7 +2053,14 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
             else:
                 new = (last_stop is None
                        or (a.epoch is not None and a.epoch > last_stop))
-            if new:
+            if new and not _ended_after(a, ends):
+                # Still running: its 👥 row waits for its end, and the
+                # record stays on its spawning turn for the totals until
+                # then.  `held` keeps publish_agent_offsets from marking it
+                # reported, so the row it gets at the end includes it.
+                if held is not None and a.offset < held.get(a.path, a.offset + 1):
+                    held[a.path] = a.offset
+            elif new:
                 if a.path not in late:
                     late[a.path] = _new_turn(_stamp_utc(a.epoch), "agents (other)")
                 cur = late[a.path]
@@ -2027,7 +2077,16 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
     return late
 
 
-def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
+def _ended_after(a: AgentRec, ends: Optional[Dict[str, float]]) -> bool:
+    """Has the agent that billed `a` finished since, by `ends`?  An agent
+    file is named `agent-<id>.jsonl`; a record with no stamp counts as
+    before any end."""
+    end = (ends or {}).get(agent_label_id(a.path))
+    return end is not None and (a.epoch is None or a.epoch <= end)
+
+
+def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
+               held: Optional[Dict[str, int]] = None
                ) -> Tuple[Turn, ...]:
     """Segment the transcript into prompts, with each turn's billed usage.
 
@@ -2059,7 +2118,9 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
     by_pid = {}     # promptId → the turn open when a record carrying it was read
     last_stop = None    # epoch of the last Stop record, for late_agent_turn
     pending = {}        # tool calls asked for and not yet answered; see below
+    ends = {}           # agent id → when it last finished; see scan_agent_end
     for r in _records(path):
+        scan_agent_end(r, ends)
         # Every tool call, onto the turn open when its RESULT arrives: the
         # scan read_transcript makes for the status line's 🔧, so the two
         # readouts count the same calls by the same rule.  `pending` spans
@@ -2212,7 +2273,7 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
 
     late = _fold_agents(turns, by_pid,
                         agent_records(path, seen) if agents is None else agents,
-                        last_stop, agent_offsets(path))
+                        last_stop, agent_offsets(path), ends, held)
 
     # Context growth per turn: how much bigger the window got while this prompt
     # was answered.  The first turn of a transcript gets None rather than its
@@ -2271,12 +2332,17 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None
     return tuple(out)
 
 
+def agent_label_id(path: str) -> str:
+    """The id off an agent file's `agent-<id>.jsonl`, else ""."""
+    base = os.path.basename(path)
+    return base[len("agent-"):-len(".jsonl")] if (
+        base.startswith("agent-") and base.endswith(".jsonl")) else ""
+
+
 def agent_label(path: str) -> Tuple[str, str]:
     """An agent file's id and name: the id off `agent-<id>.jsonl`, and the
     description its `.meta.json` sidecar gives, else its agentType, else ""."""
-    base = os.path.basename(path)
-    aid = base[len("agent-"):-len(".jsonl")] if (
-        base.startswith("agent-") and base.endswith(".jsonl")) else ""
+    aid = agent_label_id(path)
     name = ""
     try:
         with open(path[:-len(".jsonl")] + ".meta.json", encoding="utf-8") as fh:
@@ -2319,7 +2385,8 @@ SETTLE_POLL_S = 0.025
 
 def read_turns_settled(path: str, budget: float = SETTLE_S,
                        poll: float = SETTLE_POLL_S,
-                       agents: Optional[Sequence[AgentRec]] = None
+                       agents: Optional[Sequence[AgentRec]] = None,
+                       held: Optional[Dict[str, int]] = None
                        ) -> Tuple[Turn, ...]:
     """`read_turns`, having waited for the turn being reported to be written.
 
@@ -2350,7 +2417,7 @@ def read_turns_settled(path: str, budget: float = SETTLE_S,
     `st_size` gates the re-read so a wait that spans the whole budget parses
     the transcript once, not sixty times.
     """
-    turns = read_turns(path, agents)
+    turns = read_turns(path, agents, held)
     if not budget or _settled(turns):
         return turns
     deadline = time.monotonic() + budget
@@ -2367,7 +2434,9 @@ def read_turns_settled(path: str, budget: float = SETTLE_S,
         if grown == size:
             continue
         size = grown
-        turns = read_turns(path, agents)
+        if held is not None:
+            held.clear()
+        turns = read_turns(path, agents, held)
         if _settled(turns):
             break
     return turns

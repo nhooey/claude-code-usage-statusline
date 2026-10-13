@@ -115,6 +115,18 @@ def stop(minute):
             "timestamp": ts(minute), "isSidechain": False}
 
 
+def finished(minute, aid):
+    """The main thread's word that agent `aid` finished: the task
+    notification Claude Code queues for it.  A late agent's 👥 row waits for
+    this, so the case that shows one has to carry it."""
+    return {"type": "attachment", "timestamp": ts(minute),
+            "isSidechain": False,
+            "attachment": {"type": "queued_command", "prompt":
+                           "<task-notification>\n<task-id>%s</task-id>\n"
+                           "<status>completed</status>\n"
+                           "</task-notification>" % aid}}
+
+
 def with_pid(r, pid):
     """The same record, carrying the promptId every user record of a turn
     carries in a real transcript.  It is how an agent's spend finds its
@@ -259,7 +271,7 @@ CASES = {
     # finished with the turn, folded into its row through the tool result
     # that carries the turn's promptId; the same fork kept going and billed
     # once more after the first Stop, which is LATE -- reported on no row
-    # yet -- and prints on the 👥 row above the pair.  Under the second, a
+    # yet -- and, having finished at 18, prints on the 👥 row above the pair.  Under the second, a
     # Sonnet subagent, so the 🎤 row's 💰 is two models' prices summed per
     # record and not one model's over the token sums.  The agent files are
     # in AGENTS below, beside this transcript where Claude Code puts them.
@@ -275,6 +287,7 @@ CASES = {
         with_pid(tool_result(13, "tu-k1"), PID_K1),
         answer(14, "req-k2", 6, 400, 47000, 1200),
         stop(15),
+        finished(18, "fork1"),
         with_pid(prompt(20, "Now have a subagent read the strategy."), PID_K2),
         answer(21, "req-k3", 9, 1500, 52000, 900, tool=("tu-k3", "Bash")),
         with_pid(tool_result(24, "tu-k3"), PID_K2),

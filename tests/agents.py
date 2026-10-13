@@ -167,6 +167,18 @@ def result(minute, *ids, **kw):
                                      "content": "ok"} for i in ids]}}
 
 
+def finished(minute, aid, second=0):
+    """The main thread's word that agent `aid` finished: the task
+    notification Claude Code queues for it, as the attachment form, which
+    opens no turn.  A late agent gets its 👥 row only once this is in."""
+    return {"type": "attachment", "timestamp": ts(minute, second),
+            "isSidechain": False,
+            "attachment": {"type": "queued_command", "prompt":
+                           "<task-notification>\n<task-id>%s</task-id>\n"
+                           "<status>completed</status>\n"
+                           "</task-notification>" % aid}}
+
+
 def boundary(minute, pre, ms):
     return {"type": "system", "subtype": "compact_boundary",
             "timestamp": ts(minute),
@@ -302,6 +314,7 @@ def run(tmp):
         stop(13),
         prompt(20, "second", "p2"),
         answer(21, "m2", 1000, 0, 60000, 500),
+        finished(23, "a1"),
     ], agents=[
         ("agent-a1", [agent_user(11, "p1"),
                       agent_answer(12, "a1", 100, 0, 1000, 10),
@@ -614,6 +627,7 @@ def run(tmp):
         answer(13, "m1b", 1000, 0, 9000, 500),  # lands on the compaction
         prompt(20, "second"),
         answer(21, "m2", 1000, 0, 60000, 500),
+        finished(22, "a1"),
     ], agents=[
         ("agent-a1", [agent_user(11, "nobody-has-this"),
                       agent_answer(13, "a1", 100, 0, 1000, 10),
@@ -654,6 +668,8 @@ def run(tmp):
         stop(12),
         prompt(20, "second", "p2"),
         answer(21, "m2", 1000, 0, 60000, 500),
+        finished(21, "a", second=45),
+        finished(21, "b", second=45),
         stop(22),
         prompt(30, "third", "p3"),
         answer(31, "m3", 1000, 0, 70000, 500),
@@ -671,7 +687,7 @@ def run(tmp):
     check("the state file holds the extent reported",
           sl.agent_offsets(tr), {recs[0].path: recs[0].offset})
 
-    tr = session(tmp, "late", main[:5], agents=[("agent-a", agent)])
+    tr = session(tmp, "late", main[:7], agents=[("agent-a", agent)])
     recs = sl.agent_records(tr)
     turns = sl.read_turns(tr, recs)
     check("second Stop: the new record is late, and the spawning turn "
@@ -692,7 +708,7 @@ def run(tmp):
     sl.publish_agent_offsets(tr2, sl.agent_records(tr2))
     with open(os.path.join(tmp, "late2", "subagents", "agent-b.meta.json"), "w") as fh:
         json.dump({"agentType": "Explore", "description": "Find the callers"}, fh)
-    tr2 = session(tmp, "late2", main[:5],
+    tr2 = session(tmp, "late2", main[:7],
                   agents=[("agent-a", agent), ("agent-b", b_all)])
     with open(os.path.join(tmp, "late2", "subagents", "agent-b.meta.json"), "w") as fh:
         json.dump({"agentType": "Explore", "description": "Find the callers"}, fh)
@@ -716,18 +732,50 @@ def run(tmp):
                 out2[1].index(" b ")})),
           (["general-purpose a", "Find the callers b"], 1))
 
-    tr = session(tmp, "late", main[:8], agents=[("agent-a", agent)])
+    tr = session(tmp, "late", main[:10], agents=[("agent-a", agent)])
     turns = sl.read_turns(tr)
     check("third Stop: reported once, now back on its turn for the totals",
           [(t.text[:6], t.agent_calls, t.agent) for t in turns],
           [("first", 2, False), ("second", 0, False), ("third", 0, False)])
+
+    # An agent still running at a Stop gets no 👥 row there: the rows are
+    # the agents that ENDED since the last Stop.  Its spend stays on its
+    # spawning turn for the totals, the offset stops short of it, and the
+    # Stop after it finishes prints one row with all of it.
+    run_main = main[:5] + [stop(22), prompt(30, "third", "p3"),
+                           answer(31, "m3", 1000, 0, 70000, 500)]
+    run_agent = agent + [agent_answer(31, "a3", 100, 0, 1000, 10, second=30)]
+    rt = session(tmp, "running", main[:2], agents=[("agent-a", agent[:2])])
+    sl.publish_agent_offsets(rt, sl.agent_records(rt))
+    rt = session(tmp, "running", main[:5], agents=[("agent-a", agent)])
+    recs, held = sl.agent_records(rt), {}
+    turns = sl.read_turns(rt, recs, held)
+    check("a running agent gets no 👥 row, and its record stays on its "
+          "spawning turn for the totals",
+          [(t.text[:6], t.agent_calls, t.agent) for t in turns],
+          [("first", 2, False), ("second", 0, False)])
+    sl.publish_agent_offsets(rt, recs, held)
+    check("and the Stop does not mark it reported",
+          sl.agent_offsets(rt), {recs[0].path: recs[0].offset})
+    rt = session(tmp, "running", run_main + [finished(31, "a", second=45)],
+                 agents=[("agent-a", run_agent)])
+    check("once it ends, one row with all it billed since it was last "
+          "reported",
+          [(t.text[:6], t.agent_calls, t.agent) for t in sl.read_turns(rt)],
+          [("first", 1, False), ("second", 0, False), ("agents", 2, True),
+           ("third", 0, False)])
+    check("an agent resumed after it ended is running again",
+          [t.agent for t in sl.read_turns(session(
+              tmp, "running", run_main[:5] + [finished(21, "a", second=10)]
+              + run_main[5:], agents=[("agent-a", run_agent)]))],
+          [False, False, False])
 
     # Without the state file the stamp decides: after the last Stop record
     # is late, before it is taken as reported.
     os.remove(_agent_state_path(tr))
     check("stamp fallback: a record before the last Stop is not late",
           [t.agent for t in sl.read_turns(tr)], [False, False, False])
-    tr = session(tmp, "late", main[:5], agents=[("agent-a", agent)])
+    tr = session(tmp, "late", main[:7], agents=[("agent-a", agent)])
     check("stamp fallback: a record after the last Stop is",
           [t.agent for t in sl.read_turns(tr)], [False, False, True])
     check("a record under the CURRENT turn is never late",
@@ -746,6 +794,7 @@ def run(tmp):
                   answer(11, "m1", 10, 0, 100, 5),
                   queued(12, "queued while running"),
                   answer(13, "m2", 10, 0, 100, 5),
+                  finished(13, "c", second=30),
               ], agents=[("agent-c", [agent_user(11, "p1"),
                                       agent_answer(11, "c1", 1, 0, 1, 1,
                                                    second=30)])]))],

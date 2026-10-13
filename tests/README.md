@@ -220,7 +220,9 @@ yet. `ok*` marks a transcript whose compaction predates its first Stop record,
 meaning the hook was installed mid-session.
 
 `agents-once.py` checks that every agent request lands on a 🎤 or 👥 row at
-the first Stop that saw it, and on a 👥 row at no later Stop. It imports the
+the first Stop that saw it, and on a 👥 row at no later Stop. A request whose
+agent is still running is held back, and is first seen at the Stop after the
+agent ends; `held` counts the ones whose agent never ended. It imports the
 program rather than running it.
 
 Both walk `~/.claude/projects/`, so their runtime scales with your history:

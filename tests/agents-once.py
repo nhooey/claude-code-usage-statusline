@@ -16,7 +16,10 @@ in-process, notes which agent requests are on a row that prints (the 🎤 turn,
 or a 👥 turn), publishes the state file the way the hook does, and moves on.
 
 What is asserted, per agent request: on a 🎤 or 👥 row at the Stop that
-first saw it, and on a 👥 row at no later Stop.  The first half is what the
+first saw it, and on a 👥 row at no later Stop.  A request whose agent is
+still running is held back — its row waits for the agent's end — and is
+not "seen" until a Stop stops holding it; those still held at the last
+Stop are counted, not failed: their agent never ended in the transcript.  The first half is what the
 👥 row exists for — a turn that shares its Stop with a later one gets no 🎤
 row, and before the 👥 rule was widened to cover that, 766 of 766 requests
 in one workflow session printed nowhere.  The second half is the state file
@@ -63,7 +66,7 @@ def find_sessions():
 
 
 def replay(sl, transcript, work):
-    """One session.  Returns (requests, twice, never)."""
+    """One session.  Returns (requests, twice, never, held)."""
     lines = open(transcript, encoding="utf-8", errors="replace").readlines()
     stops = []
     for i, line in enumerate(lines):
@@ -98,6 +101,7 @@ def replay(sl, transcript, work):
     seen_ids = set()
     unreportable = set()
     late_seen = {}      # requestId → the Stops at which it sat on a 👥 turn
+    still = set()       # requestIds held back at the latest Stop
     for i, stop_epoch in stops:
         # What the hook saw: the main file before its own Stop record, and
         # each agent file up to the last record stamped before the Stop.
@@ -116,15 +120,20 @@ def replay(sl, transcript, work):
             with open(p, "wb") as fh:
                 fh.writelines(keep)
         agents = sl.agent_records(cut_tr)
-        turns = sl.read_turns(cut_tr, agents)
+        held = {}
+        turns = sl.read_turns(cut_tr, agents, held)
         # The rows that print at this Stop: the 🎤 turn and every 👥 turn.
         # A request new to this Stop is on one of them or on no row at all.
         prompts = [t for t in turns if t.calls and not t.compact
                    and not t.agent]
         rows = [t for t in turns if t.agent] + prompts[-1:]
         on_rows = set(rid for t in rows for rid in t.agent_ids)
+        still = set()
         for a in agents:
             rid = a.request_id
+            if a.offset >= held.get(a.path, a.offset + 1):
+                still.add(rid)
+                continue
             if rid in seen_ids:
                 # Seen by an earlier Stop.  It may still sit on `last` if
                 # that turn is being reported again (a Stop that could not
@@ -143,14 +152,14 @@ def replay(sl, transcript, work):
             if t.agent:
                 for rid in t.agent_ids:
                     late_seen.setdefault(rid, set()).add(i)
-        sl.publish_agent_offsets(cut_tr, agents)
+        sl.publish_agent_offsets(cut_tr, agents, held)
     try:
         os.remove(_agent_state_path(cut_tr))
     except OSError:
         pass
     twice = [k for k, at in late_seen.items() if len(at) > 1]
     never = sorted(unreportable)
-    return len(seen_ids), twice, never
+    return len(seen_ids | still), twice, never, len(still - seen_ids)
 
 
 def main(argv):
@@ -165,13 +174,13 @@ def main(argv):
     bad = 0
     try:
         for tr in paths:
-            n, twice, never = replay(sl, tr, work)
+            n, twice, never, waiting = replay(sl, tr, work)
             tag = "ok  " if not (twice or never) else "FAIL"
             if twice or never:
                 bad += 1
-            print("  %s  %-40s  %5d requests  twice %d  never %d"
+            print("  %s  %-40s  %5d requests  twice %d  never %d  held %d"
                   % (tag, os.path.basename(tr)[:40], n, len(twice),
-                     len(never)))
+                     len(never), waiting))
     finally:
         shutil.rmtree(work, ignore_errors=True)
     print("\nsessions %d   fail %d" % (len(paths), bad))

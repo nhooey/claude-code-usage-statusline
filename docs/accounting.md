@@ -174,6 +174,18 @@ Such a request, if no earlier Stop has seen it, goes into a separate
 that agent's 👥 row above the 🎤 row at the next Stop. It is not also added to the turn that spawned it, which would
 bill it twice.
 
+The row waits for the agent to finish, so a Stop lists the agents that ended
+since the last one, not every agent that billed something since. The main
+transcript says when an agent finished: a `<task-notification>` for its id
+that carries a `<status>`, for a background agent, or the Agent call's result
+with its `agentId` and a terminal status, for a foreground one. Until then, its
+new requests stay on the turn that spawned it, where the totals count them,
+and the Stop does not record them as reported. The Stop after the agent ends
+prints one row with everything it billed since it was last reported. An agent
+resumed by SendMessage after it ended is running again until its next end.
+An agent whose end never reaches the main transcript never gets a row; its
+spend is still in the totals.
+
 "Not seen by an earlier Stop" is measured in bytes. After rendering, the Stop
 hook records how far into each agent file the requests it reported reached,
 in a per-session file in private state (`claude-agent-offsets-<digest>.json`).
@@ -204,7 +216,8 @@ and padded to ten, lead the row. Where the rows are right-aligned they sit in
 its pad, C_MIN_GAP columns left of the 📊, so the ids of several 👥 rows stand
 in one column; the name is cut to fit, and both are left off where the pad
 cannot hold the id. The rows are the agent spend
-the 🎤 row cannot carry, so the rows above 🎮 add up to it.
+the 🎤 row cannot carry, so the rows above 🎮 add up to it, less what agents
+still running have billed since their last row.
 
 ## Time
 

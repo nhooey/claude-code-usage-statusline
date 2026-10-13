@@ -2589,8 +2589,9 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
         # each time, because that reading's extent is what gets published
         # after the render as "reported up to here".
         agents = agent_records(transcript)
-        turns = (read_turns(transcript, agents) if _flag(argv, "--transcript")
-                 else read_turns_settled(transcript, agents=agents))
+        held: Dict[str, int] = {}
+        turns = (read_turns(transcript, agents, held) if _flag(argv, "--transcript")
+                 else read_turns_settled(transcript, agents=agents, held=held))
 
         # --all is the by-hand mode: every prompt in the transcript, listed,
         # as plain text rather than a hook response.  It is not what the hook
@@ -2632,7 +2633,7 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
         # goldens therefore exercise the stamp fallback; tests/agents.py
         # exercises this.
         if not _flag(argv, "--transcript"):
-            publish_agent_offsets(transcript, agents)
+            publish_agent_offsets(transcript, agents, held)
         return 0
     except Exception:
         # Fail silent, by contract.  "{}" is a valid no-op hook response, so
