@@ -827,7 +827,8 @@ def run(tmp):
         "\u231B1.2h \u26F3    ? \U0001F916\u2836\u2836 "
         "\U0001F527\u2800\u2800 \U0001F6A6\u2800\u2800",
         "\U0001F50B" + sl.pad_val(4, pct(want)),
-        "\U0001FAAB" + sl.pad_val(4, pct(want / 10.0)),
+        # 🪫 a column wider, for limit_pct's fourth digit.
+        "\U0001FAAB" + sl.pad_val(5, sl.limit_pct(want / 10.0, 4) + sl.E_PCT),
         ANSI.sub("", sl.render_diff("12", "4"))))
     # The spinner's first frame, for a transcript with no text or tool call
     # in it; then 🟢 running, and the Doing field after it: 🤖, no call

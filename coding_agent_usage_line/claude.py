@@ -1441,9 +1441,11 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
             dec_align(plan_pct(tsh["sess"]), 2, 2, E_PCT), ink.r,
             share_half(E_READ, rd, ink) if acct else "")
             if tsh.get("sess") is not None else "", left=False),
-        seg(lim_w, "%s%s+%s%s%s" % (
+        # One column wider than 🔋 for plan_pct's third decimal; the totals
+        # row's 📆 reserves the same, so the two points stack.
+        seg(lim_w + 1, "%s%s+%s%s%s" % (
             E_WEEK, ink.amb,
-            dec_align(plan_pct(tsh["week"]), 2, 2, E_PCT), ink.r,
+            dec_align(plan_pct(tsh["week"], 3), 2, 3, E_PCT), ink.r,
             share_half(E_WRITE, wr, ink) if acct else "")
             if tsh.get("week") is not None else "", left=False),
         # "+" as on 💰, 🔋 and 📆 beside it: every figure on this row is what
@@ -1541,7 +1543,7 @@ def session_shares(turns: Sequence[Turn],
 
 
 def limit_cell(emoji: str, share: Optional[float], total: Optional[float],
-               ink: Ink, acct: bool = True) -> str:
+               ink: Ink, acct: bool = True, places: int = 2) -> str:
     """A totals-row limit cell: this session's share, then 💳, the window's.
 
     Two figures about one window — before the mark, what this session spent;
@@ -1595,8 +1597,9 @@ def limit_cell(emoji: str, share: Optional[float], total: Optional[float],
     """
     if share is None and (total is None or not acct):
         return ""
-    left = (dec_align(plan_pct(share), 2, 2, E_PCT) if share is not None
-            else pad_val(fmt.C_SESS - fmt.C_LIM_TOT - 3, "?"))
+    left = (dec_align(plan_pct(share, places), 2, places, E_PCT)
+            if share is not None
+            else pad_val(fmt.C_SESS - fmt.C_LIM_TOT - 5 + places, "?"))
     if not acct:
         return "%s%s %s%s" % (emoji, ink.amb, left, ink.r)
     # The threshold is render_limit's, so the two readouts can never draw
@@ -1704,9 +1707,10 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
                               totals.get("sess") if totals else None, ink,
                               acct),
             left=False),
-        seg(lim_w, limit_cell(E_WEEK, mine.get("week"),
-                              totals.get("week") if totals else None, ink,
-                              acct),
+        # One wider than 🔋 for the week's third decimal; see plan_pct.
+        seg(lim_w + 1, limit_cell(E_WEEK, mine.get("week"),
+                                  totals.get("week") if totals else None,
+                                  ink, acct, 3),
             left=False),
         # The pair the status line's column 4 makes, split across the two
         # rows this readout already has: what the last prompt took, over how

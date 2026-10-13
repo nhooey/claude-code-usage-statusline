@@ -2128,8 +2128,8 @@ def pct2(v: int) -> str:
 
 
 @_subscriptable
-def plan_pct(v: float) -> str:
-    """A plan-window percentage for the COST row: two decimals at most.
+def plan_pct(v: float, places: int = 2) -> str:
+    """A plan-window percentage for the COST row: `places` decimals at most.
 
     limit_pct's sibling, and it exists because the two rows want opposite
     things.  On the status line the two limit rows are read against each
@@ -2144,19 +2144,29 @@ def plan_pct(v: float) -> str:
     share of a single prompt legible (0.01٪ rather than 0.0٪) and it is one
     column narrower than the three limit_pct would need for ".006".
 
+    `places` is three for the 📆 cells alone.  A prompt's share of the WEEK
+    is routinely a few hundredths of a point, which two decimals print as
+    "0.01٪" or "0.02٪" — a reading with one significant digit, coarse enough
+    that consecutive prompts of visibly different cost print the same.  The
+    third decimal is the column that tells them apart, and both cost rows
+    reserve it in their 📆 cell, one past C_SESS, so the point still stacks.  🔋 keeps two: a prompt's
+    share of five hours is about thirty times larger and already has its
+    digits.
+
     The leading zero stays, where limit_pct drops it.  Dropping it buys a
     decimal only in a field that floats its point; here the integer column is
     reserved either way, so dropping the zero would empty a column rather than
     free one.
     """
-    if v >= 99.95:
-        return "99.9"
+    if v >= 100 - 0.5 * 10 ** -(places - 1):
+        return "99." + "9" * (places - 1)
     # Trailing zeros stripped for the reason limit_pct strips them: the totals
     # row's figure comes from a source that quantises to whole points, so
     # "91.0٪" was two columns spent asserting a tenth nobody measured.  The
     # per-prompt figure directly above IS continuous and keeps every digit it
     # earns; dec_align still stacks the two on their units column.
-    s = "%.1f" % v if v >= 9.995 else "%.2f" % v
+    s = ("%.*f" % (places - 1, v) if v >= 10 - 0.5 * 10 ** -places
+         else "%.*f" % (places, v))
     return s.rstrip("0").rstrip(".") or "0"
 
 
@@ -2232,6 +2242,19 @@ def limit_pct(v: float, digits: int = 3) -> str:
     """
     if v <= 0:
         return "0"
+    if digits > 3:
+        # The agent panel's 🪫 alone: an agent's share of the WEEK, which this
+        # program computes as a ratio and which sits at a few hundredths of a
+        # point, where three characters print ".04" for agents of visibly
+        # different cost.  One more decimal at every magnitude, and no ".0"
+        # stripping, since a computed share's zeros are measured ones.
+        if v >= 99.95:
+            return "100"
+        if v >= 9.995:
+            return "%.1f" % v
+        if v >= 0.9995:
+            return "%.2f" % v
+        return ("%.3f" % v)[1:]
     # Each cut is placed where the NEXT format would round up into a fourth
     # character rather than at the round number below it: 9.96 belongs with 10,
     # not with 9.9, because "%.1f" would write it "10.0".

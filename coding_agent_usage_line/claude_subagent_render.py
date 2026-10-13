@@ -59,12 +59,13 @@ def token_rate(samples, status):
     except (TypeError, ValueError): return None
     return max(0.0, last - first) / (A_TICK_S * (len(samples) - 1))
 
-def render_agent_limit(emoji, pct_s, share, colour, billed=True, dim=False):
+def render_agent_limit(emoji, pct_s, share, colour, billed=True, dim=False, digits=3):
     if not pct_s or fmt._pct_num(pct_s) is None or not billed: return ""
     colour = DIM + colour if dim else colour
-    if share is None: fig = "%s%s%s" % (DIM + F_CRM, pad_val(LIM_FIG_W, "?"), R)
-    elif share >= 99.5: fig = "%s%s%s" % (colour, pad_val(LIM_FIG_W, E_HUNDRED + E_PCT), R)
-    else: fig = "%s%s%s" % (colour, pad_val(LIM_FIG_W, limit_pct(share) + E_PCT), R)
+    w = LIM_FIG_W + digits - 3
+    if share is None: fig = "%s%s%s" % (DIM + F_CRM, pad_val(w, "?"), R)
+    elif share >= 99.5: fig = "%s%s%s" % (colour, pad_val(w, E_HUNDRED + E_PCT), R)
+    else: fig = "%s%s%s" % (colour, pad_val(w, limit_pct(share, digits) + E_PCT), R)
     return emoji + fig
 
 def render_kind(agent_type, task_kind): return KIND_MARK.get(agent_type or task_kind, E_ROW_AGENTS)
@@ -568,7 +569,7 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
          + render_agent_split(agent_elapsed(task.get("startTime"), now, end, first) if clocked else None,
                               getattr(usage,"model_s",None), getattr(usage,"tool_s",0.0))),
         (A_LIMIT_W, render_agent_limit(E_SESS, limits.session_pct, shares.get("sess"), F_LIM_SESS, billed, light)),
-        (A_LIMIT_W, render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), F_LIM_WEEK, billed, light)),
+        (A_LIMIT_WEEK_W, render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), F_LIM_WEEK, billed, light, 4)),
         (A_DIFF_W, render_agent_diff(usage) if billed else "")) if w)
     desc=squash(str(task.get("description") or "")); name=str(task.get("name") or "") or desc; act=squash(str(task.get("label") or ""))
     if act == desc: act=""
