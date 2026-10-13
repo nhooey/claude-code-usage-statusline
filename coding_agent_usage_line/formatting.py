@@ -591,10 +591,14 @@ COL3_TIGHT_W = 14      # column 3 with MARK_SP empty: a row mark and its
                        # space, then 🎤 and 🎮 each ahead of SHARE_FIG_W,
                        # divided by one space.  Each of its two fields grows
                        # by len(MARK_SP).
-COL4_TIGHT_W = 29      # column 4 with MARK_SP empty; each of its four fields
-                       # grows by len(MARK_SP).
-LINE3_TIGHT = 113      # LINE3_RESERVED at COL3_TIGHT_W + COL4_TIGHT_W, measured
-LINE3_RESERVED = 113   # columns the non-pwd segments of line 3 occupy.  It
+COL4_TIGHT_W = 30      # column 4 with MARK_SP empty; each of its four fields
+                       # grows by len(MARK_SP).  It was 29 until 2026-10-13:
+                       # LIM_ACCT_W went to four on 2026-09-30 and this did
+                       # not follow, so ⌛ and 🪫 overran the column by one
+                       # while an empty 🔋 cell did not, and the 🔋 row's
+                       # tail sat a column right of the rows around it.
+LINE3_TIGHT = 114      # LINE3_RESERVED at COL3_TIGHT_W + COL4_TIGHT_W, measured
+LINE3_RESERVED = 114   # columns the non-pwd segments of line 3 occupy.  It
                        # was 123 until the evening of 2026-09-16, when the
                        # model and the cost went side by side on one row and
                        # their column with them -- seven of cell and a
@@ -1579,7 +1583,7 @@ S_SUM = E_SUM + " "
 # measuring.  Between the chat text and column 1 there is deliberately no rule:
 # that boundary is a computed pad rather than a fixed gap, and a rule there
 # would have to be paid for in width.
-RIGHT_GRID = (11, 15, 14, 29, 14) if _PAD else (11, 13, 14, 29, 14)
+RIGHT_GRID = (11, 15, 14, 30, 14) if _PAD else (11, 13, 14, 30, 14)
 
 
 def set_mark_spacing(on: bool) -> None:
