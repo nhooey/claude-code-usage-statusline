@@ -15,10 +15,12 @@ from .claude_render import (render_cost, render_diff, render_tokens, model_spec,
 from .claude_records import Limits, squash, eta_finish, WAITING_TOOLS
 
 A_KIND_W, A_ID_W, A_STATE_W = 2, 10, 2
-A_HEAD_GAP, A_NAME_MIN, A_ACT_MIN, A_CLOCK_W, A_RATE_W, A_GAP, A_TICK_S = 1, 8, 8, 6, 7, 2, 5.0
+A_HEAD_GAP, A_NAME_MIN, A_ACT_MIN, A_CLOCK_W, A_RATE_W, A_GAP, A_TICK_S = 1, 8, 8, 6, 8, 2, 5.0
 # 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 A_SPLIT_W = 3 * (2 + GAUGE_W) + 2
 A_LIMIT_W, A_TREE_W = 2 + LIM_FIG_W, 2
+# 🪫 one column wider than 🔋, for the decimal limit_pct adds at digits=4.
+A_LIMIT_WEEK_W = A_LIMIT_W + 1
 # ⛳ and five for the figure: dur_fmt's widest is four, and an overrun
 # spends one more on its "+".
 A_ETA_FIG_W = 5
@@ -295,7 +297,7 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
     return "%s%s%s%s" % (E_ETA, mag_dim(left, MAG_DUR_S) + F_ETA,
                          pad_val(A_ETA_FIG_W, dur_fmt(left)), R)
 def render_agent_rate(rate, mark=E_RATE):
-    return "" if rate is None else "%s%s%s/s%s" % (mark, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(3, rate_fig(rate)), R)
+    return "" if rate is None else "%s %s%s/s%s" % (mark, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(3, rate_fig(rate)), R)
 def state_since(status, usage, phase, mode, task=None):
     """The epoch the agent entered the state `mode` names, or None.
 
@@ -328,7 +330,8 @@ def state_since(status, usage, phase, mode, task=None):
 def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None):
     """What the agent is doing, and for how long: the mode mark agent_state
     reads, then the time since state_since: the Doing cell, in the head right
-    after the phase circle and a space — "🟢 🔧 42s " where a rate reads "🛫200/s".  The unit stands where the rate's "/" does,
+    after the phase circle and a space — "🟢 🔧  42s " where a rate reads "🛫 200/s",
+    a space after the mark either way.  The unit stands where the rate's "/" does,
     so the figures stack down the panel.
 
     🤖 keeps the rate while the agent's records keep landing: the figure
@@ -343,7 +346,7 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
     t = time.time() if now is None else now
     since = state_since(status, usage, phase, mode, task)
     secs = None if since is None else max(0.0, t - since)
-    fig_w = A_RATE_W - vis_width(mode) - 1
+    fig_w = A_RATE_W - vis_width(mode) - 2
     if mode == E_WORK and status == "running" and rate is not None and (
             secs is None or secs < A_SILENT_S):
         return render_agent_rate(rate, mode)
@@ -351,7 +354,7 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
         return mode
     ink = (F_AMB if mode == E_WORK and secs >= A_SILENT_WARN_S
            else mag_dim(secs, MAG_DUR_S) + F_PRW)
-    return "%s%s%s %s" % (mode, ink, pad_val(fig_w, dur_fmt(secs)), R)
+    return "%s %s%s %s" % (mode, ink, pad_val(fig_w, dur_fmt(secs)), R)
 def render_who(name, act, room, branch=""):
     """The name, then 🌿 and the branch of a worktree the agent works in
     apart from the session's, then what it is doing, in that order of claim
