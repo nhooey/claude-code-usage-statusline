@@ -297,10 +297,10 @@ def run(sl, sr, scratch):
           (ctx(), sl.vis_width(ctx()), sl.RIGHT_GRID[2],
            end(ctx(), "k"), end(share(sl.S_READ, 34, 32), "٪")),
           ("🧠   115k    11٪", 16, 16, 9, 9))
-    check("an estimated 🧠 size carries a ~ and keeps both edges",
+    check("an estimated 🧠 carries a ~ on both fields and keeps both edges",
           (ANSI.sub("", sl.render_ctx(7, 71000, True)),
            ANSI.sub("", sl.render_ctx(11, 115000, True))),
-          ("🧠   ~71k     7٪", "🧠  ~115k    11٪"))
+          ("🧠   ~71k    ~7٪", "🧠  ~115k   ~11٪"))
 
     print("column 3: where the bill went, at two scopes")
 

@@ -185,10 +185,10 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
     one at 100٪ are different situations, where a plan limit at either is the
     same news.
 
-    `est` marks the size "~76k": the reading is an estimate made at a
+    `est` marks both fields "~76k ~7٪": the reading is an estimate made at a
     compaction no request has followed yet, see read_transcript.  humanize
-    writes at most four columns into a field of six, so the tilde fits
-    without moving the percentage.
+    writes at most four columns into a field of six, and "100٪" four into
+    seven, so each tilde fits without moving either edge.
     """
     if ctx_pct is None:
         return ""
@@ -202,7 +202,7 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
     return "%s%s%s%s%s%s%s" % (
         S_CTX, mag_dim(ctx_tokens, MAG_TOK) + F_PNK,
         pad_val(size_w, ("~" if est else "") + humanize(ctx_tokens)),
-        R, F_PNK, pad_val(pct_w, "%d%s" % (ctx_pct, E_PCT)), R)
+        R, F_PNK, pad_val(pct_w, "%s%d%s" % ("~" if est else "", ctx_pct, E_PCT)), R)
 
 
 def render_cost(cost_usd: str, mark: str = S_COST) -> str:
