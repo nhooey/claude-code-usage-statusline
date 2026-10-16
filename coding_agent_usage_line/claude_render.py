@@ -136,7 +136,8 @@ def render_rate_cache(rate: Optional[float], cache_pct: int,
                 + pad_val(3, pct2(cache_pct) + E_PCT) + R))
 
 
-def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
+def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
+               est: bool = False) -> str:
     """Live context occupancy, as a size and then a percentage — "🧠 115k   11٪".
 
     The window itself is deliberately not printed: it is constant for the
@@ -183,6 +184,11 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
     percentages keep, which matters here and nowhere else: a context at 99٪ and
     one at 100٪ are different situations, where a plan limit at either is the
     same news.
+
+    `est` marks the size "~76k": the reading is an estimate made at a
+    compaction no request has followed yet, see read_transcript.  humanize
+    writes at most four columns into a field of six, so the tilde fits
+    without moving the percentage.
     """
     if ctx_pct is None:
         return ""
@@ -195,8 +201,8 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int) -> str:
     pct_w = fmt.RIGHT_GRID[2] - turn_end
     return "%s%s%s%s%s%s%s" % (
         S_CTX, mag_dim(ctx_tokens, MAG_TOK) + F_PNK,
-        pad_val(size_w, humanize(ctx_tokens)), R,
-        F_PNK, pad_val(pct_w, "%d%s" % (ctx_pct, E_PCT)), R)
+        pad_val(size_w, ("~" if est else "") + humanize(ctx_tokens)),
+        R, F_PNK, pad_val(pct_w, "%d%s" % (ctx_pct, E_PCT)), R)
 
 
 def render_cost(cost_usd: str, mark: str = S_COST) -> str:
@@ -1081,7 +1087,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     usage = grid_row((
         render_style(pay.output_style),
         render_model_cost(pay.model, pay.effort, pay.cost_usd),
-        render_ctx(ctx_pct, tr.ctx_tokens),
+        render_ctx(ctx_pct, tr.ctx_tokens, tr.ctx_est),
         render_elapsed(tr.busy_s, tr.start_s, tr.tool_s, now, tr.blocked_s,
                        tr.eta, tr.turn_s, tr.agent_etas),
         render_date(now),

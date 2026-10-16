@@ -120,6 +120,8 @@ class Transcript(NamedTuple):
                             # see queue_step
     compactions: int = 0    # how often this window has been compacted; see
                             # is_compaction
+    ctx_est: bool = False   # ctx_tokens is an ESTIMATE, made at a compaction
+                            # no request has followed yet; 🧠 marks it "~"
     shells: int = 0         # background shells this thread started and has
                             # not heard the end of; see scan_background
     monitors: int = 0       # and Monitors, likewise
@@ -1488,19 +1490,43 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         down += a.out
     in_all = fresh + cwrite + cread
 
-    ctx = 0
-    for r in reqs:
-        if r.get("isSidechain") is not True:
-            u = r["message"]["usage"]
-            # Skip a request whose usage is all zero.  That is how an
-            # interrupted request is recorded, and letting it win the
-            # last-write would blank the whole 🧠 cell on the status line for
-            # the rest of the session.  See read_turns for the count.
-            _c = ((u.get("input_tokens") or 0)
-                  + (u.get("cache_creation_input_tokens") or 0)
-                  + (u.get("cache_read_input_tokens") or 0))
-            if _c:
-                ctx = _c
+    # Walked over `records` rather than `reqs` so a compaction boundary falls
+    # in its place among the readings; `kept` is the dedupe's choice of them.
+    kept = {id(r) for r in reqs}
+    ctx = first_ctx = 0
+    ctx_est = False
+    for r in records:
+        if r.get("isSidechain") is True:
+            continue
+        if is_compaction(r):
+            # A compaction writes no usage record, so until the next request
+            # the last reading is the size from BEFORE it — 300k on a window
+            # that now holds 80k.  postTokens is the compacted conversation
+            # alone (see read_turns); what it leaves out is the system prompt,
+            # the tools and the files and skills re-attached after it, and
+            # the session's first reading carries the same set.  Over 520
+            # local compactions on 2026-10-16, postTokens + that first reading
+            # came within -5.8k / +9.6k (p10 / p90) of the next request's
+            # reading, median -1k; postTokens + a fixed 46k, the fallback for
+            # a file with no reading before its boundary, ran -6k / +65k.
+            post = (r.get("compactMetadata") or {}).get("postTokens") or 0
+            if post:
+                ctx = post + (first_ctx or COMPACT_OVERHEAD)
+                ctx_est = True
+            continue
+        if id(r) not in kept:
+            continue
+        u = r["message"]["usage"]
+        # Skip a request whose usage is all zero.  That is how an
+        # interrupted request is recorded, and letting it win the
+        # last-write would blank the whole 🧠 cell on the status line for
+        # the rest of the session.  See read_turns for the count.
+        _c = ((u.get("input_tokens") or 0)
+              + (u.get("cache_creation_input_tokens") or 0)
+              + (u.get("cache_read_input_tokens") or 0))
+        if _c:
+            ctx, ctx_est = _c, False
+            first_ctx = first_ctx or _c
 
     user_ts = user_text = asst_ts = asst_text = ""
     for r in records:
@@ -1592,6 +1618,7 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         # a zero.
         cache_pct=int(100 * cread / in_all) if in_all > 0 else -1,
         ctx_tokens=ctx,
+        ctx_est=ctx_est,
         user_ts=user_ts,
         user_text=squash(user_text),
         asst_ts=asst_ts,
@@ -1742,6 +1769,12 @@ def queue_step(r: dict) -> int:
         return 0
     op = r.get("operation")
     return 1 if op == "enqueue" else -1 if op in QUEUE_DELIVERED else 0
+
+
+# What postTokens leaves out of a reading, when the transcript has no
+# reading before its compaction to take it from: the median over 520 local
+# compactions on 2026-10-16.  See the 🧠 estimate in read_transcript.
+COMPACT_OVERHEAD = 46000
 
 
 def is_compaction(r: dict) -> bool:

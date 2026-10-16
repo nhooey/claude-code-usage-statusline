@@ -185,6 +185,28 @@ def run(sl, sr, scratch):
     def tool_at(recs, now):
         tr = reading(recs, now)
         return tr.tool_at - sl.ts_epoch(stamp(0)) if tr.tool_at else 0.0
+    def billed(sec, rid, fresh, cr):
+        r = rec(sec, "assistant", [{"type": "text", "text": "ok"}])
+        r["requestId"] = rid
+        r["message"]["usage"] = {"input_tokens": fresh,
+                                 "cache_read_input_tokens": cr}
+        return r
+    boundary = {"type": "system", "subtype": "compact_boundary",
+                "timestamp": stamp(30),
+                "compactMetadata": {"trigger": "auto", "preTokens": 290000,
+                                    "postTokens": 30000}}
+    ctx_of = lambda recs: (lambda t: (t.ctx_tokens, t.ctx_est))(
+        reading(recs, None))
+    grown = [prompt(0, "go"), billed(2, "r1", 1000, 40000),
+             billed(20, "r2", 1000, 289000)]
+    check("🧠 after a compaction: postTokens plus the session's first "
+          "reading, marked an estimate",
+          ctx_of(grown + [boundary]), (71000, True))
+    check("and the next request's reading replaces it",
+          ctx_of(grown + [boundary, billed(40, "r3", 2000, 74000)]),
+          (76000, False))
+    check("with no reading before it, postTokens plus COMPACT_OVERHEAD",
+          ctx_of([boundary]), (30000 + sl.COMPACT_OVERHEAD, True))
     base = sl.ts_epoch(stamp(0))
     run1 = [prompt(0, "go"), rec(2, "assistant", [use("a", "Bash")])]
     check("a Bash call with no result yet: its start",
@@ -275,6 +297,10 @@ def run(sl, sr, scratch):
           (ctx(), sl.vis_width(ctx()), sl.RIGHT_GRID[2],
            end(ctx(), "k"), end(share(sl.S_READ, 34, 32), "٪")),
           ("🧠   115k    11٪", 16, 16, 9, 9))
+    check("an estimated 🧠 size carries a ~ and keeps both edges",
+          (ANSI.sub("", sl.render_ctx(7, 71000, True)),
+           ANSI.sub("", sl.render_ctx(11, 115000, True))),
+          ("🧠   ~71k     7٪", "🧠  ~115k    11٪"))
 
     print("column 3: where the bill went, at two scopes")
 
