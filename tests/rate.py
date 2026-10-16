@@ -425,9 +425,10 @@ def run(sl, sr, scratch):
           [dims(sl.render_rate_cache(1000.0, 70))[0][0],
            D in sl.render_rate_cache(None, 70)],
           [False, False])
-    check("🧠: the size takes the token cut, the percentage stays bright",
-          dims(sl.render_ctx(45, sl.MAG_TOK - 1000)),
-          [(True, "99k"), (False, "45٪")])
+    check("🧠: the size takes the token cut, and the percentage with it",
+          [dims(sl.render_ctx(45, sl.MAG_TOK - 1000)),
+           dims(sl.render_ctx(45, sl.MAG_TOK))],
+          [[(True, "99k"), (True, "45٪")], [(False, "100k"), (False, "45٪")]])
     check("💰: a dollar is the line, on the status line and the agent rows",
           [dims(sl.render_cost(v))[0][0] for v in ("0.99", "1.0", "115")],
           [True, False, False])
@@ -477,6 +478,10 @@ def run(sl, sr, scratch):
            dims(sr.render_agent_ctx(sl.MAG_TOK - 1))[0][0],
            dims(sr.render_agent_ctx(sl.MAG_TOK))[0][0]],
           [True, False, True, False, True, False])
+    check("and the agent row's 🧠 share dims with its size",
+          [[d for d, _ in dims(sr.render_agent_ctx(v, 1000000))]
+           for v in (sl.MAG_TOK - 1000, sl.MAG_TOK)],
+          [[True, True], [False, False]])
     check("and each 🤖 🔧 🚦 gauge dims on its own seconds, not its share",
           [d for d, _ in dims(sr.render_agent_split(1800.0, 599.0, 601.0))],
           [True, False, False])

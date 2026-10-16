@@ -167,17 +167,13 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
     which field is which — stands as it did; it is outweighed here by the
     stacking, and the cost line's two rows stack with each other regardless.
 
-    One hue across both fields, and it is the percentage's.  The brightness
-    is not: the size dims under MAG_TOK like every other token count on the
-    two readouts, and the percentage stays bright at any value, because its
-    window is its ceiling and a level with a ceiling needs no cut to say what
-    high is — the case MAG_TOK makes for the limit rows.  This docstring
-    argued until 2026-09-14 that the two are one quantity said twice, so
-    dimming either half would rank a figure against itself; the reply is
-    that they are not ranked against each other but each against its own
-    kind — the size against the 🧩 figures two rows up that it stacks under,
-    the percentage against nothing.  115k of a 1M window reads bright-dim
-    and says exactly that: a lot of context, and a small part of the room.
+    One hue and one brightness across both fields: the size dims under
+    MAG_TOK like every other token count on the two readouts, and the
+    percentage dims with it, to Neil's spec on 2026-10-16.  Until then the
+    percentage stayed bright at any value, on the argument that a level with
+    a ceiling needs no cut to say what high is, and 115k of a 1M window read
+    bright-dim.  The pair now reads as one quantity said twice, ranked once
+    — the size against the 🧩 figures two rows up that it stacks under.
 
     Always pink rather than tiered, so an approaching window limit reads off
     the number rather than the colour.  It also drops the 99 clamp the other
@@ -199,10 +195,11 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
                 + SHARE_FIG_W)
     size_w = turn_end - vis_width(S_CTX)
     pct_w = fmt.RIGHT_GRID[2] - turn_end
+    dim = mag_dim(ctx_tokens, MAG_TOK)
+    tilde = "~" if est else ""
     return "%s%s%s%s%s%s%s" % (
-        S_CTX, mag_dim(ctx_tokens, MAG_TOK) + F_PNK,
-        pad_val(size_w, ("~" if est else "") + humanize(ctx_tokens)),
-        R, F_PNK, pad_val(pct_w, "%s%d%s" % ("~" if est else "", ctx_pct, E_PCT)), R)
+        S_CTX, dim + F_PNK, pad_val(size_w, tilde + humanize(ctx_tokens)), R,
+        dim + F_PNK, pad_val(pct_w, "%s%d%s" % (tilde, ctx_pct, E_PCT)), R)
 
 
 def render_cost(cost_usd: str, mark: str = S_COST) -> str:

@@ -140,8 +140,9 @@ def render_agent_ctx(ctx_tokens, window=0):
     payload gives no window; its column stays, so the cells after it hold."""
     if ctx_tokens <= 0: return ""
     pct = "%d%s" % (int(ctx_tokens * 100 / window), E_PCT) if window > 0 else ""
-    return "%s%s%s%s %s%s%s" % (S_CTX, mag_dim(ctx_tokens, MAG_TOK) + F_PNK, pad_val(4, humanize(ctx_tokens)), R,
-                                F_PNK, pad_val(A_CTX_PCT_W, pct), R)
+    dim = mag_dim(ctx_tokens, MAG_TOK)
+    return "%s%s%s%s %s%s%s" % (S_CTX, dim + F_PNK, pad_val(4, humanize(ctx_tokens)), R,
+                                dim + F_PNK, pad_val(A_CTX_PCT_W, pct), R)
 def render_compactions(n):
     """🤏 and how often the agent's window has been compacted; "" for never."""
     return "" if not n else "%s%s%d%s" % (E_ROW_COMPACT, F_PNK, n, R)
