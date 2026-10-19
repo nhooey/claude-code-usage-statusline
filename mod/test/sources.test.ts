@@ -119,11 +119,9 @@ test("tracker: plist store to reading", async () => {
       } else {
         same(trackerReading(plistLoads(bytes)), c.tracker_reading, c.name);
       }
-      // Where Python raises out of claude_usage_tracker (a store expat
-      // refuses, or one that is not a dict), the port is no reading: the
-      // band must not fall over on a store the status line falls over on.
-      const raised = isDict(c.expected) && "raises" in c.expected;
-      same(await claudeUsageTracker(env), raised ? {} : c.expected, c.name);
+      // A store expat refuses, or one that is not a dict, is no reading in
+      // both languages: neither readout falls over on it.
+      same(await claudeUsageTracker(env), c.expected, c.name);
       count("tracker");
     }
   } finally {

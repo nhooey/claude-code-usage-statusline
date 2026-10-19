@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from . import state
 from datetime import datetime, timezone
+from xml.parsers.expat import ExpatError
 
 VALID_SOURCES = ("auto", "native", "none", "off", "claude-usage-tracker",
                  "codex-app-server", "anthropic-admin", "openai-admin",
@@ -540,7 +541,9 @@ def claude_usage_tracker():
                                             ("seven_day_opus", raw.get("weekly_opus_pct"), raw.get("weekly_resets_at"), 604800)):
             if pct is not None: windows.append({"id": ident, "duration_seconds": duration, "used_percent": pct, "resets_at": reset})
         return normalise({"schema_version":1, "as_of":raw.get("as_of"), "windows":windows}, "claude-usage-tracker")
-    except (OSError, ValueError, TypeError): return {}
+    # ExpatError is a store that is not XML, and AttributeError one that is
+    # not a dict; either used to escape and take the status line down.
+    except (OSError, ValueError, TypeError, ExpatError, AttributeError): return {}
 
 def collect(agent, spec="auto", account="default", period="day", context=None, now=None):
     """Collect one selected reading with source/account/UTC-period isolation."""
