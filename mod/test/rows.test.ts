@@ -15,7 +15,7 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  accountText, bandLines, bandRows, fixedKeys,
+  accountParts, bandLines, bandRows, fixedKeys,
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
@@ -159,21 +159,24 @@ test("the receipt bills the cost line's turn", () => {
   assert.equal(receiptTurn([]), -1);
 });
 
-test("the footer's account text: the workspace, then the 💳 account details", () => {
+test("the footer's account text: the workspace and 💳, then 📅 🕐 apart", () => {
   const st = settings({});
   const fig = document("status/01-baseline@196");
-  const text = inZone(fig, () => accountText(st, fig, []));
-  assert.ok(text.includes("💳"), text);
+  const [head, when] = inZone(fig, () => accountParts(st, fig, []));
+  assert.ok(head.includes("💳") && !head.includes("📅"), head);
+  assert.ok(when.startsWith("📅") && when.includes("🕐"), when);
   // The workspace first, 📦 🌿 📁, as 🎮's label draws it.
-  assert.ok(text.startsWith("📦") && text.indexOf("📁") < text.indexOf("💳"),
-    text);
-  assert.ok(!inZone(fig, () => accountText(st, fig, ["account.workspace"]))
+  assert.ok(head.startsWith("📦") && head.indexOf("📁") < head.indexOf("💳"),
+    head);
+  assert.ok(!inZone(fig, () => accountParts(st, fig, ["account.workspace"]))[0]
     .includes("📦"));
-  assert.equal(inZone(fig, () => accountText(st, fig, ["account"])), "");
+  assert.deepEqual(inZone(fig, () => accountParts(st, fig, ["account"])),
+    ["", ""]);
   // 🔋 hidden in every row takes its 🔜 with it, and leaves 🪫's.
-  const no5h = inZone(fig, () => accountText(st, fig, ["*.plan.five_hour"]));
+  const no5h = inZone(fig, () => accountParts(st, fig,
+    ["*.plan.five_hour"]))[0];
   assert.ok(!no5h.includes("🔋") && no5h.includes("🪫"), no5h);
-  assert.equal(no5h.split("🔜").length, text.split("🔜").length - 1, no5h);
+  assert.equal(no5h.split("🔜").length, head.split("🔜").length - 1, no5h);
 });
 
 test("a hidden context.share leaves 🧠's size and drops its ٪", () => {
