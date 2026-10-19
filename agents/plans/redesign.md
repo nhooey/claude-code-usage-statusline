@@ -256,6 +256,10 @@ same version-1 reading as its output and shared cases pinning it.
    and the published context window), which the mod's handlers take on in
    step 5. `agent_window_shares` stays Python's, with the agent panel.
 4. **The cells and the layout in TypeScript,** against the shared cases.
+   Decided 2026-10-19: today's cells are ported as they are first, against
+   the 228 goldens and the agent panel's own cases, so the port is checked
+   byte for byte. The redesigned grid is then built in TypeScript, and the
+   Python cells, which the agent panel keeps, are brought to it after.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
 6. **The switch.** The band runs beside the status line until the two agree;
