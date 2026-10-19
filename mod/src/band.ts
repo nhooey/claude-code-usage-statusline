@@ -475,6 +475,16 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
     text;
 }
 
+/** A ruler as wide as `tail`, laid where it ends at `cols`: each column
+ * the last digit of its number, counting the terminal's first as 1. */
+export function footerRuler(st: Settings, tail: string, cols: number): string {
+  const n = visWidth(tail, st.widths);
+  const end = cols - RIGHT_EDGE;
+  let out = "";
+  for (let c = end - n + 1; c <= end; c++) out += String(c % 10);
+  return out;
+}
+
 /** The columns between the footer's workspace, its account and its 📅 🕐,
  * at most. */
 export const FOOTER_GAP = 4;

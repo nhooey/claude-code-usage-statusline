@@ -28,6 +28,11 @@ export const CONFIG = {
   // receipt stamps a turn — "turn", "agent" or "session" — the rows under
   // it staying on the band between turns (asked 2026-10-20).
   stampUntil: "session" as StampUntil,
+  // Draw the footer's tail as a ruler of column digits, each the last digit
+  // of the column the mod reckons it lands in, to check the padding in each
+  // footer shape: right, it ends on the band's last column (asked
+  // 2026-10-20).
+  footerRuler: true,
   // --mark-spacing and --subscript-decimals.
   markSpacing: true,
   subscriptDecimals: false,

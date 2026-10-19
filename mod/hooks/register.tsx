@@ -26,7 +26,8 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { bandLines, bandRows, footerTail, modeOfHint, workspaceOf }
+import { bandLines, bandRows, footerRuler, footerTail, modeOfHint,
+  workspaceOf }
   from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
@@ -532,13 +533,15 @@ export const register: Register = on => {
     const mode = hintMode ?? permissionMode
     const doc = await read($, status)
     if (doc === null) return next(e)
-    const tail = footerTail(await settingsOf($),
-      at(doc as Dict, await read($, clockNow)), CONFIG.hide,
-      // The band's width before the viewport's: the viewport read 10
-      // columns wider than the terminal drew, pushing the 🕐 off the row
-      // (seen live 2026-10-20), and the band's is where its rows end.
-      e.props.hint, bandCols || (e.viewport?.columns ?? 80), mode,
-      await home($))
+    const st = await settingsOf($)
+    // The band's width before the viewport's: the viewport read 10 columns
+    // wider than the terminal drew, pushing the 🕐 off the row (seen live
+    // 2026-10-20), and the band's is where its rows end.
+    const cols = bandCols || (e.viewport?.columns ?? 80)
+    const text = footerTail(st, at(doc as Dict, await read($, clockNow)),
+      CONFIG.hide, e.props.hint, cols, mode, await home($))
+    const tail = CONFIG.footerRuler && text ? footerRuler(st, text, cols)
+      : text
     // What the padding was worked out from, each time it changes, so a
     // tail drawn too wide can be checked against the line it was given.
     const seen = JSON.stringify([e.props.hint, mode ?? null, bandCols,
