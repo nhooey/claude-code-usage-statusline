@@ -141,7 +141,7 @@ type Sample = {
  * thread answering it, and two agents it started. */
 export function sample(st: Settings): Sample {
   const account: Row = { scope: "account", label: [
-    piece("account.name", E_ACCT + " account  "),
+    piece("name.label", E_ACCT + " account  "),
     piece("plan.reset", E_SESS + " " + E_RESET + " " +
       durFmt(st, 6.7 * 60) + "  " + E_WEEK + " " + E_RESET + " " +
       durFmt(st, 1.8 * 86400) + "  ", null, 0, true),
@@ -149,14 +149,14 @@ export function sample(st: Settings): Sample {
     piece("clock.time", E_TIME + " 13:06:02", null, 3, true)],
   cells: cells(st, { five: 15.0, week: 87.0 }) };
   const turn: Row = { scope: "turn", label: [
-    piece("turn.name", E_TURN + " "),
+    piece("name.label", E_TURN + " "),
     piece("chat.prompt", "Why is the build slow?", "F_CHAT_B")],
   cells: cells(st, { cost: 0.21, ctx: ["+", 34_000, 3],
     tok: [28_000, 7_100], cache: 95, clock: TURN_START,
     eta: [TURN_START, 120], split: [240, 150, 60], five: 0.03, week: 0.05,
     diff: [12, 3] }) };
   const main: Row = { scope: "main", label: [
-    piece("main.name", E_BOT + " "),
+    piece("name.label", E_BOT + " "),
     piece("chat.reply",
       "The test step takes 80٪ of the build: Jest runs serially",
       "F_CHAT_B")],
@@ -166,7 +166,7 @@ export function sample(st: Settings): Sample {
     split: [9 * 3600, 4 * 3600, 3 * 3600], five: 0.9, week: 2.1,
     diff: [3100, 180], rate: 220 }) };
   const session: Row = { scope: "session", label: [
-    piece("session.name", E_SESSION + " session  "),
+    piece("name.label", E_SESSION + " session  "),
     piece("workspace.project", E_PROJ + "app ", "F_BLU"),
     piece("workspace.branch", E_GIT_OK + "main  ", "F_GRN"),
     piece("workspace.dir", E_DIR + "~/src/app/web  ", "F_BLU", 3),
@@ -177,8 +177,8 @@ export function sample(st: Settings): Sample {
     week: 3.8, diff: [3400, 214] }) };
   const agents: Row[] = [
     { scope: "agent", depth: 1, label: [
-      piece("agent.kind", renderKind("general-purpose", "") + "🟢 "),
-      piece("agent.name", "Port renderer  ", "F_BLU"),
+      piece("name.kind", renderKind("general-purpose", "") + "🟢 "),
+      piece("name.label", "Port renderer  ", "F_BLU"),
       piece("chat.doing", "Editing claude_render.py", "F_CHAT_B")],
     cells: cells(st, { model: ["claude-opus-5-5", "high"], cost: 0.4,
       ctx: [124_000, 1_000_000], tok: [66_000, 3_600], cache: 93,
@@ -186,8 +186,8 @@ export function sample(st: Settings): Sample {
       split: [14 * 60, 5 * 60, 60], five: 0.08, week: 0.10, diff: [48, 9],
       rate: 1_500 }) },
     { scope: "agent", depth: 2, label: [
-      piece("agent.kind", renderKind("Explore", "") + "🟢 "),
-      piece("agent.name", "Find callers of seg()  ", "F_BLU"),
+      piece("name.kind", renderKind("Explore", "") + "🟢 "),
+      piece("name.label", "Find callers of seg()  ", "F_BLU"),
       piece("chat.doing", "Searching", "F_CHAT_B")],
     cells: cells(st, { model: ["claude-sonnet-5-5", "medium"], cost: 0.1,
       ctx: [48_000, 200_000], tok: [24_000, 1_000], cache: 90,
@@ -198,9 +198,9 @@ export function sample(st: Settings): Sample {
   // The receipt is the band's 🎤 and 🎮 rows as they stood when the turn
   // ended, behind the receipt's 📊.
   const receipt = [
-    { ...turn, label: [piece("turn.receipt", E_COSTLINE + " "),
+    { ...turn, label: [piece("name.receipt", E_COSTLINE + " "),
       ...turn.label] },
-    { ...session, label: [piece("session.receipt", E_COSTLINE + " "),
+    { ...session, label: [piece("name.receipt", E_COSTLINE + " "),
       ...session.label] },
   ];
   return { account, turn, main, session, receipt, agents };
