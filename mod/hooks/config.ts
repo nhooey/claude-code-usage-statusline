@@ -32,7 +32,7 @@ export const CONFIG = {
   // of the column the mod reckons it lands in, to check the padding in each
   // footer shape: right, it ends on the band's last column (asked
   // 2026-10-20).
-  footerRuler: true,
+  footerRuler: false,
   // --mark-spacing and --subscript-decimals.
   markSpacing: true,
   subscriptDecimals: false,
