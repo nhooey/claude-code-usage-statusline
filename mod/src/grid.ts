@@ -18,9 +18,9 @@ import {
   CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN, PANEL_CHROME, RIGHT_EDGE,
   VAL_W, VAL2_W,
 } from "./spec.ts";
-import { fitCols, seg, visWidth } from "./formatting.ts";
+import { seg, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
-import { span, spans, text, width } from "./spans.ts";
+import { cut, span, spans, width } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import {
   A_CLOCK_W, A_LIMIT_W, A_LIMIT_WEEK_W, A_RATE_W, A_SPLIT_W, aCtxW, aDiffW,
@@ -116,8 +116,7 @@ export function chrome(depth: number | undefined): Span[] {
 }
 
 /** The row's label in `room` columns: the ranked pieces leave first,
- * lowest rank first, then what is left is cut.  A cut label is drawn
- * plain, as the mockup draws it. */
+ * lowest rank first, then what is left is cut, keeping its colours. */
 export function labelText(st: Settings, row: Row,
   patterns: readonly string[], room: number): Span[] {
   let pieces = row.label.filter((p) =>
@@ -130,10 +129,7 @@ export function labelText(st: Settings, row: Row,
     pieces = pieces.filter((p) => p.drop !== rank);
   }
   const out = all();
-  if (width(out, st.widths) > room) {
-    return [span(fitCols(st, text(out), room))];
-  }
-  return out;
+  return width(out, st.widths) > room ? cut(out, room, st.widths) : out;
 }
 
 /** Whether the row draws column `key`: it has a figure for it, and no

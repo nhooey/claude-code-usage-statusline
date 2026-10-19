@@ -21,7 +21,7 @@ from typing import Dict, List, NamedTuple, Optional, Sequence, Union
 
 from . import formatting as fmt
 from . import claude_subagent_render as sub
-from .spans import Span, spans, text, width
+from .spans import Span, cut, spans, width
 from .spec import (CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN,
                    PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
 
@@ -101,8 +101,7 @@ def chrome(depth: Optional[int]) -> List[Span]:
 
 def label_text(row: Row, patterns: Sequence[str], room: int) -> List[Span]:
     """The row's label in `room` columns: the ranked pieces leave first,
-    lowest rank first, then what is left is cut.  A cut label is drawn
-    plain, as the mockup draws it."""
+    lowest rank first, then what is left is cut, keeping its colours."""
     pieces = [p for p in row.label
               if not hidden(patterns, row.scope + "." + p.path)]
     ranks = sorted({p.drop for p in pieces if p.drop})
@@ -115,9 +114,7 @@ def label_text(row: Row, patterns: Sequence[str], room: int) -> List[Span]:
             break
         pieces = [p for p in pieces if p.drop != rank]
     out = whole()
-    if width(out) > room:
-        return [Span(fmt.fit_cols(text(out), room))]
-    return out
+    return cut(out, room) if width(out) > room else out
 
 
 def _shows(row: Row, key: str, path: str, patterns: Sequence[str]) -> bool:
