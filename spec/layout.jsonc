@@ -1306,11 +1306,17 @@
   // figures.  Nothing the program draws today reads these yet.
   // ════════════════════════════════════════════════════════════════════════════
 
-  // The five columns Claude Code keeps for the band's [-] button.  The panel's
-  // rows and the receipt end there too, so all three readouts share one edge.
+  // The five columns Claude Code keeps for the band's [-] button.  No row of
+  // the band, the panel or the receipt runs into them; where LABEL_MAX caps
+  // the grid, all three end short of them, together.
   "RIGHT_EDGE": 5,
   // The fewest columns a row's label keeps before columns start to drop.
   "LABEL_MIN": 20,
+  // The most columns of label before the columns start, on a terminal wider
+  // than that and the kept columns need: the grid stops there and the spare
+  // width stays empty at the right, so a short label is not drawn ~70
+  // columns from its figures.  Decided 2026-10-19 from a 240-column screen.
+  "LABEL_MAX": 40,
   // The panel's chrome before a row of the session's own, drawn by Claude
   // Code: two blanks, its pointer and one blank, "  ◯ ", measured with the
   // align-probe mod on 2026-10-19.  A nested row's is a guess: two more blanks

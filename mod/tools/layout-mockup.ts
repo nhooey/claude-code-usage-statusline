@@ -18,8 +18,9 @@
 //   🤖💬 the main thread, 🎮 the session, and one row per agent.  The band
 //   draws 🎤 and 🎮 only while the turn runs; once it ends, the receipt
 //   carries them.
-// - Every row's cells end RIGHT_EDGE columns short of the terminal's right
-//   edge, where Claude Code draws the band's [-] button.
+// - No row runs into the RIGHT_EDGE columns at the terminal's right edge,
+//   where Claude Code draws the band's [-] button; on a wide terminal the
+//   grid stops after LABEL_MAX columns of label, short of them.
 // - When the terminal is too narrow for every label to keep LABEL_MIN
 //   columns, whole columns drop on every row together, in DROP_ORDER.
 // - --hide takes a path, scope[.group[.metric]], with * for any one part:
