@@ -23,7 +23,7 @@ from . import formatting as fmt
 from . import claude_subagent_render as sub
 from .spans import Span, spans, text, width
 from .spec import (CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN,
-                   RIGHT_EDGE, VAL2_W, VAL_W)
+                   PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
 
 
 class Piece(NamedTuple):
@@ -90,11 +90,13 @@ def hidden(patterns: Sequence[str], path: str) -> bool:
 
 
 def chrome(depth: Optional[int]) -> List[Span]:
-    """What Claude Code draws before a panel row: the pointer, and two more
-    columns per level of nesting.  A row outside the panel has none."""
+    """What Claude Code draws before a panel row: PANEL_CHROME columns at
+    depth 1, blanks then the pointer, and two more blanks per level below
+    it.  A row outside the panel has none."""
     if depth is None:
         return []
-    return [Span("  " * depth + "◯ ", None, True)]
+    return [Span(" " * (PANEL_CHROME - 2 + 2 * (depth - 1)) + "◯ ",
+                 None, True)]
 
 
 def label_text(row: Row, patterns: Sequence[str], room: int) -> List[Span]:

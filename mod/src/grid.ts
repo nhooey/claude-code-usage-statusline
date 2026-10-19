@@ -15,7 +15,8 @@
 // Settings, as claude_subagent_render.ts computes them.  Nothing here joins
 // spans into escape codes: that is the printing's job.
 import {
-  CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN, RIGHT_EDGE, VAL_W, VAL2_W,
+  CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN, PANEL_CHROME, RIGHT_EDGE,
+  VAL_W, VAL2_W,
 } from "./spec.ts";
 import { fitCols, seg, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -105,11 +106,13 @@ export function hidden(patterns: readonly string[], path: string): boolean {
   });
 }
 
-/** What Claude Code draws before a panel row: the pointer, and two more
- * columns per level of nesting.  A row outside the panel has none. */
+/** What Claude Code draws before a panel row: PANEL_CHROME columns at
+ * depth 1, blanks then the pointer, and two more blanks per level below
+ * it.  A row outside the panel has none. */
 export function chrome(depth: number | undefined): Span[] {
   if (depth === undefined) return [];
-  return [span("  ".repeat(depth) + "◯ ", null, true)];
+  return [span(" ".repeat(PANEL_CHROME - 2 + 2 * (depth - 1)) + "◯ ", null,
+    true)];
 }
 
 /** The row's label in `room` columns: the ranked pieces leave first,
