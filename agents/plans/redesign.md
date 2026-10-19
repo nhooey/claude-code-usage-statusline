@@ -382,8 +382,9 @@ Code's own; no hook reaches the main row. Measured with a throwaway mod on
 - **The columns line up on screen.** With the panel laid out for the
   terminal's width, the band's, the receipt's and the panel's 💰, 🧠, 🧩 and
   💾 fell in the same screen columns, checked by eye in tmux inside Ghostty
-  (the `tmux` profile) and in bare Ghostty (the `unknown` profile, no
-  `_PAD`). JediTerm, bare and under tmux, is still to check. Every row
+  (the `tmux` profile), in bare Ghostty (the `unknown` profile, no `_PAD`)
+  and in tmux inside JediTerm (the `tmux` profile again). In all three the
+  band ended before `[-]`. Bare JediTerm is still to check. Every row
   carries the same glyphs before each of those columns, so a width the
   profile gets wrong shifts all rows alike; only the band's right edge
   against `[-]` shows it.

@@ -160,14 +160,16 @@ in [Glyphs and terminals](glyphs-and-terminals.md).
 
 **Terminal profiles not measured.**
 
-- Bare Ghostty (outside tmux) gets the `unknown` profile. Whether it wants
-  the icon padding `_PAD` gives `iterm` and `tmux` is untested; only
-  `--selftest`'s drawn rows can show it.
-- tmux over JediTerm has never been measured. `term_profile` checks `TMUX`
-  first, on evidence from tmux over iTerm2 only. Running
-  `coding-agent-usage-line.py --agent claude --selftest` in tmux inside Rider
-  settles it: a non-zero delta on any row means the combination needs its
-  own branch.
+- Bare Ghostty (outside tmux) gets the `unknown` profile, without the icon
+  padding `_PAD` gives `iterm` and `tmux`. The redesign's alignment test
+  looked right there by eye: every row's columns met and the band ended
+  before `[-]`. `--selftest` has not been run there, and only its drawn rows
+  show a single glyph's width.
+- tmux over JediTerm gets the `tmux` profile, since `term_profile` checks
+  `TMUX` first. The redesign's alignment test looked right there by eye
+  too. Running `coding-agent-usage-line.py --agent claude --selftest` in tmux
+  inside Rider still settles it per glyph: a non-zero delta on any row means
+  the combination needs its own branch.
 
 **Column 1 is usually empty.** It shows the output style or the PR number,
 and on a default-style session with no open PR it is eleven columns of

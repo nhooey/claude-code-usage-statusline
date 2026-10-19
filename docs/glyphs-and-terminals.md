@@ -121,9 +121,11 @@ empty override tables in every profile; the entries are kept as a record of
 how those terminals behave.
 
 `tmux` is checked first on the evidence that tmux over iTerm2 measured the
-same as bare iTerm2. tmux inside JediTerm has never been measured. If you run
-that combination, `--selftest` in it settles whether the `tmux` profile is
-right there: a non-zero delta on any row means it needs its own profile.
+same as bare iTerm2. tmux inside JediTerm has been checked only by eye: the
+redesign's alignment test drew the band, the receipt and the agent panel
+there with every column in line and the band ending before `[-]`. `--selftest`
+in that combination settles whether the `tmux` profile is right glyph by
+glyph: a non-zero delta on any row means it needs its own profile.
 
 ## Measurements on record
 
