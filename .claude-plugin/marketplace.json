@@ -1,0 +1,12 @@
+{
+  "name": "claude-code-usage-statusline",
+  "owner": { "name": "Neil Hooey" },
+  "description": "The usage line's Claude Code mod, from this repository",
+  "plugins": [
+    {
+      "name": "usage-band",
+      "source": "./mod",
+      "description": "The usage line's grid in Claude Code's own screen: the band above the prompt, the receipt on each turn's closing line, and the turn's tag beside its prompt"
+    }
+  ]
+}

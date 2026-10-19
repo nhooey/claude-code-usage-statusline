@@ -97,6 +97,26 @@ both.
 
 ### Running it
 
+For every session, installed from this repository's marketplace
+(`.claude-plugin/marketplace.json` at its root):
+
+    claude plugin marketplace add "$PWD"
+    claude plugin install usage-band@claude-code-usage-statusline
+
+or from GitHub, in a session:
+
+    /plugin install usage-band --marketplace nhooey/claude-code-usage-statusline
+
+The install is a copy, under `~/.claude/plugins/cache/`, so a change here
+reaches it only through an update, then `/reload-plugins` in each session:
+
+    claude plugin marketplace update claude-code-usage-statusline
+    claude plugin update usage-band@claude-code-usage-statusline
+
+The mod replaces the status line and the Stop hook's receipt: leave
+`statusLine` and the `--mode cost` Stop hook out of `settings.json`. The
+agent panel, `subagentStatusLine` with `--mode subagent`, stays.
+
 For one session, with nothing installed and no settings changed:
 
     claude --plugin-dir "$PWD/mod"
