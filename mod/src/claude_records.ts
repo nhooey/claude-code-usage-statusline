@@ -248,7 +248,7 @@ export interface Payload {
 
 /** What one pass over the transcript yields for the status line.
  *
- * `tokUp` is null only when there was no transcript to read at all, which
+ * `tok_up` is null only when there was no transcript to read at all, which
  * is a different state from a transcript that exists and is empty: the
  * first suppresses the token segment, the second renders it as zeros.  Two
  * empty states, two renderings, and conflating them was how a fresh session

@@ -331,7 +331,7 @@ class ClaudeUsageTrackerSource:
 
     CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST overrides that with a path to
     an exported plist
-    file.  It is the seam tests/usage-source.sh drives — a fixture store, on
+    file.  It is the seam tests/usage-source.py drives — a fixture store, on
     any platform, with no app installed — and it doubles as the escape hatch
     for reading a store copied off another machine.
     """
