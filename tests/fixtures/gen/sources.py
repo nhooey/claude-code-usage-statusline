@@ -17,8 +17,9 @@ What the files hold:
                   _cached_reading out.
   native.json     a payload's rate_limits in, native_reading out.
   tracker.json    tracker stores as plist text in, tracker_reading and
-                  claude_usage_tracker out.  A store Python raises on is
-                  marked so; the port returns no reading there instead.
+                  claude_usage_tracker out.  A store tracker_reading
+                  raises on is marked so; claude_usage_tracker returns no
+                  reading there, in both languages.
   command.json    scripts in, command_reading and the stdin it sent out.
   limits.json     readings and a time zone in, legacy_limits out.
   collect.json    scenarios: steps sharing one state directory, each a

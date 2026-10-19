@@ -623,9 +623,7 @@
   "tz": "UTC"
  },
  {
-  "expected": {
-   "raises": "ExpatError"
-  },
+  "expected": {},
   "name": "mismatched tags",
   "plist": "<plist><dict></plist>",
   "tracker_reading": {
@@ -634,9 +632,7 @@
   "tz": "UTC"
  },
  {
-  "expected": {
-   "raises": "ExpatError"
-  },
+  "expected": {},
   "name": "undefined entity",
   "plist": "<plist><dict><key>a</key><string>&nope;</string></dict></plist>",
   "tracker_reading": {
@@ -645,9 +641,7 @@
   "tz": "UTC"
  },
  {
-  "expected": {
-   "raises": "AttributeError"
-  },
+  "expected": {},
   "name": "root array",
   "plist": "<plist><array/></plist>",
   "tracker_reading": {
@@ -656,9 +650,7 @@
   "tz": "UTC"
  },
  {
-  "expected": {
-   "raises": "AttributeError"
-  },
+  "expected": {},
   "name": "empty plist",
   "plist": "<plist></plist>",
   "tracker_reading": {
