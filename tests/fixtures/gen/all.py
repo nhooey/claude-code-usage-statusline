@@ -14,6 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
+import calib  # noqa: E402
 import cases  # noqa: E402
 import cost  # noqa: E402
 import records  # noqa: E402
@@ -28,6 +29,7 @@ status.main(ROOT)
 cost.main(ROOT)
 cases.main(ROOT)
 # Under 3.9 as well: 3.12's sum() of floats rounds differently.
+calib.main()
 records.main()
 # Last, since it sets TZ for the process.  Under /usr/bin/python3: its
 # expected epochs are 3.9's fromisoformat, quirks included.

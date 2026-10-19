@@ -1,0 +1,8371 @@
+{
+ "cases": [
+  {
+   "args": [
+    "2026-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 01:10:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00.123Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 01:10:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00ZZ"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 01:10:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-8-6T1:2:3Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-06 01:02:03",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-08-16t01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 01:10:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "٢٠٢٦-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 01:10:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-03-08T07:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-08 07:30:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-11-01T05:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 05:30:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-11-01T06:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 06:30:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-03-29T01:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-29 01:30:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-10-25T00:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-10-25 00:30:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-04-04T14:45:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-04-04 14:45:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-02-30T00:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-08-16T24:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-08-16 01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "bogus"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    ""
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00+00:00"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "9999-12-31T23:59:59Z"
+   ],
+   "fn": "_local_naive",
+   "out": "9999-12-31 23:59:59",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "0001-01-01T00:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "0001-01-01 00:00:00",
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 02:18:00",
+    null,
+    [
+     1786846680.0,
+     null
+    ],
+    "2026-08-16 02:18:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 07:18:00",
+    [
+     null,
+     1786259880.0
+    ],
+    "None|2026-08-09 07:18:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 01:31:00",
+    null,
+    [
+     1786843860.0,
+     null
+    ],
+    "2026-08-16 01:31:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 06:31:00",
+    [
+     null,
+     1786257060.0
+    ],
+    "None|2026-08-09 06:31:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-08 02:30:00",
+    null,
+    [
+     1772937000.0,
+     null
+    ],
+    "2026-03-08 02:30:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-01 07:30:00",
+    [
+     null,
+     1772350200.0
+    ],
+    "None|2026-03-01 07:30:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-11-01 01:30:00",
+    null,
+    [
+     1793496600.0,
+     null
+    ],
+    "2026-11-01 01:30:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-25 06:30:00",
+    [
+     null,
+     1792909800.0
+    ],
+    "None|2026-10-25 06:30:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-29 01:30:00",
+    null,
+    [
+     1774747800.0,
+     null
+    ],
+    "2026-03-29 01:30:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-22 06:30:00",
+    [
+     null,
+     1774161000.0
+    ],
+    "None|2026-03-22 06:30:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-10-25 01:30:00",
+    null,
+    [
+     1792891800.0,
+     null
+    ],
+    "2026-10-25 01:30:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-18 06:30:00",
+    [
+     null,
+     1792305000.0
+    ],
+    "None|2026-10-18 06:30:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-04-05 02:00:00",
+    null,
+    [
+     1775354400.0,
+     null
+    ],
+    "2026-04-05 02:00:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-29 07:00:00",
+    [
+     null,
+     1774767600.0
+    ],
+    "None|2026-03-29 07:00:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2024-02-28 19:00:00",
+    null,
+    [
+     1709146800.0,
+     null
+    ],
+    "2024-02-28 19:00:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2024-02-22 00:00:00",
+    [
+     null,
+     1708560000.0
+    ],
+    "None|2024-02-22 00:00:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-06 02:18:00",
+    null,
+    [
+     1785982680.0,
+     null
+    ],
+    "2026-08-06 02:18:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-07-30 07:18:00",
+    [
+     null,
+     1785395880.0
+    ],
+    "None|2026-07-30 07:18:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 21:10:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00.123Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 21:10:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00ZZ"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 21:10:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-8-6T1:2:3Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-05 21:02:03",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-08-16t01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 21:10:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "٢٠٢٦-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 21:10:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-03-08T07:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-08 03:30:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-11-01T05:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 01:30:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-11-01T06:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 01:30:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-03-29T01:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-28 21:30:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-10-25T00:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-10-24 20:30:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-04-04T14:45:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-04-04 10:45:00",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-02-30T00:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-08-16T24:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-08-16 01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "bogus"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    ""
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00+00:00"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "9999-12-31T23:59:59Z"
+   ],
+   "fn": "_local_naive",
+   "out": "9999-12-31 18:59:59",
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 02:18:00",
+    null,
+    [
+     1786861080.0,
+     null
+    ],
+    "2026-08-16 02:18:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 07:18:00",
+    [
+     null,
+     1786274280.0
+    ],
+    "None|2026-08-09 07:18:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 01:31:00",
+    null,
+    [
+     1786858260.0,
+     null
+    ],
+    "2026-08-16 01:31:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 06:31:00",
+    [
+     null,
+     1786271460.0
+    ],
+    "None|2026-08-09 06:31:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-08 02:30:00",
+    null,
+    [
+     1772955000.0,
+     null
+    ],
+    "2026-03-08 02:30:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-01 07:30:00",
+    [
+     null,
+     1772368200.0
+    ],
+    "None|2026-03-01 07:30:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-11-01 01:30:00",
+    null,
+    [
+     1793511000.0,
+     null
+    ],
+    "2026-11-01 01:30:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-25 06:30:00",
+    [
+     null,
+     1792924200.0
+    ],
+    "None|2026-10-25 06:30:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-29 01:30:00",
+    null,
+    [
+     1774762200.0,
+     null
+    ],
+    "2026-03-29 01:30:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-22 06:30:00",
+    [
+     null,
+     1774175400.0
+    ],
+    "None|2026-03-22 06:30:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-10-25 01:30:00",
+    null,
+    [
+     1792906200.0,
+     null
+    ],
+    "2026-10-25 01:30:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-18 06:30:00",
+    [
+     null,
+     1792319400.0
+    ],
+    "None|2026-10-18 06:30:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-04-05 02:00:00",
+    null,
+    [
+     1775368800.0,
+     null
+    ],
+    "2026-04-05 02:00:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-29 07:00:00",
+    [
+     null,
+     1774782000.0
+    ],
+    "None|2026-03-29 07:00:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767582240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766995440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767582240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766995440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767582240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766995440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767582240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766995440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2024-02-28 19:00:00",
+    null,
+    [
+     1709164800.0,
+     null
+    ],
+    "2024-02-28 19:00:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2024-02-22 00:00:00",
+    [
+     null,
+     1708578000.0
+    ],
+    "None|2024-02-22 00:00:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-06 02:18:00",
+    null,
+    [
+     1785997080.0,
+     null
+    ],
+    "2026-08-06 02:18:00|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-07-30 07:18:00",
+    [
+     null,
+     1785410280.0
+    ],
+    "None|2026-07-30 07:18:00"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/New_York"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 02:10:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00.123Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 02:10:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00ZZ"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 02:10:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-8-6T1:2:3Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-06 02:02:03",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-08-16t01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 02:10:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "٢٠٢٦-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 02:10:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-03-08T07:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-08 07:30:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-11-01T05:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 05:30:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-11-01T06:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 06:30:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-03-29T01:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-29 02:30:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-10-25T00:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-10-25 01:30:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-04-04T14:45:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-04-04 15:45:00",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-02-30T00:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-08-16T24:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-08-16 01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "bogus"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    ""
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00+00:00"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "9999-12-31T23:59:59Z"
+   ],
+   "fn": "_local_naive",
+   "out": "9999-12-31 23:59:59",
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 02:18:00",
+    null,
+    [
+     1786843080.0,
+     null
+    ],
+    "2026-08-16 02:18:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 07:18:00",
+    [
+     null,
+     1786256280.0
+    ],
+    "None|2026-08-09 07:18:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 01:31:00",
+    null,
+    [
+     1786840260.0,
+     null
+    ],
+    "2026-08-16 01:31:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 06:31:00",
+    [
+     null,
+     1786253460.0
+    ],
+    "None|2026-08-09 06:31:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-08 02:30:00",
+    null,
+    [
+     1772937000.0,
+     null
+    ],
+    "2026-03-08 02:30:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-01 07:30:00",
+    [
+     null,
+     1772350200.0
+    ],
+    "None|2026-03-01 07:30:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-11-01 01:30:00",
+    null,
+    [
+     1793496600.0,
+     null
+    ],
+    "2026-11-01 01:30:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-25 06:30:00",
+    [
+     null,
+     1792909800.0
+    ],
+    "None|2026-10-25 06:30:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-29 01:30:00",
+    null,
+    [
+     1774747800.0,
+     null
+    ],
+    "2026-03-29 01:30:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-22 06:30:00",
+    [
+     null,
+     1774161000.0
+    ],
+    "None|2026-03-22 06:30:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-10-25 01:30:00",
+    null,
+    [
+     1792888200.0,
+     null
+    ],
+    "2026-10-25 01:30:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-18 06:30:00",
+    [
+     null,
+     1792301400.0
+    ],
+    "None|2026-10-18 06:30:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-04-05 02:00:00",
+    null,
+    [
+     1775350800.0,
+     null
+    ],
+    "2026-04-05 02:00:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-29 07:00:00",
+    [
+     null,
+     1774764000.0
+    ],
+    "None|2026-03-29 07:00:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767564240.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766977440.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2024-02-28 19:00:00",
+    null,
+    [
+     1709146800.0,
+     null
+    ],
+    "2024-02-28 19:00:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2024-02-22 00:00:00",
+    [
+     null,
+     1708560000.0
+    ],
+    "None|2024-02-22 00:00:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-06 02:18:00",
+    null,
+    [
+     1785979080.0,
+     null
+    ],
+    "2026-08-06 02:18:00|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-07-30 07:18:00",
+    [
+     null,
+     1785392280.0
+    ],
+    "None|2026-07-30 07:18:00"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Europe/London"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 11:40:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00.123Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 11:40:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00ZZ"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 11:40:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-8-6T1:2:3Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-06 11:32:03",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-08-16t01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 11:40:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "٢٠٢٦-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 11:40:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-03-08T07:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-08 18:30:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-11-01T05:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 16:30:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-11-01T06:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 17:30:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-03-29T01:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-29 12:30:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-10-25T00:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-10-25 11:30:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-04-04T14:45:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-04-05 01:45:00",
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-02-30T00:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-08-16T24:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-08-16 01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "bogus"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    ""
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00+00:00"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "9999-12-31T23:59:59Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 02:18:00",
+    null,
+    [
+     1786808880.0,
+     null
+    ],
+    "2026-08-16 02:18:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 07:18:00",
+    [
+     null,
+     1786222080.0
+    ],
+    "None|2026-08-09 07:18:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 01:31:00",
+    null,
+    [
+     1786806060.0,
+     null
+    ],
+    "2026-08-16 01:31:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 06:31:00",
+    [
+     null,
+     1786219260.0
+    ],
+    "None|2026-08-09 06:31:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-08 02:30:00",
+    null,
+    [
+     1772897400.0,
+     null
+    ],
+    "2026-03-08 02:30:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-01 07:30:00",
+    [
+     null,
+     1772310600.0
+    ],
+    "None|2026-03-01 07:30:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-11-01 01:30:00",
+    null,
+    [
+     1793457000.0,
+     null
+    ],
+    "2026-11-01 01:30:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-25 06:30:00",
+    [
+     null,
+     1792870200.0
+    ],
+    "None|2026-10-25 06:30:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-29 01:30:00",
+    null,
+    [
+     1774708200.0,
+     null
+    ],
+    "2026-03-29 01:30:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-22 06:30:00",
+    [
+     null,
+     1774121400.0
+    ],
+    "None|2026-03-22 06:30:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-10-25 01:30:00",
+    null,
+    [
+     1792852200.0,
+     null
+    ],
+    "2026-10-25 01:30:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-18 06:30:00",
+    [
+     null,
+     1792265400.0
+    ],
+    "None|2026-10-18 06:30:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-04-05 02:00:00",
+    null,
+    [
+     1775316600.0,
+     null
+    ],
+    "2026-04-05 02:00:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-29 07:00:00",
+    [
+     null,
+     1774728000.0
+    ],
+    "None|2026-03-29 07:00:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767524640.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766937840.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767524640.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766937840.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767524640.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766937840.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767524640.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766937840.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2024-02-28 19:00:00",
+    null,
+    [
+     1709107200.0,
+     null
+    ],
+    "2024-02-28 19:00:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2024-02-22 00:00:00",
+    [
+     null,
+     1708520400.0
+    ],
+    "None|2024-02-22 00:00:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-06 02:18:00",
+    null,
+    [
+     1785944880.0,
+     null
+    ],
+    "2026-08-06 02:18:00|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-07-30 07:18:00",
+    [
+     null,
+     1785358080.0
+    ],
+    "None|2026-07-30 07:18:00"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Australia/Lord_Howe"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 06:40:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00.123Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 06:40:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00ZZ"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 06:40:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-8-6T1:2:3Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-06 06:32:03",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-08-16t01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 06:40:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "٢٠٢٦-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-16 06:40:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-03-08T07:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-08 13:00:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-11-01T05:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 11:00:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-11-01T06:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 12:00:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-03-29T01:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-29 07:00:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-10-25T00:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-10-25 06:00:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-04-04T14:45:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-04-04 20:15:00",
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-02-30T00:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-08-16T24:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-08-16 01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "bogus"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    ""
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00+00:00"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "9999-12-31T23:59:59Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 02:18:00",
+    null,
+    [
+     1786826880.0,
+     null
+    ],
+    "2026-08-16 02:18:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 07:18:00",
+    [
+     null,
+     1786240080.0
+    ],
+    "None|2026-08-09 07:18:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 01:31:00",
+    null,
+    [
+     1786824060.0,
+     null
+    ],
+    "2026-08-16 01:31:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 06:31:00",
+    [
+     null,
+     1786237260.0
+    ],
+    "None|2026-08-09 06:31:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-08 02:30:00",
+    null,
+    [
+     1772917200.0,
+     null
+    ],
+    "2026-03-08 02:30:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-01 07:30:00",
+    [
+     null,
+     1772330400.0
+    ],
+    "None|2026-03-01 07:30:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-11-01 01:30:00",
+    null,
+    [
+     1793476800.0,
+     null
+    ],
+    "2026-11-01 01:30:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-25 06:30:00",
+    [
+     null,
+     1792890000.0
+    ],
+    "None|2026-10-25 06:30:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-29 01:30:00",
+    null,
+    [
+     1774728000.0,
+     null
+    ],
+    "2026-03-29 01:30:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-22 06:30:00",
+    [
+     null,
+     1774141200.0
+    ],
+    "None|2026-03-22 06:30:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-10-25 01:30:00",
+    null,
+    [
+     1792872000.0,
+     null
+    ],
+    "2026-10-25 01:30:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-18 06:30:00",
+    [
+     null,
+     1792285200.0
+    ],
+    "None|2026-10-18 06:30:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-04-05 02:00:00",
+    null,
+    [
+     1775334600.0,
+     null
+    ],
+    "2026-04-05 02:00:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-29 07:00:00",
+    [
+     null,
+     1774747800.0
+    ],
+    "None|2026-03-29 07:00:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767544440.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766957640.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767544440.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766957640.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767544440.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766957640.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767544440.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766957640.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2024-02-28 19:00:00",
+    null,
+    [
+     1709127000.0,
+     null
+    ],
+    "2024-02-28 19:00:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2024-02-22 00:00:00",
+    [
+     null,
+     1708540200.0
+    ],
+    "None|2024-02-22 00:00:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-06 02:18:00",
+    null,
+    [
+     1785962880.0,
+     null
+    ],
+    "2026-08-06 02:18:00|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-07-30 07:18:00",
+    [
+     null,
+     1785376080.0
+    ],
+    "None|2026-07-30 07:18:00"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "Asia/Kolkata"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 22:40:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00.123Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 22:40:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00ZZ"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 22:40:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-8-6T1:2:3Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-05 22:32:03",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-08-16t01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 22:40:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "٢٠٢٦-08-16T01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-08-15 22:40:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-03-08T07:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-08 05:00:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-11-01T05:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 02:00:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-11-01T06:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-11-01 03:00:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-03-29T01:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-03-28 23:00:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-10-25T00:30:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-10-24 22:00:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-04-04T14:45:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": "2026-04-04 12:15:00",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-02-30T00:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-08-16T24:00:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-08-16 01:10:00Z"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "bogus"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    ""
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "2026-08-16T01:10:00+00:00"
+   ],
+   "fn": "_local_naive",
+   "out": null,
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    "9999-12-31T23:59:59Z"
+   ],
+   "fn": "_local_naive",
+   "out": "9999-12-31 20:29:59",
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 02:18:00",
+    null,
+    [
+     1786855680.0,
+     null
+    ],
+    "2026-08-16 02:18:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 07:18:00",
+    [
+     null,
+     1786268880.0
+    ],
+    "None|2026-08-09 07:18:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-16 01:31:00",
+    null,
+    [
+     1786852860.0,
+     null
+    ],
+    "2026-08-16 01:31:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 06:31"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-08-09 06:31:00",
+    [
+     null,
+     1786266060.0
+    ],
+    "None|2026-08-09 06:31:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-08 02:30:00",
+    null,
+    [
+     1772949600.0,
+     null
+    ],
+    "2026-03-08 02:30:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-08 07:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-01 07:30:00",
+    [
+     null,
+     1772362800.0
+    ],
+    "None|2026-03-01 07:30:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-11-01 01:30:00",
+    null,
+    [
+     1793505600.0,
+     null
+    ],
+    "2026-11-01 01:30:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-11-01 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-25 06:30:00",
+    [
+     null,
+     1792918800.0
+    ],
+    "None|2026-10-25 06:30:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-03-29 01:30:00",
+    null,
+    [
+     1774756800.0,
+     null
+    ],
+    "2026-03-29 01:30:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-03-29 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-22 06:30:00",
+    [
+     null,
+     1774170000.0
+    ],
+    "None|2026-03-22 06:30:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-10-25 01:30:00",
+    null,
+    [
+     1792900800.0,
+     null
+    ],
+    "2026-10-25 01:30:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-10-25 06:30"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-10-18 06:30:00",
+    [
+     null,
+     1792314000.0
+    ],
+    "None|2026-10-18 06:30:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-04-05 02:00:00",
+    null,
+    [
+     1775363400.0,
+     null
+    ],
+    "2026-04-05 02:00:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-04-05 07:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-03-29 07:00:00",
+    [
+     null,
+     1774776600.0
+    ],
+    "None|2026-03-29 07:00:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767576840.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-1-5 3:4"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766990040.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767576840.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05  03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766990040.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767576840.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05\t03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766990040.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-01-04 22:04:00",
+    null,
+    [
+     1767576840.0,
+     null
+    ],
+    "2026-01-04 22:04:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05　 03:04"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2025-12-29 03:04:00",
+    [
+     null,
+     1766990040.0
+    ],
+    "None|2025-12-29 03:04:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04 "
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05 03:04:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-01-05"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2024-02-28 19:00:00",
+    null,
+    [
+     1709159400.0,
+     null
+    ],
+    "2024-02-28 19:00:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2024-02-29 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2024-02-22 00:00:00",
+    [
+     null,
+     1708572600.0
+    ],
+    "None|2024-02-22 00:00:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 24:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08-16 23:60"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "2026-08-06 02:18:00",
+    null,
+    [
+     1785991680.0,
+     null
+    ],
+    "2026-08-06 02:18:00|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "2026-08- 6 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    "2026-07-30 07:18:00",
+    [
+     null,
+     1785404880.0
+    ],
+    "None|2026-07-30 07:18:00"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": "٢٠٢٦-٠٨-١٦ 07:18"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": null
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": 12345
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "weekly_resets_at": [
+      "2026-08-16 07:18"
+     ]
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "America/St_Johns"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "0001-01-01 03:00",
+     "weekly_resets_at": "0001-01-01 03:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    null,
+    null,
+    [
+     null,
+     null
+    ],
+    "None|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "0001-01-01 06:00",
+     "weekly_resets_at": "0001-01-01 06:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "0001-01-01 01:00:00",
+    null,
+    [
+     {
+      "raises": true
+     },
+     null
+    ],
+    "0001-01-01 01:00:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "0001-01-08 00:00",
+     "weekly_resets_at": "0001-01-08 00:00"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "0001-01-07 19:00:00",
+    "0001-01-01 00:00:00",
+    [
+     -62135010000.0,
+     {
+      "raises": true
+     }
+    ],
+    "0001-01-07 19:00:00|0001-01-01 00:00:00"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    {
+     "session_resets_at": "0001-01-07 23:59",
+     "weekly_resets_at": "0001-01-07 23:59"
+    }
+   ],
+   "fn": "_window_starts",
+   "out": [
+    "0001-01-07 18:59:00",
+    null,
+    [
+     -62135010060.0,
+     null
+    ],
+    "0001-01-07 18:59:00|None"
+   ],
+   "tz": "UTC"
+  },
+  {
+   "args": [
+    15
+   ],
+   "fn": "_pct_num",
+   "out": 15.0
+  },
+  {
+   "args": [
+    15.5
+   ],
+   "fn": "_pct_num",
+   "out": 15.5
+  },
+  {
+   "args": [
+    {
+     "$float": "-0"
+    }
+   ],
+   "fn": "_pct_num",
+   "out": {
+    "$float": "-0"
+   }
+  },
+  {
+   "args": [
+    "15"
+   ],
+   "fn": "_pct_num",
+   "out": 15.0
+  },
+  {
+   "args": [
+    " 15 "
+   ],
+   "fn": "_pct_num",
+   "out": 15.0
+  },
+  {
+   "args": [
+    "1_5"
+   ],
+   "fn": "_pct_num",
+   "out": 15.0
+  },
+  {
+   "args": [
+    "15."
+   ],
+   "fn": "_pct_num",
+   "out": 15.0
+  },
+  {
+   "args": [
+    ".5"
+   ],
+   "fn": "_pct_num",
+   "out": 0.5
+  },
+  {
+   "args": [
+    "1e2"
+   ],
+   "fn": "_pct_num",
+   "out": 100.0
+  },
+  {
+   "args": [
+    "inf"
+   ],
+   "fn": "_pct_num",
+   "out": {
+    "$float": "inf"
+   }
+  },
+  {
+   "args": [
+    "-Infinity"
+   ],
+   "fn": "_pct_num",
+   "out": {
+    "$float": "-inf"
+   }
+  },
+  {
+   "args": [
+    "nan"
+   ],
+   "fn": "_pct_num",
+   "out": {
+    "$float": "nan"
+   }
+  },
+  {
+   "args": [
+    "abc"
+   ],
+   "fn": "_pct_num",
+   "out": null
+  },
+  {
+   "args": [
+    ""
+   ],
+   "fn": "_pct_num",
+   "out": null
+  },
+  {
+   "args": [
+    null
+   ],
+   "fn": "_pct_num",
+   "out": null
+  },
+  {
+   "args": [
+    true
+   ],
+   "fn": "_pct_num",
+   "out": 1.0
+  },
+  {
+   "args": [
+    false
+   ],
+   "fn": "_pct_num",
+   "out": 0.0
+  },
+  {
+   "args": [
+    []
+   ],
+   "fn": "_pct_num",
+   "out": null
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "_pct_num",
+   "out": null
+  },
+  {
+   "args": [
+    "٣"
+   ],
+   "fn": "_pct_num",
+   "out": 3.0
+  },
+  {
+   "args": [
+    "٣.٥"
+   ],
+   "fn": "_pct_num",
+   "out": 3.5
+  },
+  {
+   "args": [
+    " 5 "
+   ],
+   "fn": "_pct_num",
+   "out": 5.0
+  },
+  {
+   "args": [
+    {
+     "$float": "inf"
+    }
+   ],
+   "fn": "_pct_num",
+   "out": {
+    "$float": "inf"
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    null
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "text"
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {}
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": "me",
+     "period_start": 1786800000,
+     "source": "cmd"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": 0,
+     "period_start": 1.5,
+     "source": null
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": {
+      "x": 1
+     },
+     "source": [
+      "a"
+     ]
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    null
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "text"
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {}
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": "me",
+     "period_start": 1786800000,
+     "source": "cmd"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "cmd\u0000me\u00001786800000",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "cmd\u0000me\u00001786800000",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": 0,
+     "period_start": 1.5,
+     "source": null
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u00001.5",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u00001.5",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": {
+      "x": 1
+     },
+     "source": [
+      "a"
+     ]
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "['a']\u0000{'x': 1}\u0000",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "['a']\u0000{'x': 1}\u0000",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    null
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "text"
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {}
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": "me",
+     "period_start": 1786800000,
+     "source": "cmd"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "cmd\u0000me\u00001786800000",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "cmd\u0000me\u00001786800000",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": 0,
+     "period_start": 1.5,
+     "source": null
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u00001.5",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u00001.5",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": {
+      "x": 1
+     },
+     "source": [
+      "a"
+     ]
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "['a']\u0000{'x': 1}\u0000",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "['a']\u0000{'x': 1}\u0000",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    null
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "text"
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {}
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": "me",
+     "period_start": 1786800000,
+     "source": "cmd"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "cmd\u0000me\u00001786800000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "cmd\u0000me\u00001786800000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": 0,
+     "period_start": 1.5,
+     "source": null
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u00001.5",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u00001.5",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": {
+      "x": 1
+     },
+     "source": [
+      "a"
+     ]
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "['a']\u0000{'x': 1}\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "['a']\u0000{'x': 1}\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    null
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "text"
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {}
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": "me",
+     "period_start": 1786800000,
+     "source": "cmd"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "cmd\u0000me\u00001786800000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "cmd\u0000me\u00001786800000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": 0,
+     "period_start": 1.5,
+     "source": null
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "\u0000\u00001.5",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "\u0000\u00001.5",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_name": {
+      "x": 1
+     },
+     "source": [
+      "a"
+     ]
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "['a']\u0000{'x': 1}\u0000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "['a']\u0000{'x': 1}\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "7",
+     "weekly_pct": true
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 7.0,
+    "week": 1.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": {
+      "$float": "nan"
+     },
+     "weekly_pct": 0
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": {
+     "$float": "nan"
+    },
+    "week": 0.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": 5
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "text": "{\"message\": {\"content\": \"Explain the width table.\"}, \"promptSource\": \"typed\", \"timestamp\": \"2026-08-16T01:10:00Z\", \"type\": \"user\", \"userType\": \"external\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": false, \"message\": {\"id\": \"req-a1\", \"usage\": {\"cache_creation_input_tokens\": 2400, \"cache_read_input_tokens\": 40000, \"input_tokens\": 12, \"output_tokens\": 900}}, \"requestId\": \"req-a1\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"type\": \"assistant\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-a1",
+    0.06656000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": false, \"message\": {\"id\": \"req-a2\", \"usage\": {\"cache_creation_input_tokens\": 0, \"cache_read_input_tokens\": 43000, \"input_tokens\": 3, \"output_tokens\": 1500}}, \"requestId\": \"req-a2\", \"timestamp\": \"2026-08-16T01:12:00Z\", \"type\": \"assistant\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842720.0,
+    "req-a2",
+    0.059015
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": false, \"subtype\": \"stop_hook_summary\", \"timestamp\": \"2026-08-16T01:13:00Z\", \"type\": \"system\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"message\": {\"content\": \"Now do the same for the escape table.\"}, \"promptSource\": \"typed\", \"timestamp\": \"2026-08-16T01:20:00Z\", \"type\": \"user\", \"userType\": \"external\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": false, \"message\": {\"id\": \"req-b1\", \"usage\": {\"cache_creation_input_tokens\": 1800, \"cache_read_input_tokens\": 61000, \"input_tokens\": 8, \"output_tokens\": 2100}}, \"requestId\": \"req-b1\", \"timestamp\": \"2026-08-16T01:21:00Z\", \"type\": \"assistant\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786843260.0,
+    "req-b1",
+    0.10104
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": false, \"subtype\": \"stop_hook_summary\", \"timestamp\": \"2026-08-16T01:22:00Z\", \"type\": \"system\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"message\": {\"content\": \"And the one after that, please.\"}, \"promptSource\": \"typed\", \"timestamp\": \"2026-08-16T01:30:00Z\", \"type\": \"user\", \"userType\": \"external\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": false, \"message\": {\"id\": \"req-c1\", \"usage\": {\"cache_creation_input_tokens\": 900, \"cache_read_input_tokens\": 78000, \"input_tokens\": 5, \"output_tokens\": 3400}}, \"requestId\": \"req-c1\", \"timestamp\": \"2026-08-16T01:31:00Z\", \"type\": \"assistant\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786843860.0,
+    "req-c1",
+    0.133025
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": true, \"message\": {\"content\": \"do a thing\"}, \"promptId\": \"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"type\": \"user\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": true, \"message\": {\"id\": \"req-f1\", \"model\": \"claude-opus-5\", \"usage\": {\"cache_creation_input_tokens\": 3000, \"cache_read_input_tokens\": 61000, \"input_tokens\": 20, \"output_tokens\": 2200}}, \"requestId\": \"req-f1\", \"timestamp\": \"2026-08-16T01:12:00Z\", \"type\": \"assistant\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842720.0,
+    "req-f1",
+    0.11560000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": true, \"message\": {\"id\": \"req-f2\", \"model\": \"claude-opus-5\", \"usage\": {\"cache_creation_input_tokens\": 500, \"cache_read_input_tokens\": 64000, \"input_tokens\": 5, \"output_tokens\": 1800}}, \"requestId\": \"req-f2\", \"timestamp\": \"2026-08-16T01:12:40Z\", \"type\": \"assistant\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842760.0,
+    "req-f2",
+    0.08202500000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"isSidechain\": true, \"message\": {\"id\": \"req-f3\", \"model\": \"claude-opus-5\", \"usage\": {\"cache_creation_input_tokens\": 300, \"cache_read_input_tokens\": 66000, \"input_tokens\": 4, \"output_tokens\": 900}}, \"requestId\": \"req-f3\", \"timestamp\": \"2026-08-16T01:17:00Z\", \"type\": \"assistant\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786843020.0,
+    "req-f3",
+    0.05852
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"user\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": null, \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": null}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": null, \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"bogus\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    null,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00.5Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": null, \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "msg-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"\", \"message\": {\"id\": null, \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    null,
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": 0, \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "msg-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": 0, \"message\": {\"id\": 7, \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    7,
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": 1.0, \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    1.0,
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": true, \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    true,
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": false, \"message\": {\"id\": false, \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    false,
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": [1], \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    [
+     1
+    ],
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-sonnet-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.000386
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"Claude-HAIKU-4\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.000193
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"fable-5-1\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0019075
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": null, \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"unknown-model\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": true, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.00092
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 1.5, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0005025
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": -5, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009475
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 1e+300, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    5.0000000000000005e+294
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 1152921504606846976, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    28823037615171.176
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"output_tokens\": 7}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.000175
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"other\": 1}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": [1]}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": \"yes\"}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": \"10\", \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": null, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": [1], \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": 5, \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": [\"opus\"], \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": 5, \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": true, \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": [\"x\"], \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": [1]}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": \"text\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": \"\"}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": null}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": 0}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": NaN, \"message\": {\"usage\": {\"input_tokens\": NaN}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    {
+     "$float": "nan"
+    },
+    {
+     "$float": "nan"
+    }
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"r\", \"message\": {\"usage\": {\"input_tokens\": Infinity, \"output_tokens\": -Infinity}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "r",
+    {
+     "$float": "nan"
+    }
+   ]
+  },
+  {
+   "args": [
+    {
+     "hex": "7b2274797065223a2022617373697374616e74222c202274696d657374616d70223a2022323032362d30382d31365430313a31313a30305a222c2022726571756573744964223a202272fffe222c20226d657373616765223a207b227573616765223a207b22696e7075745f746f6b656e73223a20317d7d7d0a"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "r��",
+    5e-06
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "﻿{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\r\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": "  {\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": [
+    1786842660.0,
+    "req-x",
+    0.0009650000000000001
+   ]
+  },
+  {
+   "args": [
+    {
+     "text": ""
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "not json\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "[1, 2]\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "null\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"req-x\", \"message\": {\"id\": \"msg-x\", \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 10, \"output_tokens\": 20, \"cache_read_input_tokens\": 30, \"cache_creation_input_tokens\": 40}}} x\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  },
+  {
+   "args": [
+    {
+     "text": "{\"type\": \"assistant\", \"type\": \"user\", \"timestamp\": \"2026\", \"message\": {\"usage\": {\"a\": 1}}}\n"
+    }
+   ],
+   "fn": "_priced_record",
+   "out": null
+  }
+ ]
+}
