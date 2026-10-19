@@ -1258,6 +1258,16 @@ class Widths(NamedTuple):
     wide: Tuple[Tuple[int, int], ...]
 
 
+# term_profile's rules, first match wins: a variable, the value it must hold
+# (None for any non-empty one), and the profile it selects.  Data rather than
+# code so tools/layout-spec.py can hand them to the mod.
+PROFILE_RULES = (
+    ("TMUX", None, "tmux"),
+    ("TERMINAL_EMULATOR", "JetBrains-JediTerm", "jediterm"),
+    ("TERM_PROGRAM", "iTerm.app", "iterm"),
+)
+
+
 def term_profile(env: Optional[Dict[str, str]] = None) -> str:
     """Which terminal is drawing this, as a profile name.
 
@@ -1279,12 +1289,9 @@ def term_profile(env: Optional[Dict[str, str]] = None) -> str:
     painter, and the combination needs a branch of its own.
     """
     e = os.environ if env is None else env
-    if e.get("TMUX"):
-        return "tmux"
-    if e.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":
-        return "jediterm"
-    if e.get("TERM_PROGRAM") == "iTerm.app":
-        return "iterm"
+    for var, value, profile in PROFILE_RULES:
+        if e.get(var) and (value is None or e.get(var) == value):
+            return profile
     return "unknown"
 
 
@@ -1380,7 +1387,8 @@ WIDTHS = widths_for(PROFILE)
 # and follows it.  The status line's own 💰 touches its figure again since
 # 2026-10-02, as ▾ does, so the column's second figures end together; see
 # render_model_cost.
-_PAD = " " if PROFILE in ("iterm", "tmux") else ""
+PAD_PROFILES = ("iterm", "tmux")
+_PAD = " " if PROFILE in PAD_PROFILES else ""
 
 # Status-mode glyph forms.  The ones written with a literal " " carry it in
 # EVERY profile, where _PAD is empty on JediTerm: the countdown field and the

@@ -192,9 +192,12 @@ is laid out so the two copies are easy to keep in step:
   `claude_records.ts`), and each function keeps its name, in the language's
   case (`render_agent_ctx` and `renderAgentCtx`). A change to one names the
   place to change in the other.
-- **One spec, read by both.** The cells' keys, `--hide` paths, widths and
-  gaps, the glyphs, the drop order, the label ranks and the palette are in
-  one JSON file that both load. Neither hardcodes them.
+- **One spec, written by Python, read by TypeScript.** The glyphs, the
+  palette, the widths and cuts, and the terminal-profile rules are in
+  `spec/layout.json`, which `tools/layout-spec.py` writes from
+  `formatting.py`; `tests/formatting.py` fails when it is out of date. The
+  cells' keys, `--hide` paths, drop order and label ranks join it when the
+  new grid is built. The TypeScript side hardcodes none of them.
 - **One set of cases, run by both.** Shared fixtures, sample transcripts
   with the figures they make and figures with the spans they draw, are
   written by the Python side with `--regen`. Both test suites run every case,
@@ -269,7 +272,16 @@ and a shared case that pins it:
 
 ### What the layout spec holds
 
-Each cell's key, `--hide` path, width, gap and drop rank; each glyph by code
+`spec/layout.json` exists now, generated: 74 glyphs, 25 colours and a
+background as RGB triples, 49 widths and cuts, the wide-character table,
+`term_profile`'s rules, the profiles `_PAD` pads, and each profile's width
+overrides. `formatting.py` keeps its literals, each beside the comment that
+explains it; reading them back from the JSON instead turned `E_TOK = "🧩"`
+into `E_TOK = _G["E_TOK"]` and pushed 139 more lines past 79 columns.
+Values computed at import (the `S_*` forms, `RIGHT_GRID`) and the defaults
+the two switches rebind are rules, and each language computes them.
+
+Still to come, with the new grid: each cell's key, `--hide` path, width, gap and drop rank; each glyph by code
 point; each colour as its RGB triple and the cut-offs that dim it (`mag_dim`,
 `cache_color`). Three things vary at run time and go in the spec as rules,
 not numbers:

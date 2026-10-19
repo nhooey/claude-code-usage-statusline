@@ -97,7 +97,7 @@ without consuming claims. See [Codex](codex.md).
 | A status-line cell | `claude_render.py`; its width in `RIGHT_GRID` / `LINE3_RESERVED` / `RULE_MIN` in `formatting.py` | Regenerate the status goldens and read the diff; update [Layout](layout.md). |
 | A cost-line cell | `claude_cost_render.py`, and the group builders in `claude.py` | Regenerate the cost goldens; update [Layout](layout.md). |
 | An agent-panel cell | `claude_subagent_render.py` | Update the row shape asserted in `tests/subagent.py`. |
-| A glyph | An `E_*` constant in `formatting.py` | Follow [Glyphs and terminals](glyphs-and-terminals.md); run `tests/probe-advance.sh` in a real terminal. |
+| A glyph | An `E_*` constant in `formatting.py` | Follow [Glyphs and terminals](glyphs-and-terminals.md); run `tests/probe-advance.sh` in a real terminal; run `python3 tools/layout-spec.py`. |
 | A flag | `_CLAUDE_FLAGS` / `_COMMON_FLAGS` and `USAGE` in `cli.py`; read it in `claude.main` or `codex_main` | Update [Options](options.md); add a case to `tests/port-cli.py`, the public-CLI suite. |
 | Claude accounting (prices, turns, agents) | `claude_records.py`; window shares and calibration in `claude.py` | `tests/agents.py`, the cost goldens; update [Accounting](accounting.md). |
 | A usage source | `sources.py`, and `validate_source` for its spec | `tests/sources-v1.py` and friends; update [Usage sources](usage-sources.md). |
@@ -189,6 +189,11 @@ Intentions, not designs:
 
 Until (3) exists, the width tables, terminal profiles and glyph rules stay in
 `formatting.py`. They are the first thing to move out when it does.
+
+`spec/layout.json` holds the glyphs, colours, widths and cuts of
+`formatting.py` for the TypeScript mod. `tools/layout-spec.py` writes it from
+`formatting.py`, so change a value there and rerun the tool;
+`tests/formatting.py` fails while the two disagree.
 
 `tools/layout-mockup.py` draws the proposed [redesign](../agents/plans/redesign.md) inside a
 mocked Claude Code screen. It uses the package's cell renderers on made-up

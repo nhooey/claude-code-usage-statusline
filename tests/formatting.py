@@ -20,4 +20,15 @@ assert f.MARK_SP == " " and f.C_TOK == f.C_TOK_TIGHT + 1
 f.set_subscript_decimals(True)
 assert f.sub_dec("1.2") == "1₂"
 f.set_subscript_decimals(False)
+# The profile rules, first match wins, read as data since 2026-10-19.
+assert f.term_profile({"TMUX": "/tmp/s", "TERMINAL_EMULATOR": "JetBrains-JediTerm"}) == "tmux"
+assert f.term_profile({"TMUX": ""}) == "unknown"
+assert f.term_profile({"TERMINAL_EMULATOR": "JetBrains-JediTerm"}) == "jediterm"
+assert f.term_profile({"TERM_PROGRAM": "iTerm.app"}) == "iterm"
+assert f.term_profile({"TERM_PROGRAM": "ghostty"}) == "unknown"
+# spec/layout.json is generated from this module; the mod reads it.
+import subprocess
+spec = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    "tools", "layout-spec.py")
+assert subprocess.run([sys.executable, spec, "--check"]).returncode == 0
 print("ok shared formatting")

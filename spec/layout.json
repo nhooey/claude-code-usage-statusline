@@ -1,0 +1,530 @@
+{
+  "backgrounds": {
+    "B_DRK": [
+      12,
+      14,
+      18
+    ]
+  },
+  "colors": {
+    "F_AMB": [
+      255,
+      200,
+      0
+    ],
+    "F_BLU": [
+      100,
+      170,
+      255
+    ],
+    "F_BLU2": [
+      70,
+      115,
+      185
+    ],
+    "F_CHAT_B": [
+      112,
+      126,
+      140
+    ],
+    "F_CHAT_U": [
+      166,
+      170,
+      158
+    ],
+    "F_CRM": [
+      211,
+      215,
+      207
+    ],
+    "F_CYN": [
+      80,
+      200,
+      220
+    ],
+    "F_ETA": [
+      255,
+      77,
+      255
+    ],
+    "F_GRN": [
+      120,
+      200,
+      80
+    ],
+    "F_LIM_SESS": [
+      120,
+      200,
+      80
+    ],
+    "F_LIM_WEEK": [
+      255,
+      90,
+      90
+    ],
+    "F_OVER": [
+      255,
+      40,
+      40
+    ],
+    "F_PNK": [
+      255,
+      120,
+      190
+    ],
+    "F_PNK2": [
+      178,
+      84,
+      133
+    ],
+    "F_PRW": [
+      140,
+      150,
+      255
+    ],
+    "F_PUR": [
+      200,
+      130,
+      255
+    ],
+    "F_RATE": [
+      100,
+      225,
+      180
+    ],
+    "F_RED": [
+      255,
+      90,
+      90
+    ],
+    "F_RULE": [
+      76,
+      76,
+      76
+    ],
+    "F_SHARE": [
+      255,
+      200,
+      0
+    ],
+    "F_SPIN": [
+      255,
+      90,
+      90
+    ],
+    "F_SUM": [
+      76,
+      76,
+      76
+    ],
+    "F_TDN": [
+      220,
+      140,
+      200
+    ],
+    "F_TUP": [
+      120,
+      200,
+      220
+    ],
+    "F_YEL": [
+      255,
+      210,
+      60
+    ]
+  },
+  "eaw_wide": [
+    [
+      4352,
+      4447
+    ],
+    [
+      8986,
+      8987
+    ],
+    [
+      9001,
+      9002
+    ],
+    [
+      9193,
+      9203
+    ],
+    [
+      9725,
+      9726
+    ],
+    [
+      9748,
+      9749
+    ],
+    [
+      9800,
+      9811
+    ],
+    [
+      9855,
+      9855
+    ],
+    [
+      9875,
+      9875
+    ],
+    [
+      9889,
+      9889
+    ],
+    [
+      9898,
+      9899
+    ],
+    [
+      9917,
+      9925
+    ],
+    [
+      9934,
+      9940
+    ],
+    [
+      9962,
+      9995
+    ],
+    [
+      10024,
+      10024
+    ],
+    [
+      10060,
+      10071
+    ],
+    [
+      10133,
+      10135
+    ],
+    [
+      10160,
+      10160
+    ],
+    [
+      10175,
+      10175
+    ],
+    [
+      11035,
+      11036
+    ],
+    [
+      11088,
+      11093
+    ],
+    [
+      11904,
+      12019
+    ],
+    [
+      12032,
+      12245
+    ],
+    [
+      12272,
+      12771
+    ],
+    [
+      12784,
+      12871
+    ],
+    [
+      12880,
+      19903
+    ],
+    [
+      19968,
+      42182
+    ],
+    [
+      43360,
+      43388
+    ],
+    [
+      44032,
+      55203
+    ],
+    [
+      63744,
+      64255
+    ],
+    [
+      65040,
+      65049
+    ],
+    [
+      65072,
+      65131
+    ],
+    [
+      65281,
+      65376
+    ],
+    [
+      65504,
+      65510
+    ],
+    [
+      94176,
+      94180
+    ],
+    [
+      94192,
+      94193
+    ],
+    [
+      94208,
+      100343
+    ],
+    [
+      100352,
+      101589
+    ],
+    [
+      101632,
+      101640
+    ],
+    [
+      110576,
+      110882
+    ],
+    [
+      110898,
+      110898
+    ],
+    [
+      110928,
+      110933
+    ],
+    [
+      110948,
+      110951
+    ],
+    [
+      110960,
+      111355
+    ],
+    [
+      126980,
+      126980
+    ],
+    [
+      127183,
+      127183
+    ],
+    [
+      127374,
+      127386
+    ],
+    [
+      127462,
+      127490
+    ],
+    [
+      127504,
+      127569
+    ],
+    [
+      127584,
+      127589
+    ],
+    [
+      127744,
+      130047
+    ],
+    [
+      131072,
+      262141
+    ]
+  ],
+  "glyphs": {
+    "E_ACCT": "💳",
+    "E_BOT": "🤖💬",
+    "E_CACHE": "🎯",
+    "E_COST": "💰",
+    "E_COSTLINE": "📊",
+    "E_CTX": "🧠",
+    "E_DATE": "📅",
+    "E_DIFF": "💾",
+    "E_DIR": "📁",
+    "E_DIRTY": "✱",
+    "E_DOWN": "▾",
+    "E_EFF_HIGH": "🏃",
+    "E_EFF_LOW": "🐢",
+    "E_EFF_MAX": "🔥",
+    "E_EFF_MED": "🚶",
+    "E_EFF_XHIGH": "🚀",
+    "E_ETA": "⛳",
+    "E_ETA_REPORT": "⛳",
+    "E_ETA_REPORT_OLD": "🏁",
+    "E_FOLD": "¶ ",
+    "E_GAUGE": "⠀⠄⠆⠦⠶",
+    "E_GIT_BAD": "🍂",
+    "E_GIT_OK": "🌿",
+    "E_HUMAN": "👤💬",
+    "E_HUNDRED": "💯",
+    "E_IDLE": "⌛",
+    "E_INBOX": "📨",
+    "E_KIDS": "👶🏻",
+    "E_MOD": "🤖",
+    "E_MODE_AGENTS": "💤",
+    "E_MODE_API_ERROR": "💥",
+    "E_MODE_DONE": "✅",
+    "E_MODE_ETA": "⛳",
+    "E_MODE_FAILED": "❌",
+    "E_MODE_KILLED": "🛑",
+    "E_MODE_MONITOR": "📡",
+    "E_MODE_QUEUED": "🥚",
+    "E_MODE_SHELL": "💻",
+    "E_PCT": "٪",
+    "E_PHASE_END": "⚫",
+    "E_PHASE_PAUSE": "🟡",
+    "E_PHASE_RUN": "🟢",
+    "E_PR": "🔀",
+    "E_PROJ": "📦",
+    "E_RATE": "🛫",
+    "E_READ": "📖",
+    "E_RESET": "🔜",
+    "E_ROW_AGENTS": "👥",
+    "E_ROW_COMPACT": "🤏",
+    "E_ROW_PROMPT": "🎤",
+    "E_ROW_TOTAL": "🎮",
+    "E_SESS": "🔋",
+    "E_SESSION": "🎮",
+    "E_SPIN": "·✢✳✶✻✽",
+    "E_STY": "🎨",
+    "E_SUB_DIGITS": "₀₁₂₃₄₅₆₇₈₉",
+    "E_SUM": "Σ",
+    "E_SUP_DIGITS": "⁰¹²³⁴⁵⁶⁷⁸⁹",
+    "E_TIME": "🕐",
+    "E_TOK": "🧩",
+    "E_TOOL": "🔧",
+    "E_TREE_BAR": "│",
+    "E_TREE_END": "└",
+    "E_TREE_MID": "├",
+    "E_TREE_NODE": "◯",
+    "E_TREE_OPEN": "⏺",
+    "E_TURN": "🎤",
+    "E_TURN_ID": "🔖",
+    "E_TURN_PAST": "🔺",
+    "E_UP": "▴",
+    "E_WAIT": "🚦",
+    "E_WEEK": "🪫",
+    "E_WORK": "🤖",
+    "E_WRITE": "📝"
+  },
+  "numbers": {
+    "COL3_TIGHT_W": 14,
+    "COL4_TIGHT_W": 30,
+    "CTX_1M": 1000000,
+    "CTX_DEF": 200000,
+    "C_CACHE_TIGHT": 5,
+    "C_CHROME_CONT": 5,
+    "C_CHROME_LEFT": 16,
+    "C_COST": 9,
+    "C_CTX": 14,
+    "C_ELAPSED": 9,
+    "C_LIM_TOT_TIGHT": 6,
+    "C_MIN_GAP": 4,
+    "C_RIGHT_MARGIN": 4,
+    "C_SEG_GAP": 2,
+    "C_STAMP": 13,
+    "C_TOK_TIGHT": 13,
+    "C_TOOL": 7,
+    "GAUGE_W": 2,
+    "LEFT_GAP": 2,
+    "LIM_ACCT_W": 4,
+    "LIM_FIG_W": 4,
+    "LIM_PCT_W": 4,
+    "LINE3_TIGHT": 114,
+    "MAG_COST": 1.0,
+    "MAG_DIFF": 100,
+    "MAG_DUR_S": 600.0,
+    "MAG_RATE": 1000.0,
+    "MAG_SHARE_AGENT": 0.2,
+    "MAG_SHARE_READ": 67,
+    "MAG_SHARE_SESS": 5.0,
+    "MAG_SHARE_TURN": 1.0,
+    "MAG_TOK": 100000,
+    "MAX_LINE": 165,
+    "MAX_ROW": 120,
+    "MIN_GAP": 2,
+    "MONTH_S": 2629800.0,
+    "PAIR_GAP": 2,
+    "RATE_SAMPLES": 16,
+    "RATE_TICK_S": 5.0,
+    "RIGHT_MARGIN": 4,
+    "RST_W": 6,
+    "RULE_MIN": 170,
+    "SEG_GAP": 4,
+    "SHARE_FIG_W": 3,
+    "TURN_ID_HEX": 8,
+    "VAL2_W": 6,
+    "VAL_W": 5,
+    "W_MOD": 4,
+    "W_STY": 6
+  },
+  "pad_profiles": [
+    "iterm",
+    "tmux"
+  ],
+  "profile_rules": [
+    [
+      "TMUX",
+      null,
+      "tmux"
+    ],
+    [
+      "TERMINAL_EMULATOR",
+      "JetBrains-JediTerm",
+      "jediterm"
+    ],
+    [
+      "TERM_PROGRAM",
+      "iTerm.app",
+      "iterm"
+    ]
+  ],
+  "profiles": {
+    "iterm": {
+      "clusters": true,
+      "icons": [
+        9851
+      ],
+      "narrow": [
+        9201,
+        128368
+      ]
+    },
+    "jediterm": {
+      "clusters": false,
+      "icons": [
+        128368
+      ],
+      "narrow": [
+        9201
+      ]
+    },
+    "tmux": {
+      "clusters": true,
+      "icons": [
+        9851
+      ],
+      "narrow": [
+        9201,
+        128368
+      ]
+    },
+    "unknown": {
+      "clusters": false,
+      "icons": [],
+      "narrow": []
+    }
+  }
+}
