@@ -15,8 +15,10 @@ What the files under tests/fixtures/calib/ hold:
                plan_totals and _priced_record.
   shares.json  the committed transcripts' turns, and hand-made ones, with
                turn_cost, turn_shares and session_cache_shares, then each
-               turn's turn_cost_since and window_shares and the session's
-               session_shares against plan snapshots, units and zones.
+               turn's turn_cost_since and window_shares, and the session's
+               session_shares and cost_accounting (turn_accounting for
+               each turn, and the session's), against plan snapshots,
+               units and zones.  One case to a line: they are long.
   scan.json    scenarios: a projects directory built from the committed
                corpus and hand-made files, with mtimes, then steps sharing
                one state directory — calibration, _window_costs, appends,
@@ -119,12 +121,18 @@ def out(v):
     return {"raises": True} if v is RAISES else enc(v)
 
 
-def write(name, cases):
+def write(name, cases, by_line=False):
+    """The cases as {"cases": [...]}: indented, or `by_line` one case to a
+    line, for a file whose cases are long lists of figures."""
     os.makedirs(OUT, exist_ok=True)
+    opts = dict(sort_keys=True, ensure_ascii=False, allow_nan=False)
     with open(os.path.join(OUT, name + ".json"), "w",
               encoding="utf-8") as fh:
-        json.dump({"cases": cases}, fh, indent=1, sort_keys=True,
-                  ensure_ascii=False, allow_nan=False)
+        if by_line:
+            fh.write('{"cases": [\n' + ",\n".join(
+                json.dumps(c, **opts) for c in cases) + "\n]}")
+        else:
+            json.dump({"cases": cases}, fh, indent=1, **opts)
         fh.write("\n")
     return len(cases)
 
@@ -407,7 +415,9 @@ def shares():
                                 out(run(claude.window_shares, t, units))
                                 for t in ts],
                             "session_shares": out(run(
-                                claude.session_shares, ts, units))}
+                                claude.session_shares, ts, units)),
+                            "cost_accounting": out(run(
+                                claude.cost_accounting, ts, units))}
                             for units in UNITS]}})
     # The turns go in once each, not once per case.
     by_name = {}
@@ -415,7 +425,7 @@ def shares():
         if "turns" in c:
             by_name[c["args"][0]] = c.pop("turns")
     cases.insert(0, {"fn": "turns", "args": [], "out": by_name})
-    return write("shares", cases)
+    return write("shares", cases, by_line=True)
 
 
 # ════════════════════════════════════════════════════════════════════════════

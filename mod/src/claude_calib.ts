@@ -395,6 +395,41 @@ export function sessionShares(turns: readonly Turn[], calib: Calib,
   return out;
 }
 
+/** What one turn, or the session, comes to: the figures document's
+ * `accounting` entry. */
+export interface Accounting {
+  readonly cost_usd: number;
+  readonly sess_share: number | null;
+  readonly week_share: number | null;
+  readonly read_share: number | null;
+  readonly write_share: number | null;
+}
+
+/** What one turn comes to: its cost, its share of each live window and
+ * the shares of it spent re-reading and caching.  cost_group draws these.
+ * The window shares read the plan snapshot, so this belongs to the first
+ * stage, never to a render. */
+export function turnAccounting(t: Turn, calib: Calib, snap: Snapshot):
+  Accounting {
+  const tsh = windowShares(t, calib, snap);
+  const [rd, wr] = turnShares(t);
+  return { cost_usd: turnCost(t), sess_share: tsh.sess,
+    week_share: tsh.week, read_share: rd, write_share: wr };
+}
+
+/** turnAccounting for each turn, in order, and the same for the session:
+ * the figures document's `accounting`. */
+export function costAccounting(turns: readonly Turn[], calib: Calib,
+  snap: Snapshot): { turns: Accounting[]; session: Accounting } {
+  const sh = sessionShares(turns, calib, snap);
+  const [rd, wr] = sessionCacheShares(turns);
+  const each = turns.map((t) => turnAccounting(t, calib, snap));
+  let cost = 0;
+  for (const t of turns) cost += turnCost(t);
+  return { turns: each, session: { cost_usd: cost, sess_share: sh.sess,
+    week_share: sh.week, read_share: rd, write_share: wr } };
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // The machine-wide scan.
 // ════════════════════════════════════════════════════════════════════════════

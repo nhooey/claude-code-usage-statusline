@@ -147,6 +147,7 @@ suite("shares", {
         window_shares: ts.map((t) =>
           attempt(() => cc.windowShares(t, calib, c.snap))),
         session_shares: attempt(() => cc.sessionShares(ts, calib, c.snap)),
+        cost_accounting: attempt(() => cc.costAccounting(ts, calib, c.snap)),
       })),
     };
   },
