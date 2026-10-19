@@ -47,8 +47,8 @@
 import { STAMP_FMT } from "./spec.ts";
 import type { Dict } from "./py.ts";
 import {
-  isDict, pyAsciiDigits, pyGet, pyHas, pyOr, PY_SPACE, pyTruthy,
-  utf8,
+  daysFromCivil, daysIn, isDict, pyAsciiDigits, pyGet, pyHas, pyOr, PY_SPACE,
+  pyTruthy, utf8,
 } from "./py.ts";
 import { pyFloat, pyJsonLoads } from "./sources.ts";
 import { _price, pyStr, tsEpoch, turnTimes } from "./claude_records.ts";
@@ -131,15 +131,6 @@ export function _idKey(k: unknown): string {
 
 const DAY = 86400;
 
-function daysFromCivil(y: number, m: number, d: number): number {
-  y -= m <= 2 ? 1 : 0;
-  const era = Math.floor(y / 400);
-  const yoe = y - era * 400;
-  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
-  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
-  return era * 146097 + doe - 719468;
-}
-
 function civilFromDays(z: number): [number, number, number] {
   z += 719468;
   const era = Math.floor(z / 146097);
@@ -151,11 +142,6 @@ function civilFromDays(z: number): [number, number, number] {
   const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
   const m = mp + (mp < 10 ? 3 : -9);
   return [yoe + era * 400 + (m <= 2 ? 1 : 0), m, d];
-}
-
-function daysIn(y: number, m: number): number {
-  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
-  return [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
 }
 
 /** datetime(y, mo, d, h, mi, s) as a Naive. */

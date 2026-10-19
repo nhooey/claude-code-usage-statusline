@@ -291,3 +291,23 @@ export function pyIntText(s: string): number | null {
   if (!INT_TEXT.test(t)) return null;
   return parseInt(pyAsciiDigits(t).replaceAll("_", ""), 10);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// The proleptic Gregorian calendar, as datetime counts it.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Days from 1970-01-01 to y-m-d. */
+export function daysFromCivil(y: number, m: number, d: number): number {
+  y -= m <= 2 ? 1 : 0;
+  const era = Math.floor(y / 400);
+  const yoe = y - era * 400;
+  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
+}
+
+/** The days in month m of year y. */
+export function daysIn(y: number, m: number): number {
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+  return [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
+}

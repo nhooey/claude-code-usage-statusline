@@ -31,8 +31,8 @@ import { sha256Hex } from "./sha256.ts";
 
 import type { Dict } from "./py.ts";
 import {
-  isDict, pyAsciiDigits, pyFloatRepr, pyGet, pyStrip, pyTruthy,
-  utf8,
+  daysFromCivil, daysIn, isDict, pyAsciiDigits, pyFloatRepr, pyGet, pyStrip,
+  pyTruthy, utf8,
 } from "./py.ts";
 
 export type { Dict };
@@ -274,22 +274,6 @@ export function splitTimestamp(t: number): [number, number] {
   return [secs, us];
 }
 
-// Days from 1970-01-01 to a proleptic Gregorian date.
-function daysFromCivil(y: number, m: number, d: number): number {
-  y -= m <= 2 ? 1 : 0;
-  const era = Math.floor(y / 400);
-  const yoe = y - era * 400;
-  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
-  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
-  return era * 146097 + doe - 719468;
-}
-
-function daysInMonth(y: number, m: number): number {
-  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
-  if (m === 2) return leap ? 29 : 28;
-  return [4, 6, 9, 11].includes(m) ? 30 : 31;
-}
-
 // datetime.fromisoformat as Python 3.9's C implementation parses, which is
 // what /usr/bin/python3 runs the status line with: YYYY-MM-DD, any one
 // separator, HH[:MM[:SS[.fff[fff]]]], and an offset of +HH:MM[:SS[.ffffff]].
@@ -374,7 +358,7 @@ export function fromIsoformat(text: string): number | null {
     }
   }
   if (year < 1 || month < 1 || month > 12) return null;
-  if (day < 1 || day > daysInMonth(year, month)) return null;
+  if (day < 1 || day > daysIn(year, month)) return null;
   if (t[0] > 23 || t[1] > 59 || t[2] > 59) return null;
   const secs = daysFromCivil(year, month, day) * 86400 +
     t[0] * 3600 + t[1] * 60 + t[2] - offset;
