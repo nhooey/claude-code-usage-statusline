@@ -6,10 +6,11 @@ does not inspect transcripts, source caches, hook stdin/stdout, or rate state.
 import math
 import os
 import time
-from typing import Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from . import formatting as fmt
 from .formatting import *
+from .spans import Span, SpanLike, ink, join, paint, rstrip, spans, width
 from .claude_records import (CacheShares, Git, Limits, NO_CACHE_SHARES,
                              Payload, Transcript, eta_finish)
 
@@ -35,9 +36,14 @@ def project_name(git: Git, project_dir: str) -> str:
 # This is the one structural change the port exists to make.  In the bash these
 # read globals, so their inputs were invisible in their signatures and the
 # function that set those globals grew every time a renderer wanted something.
+#
+# Each returns its cell as spans (see spans.py), [] for nothing to draw, with
+# each colour by its constant's name.  render_status joins them into escape
+# codes at the end, where the readout is printed.
 # ════════════════════════════════════════════════════════════════════════════
 
-def render_tokens(up: Optional[int], down: int, down_w: int = VAL2_W) -> str:
+def render_tokens(up: Optional[int], down: int,
+                  down_w: int = VAL2_W) -> List[Span]:
     """The ▴/▾ billable-equivalent token totals.
 
     Each figure gets four columns of its own — three characters and a unit, the
@@ -54,12 +60,12 @@ def render_tokens(up: Optional[int], down: int, down_w: int = VAL2_W) -> str:
     the ▾ figure ends on column 2's right edge with 💰's and 🎯's.
     """
     if up is None:
-        return ""
-    return "%s%s%s%s%s%s%s" % (
-        S_TOK, mag_dim(up, MAG_TOK) + F_TUP,
-        pad_val(VAL_W, E_UP + pad_val(4, humanize(up)), True), R,
-        mag_dim(down, MAG_TOK) + F_TDN,
-        pad_val(down_w, E_DOWN + pad_val(4, humanize(down))), R)
+        return []
+    return [Span(S_TOK),
+            Span(pad_val(VAL_W, E_UP + pad_val(4, humanize(up)), True),
+                 "F_TUP", mag_dim(up, MAG_TOK)),
+            Span(pad_val(down_w, E_DOWN + pad_val(4, humanize(down))),
+                 "F_TDN", mag_dim(down, MAG_TOK))]
 
 
 def main_doing(tr: Transcript) -> Tuple[str, float]:
@@ -83,7 +89,8 @@ def main_doing(tr: Transcript) -> Tuple[str, float]:
 
 
 def render_rate_cache(rate: Optional[float], cache_pct: int,
-                      mark: str = "", secs: Optional[float] = None) -> str:
+                      mark: str = "", secs: Optional[float] = None
+                      ) -> List[Span]:
     """The Doing figure and 🎯 the cache hit rate in one cell:
     "🔧 42s  🎯98٪", "🤖200/s 🎯98٪".
 
@@ -114,30 +121,28 @@ def render_rate_cache(rate: Optional[float], cache_pct: int,
     magnitude cell.
     """
     if cache_pct is None or cache_pct < 0:
-        return ""
+        return []
     show_rate = not mark or (mark == E_WORK and rate is not None
                              and (secs is None or secs < QUIET_S))
     if not show_rate and secs is not None:
-        ink = (F_AMB if mark == E_WORK and secs >= QUIET_WARN_S
-               else mag_dim(secs, MAG_DUR_S) + F_PRW)
-        head = "%s%s%s%s%s" % (mark, DOING_PAD, ink,
-                               pad_val(VAL_W - 1, dur_fmt(secs)) + " ", R)
+        style = (ink("F_AMB") if mark == E_WORK and secs >= QUIET_WARN_S
+                 else ink("F_PRW", mag_dim(secs, MAG_DUR_S)))
+        head = [Span(mark + DOING_PAD),
+                paint(style, pad_val(VAL_W - 1, dur_fmt(secs)) + " ")]
     else:
         fig = "" if rate is None else rate_fig(rate) + "/s"
-        head = "%s%s%s%s" % ((mark + DOING_PAD) if mark else S_RATE,
-                             mag_dim(rate, MAG_RATE) + F_RATE,
-                             pad_val(VAL_W, fig), R)
+        head = [Span((mark + DOING_PAD) if mark else S_RATE),
+                Span(pad_val(VAL_W, fig), "F_RATE", mag_dim(rate, MAG_RATE))]
     # 🎯 takes its pad, where 💰 and ▾ touch their figures: the percentage
     # is three wide, and the pad makes it the four theirs are, so the three
     # end together on the column's edge — "🎯 96٪" under "▾6.2M".
-    return "%s%s" % (
-        head,
-        pad_val(COL2_VAL2_W, S_CACHE + cache_color(cache_pct)
-                + pad_val(3, pct2(cache_pct) + E_PCT) + R))
+    return head + pad_val(COL2_VAL2_W, [
+        Span(S_CACHE),
+        paint(cache_color(cache_pct), pad_val(3, pct2(cache_pct) + E_PCT))])
 
 
 def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
-               est: bool = False) -> str:
+               est: bool = False) -> List[Span]:
     """Live context occupancy, as a size and then a percentage — "🧠 115k   11٪".
 
     The window itself is deliberately not printed: it is constant for the
@@ -187,7 +192,7 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
     seven, so each tilde fits without moving either edge.
     """
     if ctx_pct is None:
-        return ""
+        return []
     # fmt's bindings: set_mark_spacing rebinds MARK_SP and the grid after
     # import.  The size ends where the share row's 🎤 figure ends, and the
     # percentage where its 🎮 figure does.
@@ -195,32 +200,33 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
                 + SHARE_FIG_W)
     size_w = turn_end - vis_width(S_CTX)
     pct_w = fmt.RIGHT_GRID[2] - turn_end
-    dim = mag_dim(ctx_tokens, MAG_TOK)
+    style = ink("F_PNK", mag_dim(ctx_tokens, MAG_TOK))
     tilde = "~" if est else ""
-    return "%s%s%s%s%s%s%s" % (
-        S_CTX, dim + F_PNK, pad_val(size_w, tilde + humanize(ctx_tokens)), R,
-        dim + F_PNK, pad_val(pct_w, "%s%d%s" % (tilde, ctx_pct, E_PCT)), R)
+    return [Span(S_CTX),
+            paint(style, pad_val(size_w, tilde + humanize(ctx_tokens))),
+            paint(style, pad_val(pct_w, "%s%d%s" % (tilde, ctx_pct, E_PCT)))]
 
 
-def render_cost(cost_usd: str, mark: str = S_COST) -> str:
+def render_cost(cost_usd: str, mark: str = S_COST) -> List[Span]:
     """The session cost, "💰115 ": money_fig's three characters and a unit
     column.  Always yellow — no value tiering — and
     dim under MAG_COST, a dollar; the agent rows borrow the cell, so a heavy
     agent's 💰 is the bright one down the panel.  The status line passes the
     bare E_COST as `mark`: see render_model_cost."""
     if not cost_usd or cost_usd == "null":
-        return ""
+        return []
     try:
         c = float(cost_usd)
     except ValueError:
-        return ""
+        return []
     if not math.isfinite(c):            # json reads NaN and 1e400 as floats
-        return ""
-    return "%s%s%s%s" % (mark, mag_dim(c, MAG_COST) + F_YEL,
-                         pad_val(4, money_fig(c)), R)
+        return []
+    return [Span(mark),
+            Span(pad_val(4, money_fig(c)), "F_YEL", mag_dim(c, MAG_COST))]
 
 
-def render_model_cost(model: str, effort: str, cost_usd: str) -> str:
+def render_model_cost(model: str, effort: str,
+                      cost_usd: str) -> List[Span]:
     """The model and the cost side by side in one cell — "🤖O⁵🏃 💰115 ".
 
     Column 2's first row since the evening of 2026-09-16, to Neil's spec.
@@ -241,15 +247,17 @@ def render_model_cost(model: str, effort: str, cost_usd: str) -> str:
     mod = render_model(model, effort)
     cost = render_cost(cost_usd, E_COST)
     if not mod and not cost:
-        return ""
-    return seg(vis_width(S_MOD) + VAL_W, mod) + (pad_val(COL2_VAL2_W, cost) if cost else "")
+        return []
+    return (seg(vis_width(S_MOD) + VAL_W, mod)
+            + (pad_val(COL2_VAL2_W, cost) if cost else []))
 
 
 def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
-                 turn: str = "", colour: str = F_LIM_SESS,
+                 turn: str = "", colour: str = "F_LIM_SESS",
                  dim_total: bool = False,
                  now: Optional[float] = None,
-                 dim_turn: bool = False, dim_session: bool = False) -> str:
+                 dim_turn: bool = False, dim_session: bool = False
+                 ) -> List[Span]:
     """One plan-limit segment: three widening scopes, then a countdown.
 
     The percentages come in widening order: 🎤 what the turn just answered
@@ -306,10 +314,10 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
     on one row and "over 90٪" on the other.  See F_LIM_SESS.
     """
     if not pct_s:
-        return ""
+        return []
     pct_v = fmt._pct_num(pct_s)
     if pct_v is None:
-        return ""
+        return []
     d = short_dur(resets, now)
     if d:
         # Blank rather than absent when there is no reset time to count down
@@ -323,19 +331,20 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
         # itself and ignores one — and would not be now, because DIM reaches
         # a pictograph where a foreground colour does not, and would have
         # dimmed the mark on every countdown an hour or more out.
-        rst = "%s%s%s%s%s%s" % (S_RESET, fmt.MARK_SP, reset_dim(d), colour,
-                                pad_val(RST_W - vis_width(S_RESET), d), R)
+        rst = [Span(S_RESET + fmt.MARK_SP),
+               Span(pad_val(RST_W - vis_width(S_RESET), d), colour,
+                    reset_dim(d))]
     else:
-        rst = " " * (RST_W + len(fmt.MARK_SP))
+        rst = [Span(" " * (RST_W + len(fmt.MARK_SP)))]
 
-    def fig(mark: str, v: Optional[float], col: str,
-            w: int = LIM_FIG_W, digits: int = 3) -> str:
+    def fig(mark: str, v: Optional[float], col: Span,
+            w: int = LIM_FIG_W, digits: int = 3) -> List[Span]:
         # No transcript to sum or no calibration to divide by: say so rather
         # than showing a zero, which would read as "this consumed nothing".
         # See _with_shares.
         if v is None:
-            return "%s%s%s%s%s" % (mark, fmt.MARK_SP, DIM + F_CRM,
-                                   pad_val(w, "?"), R)
+            return [Span(mark + fmt.MARK_SP),
+                    Span(pad_val(w, "?"), "F_CRM", True)]
         # 100 is drawn, not spelled.  See E_HUNDRED.  E_PCT follows it just
         # as it follows a spelled figure below, so the column reads as one
         # scale all the way down; the glyph is two columns in a field of at
@@ -346,31 +355,31 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
         # 99.6 as "100".  One test, so the glyph and the string can never
         # disagree about where the window ends.
         if v >= 99.5:
-            return "%s%s%s%s%s" % (mark, fmt.MARK_SP, col,
-                                   pad_val(w, E_HUNDRED + E_PCT), R)
-        return "%s%s%s%s%s" % (mark, fmt.MARK_SP, col,
-                               pad_val(w, limit_pct(v, digits) + E_PCT), R)
+            return [Span(mark + fmt.MARK_SP),
+                    paint(col, pad_val(w, E_HUNDRED + E_PCT))]
+        return [Span(mark + fmt.MARK_SP),
+                paint(col, pad_val(w, limit_pct(v, digits) + E_PCT))]
 
     # The 5-hour row dims its account figure, leaving the two this session
     # owns at full strength: those are what a reader can act on and the
     # account total is context for them.  The weekly row keeps all three
     # bright, because by then the total IS the news.
-    tcol = DIM + colour if dim_total else colour
+    tcol = ink(colour, dim_total)
     # The two shares dim on the caller's word, not on their own figure: the
     # 5-hour row's share is always the larger of the pair and would flip on
     # a different turn than the weekly row's.  See MAG_SHARE_TURN.
-    return "%s%s" % (emoji, " ".join((
-        fig(E_TURN, fmt._pct_num(turn) if turn else None,
-            DIM + colour if dim_turn else colour),
-        fig(E_SESSION, fmt._pct_num(delta) if delta else None,
-            DIM + colour if dim_session else colour),
-        fig(E_ACCT, pct_v, tcol, LIM_ACCT_W, 2),
-        rst)))
+    return spans([emoji,
+                  fig(E_TURN, fmt._pct_num(turn) if turn else None,
+                      ink(colour, dim_turn)), " ",
+                  fig(E_SESSION, fmt._pct_num(delta) if delta else None,
+                      ink(colour, dim_session)), " ",
+                  fig(E_ACCT, pct_v, tcol, LIM_ACCT_W, 2), " ",
+                  rst])
 
 
 def render_cache_share(emoji: str, turn: Optional[int], sess: Optional[int],
-                       colour: str = F_SHARE, dim_turn: bool = False,
-                       dim_sess: bool = False) -> str:
+                       colour: str = "F_SHARE", dim_turn: bool = False,
+                       dim_sess: bool = False) -> List[Span]:
     """One column-3 row: where a bill went, at two scopes.  "📖 🎤 61٪ 🎮 45٪".
 
     The pair render_limit draws first -- 🎤 the turn just answered, 🎮 this
@@ -416,24 +425,24 @@ def render_cache_share(emoji: str, turn: Optional[int], sess: Optional[int],
     rounds to it.
     """
     if turn is None and sess is None:
-        return ""
+        return []
 
-    def fig(mark: str, v: Optional[int], col: str) -> str:
+    def fig(mark: str, v: Optional[int], col: Span) -> List[Span]:
         if v is None:
-            return "%s%s%s%s%s" % (mark, fmt.MARK_SP, DIM + F_CRM,
-                                   pad_val(SHARE_FIG_W, "?"), R)
+            return [Span(mark + fmt.MARK_SP),
+                    Span(pad_val(SHARE_FIG_W, "?"), "F_CRM", True)]
         if v >= 99.5:
-            return "%s%s%s%s%s" % (mark, fmt.MARK_SP, col,
-                                   pad_val(SHARE_FIG_W, E_HUNDRED + E_PCT), R)
-        return "%s%s%s%s%s" % (mark, fmt.MARK_SP, col,
-                               pad_val(SHARE_FIG_W, pct(v)), R)
+            return [Span(mark + fmt.MARK_SP),
+                    paint(col, pad_val(SHARE_FIG_W, E_HUNDRED + E_PCT))]
+        return [Span(mark + fmt.MARK_SP),
+                paint(col, pad_val(SHARE_FIG_W, pct(v)))]
 
-    return "%s%s" % (emoji, " ".join((
-        fig(E_TURN, turn, DIM + colour if dim_turn else colour),
-        fig(E_SESSION, sess, DIM + colour if dim_sess else colour))))
+    return spans([emoji,
+                  fig(E_TURN, turn, ink(colour, dim_turn)), " ",
+                  fig(E_SESSION, sess, ink(colour, dim_sess))])
 
 
-def render_diff(added: str, removed: str) -> str:
+def render_diff(added: str, removed: str) -> List[Span]:
     """The +adds/-removes segment, in eleven columns after its emoji.
 
     One for the space that divides the halves, two for the signs, and four for
@@ -463,7 +472,7 @@ def render_diff(added: str, removed: str) -> str:
     strength, as the limit rows' "?" does — the question is not small.
     """
     if not added:
-        return ""
+        return []
 
     def n(v: str) -> Optional[int]:
         try:
@@ -471,23 +480,22 @@ def render_diff(added: str, removed: str) -> str:
         except (TypeError, ValueError, OverflowError):    # "inf" as well
             return None
 
-    def half(sign: str, v: Optional[int], col: str) -> str:
+    def half(sign: str, v: Optional[int], col: str) -> Span:
         # rstrip drops humanize's unit column; see the note above for why
         # this cell is the exception.  "3.4k" is unaffected — it has no
         # trailing blank to lose — so only the sub-1000 case moves, and it
         # moves one column right, onto the margin.
         fig = "?" if v is None else humanize(v).rstrip()
-        return "%s%s%s%s" % (mag_dim(v, MAG_DIFF) + col, sign,
-                             pad_val(4, fig), R)
+        return Span(sign + pad_val(4, fig), col, mag_dim(v, MAG_DIFF))
 
-    return "%s%s %s" % (S_DIFF, half("+", n(added), F_GRN),
-                        half("-", n(removed), F_RED))
+    return [Span(S_DIFF), half("+", n(added), "F_GRN"), Span(" "),
+            half("-", n(removed), "F_RED")]
 
 
-def render_pr(pr: str) -> str:
+def render_pr(pr: str) -> List[Span]:
     if not pr or pr == "null":
-        return ""
-    return "%s%s%s%s" % (S_PR, F_CYN, pad_val(4, pr), R)
+        return []
+    return [Span(S_PR), Span(pad_val(4, pr), "F_CYN")]
 
 
 def model_label(model_id: str) -> str:
@@ -525,7 +533,7 @@ def model_spec(model_id: str) -> str:
     return fam[:2]
 
 
-def render_model(model: str, effort: str = "") -> str:
+def render_model(model: str, effort: str = "") -> List[Span]:
     """🤖, the two-character model spec and the effort's glyph — "🤖O⁵🏃".
 
     Three changes on 2026-09-13, all to Neil's spec.  The context window went:
@@ -549,10 +557,10 @@ def render_model(model: str, effort: str = "") -> str:
     a cell of the column's exact width, six, and a row of it back.
     """
     if not model:
-        return ""
-    cell = "%s%s%s%s" % (S_MOD, F_PUR, pad_val(2, model_spec(model)), R)
+        return []
+    cell = [Span(S_MOD), Span(pad_val(2, model_spec(model)), "F_PUR")]
     if effort and effort != "null":
-        cell += effort_glyph(effort)
+        cell.append(Span(effort_glyph(effort)))
     return cell
 
 
@@ -570,7 +578,7 @@ def effort_glyph(effort: str) -> str:
     }.get(effort, E_EFF_MED)
 
 
-def render_queue(queued: int, compactions: int) -> str:
+def render_queue(queued: int, compactions: int) -> List[Span]:
     """📨 the messages waiting for the main thread's next turn, then 🤏 how
     often its window has been compacted — "📨 2 🤏 1".
 
@@ -579,24 +587,24 @@ def render_queue(queued: int, compactions: int) -> str:
     it next to a "100٪".  Each half keeps its columns when the other is zero,
     so 🤏 does not move as the queue drains; a count past 99 reads 99.
     """
-    def half(mark: str, n: int, col: str) -> str:
+    def half(mark: str, n: int, col: str) -> List[Span]:
         if not n:
-            return " " * (vis_width(mark) + 2)
-        return "%s%s%s%s" % (mark, col, pad_val(2, str(min(n, 99))), R)
+            return [Span(" " * (vis_width(mark) + 2))]
+        return [Span(mark), Span(pad_val(2, str(min(n, 99))), col)]
     if not queued and not compactions:
-        return ""
-    return (half(E_INBOX, queued, F_CYN) + " "
-            + half(E_ROW_COMPACT, compactions, F_PNK)).rstrip()
+        return []
+    return rstrip([half(E_INBOX, queued, "F_CYN"), " ",
+                   half(E_ROW_COMPACT, compactions, "F_PNK")])
 
 
-def render_style(style: str) -> str:
+def render_style(style: str) -> List[Span]:
     """The output style, when it is not the default one."""
     if not style or style in ("default", "null"):
-        return ""
-    return "%s%s%s%s" % (S_STY, F_CYN, style[:W_STY - 2], R)
+        return []
+    return [Span(S_STY), Span(style[:W_STY - 2], "F_CYN")]
 
 
-def render_time(now: Optional[float] = None) -> str:
+def render_time(now: Optional[float] = None) -> List[Span]:
     """The wall clock, right-aligned on column 5's edge.
 
     Eleven columns for eight characters of clock.  Ten would hold the date
@@ -607,11 +615,11 @@ def render_time(now: Optional[float] = None) -> str:
     figures whole.
     """
     t = time.localtime(now) if now is not None else time.localtime()
-    return "%s%s%s%s" % (S_TIME, F_CRM,
-                         pad_val(11, time.strftime("%H:%M:%S", t)), R)
+    return [Span(S_TIME),
+            Span(pad_val(11, time.strftime("%H:%M:%S", t)), "F_CRM")]
 
 
-def render_date(now: Optional[float] = None) -> str:
+def render_date(now: Optional[float] = None) -> List[Span]:
     """Today, above the clock it belongs to.
 
     A status line that has been open across a date boundary — and at 18h and
@@ -623,8 +631,8 @@ def render_date(now: Optional[float] = None) -> str:
     column's right edge — see render_time.
     """
     t = time.localtime(now) if now is not None else time.localtime()
-    return "%s%s%s%s" % (S_DATE, F_CRM,
-                         pad_val(11, time.strftime("%Y-%m-%d", t)), R)
+    return [Span(S_DATE),
+            Span(pad_val(11, time.strftime("%Y-%m-%d", t)), "F_CRM")]
 
 
 def eta_reading(eta, start_ms, now, status="running", end=None):
@@ -701,24 +709,27 @@ def inherit_eta(own: Tuple[float, ...], finishes: Sequence[float],
     return (at, max(ends) - at)
 
 
-def eta_fig(reading, w: int, digits: int = 3, signed_off: bool = False) -> str:
+def eta_fig(reading, w: int, digits: int = 3,
+            signed_off: bool = False) -> List[Span]:
     """⛳ and the time left, in a field of `w`: "?" with no live estimate,
     an amber "+" past it, and nothing where there is no transcript at all.
     See eta_reading for which is which.  The "+" is bright red instead when
     `signed_off`: the finish it counts to is a report of zero, so the run
     said it was done and is running over."""
     if reading is None:
-        return ""
+        return []
     if not reading:
-        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, DIM + F_ETA, pad_val(w, "?"), R)
+        return [Span(E_ETA + fmt.MARK_SP), Span(pad_val(w, "?"), "F_ETA", True)]
     left = reading[1]
     if left < 0:
         # The "+" takes a column, so an overrun gets no decimal: "+9.3h"
         # would not fit the four a "9.3h" left does.
-        return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, F_OVER if signed_off else F_AMB,
-                               pad_val(w, "+" + dur_fmt(-left, min(digits, w - 2))), R)
-    return "%s%s%s%s%s" % (E_ETA, fmt.MARK_SP, mag_dim(left, MAG_DUR_S) + F_ETA,
-                           pad_val(w, dur_fmt(left, digits)), R)
+        return [Span(E_ETA + fmt.MARK_SP),
+                Span(pad_val(w, "+" + dur_fmt(-left, min(digits, w - 2))),
+                     "F_OVER" if signed_off else "F_AMB")]
+    return [Span(E_ETA + fmt.MARK_SP),
+            Span(pad_val(w, dur_fmt(left, digits)), "F_ETA",
+                 mag_dim(left, MAG_DUR_S))]
 
 
 def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
@@ -726,7 +737,7 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
                    blocked_s: float = 0.0, eta: Tuple[float, ...] = (),
                    turn_s: float = 0.0,
                    agent_etas: Sequence[Tuple[float, Optional[float]]] = ()
-                   ) -> str:
+                   ) -> List[Span]:
     """The session's clock, in the four fields the two rows below it use.
 
     It heads the column since the evening of 2026-09-16, to Neil's spec,
@@ -819,7 +830,7 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     the scale that is, because the scales run opposite ways.
     """
     if not start_s:
-        return ""
+        return []
     t = time.time() if now is None else now
     age = t - start_s if t > start_s else 0.0
     # A blocking prompt is answering time to the transcript and waiting time
@@ -838,9 +849,11 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     model_s = busy_s - wait - tool_s
     model_s = model_s if model_s > 0.0 else 0.0
 
-    def fig(mark: str, v: float, w: int = LIM_FIG_W, digits: int = 2) -> str:
-        return "%s%s%s%s%s" % (mark, fmt.MARK_SP, mag_dim(v, MAG_DUR_S) + F_PRW,
-                               pad_val(w, dur_fmt(v, digits)), R)
+    def fig(mark: str, v: float, w: int = LIM_FIG_W,
+            digits: int = 2) -> List[Span]:
+        return [Span(mark + fmt.MARK_SP),
+                Span(pad_val(w, dur_fmt(v, digits)), "F_PRW",
+                     mag_dim(v, MAG_DUR_S))]
 
     shown = inherit_eta(eta, [
         f for f, last in agent_etas
@@ -851,10 +864,10 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     # the agent's, which its panel row reports, so it stays amber here.
     signed_off = (bool(eta) and eta[1] == 0 and bool(shown)
                   and eta_finish(shown) <= eta_finish(eta) + 1e-6)
-    return "%s%s %s %s %s" % (
-        S_IDLE, eta_fig(reading, LIM_FIG_W, signed_off=signed_off),
-        fig(E_WORK, model_s, LIM_FIG_W, 3), fig(E_TOOL, tool_s, LIM_ACCT_W, 3),
-        fig(E_WAIT, idle, RST_W - vis_width(E_WAIT), 3))
+    return spans([S_IDLE, eta_fig(reading, LIM_FIG_W, signed_off=signed_off),
+                  " ", fig(E_WORK, model_s, LIM_FIG_W, 3),
+                  " ", fig(E_TOOL, tool_s, LIM_ACCT_W, 3),
+                  " ", fig(E_WAIT, idle, RST_W - vis_width(E_WAIT), 3)])
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -930,19 +943,22 @@ def allocate_left(budget: int, nat_branch: int, nat_proj: int,
     return got[0], got[1], got[2]
 
 
-def render_thread_background(shells: int, monitors: int) -> str:
+def render_thread_background(shells: int, monitors: int) -> List[Span]:
     """💻 the background shells and 📡 the Monitors the main thread started
     and has not heard the end of — "💻 2 📡 1" — each only while it has one,
     and "" for neither.  The agent rows count their own the same way.
     Claude Code says as much in words, and the panel gives a shell a row of
     its own; these are here so the main thread reads as its agents do."""
-    return " ".join("%s%s%s%d%s" % (mark, fmt.MARK_SP, F_CRM, n, R)
-                    for mark, n in ((E_MODE_SHELL, shells),
-                                    (E_MODE_MONITOR, monitors)) if n)
+    out = []
+    for mark, n in ((E_MODE_SHELL, shells), (E_MODE_MONITOR, monitors)):
+        if n:
+            out += [" "] if out else []
+            out += [Span(mark + fmt.MARK_SP), Span("%d" % n, "F_CRM")]
+    return spans(out)
 
 
 def render_where_group(proj: str, path: str, branch: str, git: Git,
-                       background: str = "") -> str:
+                       background: SpanLike = ()) -> List[Span]:
     """The project / pwd / branch group — the flush-left half of line 3,
     then `background`, render_thread_background's 💻 and 📡, while the main
     thread has a shell or a Monitor running.
@@ -960,21 +976,22 @@ def render_where_group(proj: str, path: str, branch: str, git: Git,
     column 1, whose row 3 📨 and 🤏 fill: here they cost the pwd its columns
     only while a shell or a Monitor runs, and the fixed grid none.
     """
-    out = ["%s%s%s%s" % (E_PROJ, F_BLU, proj, R),
-           "%s%s%s%s%s" % (" " * LEFT_GAP, E_DIR, F_BLU2, path, R)]
+    out = [Span(E_PROJ), Span(proj, "F_BLU"),
+           Span(" " * LEFT_GAP + E_DIR), Span(path, "F_BLU2")]
     if git.branch:
-        out.append(" " * LEFT_GAP)
+        out.append(Span(" " * LEFT_GAP))
         if git.dirty:
-            out.append("%s%s%s %s%s" % (E_GIT_BAD, F_AMB, branch, E_DIRTY, R))
+            out += [Span(E_GIT_BAD), Span(branch + " " + E_DIRTY, "F_AMB")]
         else:
-            out.append("%s%s%s%s" % (E_GIT_OK, F_GRN, branch, R))
+            out += [Span(E_GIT_OK), Span(branch, "F_GRN")]
+    background = spans(background)
     if background:
-        out.append(" " * LEFT_GAP + background)
-    return "".join(out)
+        out += [Span(" " * LEFT_GAP)] + background
+    return out
 
 
-def chat_row(prefix: str, text: str, placeholder: str, fg: str, tail: str,
-             cols: Optional[int]) -> str:
+def chat_row(prefix: str, text: str, placeholder: str, fg: str,
+             tail: SpanLike, cols: Optional[int]) -> List[Span]:
     """One chat row: truncated text on a dark background, with a tail riding
     the right edge.
 
@@ -986,15 +1003,19 @@ def chat_row(prefix: str, text: str, placeholder: str, fg: str, tail: str,
     deliberately kept: the alternative is dropping the tail entirely, which
     loses two thirds of the readout in exactly the sessions (`claude -p`,
     cloud) where there is least else to look at.
+
+    `fg` names the row's colour.  The line's clears are render_status's, which
+    writes them round the joined row.
     """
     body = text
-    dim = ""
+    dim = False
     if not body:
-        body, dim = placeholder, DIM
+        body, dim = placeholder, True
+    tail = spans(tail)
     cap = MAX_ROW
     tail_w = 0
     if tail and cols:
-        tail_w = vis_width(strip_ansi(tail))
+        tail_w = width(tail)
         # Everything the row owes: the margin, the table, the gap before it and
         # the prefix.  Whatever is left is the text's, and MAX_ROW does not
         # apply — that is the cap for when there is no width to measure
@@ -1005,7 +1026,7 @@ def chat_row(prefix: str, text: str, placeholder: str, fg: str, tail: str,
         cap = 1
     body = fit_cols(body, cap)
 
-    out = ["%s%s%s%s%s%s" % (LINE_CLEAR, fg, prefix, B_DRK + dim + fg, body, R)]
+    out = [Span(prefix, fg), Span(body, fg, dim, bg="B_DRK")]
     if tail:
         # tail_w is deliberately left at 0 when the width is unknown, matching
         # the arithmetic this was ported from: the pad goes negative either
@@ -1015,13 +1036,13 @@ def chat_row(prefix: str, text: str, placeholder: str, fg: str, tail: str,
         pad = (cols or 0) - RIGHT_MARGIN - tail_w - vis_width(prefix + body)
         if pad < MIN_GAP:
             pad = MIN_GAP
-        out.append(" " * pad + tail)
-    out.append(EOL_CLEAR)
-    return "".join(out)
+        out += [Span(" " * pad)] + tail
+    return out
 
 
-def render_chat_rows(tr: Transcript, tail1: str, tail2: str,
-                     cols: Optional[int]) -> Tuple[str, str]:
+def render_chat_rows(tr: Transcript, tail1: SpanLike, tail2: SpanLike,
+                     cols: Optional[int]
+                     ) -> Tuple[List[Span], List[Span]]:
     """Lines 1 and 2, swapping order when the model is thinking.
 
     ISO-8601 timestamps sort lexicographically the same as chronologically, and
@@ -1032,14 +1053,22 @@ def render_chat_rows(tr: Transcript, tail1: str, tail2: str,
     tails stay put, so the eye keeps finding each group where it left it.
     """
     if tr.user_ts > tr.asst_ts:
-        return (chat_row(S_BOT, tr.asst_text, "(no reply yet)", F_CHAT_B,
+        return (chat_row(S_BOT, tr.asst_text, "(no reply yet)", "F_CHAT_B",
                          tail1, cols),
-                chat_row(S_HUMAN, tr.user_text, "(no prompt yet)", F_CHAT_U,
+                chat_row(S_HUMAN, tr.user_text, "(no prompt yet)", "F_CHAT_U",
                          tail2, cols))
-    return (chat_row(S_HUMAN, tr.user_text, "(no prompt yet)", F_CHAT_U,
+    return (chat_row(S_HUMAN, tr.user_text, "(no prompt yet)", "F_CHAT_U",
                      tail1, cols),
-            chat_row(S_BOT, tr.asst_text, "(no reply yet)", F_CHAT_B,
+            chat_row(S_BOT, tr.asst_text, "(no reply yet)", "F_CHAT_B",
                      tail2, cols))
+
+
+def drawn_line(row: SpanLike, grid: bool = True) -> str:
+    """One printed line of the readout: the row's spans joined into escape
+    codes between the clears that erase the line before and after it (see
+    LINE_CLEAR).  `grid` says the row ends on a grid row, whose closing reset
+    join writes."""
+    return LINE_CLEAR + join(row, close=grid) + EOL_CLEAR
 
 
 def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
@@ -1093,9 +1122,9 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         render_pr(pay.pr_number),
         render_tokens(tr.tok_up, tr.tok_down, COL2_VAL2_W),
         render_cache_share(S_READ, cache.turn_read, cache.sess_read,
-                           F_SHARE, dim_rd_turn, dim_rd_sess),
+                           "F_SHARE", dim_rd_turn, dim_rd_sess),
         render_limit(S_SESS, lim.session_pct, lim.session_share,
-                     lim.session_reset, lim.session_turn, F_LIM_SESS, True,
+                     lim.session_reset, lim.session_turn, "F_LIM_SESS", True,
                      now, dim_turn, dim_sess),
         render_time(now),
     ), rule=rule)
@@ -1106,9 +1135,9 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
             max(0.0, (time.time() if now is None else now) - doing[1])
             if doing[0] else None)),
         render_cache_share(S_WRITE, cache.turn_write, cache.sess_write,
-                           F_SHARE, dim_rd_turn, dim_rd_sess),
+                           "F_SHARE", dim_rd_turn, dim_rd_sess),
         render_limit(S_WEEK, lim.weekly_pct, lim.weekly_share,
-                     lim.weekly_reset, lim.weekly_turn, F_LIM_WEEK, False,
+                     lim.weekly_reset, lim.weekly_turn, "F_LIM_WEEK", False,
                      now, dim_turn, dim_sess),
         render_diff(pay.lines_added, pay.lines_removed),
     ), rule=rule)
@@ -1125,7 +1154,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     branch_display = git.branch
     background = render_thread_background(tr.shells, tr.monitors)
 
-    right_w = vis_width(strip_ansi(right))
+    right_w = width(right)
     split = False
     if cols:
         # What the three left-hand names have to share: the row, less the
@@ -1134,8 +1163,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         # from rendering the group with all three names empty, so the emoji,
         # the separators and the dirty marker are measured rather than
         # estimated — and it stays correct if the punctuation ever changes.
-        chrome_w = vis_width(strip_ansi(render_where_group("", "", "", git,
-                                                           background)))
+        chrome_w = width(render_where_group("", "", "", git, background))
         budget = cols - RIGHT_MARGIN - right_w - MIN_GAP - chrome_w
         if budget < LMIN_PROJ + LMIN_PATH:
             # Too narrow to share line 3: the names move down to a line 4
@@ -1162,26 +1190,25 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
         # overruns, the chat text has been cut to its floor, and the tails
         # sit just past the prompt instead — line 3 has to follow them there
         # to keep the columns stacked.
-        # The clears are not SGR, so strip_ansi leaves them; drop them first.
-        bare = row1.replace(LINE_CLEAR, "").replace(EOL_CLEAR, "")
-        pad = vis_width(strip_ansi(bare)) - vis_width(strip_ansi(usage))
-        return "%s\n%s\n%s%s%s%s\n%s%s%s\n" % (
-            row1, row2, LINE_CLEAR, " " * pad, right, EOL_CLEAR,
-            LINE_CLEAR, left, EOL_CLEAR)
+        pad = width(row1) - width(usage)
+        return "%s\n%s\n%s\n%s\n" % (
+            drawn_line(row1), drawn_line(row2),
+            drawn_line([" " * pad, right]), drawn_line(left, grid=False))
 
     if cols:
         left = render_where_group(proj_display, pwd_display, branch_display,
                                   git, background)
-        pad = cols - RIGHT_MARGIN - right_w - vis_width(strip_ansi(left))
+        pad = cols - RIGHT_MARGIN - right_w - width(left)
         if pad < MIN_GAP:
             pad = MIN_GAP
-        line3 = left + " " * pad + right
+        line3 = [left, " " * pad, right]
     else:
         # No usable width, or too little of it to divide: fall back to the
         # left-flowing row, with only the path trimmed and only by estimate.
-        bg_w = LEFT_GAP + vis_width(strip_ansi(background)) if background else 0
-        line3 = render_where_group(
+        bg_w = LEFT_GAP + width(background) if background else 0
+        line3 = [render_where_group(
             proj_display, fit_path(pwd_display, fmt.PWD_MAX_FALLBACK - bg_w),
-            branch_display, git, background) + " " * MIN_GAP + right
+            branch_display, git, background), " " * MIN_GAP, right]
 
-    return "%s\n%s\n%s%s%s\n" % (row1, row2, LINE_CLEAR, line3, EOL_CLEAR)
+    return "%s\n%s\n%s\n" % (drawn_line(row1), drawn_line(row2),
+                              drawn_line(line3))

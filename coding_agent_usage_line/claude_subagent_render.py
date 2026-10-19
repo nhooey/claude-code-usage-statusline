@@ -2,7 +2,8 @@
 
 Preparation (sidecar lookup, usage parsing, limits/source selection and JSON
 serialization) belongs to orchestration.  This module only lays out supplied
-task facts and returns strings.
+task facts.  Its cells return spans (see spans.py), and render_task_rows
+joins each row into escape codes, where the panel prints it.
 """
 import time
 from typing import Optional, Sequence
@@ -13,6 +14,7 @@ from .claude_render import (render_cost, render_diff, render_tokens, model_spec,
                             effort_glyph, eta_reading,
                             inherit_eta)
 from .claude_records import Limits, squash, eta_finish, WAITING_TOOLS
+from .spans import Span, ink, join, paint, rstrip, spans, width
 
 A_KIND_W, A_ID_W, A_STATE_W = 2, 10, 2
 A_HEAD_GAP, A_NAME_MIN, A_ACT_MIN, A_CLOCK_W, A_RATE_W, A_GAP, A_TICK_S = 1, 8, 8, 6, 8, 2, 5.0
@@ -60,13 +62,15 @@ def token_rate(samples, status):
     return max(0.0, last - first) / (A_TICK_S * (len(samples) - 1))
 
 def render_agent_limit(emoji, pct_s, share, colour, billed=True, dim=False, digits=3):
-    if not pct_s or fmt._pct_num(pct_s) is None or not billed: return ""
-    colour = DIM + colour if dim else colour
+    """`emoji` and the agent's share of the window; `colour` names the row's
+    F_* constant, as render_limit's does."""
+    if not pct_s or fmt._pct_num(pct_s) is None or not billed: return []
+    style = ink(colour, dim)
     w = LIM_FIG_W + digits - 3
-    if share is None: fig = "%s%s%s" % (DIM + F_CRM, pad_val(w, "?"), R)
-    elif share >= 99.5: fig = "%s%s%s" % (colour, pad_val(w, E_HUNDRED + E_PCT), R)
-    else: fig = "%s%s%s" % (colour, pad_val(w, limit_pct(share, digits) + E_PCT), R)
-    return emoji + fig
+    if share is None: fig = Span(pad_val(w, "?"), "F_CRM", True)
+    elif share >= 99.5: fig = paint(style, pad_val(w, E_HUNDRED + E_PCT))
+    else: fig = paint(style, pad_val(w, limit_pct(share, digits) + E_PCT))
+    return [Span(emoji), fig]
 
 def render_kind(agent_type, task_kind): return KIND_MARK.get(agent_type or task_kind, E_ROW_AGENTS)
 def agent_state(status, usage=None, waiting_on=False):
@@ -79,7 +83,8 @@ def agent_state(status, usage=None, waiting_on=False):
     be the thing that wakes it: 💤 its agents, then 💻 a background shell,
     📡 a Monitor, ⛳ only the ETA it gave (see parked); 🥚 is a task not
     started.  Ended, it is how: ✅ ❌ 🛑.  💥, paused or ended, is an agent
-    whose last answer died on an API error.
+    whose last answer died on an API error.  A status never seen is its
+    first two letters, which render_phase paints amber.
     """
     if status == "running":
         names = [n for _, n in (getattr(usage, "pending", ()) or ())]
@@ -102,7 +107,8 @@ def agent_state(status, usage=None, waiting_on=False):
                                next((PAUSE_MARK[k] for k in ("bash", "monitor") if k in kinds), E_MODE_ETA))
     if status in END_MARK:
         return E_PHASE_END, END_MARK[status]
-    return ("%s%s%s" % (F_AMB, status[:2], R), "") if status else ("", "")
+    return (status[:2], "") if status else ("", "")
+PHASES = (E_PHASE_RUN, E_PHASE_PAUSE, E_PHASE_END, "")
 def render_state(status, usage=None, waiting_on=False):
     """The phase circle and the mode mark after it: see agent_state.
 
@@ -112,43 +118,48 @@ def render_state(status, usage=None, waiting_on=False):
     running, 🟡 paused, ⚫ ended — and the mark after it says what the agent
     is doing in it.  A status never seen is two amber letters and no mark.
     """
-    return "".join(agent_state(status, usage, waiting_on))
+    phase, mode = agent_state(status, usage, waiting_on)
+    return spans([_phase_span(phase), mode])
 def render_phase(status, usage=None, waiting_on=False):
     """The phase circle alone: the mode after it is the Doing cell's now,
     beside how long the agent has been in it; see render_doing."""
-    return agent_state(status, usage, waiting_on)[0]
+    return spans(_phase_span(agent_state(status, usage, waiting_on)[0]))
+def _phase_span(phase):
+    """The phase circle, or a status never seen in amber."""
+    return Span(phase, None if phase in PHASES else "F_AMB")
 def render_spin(status, usage=None):
     """A running agent's spinner, one frame on for each ⏺ it has written; see E_SPIN.
 
     Blank on any other row, and on one with no transcript to count in.
     """
-    if status != "running" or getattr(usage, "eta", None) is None: return ""
+    if status != "running" or getattr(usage, "eta", None) is None: return []
     frames = E_SPIN + E_SPIN[::-1]
-    return "%s%s%s" % (F_SPIN, frames[(getattr(usage, "blocks", 0) or 0) % len(frames)], R)
+    return [Span(frames[(getattr(usage, "blocks", 0) or 0) % len(frames)], "F_SPIN")]
 def render_kids(n):
     """👶🏻 and how many agents hang under this row on the panel; see render_task_rows."""
-    return "" if not n else "%s%s%d%s" % (E_KIDS, F_CRM, n, R)
+    return [] if not n else [Span(E_KIDS), Span("%d" % n, "F_CRM")]
 def render_agent_model(model_id, effort):
-    if not model_id: return ""
-    return "%s%s%s%s%s" % (E_MOD, F_PUR, pad_val(2, model_spec(model_id)), R, effort_glyph(effort) if effort and effort != "null" else "")
+    if not model_id: return []
+    return spans([E_MOD, Span(pad_val(2, model_spec(model_id)), "F_PUR"),
+                  effort_glyph(effort) if effort and effort != "null" else ""])
 def render_agent_cache(cache_pct):
-    if cache_pct is None or cache_pct < 0: return ""
-    return "%s%s%s%s%s" % (E_CACHE, cache_color(cache_pct), E_HUNDRED if cache_pct >= 100 else pad_val(2, "%d" % cache_pct), E_PCT, R)
+    if cache_pct is None or cache_pct < 0: return []
+    return [Span(E_CACHE), paint(cache_color(cache_pct), (E_HUNDRED if cache_pct >= 100 else pad_val(2, "%d" % cache_pct)) + E_PCT)]
 def render_agent_ctx(ctx_tokens, window=0):
     """🧠, the agent's context size and its share of its own window, as the
     status line's cell draws the main thread's.  The share is blank where the
     payload gives no window; its column stays, so the cells after it hold."""
-    if ctx_tokens <= 0: return ""
+    if ctx_tokens <= 0: return []
     pct = "%d%s" % (int(ctx_tokens * 100 / window), E_PCT) if window > 0 else ""
-    dim = mag_dim(ctx_tokens, MAG_TOK)
-    return "%s%s%s%s %s%s%s" % (S_CTX, dim + F_PNK, pad_val(4, humanize(ctx_tokens)), R,
-                                dim + F_PNK, pad_val(A_CTX_PCT_W, pct), R)
+    style = ink("F_PNK", mag_dim(ctx_tokens, MAG_TOK))
+    return [Span(S_CTX), paint(style, pad_val(4, humanize(ctx_tokens))), Span(" "),
+            paint(style, pad_val(A_CTX_PCT_W, pct))]
 def render_compactions(n):
     """🤏 and how often the agent's window has been compacted; "" for never."""
-    return "" if not n else "%s%s%d%s" % (E_ROW_COMPACT, F_PNK, n, R)
+    return [] if not n else [Span(E_ROW_COMPACT), Span("%d" % n, "F_PNK")]
 def render_inbox(n):
     """📨 and how many messages wait for the agent's next tool round."""
-    return "" if not n else "%s%s%d%s" % (E_INBOX, F_CYN, n, R)
+    return [] if not n else [Span(E_INBOX), Span("%d" % n, "F_CYN")]
 def background_count(status, usage, kind):
     """How many background tasks of `kind`, "bash" or "monitor", the agent
     started and has not heard the end of; 0 once it failed or was killed,
@@ -159,7 +170,7 @@ def render_background(mark, n):
     """💻 or 📡 and how many shells or Monitors it has running; "" for none.
     The paused mark says which one wakes it; this says how many there are,
     and says it while the agent is still running too."""
-    return "" if not n else "%s%s%d%s" % (mark, F_CRM, n, R)
+    return [] if not n else [Span(mark), Span("%d" % n, "F_CRM")]
 def render_agent_diff(usage):
     """The agent's own +adds/-removes, in the status line's 💾 cell.
 
@@ -199,8 +210,8 @@ def render_agent_elapsed(start_ms, now, end=None, first=None):
     shares, so the one figure left is the one no share can be read without.
     """
     run = agent_elapsed(start_ms, now, end, first)
-    if run is None: return ""
-    return "%s%s%s%s" % (E_IDLE, mag_dim(run, MAG_DUR_S) + F_PRW, pad_val(4, dur_fmt(run)), R)
+    if run is None: return []
+    return [Span(E_IDLE), Span(pad_val(4, dur_fmt(run)), "F_PRW", mag_dim(run, MAG_DUR_S))]
 def gauge_dots(parts, dots=4*GAUGE_W):
     """`parts` shared out as whole dots that always sum to `dots`.
 
@@ -225,7 +236,7 @@ def render_gauge(mark, secs, n):
     """`mark` and `n` dots of E_GAUGE, dim under MAG_DUR_S of its own seconds
     the way every duration on the row is."""
     cells = "".join(E_GAUGE[max(0, min(4, n - 4 * k))] for k in range(GAUGE_W))
-    return "%s%s%s%s" % (mark, mag_dim(secs, MAG_DUR_S) + F_PRW, cells, R)
+    return [Span(mark), Span(cells, "F_PRW", mag_dim(secs, MAG_DUR_S))]
 def render_agent_split(elapsed, model_s, tool_s=0.0):
     """🤖 🔧 🚦, each with a gauge of its share of the agent's ⌛.
 
@@ -243,11 +254,13 @@ def render_agent_split(elapsed, model_s, tool_s=0.0):
     and 🚦 is empty.  Blank with no transcript to read the split from — a
     shell, a remote agent — where ⌛ alone is still drawn.
     """
-    if model_s is None or elapsed is None: return ""
+    if model_s is None or elapsed is None: return []
     model_s, tool_s = max(0.0, model_s), max(0.0, tool_s or 0.0)
     parts = (model_s, tool_s, max(0.0, elapsed - model_s - tool_s))
-    return " ".join(render_gauge(m, s, n) for m, s, n in
-                    zip((E_WORK, E_TOOL, E_WAIT), parts, gauge_dots(parts)))
+    out = []
+    for m, s, n in zip((E_WORK, E_TOOL, E_WAIT), parts, gauge_dots(parts)):
+        out += ([Span(" ")] if out else []) + render_gauge(m, s, n)
+    return out
 def parked(status, eta, waiting_on=False, background=()):
     """Whether a task Claude Code calls completed is only waiting.
 
@@ -289,17 +302,17 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
     """
     got = eta_reading(eta, start_ms, now, status, end)
     if got is None:
-        return ""
+        return []
     if not got:
-        return "%s%s%s%s" % (E_ETA, DIM + F_ETA, pad_val(A_ETA_FIG_W, "?"), R)
+        return [Span(E_ETA), Span(pad_val(A_ETA_FIG_W, "?"), "F_ETA", True)]
     left = got[1]
     if left < 0:
-        return "%s%s%s%s" % (E_ETA, F_OVER if signed_off else F_AMB,
-                             pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)), R)
-    return "%s%s%s%s" % (E_ETA, mag_dim(left, MAG_DUR_S) + F_ETA,
-                         pad_val(A_ETA_FIG_W, dur_fmt(left)), R)
+        return [Span(E_ETA), Span(pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)),
+                                  "F_OVER" if signed_off else "F_AMB")]
+    return [Span(E_ETA), Span(pad_val(A_ETA_FIG_W, dur_fmt(left)), "F_ETA",
+                              mag_dim(left, MAG_DUR_S))]
 def render_agent_rate(rate, mark=E_RATE):
-    return "" if rate is None else "%s %s%s/s%s" % (mark, mag_dim(rate, MAG_RATE) + F_RATE, pad_val(3, rate_fig(rate)), R)
+    return [] if rate is None else [Span(mark + " "), Span(pad_val(3, rate_fig(rate)) + "/s", "F_RATE", mag_dim(rate, MAG_RATE))]
 def state_since(status, usage, phase, mode, task=None):
     """The epoch the agent entered the state `mode` names, or None.
 
@@ -353,10 +366,10 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
             secs is None or secs < A_SILENT_S):
         return render_agent_rate(rate, mode)
     if secs is None:
-        return mode
-    ink = (F_AMB if mode == E_WORK and secs >= A_SILENT_WARN_S
-           else mag_dim(secs, MAG_DUR_S) + F_PRW)
-    return "%s %s%s %s" % (mode, ink, pad_val(fig_w, dur_fmt(secs)), R)
+        return [Span(mode)]
+    style = (ink("F_AMB") if mode == E_WORK and secs >= A_SILENT_WARN_S
+             else ink("F_PRW", mag_dim(secs, MAG_DUR_S)))
+    return [Span(mode + " "), paint(style, pad_val(fig_w, dur_fmt(secs)) + " ")]
 def render_who(name, act, room, branch=""):
     """The name, then 🌿 and the branch of a worktree the agent works in
     apart from the session's, then what it is doing, in that order of claim
@@ -364,7 +377,7 @@ def render_who(name, act, room, branch=""):
     all; the activity needs A_ACT_MIN."""
     tag = E_GIT_OK + fit_cols(branch, A_BRANCH_W) if branch else ""
     out, left = [], room
-    for col, text, least in ((F_BLU, name, 0), (F_GRN, tag, None), (F_CHAT_B, act, A_ACT_MIN)):
+    for col, text, least in (("F_BLU", name, 0), ("F_GRN", tag, None), ("F_CHAT_B", act, A_ACT_MIN)):
         if not text: continue
         have = left - (A_HEAD_GAP if out else 0)
         if not out: text = fit_cols(text, have)
@@ -372,9 +385,9 @@ def render_who(name, act, room, branch=""):
             if have < vis_width(text): continue
         elif have < least: continue
         else: text = fit_cols(text, have)
-        out.append("%s%s%s" % (col, text, R))
+        out += ([Span(" " * A_HEAD_GAP)] if out else []) + [Span(text, col)]
         left = have - vis_width(text)
-    return (" " * A_HEAD_GAP).join(out)
+    return out
 
 def tree_cols(task, meta, depth=None):
     """The columns the panel spends before a NESTED row, which `cols` is not net of.
@@ -553,10 +566,10 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # finish past it, so the zero is what the figure counts to.
     signed_off=bool(own_eta) and own_eta[1] == 0 and bool(shown_eta) and eta_finish(shown_eta) <= eta_finish(own_eta) + 1e-6
     eta_args=(shown_eta, task.get("startTime"), now, status, getattr(usage,"last_epoch",None), signed_off)
-    right=gap.join(seg(w,c) for w,c in (
+    right=_gapped(gap, (seg(w,c) for w,c in (
         # The model and effort, right before the 💰 they priced.
         (6, render_agent_model(model, str(task.get("effort") or "") or getattr(usage,"effort", ""))),
-        (vis_width(S_COST)+4, render_cost("%.4f" % getattr(usage,"cost",0)) if billed else ""),
+        (vis_width(S_COST)+4, render_cost("%.4f" % getattr(usage,"cost",0)) if billed else []),
         (A_CTX_W, render_agent_ctx(getattr(usage,"ctx_tokens",0), getattr(usage,"ctx_window",0))),
         (vis_width(S_TOK)+VAL_W+VAL2_W, render_tokens(getattr(usage,"tok_up",None), getattr(usage,"tok_down",0))),
         (5, render_agent_cache(getattr(usage,"cache_pct",-1))),
@@ -564,14 +577,14 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
         # 5h and 1w it spent: how long it has run, how long it says it has
         # left, and how the run split — the status line's ⌛ row in the same
         # order, with shares where it has figures.
-        (A_CLOCK_W + A_ETA_W + A_SPLIT_W + 2,
-         seg(A_CLOCK_W, render_agent_elapsed(task.get("startTime"), now, end, first) if clocked else "") + " "
-         + seg(A_ETA_W, render_agent_eta(*eta_args)) + " "
-         + render_agent_split(agent_elapsed(task.get("startTime"), now, end, first) if clocked else None,
-                              getattr(usage,"model_s",None), getattr(usage,"tool_s",0.0))),
-        (A_LIMIT_W, render_agent_limit(E_SESS, limits.session_pct, shares.get("sess"), F_LIM_SESS, billed, light)),
-        (A_LIMIT_WEEK_W, render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), F_LIM_WEEK, billed, light, 4)),
-        (A_DIFF_W, render_agent_diff(usage) if billed else "")) if w)
+        (A_CLOCK_W + A_ETA_W + A_SPLIT_W + 2, spans([
+         seg(A_CLOCK_W, render_agent_elapsed(task.get("startTime"), now, end, first) if clocked else []), " ",
+         seg(A_ETA_W, render_agent_eta(*eta_args)), " ",
+         render_agent_split(agent_elapsed(task.get("startTime"), now, end, first) if clocked else None,
+                            getattr(usage,"model_s",None), getattr(usage,"tool_s",0.0))])),
+        (A_LIMIT_W, render_agent_limit(E_SESS, limits.session_pct, shares.get("sess"), "F_LIM_SESS", billed, light)),
+        (A_LIMIT_WEEK_W, render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), "F_LIM_WEEK", billed, light, 4)),
+        (A_DIFF_W, render_agent_diff(usage) if billed else [])) if w))
     desc=squash(str(task.get("description") or "")); name=str(task.get("name") or "") or desc; act=squash(str(task.get("label") or ""))
     if act == desc: act=""
     # The cells a panel draws only while some row needs one sit together,
@@ -580,15 +593,15 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
     # stay once they come; 💻 and 📡 last as long as a shell or a Monitor
     # runs; 📨 passes quickest — so the passing ones shift the fewest.
-    head=(" "*A_HEAD_GAP).join(seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W+1+A_RATE_W, seg(A_SPIN_W, render_spin(status, usage))+render_kind(str(meta.get("agentType") or ""),kind)+seg(A_STATE_W, render_phase(status, usage, waiting_on))
-                                                      +" "+seg(A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task))),
+    head=_gapped(" "*A_HEAD_GAP, (seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W+1+A_RATE_W, spans([seg(A_SPIN_W, render_spin(status, usage)), render_kind(str(meta.get("agentType") or ""),kind), seg(A_STATE_W, render_phase(status, usage, waiting_on)),
+                                                      " ", seg(A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task))])),
                                                      (kids_w, render_kids(kids)),
                                                      (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
                                                      (widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),
                                                      (widths.get("monitors", 0), render_background(E_MODE_MONITOR, background_count(status, usage, "monitor"))),
                                                      (widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0))),
-                                                     (A_ID_W, DIM+F_BLU2+fit_cols(tid,A_ID_W)+R)) if w)
-    room=A_NAME_MIN if not cols else max(A_NAME_MIN, cols-vis_width(strip_ansi(head))-A_HEAD_GAP-vis_width(strip_ansi(right))-A_GAP)
+                                                     (A_ID_W, [Span(fit_cols(tid,A_ID_W), "F_BLU2", True)])) if w))
+    room=A_NAME_MIN if not cols else max(A_NAME_MIN, cols-width(head)-A_HEAD_GAP-width(right)-A_GAP)
     branch=str(getattr(usage,"branch","") or "")
     # Decided on the room a row would have with neither the panel's indent
     # nor the lead: those add up to the same on every row, and deciding on
@@ -596,8 +609,15 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # few columns past the line.
     if tree and room + tree_cols(task, meta, depth) + lead - tree_w - A_HEAD_GAP >= A_TREE_ROOM:
         room -= tree_w + A_HEAD_GAP
-        right = seg(tree_w, DIM + tree + R) + " " * A_HEAD_GAP + right
-    return (" "*lead+head+" "*A_HEAD_GAP+seg(room,render_who(name,act,room,branch))+gap+right).rstrip()
+        right = seg(tree_w, [Span(tree, dim=True)]) + [Span(" " * A_HEAD_GAP)] + right
+    return rstrip([" "*lead, head, " "*A_HEAD_GAP, seg(room,render_who(name,act,room,branch)), gap, right])
+
+def _gapped(gap, cells):
+    """`cells`' spans in one list, `gap` between each two: str.join for spans."""
+    out = []
+    for i, c in enumerate(cells):
+        out += ([Span(gap)] if i else []) + spans(c)
+    return out
 
 def panel_widths(prepared_tasks, now=None):
     """The widest 📨, 📡, 💻 and 🤏 cell on the panel, each 0 where no row
@@ -643,5 +663,5 @@ def render_task_rows(prepared_tasks, limits, cols=None, now=None):
     for task, usage, meta, shares in prepared_tasks:
         if isinstance(task, dict) and task.get("id"):
             tid=str(task["id"])
-            rows.append((tid, render_agent_row(task, usage, meta, shares, limits, cols, now, trees.get(tid, ""), tree_w, etas.get(tid, False), tid in busy, shape[tid][1], kids.get(tid, 0), kids_w, A_TREE_W * (deep - shape[tid][1]), widths)))
+            rows.append((tid, join(render_agent_row(task, usage, meta, shares, limits, cols, now, trees.get(tid, ""), tree_w, etas.get(tid, False), tid in busy, shape[tid][1], kids.get(tid, 0), kids_w, A_TREE_W * (deep - shape[tid][1]), widths))))
     return rows

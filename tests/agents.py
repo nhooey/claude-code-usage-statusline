@@ -509,12 +509,13 @@ def run(tmp):
            (sl.EMPTY_TRANSCRIPT.shells, sl.EMPTY_TRANSCRIPT.monitors)),
           ((2, 1), (0, 0)))
     check("drawn shells first, each only while it has one",
-          [sl.strip_ansi(sl.render_thread_background(*n)).replace(" ", "")
+          [sl.strip_ansi(sl.join(sl.render_thread_background(*n)))
+           .replace(" ", "")
            for n in ((2, 1), (0, 3), (4, 0), (0, 0))],
           ["\U0001F4BB2\U0001F4E11", "\U0001F4E13", "\U0001F4BB4", ""])
     git = sl.Git(True, "main", False, "", "", False)
-    plain = [sl.strip_ansi(sl.render_where_group(
-        "p", "~/x", "main", git, sl.render_thread_background(*n)))
+    plain = [sl.strip_ansi(sl.join(sl.render_where_group(
+        "p", "~/x", "main", git, sl.render_thread_background(*n))))
              for n in ((0, 0), (2, 1))]
     check("on the end of row 3's left half, after the branch",
           (plain[1][:len(plain[0])] == plain[0],

@@ -1801,13 +1801,13 @@ def selftest() -> int:
         ("cache-share", render_cache_share(S_READ, 100, 34)),
         ("limit-session", render_limit(S_SESS, "38", "5", "", "0.4")),
         ("limit-weekly", render_limit(S_WEEK, "84", "2", "", "0.05",
-                                      F_LIM_WEEK)),
+                                      "F_LIM_WEEK")),
         # Both fields in their fraction form.  Every limit_pct branch fills
         # its four characters, so this one is not wider than the whole
         # percentages above — it is the one whose glyphs are all punctuation
         # and digits with no leading pad to hide a miscount.
         ("limit-fractional",
-         render_limit(S_WEEK, "0.384", "0.04", "", "0.004", F_LIM_WEEK)),
+         render_limit(S_WEEK, "0.384", "0.04", "", "0.004", "F_LIM_WEEK")),
         ("elapsed-clock", pair(S_IDLE + pad_val(RST_W, "45s", True),
                                render_time(), fmt.RIGHT_GRID[-1])),
         # The same cell with nothing elapsed to report, which is how every
@@ -1870,6 +1870,8 @@ def selftest() -> int:
     try:
         ttymod.setcbreak(fd)
         for name, row in rows:
+            # The cells are spans and the receipt's groups strings.
+            row = row if isinstance(row, str) else join(row)
             expect = vis_width(strip_ansi(row))
             tty.write(("\r\033[K%s\033[6n" % row).encode("utf-8"))
             resp = b""

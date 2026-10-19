@@ -323,6 +323,22 @@ in `formatting.py`. Moving them to spans touches:
   `cache_color`, which return colour prefixes), and about 8 that measure a
   drawn string through `strip_ansi`. With spans, a width is the sum of the
   spans' text widths, and the `F_*` constants become a colour map.
+  Done 2026-10-19: `spans.py` holds the `Span` record (text, a colour
+  key naming an `F_*` constant, dim, bold and a `B_*` background), `width`
+  and `join`. Every cell in `claude_render.py` and
+  `claude_subagent_render.py`, the receipt's labels and tags in
+  `claude_cost_render.py`, and `pad_val`, `seg`, `pair`, `grid_row`,
+  `seg_gap`, `mag_dim` (now a bool), `reset_dim` (a bool) and `cache_color`
+  (a style span) work in spans, and the strip_ansi measurements are span
+  widths. `join` writes escapes only where a line is printed:
+  `render_status`, `render_task_rows`, and where the receipt's labels meet
+  its groups. Two bytes of the old output are kept by `join` itself: a
+  chat row's prefix runs unreset into its body on the dark band, and a
+  grid row's closing reset. The goldens did not move, and every renderer
+  call the panel and rate suites make returns the bytes it did before.
+  Still strings: the receipt's metric groups (`cost_group` and
+  `cost_totals_group` in `claude.py`), which `claude_cost_render.Ink`
+  colours, and the Codex renderer in `render.py`.
 - **State read at import.** `term_profile` reads `TMUX`,
   `TERMINAL_EMULATOR` and `TERM_PROGRAM` when the module loads, and the
   width table and every `S_*` mark are fixed from it then.
