@@ -14,7 +14,9 @@ The proposal it draws:
   panel's own, drawn by claude_subagent_render's and claude_render's
   renderers, so the figures are formatted as the readouts format them.
 - One scope per row, named by its label: 💳 the account, 🎤 the turn,
-  🤖💬 the main thread, 🎮 the session, and one row per agent.
+  🤖💬 the main thread, 🎮 the session, and one row per agent.  The band
+  draws 🎤 and 🎮 only while the turn runs; once it ends, the receipt
+  carries them.
 - Every row's cells end on the same column, RIGHT_EDGE columns short of the
   terminal's right edge, where Claude Code draws the band's [-] button.
 - When the terminal is too narrow for every label to keep LABEL_MIN columns,
@@ -24,7 +26,8 @@ The proposal it draws:
   could show on is removed; hidden on some, it is left blank there.
 
 Run:  python3 tools/layout-mockup.py [--cols N] [--hide PATH ...]
-                                     [--receipt hook|mod] [--plain]
+                                     [--receipt hook|mod] [--phase running|done]
+                                     [--plain]
 """
 import argparse
 import fnmatch
@@ -211,32 +214,45 @@ def draw(row, keys, cols, patterns):
     return head + seg(room, text) + right
 
 
-def screen(cols, patterns, receipt_by="hook"):
+def screen(cols, patterns, receipt_by="hook", phase="done"):
     rule = "─" * cols
-    band = [r for r in (ACCOUNT, TURN, MAIN, SESSION) if not hidden(patterns, r["scope"])]
+    every = [r for r in (ACCOUNT, TURN, MAIN, SESSION) if not hidden(patterns, r["scope"])]
     receipt = [r for r in RECEIPT if not hidden(patterns, r["scope"])]
     agents = [r for r in AGENTS if not hidden(patterns, r["scope"])]
-    keys = layout(band + receipt + agents, cols, patterns)
+    # Laid out over every row either phase can draw, so the columns do not
+    # move when the turn ends and its rows leave the band.
+    keys = layout(every + receipt + agents, cols, patterns)
+    # The band carries the turn and the session while the turn runs.  Once it
+    # ends the receipt carries them, and the band keeps the account and the
+    # main thread.
+    band = every if phase == "running" else [r for r in every if r["scope"] in ("account", "main")]
+    if phase == "running":
+        # Mid-turn the main row says what the thread is doing, not its reply.
+        band = [dict(r, label=r["label"][:1] + [piece("chat.doing", "Reading jest.config.js", F_CHAT_B)])
+                if r is MAIN else r for r in band]
     out = [
         DIM + "❯ " + R + "Why is the build slow?",
         "",
         "⏺ Bash(npm run build -- --profile)",
         "  ⎿  compile 31s · bundle 18s · test 3m 12s",
         "",
-        "⏺ The test step takes 80٪ of the build: Jest runs the suites serially",
-        "  because maxWorkers is 1 in jest.config.js.",
-        "",
     ]
-    rows = [draw(r, keys, cols, patterns) for r in receipt]
-    if receipt_by == "hook":
-        # Claude Code draws a Stop hook's systemMessage behind "Stop says: ",
-        # and no setting changes it, so the receipt opens on a newline.
-        out += [DIM + "Stop says: " + R, RECEIPT_HEAD] + rows
-        out += ["", DIM + "✻ Worked for 4m 2s · done 1:06 PM" + R]
+    if phase == "running":
+        out += ["⏺ Read(jest.config.js)", "",
+                F_PNK + "✻ " + R + "Pondering… (3m 48s · esc to interrupt)", ""]
     else:
-        # The mod redraws the TurnDuration line instead, with the receipt's
-        # head on it and its rows under it, and the Stop hook prints nothing.
-        out += [DIM + "✻ Worked for 4m 2s · " + R + RECEIPT_HEAD] + rows
+        out += ["⏺ The test step takes 80٪ of the build: Jest runs the suites serially",
+                "  because maxWorkers is 1 in jest.config.js.", ""]
+        rows = [draw(r, keys, cols, patterns) for r in receipt]
+        if receipt_by == "hook":
+            # Claude Code draws a Stop hook's systemMessage behind "Stop says: ",
+            # and no setting changes it, so the receipt opens on a newline.
+            out += [DIM + "Stop says: " + R, RECEIPT_HEAD] + rows
+            out += ["", DIM + "✻ Worked for 4m 2s · done 1:06 PM" + R]
+        else:
+            # The mod redraws the TurnDuration line instead, with the receipt's
+            # head on it and its rows under it, and the Stop hook prints nothing.
+            out += [DIM + "✻ Worked for 4m 2s · " + R + RECEIPT_HEAD] + rows
 
     band_rows = [draw(r, keys, cols, patterns) for r in band]
     if band_rows:
@@ -260,9 +276,11 @@ def main(argv=None):
     ap.add_argument("--receipt", choices=("hook", "mod"), default="mod",
                     help="draw the receipt as the Stop hook's message, or as the "
                          "mod's rewrite of the turn's closing line")
+    ap.add_argument("--phase", choices=("running", "done"), default="done",
+                    help="draw the screen while the turn runs, or after it ended")
     ap.add_argument("--plain", action="store_true", help="no colour")
     a = ap.parse_args(argv)
-    text = screen(a.cols, a.hide, a.receipt)
+    text = screen(a.cols, a.hide, a.receipt, a.phase)
     print(strip_ansi(text) if a.plain else text)
 
 

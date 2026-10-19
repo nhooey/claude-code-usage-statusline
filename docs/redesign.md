@@ -25,14 +25,19 @@ nothing hides the agent panel; see [Claude Code's limits](#claude-codes-limits).
 | Row | Scope | Drawn by |
 |---|---|---|
 | 💳 account | the plan's two windows, and when each resets | the mod, in the band |
-| 🎤 and the prompt | the turn | the mod, in the band |
-| 🤖💬 and the reply | the main thread alone | the mod, in the band |
-| 🎮 session, 📦 project, 🌿 branch | the main thread and every agent, summed | the mod, in the band |
+| 🎤 and the prompt | the turn | the mod, in the band, while the turn runs |
+| 🤖💬 and the reply, or what it is doing | the main thread alone | the mod, in the band |
+| 🎮 session, 📦 project, 🌿 branch | the main thread and every agent, summed | the mod, in the band, while the turn runs |
 | one per agent | that agent's life | `subagentStatusLine`, in the panel |
 | 📊 🎤 and 📊 🎮 | the turn and the session as they stood when it ended | the mod, on the turn's closing line |
 
 A row's label says which scope its figures count; the figures do not carry
-the scope's glyph. The band replaces the status line, which is removed from
+the scope's glyph.
+
+The band draws 🎤 and 🎮 only while a turn runs. When it ends, the receipt
+on the turn's closing line carries both, frozen, and the band drops to 💳
+and 🤖💬; the next prompt brings them back. The columns are laid out over
+every row either phase draws, so none moves when the two rows come or go. The band replaces the status line, which is removed from
 `settings.json`.
 
 ### One column per metric
@@ -132,7 +137,8 @@ How the mod would do it, from the mod API in 2.1.296:
 
 ## The whole screen
 
-`python3 tools/layout-mockup.py --cols 150 --plain`, made-up figures:
+After the turn, `python3 tools/layout-mockup.py --cols 150 --plain`, made-up
+figures; `--phase running` draws it mid-turn:
 
 ```
 ❯ Why is the build slow?
@@ -147,9 +153,7 @@ How the mod would do it, from the mod API in 2.1.296:
 📊 🎤 Why is the build slo…          💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
 📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 💳 account  🔋 🔜 6.7m  🪫…                                                                                       🔋 15٪  🪫87.0٪                  [-]
-🎤 Why is the build slow?            💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
 🤖💬 The test step takes 8…  🤖O⁵🏃  💰  92   🧠 115k  11٪  🧩 ▴2.1M ▾640k  🎯98٪  ⌛  9h ⛳   2m 🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋.90٪  🪫2.10٪  💾 +3.1k - 180
-🎮 session  📦app 🌿main             💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
