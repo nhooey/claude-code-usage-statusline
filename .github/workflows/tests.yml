@@ -88,7 +88,8 @@ jobs:
 
   mod:
     # The TypeScript port's tests, against the cases the Python writes.
-    # Node 23.6 and later run .ts directly, so there is nothing to install.
+    # Node 23.6 and later run .ts directly, so the tests install nothing;
+    # the type check needs the two dev dependencies in the lockfile.
     runs-on: ubuntu-latest
     name: mod (node)
     steps:
@@ -98,6 +99,8 @@ jobs:
           node-version: "24"
       - name: node --test
         run: cd mod && node --test test/
+      - name: typecheck
+        run: cd mod && npm ci && npm run typecheck
       - name: spec.py and spec.ts are generated from spec/layout.jsonc
         run: python3 tools/gen-spec.py --check
 

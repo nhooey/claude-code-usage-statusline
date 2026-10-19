@@ -276,7 +276,7 @@ export interface Transcript {
   readonly blocked_s: number;       // inside a WAITING_TOOLS call
   readonly turn_s: number;          // epoch of the current turn's prompt
   readonly eta: readonly number[];  // (epoch, seconds left), or ()
-  readonly agent_etas: readonly (readonly [number, number | null])[];
+  readonly agent_etas: readonly AgentEta[];
   readonly queued: number;          // messages waiting; see queueStep
   readonly compactions: number;     // see isCompaction
   readonly ctx_est: boolean;        // ctx_tokens is a compaction's estimate
@@ -1493,7 +1493,7 @@ export function _agentFileReadings(transcript: string,
     const stamp: [number, string] = [Number(st.size), String(st.mtimeNs)];
     let got: AgentReading | null = Object.hasOwn(kept, path)
       ? kept[path] : null;
-    if (isDict(got) && recordEqual((got as Kept).stamp, stamp)) {
+    if (isDict(got) && recordEqual((got as unknown as Kept).stamp, stamp)) {
       const { recs, work, tools, waiting, eta } = got;
       got = { recs, work, tools, waiting, eta };
       keep[path] = kept[path];

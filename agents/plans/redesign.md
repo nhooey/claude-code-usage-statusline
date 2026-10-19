@@ -150,7 +150,9 @@ How the mod would do it, from the mod API in 2.1.296:
 - The line is redrawn whenever it scrolls into view, so the mod keeps every
   turn's receipt, not only the last.
 - `TurnDuration` is raised on the terminal only; the desktop app would show
-  no receipt.
+  no receipt. Decided 2026-10-19: the desktop app is out of scope. The band
+  and the start line use render sites it supports, but nothing is designed
+  or checked for it.
 
 ### The start line
 
