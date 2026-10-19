@@ -561,6 +561,12 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
+    // A blank row above it, apart from the answer.
+    const drawn = await (await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'TurnDuration',
+      props: { word: 'Worked', durationMs: ASKED_MS },
+      viewport: { columns: COLS, rows: 40 } })).drawn() as Drawn
+    expect(drawn.props?.marginTop).toBe(1)
     expect(w.logged).toEqual([])
     // turn.complete again over the same turn: the same receipt, once.
     await $.turn.complete(COMPLETE)

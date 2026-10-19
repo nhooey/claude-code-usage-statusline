@@ -459,8 +459,10 @@ export const register: Register = on => {
     const got = (await $.store.get(receiptAt(e.props.durationMs))) as
       Span[][] | undefined
     if (got) {
+      // A blank row above, so the receipt stands apart from the answer
+      // (asked 2026-10-19).
       return (
-        <Box flexDirection="column">
+        <Box flexDirection="column" marginTop={1}>
           {got.map((l, i) => line(Text, l, 'receipt' + i))}
         </Box>
       )
