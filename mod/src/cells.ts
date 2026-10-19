@@ -304,10 +304,21 @@ export function sessionLabel(ws: Workspace | null): Piece[] {
 export function turnHead(arrow: string, promptId: string,
   turnIndex: number | null, date: string | null,
   time: string | null): string {
+  const tag = turnTag(arrow, promptId, turnIndex);
+  const when = turnWhen(date, time);
+  return tag && when ? tag + "  " + when : tag + when;
+}
+
+/** turnHead's tag, "🔺🔖 8f37748e #12", "" with neither part. */
+export function turnTag(arrow: string, promptId: string,
+  turnIndex: number | null): string {
   const parts = [...(promptId ? [pySlice(promptId, null, TURN_ID_HEX)] : []),
     ...(turnIndex !== null ? ["#" + pyIntStr(turnIndex)] : [])];
-  const tag = parts.length ? arrow + E_TURN_ID + " " + parts.join(" ") : "";
-  const when = date !== null && time !== null
+  return parts.length ? arrow + E_TURN_ID + " " + parts.join(" ") : "";
+}
+
+/** turnHead's when, "📅 2026-10-19  🕐 13:06:02", "" without a time. */
+export function turnWhen(date: string | null, time: string | null): string {
+  return date !== null && time !== null
     ? E_DATE + " " + date + "  " + E_TIME + " " + time : "";
-  return tag && when ? tag + "  " + when : tag + when;
 }

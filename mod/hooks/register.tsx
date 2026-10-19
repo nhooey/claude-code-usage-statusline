@@ -22,18 +22,18 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
 import type { FiguresDoc } from '../types'
-import * as spec from '../src/spec.ts'
 import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { bandLines, footerTail, workspaceOf } from '../src/band.ts'
+import { bandLines, footerTail, headIndent, workspaceOf } from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
+import * as spec from '../src/spec.ts'
 import { CONFIG } from './config.ts'
 import { costDoc, placesOf, seen, statusDoc, steps, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
@@ -47,6 +47,7 @@ const status = atom({ plugin: 'usage-band', key: 'status' } as const, null)
 const rate = atom({ plugin: 'usage-band', key: 'rate' } as const, null)
 const filed = atom({ plugin: 'usage-band', key: 'filed' } as const, 0)
 const clockNow = atom({ plugin: 'usage-band', key: 'now' } as const, 0)
+const held = atom({ plugin: 'usage-band', key: 'held' } as const, false)
 
 /** The store's key for a start line: its prompt's text. */
 export const startKey = (text: string) =>
@@ -246,7 +247,7 @@ const receiptAt = (durationMs: number) => 'receipt-at:' + durationMs
  * records only after its Stop hooks have run, after turn.complete, so the
  * transcript is read every CONFIG.receiptPollMs until the newest prompt's
  * turn is billed and two reads agree on what it billed, for up to
- * CONFIG.receiptWaitMs.  Then the cost document, the head and the 📊 rows,
+ * CONFIG.receiptWaitMs.  Then the cost document, the receipt's two lines,
  * filed for the closing line to draw.  Each turn is stamped once (receiptKey); one
  * whose records never land is logged, and nothing stamped. */
 async function stamp($: $, durationMs: number, prompt: string):
@@ -288,11 +289,10 @@ async function stamp($: $, durationMs: number, prompt: string):
     const ws = doc ? workspaceOf(doc as Dict, where.home) : null
     // Laid out as the band is, with its indent, so the rows' columns are
     // the band's.
-    const { head, rows } = receiptLines(await settingsOf($), fig, bandCols,
-      CONFIG.hide, ws, true, spec.C_CHROME_CONT)
+    const lines = receiptLines(await settingsOf($), fig, bandCols,
+      CONFIG.hide, ws, true)
     await remember($, 'receipts', key, true)
-    await remember($, 'receipts', receiptAt(durationMs),
-      head.length ? [...rows, head] : rows)
+    await remember($, 'receipts', receiptAt(durationMs), lines)
   } finally {
     stamping.delete(key)
   }
@@ -386,6 +386,7 @@ export const register: Register = on => {
     await start($, 'turn.start')
     if (e.agentId) return result
     turnRunning = true
+    await update($, held, () => false)
     const tr = (await read($, status))?.transcript as Dict | undefined
     pending = { text: e.text, before: tr?.prompt_id ?? '' }
     await refresh($)
@@ -402,13 +403,23 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     await start($, 'turn.complete')
-    if (!e.agentId) turnRunning = false
+    if (!e.agentId) {
+      turnRunning = false
+      // The band keeps the turn's 🎤 and 🎮 until its receipt is stamped,
+      // and a second more, so the two lines are never missing from both
+      // (asked 2026-10-19).
+      await update($, held, () => true)
+    }
     await refresh($)
     if (e.agentId) return result
     const tr = (await read($, status))?.transcript as Dict | undefined
     const prompt = typeof tr?.prompt_id === 'string' ? tr.prompt_id : ''
     void stamp($, e.durationMs, prompt)
       .catch((err) => log($, 'no receipt', err))
+      .finally(async () => {
+        await $.clock.sleep(CONFIG.receiptHoldMs)
+        await update($, held, () => false)
+      })
     return result
   })
 
@@ -417,12 +428,14 @@ export const register: Register = on => {
     if (e.props.hasSurvey || doc === null) return next(e)
     const { Box, Text } = $.ui.resolve(e)
     bandCols = e.props.bodyColumns + 5
-    const lines = bandLines(await settingsOf($),
-      at(doc as Dict, await read($, clockNow)),
+    const st = await settingsOf($)
+    // At the receipt's indent, past its head column, so 🤖 stacks under
+    // the receipt's 🎤 and 🎮.
+    const lines = bandLines(st, at(doc as Dict, await read($, clockNow)),
       bandCols, CONFIG.hide, { home: await home($),
         rate: await read($, rate),
-        phase: e.props.isWorking ? 'running' : 'done',
-        indent: spec.C_CHROME_CONT })
+        phase: e.props.isWorking || await read($, held) ? 'running' : 'done',
+        indent: headIndent(st) })
     // No margin: Claude Code draws its `[-]` on the band's first row, and
     // on a blank top row it stood alone.  A bottom margin of -1, into the
     // blank row above the prompt's border, hid the band's last row under
@@ -435,8 +448,8 @@ export const register: Register = on => {
   })
 
   // Claude Code's closing line, `✻ <word> for <duration>`, drawn as the
-  // turn's receipt: 📊 🎤 with its 🔺🔖 tag, then 📊 🎮, dim, on the band's
-  // columns, once stamped (decided 2026-10-19: a `$.ui.log` line came with
+  // turn's receipt: 🔺🔖 its tag beside 🎤, then 📅 🕐 beside 🎮, dim, on
+  // the band's columns, once stamped (decided 2026-10-19: a `$.ui.log` line came with
   // Claude Code's `⏺ usage-band:` before it and a blank row after).  Until
   // then one blank row: a Box one row high around a space, rather than an
   // empty Text, which Ink measures as no row at all.

@@ -22,8 +22,8 @@
 //             same joined with their escape codes
 //   receipt   one case a line: a cost document drawn at `cols` under
 //             `hide`, its 📦 🌿 from the status document `workspace` (or
-//             none); `rows` and `head` as spans, and `lines`, each
-//             row's then the head's, joined
+//             none); its two lines as spans, `rows`, and joined,
+//             `lines`
 //   start     one case a line: a status document's start line, as `spans`
 //             and as `line`
 //
@@ -108,9 +108,9 @@ export function drawBand(st: Settings, fig: Dict, c: BandCase): Span[][] {
     { home: HOME, rate: c.rate, phase: c.phase }));
 }
 
-/** The receipt case's head and rows. */
+/** The receipt case's lines. */
 export function drawReceipt(st: Settings, fig: Dict, c: ReceiptCase):
-  { head: Span[]; rows: Span[][] } {
+  Span[][] {
   const ws = c.workspace === null ? null
     : workspaceOf(document(c.workspace), HOME);
   return inZone(fig, () => receiptLines(st, fig, c.cols, c.hide, ws));
@@ -168,9 +168,8 @@ function cases(st: Settings): string {
   for (const [id, same, fig] of documents("cost")) {
     for (const c of receiptCases(id)) {
       const got = drawReceipt(st, fig, c);
-      receipt.push(JSON.stringify({ ...c, same, head: got.head.map(spanJson),
-        rows: rowsJson(got.rows),
-        lines: [...got.rows, got.head].map((r) => join(r)) }));
+      receipt.push(JSON.stringify({ ...c, same, rows: rowsJson(got),
+        lines: got.map((r) => join(r)) }));
     }
   }
   const list = (name: string, lines: string[]): string =>

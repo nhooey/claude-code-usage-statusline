@@ -48,4 +48,7 @@ export const CONFIG = {
   // Stop hooks), and how often it looks.
   receiptWaitMs: 30_000,
   receiptPollMs: 500,
+  // How long the band keeps a done turn's 🎤 and 🎮 rows after its receipt
+  // is stamped, so the receipt is there before they go.
+  receiptHoldMs: 1_000,
 } as const;

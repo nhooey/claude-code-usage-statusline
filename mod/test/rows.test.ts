@@ -15,7 +15,7 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  accountText, bandRows, fixedKeys, footerTail, phaseRows,
+  accountText, bandRows, fixedKeys, footerTail, phaseRows, workspaceOf,
 } from "../src/band.ts";
 import { receiptTurn } from "../src/receipt.ts";
 import { decodeTurn } from "../src/claude_cost.ts";
@@ -29,8 +29,7 @@ import type { BandCase, ReceiptCase } from "../tools/gen-row-cases.ts";
 type Same = { same: string[] };
 type File = { settings: { profiles: { [name: string]: Env } };
   band: (BandCase & Same & { rows: unknown[][][]; lines: string[] })[];
-  receipt: (ReceiptCase & Same & { head: unknown[][]; rows: unknown[][][];
-    lines: string[] })[];
+  receipt: (ReceiptCase & Same & { rows: unknown[][][]; lines: string[] })[];
   start: { doc: string; same: string[]; spans: unknown[][];
     line: string }[] };
 
@@ -73,9 +72,8 @@ for (const f of files) {
       for (const c of data.receipt) {
         const where = JSON.stringify([c.doc, c.cols, c.hide, c.workspace]);
         const got = drawReceipt(st, document(c.doc), c);
-        assert.equal(got.rows.length, c.rows.length, where);
-        got.rows.forEach((r, i) => same(r, c.rows[i], c.lines[i], where));
-        same(got.head, c.head, c.lines[c.rows.length], where);
+        assert.equal(got.length, c.rows.length, where);
+        got.forEach((r, i) => same(r, c.rows[i], c.lines[i], where));
       }
     });
     test(`${f} under ${profile}: start`, () => {
@@ -138,6 +136,21 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
     .startsWith("  " + text.slice(0, 1)));
   assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 155)),
     "");
+});
+
+test("📁 draws the project's root as 📦", () => {
+  const fig = document("status/01-baseline@196");
+  const at = (dir: string, git: Dict) => workspaceOf({ ...fig,
+    git: { ...(fig.git as Dict), in_git: true, ...git },
+    payload: { ...(fig.payload as Dict), current_dir: dir } }, "/home/u").dir;
+  const repo = { toplevel: "/home/u/repo", main_root: "/home/u/repo" };
+  assert.equal(at("/home/u/repo", repo), "📦");
+  assert.equal(at("/home/u/repo/mod", repo), "📦/mod");
+  assert.equal(at("/home/u/repository", repo), "~/repository");
+  // A worktree's paths are the main checkout's project, under its root.
+  assert.equal(at("/home/u/repo/.claude/worktrees/w/mod",
+    { toplevel: "/home/u/repo/.claude/worktrees/w", main_root: "/home/u/repo" }),
+  "📦/.claude/worktrees/w/mod");
 });
 
 test("🎤 carries the model and 🛫, and a running tool's time in 🛫's column", () => {

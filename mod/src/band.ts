@@ -15,14 +15,14 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
+  CHROME_DEPTH, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
   RIGHT_EDGE,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
-import { pyLen, pySlice } from "./py.ts";
+import { pyLen, pyRstrip, pySlice } from "./py.ts";
 import { pyFloat } from "./sources.ts";
 import {
   W_CACHE_READ, W_CACHE_WRITE, etaFinish, squash,
@@ -38,7 +38,7 @@ import {
 import { decodeTurn } from "./claude_cost.ts";
 import {
   CELLS, accountLabel, cacheRate, hms, mainLabel, sessionLabel, turnLabel,
-  untilReset, ymd,
+  turnWhen, untilReset, ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
 import { draw, hidden, layout } from "./grid.ts";
@@ -102,6 +102,17 @@ function skeleton(scope: string, depth?: number): Row {
 export function indented(row: Row, n: number): Row {
   return n ? { ...row, label: [{ path: "indent",
     spans: [span(" ".repeat(n))], drop: 0 }, ...row.label] } : row;
+}
+
+/** The blank columns between the receipt's head column and its rows. */
+export const HEAD_GAP = 4;
+
+/** The indent of the band's rows and the receipt's: the receipt's head
+ * column, as wide as its date and time, "📅 2026-10-19  🕐 13:06:02", then
+ * HEAD_GAP, so the band's 🤖 stacks under the receipt's 🎤 and 🎮 (asked
+ * 2026-10-19). */
+export function headIndent(st: Settings): number {
+  return visWidth(turnWhen("2026-10-19", "00:00:00"), st.widths) + HEAD_GAP;
 }
 
 /** The columns at `cols` under `hide`, laid out over every row the band,
@@ -173,6 +184,16 @@ function homeDir(dir: string, home: string): string {
   return dir;
 }
 
+/** `dir` with the project's root, `root`, drawn as 📦, the project's own
+ * mark (asked 2026-10-19), "📦/mod" for its mod/ folder; outside it, as
+ * homeDir draws it. */
+function projectDir(dir: string, root: string, home: string): string {
+  const r = pyRstrip(root, "/");
+  if (r && dir === r) return E_PROJ;
+  if (r && dir.startsWith(r + "/")) return E_PROJ + pySlice(dir, pyLen(r));
+  return homeDir(dir, home);
+}
+
 /** Where the session works, off the document's `git` and `payload`.  The
  * receipt draws the 📦 🌿 of the band's last one (decision 7). */
 export function workspaceOf(fig: Dict, home: string): Workspace {
@@ -184,7 +205,9 @@ export function workspaceOf(fig: Dict, home: string): Workspace {
     project: projectName(git, pay.project_dir),
     branch: git.branch,
     dirty: Boolean(git.dirty),
-    dir: homeDir(pay.current_dir, home),
+    dir: git.in_git
+      ? projectDir(pay.current_dir, git.main_root || git.toplevel, home)
+      : homeDir(pay.current_dir, home),
     pr: pr && pr !== "null" ? pr : "",
     style: style && style !== "default" && style !== "null" ? style : "",
   };

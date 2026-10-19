@@ -19,6 +19,9 @@ declare module 'claude-code' {
       /** Seconds since the epoch the band and the footer draw their clocks
        * at, moved each second between reads; 0 before the first. */
       now: number;
+      /** Whether the band still draws a done turn's 🎤 and 🎮 rows, until
+       * just after its receipt is stamped. */
+      held: boolean;
     }
   }
 }

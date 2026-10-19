@@ -41,7 +41,7 @@ import {
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
-import { bandLines, workspaceOf } from '../src/band.ts'
+import { bandLines, headIndent, workspaceOf } from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
 } from '../src/receipt.ts'
@@ -316,7 +316,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
       const ui = await $.ui.mount({ plugin: 'usage-band', surface,
         component: 'AbovePrompt', props: BAND })
       const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
-        rate: null, phase: 'done', indent: spec.C_CHROME_CONT })
+        rate: null, phase: 'done', indent: headIndent(settings({})) })
       expect(lines.length).toBeGreaterThan(0)
       expect(await drawnRows(ui)).toEqual(expected(lines))
       // No blank top row, where Claude Code's `[-]` would stand alone.
@@ -331,7 +331,7 @@ test('a turn running draws the running phase', async ($, on) => {
   const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
     component: 'AbovePrompt', props: { ...BAND, isWorking: true } })
   const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
-    rate: null, phase: 'running', indent: spec.C_CHROME_CONT })
+    rate: null, phase: 'running', indent: headIndent(settings({})) })
   expect(await drawnRows(ui)).toEqual(expected(lines))
 })
 
@@ -509,7 +509,7 @@ async function until(w: World, ms: number) {
 
 /** The receipt's lines as the closing line should draw them at `now`,
  * worked out from the transcript's bytes: receiptLines over the cost
- * document, at the band's width with the band's indent, the head too. */
+ * document, at the band's width with the band's indent. */
 async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const doc = lastDoc(w)
   const records = _recordsOf(bytesOf(w, RESUMED))
@@ -521,9 +521,8 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const fig = withEngineDuration(costFigures(turns, windowFor(turns,
     Number(doc.context_window)), CALIB, snap, prepared, now,
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
-  const { head, rows } = receiptLines(settings({}), fig, COLS, [],
-    workspaceOf(doc, HOME), true, spec.C_CHROME_CONT)
-  return [...rows, head]
+  return receiptLines(settings({}), fig, COLS, [], workspaceOf(doc, HOME),
+    true)
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -546,11 +545,15 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 📊 🎤 and 📊 🎮, then the 🔺🔖 tag line under them, at no indent.
-    expect(want.length).toBe(3)
-    expect(text(want[2])).toContain('p-resume'.slice(0, 8))
-    expect(text(want[2]).startsWith(spec.E_TURN_PAST)).toBe(true)
-    expect(text(want[2])).not.toContain(spec.E_ACCT)
+    // Two lines: 🔺🔖 the tag beside 🎤, at no indent, then 📅 🕐 beside
+    // 🎮, each at least four blanks from its row.
+    expect(want.length).toBe(2)
+    expect(text(want[0])).toContain('p-resume'.slice(0, 8))
+    expect(text(want[0]).startsWith(spec.E_TURN_PAST)).toBe(true)
+    expect(text(want[0])).toMatch(new RegExp(' {4,}' + spec.E_TURN))
+    expect(text(want[1]).startsWith(spec.E_DATE)).toBe(true)
+    expect(text(want[1])).toMatch(new RegExp(' {4,}' + spec.E_SESSION))
+    expect(text(want[1])).not.toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
@@ -597,12 +600,24 @@ async function drewAll($: any, w: World) {
     .toEqual(JSON.parse(JSON.stringify(want.transcript)))
   const st = settings({})
 
-  const band = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
-    component: 'AbovePrompt', props: BAND })
-  const lines = bandLines(st, doc, COLS, [], { home: HOME, rate: null,
-    phase: 'done', indent: spec.C_CHROME_CONT })
+  const mount = () => $.ui.mount({ plugin: 'usage-band',
+    surface: 'terminal', component: 'AbovePrompt', props: BAND })
+  // The band drawn as of now, its clocks moved on as the mod moves them.
+  const shown = (phase: 'running' | 'done') => {
+    const now = Math.max(Number((doc.clock as Dict).now),
+      w.clock.now() / 1000)
+    return bandLines(st, { ...doc, clock: { ...(doc.clock as Dict), now } },
+      COLS, [], { home: HOME, rate: null, phase, indent: headIndent(st) })
+  }
+  // The turn has ended, but until its receipt is stamped, and a second
+  // more, the band keeps its 🎤 and 🎮 rows.
+  expect(await drawnRows(await mount())).toEqual(expected(shown('running')))
+  await until(w, 5_000)
+  expect(stamped(w)).toBe(true)
+  await w.clock.advance(1_000)
+  const lines = shown('done')
   expect(lines.length).toBeGreaterThan(0)
-  expect(await drawnRows(band)).toEqual(expected(lines))
+  expect(await drawnRows(await mount())).toEqual(expected(lines))
 
   const tag = startLine(doc)
   expect(tag.length).toBeGreaterThan(0)
@@ -612,7 +627,8 @@ async function drewAll($: any, w: World) {
       origin: { kind: 'composer' } } })
   expect(await tagDrawn(typed)).toEqual({ beside: false, text: text(tag) })
 
-  await blankClosing($, 'Crunched', ASKED_MS)
+  // The receipt the hold waited for: its two lines on the closing line.
+  expect((await closing($, ASKED_MS)).length).toBe(2)
 }
 
 test('a resumed session whose first turn calls no tool draws all three',
