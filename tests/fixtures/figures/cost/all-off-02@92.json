@@ -1,0 +1,186 @@
+{
+  "accounting": {
+    "session": {
+      "cost_usd": 0.530998,
+      "read_share": 64,
+      "sess_share": 0.0965450909090909,
+      "week_share": 0.12951170731707318,
+      "write_share": 8
+    },
+    "turns": [
+      {
+        "cost_usd": 0.20454999999999998,
+        "read_share": 71,
+        "sess_share": 0.03719090909090909,
+        "week_share": 0.04989024390243903,
+        "write_share": 15
+      },
+      {
+        "cost_usd": 0.2475725,
+        "read_share": 59,
+        "sess_share": 0.04501318181818182,
+        "week_share": 0.06038353658536586,
+        "write_share": 0
+      },
+      {
+        "cost_usd": 0.0788755,
+        "read_share": 61,
+        "sess_share": 0.014341,
+        "week_share": 0.019237926829268295,
+        "write_share": 14
+      }
+    ]
+  },
+  "calibration": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 1000000,
+  "mode": "cost",
+  "schema": 1,
+  "turns": [
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 289000,
+      "cache_write": 3000,
+      "calls": 1,
+      "compact": false,
+      "ctx": 292010,
+      "dctx": null,
+      "dur_s": 120,
+      "fresh": 10,
+      "out": 1200,
+      "parts": [
+        [
+          1786842660,
+          0.20454999999999998
+        ]
+      ],
+      "prompt_id": null,
+      "reported": true,
+      "text": "A long conversation up to here.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:10:00Z",
+      "turn_index": null,
+      "usd_cr": 0.1445,
+      "usd_cw": 0.030000000000000002,
+      "usd_in": 0.00005,
+      "usd_out": 0.030000000000000002
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 292645,
+      "cache_write": 0,
+      "calls": 1,
+      "compact": true,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 41,
+      "fresh": 0,
+      "out": 4050,
+      "parts": [],
+      "prompt_id": null,
+      "reported": false,
+      "text": "/compact (auto)",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:15:00Z",
+      "turn_index": null,
+      "usd_cr": 0.1463225,
+      "usd_cw": 0,
+      "usd_in": 0,
+      "usd_out": 0.10125
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 95691,
+      "cache_write": 1100,
+      "calls": 1,
+      "compact": false,
+      "ctx": 96797,
+      "dctx": -195213,
+      "dur_s": 60,
+      "fresh": 6,
+      "out": 800,
+      "parts": [
+        [
+          1786843260,
+          0.0788755
+        ]
+      ],
+      "prompt_id": null,
+      "reported": false,
+      "text": "Carrying on after the compaction.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:20:00Z",
+      "turn_index": null,
+      "usd_cr": 0.0478455,
+      "usd_cw": 0.011000000000000001,
+      "usd_in": 0.000030000000000000004,
+      "usd_out": 0.02
+    }
+  ],
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 99.6,
+      "session_resets_at": 1786847400,
+      "weekly_pct": 100,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786847400,
+              "used_percent": 99.6
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 100
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-plan-full",
+      "stale": false
+    }
+  }
+}

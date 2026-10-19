@@ -1,0 +1,223 @@
+{
+  "accounting": {
+    "session": {
+      "cost_usd": 0.568581,
+      "read_share": 36,
+      "sess_share": 0.10337836363636364,
+      "week_share": 0.13867829268292683,
+      "write_share": 17
+    },
+    "turns": [
+      {
+        "cost_usd": 0.31772500000000004,
+        "read_share": 34,
+        "sess_share": 0.05776818181818182,
+        "week_share": 0.0774939024390244,
+        "write_share": 19
+      },
+      {
+        "cost_usd": 0.05852,
+        "read_share": 56,
+        "sess_share": 0.01064,
+        "week_share": 0.01427317073170732,
+        "write_share": 5
+      },
+      {
+        "cost_usd": 0.192336,
+        "read_share": 32,
+        "sess_share": 0.03497018181818182,
+        "week_share": 0.04691121951219513,
+        "write_share": 18
+      }
+    ]
+  },
+  "calibration": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 200000,
+  "mode": "cost",
+  "schema": 1,
+  "turns": [
+    {
+      "agent": false,
+      "agent_calls": 2,
+      "agent_id": null,
+      "agent_ids": [
+        "req-f1",
+        "req-f2"
+      ],
+      "agent_model_s": 100,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 120,
+      "cache_read": 217000,
+      "cache_write": 5900,
+      "calls": 2,
+      "compact": false,
+      "ctx": 47406,
+      "dctx": null,
+      "dur_s": 300,
+      "fresh": 45,
+      "out": 6000,
+      "parts": [
+        [
+          1786842660,
+          0.06257
+        ],
+        [
+          1786842840,
+          0.05753
+        ],
+        [
+          1786842720,
+          0.11560000000000001
+        ],
+        [
+          1786842760,
+          0.08202500000000001
+        ]
+      ],
+      "prompt_id": "3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11",
+      "reported": true,
+      "text": "Fork off and check the two exhibits.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:10:00Z",
+      "turn_index": null,
+      "usd_cr": 0.1085,
+      "usd_cw": 0.059000000000000004,
+      "usd_in": 0.00022500000000000005,
+      "usd_out": 0.15000000000000002
+    },
+    {
+      "agent": true,
+      "agent_calls": 1,
+      "agent_id": "fork1",
+      "agent_ids": [
+        "req-f3"
+      ],
+      "agent_model_s": 260,
+      "agent_name": "fork",
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 66000,
+      "cache_write": 300,
+      "calls": 0,
+      "compact": false,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 0,
+      "fresh": 4,
+      "out": 900,
+      "parts": [
+        [
+          1786843020,
+          0.05852
+        ]
+      ],
+      "prompt_id": null,
+      "reported": false,
+      "text": "agents (other)",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:17:00.000Z",
+      "turn_index": null,
+      "usd_cr": 0.033,
+      "usd_cw": 0.003,
+      "usd_in": 0.00002,
+      "usd_out": 0.022500000000000003
+    },
+    {
+      "agent": false,
+      "agent_calls": 2,
+      "agent_id": null,
+      "agent_ids": [
+        "req-s1",
+        "req-s2"
+      ],
+      "agent_model_s": 120,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 150000,
+      "cache_write": 6300,
+      "calls": 2,
+      "compact": false,
+      "ctx": 54203,
+      "dctx": 6797,
+      "dur_s": 300,
+      "fresh": 50,
+      "out": 7100,
+      "parts": [
+        [
+          1786843260,
+          0.063545
+        ],
+        [
+          1786843500,
+          0.046515
+        ],
+        [
+          1786843320,
+          0.05006000000000001
+        ],
+        [
+          1786843380,
+          0.032216
+        ]
+      ],
+      "prompt_id": "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22",
+      "reported": false,
+      "text": "Now have a subagent read the strategy.",
+      "tool_s": 180,
+      "ts": "2026-08-16T01:20:00Z",
+      "turn_index": null,
+      "usd_cr": 0.061799999999999994,
+      "usd_cw": 0.0354,
+      "usd_in": 0.000136,
+      "usd_out": 0.095
+    }
+  ],
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 41,
+      "session_resets_at": 1786852800,
+      "weekly_pct": 63,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786852800,
+              "used_percent": 41
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 63
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-app-41-63",
+      "stale": false
+    }
+  }
+}

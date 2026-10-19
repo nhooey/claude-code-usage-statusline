@@ -26,7 +26,7 @@ the program and is not.
 
 | Command | Checks | Result line |
 |---|---|---|
-| `python3 tests/run-cases.py` | both suites below, from the committed cases in `tests/fixtures/` | `pass 228   fail 0   missing 0` |
+| `python3 tests/run-cases.py` | both suites below, from the committed cases in `tests/fixtures/`, and each case's [figures](../tests/README.md#figures) and render stages apart | `pass 228   fail 0   missing 0` |
 | `bash tests/golden.sh` | `--mode status` output, byte for byte, against 141 golden files | `pass 141   fail 0   missing 0` |
 | `bash tests/golden-cost.sh` | `--mode cost` output against 87 golden files | `pass 87   fail 0   missing 0` |
 | `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 41   fail 0   missing 0` |

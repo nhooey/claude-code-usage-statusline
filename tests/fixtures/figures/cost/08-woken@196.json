@@ -1,0 +1,273 @@
+{
+  "accounting": {
+    "session": {
+      "cost_usd": 0.33440000000000003,
+      "read_share": 35,
+      "sess_share": 0.06080000000000001,
+      "week_share": 0.08156097560975611,
+      "write_share": 18
+    },
+    "turns": [
+      {
+        "cost_usd": 0.080545,
+        "read_share": 27,
+        "sess_share": 0.014644545454545455,
+        "week_share": 0.019645121951219514,
+        "write_share": 32
+      },
+      {
+        "cost_usd": 0.08302,
+        "read_share": 31,
+        "sess_share": 0.015094545454545454,
+        "week_share": 0.020248780487804877,
+        "write_share": 14
+      },
+      {
+        "cost_usd": 0,
+        "read_share": null,
+        "sess_share": 0,
+        "week_share": 0,
+        "write_share": null
+      },
+      {
+        "cost_usd": 0.10353,
+        "read_share": 32,
+        "sess_share": 0.018823636363636362,
+        "week_share": 0.025251219512195125,
+        "write_share": 14
+      },
+      {
+        "cost_usd": 0.067305,
+        "read_share": 53,
+        "sess_share": 0.012237272727272729,
+        "week_share": 0.016415853658536587,
+        "write_share": 12
+      }
+    ]
+  },
+  "calibration": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 200000,
+  "mode": "cost",
+  "schema": 1,
+  "turns": [
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 44000,
+      "cache_write": 2600,
+      "calls": 1,
+      "compact": false,
+      "ctx": 46609,
+      "dctx": null,
+      "dur_s": 120,
+      "fresh": 9,
+      "out": 1300,
+      "parts": [
+        [
+          1786842360,
+          0.080545
+        ]
+      ],
+      "prompt_id": null,
+      "reported": true,
+      "text": "Another Claude session sent a message:\n<cross-session-message from=\"uds:/tmp/cc-socks/54251.sock\" from-name=\"claude-code-39\" from-mode=\"prompting\">\nHave a look at the width table.\n</cross-session-message>",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:05:00Z",
+      "turn_index": null,
+      "usd_cr": 0.022,
+      "usd_cw": 0.026000000000000002,
+      "usd_in": 0.000045,
+      "usd_out": 0.0325
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 52000,
+      "cache_write": 1200,
+      "calls": 1,
+      "compact": false,
+      "ctx": 53204,
+      "dctx": 6595,
+      "dur_s": 120,
+      "fresh": 4,
+      "out": 1800,
+      "parts": [
+        [
+          1786842660,
+          0.08302
+        ]
+      ],
+      "prompt_id": null,
+      "reported": true,
+      "text": "And now one I typed myself.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:10:00Z",
+      "turn_index": null,
+      "usd_cr": 0.026,
+      "usd_cw": 0.012,
+      "usd_in": 0.00002,
+      "usd_out": 0.045000000000000005
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 0,
+      "cache_write": 0,
+      "calls": 0,
+      "compact": false,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 0,
+      "fresh": 0,
+      "out": 0,
+      "parts": [],
+      "prompt_id": null,
+      "reported": false,
+      "text": "Another Claude session sent a message:\n<cross-session-message from=\"uds:/tmp/cc-socks/54251.sock\" from-name=\"Market\" from-mode=\"prompting\">\nFirst of two, delivered together.\n</cross-session-message>",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:20:00Z",
+      "turn_index": null,
+      "usd_cr": 0,
+      "usd_cw": 0,
+      "usd_in": 0,
+      "usd_out": 0
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 67000,
+      "cache_write": 1500,
+      "calls": 1,
+      "compact": false,
+      "ctx": 68506,
+      "dctx": 15302,
+      "dur_s": 60,
+      "fresh": 6,
+      "out": 2200,
+      "parts": [
+        [
+          1786843260,
+          0.10353
+        ]
+      ],
+      "prompt_id": null,
+      "reported": false,
+      "text": "Another Claude session sent a message:\n<cross-session-message from=\"uds:/tmp/cc-socks/54251.sock\" from-name=\"Market\" from-mode=\"prompting\">\nSecond of two, and this one is answered.\n</cross-session-message>",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:20:00Z",
+      "turn_index": null,
+      "usd_cr": 0.033499999999999995,
+      "usd_cw": 0.015000000000000001,
+      "usd_in": 0.000030000000000000004,
+      "usd_out": 0.055
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 71000,
+      "cache_write": 800,
+      "calls": 1,
+      "compact": false,
+      "ctx": 71811,
+      "dctx": 3305,
+      "dur_s": 60,
+      "fresh": 11,
+      "out": 950,
+      "parts": [
+        [
+          1786843860,
+          0.067305
+        ]
+      ],
+      "prompt_id": null,
+      "reported": false,
+      "text": "<task-notification>\n<task-id>b1s1s9729</task-id>\n<status>completed</status>\n</task-notification>",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:30:00Z",
+      "turn_index": null,
+      "usd_cr": 0.0355,
+      "usd_cw": 0.008,
+      "usd_in": 0.000055,
+      "usd_out": 0.02375
+    }
+  ],
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 41,
+      "session_resets_at": 1786852800,
+      "weekly_pct": 63,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "account_name": "session:08-woken",
+      "agent": "claude",
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786852800,
+              "used_percent": 41
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 63
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-app-41-63",
+      "stale": false
+    }
+  }
+}

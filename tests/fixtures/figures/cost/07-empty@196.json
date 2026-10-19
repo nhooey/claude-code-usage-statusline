@@ -1,0 +1,66 @@
+{
+  "accounting": {
+    "session": {
+      "cost_usd": 0,
+      "read_share": null,
+      "sess_share": 0,
+      "week_share": 0,
+      "write_share": null
+    },
+    "turns": []
+  },
+  "calibration": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 200000,
+  "mode": "cost",
+  "schema": 1,
+  "turns": [],
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 41,
+      "session_resets_at": 1786852800,
+      "weekly_pct": 63,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "account_name": "session:07-empty",
+      "agent": "claude",
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786852800,
+              "used_percent": 41
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 63
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-app-41-63",
+      "stale": false
+    }
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "accounting": {
+    "session": {
+      "cost_usd": 0.243125,
+      "read_share": 34,
+      "sess_share": 0.04420454545454546,
+      "week_share": 0.05929878048780489,
+      "write_share": 21
+    },
+    "turns": [
+      {
+        "cost_usd": 0.06656000000000001,
+        "read_share": 30,
+        "sess_share": 0.012101818181818184,
+        "week_share": 0.016234146341463418,
+        "write_share": 36
+      },
+      {
+        "cost_usd": 0.176565,
+        "read_share": 35,
+        "sess_share": 0.032102727272727276,
+        "week_share": 0.04306463414634147,
+        "write_share": 15
+      }
+    ]
+  },
+  "calibration": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 200000,
+  "mode": "cost",
+  "schema": 1,
+  "turns": [
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 40000,
+      "cache_write": 2400,
+      "calls": 1,
+      "compact": false,
+      "ctx": 42412,
+      "dctx": null,
+      "dur_s": 120,
+      "fresh": 12,
+      "out": 900,
+      "parts": [
+        [
+          1786842660,
+          0.06656000000000001
+        ]
+      ],
+      "prompt_id": "1b2c3d4e-0000-4000-8000-000000000001",
+      "reported": true,
+      "text": "Which turn was that?",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:10:00Z",
+      "turn_index": 11,
+      "usd_cr": 0.02,
+      "usd_cw": 0.024,
+      "usd_in": 0.00006000000000000001,
+      "usd_out": 0.022500000000000003
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 124000,
+      "cache_write": 2700,
+      "calls": 2,
+      "compact": false,
+      "ctx": 63905,
+      "dctx": 21493,
+      "dur_s": 180,
+      "fresh": 13,
+      "out": 3500,
+      "parts": [
+        [
+          1786843260,
+          0.10104
+        ],
+        [
+          1786843380,
+          0.07552500000000001
+        ]
+      ],
+      "prompt_id": "8f37748e-47ff-492b-888b-0163beb40189",
+      "reported": false,
+      "text": "And this one?",
+      "tool_s": 60,
+      "ts": "2026-08-16T01:20:00Z",
+      "turn_index": 12,
+      "usd_cr": 0.062,
+      "usd_cw": 0.027000000000000003,
+      "usd_in": 0.00006500000000000001,
+      "usd_out": 0.08750000000000001
+    }
+  ],
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 41,
+      "session_resets_at": 1786852800,
+      "weekly_pct": 63,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "account_name": "session:10-turn-id",
+      "agent": "claude",
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786852800,
+              "used_percent": 41
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 63
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-app-41-63",
+      "stale": false
+    }
+  }
+}
