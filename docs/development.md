@@ -188,11 +188,10 @@ Intentions, not designs:
 Until (3) exists, the width tables, terminal profiles and glyph rules stay in
 `formatting.py`. They are the first thing to move out when it does.
 
-`tools/layout-mockup.py` draws a proposed redesign inside a mocked Claude Code
-screen: a mod's band above the prompt in place of the status line, and the
-band, the agent panel and the Stop receipt sharing one column per metric. It
-uses the package's cell renderers on made-up figures and reads nothing.
-`--cols`, `--hide` and `--plain` are in its `--help`.
+`tools/layout-mockup.py` draws the proposed [redesign](redesign.md) inside a
+mocked Claude Code screen. It uses the package's cell renderers on made-up
+figures and reads nothing. `--cols`, `--hide`, `--receipt` and `--plain` are
+in its `--help`.
 
 ## License
 

@@ -257,7 +257,7 @@ def main(argv=None):
                     help="terminal width to draw for (default: this terminal's, else 160)")
     ap.add_argument("--hide", action="append", default=[], metavar="PATH",
                     help="scope[.group[.metric]] to hide; repeatable")
-    ap.add_argument("--receipt", choices=("hook", "mod"), default="hook",
+    ap.add_argument("--receipt", choices=("hook", "mod"), default="mod",
                     help="draw the receipt as the Stop hook's message, or as the "
                          "mod's rewrite of the turn's closing line")
     ap.add_argument("--plain", action="store_true", help="no colour")
