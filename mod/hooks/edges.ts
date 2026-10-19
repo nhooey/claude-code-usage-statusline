@@ -703,6 +703,22 @@ export async function transcriptPath($: $, places: Places):
   return ''
 }
 
+/** The permission mode the transcript's newest record names, from its
+ * last MODE_TAIL bytes: each prompt's record carries `permissionMode`.
+ * undefined where none of them names one. */
+export async function permissionModeOf($: $, path: string):
+  Promise<string | undefined> {
+  const size = await fileSize($, path)
+  if (!size) return undefined
+  const bytes = await readRange($, path, Math.max(0, size - MODE_TAIL), size)
+  const text = new TextDecoder().decode(bytes)
+  const all = [...text.matchAll(/"permissionMode":"(\w+)"/g)]
+  return all.length ? all[all.length - 1][1] : undefined
+}
+
+// How far back from the transcript's end permissionModeOf looks.
+const MODE_TAIL = 256 * 1024
+
 /** detect_git through `$.process.run`, in the session's directory. */
 async function gitVia($: $, cwd: string) {
   return detectGit(async (args) => {

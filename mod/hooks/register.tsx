@@ -35,7 +35,8 @@ import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import * as spec from '../src/spec.ts'
 import { CONFIG } from './config.ts'
-import { costDoc, placesOf, seen, statusDoc, steps, turnsNow } from './edges.ts'
+import { costDoc, permissionModeOf, placesOf, seen, statusDoc, steps,
+  transcriptPath, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -133,6 +134,15 @@ async function refresh($: $): Promise<void> {
         await fileStart($, doc)
       } catch (err) {
         await log($, 'refresh: no start line', err)
+      }
+      // The classic hook events that carry the mode were seen not to
+      // reach the mod (2026-10-20), so it is read off the transcript.
+      try {
+        const places = await placesFor($)
+        noteMode($, 'transcript', await permissionModeOf($,
+          await transcriptPath($, places)))
+      } catch (err) {
+        await log($, 'refresh: no permission mode', err)
       }
     } while (again)
   })()
