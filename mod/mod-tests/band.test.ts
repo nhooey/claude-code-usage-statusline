@@ -550,16 +550,17 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 🎤, 🤖 and 🎮 at no indent, then the 🔺🔖 tag line, drawn as the
-    // start line is.
-    expect(want.length).toBe(4)
+    // 🎤, 🤖 and 🎮 at no indent, a blank row, then the 🔺🔖 tag line,
+    // drawn as the start line is.
+    expect(want.length).toBe(5)
     expect(text(want[0]).startsWith(spec.E_TURN)).toBe(true)
     expect(text(want[1]).startsWith(spec.E_BOT)).toBe(true)
     expect(text(want[2]).startsWith(spec.E_SESSION)).toBe(true)
-    expect(text(want[3])).toContain('p-resume'.slice(0, 8))
-    expect(text(want[3]).startsWith(spec.E_TURN_PAST)).toBe(true)
-    expect(text(want[3])).toContain(spec.E_DATE)
-    expect(text(want[3])).not.toContain(spec.E_ACCT)
+    expect(text(want[3])).toBe(' ')
+    expect(text(want[4])).toContain('p-resume'.slice(0, 8))
+    expect(text(want[4]).startsWith(spec.E_TURN_PAST)).toBe(true)
+    expect(text(want[4])).toContain(spec.E_DATE)
+    expect(text(want[4])).not.toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
@@ -640,9 +641,9 @@ async function drewAll($: any, w: World) {
       origin: { kind: 'composer' } } })
   expect(await tagDrawn(typed)).toEqual({ beside: false, text: text(tag) })
 
-  // The receipt the hold waited for: its three rows and its tag line on
-  // the closing line.
-  expect((await closing($, ASKED_MS)).length).toBe(4)
+  // The receipt the hold waited for: its three rows, a blank row and its
+  // tag line on the closing line.
+  expect((await closing($, ASKED_MS)).length).toBe(5)
 }
 
 test('a resumed session whose first turn calls no tool draws all three',

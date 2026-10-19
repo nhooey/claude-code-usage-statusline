@@ -213,8 +213,10 @@ export function receiptLines(st: Settings, fig: Dict, cols: number,
   const keep = stamped(until);
   const lines = drawRows(st, [turn, main, session].filter((r): r is Row =>
     r !== null && keep.includes(r.scope)), cols, hide);
+  // A blank row before the tag line (asked 2026-10-20): a space, since Ink
+  // measures an empty Text as no row at all.
   const head = receiptHead(fig, hide);
-  if (head.length) lines.push(head);
+  if (head.length) lines.push([span(" ")], head);
   return dim ? lines.map(dimmed) : lines;
 }
 

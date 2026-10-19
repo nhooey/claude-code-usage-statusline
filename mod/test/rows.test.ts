@@ -128,8 +128,9 @@ test("--stamp-until splits 🎤, 🤖 and 🎮 between the receipt and the band"
   ] as const) {
     const receipt = inZone(cost, () => receiptLines(st, cost, 196, [], null,
       false, main, until));
-    // The rows, then the 🔺🔖 tag line.
-    assert.deepEqual(marks(receipt).slice(0, -1), stamp, until);
+    // The rows, then a blank row and the 🔺🔖 tag line.
+    assert.deepEqual(marks(receipt).slice(0, -2), stamp, until);
+    assert.equal(marks(receipt).at(-2), " ", until);
     const band = inZone(status, () => bandLines(st, status, 196, [],
       { ...opts, stampUntil: until }));
     assert.deepEqual(marks(band), keep, until);
