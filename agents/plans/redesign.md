@@ -286,6 +286,27 @@ Glyphs on these rows not yet measured by `tests/probe-advance.sh`: ▴ and ▾,
 the superscript digits in the model cell (¹ ² ³ ⁴ are East Asian Ambiguous,
 so a terminal may draw them two wide), and 🔻.
 
+### What the cells port has to change
+
+The cells the band, receipt and panel draw live in `claude_render.py`,
+`claude_subagent_render.py`, `claude_cost_render.py` and the number formats
+in `formatting.py`. Moving them to spans touches:
+
+- **About 60 places that build escape codes inline** (22 in the panel's
+  renderer, 33 in the status line's, and `mag_dim`, `reset_dim` and
+  `cache_color`, which return colour prefixes), and about 8 that measure a
+  drawn string through `strip_ansi`. With spans, a width is the sum of the
+  spans' text widths, and the `F_*` constants become a colour map.
+- **State read at import.** `term_profile` reads `TMUX`,
+  `TERMINAL_EMULATOR` and `TERM_PROGRAM` when the module loads, and the
+  width table and every `S_*` mark are fixed from it then.
+  `set_mark_spacing` and `set_subscript_decimals` rebind module globals
+  afterwards. In both languages these become one settings value passed to
+  the renderers, not globals.
+- **The clock.** Seven helpers fall back to `time.time()` or
+  `time.localtime()` when no `now` is passed, and many callers pass none.
+  Every renderer takes `now`; only the edge reads the clock.
+
 ### The shared test cases
 
 Nothing the suites read is checked in today: `mkcorpus-status.py` and
