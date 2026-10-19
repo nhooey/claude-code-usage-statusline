@@ -436,6 +436,8 @@ export const register: Register = on => {
       at(doc as Dict, await read($, clockNow)), bandCols, CONFIG.hide,
       { home: await home($), rate: await read($, rate),
         phase: e.props.isWorking || await read($, held) ? 'running' : 'done' })
+    // Between turns the receipt carries the rows, and the band has none.
+    if (!lines.length) return next(e)
     // No margin: Claude Code draws its `[-]` on the band's first row, and
     // on a blank top row it stood alone.  A bottom margin of -1, into the
     // blank row above the prompt's border, hid the band's last row under

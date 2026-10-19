@@ -316,12 +316,11 @@ for (const surface of ['terminal', 'desktop'] as const) {
         .toEqual(JSON.parse(JSON.stringify(want)))
       const ui = await $.ui.mount({ plugin: 'usage-band', surface,
         component: 'AbovePrompt', props: BAND })
+      // Between turns the band draws nothing: the receipt has the rows.
       const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
         rate: null, phase: 'done' })
-      expect(lines.length).toBeGreaterThan(0)
-      expect(await drawnRows(ui)).toEqual(expected(lines))
-      // No blank top row, where Claude Code's `[-]` would stand alone.
-      expect(((await ui.drawn()) as Drawn).props?.marginTop).toBeUndefined()
+      expect(lines).toEqual([])
+      expect(await drawnRows(ui)).toEqual([])
     })
 }
 
@@ -334,6 +333,8 @@ test('a turn running draws the running phase', async ($, on) => {
   const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
     rate: null, phase: 'running' })
   expect(await drawnRows(ui)).toEqual(expected(lines))
+  // No blank top row, where Claude Code's `[-]` would stand alone.
+  expect(((await ui.drawn()) as Drawn).props?.marginTop).toBeUndefined()
 })
 
 test('a survey above the prompt leaves the band to the engine',
@@ -627,9 +628,9 @@ async function drewAll($: any, w: World) {
   await until(w, 5_000)
   expect(stamped(w)).toBe(true)
   await w.clock.advance(1_000)
-  const lines = shown('done')
-  expect(lines.length).toBeGreaterThan(0)
-  expect(await drawnRows(await mount())).toEqual(expected(lines))
+  // Then nothing: the receipt has stamped 🤖 with 🎤 and 🎮.
+  expect(shown('done')).toEqual([])
+  expect(await drawnRows(await mount())).toEqual([])
 
   const tag = startLine(doc)
   expect(tag.length).toBeGreaterThan(0)

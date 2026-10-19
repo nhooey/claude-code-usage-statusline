@@ -388,14 +388,15 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
 }
 
 /** The rows a phase draws, top to bottom: 🎤, 🤖💬 and 🎮 while a turn
- * runs, the order the receipt stamps them in (asked 2026-10-20), and 🤖💬
- * once it ends.  💳 is not among them: it is drawn
+ * runs, the order the receipt stamps them in (asked 2026-10-20), and none
+ * once it ends, since the receipt has stamped all three by then (asked
+ * 2026-10-20).  💳 is not among them: it is drawn
  * on the footer under the prompt, right-aligned, as `accountText` gives it
  * (decided 2026-10-19). */
 export function phaseRows(rows: BandRows, phase: Phase): Row[] {
   return phase === "running"
     ? [rows.turn, rows.main, rows.session]
-    : [rows.main];
+    : [];
 }
 
 /** The 💳 row's label as one line of plain text, "📅 2026-10-19  🕐 22:12:44
