@@ -2,7 +2,8 @@
 
 The TypeScript side of the [redesign](../agents/plans/redesign.md): the
 Claude accounting, the usage-source reader and the cells, ported from
-`coding_agent_usage_line/` module by module, each under the same name.
+`coding_agent_usage_line/` module by module, each under the same name, and
+the Claude Code mod, `usage-band`, that draws them.
 
 Node 23.6 or later runs the sources directly, with no build, so the code
 keeps to TypeScript's erasable syntax: no `enum`, no `namespace`, no
@@ -17,3 +18,81 @@ Node's type definitions.
 `spec/layout.jsonc`; never edit it. Each module's tests compare it with
 the Python it ports, through JSON fixtures the Python side writes under
 `tests/fixtures/`.
+
+## The mod
+
+This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
+`hooks/register.tsx` is its hooks module, and `types/index.d.ts` its
+`$.state` contract. It draws three places:
+
+- **The band,** above the prompt: the grid's rows for the session, from
+  the last status figures document, redrawn as the session starts, after
+  each tool call, as a turn starts and ends, and every 30 seconds.
+- **The receipt,** on each turn's closing line: `✻ Worked for 1m 5s · `
+  and the turn's tag, with the 📊 🎤 and 📊 🎮 rows under it. Each is kept
+  in the mod's store under the turn's duration, so a resumed session still
+  shows them. A subagent's turn has none.
+- **The start line,** under a prompt typed at the composer: 🔻🔖 and the
+  turn's tag, dim.
+
+The hooks import the ports from `src/`. The mod's runtime has no Node and
+loads nothing from outside the plugin's folder, so the ports that read
+files keep their reads in `src/*_node.ts`, which only Node imports, and
+`hooks/edges.ts` makes the same reads through the engine's `$`.
+
+### Configuration
+
+`hooks/config.ts` holds it, in one place: the usage source
+(`claude-usage-tracker` by default, as `--usage-source` names it), the
+account and period, the `--hide` paths, `--mark-spacing` and
+`--subscript-decimals`, the tick, how many receipts are kept, and the
+version the mod's caches are keyed by. Set them to what your status line
+runs with, so the two read one reading and draw one grid. Edit it, then
+`/reload-plugins`.
+
+The state directory and the projects directory are the status line's:
+`CODING_AGENT_USAGE_LINE_STATE_DIR` (else
+`$XDG_STATE_HOME/coding-agent-usage-line`, else
+`~/.local/state/coding-agent-usage-line`) and `$CLAUDE_CONFIG_DIR/projects`
+(else `~/.claude/projects`). The tracker override,
+`CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST`, is read as the status line
+reads it.
+
+### Running it
+
+For one session, with nothing installed and no settings changed:
+
+    claude --plugin-dir "$PWD/mod"
+
+To try it in a session already running, as a dev mod: copy the folder into
+the session's mods folder, which the `plugin-authoring` skill makes and
+names (`~/.claude/dev-mods/<session id>/`), then reload. A copy and not a
+symbolic link: the loader refuses a module that resolves outside the
+folder it loads.
+
+    rsync -a --delete --exclude node_modules --exclude test \
+      --exclude tools mod/ ~/.claude/dev-mods/<session id>/usage-band/
+
+and in the session, `/reload-plugins`. To remove it, delete that folder
+and `/reload-plugins` again.
+
+### Its tests
+
+`mod-tests/` runs in Claude Code's own test runner, which loads the mod as
+a session would and stands in for the engine beneath it:
+
+    cd mod && npm run test:plugin
+
+It validates the mod and runs the harness tests from a scratch copy, since
+the runner collects every `*.test.ts` under the folder it is given and
+`test/` holds Node's. Each test answers `$.fs` from the fixture
+transcripts (`mod-tests/fixtures.gen.ts`, written by
+`node tools/gen-mod-fixtures.ts`; `test/mod-fixtures.test.ts` fails when it
+is stale) and checks what the mod drew against the `src/` functions over
+the same bytes. It needs the `claude` command, which CI does not have.
+
+The hooks type-check against the engine's types, which it writes into
+`.claude-plugin/types/` the first time it loads the mod (with
+`--plugin-dir`, or as a dev mod); they are not committed.
+
+    cd mod && npm run typecheck:plugin

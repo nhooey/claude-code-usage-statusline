@@ -290,6 +290,24 @@ same version-1 reading as its output and shared cases pinning it.
    45 goldens and 275 render cases moved with it, and `--hide` reaches it.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
+   Status 2026-10-19: built and tested in the harness, not yet run in a
+   live session. `mod/` is the plugin; its hooks import `src/`, whose
+   file reads moved to `src/*_node.ts` so the rest loads in the mod's
+   runtime. `src/claude.ts` ports the glue (`status_figures`,
+   `cost_figures`, `_with_shares`, `window_for`, `ctx_window_for`,
+   `detect_git`'s reading, `session_rate` in memory), and every committed
+   status and cost document is built again from its inputs, field for
+   field (`test/claude.test.ts`, with `tests/fixtures/gen/claude.py`'s
+   cases for the small parts). `mod/hooks/edges.ts` reads through `$`:
+   the transcript and the agent files through `$.fs`, a file over 4 MiB
+   in pieces through the shell; the tracker and git through
+   `$.process.run`; the clock through `$.clock`. The calibration's scan
+   runs behind the render, so the shares are blank until the first one
+   lands. The published context window is the band's last document's,
+   and the agent offsets are read from the Python Stop hook's file and
+   not written. `mod/mod-tests/` checks each drawn place against the
+   `src/` functions over the same fixture bytes (`npm run test:plugin`;
+   CI has no `claude` to run it).
 6. **The switch.** The band runs beside the status line until the two agree;
    then the status line leaves `settings.json` and
    [Layout](../../docs/layout.md) is rewritten.
