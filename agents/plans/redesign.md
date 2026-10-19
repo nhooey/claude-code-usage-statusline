@@ -174,23 +174,70 @@ hook cannot do it: its payload carries no prompt id, and its message would
 sit behind `UserPromptSubmit says:`. 🔻 is not yet a glyph constant; it joins
 `formatting.py` beside 🔺 after a run of `tests/probe-advance.sh`.
 
-### The mod's renderer
+### The mod's code
 
-The mod draws every cell itself, in TypeScript: a port of the Python cells,
-written as pure functions from figures to drawn spans, with no side effects
-of their own and no workarounds. Reading figures, the clock and the
-transcript stays at the edges, in the mod's event handlers.
+The mod works out its figures and draws them in TypeScript: a port of the
+Claude accounting (transcripts, request deduplication, prices, turns,
+agents, calibration) and of the cells. Both are pure functions, figures from
+records and spans from figures, with no side effects of their own and no
+workarounds. Reading the transcript, the usage source and the clock stays at
+the edges, in the mod's event handlers.
+
+Python keeps the agent panel, which `subagentStatusLine` draws, and Codex,
+which has no mods. So the accounting and the cells exist twice, and the code
+is laid out so the two copies are easy to keep in step:
+
+- **One module per module.** Each Python module that is ported has one
+  TypeScript module of the same name and split (`claude_records.py` and
+  `claude_records.ts`), and each function keeps its name, in the language's
+  case (`render_agent_ctx` and `renderAgentCtx`). A change to one names the
+  place to change in the other.
+- **One spec, read by both.** The cells' keys, `--hide` paths, widths and
+  gaps, the glyphs, the drop order, the label ranks and the palette are in
+  one JSON file that both load. Neither hardcodes them.
+- **One set of cases, run by both.** Shared fixtures, sample transcripts
+  with the figures they make and figures with the spans they draw, are
+  written by the Python side with `--regen`. Both test suites run every case,
+  so CI fails when either copy drifts.
+- **The same boundaries.** Pure renderers, one snapshot per render, missing
+  is not zero, estimates labelled ([Development](../../docs/development.md#boundaries)) hold in both.
 
 A cell returns spans, not a string: a mod's `Text` refuses control
 characters, so the escape codes the Python renderers colour with cannot
 reach the screen. Each span is drawn as a nested `<Text>` with its own
-`color`, a theme key or a raw colour such as hex, and `dimColor`. The
-throwaway band mod draws everything in one `<Text dimColor>`, which is why
-it shows no colour.
+`color`, a theme key or a raw colour such as hex, and `dimColor`. The Python
+cells return the same spans and join them into escape codes at the edge, so
+the shared cases compare spans, colours included.
 
-The Python renderer keeps the agent panel, which `subagentStatusLine` still
-draws, so the two copies of each cell must match. The goldens are the
-check: the TypeScript port is tested against the same figures.
+### Where the columns go
+
+The columns follow from the terminal's width and the `--hide` setting alone.
+The chrome is kept for two levels of nesting whether any agent runs or not,
+and a deeper agent row cuts its own label instead. The mod and each panel
+row's process then reach the same columns without talking to each other, and
+no column moves when an agent starts. `--grid rows` in the mockup draws the
+alternative, columns from the rows drawn: at 125 columns, a nested agent
+appearing there drops 🤖 🔧 🚦 from every row and moves every label.
+
+### The build order
+
+1. **An alignment test.** A throwaway mod draws the mockup's rows, as fixed
+   strings, in the band, on the closing line and under the prompt, and a
+   stub `subagentStatusLine` draws the mockup's agent rows. Looked at in
+   Ghostty, tmux and JediTerm, it shows whether Ink and the terminal agree on
+   each glyph's width, what width the band is given, where `[-]` sits and
+   how wide the panel's chrome is.
+2. **The spec and the shared cases, from Python.** The layout spec as JSON,
+   the Python cells returning spans, and the fixtures written from the
+   current renderers. The goldens show that nothing moved.
+3. **The accounting in TypeScript,** module by module, each passing the
+   shared cases before the next.
+4. **The cells and the layout in TypeScript,** against the shared cases.
+5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
+   `$.store` so a resumed transcript still shows them, and the 🔻 line.
+6. **The switch.** The band runs beside the status line until the two agree;
+   then the status line leaves `settings.json` and
+   [Layout](../../docs/layout.md) is rewritten.
 
 ## The whole screen
 
@@ -244,6 +291,7 @@ Read from the 2.1.302 binary:
 
 ## Open
 
-1. **The band's weekly share.** `$.session.usage()` gives a weekly share a
-   point off the status line's (33 against 34): another source, not
-   rounding.
+1. **The usage source.** `$.session.usage()` gives a weekly share a point
+   off the status line's (33 against 34). The status line here runs with
+   `--usage-source claude-usage-tracker`, and the mod reads Claude Code's
+   own figures. Which one the band reads is open.

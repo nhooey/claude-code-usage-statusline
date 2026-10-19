@@ -33,7 +33,8 @@ The proposal it draws:
 
 Run:  python3 tools/layout-mockup.py [--cols N] [--hide PATH ...]
                                      [--receipt hook|mod] [--phase running|done]
-                                     [--labels clip|spill] [--plain]
+                                     [--labels clip|spill] [--grid fixed|rows]
+                                     [--agents 0|1|2] [--plain]
 """
 import argparse
 import fnmatch
@@ -68,6 +69,9 @@ LABEL_MIN = 20
 # The panel's chrome before a row of the session's own: its pointer and two
 # blanks, drawn by Claude Code.  A nested row adds two more per level.
 PANEL_CHROME = 3
+# The deepest nesting the grid keeps room for with --grid fixed.  A deeper
+# row cuts its own label instead of moving the columns.
+CHROME_DEPTH = 2
 # 🔻 before 🔖 on the line under a prompt: the turn BELOW, the one it starts,
 # as the receipt's 🔺 points up at the turn that ended.  Wide, one code
 # point, Emoji_Presentation=Yes, Unicode 6, as 🔺 is; it would join
@@ -217,13 +221,20 @@ def label_text(row, patterns, room):
     return text
 
 
-def layout(rows, cols, patterns):
-    """The columns every row draws, after --hide and the narrow-window drop."""
+def layout(rows, cols, patterns, fixed=True):
+    """The columns every row draws, after --hide and the narrow-window drop.
+
+    With `fixed`, `rows` is every row the design can draw, and the chrome
+    is kept for CHROME_DEPTH levels of nesting whether any agent runs or
+    not: the columns then follow from the width and --hide alone, so the
+    mod and each panel row's process reach them apart.  Without it they
+    follow from the rows drawn, and move when a nested agent appears."""
     keys = [k for k, *_ in CELLS
             if any(k in r["cells"] and not hidden(patterns, r["scope"] + "." + path)
                    for r in rows for kk, path, *_ in CELLS if kk == k)]
     width = {k: w + gap for k, _, w, gap, _ in CELLS}
-    lead = max(vis_width(strip_ansi(chrome(r))) for r in rows)
+    lead = (vis_width(strip_ansi(chrome(dict(depth=CHROME_DEPTH)))) if fixed
+            else max(vis_width(strip_ansi(chrome(r))) for r in rows))
     for k in DROP_ORDER:
         if cols - RIGHT_EDGE - lead - sum(width[c] for c in keys) >= LABEL_MIN:
             break
@@ -250,14 +261,17 @@ def draw(row, keys, cols, patterns, spill=True):
     return head + seg(room, label_text(row, patterns, room)) + right
 
 
-def screen(cols, patterns, receipt_by="hook", phase="done", spill=True):
+def screen(cols, patterns, receipt_by="hook", phase="done", spill=True, grid="fixed",
+           depth=2):
     rule = "─" * cols
     every = [r for r in (ACCOUNT, TURN, MAIN, SESSION) if not hidden(patterns, r["scope"])]
     receipt = [r for r in RECEIPT if not hidden(patterns, r["scope"])]
-    agents = [r for r in AGENTS if not hidden(patterns, r["scope"])]
+    possible = [r for r in AGENTS if not hidden(patterns, r["scope"])]
+    agents = [r for r in possible if r["depth"] <= depth]
     # Laid out over every row either phase can draw, so the columns do not
     # move when the turn ends and its rows leave the band.
-    keys = layout(every + receipt + agents, cols, patterns)
+    keys = (layout(every + receipt + possible, cols, patterns) if grid == "fixed"
+            else layout(every + receipt + agents, cols, patterns, fixed=False))
     # The band carries the turn and the session while the turn runs.  Once it
     # ends the receipt carries them, and the band keeps the account and the
     # main thread.
@@ -318,9 +332,15 @@ def main(argv=None):
     ap.add_argument("--labels", choices=("spill", "clip"), default="spill",
                     help="let a label run on over its own row's leading blank "
                          "columns, or stop every label where the first column starts")
+    ap.add_argument("--grid", choices=("fixed", "rows"), default="fixed",
+                    help="lay the columns out from the width and --hide alone, or "
+                         "from the rows drawn")
+    ap.add_argument("--agents", type=int, choices=(0, 1, 2), default=2,
+                    help="the deepest agent row drawn: 0 for none")
     ap.add_argument("--plain", action="store_true", help="no colour")
     a = ap.parse_args(argv)
-    text = screen(a.cols, a.hide, a.receipt, a.phase, a.labels == "spill")
+    text = screen(a.cols, a.hide, a.receipt, a.phase, a.labels == "spill", a.grid,
+                  a.agents)
     print(strip_ansi(text) if a.plain else text)
 
 
