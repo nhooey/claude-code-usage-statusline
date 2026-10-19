@@ -116,3 +116,158 @@ export function pyFloatRepr(x: number): string {
   }
   return (neg ? "-" : "") + body;
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Strings by code point, as Python indexes them.
+//
+// A Python str is a sequence of code points where a JavaScript string is
+// one of UTF-16 units, so every emoji above U+FFFF is one character to
+// len() and a slice and two to .length and .slice.  The formatters cut,
+// count and pad by character, and do it here.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** len(s). */
+export function pyLen(s: string): number {
+  let n = 0;
+  for (const _ of s) n++;
+  return n;
+}
+
+/** s[start:end], negative indices from the end and clamped, as a slice
+ * is: an omitted bound is null. */
+export function pySlice(s: string, start: number | null = null,
+  end: number | null = null): string {
+  const cps = Array.from(s);
+  const n = cps.length;
+  const at = (i: number | null, dflt: number): number => {
+    if (i === null) return dflt;
+    if (i < 0) return Math.max(0, n + i);
+    return Math.min(i, n);
+  };
+  const a = at(start, 0), b = at(end, n);
+  return a < b ? cps.slice(a, b).join("") : "";
+}
+
+const RSTRIP_WS = new RegExp(`[${PY_SPACE}]+$`, "u");
+const LSTRIP_WS = new RegExp(`^[${PY_SPACE}]+`, "u");
+
+/** s.rstrip(chars): `chars` a set of characters, null for whitespace. */
+export function pyRstrip(s: string, chars: string | null = null): string {
+  if (chars === null) return s.replace(RSTRIP_WS, "");
+  const set = new Set(Array.from(chars));
+  const cps = Array.from(s);
+  while (cps.length && set.has(cps[cps.length - 1])) cps.pop();
+  return cps.join("");
+}
+
+/** s.lstrip(chars): `chars` a set of characters, null for whitespace. */
+export function pyLstrip(s: string, chars: string | null = null): string {
+  if (chars === null) return s.replace(LSTRIP_WS, "");
+  const set = new Set(Array.from(chars));
+  const cps = Array.from(s);
+  let i = 0;
+  while (i < cps.length && set.has(cps[i])) i++;
+  return cps.slice(i).join("");
+}
+
+/** s.split() with no separator: runs of whitespace, none at either end. */
+export function pySplitWs(s: string): string[] {
+  const t = pyStrip(s);
+  return t ? t.split(new RegExp(`[${PY_SPACE}]+`, "u")) : [];
+}
+
+/** "%*s" % (w, s) when `left` is false, "%-*s" when it is true: padded
+ * with blanks to `w` characters, and a negative `w` pads on the right
+ * whichever was asked, as Python's % takes a negative star width. */
+export function pyPadS(s: string, w: number, left = false): string {
+  const pad = " ".repeat(Math.max(0, Math.abs(w) - pyLen(s)));
+  return left || w < 0 ? s + pad : pad + s;
+}
+
+/** s.ljust(w). */
+export function pyLjust(s: string, w: number): string {
+  return s + " ".repeat(Math.max(0, w - pyLen(s)));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Numbers as % formats them.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** "%.*f" % (prec, x): the double's EXACT value rounded half to even, which
+ * is what Python's float formatting does and toFixed does not (toFixed
+ * takes a tie up, so 2.5 is "3" to it and "2" to Python), at any
+ * magnitude (toFixed turns exponential at 1e21).  A negative zero keeps
+ * its sign, "-0.0", and a negative precision is none. */
+export function pyFormatF(x: number, prec: number): string {
+  if (Number.isNaN(x)) return "nan";
+  if (!Number.isFinite(x)) return x > 0 ? "inf" : "-inf";
+  const p = Math.max(0, Math.trunc(prec));
+  const neg = x < 0 || Object.is(x, -0);
+  // |x| = mant * 2**e, read straight off the IEEE bits.
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, Math.abs(x));
+  const hi = view.getUint32(0), lo = view.getUint32(4);
+  const bexp = (hi >>> 20) & 0x7ff;
+  let mant = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
+  let e: number;
+  if (bexp === 0) {
+    e = -1074;
+  } else {
+    mant |= 1n << 52n;
+    e = bexp - 1075;
+  }
+  let num = mant * 10n ** BigInt(p), den = 1n;
+  if (e >= 0) num <<= BigInt(e);
+  else den <<= BigInt(-e);
+  let q = num / den;
+  const twice = 2n * (num % den);
+  if (twice > den || (twice === den && (q & 1n) === 1n)) q += 1n;
+  let s = q.toString();
+  if (p > 0) {
+    s = s.padStart(p + 1, "0");
+    s = s.slice(0, -p) + "." + s.slice(-p);
+  }
+  return (neg ? "-" : "") + s;
+}
+
+/** "%d" % x, or str(int(x)): the number truncated toward zero, at any
+ * magnitude.  An infinity raises OverflowError and a NaN ValueError in
+ * Python, so both throw here. */
+export function pyIntStr(x: number): string {
+  if (!Number.isFinite(x)) throw new RangeError("cannot convert " + x);
+  return BigInt(Math.trunc(x)).toString();
+}
+
+// The characters str.isdigit takes that int() does not: the superscripts,
+// the subscripts and the circled and parenthesised digits, which are
+// Numeric_Type=Digit and not decimal.  JavaScript has no property for the
+// type, so the ranges are written out; they are the ones a status line
+// could plausibly be handed.
+const DIGIT_NOT_DECIMAL = "\\u00b2\\u00b3\\u00b9\\u2070\\u2074-\\u2079" +
+  "\\u2080-\\u2089\\u2460-\\u2468\\u2474-\\u247c\\u2488-\\u2490\\u24ea" +
+  "\\u24f5-\\u24fd\\u24ff\\u2776-\\u277e\\u2780-\\u2788\\u278a-\\u2792";
+const IS_DIGIT = new RegExp(`^[\\p{Nd}${DIGIT_NOT_DECIMAL}]+$`, "u");
+const IS_DECIMAL = /^\p{Nd}+$/u;
+
+/** s.isdigit(). */
+export function pyIsDigit(s: string): boolean {
+  return IS_DIGIT.test(s);
+}
+
+/** int(s) of a string s.isdigit() passed: a ValueError, thrown, where it
+ * holds a digit that is not a decimal one. */
+export function pyIntDigits(s: string): number {
+  if (!IS_DECIMAL.test(s)) {
+    throw new RangeError("invalid literal for int(): " + s);
+  }
+  return parseInt(pyAsciiDigits(s), 10);
+}
+
+const INT_TEXT = /^[+-]?\p{Nd}+(?:_\p{Nd}+)*$/u;
+
+/** int(s) of a string, or null where Python raises ValueError. */
+export function pyIntText(s: string): number | null {
+  const t = pyStrip(s);
+  if (!INT_TEXT.test(t)) return null;
+  return parseInt(pyAsciiDigits(t).replaceAll("_", ""), 10);
+}
