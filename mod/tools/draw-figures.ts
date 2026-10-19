@@ -3,7 +3,8 @@
 //
 //   node mod/tools/draw-figures.ts FILE [--cols N] [--part PART]
 //        [--phase running|done] [--hide PATH ...] [--rate N]
-//        [--home DIR] [--workspace STATUS_FILE] [--plain]
+//        [--home DIR] [--workspace STATUS_FILE]
+//        [--stamp-until turn|agent|session] [--plain]
 //
 // FILE is a figures document, such as one of tests/fixtures/figures/.
 // A status document draws the band (--part band, the default) or the
@@ -12,6 +13,9 @@
 // the band's last one, as the mod keeps it.  --rate is the 🛫 the mod
 // would pass, in tokens a second.  --home stands for HOME, "${HOME}" by
 // default, which is what the fixtures' paths are written under.
+// --stamp-until is how far down 🎤, 🤖 and 🎮 the receipt stamps, the
+// mod's CONFIG.stampUntil: the receipt draws those rows, and the band's
+// done phase the rest; 🤖 on the receipt comes from --workspace.
 //
 // The clock is drawn in the document's `clock.tz`, as the edge would set
 // it, and the terminal's profile is read from the environment.
@@ -21,13 +25,14 @@ import { join } from "../src/spans.ts";
 import type { Span } from "../src/spans.ts";
 import { pyRstrip } from "../src/py.ts";
 import type { Dict } from "../src/py.ts";
-import { bandLines, workspaceOf } from "../src/band.ts";
-import type { Phase } from "../src/band.ts";
+import { STAMP_UNTIL, bandLines, bandRows, workspaceOf } from "../src/band.ts";
+import type { Phase, StampUntil } from "../src/band.ts";
 import { receiptLines, startLine } from "../src/receipt.ts";
 
 const USAGE = "usage: draw-figures.ts FILE [--cols N] " +
   "[--part {band,receipt,start}] [--phase {running,done}] [--hide PATH] " +
-  "[--rate N] [--home DIR] [--workspace STATUS_FILE] [--plain]";
+  "[--rate N] [--home DIR] [--workspace STATUS_FILE] " +
+  "[--stamp-until {turn,agent,session}] [--plain]";
 
 function fail(msg: string): never {
   process.stderr.write(USAGE + "\ndraw-figures.ts: error: " + msg + "\n");
@@ -41,6 +46,7 @@ function read(path: string): Dict {
 const argv = process.argv.slice(2);
 let file = "", cols = 160, part = "", phase: Phase = "running";
 let rate: number | null = null, home = "${HOME}", wsFile = "", plain = false;
+let stampUntil: StampUntil = "session";
 const hide: string[] = [];
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -54,6 +60,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === "--part") part = next();
   else if (a === "--phase") phase = next() as Phase;
   else if (a === "--hide") hide.push(next());
+  else if (a === "--stamp-until") stampUntil = next() as StampUntil;
   else if (a === "--rate") rate = Number(next());
   else if (a === "--home") home = next();
   else if (a === "--workspace") wsFile = next();
@@ -63,6 +70,7 @@ for (let i = 0; i < argv.length; i++) {
 if (!file) fail("the figures document is required");
 if (!Number.isInteger(cols) || cols <= 0) fail("--cols takes a width");
 if (!["running", "done"].includes(phase)) fail("--phase: invalid choice");
+if (!STAMP_UNTIL.includes(stampUntil)) fail("--stamp-until: invalid choice");
 
 const fig = read(file);
 const mode = fig.mode as string;
@@ -77,12 +85,15 @@ const st = settings(process.env);
 
 let lines: Span[][];
 if (part === "band") {
-  lines = bandLines(st, fig, cols, hide, { home, rate, phase });
+  lines = bandLines(st, fig, cols, hide, { home, rate, phase, stampUntil });
 } else if (part === "start") {
   lines = [startLine(fig)];
 } else if (part === "receipt") {
-  const ws = wsFile ? workspaceOf(read(wsFile), home) : null;
-  lines = receiptLines(st, fig, cols, hide, ws);
+  const status = wsFile ? read(wsFile) : null;
+  const ws = status ? workspaceOf(status, home) : null;
+  const main = status
+    ? bandRows(st, status, { home, rate: null, phase: "done" }).main : null;
+  lines = receiptLines(st, fig, cols, hide, ws, false, main, stampUntil);
 } else {
   fail("--part: invalid choice: '" + part + "'");
 }

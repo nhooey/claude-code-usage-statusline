@@ -79,17 +79,22 @@ live, frozen and dim, in their colours:
 ```
 
 🎤 Why is the build slow?                 💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
+🤖 It's the cold cache on CI.                      🧠 150k        🧩 ▴ 31M ▾997k  …
 🎮 📦app 🌿main                            💰 115                 🧩 ▴2.7M ▾841k  …
 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
 
 ```
 
-A blank row, 🎤 and 🎮 laid out at the width the band last drew at, at no
-indent as the band's rows are, so each column is under the band's; then
-the turn's tag line, drawn as the start tag is, so its 🔺🔖 is under the
-🔻🔖; then a blank row. Until the stamp lands the closing line is a blank
-row, and the band keeps the turn's 🎤 and 🎮 rows until a second after it
-lands (`receiptHoldMs`), so neither place is ever without them. A
+A blank row, 🎤, 🤖 and 🎮 laid out at the width the band last drew at,
+at no indent as the band's rows are, so each column is under the band's;
+then the turn's tag line, drawn as the start tag is, so its 🔺🔖 is under
+the 🔻🔖; then a blank row. Until the stamp lands the closing line is a
+blank row, and the band keeps the turn's rows until a second after it
+lands (`receiptHoldMs`), so neither place is ever without them; then the
+band draws none. `stampUntil` in `hooks/config.ts` (`--stamp-until` to
+`tools/draw-figures.ts`) stamps fewer: `turn` stamps 🎤 alone, `agent` 🎤
+and 🤖, and `session`, the default, all three; the rows it leaves stay on
+the band between turns. A
 `$.ui.log` line was tried first:
 Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
 blank row after, in plain dim text.

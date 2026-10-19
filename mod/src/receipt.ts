@@ -31,8 +31,9 @@ import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
 import type { Row } from "./grid.ts";
 import {
-  accountingSplit, fixedKeys, shareCells, turnCache, turnTokens,
+  accountingSplit, fixedKeys, shareCells, stamped, turnCache, turnTokens,
 } from "./band.ts";
+import type { StampUntil } from "./band.ts";
 import type { Dict } from "./py.ts";
 
 type Cells = { [key: string]: Span[] };
@@ -200,16 +201,18 @@ export function receiptHead(fig: Dict, hide: readonly string[]): Span[] {
  * row, where there is one, and 🎮 on the band's fixed grid, at no indent,
  * as the band's rows are, then the tag line
  * (receiptHead) under them (decided 2026-10-19).  A hidden scope's row is
- * left out.  `dim` draws every span dim, as the stamped receipt is drawn,
- * its colours kept. */
+ * left out, and so is a row under `until` (StampUntil), which the band
+ * keeps instead.  `dim` draws every span dim, as the stamped receipt is
+ * drawn, its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null, dim = false,
-  main: Row | null = null): Span[][] {
+  main: Row | null = null, until: StampUntil = "session"): Span[][] {
   const { turn, session } = receiptRows(st, fig, ws);
   // 🤖 between 🎤 and 🎮, as the band stacks them, where the caller has
   // the band's row for it (asked 2026-10-20).
-  const lines = drawRows(st, [...(turn ? [turn] : []),
-    ...(main ? [main] : []), session], cols, hide);
+  const keep = stamped(until);
+  const lines = drawRows(st, [turn, main, session].filter((r): r is Row =>
+    r !== null && keep.includes(r.scope)), cols, hide);
   const head = receiptHead(fig, hide);
   if (head.length) lines.push(head);
   return dim ? lines.map(dimmed) : lines;

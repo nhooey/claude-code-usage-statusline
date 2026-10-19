@@ -293,7 +293,7 @@ async function stamp($: $, durationMs: number, prompt: string):
       { home: where.home, rate: null, phase: 'done' }).main : null
     // Laid out as the band is, so the rows' columns are the band's.
     const lines = receiptLines(st, fig, bandCols, CONFIG.hide, ws, true,
-      main)
+      main, CONFIG.stampUntil)
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs), lines)
   } finally {
@@ -435,7 +435,8 @@ export const register: Register = on => {
     const lines = bandLines(await settingsOf($),
       at(doc as Dict, await read($, clockNow)), bandCols, CONFIG.hide,
       { home: await home($), rate: await read($, rate),
-        phase: e.props.isWorking || await read($, held) ? 'running' : 'done' })
+        phase: e.props.isWorking || await read($, held) ? 'running' : 'done',
+        stampUntil: CONFIG.stampUntil })
     // Between turns the receipt carries the rows, and the band has none.
     if (!lines.length) return next(e)
     // No margin: Claude Code draws its `[-]` on the band's first row, and

@@ -6,6 +6,7 @@
 // grid while they run side by side (agents/plans/redesign.md, "Where the
 // plan figures come from").  A change here is a change to the mod: edit,
 // then /reload-plugins.
+import type { StampUntil } from '../src/band.ts'
 
 export const CONFIG = {
   // The usage source, as --usage-source names it: "claude-usage-tracker"
@@ -21,6 +22,10 @@ export const CONFIG = {
   // flags in ~/.claude/settings.json the same, so the panel stacks.
   hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache'] as
     readonly string[],
+  // --stamp-until: how far down the band's rows, 🎤 then 🤖 then 🎮, the
+  // receipt stamps a turn — "turn", "agent" or "session" — the rows under
+  // it staying on the band between turns (asked 2026-10-20).
+  stampUntil: "session" as StampUntil,
   // --mark-spacing and --subscript-decimals.
   markSpacing: true,
   subscriptDecimals: false,

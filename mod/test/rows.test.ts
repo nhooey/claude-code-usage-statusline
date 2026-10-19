@@ -18,7 +18,7 @@ import {
   accountText, bandLines, bandRows, fixedKeys, footerTail, phaseRows,
   workspaceOf,
 } from "../src/band.ts";
-import { receiptTurn } from "../src/receipt.ts";
+import { receiptLines, receiptTurn } from "../src/receipt.ts";
 import { decodeTurn } from "../src/claude_cost.ts";
 import { spanFrom, spanJson } from "../tools/gen-grid-cases.ts";
 import {
@@ -109,6 +109,29 @@ test("the band's columns do not move with the phase or the figures", () => {
         assert.equal(width(drawn, st.widths), 155 - RIGHT_EDGE, id);
       }
     }
+  }
+});
+
+test("--stamp-until splits 🎤, 🤖 and 🎮 between the receipt and the band", () => {
+  const st = settings({});
+  const status = document("status/01-baseline@196");
+  const cost = document("cost/09-agents@196");
+  const opts = { home: HOME, rate: null, phase: "done" as const };
+  const main = inZone(status, () => bandRows(st, status, opts).main);
+  const marks = (lines: Span[][]) => lines.map((l) =>
+    Array.from(stripAnsi(join(l)))[0]);
+  for (const [until, stamp, keep] of [
+    ["turn", ["🎤"], ["🤖", "🎮"]],
+    ["agent", ["🎤", "🤖"], ["🎮"]],
+    ["session", ["🎤", "🤖", "🎮"], []],
+  ] as const) {
+    const receipt = inZone(cost, () => receiptLines(st, cost, 196, [], null,
+      false, main, until));
+    // The rows, then the 🔺🔖 tag line.
+    assert.deepEqual(marks(receipt).slice(0, -1), stamp, until);
+    const band = inZone(status, () => bandLines(st, status, 196, [],
+      { ...opts, stampUntil: until }));
+    assert.deepEqual(marks(band), keep, until);
   }
 });
 

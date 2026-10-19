@@ -57,7 +57,21 @@ export type BandOpts = {
   readonly phase: Phase;
   /** Blank columns before each row's label (`indented`). */
   readonly indent?: number;
+  /** The last row the receipt stamps; see StampUntil.  "session" where
+   * absent. */
+  readonly stampUntil?: StampUntil;
 };
+
+/** How far down the band's rows, 🎤 then 🤖 then 🎮, the receipt stamps a
+ * turn: "turn" stamps 🎤 alone, "agent" 🎤 and 🤖, "session" all three.
+ * The rows under it stay on the band between turns (asked 2026-10-20). */
+export type StampUntil = "turn" | "agent" | "session";
+export const STAMP_UNTIL: readonly StampUntil[] = ["turn", "agent", "session"];
+
+/** The scopes the receipt stamps under `until`, top to bottom. */
+export function stamped(until: StampUntil = "session"): string[] {
+  return ["turn", "main", "session"].slice(0, STAMP_UNTIL.indexOf(until) + 1);
+}
 
 /** The band's four rows, whichever the phase draws. */
 export type BandRows = {
@@ -388,15 +402,17 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
 }
 
 /** The rows a phase draws, top to bottom: 🎤, 🤖💬 and 🎮 while a turn
- * runs, the order the receipt stamps them in (asked 2026-10-20), and none
- * once it ends, since the receipt has stamped all three by then (asked
- * 2026-10-20).  💳 is not among them: it is drawn
+ * runs, the order the receipt stamps them in (asked 2026-10-20), and once
+ * it ends those the receipt did not stamp under `until`: none by default
+ * (asked 2026-10-20).  💳 is not among them: it is drawn
  * on the footer under the prompt, right-aligned, as `accountText` gives it
  * (decided 2026-10-19). */
-export function phaseRows(rows: BandRows, phase: Phase): Row[] {
-  return phase === "running"
-    ? [rows.turn, rows.main, rows.session]
-    : [];
+export function phaseRows(rows: BandRows, phase: Phase,
+  until: StampUntil = "session"): Row[] {
+  const all = [rows.turn, rows.main, rows.session];
+  if (phase === "running") return all;
+  const gone = stamped(until);
+  return all.filter((r) => !gone.includes(r.scope));
 }
 
 /** The 💳 row's label as one line of plain text, "📅 2026-10-19  🕐 22:12:44
@@ -439,7 +455,7 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
 export function bandLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], opts: BandOpts): Span[][] {
   const keys = fixedKeys(st, cols, hide);
-  return phaseRows(bandRows(st, fig, opts), opts.phase)
+  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.stampUntil)
     .filter((r) => !hidden(hide, r.scope))
     .map((r) => draw(st, indented(r, opts.indent ?? 0), keys, cols, hide));
 }
