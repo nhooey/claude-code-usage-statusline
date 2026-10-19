@@ -118,8 +118,7 @@ export function chrome(depth: number | undefined): Span[] {
 export function labelText(st: Settings, row: Row,
   patterns: readonly string[], room: number): Span[] {
   let pieces = row.label.filter((p) =>
-    !hidden(patterns, row.scope + "." + p.path) &&
-    !hidden(patterns, row.scope + "." + p.path.split(".")[0]));
+    !hidden(patterns, row.scope + "." + p.path));
   const ranks = [...new Set(pieces.map((p) => p.drop).filter((d) => d))]
     .sort((a, b) => a - b);
   const all = (): Span[] => pieces.flatMap((p) => p.spans);

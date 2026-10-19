@@ -102,9 +102,7 @@ def label_text(row: Row, patterns: Sequence[str], room: int) -> List[Span]:
     lowest rank first, then what is left is cut.  A cut label is drawn
     plain, as the mockup draws it."""
     pieces = [p for p in row.label
-              if not hidden(patterns, row.scope + "." + p.path)
-              and not hidden(patterns,
-                             row.scope + "." + p.path.split(".")[0])]
+              if not hidden(patterns, row.scope + "." + p.path)]
     ranks = sorted({p.drop for p in pieces if p.drop})
 
     def whole() -> List[Span]:
