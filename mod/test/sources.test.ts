@@ -134,17 +134,22 @@ test("tracker: plist store to reading", async () => {
 test("command_reading and what it is sent", async () => {
   const dir = scratch();
   try {
-    let index = 0;
+    // One file, rewritten for each case: macOS looks over every new
+    // executable on its first run, for a tenth of a second, and a file it
+    // has looked at once it lets run.  A case with no script gets a name
+    // never written.
+    const file = path.join(dir, "cmd");
     for (const c of load("command.json")) {
-      const file = path.join(dir, "cmd-" + index++);
+      fs.rmSync(file + ".stdin", { force: true });
       if (c.script !== null) {
-        fs.writeFileSync(file, c.script,
-                         { mode: c.executable ? 0o700 : 0o600 });
+        fs.writeFileSync(file, c.script);
+        fs.chmodSync(file, c.executable ? 0o700 : 0o600);
       }
-      same(await commandReading(file, c.context, c.timeout), c.expected,
+      const run = c.script !== null ? file : path.join(dir, "missing");
+      same(await commandReading(run, c.context, c.timeout), c.expected,
            c.name);
       let stdin: string | null = null;
-      try { stdin = fs.readFileSync(file + ".stdin", "utf8"); } catch { /**/ }
+      try { stdin = fs.readFileSync(run + ".stdin", "utf8"); } catch { /**/ }
       assert.equal(stdin, c.stdin, c.name + " stdin");
       count("command");
     }
