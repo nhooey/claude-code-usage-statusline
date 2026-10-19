@@ -530,7 +530,8 @@ export const register: Register = on => {
       // The band's width before the viewport's: the viewport read 10
       // columns wider than the terminal drew, pushing the 🕐 off the row
       // (seen live 2026-10-20), and the band's is where its rows end.
-      e.props.hint, bandCols || (e.viewport?.columns ?? 80), permissionMode)
+      e.props.hint, bandCols || (e.viewport?.columns ?? 80), permissionMode,
+      await home($))
     // What the padding was worked out from, each time it changes, so a
     // tail drawn too wide can be checked against the line it was given.
     const seen = JSON.stringify([e.props.hint, permissionMode ?? null, bandCols,

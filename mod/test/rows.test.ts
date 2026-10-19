@@ -165,7 +165,12 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   const hint = "-- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)";
   const text = inZone(fig, () => accountText(st, fig, []));
   assert.ok(text.includes("💳"), text);
-  const tail = inZone(fig, () => footerTail(st, fig, [], hint, 155));
+  // The workspace first, 📦 🌿 📁, as 🎮's label draws it.
+  assert.ok(text.startsWith("📦") && text.indexOf("📁") < text.indexOf("💳"),
+    text);
+  assert.ok(!inZone(fig, () => accountText(st, fig, ["account.workspace"]))
+    .includes("📦"));
+  const tail = inZone(fig, () => footerTail(st, fig, [], hint, 240));
   // Each run of spaces is one space and blanks, since Claude Code draws a
   // run of them as one.
   const kept = text.replace(/ {2,}/g, (r) => " " + "\u2800".repeat(r.length - 1));
@@ -174,17 +179,17 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   // band's right edge, padded with blanks no trim takes.
   assert.equal(2 + visWidth(hint, st.widths) +
     visWidth(FOOTER_JOIN, st.widths) + visWidth(tail, st.widths),
-  155 - RIGHT_EDGE);
+  240 - RIGHT_EDGE);
   // The mode's pill, left out of the hint, is drawn before it all the same.
   const bare = "-- INSERT -- 2 shells";
-  const auto = inZone(fig, () => footerTail(st, fig, [], bare, 155, "auto"));
+  const auto = inZone(fig, () => footerTail(st, fig, [], bare, 240, "auto"));
   assert.equal(2 + visWidth(MODE_PILLS.auto + FOOTER_JOIN + bare, st.widths) +
     visWidth(FOOTER_JOIN, st.widths) + visWidth(auto, st.widths),
-  155 - RIGHT_EDGE);
+  240 - RIGHT_EDGE);
   assert.equal(tail.trimStart(), tail);
   // Too narrow a row: the " · " alone parts the two.
   assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)), kept);
-  assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 155)),
+  assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 240)),
     "");
   // 🔋 hidden in every row takes its 🔜 with it, and leaves 🪫's.
   const no5h = inZone(fig, () => accountText(st, fig, ["*.plan.five_hour"]));

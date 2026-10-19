@@ -415,15 +415,22 @@ export function phaseRows(rows: BandRows, phase: Phase,
   return all.filter((r) => !gone.includes(r.scope));
 }
 
-/** The 💳 row's label as one line of plain text, "📅 2026-10-19  🕐 22:12:44
- * 💳 🔋 1٪ 🔜 4.8h  🪫 49٪ 🔜 9.8h", each piece hidden by its own path; ""
+/** The 💳 row's label as one line of plain text after the workspace,
+ * "📦claude-code-usage-statusline 🌿master  📁~/git/📦  💳 🔋 1٪ 🔜 4.8h
+ * 🪫 49٪ 🔜 9.8h  📅 2026-10-19  🕐 22:12:44", each piece hidden by its own
+ * path, the workspace's under `account.workspace`, with `home` shortening
+ * the 📁 directory as the band's does; ""
  * under the hide path `account`.  The footer it is drawn on takes a string,
  * so it keeps none of the row's colours. */
 export function accountText(st: Settings, fig: Dict,
-  hide: readonly string[]): string {
+  hide: readonly string[], home = ""): string {
   if (hidden(hide, "account")) return "";
   const now = (fig.clock as Dict).now as number;
-  const shown: Piece[] = [];
+  // 📦 the project, 🌿 the branch and 📁 the directory first, as 🎮's
+  // label draws them (asked 2026-10-20), each hidden by its own path.
+  const shown: Piece[] = sessionLabel(workspaceOf(fig, home)).filter((p) =>
+    ["workspace.project", "workspace.branch", "workspace.dir"]
+      .includes(p.path) && !hidden(hide, "account." + p.path));
   let dropped = false;
   for (const p of accountRow(st, fig, now).label) {
     // A window's 🔜 goes with its window.
@@ -446,10 +453,10 @@ export function accountText(st: Settings, fig: Dict,
  * on · " (seen live 2026-10-20: "-- INSERT -- 2 shells"), so the pill of
  * `mode`, the session's permission mode, is counted apart. */
 export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
-  hint: string, cols: number, mode?: string): string {
+  hint: string, cols: number, mode?: string, home = ""): string {
   // Claude Code draws a run of spaces in the tail as one (seen live
   // 2026-10-20: "6.6h 📅"), so a run's spaces past its first are blanks.
-  const text = accountText(st, fig, hide).replace(/ {2,}/g,
+  const text = accountText(st, fig, hide, home).replace(/ {2,}/g,
     (run) => " " + TAIL_BLANK.repeat(run.length - 1));
   if (!text) return "";
   const pill = MODE_PILLS[mode ?? ""] ?? "";
