@@ -15,7 +15,7 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, accountText, footerParts, bandLines, bandRows, fixedKeys, footerTail,
+  FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, accountText, footerParts, modeOfHint, bandLines, bandRows, fixedKeys, footerTail,
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
@@ -197,6 +197,25 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   assert.equal(2 + visWidth("-- INSERT -- " + MODE_PILLS.auto +
     " (shift+tab to cycle)", st.widths) + visWidth(FOOTER_JOIN, st.widths) +
     visWidth(cycTail, st.widths), 240 - RIGHT_EDGE);
+  // Each shape the hint was seen in, by what the footer drew for it.
+  const drawn: [string, string, string][] = [
+    ["-- INSERT -- (shift+tab to cycle)", "plan",
+      "-- INSERT -- ⏸ plan mode on (shift+tab to cycle)"],
+    ["-- INSERT -- plan mode on (shift+tab to cycle)", "plan",
+      "-- INSERT -- ⏸ plan mode on (shift+tab to cycle)"],
+    ["-- INSERT --", "default", "-- INSERT -- ⏸ manual mode on"],
+    ["-- INSERT -- manual mode on", "default", "-- INSERT -- ⏸ manual mode on"],
+    ["-- INSERT -- 2 shells", "acceptEdits",
+      "-- INSERT -- ⏵⏵ accept edits on · 2 shells"],
+  ];
+  for (const [h, mode, line] of drawn) {
+    const t = inZone(fig, () => footerTail(st, fig, [], h, 240, mode));
+    assert.equal(2 + visWidth(line + FOOTER_JOIN, st.widths) +
+      visWidth(t, st.widths), 240 - RIGHT_EDGE, h);
+  }
+  assert.equal(modeOfHint("-- INSERT -- accept edits on (shift+tab to cycle)"),
+    "acceptEdits");
+  assert.equal(modeOfHint("-- INSERT -- (shift+tab to cycle)"), undefined);
   assert.equal(tail.trimStart(), tail);
   // Too narrow a row: the gaps down to one, and the " · " alone parts the
   // two.

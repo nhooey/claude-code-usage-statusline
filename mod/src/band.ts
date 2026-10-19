@@ -456,12 +456,7 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   hint: string, cols: number, mode?: string, home = ""): string {
   const plain = accountText(st, fig, hide, home);
   if (!plain) return "";
-  const pill = MODE_PILLS[mode ?? ""] ?? "";
-  // The pill joins what follows with " · ", but its own "(shift+tab to
-  // cycle)" with one space (seen live 2026-10-20).
-  const pillW = pill && !hint.includes(pill)
-    ? visWidth(pill + (hint.includes(MODE_CYCLE) ? " " : FOOTER_JOIN),
-      st.widths) : 0;
+  const pillW = pillWidth(st, hint, MODE_PILLS[mode ?? ""] ?? "");
   const room = cols - RIGHT_EDGE - 2 - pillW - visWidth(hint, st.widths) -
     visWidth(FOOTER_JOIN, st.widths);
   // The workspace, the 💳 account and 📅 🕐, FOOTER_GAP columns apart,
@@ -499,6 +494,37 @@ export function footerParts(text: string): string[] {
   return out.map((p) => p.trim()).filter((p) => p);
 }
 
+/** The columns the footer draws for the mode's `pill` that `hint` does
+ * not read (seen live 2026-10-20):
+ *
+ *   none, where `hint` has the pill whole;
+ *   its glyph and a space, where it has the pill's words alone, "-- INSERT
+ *   -- plan mode on (shift+tab to cycle)", the first of the two draws a
+ *   change of mode makes;
+ *   the pill and a space, where it has none of it and nothing follows but
+ *   MODE_CYCLE, "-- INSERT -- (shift+tab to cycle)" or "-- INSERT --";
+ *   the pill and FOOTER_JOIN before anything else, "-- INSERT -- 2 shells".
+ */
+export function pillWidth(st: Settings, hint: string, pill: string): number {
+  if (!pill || hint.includes(pill)) return 0;
+  const glyph = pill.slice(0, pill.indexOf(" ") + 1);
+  if (hint.includes(pill.slice(glyph.length))) {
+    return visWidth(glyph, st.widths);
+  }
+  const rest = hint.replace(/^-- [A-Z]+ --\s*/, "");
+  const join = !rest || rest.startsWith(MODE_CYCLE) ? " " : FOOTER_JOIN;
+  return visWidth(pill + join, st.widths);
+}
+
+/** The permission mode whose pill's words `hint` reads, as the first draw
+ * after a change of mode has them; undefined where it reads none. */
+export function modeOfHint(hint: string): string | undefined {
+  for (const [mode, pill] of Object.entries(MODE_PILLS)) {
+    if (hint.includes(pill.slice(pill.indexOf(" ") + 1))) return mode;
+  }
+  return undefined;
+}
+
 /** The help that follows the mode's pill, joined to it by a space. */
 export const MODE_CYCLE = "(shift+tab to cycle)";
 
@@ -506,8 +532,9 @@ export const MODE_CYCLE = "(shift+tab to cycle)";
 export const FOOTER_JOIN = " · ";
 
 /** The pill Claude Code draws in the footer for each permission mode, by
- * the mode's name; none in `default`.  Only "auto" was seen live. */
+ * the mode's name: all but bypassPermissions's seen live (2026-10-20). */
 export const MODE_PILLS: Readonly<Record<string, string>> = {
+  default: "⏸ manual mode on",
   auto: "⏵⏵ auto mode on",
   acceptEdits: "⏵⏵ accept edits on",
   plan: "⏸ plan mode on",

@@ -26,7 +26,8 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { bandLines, bandRows, footerTail, workspaceOf } from '../src/band.ts'
+import { bandLines, bandRows, footerTail, modeOfHint, workspaceOf }
+  from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
   withEngineDuration,
@@ -244,6 +245,8 @@ let hintSeen = ''
 // The session's permission mode, as the last classic hook event gave it:
 // the footer's `hint` leaves its pill out, so footerTail counts it apart.
 let permissionMode: string | undefined
+// The mode the footer's hint last named, which outranks the transcript's.
+let hintMode: string | undefined
 
 // The events seen carrying no mode, logged once each.
 const modeless = new Set<string>()
@@ -523,6 +526,10 @@ export const register: Register = on => {
   // the 💳 row at its right end (decided 2026-10-19): a dim tail after
   // Claude Code's own line, which keeps its pills live (footerTail).
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
+    // A change of mode draws the line first with the mode's words in it:
+    // the mode as of now, which the transcript has only at the next record.
+    hintMode = modeOfHint(e.props.hint) ?? hintMode
+    const mode = hintMode ?? permissionMode
     const doc = await read($, status)
     if (doc === null) return next(e)
     const tail = footerTail(await settingsOf($),
@@ -530,11 +537,11 @@ export const register: Register = on => {
       // The band's width before the viewport's: the viewport read 10
       // columns wider than the terminal drew, pushing the 🕐 off the row
       // (seen live 2026-10-20), and the band's is where its rows end.
-      e.props.hint, bandCols || (e.viewport?.columns ?? 80), permissionMode,
+      e.props.hint, bandCols || (e.viewport?.columns ?? 80), mode,
       await home($))
     // What the padding was worked out from, each time it changes, so a
     // tail drawn too wide can be checked against the line it was given.
-    const seen = JSON.stringify([e.props.hint, permissionMode ?? null, bandCols,
+    const seen = JSON.stringify([e.props.hint, mode ?? null, bandCols,
       e.viewport?.columns ?? null, tail.length])
     if (seen !== hintSeen) {
       hintSeen = seen
