@@ -22,7 +22,7 @@ import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import { bandLines, workspaceOf } from '../src/band.ts'
 import {
-  drawRows, receiptHead, receiptRows, startLine,
+  drawRows, receiptHead, receiptRows, startLine, withEngineDuration,
 } from '../src/receipt.ts'
 import type { Row } from '../src/grid.ts'
 import { sha256Hex } from '../src/sha256.ts'
@@ -243,7 +243,8 @@ export const register: Register = on => {
       const where = await placesFor($)
       const last = await read($, status)
       const published = last ? Number(last.context_window) || 0 : 0
-      const doc = await costDoc($, where, published)
+      const got = await costDoc($, where, published)
+      const doc = got ? withEngineDuration(got as Dict, e.durationMs) : null
       if (doc) {
         // 📦 🌿 from the band's last status document (decision 7).
         const ws = last ? workspaceOf(last as Dict, where.home) : null

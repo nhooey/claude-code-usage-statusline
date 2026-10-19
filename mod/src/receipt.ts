@@ -129,6 +129,28 @@ export function receiptRows(st: Settings, fig: Dict,
   };
 }
 
+/** `fig` with the billed turn timed by the engine's own duration.  The
+ * transcript's turn_duration record, which dur_s takes when it is there,
+ * lands after turn.complete, so at that point dur_s is the span from the
+ * turn's first record to its last, short of what the closing line beside
+ * the receipt prints.  The seconds added are the model's: they are the
+ * answer streaming after its last record, in no tool and no wait. */
+export function withEngineDuration(fig: Dict, durationMs: number): Dict {
+  const turns = fig.turns as Dict[];
+  const i = receiptTurn(turns.map(decodeTurn));
+  if (i < 0 || !(durationMs > 0)) return fig;
+  const dur = durationMs / 1000;
+  const gain = dur - (turns[i].dur_s as number);
+  if (!(gain > 0)) return fig;
+  const acc = fig.accounting as Dict;
+  const accTurns = [...(acc.turns as Dict[])];
+  const a = accTurns[i];
+  accTurns[i] = { ...a, model_s: (a.model_s as number) + gain };
+  const t = [...turns];
+  t[i] = { ...turns[i], dur_s: dur };
+  return { ...fig, turns: t, accounting: { ...acc, turns: accTurns } };
+}
+
 /** The receipt's head, "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02": the
  * billed turn's tag and `clock.now`, when the Stop ran. */
 export function receiptHead(fig: Dict): Span[] {
