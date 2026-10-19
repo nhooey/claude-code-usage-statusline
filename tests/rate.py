@@ -25,53 +25,10 @@ import tempfile
 DIR = os.path.dirname(os.path.abspath(__file__))
 PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
-pass_n = fail_n = 0
+from _checks import check, drawn, near, tally, unpainted  # noqa: E402
 
-
-def ok(name):
-    global pass_n
-    pass_n += 1
-    print("  ok    %s" % name)
-
-
-def bad(name, detail=""):
-    global fail_n
-    fail_n += 1
-    print("  FAIL  %s" % name)
-    if detail:
-        for line in str(detail).splitlines():
-            print("          " + line)
-
-
-def check(name, got, want):
-    if got == want:
-        ok(name)
-    else:
-        bad(name, "got  %r\nwant %r" % (got, want))
-
-
-def near(name, got, want, tol=1e-6):
-    if got is not None and want is not None and abs(got - want) <= tol:
-        ok(name)
-    else:
-        bad(name, "got  %r\nwant %r" % (got, want))
-
-
-ANSI = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def drawn(cell):
-    """A cell's spans joined into escape codes, as the terminal gets them."""
-    if isinstance(cell, str):
-        return cell
-    from coding_agent_usage_line.spans import join
-    return join(cell)
-
-
-def unpainted(cell):
-    """A cell's text alone, its escape codes dropped."""
-    return ANSI.sub("", drawn(cell))
 NOW = 1786847000.0      # the shared cases' PIN_NOW, for no reason but habit
+TOL = 1e-6              # how near a rate has to come, in tokens a second
 
 
 
@@ -94,8 +51,9 @@ def main():
         run(sl, sr, scratch)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
-    print("\npass %d   fail %d" % (pass_n, fail_n))
-    return 1 if fail_n else 0
+    line, status = tally()
+    print("\n" + line)
+    return status
 
 
 def run(sl, sr, scratch):
@@ -111,10 +69,10 @@ def run(sl, sr, scratch):
           (sl.session_rate("s1", 1500, NOW + 2), json.load(open(path))),
           (None, [[NOW, 1000.0]]))
     near("one tick on, the slope is rise over the RECORDED span",
-         sl.session_rate("s1", 2000, NOW + tick), 1000.0 / tick)
+         sl.session_rate("s1", 2000, NOW + tick), 1000.0 / tick, TOL)
     near("a late render divides by the time that actually passed, not the tick",
          sl.session_rate("s1", 2000 + 300 * 20, NOW + tick + 20),
-         (300 * 20 + 1000) / (tick + 20))
+         (300 * 20 + 1000) / (tick + 20), TOL)
     check("a total that fell — a transcript re-read shorter — reads zero, not negative",
           sl.session_rate("s1", 10, NOW + 2 * tick + 20), 0.0)
     # Fill the history past its depth: the oldest reading falls off, so the
@@ -127,7 +85,7 @@ def run(sl, sr, scratch):
     check("the history is cut to RATE_SAMPLES readings",
           len(kept), sl.RATE_SAMPLES)
     near("and the slope is over those alone: a steady 500 a tick reads 100/s",
-         r, 500.0 / tick)
+         r, 500.0 / tick, TOL)
     check("no session id: nothing sampled, nothing said",
           (sl.session_rate("", 5, NOW), os.path.exists(sl._rate_path(""))),
           (None, False))

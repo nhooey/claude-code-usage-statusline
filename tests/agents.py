@@ -28,36 +28,7 @@ import time
 DIR = os.path.dirname(os.path.abspath(__file__))
 PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
-pass_n = fail_n = 0
-
-
-def ok(name):
-    global pass_n
-    pass_n += 1
-    print("  ok    %s" % name)
-
-
-def bad(name, detail=""):
-    global fail_n
-    fail_n += 1
-    print("  FAIL  %s" % name)
-    if detail:
-        for line in str(detail).splitlines():
-            print("          " + line)
-
-
-def check(name, got, want):
-    if got == want:
-        ok(name)
-    else:
-        bad(name, "got  %r\nwant %r" % (got, want))
-
-
-def near(name, got, want, tol=1e-9):
-    if got is not None and want is not None and abs(got - want) <= tol:
-        ok(name)
-    else:
-        bad(name, "got  %r\nwant %r" % (got, want))
+from _checks import check, near, tally, write_jsonl  # noqa: E402
 
 
 def load_program():
@@ -189,13 +160,6 @@ def boundary(minute, pre, ms):
 def stop(minute):
     return {"type": "system", "subtype": "stop_hook_summary",
             "timestamp": ts(minute), "isSidechain": False}
-
-
-def write_jsonl(path, records):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as fh:
-        for r in records:
-            fh.write(json.dumps(r, sort_keys=True) + "\n")
 
 
 def session(root, name, main, agents=(), workflow=()):
@@ -938,8 +902,9 @@ def run(tmp):
     sl._priced_record = priced
 
     print()
-    print("pass %d   fail %d" % (pass_n, fail_n))
-    return 1 if fail_n else 0
+    line, status = tally()
+    print(line)
+    return status
 
 
 if __name__ == "__main__":

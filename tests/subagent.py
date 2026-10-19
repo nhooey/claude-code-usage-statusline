@@ -25,36 +25,8 @@ import tempfile
 DIR = os.path.dirname(os.path.abspath(__file__))
 PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
-pass_n = fail_n = 0
-
-
-def ok(name):
-    global pass_n
-    pass_n += 1
-    print("  ok    %s" % name)
-
-
-def bad(name, detail=""):
-    global fail_n
-    fail_n += 1
-    print("  FAIL  %s" % name)
-    if detail:
-        for line in str(detail).splitlines():
-            print("          " + line)
-
-
-def check(name, got, want):
-    if got == want:
-        ok(name)
-    else:
-        bad(name, "got  %r\nwant %r" % (got, want))
-
-
-def near(name, got, want, tol=1e-9):
-    if got is not None and want is not None and abs(got - want) <= tol:
-        ok(name)
-    else:
-        bad(name, "got  %r\nwant %r" % (got, want))
+from _checks import (check, drawn, near, tally, unpainted,  # noqa: E402
+                     write_jsonl)
 
 
 def load_program():
@@ -70,21 +42,6 @@ def load_renderer():
     from coding_agent_usage_line import claude_subagent_render
     return claude_subagent_render
 
-
-ANSI = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def drawn(cell):
-    """A cell's spans joined into escape codes, as the terminal gets them."""
-    if isinstance(cell, str):
-        return cell
-    from coding_agent_usage_line.spans import join
-    return join(cell)
-
-
-def unpainted(cell):
-    """A cell's text alone, its escape codes dropped."""
-    return ANSI.sub("", drawn(cell))
 
 # 2026-08-16 02:23:20 UTC — the shared cases' PIN_NOW, so the two suites agree
 # about what "now" is and the plan cache below is read as fresh.
@@ -170,13 +127,6 @@ def agent_says(minute, text, second=0):
 
 
 ETA = "\u26F3 skills/coding-agent-usage-line-report-eta: ETA "
-
-
-def write_jsonl(path, records):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as fh:
-        for r in records:
-            fh.write(json.dumps(r, sort_keys=True) + "\n")
 
 
 def session(root, name, agents=(), workflow=()):
@@ -1243,8 +1193,9 @@ def run(tmp):
           (False, False, sr.grid.cell_width("A_DIFF_W") + 2, True))
 
     print()
-    print("pass %d   fail %d" % (pass_n, fail_n))
-    return 1 if fail_n else 0
+    line, status = tally()
+    print(line)
+    return status
 
 
 if __name__ == "__main__":
