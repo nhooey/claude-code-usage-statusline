@@ -1,14 +1,14 @@
-// The mod's edges: every read the status document is made from, through
-// `$`, and the document built from them.  The cost document is the
-// receipt's Stop hook's (tools/receipt-hook.ts), through Node's edges.
+// The mod's edges: every read the figures documents are made from, through
+// `$`, and the two documents built from them: the status document the band
+// draws, and the cost document the receipt is stamped from.
 //
 // The src/ ports are pure where the plan says (figures from records, spans
 // from figures), and their Node edges live in src/*_node.ts, which the mod
 // never imports: this module is the mod's version of those, reading the
 // transcript and the agent files through `$.fs`, git and the usage source
 // through `$.process.run`, and the clock through `$.clock`.  What it reads
-// it hands to src/claude.ts's statusFigures, which is the Python's
-// status_figures past its reads.
+// it hands to src/claude.ts's statusFigures and costFigures, which are the
+// Python's status_figures and cost_figures past their reads.
 //
 // The reads keep what they have read in memory between documents, as the
 // Python keeps its agent cache and cost cache on disk: a transcript is only
@@ -40,7 +40,7 @@ import {
 } from '../src/claude_sources.ts'
 import type { PreparedClaudeReading } from '../src/claude_sources.ts'
 import {
-  baseLimits, detectGit, sessionRate, statusFigures,
+  baseLimits, costFigures, detectGit, sessionRate, statusFigures, windowFor,
 } from '../src/claude.ts'
 import type { RateSample } from '../src/claude.ts'
 import { sha256Hex } from '../src/sha256.ts'
@@ -735,16 +735,29 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
     tz: localZone(), rate })
 }
 
-/** publish_ctx_window through `$`: the document's context window, where
- * the receipt's Stop hook reads it (and where the status line writes it,
- * the same file under the same name), rewritten only when it moved. */
-export async function publishWindow($: $, places: Places, doc: Dict):
-  Promise<void> {
-  const win = Number(doc.context_window) || 0
-  const id = await $.session.id()
-  if (!id || win <= 0) return
-  const path = pyJoin(places.stateDir, 'claude-context-' +
-    sha256Hex('context\0' + id) + '.json')
-  if ((await readText($, path))?.trim() === String(win)) return
-  await writeText($, path, win + '\n')
+/** The session's turns as read_turns makes them from the transcript as it
+ * stands, with the transcript's path; null with no transcript found.  No
+ * settling wait: the receipt's stamp polls this until the newest prompt's
+ * turn is billed. */
+export async function turnsNow($: $, places: Places):
+  Promise<{ path: string; turns: Turn[] } | null> {
+  const path = await transcriptPath($, places)
+  if (!path || await fileSize($, path) === null) return null
+  const records = await recordsOf($, path)
+  return { path, turns: await turnsVia($, places, path, records,
+    await agentReadings($, path)) }
+}
+
+/** cost_figures through `$`, over turns turnsNow read.  `published` is the
+ * band's last context window, as window_for reads the status line's. */
+export async function costDoc($: $, places: Places, path: string,
+  turns: Turn[], published: number): Promise<Dict> {
+  const now = (await $.clock.now()) / 1000
+  const { raw, payload } = await payloadOf($, path)
+  const prepared = await preparedVia($, places, raw, payload.session_id,
+    payload.model_id || payload.model, now)
+  const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
+  const calib = await calibrationVia($, places, snap, now)
+  return costFigures(turns, windowFor(turns, published), calib, snap,
+    prepared, now, localZone())
 }

@@ -1,7 +1,6 @@
 // The mod's log file, as a file: its name, how much it keeps, and how a
-// line is written.  Pure, so the mod (hooks/log.ts, through `$`) and the
-// receipt's Stop hook (tools/receipt-hook.ts, through Node) write one file
-// one way.
+// line is written.  Pure, so the mod (hooks/log.ts) writes it through `$`
+// and Node could write the same file the same way.
 
 /** How many lines the log file keeps, the newest last. */
 export const LOG_KEPT = 500;

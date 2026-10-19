@@ -10,9 +10,8 @@
 //   <path>`, beside the engine's own lines about the mod's hooks;
 //
 //   `usage-band.log` in the status line's state directory, always: the
-//   last LOG_KEPT lines from every session, each naming its session.  The
-//   receipt's Stop hook (tools/receipt-hook.ts) writes its lines there too,
-//   as src/modlog.ts lays them out.
+//   last LOG_KEPT lines from every session, each naming its session, as
+//   src/modlog.ts lays them out.
 //
 // A line is never allowed to fail its caller: a log that cannot be written
 // is a log with a line missing.

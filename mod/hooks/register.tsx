@@ -8,9 +8,10 @@
 //   TurnDuration  the turn's closing line, as a blank row;
 //   UserMessage   under a prompt typed at the composer, its turn's tag.
 //
-// The receipt is not the mod's: the band's 🎤 and 🎮 rows are live while a
-// turn runs, and the Stop hook (tools/receipt-hook.ts) stamps them into the
-// transcript as it ends, under the blank closing line.
+// And one is written: the receipt.  The band's 🎤 and 🎮 rows are live
+// while a turn runs; once the turn has ended and Claude Code has written
+// its records, the mod stamps them into the transcript, frozen, a
+// `$.ui.log` line each, under the blank closing line (stamp).
 //
 // The handlers do the reading (edges.ts) and file what they read: the
 // status document in `$.state`, so a new one redraws the band, and each
@@ -22,15 +23,20 @@ import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
 import type { FiguresDoc } from '../types'
 import * as spec from '../src/spec.ts'
-import { settings } from '../src/formatting.ts'
+import { settings, stripAnsi } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
-import { bandLines } from '../src/band.ts'
-import { startLine } from '../src/receipt.ts'
+import type { Turn } from '../src/claude_records.ts'
+import { bandLines, workspaceOf } from '../src/band.ts'
+import {
+  newestBilled, receiptLines, receiptTurn, startLine, turnKey,
+  withEngineDuration,
+} from '../src/receipt.ts'
 import { sha256Hex } from '../src/sha256.ts'
+import { pyRstrip } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import { placesOf, publishWindow, seen, statusDoc } from './edges.ts'
+import { costDoc, placesOf, seen, statusDoc, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -96,12 +102,6 @@ async function refresh($: $): Promise<void> {
         await update($, rate, () => (doc.rate as number | null) ?? null)
       } catch (err) {
         await log($, 'refresh: the band was not updated', err)
-      }
-      try {
-        // The window, where the receipt's Stop hook reads it.
-        await publishWindow($, await placesFor($), doc)
-      } catch (err) {
-        await log($, 'refresh: no window published', err)
       }
       try {
         await fileStart($, doc)
@@ -172,6 +172,96 @@ async function remember($: $, index: string, key: string, value: unknown) {
   }
   await $.store.set(index, kept)
   await update($, filed, (n) => n + 1)
+}
+
+// The width the band last drew at, the terminal's: the receipt is laid out
+// at it, so its columns are the band's.  80 until the band has drawn.
+let bandCols = 80
+
+/** The columns Claude Code draws a `$.ui.log` line's text from.  The line
+ * is drawn as a system notice, a dim row of its own taking plain text,
+ * and a notice's text is taken to stand where a hook's message does,
+ * C_CHROME_CONT columns in (the types do not say; a live session checks
+ * it): the band's rows open with as many blanks, so a receipt row laid out
+ * with that indent and logged without it puts its 📊 under the band's,
+ * and every column after it. */
+const NOTICE_INDENT = spec.C_CHROME_CONT
+
+/** The store's key for a stamped receipt: its session and its turn. */
+export const receiptKey = (session: string, turn: string) =>
+  'receipt:' + sha256Hex(session + '\0' + turn).slice(0, 32)
+
+// The receipts being stamped, so two turn.completes over one turn stamp it
+// once even before the first has filed its key.
+const stamping = new Set<string>()
+
+/** A receipt row as a `$.ui.log` line: its spans' text, plain (the line
+ * takes a string, drawn dim), without the NOTICE_INDENT blanks `indented`
+ * put first, which Claude Code draws. */
+function logged(row: readonly Span[], indent: number): string {
+  const pad = ' '.repeat(indent)
+  const [first, ...rest] = row
+  const spans = indent && first?.text.startsWith(pad)
+    ? [{ ...first, text: first.text.slice(pad.length) }, ...rest] : row
+  return pyRstrip(stripAnsi(spans.map((s) => s.text).join('')))
+}
+
+/** Stamps the receipt of the turn that opened with `prompt` (its id, ""
+ * for any) into the transcript.  Claude Code writes a turn's assistant
+ * records only after its Stop hooks have run, after turn.complete, so the
+ * transcript is read every CONFIG.receiptPollMs until the newest prompt's
+ * turn is billed and two reads agree on what it billed, for up to
+ * CONFIG.receiptWaitMs.  Then the cost document, the head and the 📊 rows,
+ * a `$.ui.log` line each.  Each turn is stamped once (receiptKey); one
+ * whose records never land is logged, and nothing stamped. */
+async function stamp($: $, durationMs: number, prompt: string):
+  Promise<void> {
+  const where = await placesFor($)
+  const deadline = (await $.clock.now()) + CONFIG.receiptWaitMs
+  let got: { path: string; turns: Turn[] } | null = null
+  let last = ''
+  for (;;) {
+    got = await turnsNow($, where)
+    const turns = got?.turns ?? []
+    const billed = newestBilled(turns) && (!prompt ||
+      turns[receiptTurn(turns)].prompt_id === prompt)
+    const key = billed ? turnKey(turns) : ''
+    if (key && key === last) break
+    const late = (await $.clock.now()) >= deadline
+    if (late && key) break
+    if (late) {
+      const t = turns.at(-1)
+      await log($, 'no receipt: the turn was not billed within ' +
+        CONFIG.receiptWaitMs / 1000 + 's: ' + JSON.stringify(got ? [
+          prompt.slice(0, 8), t ? [t.prompt_id.slice(0, 8), t.turn_index,
+            t.calls, t.agent ?? null, t.compact ?? null] : null]
+          : 'no transcript'))
+      return
+    }
+    last = key
+    await $.clock.sleep(CONFIG.receiptPollMs)
+  }
+  const key = receiptKey(await $.session.id(), turnKey(got!.turns))
+  if (stamping.has(key) || await $.store.get(key) !== undefined) return
+  stamping.add(key)
+  try {
+    const doc = await read($, status)
+    const published = doc ? Number(doc.context_window) || 0 : 0
+    const fig = withEngineDuration(await costDoc($, where, got!.path,
+      got!.turns, published), durationMs)
+    // 📦 🌿 from the band's last status document (decision 7).
+    const ws = doc ? workspaceOf(doc as Dict, where.home) : null
+    const { head, rows } = receiptLines(await settingsOf($), fig, bandCols,
+      CONFIG.hide, ws, true, NOTICE_INDENT)
+    const lines = [logged(head, 0), ...rows.map((r) =>
+      logged(r, NOTICE_INDENT))]
+    // Filed before it is logged: a receipt stamped twice is the worse
+    // failure than one lost to a log that failed after it.
+    await remember($, 'receipts', key, true)
+    for (const l of lines) $.ui.log(l)
+  } finally {
+    stamping.delete(key)
+  }
 }
 
 /** A row of spans as Text: each span a nested Text in its own colour,
@@ -267,12 +357,22 @@ export const register: Register = on => {
     return result
   })
 
-  // A turn ends: the band again, its 🎤 row now the turn just done.  The
-  // receipt is the Stop hook's.
+  // A turn ends: the band again, its 🎤 row now the turn just done, and
+  // the receipt stamped once the transcript bills the turn.  The stamp is
+  // not awaited: it waits on Claude Code's own write, which comes after
+  // this event, for longer than a handler's budget, whose clock runs on
+  // through a sleep; it goes on after the handler returns, as the tick
+  // does.  The refresh reads the prompt the turn opened with, which the
+  // stamp bills and no later one.
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     await start($, 'turn.complete')
     await refresh($)
+    if (e.agentId) return result
+    const tr = (await read($, status))?.transcript as Dict | undefined
+    const prompt = typeof tr?.prompt_id === 'string' ? tr.prompt_id : ''
+    void stamp($, e.durationMs, prompt)
+      .catch((err) => log($, 'no receipt', err))
     return result
   })
 
@@ -280,14 +380,14 @@ export const register: Register = on => {
     const doc = await read($, status)
     if (e.props.hasSurvey || doc === null) return next(e)
     const { Box, Text } = $.ui.resolve(e)
+    bandCols = e.props.bodyColumns + 5
     const lines = bandLines(await settingsOf($), doc as Dict,
-      e.props.bodyColumns + 5, CONFIG.hide, { home: await home($),
+      bandCols, CONFIG.hide, { home: await home($),
         rate: await read($, rate),
         phase: e.props.isWorking ? 'running' : 'done',
         indent: spec.C_CHROME_CONT })
     // No margin of its own: Claude Code draws its `[-]` on the band's
-    // first row, and on a blank top row it stood alone.  The blank closing
-    // line parts the band from the stamped receipt.
+    // first row, and on a blank top row it stood alone.
     return (
       <Box flexDirection="column">
         {lines.map((l, i) => line(Text, l, 'band' + i))}
@@ -296,7 +396,7 @@ export const register: Register = on => {
   })
 
   // Claude Code's closing line, `✻ <word> for <duration>`, drawn as one
-  // blank row: the Stop hook's receipt under it carries the turn's 🔺🔖 tag
+  // blank row: the receipt stamped under it carries the turn's 🔺🔖 tag
   // and when it ended, and the blank parts the answer from it.  A Box one
   // row high around a space, rather than an empty Text, which Ink measures
   // as no row at all.

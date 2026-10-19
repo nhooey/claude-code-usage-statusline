@@ -2,18 +2,18 @@
 // the figures documents.
 //
 // agents/plans/redesign.md has the design ("The receipt"): live, then
-// stamped.  While a turn runs the band draws its 🎤 and 🎮 rows; when it
-// ends, the Stop hook (tools/receipt-hook.ts) prints them frozen into the
-// transcript as its systemMessage: a head, 🔺🔖 the turn's tag and when it
-// ended, and under it the same two rows behind 📊, from the cost document
-// (`cost_figures`), dimmed so history reads apart from the live band.  As
+// stamped.  While a turn runs the band draws its 🎤 and 🎮 rows; once the
+// turn's records are in the transcript, the mod stamps them there frozen, a
+// `$.ui.log` line each: a head, 🔺🔖 the turn's tag and when it was
+// stamped, and under it the same two rows behind 📊, from the cost document
+// (`cost_figures`), dim so history reads apart from the live band.  As
 // a turn starts, the mod draws the same tag under the prompt, 🔻 pointing
 // down at the turn it opens, from the status document.  The rows are drawn
 // on the band's fixed grid (band.ts), so the receipt's columns are the
 // band's and the panel's.
 //
 // Pure, as band.ts is: the 📦 🌿 on the 📊 🎮 row are the caller's, since
-// cost_figures runs no git (the hook runs detectGit), and the clock is
+// cost_figures runs no git (the mod takes the band's), and the clock is
 // drawn in the TZ the edge sets.
 import { E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
 import type { Settings } from "./formatting.ts";
@@ -47,6 +47,32 @@ export function receiptTurn(turns: readonly Turn[]): number {
     if (t.calls && !t.compact && !t.agent) return i;
   }
   return turns.length - 1;
+}
+
+/** Whether the billed turn is the newest of the main thread's turns.  One
+ * before it is the turn before's, read before this turn's records were
+ * written: Claude Code writes a turn's assistant records only after its
+ * Stop hooks have run, and its prompt's record as it opens, so until then
+ * the newest prompt bills nothing and receiptTurn falls back past it. */
+export function newestBilled(turns: readonly Turn[]): boolean {
+  const i = receiptTurn(turns);
+  if (i < 0 || !turns[i].calls || turns[i].compact || turns[i].agent) {
+    return false;
+  }
+  for (let j = turns.length - 1; j > i; j--) {
+    if (!turns[j].agent && !turns[j].compact) return false;
+  }
+  return true;
+}
+
+/** The billed turn, as one key: its tag, its first stamp and how many
+ * calls it has billed, so the same turn read again is the same key and a
+ * turn that went on is not; "" with none. */
+export function turnKey(turns: readonly Turn[]): string {
+  const i = receiptTurn(turns);
+  if (i < 0) return "";
+  const t = turns[i];
+  return JSON.stringify([t.prompt_id, t.turn_index, t.ts, t.calls]);
 }
 
 /** The plan reading's percentage as the plan cells take it, "" for
@@ -157,7 +183,7 @@ export function withEngineDuration(fig: Dict, durationMs: number): Dict {
 }
 
 /** The receipt's head, "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02": the
- * billed turn's tag and `clock.now`, when the Stop ran. */
+ * billed turn's tag and `clock.now`, when it was stamped. */
 export function receiptHead(fig: Dict): Span[] {
   const now = (fig.clock as Dict).now as number;
   const turns = (fig.turns as Dict[]).map(decodeTurn);

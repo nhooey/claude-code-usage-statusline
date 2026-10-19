@@ -14,9 +14,11 @@
 // span's colour must match.  That proves the edges (that `$.fs` was read
 // as the bytes are), the filing (the start line's trip through `$.store`)
 // and the drawing (spans to Text); the documents themselves are proven
-// against the Python's by test/claude.test.ts.  The receipt is the Stop
-// hook's, and test/receipt_hook.test.ts has it.
+// against the Python's by test/claude.test.ts.  The receipt, which the mod
+// writes rather than draws, is checked as the `$.ui.log` lines it sends,
+// against receiptLines over the same bytes.
 import { expect, mock, test } from 'claude-code/testing'
+import type { MockClock } from 'claude-code/testing'
 import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
@@ -34,14 +36,18 @@ import {
 } from '../src/claude_sources.ts'
 import { trackerV1 } from '../src/sources.ts'
 import type { Store } from '../src/sources.ts'
-import { baseLimits, statusFigures } from '../src/claude.ts'
+import {
+  baseLimits, costFigures, statusFigures, windowFor,
+} from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
-import { bandLines } from '../src/band.ts'
-import { startLine } from '../src/receipt.ts'
-import { sha256Hex } from '../src/sha256.ts'
+import { bandLines, workspaceOf } from '../src/band.ts'
+import {
+  receiptLines, startLine, withEngineDuration,
+} from '../src/receipt.ts'
 import type { Span } from '../src/spans.ts'
 import * as spec from '../src/spec.ts'
+import { pyRstrip } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
 
 const HOME = '/home/fixture'
@@ -69,6 +75,9 @@ type World = {
   docs: Dict[]
   // Each line the mod sent the debug log.
   debug: string[]
+  // Each line the mod wrote into the transcript, `$.ui.log`'s default.
+  logged: string[]
+  clock: MockClock
 }
 
 type Run = { argv: readonly string[] }
@@ -86,7 +95,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   const files = new Map<string, Uint8Array>()
   for (const [p, b64] of Object.entries(FILES)) files.set(p, fromBase64(b64))
   files.set('/tracker.plist', encoder.encode(TRACKER))
-  mock.clock(on, { now: NOW * 1000 })
+  const clock = mock.clock(on, { now: NOW * 1000 })
   const store = new Map<string, unknown>()
   on('store.get', ($, e) => ({ value: store.get(e.key) }))
   on('store.set', ($, e) => {
@@ -171,13 +180,15 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', () => ({ text: '' }))
   on('classic.SessionStart', () => ({}))
-  // The debug log's lines, which `$.ui.log(…, { to: 'debug' })` sends.
+  // The lines `$.ui.log` sends: the debug log's, `{ to: 'debug' }`, and
+  // the transcript's.
   const debug: string[] = []
-  on('ui.log', ($, e: any) => {
-    debug.push(e.text)
+  const logged: string[] = []
+  on('ui.log', ($, e) => {
+    ;(e.to === 'debug' ? debug : logged).push(e.text)
     return { value: undefined }
   })
-  return { files, store, docs, debug }
+  return { files, store, docs, debug, logged, clock }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -335,28 +346,13 @@ async function blankClosing($: any, word: string, durationMs: number) {
   expect(rows[0].children).toEqual([' '])
 }
 
-test('a turn ends on a blank closing line, and files no receipt',
-  async ($, on) => {
-    const w = world(on)
-    await start($, 'terminal', COST)
-    await $.turn.complete({ answer: '', durationMs: 65_000,
-      isAborted: false, turnId: 't1', reason: 'answer' })
-    expect([...w.store.keys()].filter((k) => !k.startsWith('start')))
-      .toEqual([])
-    await blankClosing($, 'Worked', 65_000)
-  })
-
-test("the band's context window is published for the receipt's Stop hook",
-  async ($, on) => {
-    const w = world(on)
-    await start($, 'terminal', COST)
-    const path = STATE + '/claude-context-' +
-      sha256Hex('context\0' + SESSION) + '.json'
-    const f = w.files.get(path)
-    expect(f).toBeDefined()
-    expect(new TextDecoder().decode(f)).toBe(
-      String(lastDoc(w).context_window) + '\n')
-  })
+test('a turn ends on a blank closing line', async ($, on) => {
+  world(on)
+  await start($, 'terminal', COST)
+  await $.turn.complete({ answer: '', durationMs: 65_000,
+    isAborted: false, turnId: 't1', reason: 'answer' })
+  await blankClosing($, 'Worked', 65_000)
+})
 
 test('a prompt from the composer gets its turn tag under it',
   async ($, on) => {
@@ -458,13 +454,97 @@ async function askAndAnswer($: any, w: World) {
     promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z', type: 'user',
     userType: 'external' })
   await $.turn.start({ text: ASKED, turnId: 't-resume' })
-  grow(w, { isSidechain: false, message: { content: [{ text: 'Done.',
-    type: 'text' }], id: 'req-r1', usage: { cache_creation_input_tokens: 500,
-    cache_read_input_tokens: 41000, input_tokens: 3, output_tokens: 40 } },
-  requestId: 'req-r1', timestamp: '2026-08-16T02:20:05Z', type: 'assistant' })
-  await $.turn.complete({ answer: 'Done.', durationMs: ASKED_MS,
-    isAborted: false, turnId: 't-resume', reason: 'answer' })
+  grow(w, ANSWER)
+  await $.turn.complete(COMPLETE)
 }
+
+const ANSWER = { isSidechain: false, message: { content: [{ text: 'Done.',
+  type: 'text' }], id: 'req-r1', usage: { cache_creation_input_tokens: 500,
+  cache_read_input_tokens: 41000, input_tokens: 3, output_tokens: 40 } },
+requestId: 'req-r1', timestamp: '2026-08-16T02:20:05Z', type: 'assistant' }
+const COMPLETE = { answer: 'Done.', durationMs: ASKED_MS, isAborted: false,
+  turnId: 't-resume', reason: 'answer' } as const
+
+/** A turn as Claude Code runs one live: the prompt's record as it opens,
+ * and turn.complete before the answer's record, which Claude Code writes
+ * only after its Stop hooks; `land` says whether it is written at all. */
+async function askLive($: any, w: World, land: boolean) {
+  grow(w, { message: { content: ASKED }, promptId: 'p-resume',
+    promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z', type: 'user',
+    userType: 'external' })
+  await $.turn.start({ text: ASKED, turnId: 't-resume' })
+  await $.turn.complete(COMPLETE)
+  await w.clock.settle()
+  expect(w.logged).toEqual([])
+  if (land) grow(w, ANSWER)
+}
+
+/** Moves the clock on in the mod's polling steps until it has logged, or
+ * `ms` have passed. */
+async function until(w: World, ms: number) {
+  for (let t = 0; t < ms && !w.logged.length; t += 500) {
+    await w.clock.advance(500)
+  }
+}
+
+/** The receipt's lines as the mod should log them at `now`, worked out
+ * from the transcript's bytes: receiptLines over the cost document, at the
+ * band's width, its rows' indent left to Claude Code's notice chrome. */
+async function receiptOf(w: World, now: number): Promise<string[]> {
+  const doc = lastDoc(w)
+  const records = _recordsOf(bytesOf(w, RESUMED))
+  const readings = readingsOf(w, RESUMED)
+  const turns = turnsOf(records, (s) => agentRecordsOf(readings, s, null),
+    null, new Map(), labelIn(w))
+  const prepared = await preparedOf(now)
+  const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
+  const fig = withEngineDuration(costFigures(turns, windowFor(turns,
+    Number(doc.context_window)), CALIB, snap, prepared, now,
+  Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
+  const { head, rows } = receiptLines(settings({}), fig, COLS, [],
+    workspaceOf(doc, HOME), true, spec.C_CHROME_CONT)
+  const pad = ' '.repeat(spec.C_CHROME_CONT)
+  return [text(head), ...rows.map((r) => {
+    const t = text(r)
+    expect(t.startsWith(pad)).toBe(true)
+    return t.slice(pad.length)
+  })].map((l) => pyRstrip(l))
+}
+
+test('a turn whose records land after turn.complete gets its receipt, once',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    // The band draws first, and the receipt is laid out at its width.
+    await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'AbovePrompt', props: BAND })
+    await askLive($, w, true)
+    await until(w, 5_000)
+    const want = await receiptOf(w, w.clock.now() / 1000)
+    expect(want.length).toBe(3)
+    expect(want[0]).toContain('p-resume'.slice(0, 8))
+    expect(w.logged).toEqual(want)
+    // turn.complete again over the same turn: nothing more.
+    await $.turn.complete(COMPLETE)
+    await w.clock.advance(5_000)
+    expect(w.logged).toEqual(want)
+    expect(logOf(w)).not.toContain('no receipt')
+  })
+
+test('a turn whose records never land logs why and stamps nothing',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await askLive($, w, false)
+    await until(w, 31_000)
+    expect(w.logged).toEqual([])
+    expect(logOf(w)).toContain('no receipt: the turn was not billed ' +
+      'within 30s')
+  })
 
 /** The mod's log file, as the world holds it. */
 function logOf(w: World): string {
