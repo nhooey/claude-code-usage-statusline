@@ -227,8 +227,8 @@ async function remember($: $, index: string, key: string, value: unknown) {
 }
 
 // The width the band last drew at, the terminal's: the receipt is laid out
-// at it, so its columns are the band's.  80 until the band has drawn.
-let bandCols = 80
+// at it, so its columns are the band's.  0 until the band has drawn.
+let bandCols = 0
 
 /** The store's key for a stamped receipt: its session and its turn. */
 export const receiptKey = (session: string, turn: string) =>
@@ -292,7 +292,7 @@ async function stamp($: $, durationMs: number, prompt: string):
     const main = doc ? bandRows(st, doc as Dict,
       { home: where.home, rate: null, phase: 'done' }).main : null
     // Laid out as the band is, so the rows' columns are the band's.
-    const lines = receiptLines(st, fig, bandCols, CONFIG.hide, ws, true,
+    const lines = receiptLines(st, fig, bandCols || 80, CONFIG.hide, ws, true,
       main, CONFIG.stampUntil)
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs), lines)
@@ -485,7 +485,10 @@ export const register: Register = on => {
     if (doc === null) return next(e)
     const tail = footerTail(await settingsOf($),
       at(doc as Dict, await read($, clockNow)), CONFIG.hide,
-      e.props.hint, e.viewport?.columns ?? bandCols)
+      // The band's width before the viewport's: the viewport read 10
+      // columns wider than the terminal drew, pushing the 🕐 off the row
+      // (seen live 2026-10-20), and the band's is where its rows end.
+      e.props.hint, bandCols || (e.viewport?.columns ?? 80))
     return tail ? next({ ...e, props: { ...e.props, tail } }) : next(e)
   })
 
