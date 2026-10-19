@@ -616,8 +616,8 @@ def seg(want: int, txt="", left: bool = True):
     erring one narrow, because wide only shifts the row and narrow corrupts the
     alignment of everything after it.
 
-    Spans in, spans out, the pad a plain span; a string, which the receipt's
-    metric groups still are, comes back a string.
+    Spans in, spans out, the pad a plain span; a string comes back a
+    string, for a caller that still draws them.
     """
     if not isinstance(txt, str):
         pad = _sp.Span(" " * max(0, want - _sp.width(txt)))

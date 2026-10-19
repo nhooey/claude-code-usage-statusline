@@ -331,14 +331,16 @@ in `formatting.py`. Moving them to spans touches:
   `seg_gap`, `mag_dim` (now a bool), `reset_dim` (a bool) and `cache_color`
   (a style span) work in spans, and the strip_ansi measurements are span
   widths. `join` writes escapes only where a line is printed:
-  `render_status`, `render_task_rows`, and where the receipt's labels meet
-  its groups. Two bytes of the old output are kept by `join` itself: a
-  chat row's prefix runs unreset into its body on the dark band, and a
-  grid row's closing reset. The goldens did not move, and every renderer
+  `render_status`, `render_task_rows` and the receipt's `render_cost_line`.
+  Three habits of the old output are kept by `join` itself: a chat row's
+  prefix runs unreset into its body on the dark band, a grid row's closing
+  reset, and, asked for with `runs`, the receipt's runs of bare colours
+  (▴ then ▾) under one reset. The goldens did not move, and every renderer
   call the panel and rate suites make returns the bytes it did before.
-  Still strings: the receipt's metric groups (`cost_group` and
-  `cost_totals_group` in `claude.py`), which `claude_cost_render.Ink`
-  colours, and the Codex renderer in `render.py`.
+  The receipt's metric groups (`cost_group` and `cost_totals_group` in
+  `claude.py`) return spans too, so `Ink` is gone, and `place` and
+  `render_cost_line` take and return spans. Only the Codex renderer in
+  `render.py` still draws strings.
 - **State read at import.** `term_profile` reads `TMUX`,
   `TERMINAL_EMULATOR` and `TERM_PROGRAM` when the module loads, and the
   width table and every `S_*` mark are fixed from it then.
@@ -379,12 +381,12 @@ tests/fixtures/
   gen/*.py                      the generators, writing the above              (done)
 ```
 
-The figures stage of the cost line is not yet whole: its rows still work out
-each turn's window shares while drawing, from the turns, the calibration and
-the plan reading in the document. The document carries those shares as
-`accounting`, checked but not read, and the cost cells read them once they
-return spans. Until then the render stage puts the plan reading back where
-`window_shares` looks for it.
+The figures stage of the cost line is whole too: the document carries each
+turn's and the session's cost and shares as `accounting`, and the cost cells
+read them instead of working them out while drawing. The render stage puts
+back only the clock's zone; it no longer restores the plan reading into
+`limits_snapshot`, and the totals row takes its 💳 percentages from the
+document's `usage.plan`. With that, build step 2 is done.
 
 The cases of one suite share one state directory in the order listed, as
 the shell suites did: a payload with `rate_limits` writes the cache a later

@@ -39,7 +39,7 @@ Every module above lives in `coding_agent_usage_line/`.
 | `claude_records.py` | Claude JSONL interpretation: payload fields, request deduplication, per-model prices, turns, tool spans, agent files. No terminal output. |
 | `claude_sources.py` | Turns a normalised usage-source reading into the `Limits` pair (5-hour and weekly) the Claude rows draw. |
 | `claude_render.py` | Every status-line cell and the three-row grid, with its fourth line on a narrow terminal. Each cell returns spans; `render_status` joins them into escape codes, line by line. |
-| `claude_cost_render.py` | Placement and stacking of the cost rows. Its labels and tags are spans, joined where they meet the metric groups, which `claude.py` still draws as strings. |
+| `claude_cost_render.py` | Placement and stacking of the cost rows. Its labels, tags and the metric groups `claude.py` builds are all spans, joined into escape codes once the rows are laid out. |
 | `claude_subagent_render.py` | One agent-panel row per task. Each cell returns spans; `render_task_rows` joins each row. |
 | `codex.py` | Codex rollout records: thread identity, child discovery, request deduplication, turn attribution. Read-only. |
 | `render.py` | Codex status, history and Stop reports, and account-period rows. |
@@ -61,10 +61,10 @@ These hold across the package. Most bugs that reach the goldens come from
 breaking one of them.
 
 - **Renderers are pure.** The four `*render*` modules take prepared values
-  and return strings. They do not read transcripts, call usage sources, touch
-  the cache or read the clock on their own. File reads, subprocesses, HTTP,
-  cache writes and report claims belong to the orchestration, source and
-  state layers.
+  and return spans or strings. They do not read transcripts, call usage
+  sources, touch the cache or read the clock on their own. File reads,
+  subprocesses, HTTP, cache writes and report claims belong to the
+  orchestration, source and state layers.
 - **One snapshot per process.** A process is one render. The usage source is
   read once, before rendering, so no two cells can disagree about the
   reading. Agent files are read once and passed down: `read_transcript`,

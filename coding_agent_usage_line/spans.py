@@ -99,6 +99,33 @@ def rstrip(x: SpanLike) -> List[Span]:
     return out
 
 
+def lstrip(x: SpanLike, chars: Optional[str] = None) -> List[Span]:
+    """The spans less leading `chars` (blanks by default), as str.lstrip
+    took them off a drawn string: only off plain spans, since a coloured
+    span's text starts after the escape that opens it."""
+    out = spans(x)
+    while out and not out[0].styled():
+        t = out[0].text.lstrip(chars)
+        if t:
+            out[0] = out[0]._replace(text=t)
+            break
+        out.pop(0)
+    return out
+
+
+def indent(x: SpanLike) -> int:
+    """Columns of blanks the spans open with: what lstrip(" ") takes off."""
+    return len(text(x)) - len(text(lstrip(x, " ")))
+
+
+def _runs_on(s: Span, nxt: Optional[Span]) -> bool:
+    """Whether `s` and `nxt` are both a colour alone, so the escape that
+    opens `nxt` replaces `s`'s colour with no reset between them."""
+    def bare(t: Span) -> bool:
+        return bool(t.colour) and not (t.bg or t.dim or t.bold)
+    return nxt is not None and bare(s) and bare(nxt)
+
+
 def _sgr(s: Span) -> str:
     """The escapes that open `s`: background, dim, bold, then colour, the
     order the renderers wrote them in (B_DRK + DIM + F_CHAT_U)."""
@@ -108,7 +135,7 @@ def _sgr(s: Span) -> str:
                     getattr(spec, s.colour) if s.colour else ""))
 
 
-def join(x: SpanLike, close: bool = False) -> str:
+def join(x: SpanLike, close: bool = False, runs: bool = False) -> str:
     """The spans as the terminal draws them, with their escape codes.
 
     Each styled span is opened with its escapes and closed with a reset of
@@ -123,6 +150,11 @@ def join(x: SpanLike, close: bool = False) -> str:
     - `close` writes one more reset at the end, which the status line's
       grid rows always carried after their last cell.  It changes nothing
       on screen, since every cell already reset itself.
+
+    `runs` keeps the receipt's bytes: its metric groups wrote a run of
+    bare colours, F_TUP ▴ then F_TDN ▾, with one reset after the run, so
+    with it a span that is a colour alone is not reset before another.
+    The status line's cells reset each half, which is why it is asked for.
     """
     out = []
     items = spans(x)
@@ -134,6 +166,8 @@ def join(x: SpanLike, close: bool = False) -> str:
         nxt = items[i + 1] if i + 1 < len(items) else None
         if (nxt is not None and s.colour and nxt.colour == s.colour
                 and nxt.bg and not s.bg and not s.bold):
+            continue
+        if runs and _runs_on(s, nxt):
             continue
         if s.bold and not (s.colour or s.bg or s.dim):
             out.append(UNBOLD)
