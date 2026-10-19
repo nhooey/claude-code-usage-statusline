@@ -394,6 +394,37 @@ Code's own; no hook reaches the main row. Measured with a throwaway mod on
   lands at the right edge, so the mod draws the whole line, `✻ Baked for 1m
   17s · 🔺🔖 …`, and loses Claude Code's `done` time unless it keeps its own.
 
+### Rerunning the alignment test
+
+The probe is in `tools/align-probe/`:
+
+- **`mod/`** is a throwaway mod. Its `AbovePrompt` hook draws a ruler and the
+  mockup's band rows. Its `TurnDuration` hook draws the whole closing line
+  with the receipt rows under it. Its `UserMessage` hook adds a dim 🔻 line
+  under the prompt. It runs `tools/layout-mockup.py` from the usual checkout
+  path.
+- **`align-panel.py`** is a `subagentStatusLine` command. While
+  `align-probe.on` (git-ignored) sits beside it, each task's row is the
+  mockup's first agent row, laid out for the payload's `columns` plus 6.
+  Without that file it runs the real subagent mode.
+
+To run it:
+
+1. Copy `mod/` into `~/.claude/dev-mods/<session id>/align-probe/`.
+2. Point `subagentStatusLine.command` in `~/.claude/settings.json` at
+   `/usr/bin/python3 <repo>/tools/align-probe/align-panel.py`.
+3. `touch tools/align-probe/align-probe.on`.
+4. Start Claude Code in the terminal under test, `/reload-plugins`, send a
+   prompt, then ask for panel agents that each run a 100-second background
+   `sleep`.
+5. Check by eye that 💰, 🧠, 🧩 and 💾 fall in the same screen columns in the
+   band, the receipt and the panel, and that the band ends before `[-]`.
+
+To clean up, set `subagentStatusLine.command` back to
+`<repo>/coding-agent-usage-line.py --agent claude --mode subagent
+--mark-spacing --usage-source claude-usage-tracker`, delete
+`align-probe.on`, and delete the dev mod.
+
 ## Claude Code's limits
 
 Read from the 2.1.302 binary:
