@@ -23,7 +23,8 @@ The proposal it draws:
   "account", "*.work", "turn.time.eta".  A column hidden on every row it
   could show on is removed; hidden on some, it is left blank there.
 
-Run:  python3 tools/layout-mockup.py [--cols N] [--hide PATH ...] [--plain]
+Run:  python3 tools/layout-mockup.py [--cols N] [--hide PATH ...]
+                                     [--receipt hook|mod] [--plain]
 """
 import argparse
 import fnmatch
@@ -36,7 +37,8 @@ sys.path.insert(0, os.path.dirname(_HERE))
 
 from coding_agent_usage_line import formatting as fmt  # noqa: E402
 from coding_agent_usage_line.formatting import (  # noqa: E402
-    DIM, E_ACCT, E_BOT, E_COSTLINE, E_CTX, E_DIR, E_GIT_OK, E_PROJ, E_RESET,
+    DIM, E_ACCT, E_BOT, E_COSTLINE, E_CTX, E_DATE, E_DIR, E_GIT_OK, E_PROJ,
+    E_RESET, E_TIME, E_TURN_ID, E_TURN_PAST,
     E_SESS, E_SESSION, E_TURN, E_WEEK, F_BLU, F_CHAT_B, F_GRN, F_LIM_SESS,
     F_LIM_WEEK, F_PNK, R, S_COST, S_CTX, S_TOK, VAL2_W, VAL_W, dur_fmt,
     fit_cols, humanize, pad_val, seg, strip_ansi, vis_width)
@@ -145,6 +147,10 @@ AGENTS = [
 ]
 # The receipt is the band's 🎤 and 🎮 rows as they stood when the turn
 # ended, behind the receipt's 📊.
+# The receipt's first line: which turn the rows under it bill, by the head
+# of its promptId and Claude Code's turn index, and when it ended.
+RECEIPT_HEAD = "%s%s 8f37748e #12  %s 2026-10-19  %s 13:06:02" % (
+    E_TURN_PAST, E_TURN_ID, E_DATE, E_TIME)
 RECEIPT = [dict(TURN, label=[piece("turn.receipt", E_COSTLINE + " ")] + TURN["label"]),
            dict(SESSION, label=[piece("session.receipt", E_COSTLINE + " ")] + SESSION["label"])]
 
@@ -205,7 +211,7 @@ def draw(row, keys, cols, patterns):
     return head + seg(room, text) + right
 
 
-def screen(cols, patterns):
+def screen(cols, patterns, receipt_by="hook"):
     rule = "─" * cols
     band = [r for r in (ACCOUNT, TURN, MAIN, SESSION) if not hidden(patterns, r["scope"])]
     receipt = [r for r in RECEIPT if not hidden(patterns, r["scope"])]
@@ -221,8 +227,17 @@ def screen(cols, patterns):
         "  because maxWorkers is 1 in jest.config.js.",
         "",
     ]
-    out += [draw(r, keys, cols, patterns) for r in receipt]
-    out += ["", DIM + "✻ Worked for 4m 2s · done 1:06 PM" + R]
+    rows = [draw(r, keys, cols, patterns) for r in receipt]
+    if receipt_by == "hook":
+        # Claude Code draws a Stop hook's systemMessage behind "Stop says: ",
+        # and no setting changes it, so the receipt opens on a newline.
+        out += [DIM + "Stop says: " + R, RECEIPT_HEAD] + rows
+        out += ["", DIM + "✻ Worked for 4m 2s · done 1:06 PM" + R]
+    else:
+        # The mod redraws the TurnDuration line instead, with the receipt's
+        # head on it and its rows under it, and the Stop hook prints nothing.
+        out += [DIM + "✻ Worked for 4m 2s · " + R + RECEIPT_HEAD] + rows
+
     band_rows = [draw(r, keys, cols, patterns) for r in band]
     if band_rows:
         # Claude Code's [-] button, on the band's first row.
@@ -242,9 +257,12 @@ def main(argv=None):
                     help="terminal width to draw for (default: this terminal's, else 160)")
     ap.add_argument("--hide", action="append", default=[], metavar="PATH",
                     help="scope[.group[.metric]] to hide; repeatable")
+    ap.add_argument("--receipt", choices=("hook", "mod"), default="hook",
+                    help="draw the receipt as the Stop hook's message, or as the "
+                         "mod's rewrite of the turn's closing line")
     ap.add_argument("--plain", action="store_true", help="no colour")
     a = ap.parse_args(argv)
-    text = screen(a.cols, a.hide)
+    text = screen(a.cols, a.hide, a.receipt)
     print(strip_ansi(text) if a.plain else text)
 
 
