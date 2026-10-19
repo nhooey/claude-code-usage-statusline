@@ -5,14 +5,14 @@
 // stamped.  While a turn runs the band draws its 🎤 and 🎮 rows; once the
 // turn's records are in the transcript, the mod stamps them there frozen, a
 // `$.ui.log` line each: a head, 🔺🔖 the turn's tag and when it was
-// stamped, and under it the same two rows behind 📊, from the cost document
+// stamped, and over it the same two rows, from the cost document
 // (`cost_figures`), dim so history reads apart from the live band.  As
 // a turn starts, the mod draws the same tag under the prompt, 🔻 pointing
 // down at the turn it opens, from the status document.  The rows are drawn
 // on the band's fixed grid (band.ts), so the receipt's columns are the
 // band's and the panel's.
 //
-// Pure, as band.ts is: the 📦 🌿 on the 📊 🎮 row are the caller's, since
+// Pure, as band.ts is: the 📦 🌿 on the 🎮 row are the caller's, since
 // cost_figures runs no git (the mod takes the band's), and the clock is
 // drawn in the TZ the edge sets.
 import { E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
@@ -25,7 +25,7 @@ import type { Accounting } from "./claude_calib.ts";
 import { decodeTranscript } from "./figures.ts";
 import { _readAccounting, decodeTurn } from "./claude_cost.ts";
 import {
-  CELLS, cacheRate, hms, receiptLabel, sessionLabel, turnHead, turnLabel,
+  CELLS, cacheRate, hms, sessionLabel, turnHead, turnLabel,
   ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
@@ -83,7 +83,7 @@ function planPct(plan: unknown, key: string): string {
   return v === null || v === undefined ? "" : String(v);
 }
 
-/** 📊 🎤: the turn the receipt bills, `turns[i]` with
+/** 🎤: the turn the receipt bills, `turns[i]` with
  * `accounting.turns[i]`.  🧠 its growth, `dctx` over `context_window`;
  * 🧩 🎯 weighed from its tokens; ⌛ its `dur_s`; ⛳ the last ETA it
  * reported, `eta` (decision 6), read at `clock.now`, when it ended, so a
@@ -103,8 +103,7 @@ function turnRow(st: Settings, t: Turn, acc: Accounting, win: number,
     ...shareCells(st, acc, sessPct, weekPct),
     diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),
   };
-  return { scope: "turn", label: receiptLabel(turnLabel(squash(t.text))),
-    cells };
+  return { scope: "turn", label: turnLabel(squash(t.text)), cells };
 }
 
 /** sum() of floats, left to right, as the receipt's totals add up. */
@@ -114,7 +113,7 @@ function addUp(values: readonly number[]): number {
   return total;
 }
 
-/** 📊 🎮: the session, `accounting.session`, its 🧩 🎯 every turn summed
+/** 🎮: the session, `accounting.session`, its 🧩 🎯 every turn summed
  * as cost_totals_group sums them, ⌛ its age from `start_s` (decision 5),
  * and on the label the caller's 📦 🌿. */
 function sessionRow(st: Settings, turns: readonly Turn[], acc: Accounting,
@@ -137,12 +136,13 @@ function sessionRow(st: Settings, turns: readonly Turn[], acc: Accounting,
   // Only the project and the branch: the receipt is about what was spent
   // where, not where the shell stood.
   const where = ws ? { ...ws, dir: "", pr: "", style: "" } : null;
-  return { scope: "session", label: receiptLabel(sessionLabel(where)),
-    cells };
+  return { scope: "session", label: sessionLabel(where), cells };
 }
 
-/** The receipt's rows from a cost figures document: 📊 🎤, or null with
- * no turn to bill, and 📊 🎮. */
+/** The receipt's rows from a cost figures document: 🎤, or null with no
+ * turn to bill, and 🎮.  They have no 📊 of their own (decided
+ * 2026-10-19): the band has no 🎤 or 🎮 once a turn ends, so they read
+ * apart by being dim. */
 export function receiptRows(st: Settings, fig: Dict,
   ws: Workspace | null): { turn: Row | null; session: Row } {
   const now = (fig.clock as Dict).now as number;
@@ -199,7 +199,7 @@ export function receiptHead(fig: Dict, hide: readonly string[]): Span[] {
 
 /** The receipt as drawn at `cols` under `hide`: the rows, on the band's
  * fixed grid, and the head, the turn's tag line, drawn under them (decided
- * 2026-10-19: under 📊 🎮, without the 💳 account details).  A hidden scope's row is left out.
+ * 2026-10-19: under 🎮, without the 💳 account details).  A hidden scope's row is left out.
  * `dim` draws every span dim, as the stamped receipt is drawn, its colours
  * kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,

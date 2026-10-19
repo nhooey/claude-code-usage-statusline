@@ -17,7 +17,7 @@
 export const E_HUMAN = "👤💬";       // chat row prefix — user.  U+1F464, Unicode 6.0, single
                                      // codepoint, two columns — same width as the 👨 it
                                      // replaced, so no field moves.
-export const E_BOT = "🤖💬";         // chat row prefix — assistant
+export const E_BOT = "🤖";           // chat row prefix — assistant
 export const E_PROJ = "📦";          // project name
 export const E_DIR = "📁";           // pwd
 export const E_GIT_OK = "🌿";        // branch, clean tree

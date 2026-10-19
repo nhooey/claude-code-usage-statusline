@@ -53,7 +53,7 @@ import type { Span, SpanLike } from "../src/spans.ts";
 import { pyRstrip } from "../src/py.ts";
 import { renderKind } from "../src/claude_subagent_render.ts";
 import {
-  CELLS, accountLabel, mainLabel, piece, receiptLabel, sessionLabel,
+  CELLS, accountLabel, mainLabel, piece, sessionLabel,
   turnHead, turnLabel,
 } from "../src/cells.ts";
 import { chrome, draw, hidden, layout } from "../src/grid.ts";
@@ -155,11 +155,11 @@ export function sample(st: Settings): Sample {
       rate: 340 }) },
   ];
   // The receipt is the band's 🎤 and 🎮 rows as they stood when the turn
-  // ended, behind the receipt's 📊.
+  // ended, with no 📊 of their own, the tag on 🎤.
   const receipt = [
-    { ...turn, label: receiptLabel([turn.label[0],
-      piece("name.tag", RECEIPT_TAG + "  "), ...turn.label.slice(1)]) },
-    { ...session, label: receiptLabel(session.label) },
+    { ...turn, label: [turn.label[0],
+      piece("name.tag", RECEIPT_TAG + "  "), ...turn.label.slice(1)] },
+    session,
   ];
   return { account, turn, main, session, receipt, agents };
 }

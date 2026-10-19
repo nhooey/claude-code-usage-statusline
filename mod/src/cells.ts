@@ -17,7 +17,7 @@
 // `now` in the process's TZ, which the edge sets from the document's
 // `clock.tz`, as claude_cost.ts's do.
 import {
-  E_ACCT, E_BOT, E_COST, E_COSTLINE, E_DATE, E_DIR, E_DIRTY, E_GIT_BAD,
+  E_ACCT, E_BOT, E_COST, E_DATE, E_DIR, E_DIRTY, E_GIT_BAD,
   E_GIT_OK, E_IDLE, E_PCT, E_PR, E_PROJ, E_RESET, E_SESS, E_SESSION, E_STY,
   E_TIME, E_TURN, E_TURN_ID, E_WEEK, K, MAG_COST, MAG_DUR_S, TURN_ID_HEX,
 } from "./spec.ts";
@@ -295,10 +295,6 @@ export function sessionLabel(ws: Workspace | null): Piece[] {
   return out;
 }
 
-/** A receipt row's label: the band row's behind 📊. */
-export function receiptLabel(label: readonly Piece[]): Piece[] {
-  return [piece("name.receipt", E_COSTLINE + " "), ...label];
-}
 
 /** A turn's tag and when, "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02":
  * `arrow` then 🔖, the head of the promptId and Claude Code's turn index,

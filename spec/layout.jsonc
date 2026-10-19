@@ -28,7 +28,7 @@
   "E_HUMAN": "👤💬",       // chat row prefix — user.  U+1F464, Unicode 6.0, single
                            // codepoint, two columns — same width as the 👨 it
                            // replaced, so no field moves.
-  "E_BOT": "🤖💬",         // chat row prefix — assistant
+  "E_BOT": "🤖",           // chat row prefix — assistant
   "E_PROJ": "📦",          // project name
   "E_DIR": "📁",           // pwd
   "E_GIT_OK": "🌿",        // branch, clean tree
