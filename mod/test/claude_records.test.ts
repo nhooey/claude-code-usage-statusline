@@ -11,6 +11,9 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cr from "../src/claude_records_node.ts";
+import {
+  agentReadingOf, foldAgentBytes, newAgentFold,
+} from "../src/claude_records.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
   "../..");
@@ -211,3 +214,29 @@ for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))
     });
   }
 }
+
+// The mod reads an agent's file as it grows, folding only what was appended
+// since its last read: cut anywhere, mid-line included, the file folded
+// piece by piece reads as the Python reads it whole.
+test("an agent file folded as it grows reads as it does whole", () => {
+  let files = 0;
+  for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))) {
+    const cases: Case[] = revive(JSON.parse(
+      fs.readFileSync(path.join(DIR, file), "utf-8"))).cases;
+    for (const c of cases.filter((c) => c.fn === "_read_agent_file")) {
+      if (c.out === null) continue;
+      const data = fs.readFileSync(c.args[0]);
+      for (const step of [1, 7, 97, 4096]) {
+        const fold = newAgentFold();
+        for (let end = step; end < data.length; end += step) {
+          foldAgentBytes(fold, data.subarray(fold.pos, end));
+        }
+        foldAgentBytes(fold, data.subarray(fold.pos), true);
+        assert.deepEqual(agentReadingOf(fold), c.out,
+          `${c.args[0]} in pieces of ${step}`);
+      }
+      files++;
+    }
+  }
+  assert.ok(files > 0, "no _read_agent_file cases");
+});

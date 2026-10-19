@@ -17,12 +17,13 @@
 import type { EngineInterface } from 'claude-code'
 
 import {
-  _agentDir, _agentStatePath, _readAgentBytes, _recordsOf, agentLabelOf,
-  agentOffsetsOf, agentRecordsOf, cmpStr, EMPTY_TRANSCRIPT, pyJoin,
-  readPayload, transcriptOf, turnsOf,
+  _agentDir, _agentStatePath, _recordsOf, agentLabelOf, agentOffsetsOf,
+  agentReadingOf, agentRecordsOf, cmpStr, EMPTY_TRANSCRIPT, foldAgentBytes,
+  newAgentFold, pyJoin, readPayload, transcriptOf, turnsOf,
 } from '../src/claude_records.ts'
 import type {
-  AgentEta, AgentReading, AgentRec, Payload, Rec, Transcript, Turn,
+  AgentEta, AgentFold, AgentReading, AgentRec, Payload, Rec, Transcript,
+  Turn,
 } from '../src/claude_records.ts'
 import {
   _calibrationCacheName, _calibrationOf, _idKey, _pricedRecord,
@@ -160,7 +161,7 @@ async function writeText($: $, path: string, text: string): Promise<boolean> {
 // ════════════════════════════════════════════════════════════════════════════
 
 type Parsed = { stable: number; records: Rec[] }
-type AgentKept = { stamp: string; reading: AgentReading }
+type AgentKept = { stamp: string; fold: AgentFold; reading: AgentReading }
 type CostKept = { off: number; tail: string | null; recs: Priced[] }
 
 /** What the session tells the mod that the status line's payload carries,
@@ -274,12 +275,19 @@ export async function agentReadings($: $, transcript: string):
     const stamp = f.size + ':' + f.mtimeMs
     let got = agentKept.get(f.path)
     if (!got || got.stamp !== stamp) {
+      // Only what was appended since the last read: an agent's file is
+      // only ever appended to, and re-reading each whole, 2.7 GB over a
+      // session's 231 agents, outran the hooks' 10s budget and left the
+      // mod dead in that session (seen live 2026-10-20).  A file that
+      // shrank was rewritten, and is read from its start.
+      const fold = got && got.fold.pos <= f.size ? got.fold : newAgentFold()
       try {
-        got = { stamp, reading: _readAgentBytes(
-          await readRange($, f.path, 0, f.size)) }
+        foldAgentBytes(fold, await readRange($, f.path, fold.pos, f.size))
       } catch {
+        agentKept.delete(f.path)
         continue
       }
+      got = { stamp, fold, reading: agentReadingOf(fold) }
       agentKept.set(f.path, got)
     }
     out.push([f.path, got.reading])

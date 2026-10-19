@@ -301,6 +301,16 @@ async function start($: any, surface: 'terminal' | 'desktop',
   await $.classic.SessionStart({ source: 'startup', session_id: SESSION,
     transcript_path: transcript })
   await $.session.start({ cwd: CWD, surface, isInteractive: true })
+  await settle()
+}
+
+// The test's environment has timers, which the hooks' types leave out.
+declare const setTimeout: (f: () => void, ms: number) => unknown
+
+/** Lets the reads the session's and turns' hooks start, and do not wait
+ * for, run to their end. */
+async function settle() {
+  for (let i = 0; i < 50; i++) await new Promise((r) => setTimeout(() => r(undefined), 0))
 }
 
 for (const surface of ['terminal', 'desktop'] as const) {
@@ -366,6 +376,7 @@ test('a turn ends on a blank closing line', async ($, on) => {
   await start($, 'terminal', COST)
   await $.turn.complete({ answer: '', durationMs: 65_000,
     isAborted: false, turnId: 't1', reason: 'answer' })
+  await settle()
   await blankClosing($, 'Worked', 65_000)
 })
 
@@ -384,6 +395,7 @@ test('a prompt from the composer gets its turn tag under it, at no indent',
     grown.set(encoder.encode(prompt), before.length)
     w.files.set(STATUS, grown)
     await $.turn.start({ text: 'Go on.', turnId: 't3' })
+    await settle()
     const doc = lastDoc(w)
     expect((doc.transcript as Dict).prompt_id).toBe('p-next')
     const tag = startLine(doc)
@@ -471,8 +483,10 @@ async function askAndAnswer($: any, w: World) {
     promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z', type: 'user',
     userType: 'external' })
   await $.turn.start({ text: ASKED, turnId: 't-resume' })
+  await settle()
   grow(w, ANSWER)
   await $.turn.complete(COMPLETE)
+  await settle()
 }
 
 const ANSWER = { isSidechain: false, message: { content: [{ text: 'Done.',
@@ -490,7 +504,9 @@ async function askLive($: any, w: World, land: boolean) {
     promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z', type: 'user',
     userType: 'external' })
   await $.turn.start({ text: ASKED, turnId: 't-resume' })
+  await settle()
   await $.turn.complete(COMPLETE)
+  await settle()
   await w.clock.settle()
   expect(stamped(w)).toBe(false)
   if (land) grow(w, ANSWER)
@@ -544,6 +560,7 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     resumed(w)
     await $.session.start({ cwd: CWD, surface: 'terminal',
       isInteractive: true })
+    await settle()
     // The band draws first, and the receipt is laid out at its width.
     await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
       component: 'AbovePrompt', props: BAND })
@@ -574,6 +591,7 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     expect(w.logged).toEqual([])
     // turn.complete again over the same turn: the same receipt, once.
     await $.turn.complete(COMPLETE)
+    await settle()
     await w.clock.advance(5_000)
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
     expect(logOf(w)).not.toContain('no receipt')
@@ -585,6 +603,7 @@ test('a turn whose records never land logs why and stamps nothing',
     resumed(w)
     await $.session.start({ cwd: CWD, surface: 'terminal',
       isInteractive: true })
+    await settle()
     await askLive($, w, false)
     await until(w, 31_000)
     expect(stamped(w)).toBe(false)
@@ -652,6 +671,7 @@ test('a resumed session whose first turn calls no tool draws all three',
     resumed(w)
     await $.session.start({ cwd: CWD, surface: 'terminal',
       isInteractive: true })
+    await settle()
     await askAndAnswer($, w)
     await drewAll($, w)
     expect(logOf(w)).toContain('started by session.start in ' + CWD)
@@ -673,6 +693,7 @@ test('a refresh that throws once is logged, and the next one draws',
     resumed(w)
     await $.session.start({ cwd: CWD, surface: 'terminal',
       isInteractive: true })
+    await settle()
     // The first read failed: nothing filed, and the log says why, in its
     // file and in the debug log.
     expect(w.docs.length).toBe(0)

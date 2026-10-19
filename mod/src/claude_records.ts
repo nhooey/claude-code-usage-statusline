@@ -1334,18 +1334,43 @@ function* byteLines(data: Uint8Array): Generator<Uint8Array> {
  * file's live ETA, or null.  A line that is not UTF-8 is skipped, as
  * json.loads skips it when handed bytes. */
 export function _readAgentBytes(data: Uint8Array): AgentReading {
-  let pid: unknown = "";
-  const etaState = newEtaState();
-  const spanState: SpanState = [null, null];
-  const work: Span[] = [];
-  const pending: Pending = new Map();
-  const tools: Span[] = [], waiting: Span[] = [];
-  const recs: AgentRaw[] = [];
-  const wrote = new Set<string>();
-  let added = 0, removed = 0;
-  let pos = 0;
+  const fold = newAgentFold();
+  foldAgentBytes(fold, data, true);
+  return agentReadingOf(fold);
+}
+
+/** _readAgentBytes's fold, kept between reads of a growing file so each
+ * reads only what was appended: `pos` is how far into the file it has
+ * folded, at a line's end. */
+export interface AgentFold {
+  pid: unknown;
+  readonly etaState: EtaState;
+  readonly spanState: SpanState;
+  readonly work: Span[];
+  readonly pending: Pending;
+  readonly tools: Span[];
+  readonly waiting: Span[];
+  readonly recs: AgentRaw[];
+  readonly wrote: Set<string>;
+  added: number;
+  removed: number;
+  pos: number;
+}
+
+export function newAgentFold(): AgentFold {
+  return { pid: "", etaState: newEtaState(), spanState: [null, null],
+    work: [], pending: new Map(), tools: [], waiting: [], recs: [],
+    wrote: new Set(), added: 0, removed: 0, pos: 0 };
+}
+
+/** Fold `data`, the file's bytes from `fold.pos` on, into `fold`.  Short
+ * of `last`, a line with no newline yet is left for the next read, as one
+ * still being written. */
+export function foldAgentBytes(fold: AgentFold, data: Uint8Array,
+  last = false): void {
   for (const line of byteLines(data)) {
-    pos += line.length;
+    if (!last && line[line.length - 1] !== 10) break;
+    fold.pos += line.length;
     let r: unknown;
     try {
       r = JSON.parse(DECODE_STRICT.decode(line));
@@ -1353,35 +1378,43 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
       continue;
     }
     if (!isDict(r)) continue;
-    liveEta(r, etaState);
-    agentSpan(r, spanState, work);
-    scanToolSpans(r, pending, tools, waiting);
-    const [a, d] = diffLines(r, wrote);
-    added += a;
-    removed += d;
+    liveEta(r, fold.etaState);
+    agentSpan(r, fold.spanState, fold.work);
+    scanToolSpans(r, fold.pending, fold.tools, fold.waiting);
+    const [a, d] = diffLines(r, fold.wrote);
+    fold.added += a;
+    fold.removed += d;
     if (pyGet(r, "type") === "user") {
-      pid = pyOr(pyGet(r, "promptId"), pid);
+      fold.pid = pyOr(pyGet(r, "promptId"), fold.pid);
       continue;
     }
     if (pyGet(r, "type") !== "assistant") continue;
     const m = pyOr(pyGet(r, "message"), {});
     const u = pyGet(m, "usage");
     if (!pyTruthy(u)) continue;
-    recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), pid,
+    fold.recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), fold.pid,
       pyGet(m, "model") ?? null, num0(pyGet(u, "input_tokens")),
       num0(pyGet(u, "cache_creation_input_tokens")),
       num0(pyGet(u, "cache_read_input_tokens")),
       num0(pyGet(u, "output_tokens")),
-      pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), pos,
-      added, removed]);
-    added = removed = 0;
+      pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), fold.pos,
+      fold.added, fold.removed]);
+    fold.added = fold.removed = 0;
   }
-  closeAgentSpan(spanState, work);
+}
+
+/** The reading `fold` comes to so far, its open span closed on a copy so
+ * the fold can go on. */
+export function agentReadingOf(fold: AgentFold): AgentReading {
+  const work = fold.work.slice();
+  closeAgentSpan([fold.spanState[0], fold.spanState[1]], work);
+  const etaState = fold.etaState;
   let eta: [number | null, number | null] | null = null;
   if (etaState[0].length && !etaState[1]) {
     eta = [etaFinish(etaState[0]), etaState[2]];
   }
-  return { recs, work, tools, waiting, eta };
+  return { recs: fold.recs.slice(), work, tools: fold.tools.slice(),
+    waiting: fold.waiting.slice(), eta };
 }
 
 // A file last written this long ago is SETTLED, and only a settled file's

@@ -412,10 +412,13 @@ export const register: Register = on => {
   })
 
   // Each event below starts this load's tick if no event has yet (start).
+  // The reads are not awaited: a session with many agents read for 34s
+  // after a reload (seen live 2026-10-20), its parsing the hook's own time,
+  // past the engine's 10s budget for a hook.
   on('session.start', async ($, e, next) => {
     const result = await next(e)
     await start($, 'session.start')
-    await refresh($)
+    void refresh($).catch((err) => log($, 'refresh', err))
     return result
   })
 
@@ -436,13 +439,13 @@ export const register: Register = on => {
     await update($, held, () => false)
     const tr = (await read($, status))?.transcript as Dict | undefined
     pending = { text: e.text, before: tr?.prompt_id ?? '' }
-    await refresh($)
+    void refresh($).catch((err) => log($, 'refresh', err))
     return result
   })
 
   // A turn ends: the band again, its 🎤 row now the turn just done, and
-  // the receipt stamped once the transcript bills the turn.  The stamp is
-  // not awaited: it waits on Claude Code's own write, which comes after
+  // the receipt stamped once the transcript bills the turn.  Neither the
+  // read nor the stamp is awaited: the stamp waits on Claude Code's own write, which comes after
   // this event, for longer than a handler's budget, whose clock runs on
   // through a sleep; it goes on after the handler returns, as the tick
   // does.  The refresh reads the prompt the turn opened with, which the
@@ -457,11 +460,16 @@ export const register: Register = on => {
       // (asked 2026-10-19).
       await update($, held, () => true)
     }
-    await refresh($)
-    if (e.agentId) return result
-    const tr = (await read($, status))?.transcript as Dict | undefined
-    const prompt = typeof tr?.prompt_id === 'string' ? tr.prompt_id : ''
-    void stamp($, e.durationMs, prompt)
+    if (e.agentId) {
+      void refresh($).catch((err) => log($, 'refresh', err))
+      return result
+    }
+    void (async () => {
+      await refresh($)
+      const tr = (await read($, status))?.transcript as Dict | undefined
+      const prompt = typeof tr?.prompt_id === 'string' ? tr.prompt_id : ''
+      await stamp($, e.durationMs, prompt)
+    })()
       .catch((err) => log($, 'no receipt', err))
       .finally(async () => {
         await $.clock.sleep(CONFIG.receiptHoldMs)
