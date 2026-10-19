@@ -10,45 +10,31 @@
 //   <path>`, beside the engine's own lines about the mod's hooks;
 //
 //   `usage-band.log` in the status line's state directory, always: the
-//   last LOG_KEPT lines from every session, each naming its session.
+//   last LOG_KEPT lines from every session, each naming its session.  The
+//   receipt's Stop hook (tools/receipt-hook.ts) writes its lines there too,
+//   as src/modlog.ts lays them out.
 //
 // A line is never allowed to fail its caller: a log that cannot be written
 // is a log with a line missing.
 import type { EngineInterface } from 'claude-code'
 
 import { placesOf } from './edges.ts'
+import { LOG_KEPT, LOG_NAME, describe, logAppended, logLine }
+  from '../src/modlog.ts'
 
 type $ = EngineInterface
 
-/** How many lines the log file keeps, the newest last. */
-export const LOG_KEPT = 500
-export const LOG_NAME = 'usage-band.log'
+export { LOG_KEPT, LOG_NAME, describe }
 
 // One write at a time, so a burst of lines keeps its order.
 let writing: Promise<void> = Promise.resolve()
-
-/** What was thrown, as one line's tail: the message, and where it was
- * thrown from when the error says. */
-export function describe(err: unknown): string {
-  if (err instanceof Error) {
-    const where = (err.stack ?? '').split('\n').slice(1, 4)
-      .map((l) => l.trim()).join(' < ')
-    return err.message + (where ? ' [' + where + ']' : '')
-  }
-  try {
-    return typeof err === 'string' ? err : JSON.stringify(err)
-  } catch {
-    return String(err)
-  }
-}
 
 /** Logs `what`, with the error it is about if there is one. */
 export async function log($: $, what: string, err?: unknown): Promise<void> {
   let line = what + (err === undefined ? '' : ': ' + describe(err))
   try {
-    const at = new Date(await $.clock.now()).toISOString()
     const id = await $.session.id().catch(() => '?')
-    line = `${at} ${id.slice(0, 8)} ${line}`
+    line = logLine(await $.clock.now(), id, what, err)
   } catch {
     // The line without its time.
   }
@@ -74,8 +60,7 @@ async function append($: $, line: string): Promise<void> {
     } catch {
       // No log yet.
     }
-    const lines = [...old.split('\n').filter((l) => l), line]
-    await $.fs.write(path, lines.slice(-LOG_KEPT).join('\n') + '\n')
+    await $.fs.write(path, logAppended(old, line))
   } catch {
     // Unwritable: the debug log has it.
   }

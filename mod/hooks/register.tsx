@@ -3,16 +3,20 @@
 // agents/plans/redesign.md has the design.  Three places are drawn:
 //
 //   AbovePrompt   the band, bandLines over the last status document, at the
-//                 body's width plus the five columns the gutter takes;
-//   TurnDuration  the turn's closing line, `✻ <word> for <duration> · ` and
-//                 the receipt's head, with the receipt's rows under it;
+//                 body's width plus the five columns the gutter takes, a
+//                 blank row above it;
+//   TurnDuration  the turn's closing line, as a blank row;
 //   UserMessage   under a prompt typed at the composer, its turn's tag.
+//
+// The receipt is not the mod's: the band's 🎤 and 🎮 rows are live while a
+// turn runs, and the Stop hook (tools/receipt-hook.ts) stamps them into the
+// transcript as it ends, under the blank closing line.
 //
 // The handlers do the reading (edges.ts) and file what they read: the
 // status document in `$.state`, so a new one redraws the band, and each
-// receipt and start line in `$.store`, so they outlive the module and a
-// reload draws them again.  The drawings read only what was filed.  What
-// a handler catches goes to the mod's log (log.ts), never to the engine.
+// start line in `$.store`, so it outlives the module and a reload draws it
+// again.  The drawings read only what was filed.  What a handler catches
+// goes to the mod's log (log.ts), never to the engine.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
@@ -21,15 +25,12 @@ import * as spec from '../src/spec.ts'
 import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
-import { bandLines, workspaceOf } from '../src/band.ts'
-import {
-  drawRows, receiptHead, receiptRows, startLine, withEngineDuration,
-} from '../src/receipt.ts'
-import type { Row } from '../src/grid.ts'
+import { bandLines } from '../src/band.ts'
+import { startLine } from '../src/receipt.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import { costDoc, placesOf, seen, statusDoc } from './edges.ts'
+import { placesOf, publishWindow, seen, statusDoc } from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -41,13 +42,7 @@ const status = atom({ plugin: 'usage-band', key: 'status' } as const, null)
 const rate = atom({ plugin: 'usage-band', key: 'rate' } as const, null)
 const filed = atom({ plugin: 'usage-band', key: 'filed' } as const, 0)
 
-/** What a receipt files: its head and its rows, undrawn, so the closing
- * line draws them at whatever width it is drawn at. */
-export type Filed = { head: Span[]; rows: Row[] }
-
-/** The store's keys: a receipt by its turn's duration, which is what the
- * closing line is handed, and a start line by its prompt's text. */
-export const receiptKey = (durationMs: number) => 'receipt:' + durationMs
+/** The store's key for a start line: its prompt's text. */
 export const startKey = (text: string) =>
   'start:' + sha256Hex(text).slice(0, 32)
 
@@ -101,6 +96,12 @@ async function refresh($: $): Promise<void> {
         await update($, rate, () => (doc.rate as number | null) ?? null)
       } catch (err) {
         await log($, 'refresh: the band was not updated', err)
+      }
+      try {
+        // The window, where the receipt's Stop hook reads it.
+        await publishWindow($, await placesFor($), doc)
+      } catch (err) {
+        await log($, 'refresh: no window published', err)
       }
       try {
         await fileStart($, doc)
@@ -160,13 +161,13 @@ async function start($: $, by: string): Promise<void> {
 }
 
 /** Keep `key` in the store under `index`, the newest last, dropping the
- * oldest past CONFIG.receiptsKept so the store stays small. */
+ * oldest past CONFIG.startsKept so the store stays small. */
 async function remember($: $, index: string, key: string, value: unknown) {
   await $.store.set(key, value)
   const keys = ((await $.store.get(index)) as string[] | undefined) ?? []
   const kept = [...keys.filter((k) => k !== key), key]
   for (const old of kept.splice(0, Math.max(0,
-    kept.length - CONFIG.receiptsKept))) {
+    kept.length - CONFIG.startsKept))) {
     await $.store.delete(old)
   }
   await $.store.set(index, kept)
@@ -197,15 +198,6 @@ function line(Text: any, spans: readonly Span[], key: string,
       ))}
     </Text>
   )
-}
-
-/** A duration as Claude Code's closing line writes it: "5s", "4m 2s",
- * "1h 3m". */
-export function duration(ms: number): string {
-  const s = Math.round(ms / 1000)
-  if (s < 60) return `${s}s`
-  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`
-  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`
 }
 
 /** The transcript's path, from a classic event's envelope, and the session
@@ -275,38 +267,12 @@ export const register: Register = on => {
     return result
   })
 
-  // A turn ends: the band again, and the receipt, filed under the turn's
-  // duration for the closing line to find.  A subagent's turn has none.
+  // A turn ends: the band again, its 🎤 row now the turn just done.  The
+  // receipt is the Stop hook's.
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     await start($, 'turn.complete')
-    // The receipt's 📦 🌿 come from a status document, so a turn that ends
-    // before any was read waits for one; otherwise the band reads again
-    // beside the receipt.
-    if ((await read($, status)) === null) await refresh($)
-    else void refresh($).catch((err) => log($, 'refresh', err))
-    if (e.agentId) return result
-    try {
-      const where = await placesFor($)
-      const last = await read($, status)
-      const published = last ? Number(last.context_window) || 0 : 0
-      const got = await costDoc($, where, published)
-      const doc = got ? withEngineDuration(got as Dict, e.durationMs) : null
-      if (doc) {
-        // 📦 🌿 from the band's last status document (decision 7).
-        const ws = last ? workspaceOf(last as Dict, where.home) : null
-        const st = await settingsOf($)
-        const { turn, session } = receiptRows(st, doc, ws)
-        const value: Filed = { head: receiptHead(doc),
-          rows: [...(turn ? [turn] : []), session] }
-        await remember($, 'receipts', receiptKey(e.durationMs), value)
-      } else {
-        await log($, 'no receipt: no transcript found for this session')
-      }
-    } catch (err) {
-      // No receipt: the engine's own closing line stands.
-      await log($, 'no receipt', err)
-    }
+    await refresh($)
     return result
   })
 
@@ -318,30 +284,25 @@ export const register: Register = on => {
       e.props.bodyColumns + 5, CONFIG.hide, { home: await home($),
         rate: await read($, rate),
         phase: e.props.isWorking ? 'running' : 'done' })
+    // A blank row above the band, between it and the transcript's last
+    // message, which is the stamped receipt once a turn has ended.
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginTop={1}>
         {lines.map((l, i) => line(Text, l, 'band' + i))}
       </Box>
     )
   })
 
-  // Drawn whole rather than around next(e): the engine's line is a
-  // full-width row, so text set beside it would land at the right edge.
-  on('ui.render', { component: 'TurnDuration' }, async ($, e, next) => {
-    await read($, filed)
-    const got = (await $.store.get(receiptKey(e.props.durationMs))) as
-      Filed | undefined
-    if (!got) return next(e)
+  // Claude Code's closing line, `✻ <word> for <duration>`, drawn as one
+  // blank row: the Stop hook's receipt under it carries the turn's 🔺🔖 tag
+  // and when it ended, and the blank parts the answer from it.  A Box one
+  // row high around a space, rather than an empty Text, which Ink measures
+  // as no row at all.
+  on('ui.render', { component: 'TurnDuration' }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
-    const cols = e.viewport?.columns ?? 150
-    const rows = drawRows(await settingsOf($), got.rows, cols, CONFIG.hide)
-    const close: Span = { text: `✻ ${e.props.word} for ` +
-      `${duration(e.props.durationMs)} · `, colour: null, dim: false,
-    bold: false, bg: null }
     return (
-      <Box flexDirection="column">
-        {line(Text, [close, ...got.head], 'head', true)}
-        {rows.map((l, i) => line(Text, l, 'row' + i))}
+      <Box height={1}>
+        <Text> </Text>
       </Box>
     )
   })

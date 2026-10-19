@@ -12,15 +12,16 @@
 // straight off the fixture, the reading straight off the tracker store,
 // and the document, rows and spans from those.  The drawn text and each
 // span's colour must match.  That proves the edges (that `$.fs` was read
-// as the bytes are), the filing (the receipt's trip through `$.store`) and
-// the drawing (spans to Text); the documents themselves are proven against
-// the Python's by test/claude.test.ts.
+// as the bytes are), the filing (the start line's trip through `$.store`)
+// and the drawing (spans to Text); the documents themselves are proven
+// against the Python's by test/claude.test.ts.  The receipt is the Stop
+// hook's, and test/receipt_hook.test.ts has it.
 import { expect, mock, test } from 'claude-code/testing'
 import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
 import { fromBase64 } from '../hooks/edges.ts'
-import { duration, receiptKey, startKey } from '../hooks/register.tsx'
+import { startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
 import {
   _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, readPayload,
@@ -33,15 +34,12 @@ import {
 } from '../src/claude_sources.ts'
 import { trackerV1 } from '../src/sources.ts'
 import type { Store } from '../src/sources.ts'
-import {
-  baseLimits, costFigures, statusFigures, windowFor,
-} from '../src/claude.ts'
+import { baseLimits, statusFigures } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
-import { bandLines, workspaceOf } from '../src/band.ts'
-import {
-  drawRows, receiptHead, receiptRows, startLine, withEngineDuration,
-} from '../src/receipt.ts'
+import { bandLines } from '../src/band.ts'
+import { startLine } from '../src/receipt.ts'
+import { sha256Hex } from '../src/sha256.ts'
 import type { Span } from '../src/spans.ts'
 import * as spec from '../src/spec.ts'
 import type { Dict } from '../src/py.ts'
@@ -235,17 +233,6 @@ async function statusOf(w: World, transcript: string, rate: number | null) {
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone, rate })
 }
 
-async function costOf(w: World, transcript: string, published: number) {
-  const records = _recordsOf(bytesOf(w, transcript))
-  const readings = readingsOf(w, transcript)
-  const turns = turnsOf(records, (s) => agentRecordsOf(readings, s, null),
-    null, new Map(), labelIn(w))
-  const prepared = await preparedOf(NOW)
-  const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
-  return costFigures(turns, windowFor(turns, published), CALIB, snap,
-    prepared, NOW, null)
-}
-
 const text = (spans: readonly Span[]) => spans.map((s) => s.text).join('')
 
 type Drawn = { type: string; props?: Record<string, unknown>;
@@ -308,6 +295,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
         rate: null, phase: 'done' })
       expect(lines.length).toBeGreaterThan(0)
       expect(await drawnRows(ui)).toEqual(expected(lines))
+      // A blank row between the transcript's last message and the band.
+      expect(((await ui.drawn()) as Drawn).props?.marginTop).toBe(1)
     })
 }
 
@@ -331,44 +320,43 @@ test('a survey above the prompt leaves the band to the engine',
     expect(await ui.find({ type: 'Text' })).toBeUndefined()
   })
 
-test('the receipt is filed in the store and drawn on the closing line',
+/** The closing line as the mod draws it: one row high, a space and no
+ * more, with no `✻ <word> for` and no tag. */
+async function blankClosing($: any, word: string, durationMs: number) {
+  const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'TurnDuration', props: { word, durationMs },
+    viewport: { columns: COLS, rows: 40 } })
+  const tree = await ui.drawn() as Drawn
+  expect(tree.type).toBe('Box')
+  expect(tree.props?.height).toBe(1)
+  const rows = (tree.children ?? []) as Drawn[]
+  expect(rows.length).toBe(1)
+  expect(rows[0].type).toBe('Text')
+  expect(rows[0].children).toEqual([' '])
+}
+
+test('a turn ends on a blank closing line, and files no receipt',
   async ($, on) => {
     const w = world(on)
     await start($, 'terminal', COST)
-    const status = lastDoc(w)
     await $.turn.complete({ answer: '', durationMs: 65_000,
       isAborted: false, turnId: 't1', reason: 'answer' })
-    // The store round trip: what was filed is what a later draw reads.
-    const filed = w.store.get(receiptKey(65_000)) as Dict
-    expect(filed).toBeDefined()
-    const cost = await costOf(w, COST, status.context_window as number)
-    const st = settings({})
-    const { turn, session } = receiptRows(st, cost,
-      workspaceOf(status, HOME))
-    expect(JSON.parse(JSON.stringify(filed))).toEqual(JSON.parse(
-      JSON.stringify({ head: receiptHead(cost),
-        rows: [...(turn ? [turn] : []), session] })))
-    const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
-      component: 'TurnDuration', props: { word: 'Worked',
-        durationMs: 65_000 }, viewport: { columns: COLS, rows: 40 } })
-    const [head, ...rows] = await drawnRows(ui)
-    expect(head.text).toBe(`✻ Worked for ${duration(65_000)} · ` +
-      text(receiptHead(cost)))
-    expect(rows).toEqual(expected(drawRows(st,
-      [...(turn ? [turn] : []), session], COLS, [])))
+    expect([...w.store.keys()].filter((k) => !k.startsWith('start')))
+      .toEqual([])
+    await blankClosing($, 'Worked', 65_000)
   })
 
-test("a subagent's turn files no receipt", async ($, on) => {
-  const w = world(on)
-  await start($, 'terminal', COST)
-  await $.turn.complete({ answer: '', durationMs: 7_000, isAborted: false,
-    turnId: 't2', agentId: 'agent-1', reason: 'answer' })
-  expect(w.store.get(receiptKey(7_000))).toBeUndefined()
-  const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
-    component: 'TurnDuration', props: { word: 'Worked', durationMs: 7_000 },
-    viewport: { columns: COLS, rows: 40 } })
-  expect(await ui.find({ type: 'Text' })).toBeUndefined()
-})
+test("the band's context window is published for the receipt's Stop hook",
+  async ($, on) => {
+    const w = world(on)
+    await start($, 'terminal', COST)
+    const path = STATE + '/claude-context-' +
+      sha256Hex('context\0' + SESSION) + '.json'
+    const f = w.files.get(path)
+    expect(f).toBeDefined()
+    expect(new TextDecoder().decode(f)).toBe(
+      String(lastDoc(w).context_window) + '\n')
+  })
 
 test('a prompt from the composer gets its turn tag under it',
   async ($, on) => {
@@ -485,8 +473,8 @@ function logOf(w: World): string {
 }
 
 /** All three places drawn for the turn askAndAnswer ran: the band over
- * the last document, the start line under the prompt, the receipt on the
- * closing line, each against the src/ functions over the same bytes. */
+ * the last document and the start line under the prompt, each against the
+ * src/ functions over the same bytes, and the blank closing line. */
 async function drewAll($: any, w: World) {
   const doc = lastDoc(w)
   expect((doc.transcript as Dict).prompt_id).toBe('p-resume')
@@ -515,24 +503,7 @@ async function drewAll($: any, w: World) {
   const under = await drawnRows(typed)
   expect(under[under.length - 1]?.text).toBe('  ' + text(tag))
 
-  const filed = w.store.get(receiptKey(ASKED_MS)) as Dict
-  expect(filed).toBeDefined()
-  const cost = withEngineDuration(await costOf(w, RESUMED,
-    doc.context_window as number), ASKED_MS)
-  const { turn, session } = receiptRows(st, cost, workspaceOf(doc, HOME))
-  expect(turn).toBeDefined()
-  expect(JSON.parse(JSON.stringify(filed))).toEqual(JSON.parse(
-    JSON.stringify({ head: receiptHead(cost),
-      rows: [...(turn ? [turn] : []), session] })))
-  const closing = await $.ui.mount({ plugin: 'usage-band',
-    surface: 'terminal', component: 'TurnDuration', props: {
-      word: 'Crunched', durationMs: ASKED_MS },
-    viewport: { columns: COLS, rows: 40 } })
-  const [head, ...rows] = await drawnRows(closing)
-  expect(head.text).toBe(`✻ Crunched for ${duration(ASKED_MS)} · ` +
-    text(receiptHead(cost)))
-  expect(rows).toEqual(expected(drawRows(st,
-    [...(turn ? [turn] : []), session], COLS, [])))
+  await blankClosing($, 'Crunched', ASKED_MS)
 }
 
 test('a resumed session whose first turn calls no tool draws all three',

@@ -1,4 +1,6 @@
-// The mod's configuration, in one place.
+// The mod's configuration, in one place, and the receipt's Stop hook's
+// (tools/receipt-hook.ts), which reads the same usage source and keys its
+// calibration by the same version.
 //
 // What the status line takes as flags (`--usage-source`, `--hide`,
 // `--mark-spacing`) the mod takes here, set to what the user's status line
@@ -26,7 +28,7 @@ export const CONFIG = {
   // How often the band reads its figures again with nothing else
   // happening, so the clocks and the 🔜 resets move while idle.
   tickMs: 30_000,
-  // How many receipts the store keeps, newest first: each is a few
-  // kilobytes, and the store holds 4 MiB in all.
-  receiptsKept: 400,
+  // How many start lines the store keeps, newest first: each is a few
+  // hundred bytes, and the store holds 4 MiB in all.
+  startsKept: 400,
 } as const;

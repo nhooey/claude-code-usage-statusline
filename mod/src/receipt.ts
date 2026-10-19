@@ -1,17 +1,20 @@
-// The receipt on the turn's closing line, and the start line under its
-// prompt, from the figures documents.
+// The receipt a turn ends with, and the start line under its prompt, from
+// the figures documents.
 //
-// agents/plans/redesign.md has the design: when a turn ends, the mod
-// redraws its closing line with a head, 🔺🔖 the turn's tag and when it
-// ended, and under it the band's 🎤 and 🎮 rows as they stood, behind 📊,
-// from the cost document (`cost_figures`).  As a turn starts, it draws the
-// same tag under the prompt, 🔻 pointing down at the turn it opens, from
-// the status document.  The rows are drawn on the band's fixed grid
-// (band.ts), so the receipt's columns are the band's and the panel's.
+// agents/plans/redesign.md has the design ("The receipt"): live, then
+// stamped.  While a turn runs the band draws its 🎤 and 🎮 rows; when it
+// ends, the Stop hook (tools/receipt-hook.ts) prints them frozen into the
+// transcript as its systemMessage: a head, 🔺🔖 the turn's tag and when it
+// ended, and under it the same two rows behind 📊, from the cost document
+// (`cost_figures`), dimmed so history reads apart from the live band.  As
+// a turn starts, the mod draws the same tag under the prompt, 🔻 pointing
+// down at the turn it opens, from the status document.  The rows are drawn
+// on the band's fixed grid (band.ts), so the receipt's columns are the
+// band's and the panel's.
 //
-// Pure, as band.ts is: the 📦 🌿 on the 📊 🎮 row are the caller's, kept
-// from the band's last status document, since cost_figures runs no git
-// (decision 7), and the clock is drawn in the TZ the edge sets.
+// Pure, as band.ts is: the 📦 🌿 on the 📊 🎮 row are the caller's, since
+// cost_figures runs no git (the hook runs detectGit), and the clock is
+// drawn in the TZ the edge sets.
 import { E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
@@ -133,9 +136,9 @@ export function receiptRows(st: Settings, fig: Dict,
 
 /** `fig` with the billed turn timed by the engine's own duration.  The
  * transcript's turn_duration record, which dur_s takes when it is there,
- * lands after turn.complete, so at that point dur_s is the span from the
- * turn's first record to its last, short of what the closing line beside
- * the receipt prints.  The seconds added are the model's: they are the
+ * lands late, after turn.complete, so until then dur_s is the span from the
+ * turn's first record to its last, short of what Claude Code's closing
+ * line prints.  The seconds added are the model's: they are the
  * answer streaming after its last record, in no tool and no wait. */
 export function withEngineDuration(fig: Dict, durationMs: number): Dict {
   const turns = fig.turns as Dict[];
@@ -164,20 +167,27 @@ export function receiptHead(fig: Dict): Span[] {
     t ? t.turn_index : null, ymd(now), hms(now)))];
 }
 
-/** The receipt as drawn at `cols` under `hide`: the head, which goes on
- * the closing line after Claude Code's own words, and the rows under it,
- * on the band's fixed grid.  A hidden scope's row is left out. */
+/** The receipt as drawn at `cols` under `hide`: the head, on a line of its
+ * own, and the rows under it, on the band's fixed grid.  A hidden scope's
+ * row is left out.  `dim` draws every span dim, as the stamped receipt is
+ * drawn, its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
-  hide: readonly string[], ws: Workspace | null):
+  hide: readonly string[], ws: Workspace | null, dim = false):
   { head: Span[]; rows: Span[][] } {
   const { turn, session } = receiptRows(st, fig, ws);
-  return { head: receiptHead(fig),
-    rows: drawRows(st, [...(turn ? [turn] : []), session], cols, hide) };
+  const head = receiptHead(fig);
+  const rows = drawRows(st, [...(turn ? [turn] : []), session], cols, hide);
+  return dim ? { head: dimmed(head), rows: rows.map(dimmed) }
+    : { head, rows };
+}
+
+/** `spans`, each drawn dim. */
+export function dimmed(spans: readonly Span[]): Span[] {
+  return spans.map((s) => ({ ...s, dim: true }));
 }
 
 /** Rows drawn on the band's fixed grid at `cols` under `hide`, a hidden
- * scope's left out.  The mod files a receipt's rows and draws them here
- * when its line is drawn, at the width it is drawn at then. */
+ * scope's left out. */
 export function drawRows(st: Settings, rows: readonly Row[], cols: number,
   hide: readonly string[]): Span[][] {
   const keys = fixedKeys(st, cols, hide);

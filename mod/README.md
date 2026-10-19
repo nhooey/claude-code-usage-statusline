@@ -25,15 +25,19 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `hooks/register.tsx` is its hooks module, and `types/index.d.ts` its
 `$.state` contract. It draws three places:
 
-- **The band,** above the prompt: the grid's rows for the session, from
-  the last status figures document, redrawn as the session starts, after
-  each tool call, as a turn starts and ends, and every 30 seconds.
-- **The receipt,** on each turn's closing line: `✻ Worked for 1m 5s · `
-  and the turn's tag, with the 📊 🎤 and 📊 🎮 rows under it. Each is kept
-  in the mod's store under the turn's duration, so a resumed session still
-  shows them. A subagent's turn has none.
+- **The band,** above the prompt, a blank row above it: the grid's rows
+  for the session, from the last status figures document, redrawn as the
+  session starts, after each tool call, as a turn starts and ends, and
+  every 30 seconds. While a turn runs its 🎤 and 🎮 rows are that turn's,
+  live.
+- **The closing line,** `✻ Worked for 1m 5s`, as a blank row: the receipt
+  under it says which turn ended and when.
 - **The start line,** under a prompt typed at the composer: 🔻🔖 and the
   turn's tag, dim.
+
+The receipt is not the mod's but a Stop hook's, below: as a turn ends it
+stamps the band's 🎤 and 🎮 rows into the transcript, so every turn's
+receipt stays there to scroll back to, a resumed session's included.
 
 The hooks import the ports from `src/`. The mod's runtime has no Node and
 loads nothing from outside the plugin's folder, so the ports that read
@@ -45,8 +49,9 @@ files keep their reads in `src/*_node.ts`, which only Node imports, and
 `hooks/config.ts` holds it, in one place: the usage source
 (`claude-usage-tracker` by default, as `--usage-source` names it), the
 account and period, the `--hide` paths, `--mark-spacing` and
-`--subscript-decimals`, the tick, how many receipts are kept, and the
-version the mod's caches are keyed by. Set them to what your status line
+`--subscript-decimals`, the tick, how many start lines are kept, and the
+version the mod's caches are keyed by. The receipt's Stop hook reads the
+same file. Set them to what your status line
 runs with, so the two read one reading and draw one grid. Edit it, then
 `/reload-plugins`.
 
@@ -57,6 +62,53 @@ The state directory and the projects directory are the status line's:
 (else `~/.claude/projects`). The tracker override,
 `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST`, is read as the status line
 reads it.
+
+### The receipt's Stop hook
+
+`tools/receipt-hook.ts` prints each turn's receipt as the Stop hook's
+`systemMessage`, the rows the band drew live, frozen and dimmed:
+
+```
+Stop says:
+     🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
+     📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
+     📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  …
+```
+
+It takes the Stop payload on stdin and prints `{"systemMessage": …}`, the
+message opening with a newline so `Stop says:` stands alone, or nothing at
+all: for a turn it has already printed, and for any failure, which goes to
+the mod's log (below) and never fails the Stop. Its reads are the mod's,
+through Node: the transcript once its turn is written, the agent files,
+the usage source and version of `hooks/config.ts`, the calibration the
+band last scanned (it never scans), the context window the band or the
+status line published, and git in the payload's `cwd` for 📦 🌿. It lays
+the rows out for the terminal's width, found as the status line finds it,
+less the five columns Claude Code indents a message by.
+
+It keeps two files in the state directory: the agent offsets the Python
+Stop hook kept (`claude-agent-offsets-*.json`, the same format), and
+`reported-receipt-*.json`, the turn it printed last, by session.
+
+    node mod/tools/receipt-hook.ts [--cols N] [--plain]
+         [--usage-source SPEC] [--hide PATH ...]
+
+`--cols` names the terminal's width, `--plain` drops the escapes (and the
+dimming with them), and the last two override the configuration. To use
+it, put it in place of the `--mode cost` entry under `hooks.Stop` in
+`~/.claude/settings.json`, with the checkout's path and a Node of 23.6 or
+later:
+
+```json
+{
+  "type": "command",
+  "command": "node ~/git/github/nhooey/claude-code-usage-statusline/mod/tools/receipt-hook.ts",
+  "timeout": 20
+}
+```
+
+The 20 seconds are the Python hook's: the hook waits up to 1.5 seconds for
+the turn's last records, and the rest is Node's start and the reads.
 
 ### Running it
 
@@ -78,7 +130,8 @@ and `/reload-plugins` again.
 
 `--plugin-dir` holds for the one process it is given to: a session
 resumed with `claude --resume <id>` alone runs without the mod, and draws
-neither the band, the start line nor the receipt. Resume with both:
+neither the band nor the start line (the receipt's Stop hook runs either
+way). Resume with both:
 
     claude --plugin-dir "$PWD/mod" --resume <id>
 
@@ -87,7 +140,9 @@ neither the band, the start line nor the receipt. Resume with both:
 The mod's handlers catch what fails, so a failed read leaves the last
 drawing up instead of failing Claude Code's event; what they catch is
 logged, with what was thrown and where. Each line names its time and the
-first eight characters of its session's id, and goes two ways:
+first eight characters of its session's id, and goes two ways (the
+receipt's Stop hook writes only the file, its lines marked
+`receipt-hook:`):
 
 - `usage-band.log` in the state directory
   (`~/.local/state/coding-agent-usage-line/usage-band.log` by default),
@@ -99,9 +154,9 @@ first eight characters of its session's id, and goes two ways:
 
 Each load of the mod writes one line when its first event comes,
 `started by session.start in <cwd>`: a session whose turns drew nothing
-and that has no such line never loaded the mod. A turn that drew no
-receipt says why (`no receipt: …`), as does a status read that failed
-(`refresh: no status document: …`).
+and that has no such line never loaded the mod. A status read that failed
+says why (`refresh: no status document: …`), as does a Stop that printed
+no receipt (`receipt-hook: no receipt: …`).
 
 In the debug log, `classic.SessionStart bypassed by cc-plugin-sec-default`
 is expected: Claude Code's security plugin passes the classic events by a
@@ -121,6 +176,7 @@ transcripts (`mod-tests/fixtures.gen.ts`, written by
 `node tools/gen-mod-fixtures.ts`; `test/mod-fixtures.test.ts` fails when it
 is stale) and checks what the mod drew against the `src/` functions over
 the same bytes. It needs the `claude` command, which CI does not have.
+The receipt's Stop hook is Node's, tested in `test/receipt_hook.test.ts`.
 
 The hooks type-check against the engine's types, which it writes into
 `.claude-plugin/types/` the first time it loads the mod (with

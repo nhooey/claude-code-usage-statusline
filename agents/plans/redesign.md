@@ -129,33 +129,67 @@ close up; hidden on some rows, it is left blank there.
 
 ### The receipt
 
-The mod redraws the turn's closing line, `✻ Worked for 4m 2s`, with the
-receipt's head after it and its two rows under it:
+Decided 2026-10-19: live, then stamped. While a turn runs, the band's 🎤 and
+🎮 rows are that turn's and the session's, live. When it ends, the Stop hook
+prints them frozen, as its `systemMessage`, so every turn's receipt stays in
+the transcript to scroll back to, a resumed session's included:
 
 ```
-✻ Worked for 4m 2s · 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
-📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
-📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+                                         (the closing line, a blank row)
+  Stop says:
+     🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
+     📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
+     📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+
+📊 … the band, a blank row above it
 ```
 
-The head is 🔺🔖, 🔺 pointing up at the turn that ended, the head of the turn's promptId and Claude Code's turn
-index, then 📅 and 🕐 when it ended. The Stop hook prints nothing: Claude
-Code draws a hook's `systemMessage` behind a fixed `Stop says: `, and no
-setting or mod changes that label.
+The receipt is the live rows frozen: `receiptLines` in `mod/src/receipt.ts`,
+the head, 🔺🔖, 🔺 pointing up at the turn that ended, the head of the turn's
+promptId and Claude Code's turn index, then 📅 and 🕐 when the Stop ran;
+under it the 📊 🎤 and 📊 🎮 rows on the band's fixed grid. They are drawn
+dim, so history reads apart from the live band, their colours kept.
 
-How the mod would do it, from the mod API in 2.1.296:
+- **Who prints it.** `mod/tools/receipt-hook.ts`, a Node command run as the
+  Stop hook in place of the Python's `--mode cost`, whose right-aligned
+  receipt is retired. It builds the cost document with `costFigures`
+  through Node's edges (`src/*_node.ts`), the reads the mod makes: the
+  usage source and version of `hooks/config.ts`, the calibration the band
+  last scanned (the hook never scans), and the context window the band and
+  the status line publish (`claude-context-*.json`). The billed turn is
+  timed by the engine's duration if the payload carries one; Claude Code's
+  does not yet, so it is timed as the transcript gives.
+- **The chrome.** Claude Code draws `Stop says: ` before a hook's message
+  and indents each line five columns, and no setting or mod changes that.
+  The message opens with a newline, so the label stands alone, and the rows
+  are laid out for the terminal's width less five, the width found as
+  `term_cols` finds it. All the lines are one message, since each message
+  gets the label.
+- **Once per turn.** The hook keeps the turn it printed last, by session
+  (`reported-receipt-*.json`), and a Stop over the same turn prints
+  nothing; one that went on and billed more prints again. It writes the
+  agent offsets the Python hook wrote, in the same file and format, so the
+  status line and the band read where it left off.
+- **Escapes.** The rows go out joined into escape codes, as `spans.ts`
+  `join` writes them for the Python; `--plain` drops them. The Python's
+  docs had the message shown as plain text (its `--color` was off by
+  default), which a live session has to settle.
+- **Failure.** Any failure prints nothing, exits 0, and goes to the mod's
+  log file, so a Stop never breaks.
+- **The closing line** (`TurnDuration`) is drawn as a blank row: the
+  receipt under it carries the tag and the clock, and the blank parts the
+  answer from it. The mod draws no receipt and files none.
+- **The blank row above the band** is the band's own `marginTop`, a Box
+  prop the mod sets, so it stands between the transcript's last message,
+  the receipt once a turn has ended, and the band.
+- The desktop app is out of scope (decided 2026-10-19): it raises no
+  `TurnDuration`, and how it shows a hook's message is not checked.
 
-- `turn.complete` gives the turn's id, its duration in milliseconds, and an
-  `agentId` on a subagent's turn, which is skipped.
-- `TurnDuration`, the closing line, is given only the word (`Worked`) and the
-  same duration. The mod files each receipt under its duration and finds it
-  there when the line is drawn.
-- The line is redrawn whenever it scrolls into view, so the mod keeps every
-  turn's receipt, not only the last.
-- `TurnDuration` is raised on the terminal only; the desktop app would show
-  no receipt. Decided 2026-10-19: the desktop app is out of scope. The band
-  and the start line use render sites it supports, but nothing is designed
-  or checked for it.
+Before this, the mod redrew the closing line itself, `✻ Worked for 4m 2s ·`
+and the head, with the rows under it, filing each receipt in `$.store`
+under the turn's duration, the one thing `TurnDuration` is handed. That
+held only while the mod was loaded, and a session resumed without it
+showed no receipts.
 
 ### The start line
 
@@ -308,7 +342,9 @@ same version-1 reading as its output and shared cases pinning it.
    runs behind the render, so the shares are blank until the first one
    lands. The published context window is the band's last document's,
    and the agent offsets are read from the Python Stop hook's file and
-   not written. `mod/mod-tests/` checks each drawn place against the
+   not written. Since the receipt moved to the Stop hook ("The
+   receipt"), `mod/tools/receipt-hook.ts` writes them, and the band
+   publishes its context window for it. `mod/mod-tests/` checks each drawn place against the
    `src/` functions over the same fixture bytes (`npm run test:plugin`;
    CI has no `claude` to run it).
 6. **The switch.** The band runs beside the status line until the two agree;
@@ -515,7 +551,7 @@ that draws them are `clock.now` in `clock.tz`. The labels and heads:
 | 🤖💬 reply, activity | `transcript.asst_text`; `main_doing` off `tool_at`, `wait_at`, `idle_at`, `last_seen`, `shells`, `monitors`, `queued` |
 | 🎮 📦 🌿 📁 🔀 🎨 | `git.main_root` or `toplevel` and `payload.project_dir`; `git.branch`; `payload.current_dir`; `payload.pr_number`; `payload.output_style` |
 | 📊 🎤 prompt | `turns[i].text` |
-| 📊 🎮 📦 🌿 | **Mod**: the band's last status document's `git` and `payload`, kept until the receipt is drawn (D7) |
+| 📊 🎮 📦 🌿 | **Hook**: `detectGit` in the Stop payload's `cwd`, which the receipt's Stop hook runs (D7) |
 | receipt head 🔖 # 📅 🕐 | `turns[i].prompt_id` and `turn_index`; `clock.now`, when the Stop ran |
 | start line 🔖 # 📅 🕐 | `transcript.prompt_id` and `turn_index` *added*, the turn opened last even before it calls; `transcript.turn_s`, its prompt's stamp |
 
@@ -596,7 +632,10 @@ What schemas 2 and 3 count, and how:
    after the turn ends. Comparing it with the turn's end, how far off it
    was, is left to the cell.
 7. **The receipt's 📦 🌿** come from the band's last status document, which
-   the mod keeps; `cost_figures` runs no git. Step 5's.
+   the mod keeps; `cost_figures` runs no git. Step 5's. Changed
+   2026-10-19, with the receipt moving to the Stop hook ("The receipt"):
+   the hook keeps no status document, so it runs `detectGit` itself, in
+   the payload's `cwd`; `cost_figures` still runs none.
 8. **The running 🎤 row is the turn opened last,** calls or not, so a fresh
    turn reads zeros, and its prompt is that turn's opener, `turn.text`,
    queued messages and notifications included. S carries it as `open_turn`

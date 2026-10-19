@@ -1,13 +1,14 @@
-// The mod's edges: every read the figures documents are made from, through
-// `$`, and the two documents built from them.
+// The mod's edges: every read the status document is made from, through
+// `$`, and the document built from them.  The cost document is the
+// receipt's Stop hook's (tools/receipt-hook.ts), through Node's edges.
 //
 // The src/ ports are pure where the plan says (figures from records, spans
 // from figures), and their Node edges live in src/*_node.ts, which the mod
 // never imports: this module is the mod's version of those, reading the
 // transcript and the agent files through `$.fs`, git and the usage source
 // through `$.process.run`, and the clock through `$.clock`.  What it reads
-// it hands to src/claude.ts's statusFigures and costFigures, which are the
-// Python's status_figures and cost_figures past their reads.
+// it hands to src/claude.ts's statusFigures, which is the Python's
+// status_figures past its reads.
 //
 // The reads keep what they have read in memory between documents, as the
 // Python keeps its agent cache and cost cache on disk: a transcript is only
@@ -16,9 +17,9 @@
 import type { EngineInterface } from 'claude-code'
 
 import {
-  _agentDir, _agentStatePath, _readAgentBytes, _recordsOf, _settled,
-  agentLabelOf, agentOffsetsOf, agentRecordsOf, cmpStr, EMPTY_TRANSCRIPT,
-  pyJoin, readPayload, SETTLE_POLL_S, SETTLE_S, transcriptOf, turnsOf,
+  _agentDir, _agentStatePath, _readAgentBytes, _recordsOf, agentLabelOf,
+  agentOffsetsOf, agentRecordsOf, cmpStr, EMPTY_TRANSCRIPT, pyJoin,
+  readPayload, transcriptOf, turnsOf,
 } from '../src/claude_records.ts'
 import type {
   AgentEta, AgentReading, AgentRec, Payload, Rec, Transcript, Turn,
@@ -39,7 +40,7 @@ import {
 } from '../src/claude_sources.ts'
 import type { PreparedClaudeReading } from '../src/claude_sources.ts'
 import {
-  baseLimits, costFigures, detectGit, sessionRate, statusFigures, windowFor,
+  baseLimits, detectGit, sessionRate, statusFigures,
 } from '../src/claude.ts'
 import type { RateSample } from '../src/claude.ts'
 import { sha256Hex } from '../src/sha256.ts'
@@ -734,30 +735,16 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
     tz: localZone(), rate })
 }
 
-/** cost_figures through `$`, once the turn just ended is in the
- * transcript: read_turns_settled's wait, on the mod's clock.  `published`
- * is the band's last context window, as window_for reads the status
- * line's. */
-export async function costDoc($: $, places: Places, published: number):
-  Promise<Dict | null> {
-  const path = await transcriptPath($, places)
-  if (!path) return null
-  let turns: Turn[] = []
-  const started = await $.clock.now()
-  for (;;) {
-    const records = await recordsOf($, path)
-    turns = await turnsVia($, places, path, records,
-      await agentReadings($, path))
-    if (_settled(turns) ||
-        (await $.clock.now()) - started >= SETTLE_S * 1000) break
-    await $.clock.sleep(SETTLE_POLL_S * 1000)
-  }
-  const now = (await $.clock.now()) / 1000
-  const { raw, payload } = await payloadOf($, path)
-  const prepared = await preparedVia($, places, raw, payload.session_id,
-    payload.model_id || payload.model, now)
-  const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
-  const calib = await calibrationVia($, places, snap, now)
-  return costFigures(turns, windowFor(turns, published), calib, snap,
-    prepared, now, localZone())
+/** publish_ctx_window through `$`: the document's context window, where
+ * the receipt's Stop hook reads it (and where the status line writes it,
+ * the same file under the same name), rewritten only when it moved. */
+export async function publishWindow($: $, places: Places, doc: Dict):
+  Promise<void> {
+  const win = Number(doc.context_window) || 0
+  const id = await $.session.id()
+  if (!id || win <= 0) return
+  const path = pyJoin(places.stateDir, 'claude-context-' +
+    sha256Hex('context\0' + id) + '.json')
+  if ((await readText($, path))?.trim() === String(win)) return
+  await writeText($, path, win + '\n')
 }
