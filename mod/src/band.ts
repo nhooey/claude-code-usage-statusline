@@ -441,14 +441,18 @@ export function accountText(st: Settings, fig: Dict,
  * leading spaces and joins it to the line with FOOTER_JOIN, so the blanks
  * are TAIL_BLANK, which it keeps (seen live 2026-10-20).  The line is two
  * blanks in, and `hint` is read with one space between its parts, so the
- * padding is a guess at the drawn width, FOOTER_SLACK columns short of it;
- * a tail too wide is cut where the row ends. */
+ * padding is a guess at the drawn width; a tail too wide is cut where the
+ * row ends.  `hint` leaves out the permission mode's pill, "⏵⏵ auto mode
+ * on · " (seen live 2026-10-20: "-- INSERT -- 2 shells"), so the pill of
+ * `mode`, the session's permission mode, is counted apart. */
 export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
-  hint: string, cols: number): string {
+  hint: string, cols: number, mode?: string): string {
   const text = accountText(st, fig, hide);
   if (!text) return "";
-  const pad = cols - RIGHT_EDGE - 2 - FOOTER_SLACK -
-    visWidth(hint, st.widths) -
+  const pill = MODE_PILLS[mode ?? ""] ?? "";
+  const pillW = pill && !hint.includes(pill)
+    ? visWidth(pill + FOOTER_JOIN, st.widths) : 0;
+  const pad = cols - RIGHT_EDGE - 2 - pillW - visWidth(hint, st.widths) -
     visWidth(FOOTER_JOIN, st.widths) - visWidth(text, st.widths);
   return TAIL_BLANK.repeat(Math.max(0, pad)) + text;
 }
@@ -456,10 +460,14 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
 /** What Claude Code puts between its footer line and a hook's tail. */
 export const FOOTER_JOIN = " · ";
 
-/** The columns the footer's padding leaves short of its guess, for what
- * the vim mode, permission mode and shell pills draw wider than `hint`
- * reads (asked 2026-10-20: "subtract 2 chars"). */
-export const FOOTER_SLACK = 2;
+/** The pill Claude Code draws in the footer for each permission mode, by
+ * the mode's name; none in `default`.  Only "auto" was seen live. */
+export const MODE_PILLS: Readonly<Record<string, string>> = {
+  auto: "⏵⏵ auto mode on",
+  acceptEdits: "⏵⏵ accept edits on",
+  plan: "⏸ plan mode on",
+  bypassPermissions: "⏵⏵ bypass permissions on",
+};
 /** U+2800, a blank cell that is not whitespace, so no trim takes it. */
 export const TAIL_BLANK = "⠀";
 

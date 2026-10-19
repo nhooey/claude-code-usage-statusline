@@ -231,6 +231,9 @@ async function remember($: $, index: string, key: string, value: unknown) {
 let bandCols = 0
 // The footer's hint and widths last logged.
 let hintSeen = ''
+// The session's permission mode, as the last classic hook event gave it:
+// the footer's `hint` leaves its pill out, so footerTail counts it apart.
+let permissionMode: string | undefined
 
 /** The store's key for a stamped receipt: its session and its turn. */
 export const receiptKey = (session: string, turn: string) =>
@@ -352,10 +355,12 @@ export const register: Register = on => {
     return next(e)
   })
   on('classic.UserPromptSubmit', async ($, e, next) => {
+    permissionMode = e.permission_mode ?? permissionMode
     await learn($, e).catch(() => {})
     return next(e)
   })
   on('classic.Stop', async ($, e, next) => {
+    permissionMode = e.permission_mode ?? permissionMode
     await learn($, e).catch(() => {})
     return next(e)
   })
@@ -367,6 +372,14 @@ export const register: Register = on => {
       seen.effort = String(e.effort)
     }
     return yield* next(e)
+  })
+
+  // The permission mode, from the events that carry it: a prompt and a
+  // turn's end, above, and each tool call, so a mode cycled with shift+tab
+  // is known by the next one.
+  on('classic.PostToolUse', async ($, e, next) => {
+    permissionMode = e.permission_mode ?? permissionMode
+    return next(e)
   })
 
   // Each event below starts this load's tick if no event has yet (start).
@@ -492,10 +505,10 @@ export const register: Register = on => {
       // The band's width before the viewport's: the viewport read 10
       // columns wider than the terminal drew, pushing the 🕐 off the row
       // (seen live 2026-10-20), and the band's is where its rows end.
-      e.props.hint, bandCols || (e.viewport?.columns ?? 80))
+      e.props.hint, bandCols || (e.viewport?.columns ?? 80), permissionMode)
     // What the padding was worked out from, each time it changes, so a
     // tail drawn too wide can be checked against the line it was given.
-    const seen = JSON.stringify([e.props.hint, bandCols,
+    const seen = JSON.stringify([e.props.hint, permissionMode ?? null, bandCols,
       e.viewport?.columns ?? null, tail.length])
     if (seen !== hintSeen) {
       hintSeen = seen
