@@ -10,10 +10,10 @@
 // has the design):
 //
 // - One column per metric, in one order, on every row of every readout:
-//   model, 🛫, 💰, 🧠, 🧩, 🎯, ⌛ ⛳ 🤖 🔧 🚦, 🔋, 🪫, 💾.  The cells are the
-//   agent panel's own, drawn by claude_subagent_render.ts's and
-//   claude_render.ts's renderers, so the figures are formatted as the
-//   readouts format them.
+//   model, 🛫, 💰, 🧠, 🧩, 🎯, ⌛ ⛳ 🤖 🔧 🚦, 🔋, 🪫, 💾.  The cells and the
+//   label pieces are src/cells.ts's, which the band and the receipt draw
+//   real figures with, so the figures are formatted as the readouts
+//   format them.
 // - One scope per row, named by its label: 💳 the account, 🎤 the turn,
 //   🤖💬 the main thread, 🎮 the session, and one row per agent.  The band
 //   draws 🎤 and 🎮 only while the turn runs; once it ends, the receipt
@@ -43,40 +43,23 @@
 // is not given); everything under it is handed the Settings.
 import { spawnSync } from "node:child_process";
 import { closeSync, openSync } from "node:fs";
+import { E_TURN_AHEAD, E_TURN_PAST, RIGHT_EDGE } from "../src/spec.ts";
 import {
-  E_ACCT, E_BOT, E_COSTLINE, E_DATE, E_DIR, E_GIT_OK, E_PCT,
-  E_PR, E_PROJ, E_RESET, E_SESS, E_SESSION, E_STY, E_TIME, E_TURN,
-  E_TURN_AHEAD, E_TURN_ID, E_TURN_PAST, E_WEEK, RIGHT_EDGE,
-} from "../src/spec.ts";
-import {
-  durFmt, humanize, padVal, seg, settings, stripAnsi, termCols,
+  durFmt, seg, settings, stripAnsi, termCols,
 } from "../src/formatting.ts";
 import type { Env, Settings } from "../src/formatting.ts";
 import { join, span } from "../src/spans.ts";
 import type { Span, SpanLike } from "../src/spans.ts";
-import { pyFormatF, pyRstrip } from "../src/py.ts";
-import { renderCost, renderTokens } from "../src/claude_render.ts";
+import { pyRstrip } from "../src/py.ts";
+import { renderKind } from "../src/claude_subagent_render.ts";
 import {
-  renderAgentCache, renderAgentCtx, renderAgentDiff, renderAgentElapsed,
-  renderAgentEta, renderAgentLimit, renderAgentModel, renderAgentRate,
-  renderAgentSplit, renderKind,
-} from "../src/claude_subagent_render.ts";
+  CELLS, accountLabel, mainLabel, piece, receiptLabel, sessionLabel,
+  turnHead, turnLabel,
+} from "../src/cells.ts";
 import { chrome, draw, hidden, layout } from "../src/grid.ts";
-import type { Piece, Row } from "../src/grid.ts";
+import type { Row } from "../src/grid.ts";
 
 const NOW = 1_792_000_000.0;
-
-/** 🧠 for a turn: how much the context grew, in tokens and points. */
-function ctxGrowth(st: Settings, tokens: number, points: number): Span[] {
-  return [span(st.sCtx), span(padVal(st, 4, "+" + humanize(st, tokens)) +
-    " " + padVal(st, 4, "+" + points + E_PCT), "F_PNK")];
-}
-
-/** A part of a row's label, with the path --hide names it by; see Piece. */
-function piece(path: string, text: string, colour: string | null = null,
-  drop = 0, dim = false): Piece {
-  return { path, spans: [span(text, colour, dim)], drop };
-}
 
 /** The figures of one sample row, drawn into cells by `cells`. */
 type Figures = {
@@ -87,36 +70,25 @@ type Figures = {
   five?: number; week?: number; diff?: [number, number];
 };
 
-/** The figures drawn by the panel's renderers, one cell per key. */
+/** The figures drawn by the grid's cells, one per key. */
 function cells(st: Settings, f: Figures): { [key: string]: Span[] } {
   const out: { [key: string]: Span[] } = {};
-  if (f.model) out.model = renderAgentModel(st, ...f.model);
-  if (f.rate !== undefined) out.rate = renderAgentRate(st, f.rate);
-  if (f.cost !== undefined) out.cost = renderCost(st, pyFormatF(f.cost, 4));
+  if (f.model) out.model = CELLS.model(st, ...f.model);
+  if (f.rate !== undefined) out.rate = CELLS.rate(st, f.rate);
+  if (f.cost !== undefined) out.cost = CELLS.cost(st, f.cost);
   if (f.ctx) {
-    out.ctx = f.ctx[0] === "+" ? ctxGrowth(st, f.ctx[1], f.ctx[2])
-      : renderAgentCtx(st, f.ctx[0], f.ctx[1]);
+    out.ctx = f.ctx[0] === "+" ? CELLS.ctxGrowth(st, f.ctx[1], f.ctx[2])
+      : CELLS.ctx(st, f.ctx[0], f.ctx[1]);
   }
-  if (f.tok) out.tok = renderTokens(st, f.tok[0], f.tok[1]);
-  if (f.cache !== undefined) out.cache = renderAgentCache(st, f.cache);
-  if (f.clock !== undefined) {
-    out.clock = renderAgentElapsed(st, f.clock * 1000, NOW);
-  }
-  if (f.eta) {
-    out.eta = renderAgentEta(st, [NOW, f.eta[1]], f.eta[0] * 1000, NOW);
-  }
-  if (f.split) out.split = renderAgentSplit(...f.split);
-  if (f.five !== undefined) {
-    out.five = renderAgentLimit(st, E_SESS, "1", f.five, "F_LIM_SESS");
-  }
-  if (f.week !== undefined) {
-    out.week = renderAgentLimit(st, E_WEEK, "1", f.week, "F_LIM_WEEK",
-      true, false, 4);
-  }
-  if (f.diff) {
-    out.diff = renderAgentDiff(st,
-      { lines_added: f.diff[0], lines_removed: f.diff[1] });
-  }
+  if (f.tok) out.tok = CELLS.tok(st, f.tok[0], f.tok[1]);
+  if (f.cache !== undefined) out.cache = CELLS.cache(st, f.cache);
+  if (f.clock !== undefined) out.clock = CELLS.clock(st, NOW - f.clock);
+  if (f.eta) out.eta = CELLS.eta(st, [NOW, f.eta[1]], f.eta[0], NOW);
+  if (f.split) out.split = CELLS.split(...f.split);
+  // Any reading at all: the sample's plan has one.
+  if (f.five !== undefined) out.five = CELLS.five(st, "1", f.five);
+  if (f.week !== undefined) out.week = CELLS.week(st, "1", f.week);
+  if (f.diff) out.diff = CELLS.diff(st, f.diff[0], f.diff[1]);
   return out;
 }
 
@@ -124,12 +96,12 @@ const TURN_START = NOW - 4 * 60, SESSION_START = NOW - 9 * 3600;
 
 /** The receipt's first line: which turn the rows under it bill, by the
  * head of its promptId and Claude Code's turn index, and when it ended. */
-const RECEIPT_HEAD = E_TURN_PAST + E_TURN_ID + " 8f37748e #12  " + E_DATE +
-  " 2026-10-19  " + E_TIME + " 13:06:02";
+const RECEIPT_HEAD = turnHead(E_TURN_PAST, "8f37748e", 12, "2026-10-19",
+  "13:06:02");
 /** The line the mod draws under the prompt as the turn starts: the same
  * tag, 🔻 pointing down at the turn it opens, and when it started. */
-const START_TAG = E_TURN_AHEAD + E_TURN_ID + " 8f37748e #12  " + E_DATE +
-  " 2026-10-19  " + E_TIME + " 13:02:00";
+const START_TAG = turnHead(E_TURN_AHEAD, "8f37748e", 12, "2026-10-19",
+  "13:02:00");
 
 /** The sample rows: the band's, the receipt's and the panel's. */
 type Sample = {
@@ -140,38 +112,26 @@ type Sample = {
 /** One sample session: a turn that asked why the build is slow, the main
  * thread answering it, and two agents it started. */
 export function sample(st: Settings): Sample {
-  const account: Row = { scope: "account", label: [
-    piece("name.label", E_ACCT + " account  "),
-    piece("plan.reset", E_SESS + " " + E_RESET + " " +
-      durFmt(st, 6.7 * 60) + "  " + E_WEEK + " " + E_RESET + " " +
-      durFmt(st, 1.8 * 86400) + "  ", null, 0, true),
-    piece("clock.date", E_DATE + " 2026-10-19  ", null, 2, true),
-    piece("clock.time", E_TIME + " 13:06:02", null, 3, true)],
+  const account: Row = { scope: "account", label: accountLabel(
+    durFmt(st, 6.7 * 60), durFmt(st, 1.8 * 86400), "2026-10-19", "13:06:02"),
   cells: cells(st, { five: 15.0, week: 87.0 }) };
-  const turn: Row = { scope: "turn", label: [
-    piece("name.label", E_TURN + " "),
-    piece("chat.prompt", "Why is the build slow?", "F_CHAT_B")],
+  const turn: Row = { scope: "turn",
+    label: turnLabel("Why is the build slow?"),
   cells: cells(st, { cost: 0.21, ctx: ["+", 34_000, 3],
     tok: [28_000, 7_100], cache: 95, clock: TURN_START,
     eta: [TURN_START, 120], split: [240, 150, 60], five: 0.03, week: 0.05,
     diff: [12, 3] }) };
-  const main: Row = { scope: "main", label: [
-    piece("name.label", E_BOT + " "),
-    piece("chat.reply",
-      "The test step takes 80٪ of the build: Jest runs serially",
-      "F_CHAT_B")],
+  const main: Row = { scope: "main",
+    label: mainLabel(
+      "The test step takes 80٪ of the build: Jest runs serially"),
   cells: cells(st, { model: ["claude-opus-5-5", "high"], cost: 92.0,
     ctx: [115_000, 1_000_000], tok: [2_100_000, 640_000], cache: 98,
     clock: SESSION_START, eta: [TURN_START, 120],
     split: [9 * 3600, 4 * 3600, 3 * 3600], five: 0.9, week: 2.1,
     diff: [3100, 180], rate: 220 }) };
-  const session: Row = { scope: "session", label: [
-    piece("name.label", E_SESSION + " session  "),
-    piece("workspace.project", E_PROJ + "app ", "F_BLU"),
-    piece("workspace.branch", E_GIT_OK + "main  ", "F_GRN"),
-    piece("workspace.dir", E_DIR + "~/src/app/web  ", "F_BLU", 3),
-    piece("workspace.pr", E_PR + "#418  ", "F_CYN", 2),
-    piece("workspace.style", E_STY + "Explanatory", "F_CYN", 1)],
+  const session: Row = { scope: "session", label: sessionLabel({
+    project: "app", branch: "main", dirty: false, dir: "~/src/app/web",
+    pr: "418", style: "Explanatory" }),
   cells: cells(st, { cost: 115.0, tok: [2_700_000, 841_000], cache: 98,
     clock: SESSION_START, split: [9 * 3600, 4 * 3600, 3 * 3600], five: 1.2,
     week: 3.8, diff: [3400, 214] }) };
@@ -198,10 +158,8 @@ export function sample(st: Settings): Sample {
   // The receipt is the band's 🎤 and 🎮 rows as they stood when the turn
   // ended, behind the receipt's 📊.
   const receipt = [
-    { ...turn, label: [piece("name.receipt", E_COSTLINE + " "),
-      ...turn.label] },
-    { ...session, label: [piece("name.receipt", E_COSTLINE + " "),
-      ...session.label] },
+    { ...turn, label: receiptLabel(turn.label) },
+    { ...session, label: receiptLabel(session.label) },
   ];
   return { account, turn, main, session, receipt, agents };
 }
