@@ -451,12 +451,12 @@ def render_diff(added: str, removed: str) -> List[Span]:
     sign gets a column of its own so it never drifts with the width of the
     number behind it, and the figures right-align under each other.
 
-    The one place humanize's trailing unit column is thrown away.  Everywhere
-    else it is load-bearing — it stacks mantissa under mantissa and unit under
-    unit down a grid — but nothing sits above or below this cell to stack
-    with, so under a thousand the blank only holds the last digit one column
-    short of the right edge, which is what it looks like: a cell that misses
-    the margin by one.
+    humanize's trailing unit column is kept, as everywhere else: it stacks
+    mantissa under mantissa and unit under unit down the grid, where the band
+    and the panel draw 💾 on every row, " 30k" over "  6 ".  It was once
+    thrown away here, when nothing sat above or below this cell, and then a
+    lone count under a thousand stood on its unit's column (changed
+    2026-10-19).
 
     A space divides them rather than the "/" this carried before.  The signs
     already say which half is which, so the slash was a column spent repeating
@@ -481,11 +481,9 @@ def render_diff(added: str, removed: str) -> List[Span]:
             return None
 
     def half(sign: str, v: Optional[int], col: str) -> Span:
-        # rstrip drops humanize's unit column; see the note above for why
-        # this cell is the exception.  "3.4k" is unaffected — it has no
-        # trailing blank to lose — so only the sub-1000 case moves, and it
-        # moves one column right, onto the margin.
-        fig = "?" if v is None else humanize(v).rstrip()
+        # humanize's unit column kept: see the note above.  "?" takes a
+        # blank unit column too, so it stands where a digit would.
+        fig = "? " if v is None else humanize(v)
         return Span(sign + pad_val(4, fig), col, mag_dim(v, MAG_DIFF))
 
     return [Span(S_DIFF), half("+", n(added), "F_GRN"), Span(" "),

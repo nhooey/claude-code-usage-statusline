@@ -471,7 +471,7 @@ def run(sl, sr, scratch):
           "\U0001F527 15m \U0001F6A6 1h")
     check("💾: a hundred lines, each half on its own count",
           dims(sl.render_diff("100", "99")),
-          [(False, "+ 100"), (True, "-  99")])
+          [(False, "+100"), (True, "- 99")])
     check("column 3: each scope's pair dims off its own 📖, under two thirds",
           [sl.cache_dims(t, s_) for t, s_ in
            ((66, 67), (67, 66), (None, 10), (90, None))],
