@@ -405,7 +405,7 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
  * runs, the order the receipt stamps them in (asked 2026-10-20), and once
  * it ends those the receipt did not stamp under `until`: none by default
  * (asked 2026-10-20).  💳 is not among them: it is drawn
- * on the footer under the prompt, right-aligned, as `accountParts` gives it
+ * on the footer under the prompt, right-aligned, as `accountText` gives it
  * (decided 2026-10-19). */
 export function phaseRows(rows: BandRows, phase: Phase,
   until: StampUntil = "session"): Row[] {
@@ -415,34 +415,31 @@ export function phaseRows(rows: BandRows, phase: Phase,
   return all.filter((r) => !gone.includes(r.scope));
 }
 
-/** The 💳 row's label as two parts of plain text: the workspace and the
- * account, "📦claude-code-usage-statusline 🌿master  📁~/git/📦  💳 🔋 1٪
- * 🔜 4.8h  🪫 49٪ 🔜 9.8h", and when, "📅 2026-10-19  🕐 22:12:44", which
- * the footer sets apart (asked 2026-10-20).  Each piece is hidden by its
- * own path, the workspace's under `account.workspace`, with `home`
- * shortening the 📁 directory as the band's does; both "" under the hide
- * path `account`.  The footer draws them with none of the row's colours. */
-export function accountParts(st: Settings, fig: Dict,
-  hide: readonly string[], home = ""): [string, string] {
-  if (hidden(hide, "account")) return ["", ""];
+/** The 💳 row's label as one line of plain text after the workspace,
+ * "📦claude-code-usage-statusline 🌿master  📁~/git/📦  💳 🔋 1٪ 🔜 4.8h
+ * 🪫 49٪ 🔜 9.8h  📅 2026-10-19  🕐 22:12:44", each piece hidden by its own
+ * path, the workspace's under `account.workspace`, with `home` shortening
+ * the 📁 directory as the band's does; ""
+ * under the hide path `account`.  The footer it is drawn on takes a string,
+ * so it keeps none of the row's colours. */
+export function accountText(st: Settings, fig: Dict,
+  hide: readonly string[], home = ""): string {
+  if (hidden(hide, "account")) return "";
   const now = (fig.clock as Dict).now as number;
   // 📦 the project, 🌿 the branch and 📁 the directory first, as 🎮's
   // label draws them (asked 2026-10-20), each hidden by its own path.
-  const head: Piece[] = sessionLabel(workspaceOf(fig, home)).filter((p) =>
+  const shown: Piece[] = sessionLabel(workspaceOf(fig, home)).filter((p) =>
     ["workspace.project", "workspace.branch", "workspace.dir"]
       .includes(p.path) && !hidden(hide, "account." + p.path));
-  const when: Piece[] = [];
   let dropped = false;
   for (const p of accountRow(st, fig, now).label) {
     // A window's 🔜 goes with its window.
     const gone: boolean = hidden(hide, "account." + p.path) ||
       (dropped && p.path === "plan.reset");
     dropped = gone && p.path !== "plan.reset";
-    if (!gone) (p.path.startsWith("clock.") ? when : head).push(p);
+    if (!gone) shown.push(p);
   }
-  const text = (ps: Piece[]) =>
-    ps.flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
-  return [text(head), text(when)];
+  return shown.flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
 }
 
 /** The band as drawn at `cols` under `hide`: its rows' spans, top to

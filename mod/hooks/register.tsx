@@ -26,7 +26,7 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { accountParts, bandLines, bandRows, workspaceOf } from '../src/band.ts'
+import { accountText, bandLines, bandRows, workspaceOf } from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
   withEngineDuration,
@@ -229,8 +229,6 @@ async function remember($: $, index: string, key: string, value: unknown) {
 // The width the band last drew at, the terminal's: the receipt is laid out
 // at it, so its columns are the band's.  0 until the band has drawn.
 let bandCols = 0
-// The columns between the footer's account and its 📅 🕐, at most.
-const FOOTER_GAP = 4
 
 /** The store's key for a stamped receipt: its session and its turn. */
 export const receiptKey = (session: string, turn: string) =>
@@ -486,27 +484,21 @@ export const register: Register = on => {
   // line, drawn by the engine so its pills stay live, then the account
   // text in the terminal's own colour, not the line's dim one (asked
   // 2026-10-20), pushed to where the band's rows end.  The line is two
-  // columns in, as the band's rows are not.  📅 🕐 stand FOOTER_GAP
-  // columns after the account, fewer down to one where the row is short,
-  // before any text is cut (asked 2026-10-20).
+  // columns in, as the band's rows are not.
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     const doc = await read($, status)
     if (doc === null) return next(e)
-    const [head, when] = accountParts(await settingsOf($),
+    const text = accountText(await settingsOf($),
       at(doc as Dict, await read($, clockNow)), CONFIG.hide, await home($))
     const row = await next(e)
-    if (!head && !when) return row
+    if (!text) return row
     const { Box, Text } = $.ui.resolve(e)
     const cols = bandCols || (e.viewport?.columns ?? 80)
     return (
       <Box flexDirection="row" width={Math.max(1, cols - spec.RIGHT_EDGE - 2)}>
-        <Box flexShrink={0}>{row}</Box>
-        <Box flexGrow={1} minWidth={1} />
-        {head ? <Text wrap="truncate-end">{head}</Text> : null}
-        {head && when
-          ? <Box width={FOOTER_GAP} minWidth={1} flexShrink={1000} />
-          : null}
-        {when ? <Text wrap="truncate-end">{when}</Text> : null}
+        {row}
+        <Box flexGrow={1} />
+        <Text wrap="truncate-end">{' ' + text}</Text>
       </Box>
     )
   })
