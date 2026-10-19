@@ -29,8 +29,8 @@ the program and is not.
 | `python3 tests/run-cases.py` | both suites below, from the committed cases in `tests/fixtures/`, and each case's [figures](../tests/README.md#figures) and render stages apart; then the [agent panel's](../tests/README.md#agent-panel-cases) 45 `--mode subagent` goldens and its 242 render cases | `pass 273   fail 0   missing 0`, then `panel    242 cases   0 files differ` |
 | `bash tests/golden.sh` | `--mode status` output, byte for byte, against 141 golden files | `pass 141   fail 0   missing 0` |
 | `bash tests/golden-cost.sh` | `--mode cost` output against 87 golden files | `pass 87   fail 0   missing 0` |
-| `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 48   fail 0   missing 0` |
-| `cd mod && node --test 'test/*.test.ts'` | the TypeScript port against the cases the Python writes under `tests/fixtures/`: the spec, the usage-source reader, the accounting, the calibration, the formatters and spans, the receipt and the agent panel | `ℹ fail 0` |
+| `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 49   fail 0   missing 0` |
+| `cd mod && node --test 'test/*.test.ts'` | the TypeScript port against the cases the Python writes under `tests/fixtures/`: the spec, the usage-source reader, the accounting, the calibration, the formatters and spans, and the status line, the receipt and the agent panel, cell by cell and against every golden | `ℹ fail 0` |
 | `cd mod && npm ci && npm run typecheck` | the TypeScript port's types, with TypeScript and Node's type definitions from the lockfile | no output |
 | `python3 tests/usage-source.py` | the Claude Usage Tracker reader, `cmd:` sources, and the scoped source cache | `pass 39   fail 0   missing 0` |
 | `python3 tests/sources-v1.py` | the normalized v1 reading: schema, timestamps, separate quota buckets | `ok …` |

@@ -262,6 +262,13 @@ same version-1 reading as its output and shared cases pinning it.
    the 228 goldens and the agent panel's own cases, so the port is checked
    byte for byte. The redesigned grid is then built in TypeScript, and the
    Python cells, which the agent panel keeps, are brought to it after.
+   Status 2026-10-19: today's cells are ported. `formatting.ts` and
+   `spans.ts` (35,956 cases), `claude_render.ts` and `figures.ts` (the 141
+   status goldens and 3,958 cell cases), `claude_cost_render.ts` and
+   `claude_cost.ts` (the 87 cost goldens and 256 receipt cases), and
+   `claude_subagent_render.ts` (the panel's 242 render cases) match the
+   Python byte for byte. Left: the redesigned grid, then the Python cells
+   brought to it.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
 6. **The switch.** The band runs beside the status line until the two agree;
