@@ -1,9 +1,5 @@
 """Usage source selection and the versioned, safe custom-command contract."""
 import json, os, subprocess, time, math, selectors, signal, hashlib, plistlib
-from email.utils import parsedate_to_datetime
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from . import state
 from datetime import datetime, timezone
 from xml.parsers.expat import ExpatError
@@ -246,6 +242,7 @@ def _retry_after(value, now=None):
     try:
         stamp = epoch(value)
         if stamp is None and isinstance(value, str):
+            from email.utils import parsedate_to_datetime
             stamp = parsedate_to_datetime(value).astimezone(timezone.utc).timestamp()
         return max(0.0, stamp - (time.time() if now is None else now)) if stamp is not None else None
     except (TypeError, ValueError, OverflowError, OSError): return None
@@ -267,8 +264,13 @@ def _read_response(response, deadline, maximum=1024 * 1024):
         chunks.append(part)
     return b"".join(chunks)
 
-def request_json(url, headers, params=None, opener=urlopen, timeout=10, deadline=None, failure=None):
+def request_json(url, headers, params=None, opener=None, timeout=10, deadline=None, failure=None):
     """Bounded TLS JSON GET; redirects and non-JSON provider errors fail closed."""
+    # Here, not at the top: the status line starts afresh on every redraw,
+    # and only the HTTP sources need urllib.
+    from urllib.error import HTTPError, URLError
+    from urllib.parse import urlencode
+    from urllib.request import Request, build_opener, HTTPRedirectHandler
     if params: url += ("&" if "?" in url else "?") + urlencode(params)
     if deadline is not None and time.monotonic() >= deadline: return {}
     try:
@@ -277,7 +279,7 @@ def request_json(url, headers, params=None, opener=urlopen, timeout=10, deadline
         # host (or even an unexpected route on this fixed provider endpoint).
         class NoRedirect(HTTPRedirectHandler):
             def redirect_request(self, request, fp, code, msg, headers, newurl): return None
-        open_fn = opener if opener is not urlopen else build_opener(NoRedirect()).open
+        open_fn = opener if opener is not None else build_opener(NoRedirect()).open
         remaining = timeout if deadline is None else deadline - time.monotonic()
         if remaining <= 0: return {}
         with open_fn(req, timeout=min(timeout, remaining)) as response:
@@ -290,7 +292,7 @@ def request_json(url, headers, params=None, opener=urlopen, timeout=10, deadline
         return {}
     except (URLError, OSError, ValueError): return {}
 
-def request_pages(url, headers, params=None, opener=urlopen, limit=20, timeout=20, failure=None):
+def request_pages(url, headers, params=None, opener=None, limit=20, timeout=20, failure=None):
     """Follow provider-issued page tokens only, with a finite request budget."""
     out=[]; page=None; seen=set(); deadline=time.monotonic() + timeout
     for _ in range(limit):
@@ -306,7 +308,7 @@ def request_pages(url, headers, params=None, opener=urlopen, limit=20, timeout=2
         seen.add(page)
     return None  # page budget exhausted while the provider still said more
 
-def anthropic_admin(start, end, opener=urlopen, failure=None):
+def anthropic_admin(start, end, opener=None, failure=None):
     """Organization period rows, never session/turn billing."""
     key=os.environ.get("ANTHROPIC_ADMIN_KEY")
     if not key: return {}
@@ -344,7 +346,7 @@ def anthropic_admin(start, end, opener=urlopen, failure=None):
             inp += uncached + reads + created; cached += reads; output += out
     return normalise({"schema_version":1, "as_of":time.time(), "windows":[], "account":{"period_start":start, "period_end":end, "cost_usd":cents / 100.0, "input_tokens":inp, "cached_input_tokens":cached, "output_tokens":output, "scope":"organization"}}, "anthropic-admin")
 
-def openai_admin(start, end, opener=urlopen, failure=None):
+def openai_admin(start, end, opener=None, failure=None):
     key=os.environ.get("OPENAI_ADMIN_KEY")
     if not key: return {}
     headers={"Authorization":"Bearer " + key}
@@ -377,7 +379,7 @@ def openai_admin(start, end, opener=urlopen, failure=None):
     if cached is not None: account["cached_input_tokens"]=cached
     return normalise({"schema_version":1, "as_of":time.time(), "windows":[], "account":account}, "openai-admin")
 
-def experimental_claude_oauth(opener=urlopen, failure=None):
+def experimental_claude_oauth(opener=None, failure=None):
     token=os.environ.get("CLAUDE_OAUTH_ACCESS_TOKEN")
     if not token: return {}
     raw=request_json("https://api.anthropic.com/api/oauth/usage",
@@ -391,7 +393,7 @@ def experimental_claude_oauth(opener=urlopen, failure=None):
             windows.append({"id":name, "duration_seconds":duration, "used_percent":item.get("utilization"), "resets_at":item.get("resets_at")})
     return normalise({"schema_version":1, "as_of":time.time(), "windows":windows}, "experimental-claude-oauth")
 
-def experimental_codex_api(opener=urlopen, failure=None):
+def experimental_codex_api(opener=None, failure=None):
     token=os.environ.get("CODEX_USAGE_ACCESS_TOKEN")
     account=os.environ.get("CODEX_USAGE_ACCOUNT_ID")
     if not token or not account: return {}
