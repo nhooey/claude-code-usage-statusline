@@ -286,6 +286,16 @@ export interface Transcript {
   readonly wait_at: number;         // oldest WAITING_TOOLS call, likewise
   readonly idle_at: number;         // the last answer's end, while idle
   readonly last_seen: number;       // its last stamped record of any kind
+  // The main thread's own figures, off this file alone, before the agents'
+  // requests are added: what the redesign's 🤖💬 row counts.
+  readonly own_tok_up: number | null;
+  readonly own_tok_down: number;
+  readonly own_cache_pct: number;   // -1 when it billed nothing
+  readonly own_usd: number;
+  readonly lines_added: number;     // what the main thread wrote; agentDiff
+  readonly lines_removed: number;
+  readonly prompt_id: string;       // the turn opened last: its promptId
+  readonly turn_index: number | null;   // and turnIndex; _stampTurnId
 }
 
 type TranscriptFirst = "tok_up" | "tok_down" | "cache_pct" | "ctx_tokens" |
@@ -296,7 +306,9 @@ export function transcript(
   return {
     tool_s: 0.0, blocked_s: 0.0, turn_s: 0.0, eta: [], agent_etas: [],
     queued: 0, compactions: 0, ctx_est: false, shells: 0, monitors: 0,
-    tool_at: 0.0, wait_at: 0.0, idle_at: 0.0, last_seen: 0.0, ...t,
+    tool_at: 0.0, wait_at: 0.0, idle_at: 0.0, last_seen: 0.0,
+    own_tok_up: null, own_tok_down: 0, own_cache_pct: -1, own_usd: 0.0,
+    lines_added: 0, lines_removed: 0, prompt_id: "", turn_index: null, ...t,
   };
 }
 
@@ -374,6 +386,8 @@ export interface Turn {
   readonly agent_name: string;
   readonly prompt_id: string;
   readonly turn_index: number | null;
+  readonly lines_added: number;     // what the turn wrote, its agents'
+  readonly lines_removed: number;   // included; see diffLines
 }
 
 type TurnFirst = "ts" | "text" | "fresh" | "cache_write" | "cache_read" |
@@ -386,7 +400,7 @@ export function turn(t: Pick<Turn, TurnFirst> & Partial<Turn>): Turn {
     compact: false, reported: false, parts: [], agent_calls: 0, agent_ids: [],
     agent: false, tool_s: 0.0, blocked_s: 0.0, agent_model_s: 0.0,
     agent_tool_s: 0.0, agent_id: "", agent_name: "", prompt_id: "",
-    turn_index: null, ...t,
+    turn_index: null, lines_added: 0, lines_removed: 0, ...t,
   };
 }
 
@@ -405,6 +419,8 @@ export interface AgentRec {
   readonly offset: number;          // Stop hook keeps — see agentOffsets
   readonly model_s: number;         // the agent's 🤖 and 🔧 since its
   readonly tool_s: number;          // previous billed request; splitClock
+  readonly lines_added: number;     // and what it wrote since then, filed
+  readonly lines_removed: number;   // the same way; see _readAgentBytes
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1264,9 +1280,10 @@ function isDir(p: string): boolean {
 
 /** One record of an agent file that carries usage, as _readAgentFile keeps
  * it: (epoch, promptId, model, fresh, cache write, cache read, out,
- * requestId, offset). */
+ * requestId, offset, lines added, lines removed), the lines being what its
+ * tool results wrote since the usage record before. */
 export type AgentRaw = readonly [number | null, unknown, unknown, number,
-  number, number, number, unknown, number];
+  number, number, number, unknown, number, number, number];
 
 /** One agent file's part of agentRecords, read from it alone. */
 export interface AgentReading {
@@ -1311,14 +1328,22 @@ export function agentRecordsOf(
   const out: AgentRec[] = [];
   for (const [path, got] of files) {
     const first = out.length;
-    for (const [epoch, pid, model, fresh, cw, cr, o, k, pos] of got.recs) {
+    // A record dropped below hands what its results wrote on to the next
+    // one this file keeps, as splitClock hands on its time.
+    let added = 0, removed = 0;
+    for (const [epoch, pid, model, fresh, cw, cr, o, k, pos, la, lr] of
+      got.recs) {
+      added += la;
+      removed += lr;
       if (seen.has(k)) continue;
       seen.add(k);
       if (!(pyTruthy(fresh) || pyTruthy(cw) || pyTruthy(cr) ||
             pyTruthy(o))) continue;
       out.push({ epoch, prompt_id: pid, model, fresh, cache_write: cw,
         cache_read: cr, out: o, request_id: k, path, offset: pos,
-        model_s: 0.0, tool_s: 0.0 });
+        model_s: 0.0, tool_s: 0.0, lines_added: added,
+        lines_removed: removed });
+      added = removed = 0;
     }
     if (etas !== null && got.eta !== null) etas.push([...got.eta]);
     const cuts: number[] = [];
@@ -1379,6 +1404,8 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
   const pending: Pending = new Map();
   const tools: Span[] = [], waiting: Span[] = [];
   const recs: AgentRaw[] = [];
+  const wrote = new Set<string>();
+  let added = 0, removed = 0;
   let pos = 0;
   for (const line of byteLines(data)) {
     pos += line.length;
@@ -1392,6 +1419,9 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
     liveEta(r, etaState);
     agentSpan(r, spanState, work);
     scanToolSpans(r, pending, tools, waiting);
+    const [a, d] = diffLines(r, wrote);
+    added += a;
+    removed += d;
     if (pyGet(r, "type") === "user") {
       pid = pyOr(pyGet(r, "promptId"), pid);
       continue;
@@ -1405,7 +1435,9 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
       num0(pyGet(u, "cache_creation_input_tokens")),
       num0(pyGet(u, "cache_read_input_tokens")),
       num0(pyGet(u, "output_tokens")),
-      pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), pos]);
+      pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), pos,
+      added, removed]);
+    added = removed = 0;
   }
   closeAgentSpan(spanState, work);
   let eta: [number | null, number | null] | null = null;
@@ -1786,6 +1818,75 @@ export function inboxCounts(files: readonly string[],
 
 export type AgentEta = readonly [number | null, number | null];
 
+/** +adds/-removes one record's tool result wrote, counted the way a diff
+ * is: over the `structuredPatch` an Edit's result carries, one hunk line at
+ * a time, `+` added and `-` removed; a Write to a NEW file, `type:
+ * "create"`, adds every line of its `content`.  `seen` holds the tool-use
+ * ids counted already, since a resumed or compacted transcript can carry a
+ * result twice; a result with no id is counted. */
+export function diffLines(r: Rec, seen: Set<string>): [number, number] {
+  const res = pyGet(r, "toolUseResult");
+  if (!isDict(res)) return [0, 0];
+  let tid = "";
+  const content = pyOr(pyDig(r, "message", "content"), []);
+  // Iterating a string or a dict meets no dict, so only a list has blocks.
+  for (const block of Array.isArray(content) ? content : []) {
+    if (isDict(block) && pyTruthy(pyGet(block, "tool_use_id"))) {
+      tid = pyStr(pyGet(block, "tool_use_id"));
+      break;
+    }
+  }
+  if (tid) {
+    if (seen.has(tid)) return [0, 0];
+    seen.add(tid);
+  }
+  let added = 0, removed = 0;
+  const patch = pyGet(res, "structuredPatch");
+  if (Array.isArray(patch) && patch.length) {
+    for (const hunk of patch) {
+      const lines = pyOr(pyGet(pyOr(hunk, {}), "lines"), []);
+      // A str is iterated by character, as the Python iterates it.
+      const each = typeof lines === "string" ? Array.from(lines)
+        : Array.isArray(lines) ? lines : [];
+      for (const line of each) {
+        if (typeof line !== "string" || !line) continue;
+        if (line[0] === "+") added += 1;
+        else if (line[0] === "-") removed += 1;
+      }
+    }
+  } else if (pyGet(res, "type") === "create" &&
+    typeof pyGet(res, "content") === "string") {
+    added += pySplitlinesCount(pyGet(res, "content") as string);
+  }
+  return [added, removed];
+}
+
+// str.splitlines' line boundaries.
+const LINE_BREAK = /\r\n|[\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]/g;
+
+/** len(s.splitlines()): a break ends a line, and a last line without one
+ * is a line too. */
+function pySplitlinesCount(s: string): number {
+  if (!s) return 0;
+  const breaks = s.match(LINE_BREAK)?.length ?? 0;
+  const tail = s.replace(LINE_BREAK, "\n").endsWith("\n") ? 0 : 1;
+  return breaks + tail;
+}
+
+/** +adds/-removes across everything one thread wrote: diffLines over every
+ * record, deduped across them.  An agent row, the main thread and each
+ * turn count their own this way; the payload's pair is the session's. */
+export function agentDiff(records: readonly Rec[]): [number, number] {
+  let added = 0, removed = 0;
+  const seen = new Set<string>();
+  for (const r of records) {
+    const [a, d] = diffLines(r, seen);
+    added += a;
+    removed += d;
+  }
+  return [added, removed];
+}
+
 /** One pass for the status line: totals, cache rate, context, last texts.
  *
  * The token totals and the cache rate count what the session's AGENTS
@@ -1802,13 +1903,27 @@ export function transcriptOf(records: readonly Rec[],
   now: number | null = null): Transcript {
   const reqs = _dedupeUsage(records);
   let fresh = 0, cwrite = 0, cread = 0, down = 0;
+  let ownUsd = 0.0;
   for (const r of reqs) {
     const u = pyDig(r, "message", "usage");
     fresh += num0(pyGet(u, "input_tokens"));
     cwrite += num0(pyGet(u, "cache_creation_input_tokens"));
     cread += num0(pyGet(u, "cache_read_input_tokens"));
     down += num0(pyGet(u, "output_tokens"));
+    // Priced per record at its own model, as readTurns prices it.
+    const d = _usd(pyDig(r, "message", "model"),
+      num0(pyGet(u, "input_tokens")),
+      num0(pyGet(u, "cache_creation_input_tokens")),
+      num0(pyGet(u, "cache_read_input_tokens")),
+      num0(pyGet(u, "output_tokens")));
+    ownUsd += 0 + d[0] + d[1] + d[2] + d[3];
   }
+  // The main thread's own figures, before the agents are added.
+  const ownIn = fresh + cwrite + cread;
+  const ownUp = Math.trunc(fresh + W_CACHE_WRITE * cwrite +
+    W_CACHE_READ * cread);
+  const ownDown = down;
+  const ownCache = ownIn > 0 ? Math.trunc(100 * cread / ownIn) : -1;
   for (const a of agents) {
     fresh += a.fresh;
     cwrite += a.cache_write;
@@ -1890,10 +2005,20 @@ export function transcriptOf(records: readonly Rec[],
   let queued = 0, compactions = 0;
   const background = new Map<string, string>();
   let idle_at = 0.0, last_seen = 0.0;
+  let opened = _newTurn("", "");    // the open turn, for its promptId alone
+  const wrote = new Set<string>();  // tool-use ids diffLines has counted
+  let added = 0, removed = 0;
   for (const r of records) {
     queued = Math.max(0, queued + queueStep(r));
     compactions += isCompaction(r) ? 1 : 0;
     scanToolSpans(r, pending, tools, blocked);
+    const [a, d] = diffLines(r, wrote);
+    added += a;
+    removed += d;
+    // The tag the start line prints: the promptId and turnIndex of the
+    // turn opened last, read as readTurns reads a turn's.
+    if (turnStartText(r) !== null) opened = _newTurn("", "");
+    _stampTurnId(opened, r);
     if (pyGet(r, "isSidechain") !== true) {
       liveEta(r, etaState);
       scanBackground(r, background);
@@ -1961,6 +2086,14 @@ export function transcriptOf(records: readonly Rec[],
     wait_at: now !== null && waits.length ? min(waits) : 0.0,
     idle_at: now !== null ? idle_at : 0.0,
     last_seen: now !== null ? last_seen : 0.0,
+    own_tok_up: ownUp,
+    own_tok_down: ownDown,
+    own_cache_pct: ownCache,
+    own_usd: ownUsd,
+    lines_added: added,
+    lines_removed: removed,
+    prompt_id: opened.pid,
+    turn_index: opened.tidx,
   });
 }
 
@@ -2012,6 +2145,8 @@ interface TurnBuild {
   at: number;
   pid: string;
   tidx: number | null;
+  la: number;
+  lr: number;
   dur?: number;
   compact?: boolean;
 }
@@ -2019,7 +2154,8 @@ interface TurnBuild {
 export function _newTurn(ts: string, text: string): TurnBuild {
   return { ts, text, fresh: 0, cw: 0, cr: 0, out: 0, ctx: 0, n: 0,
     usd: [0.0, 0.0, 0.0, 0.0], an: 0, aids: [], t0: tsEpoch(ts), t1: null,
-    parts: [], tools: [], waits: [], am: 0.0, at: 0.0, pid: "", tidx: null };
+    parts: [], tools: [], waits: [], am: 0.0, at: 0.0, pid: "", tidx: null,
+    la: 0, lr: 0 };
 }
 
 /** Take the turn's promptId and turnIndex off `r`, where the turn has none
@@ -2112,6 +2248,8 @@ export function _foldAgents(turns: TurnBuild[],
     cur.aids.push(a.request_id);
     cur.am += a.model_s;
     cur.at += a.tool_s;
+    cur.la += a.lines_added;
+    cur.lr += a.lines_removed;
     _addUsd(cur, a.epoch, a.model, a.fresh, a.cache_write, a.cache_read,
       a.out);
   }
@@ -2153,8 +2291,12 @@ export function turnsOf(records: readonly Rec[],
   let lastStop: number | null = null;
   const pending: Pending = new Map();
   const ends = new Map<string, number>();
+  const wrote = new Set<string>();      // tool-use ids diffLines has counted
   for (const r of records) {
     scanAgentEnd(r, ends);
+    // What the record's tool result wrote, onto the turn it is filed under
+    // below: the main thread's 💾, turn by turn.
+    const [added, removed] = diffLines(r, wrote);
     // Every tool call, onto the turn open when its RESULT arrives: the scan
     // transcriptOf makes for the status line's 🔧, so the two readouts
     // count the same calls by the same rule.  A record before the first
@@ -2175,6 +2317,8 @@ export function turnsOf(records: readonly Rec[],
         turns.push(cur);
       }
       _stampTurnId(cur, r);
+      cur.la += added;
+      cur.lr += removed;
       if (pyTruthy(pid)) byPid.set(pid, cur);
       continue;
     }
@@ -2183,6 +2327,10 @@ export function turnsOf(records: readonly Rec[],
     if (pyTruthy(pid) && cur !== null && !pyTruthy(cur.compact)) {
       if (!byPid.has(pid)) byPid.set(pid, cur);
       _stampTurnId(cur, r);
+    }
+    if (cur !== null) {
+      cur.la += added;
+      cur.lr += removed;
     }
     if (pyGet(r, "subtype") === "compact_boundary") {
       // A compaction leaves NO usage record anywhere; its boundary record's
@@ -2277,6 +2425,7 @@ export function turnsOf(records: readonly Rec[],
       tool_s, blocked_s, agent_model_s: t.am, agent_tool_s: t.at,
       prompt_id: pyTruthy(t.compact) ? "" : t.pid,
       turn_index: pyTruthy(t.compact) ? null : t.tidx,
+      lines_added: t.la, lines_removed: t.lr,
     }));
     if (t.ctx) prev = t;
   }
@@ -2312,7 +2461,8 @@ export function lateAgentTurn(t: TurnBuild, path = "",
     cache_read: t.cr, out: t.out, ctx: 0, calls: 0, dur_s: 0.0, dctx: null,
     usd_in: t.usd[0], usd_out: t.usd[1], usd_cr: t.usd[2], usd_cw: t.usd[3],
     parts: [...t.parts], agent_calls: t.an, agent_ids: [...t.aids],
-    agent: true, agent_model_s: t.am, agent_tool_s: t.at, agent_id, agent_name,
+    agent: true, agent_model_s: t.am, agent_tool_s: t.at,
+    lines_added: t.la, lines_removed: t.lr, agent_id, agent_name,
   });
 }
 

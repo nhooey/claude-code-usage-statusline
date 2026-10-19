@@ -1,17 +1,27 @@
 {
   "accounting": {
     "session": {
+      "blocked_s": 0,
       "cost_usd": 0.132085,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "model_s": 120,
       "read_share": 31,
       "sess_share": 0.024015454545454548,
+      "tool_s": 60,
       "week_share": 0.03221585365853659,
       "write_share": 25
     },
     "turns": [
       {
+        "blocked_s": 0,
         "cost_usd": 0.132085,
+        "lines_added": 0,
+        "lines_removed": 0,
+        "model_s": 120,
         "read_share": 31,
         "sess_share": 0.024015454545454548,
+        "tool_s": 60,
         "week_share": 0.03221585365853659,
         "write_share": 25
       }
@@ -27,7 +37,7 @@
   },
   "context_window": 200000,
   "mode": "cost",
-  "schema": 1,
+  "schema": 2,
   "turns": [
     {
       "agent": false,
@@ -46,6 +56,8 @@
       "dctx": null,
       "dur_s": 180,
       "fresh": 17,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2300,
       "parts": [
         [

@@ -323,6 +323,26 @@ def handmade():
     def put(name, records):
         files[name] = write_bytes(name, jsonl(records))
 
+    # diff_lines' corners: every line break splitlines knows, a trailing
+    # one, an empty file, lines given as a string, a tool id that is a
+    # number, a result with no id at all, and one repeated.
+    put("diffs.jsonl", [
+        prompt(0, "write", promptId="D1", turnPosition={"turnIndex": 0}),
+        result(1, "c1", toolUseResult={
+            "type": "create", "content": "a\r\nb\rc\x0bd\x0ce\x1cf\x1dg"
+                                         "\x1eh\x85i j k\n"}),
+        result(2, "c2", toolUseResult={"type": "create", "content": ""}),
+        result(3, "c3", toolUseResult={"type": "create", "content": 5}),
+        result(4, 7, toolUseResult={"structuredPatch": [{"lines": "+-+"}]}),
+        {"type": "user", "timestamp": stamp(5), "toolUseResult": {
+            "structuredPatch": [{"lines": ["+x"]}, {}]},
+         "message": {"content": "no id"}},
+        result(6, "c1", toolUseResult={"type": "create", "content": "z"}),
+        result(7, "c4", toolUseResult={"structuredPatch": [],
+                                       "type": "create", "content": "y"}),
+        result(8, "c5", toolUseResult="text"),
+        asst(9, "d1", "done", usage=(1, 0, 0, 1), stop="end_turn"),
+    ])
     put("eta.jsonl", [
         prompt(0, "go"),
         asst(10, "m1", "Plan.\n" + FLAG + ETA + "4m"),
@@ -470,7 +490,9 @@ def session():
     that finishes after its turn was reported; with the inbox traffic
     between them, a compaction of each kind, a queued prompt and an
     interrupted request.  Agent requests are stamped across the main
-    thread's turns on purpose, so _fold_agents has to choose."""
+    thread's turns on purpose, so _fold_agents has to choose.  Edits and a
+    new file in both threads, one result repeated and one on records the
+    agent read drops, give diff_lines each of its turns."""
     files = {}
     U = (10, 1000, 5000, 200)
 
@@ -504,7 +526,12 @@ def session():
         queue(70, "enqueue", "third"),
         queue(72, "remove", "third"),
         asst(74, "r6", None, tools=[("t-b", "Bash")], usage=U),
-        result(76, "t-b", promptId="P3", turnPosition={"turnIndex": 5}),
+        result(76, "t-b", promptId="P3", turnPosition={"turnIndex": 5},
+               toolUseResult={"filePath": "/f", "structuredPatch": [
+                   {"lines": [" a", "-b", "+c", "+d"]},
+                   {"lines": ["+e", 5, ""]}, None]}),
+        result(77, "t-b", promptId="P3",
+               toolUseResult={"type": "create", "content": "x\ny\n"}),
         {"type": "system", "subtype": "compact_boundary",
          "timestamp": stamp(80), "compactMetadata": {
              "trigger": "auto", "preTokens": 50000, "durationMs": 3000,
@@ -528,6 +555,8 @@ def session():
         asst(115, "r9", None, usage=(0, 0, 0, 0)),
         asst(116, "r10", "answer", usage=(6, 300, 12000, 80),
              model="claude-sonnet-5", tools=[("t-ag4", "Agent")]),
+        result(116.5, "t-w", toolUseResult={"type": "create",
+                                            "content": "one\ntwo\nthree"}),
         asst(117, "rs", "side", usage=(1, 1, 1, 1), isSidechain=True),
         note(119, "<task-notification><task-id>a3</task-id><status>"
                   "completed</status></task-notification>",
@@ -544,7 +573,8 @@ def session():
          "message": {"content": "do it"}},
         asst(10, "a1-1", None, tools=[("x1", "Bash")],
              usage=(3, 300, 3000, 100)),
-        result(15, "x1"),
+        result(15, "x1", toolUseResult={"type": "create",
+                                        "content": "l1\nl2"}),
         asst(30, "a1-2", FLAG + ETA + "2m", usage=(1, 30, 3300, 40),
              stop="end_turn"),
         {"type": "attachment", "timestamp": stamp(64), "attachment": {
@@ -552,6 +582,8 @@ def session():
             "origin": {"kind": "coordinator"}}},
         {"type": "user", "timestamp": stamp(70), "promptId": "P2",
          "message": {"content": "continue"}},
+        result(72, "x2", toolUseResult={"structuredPatch": [
+            {"lines": ["+q"]}]}),
         asst(75, "r1", "dup of the main thread's", usage=U),
         asst(80, "a1-4", None, usage=(0, 0, 0, 0), model="<synthetic>"),
         asst(85, "a1-5", "done " + FLAG + ETA + "0s",
@@ -570,7 +602,8 @@ def session():
          "message": {"content": "report"}},
         {"type": "user", "timestamp": stamp(57), "origin": {"kind": "human"},
          "message": {"content": "typed"}},
-        result(45, "y1"),
+        result(45, "y1", toolUseResult={"structuredPatch": [
+            {"lines": ["-x", "-y", "+z"]}]}),
         asst(50, "a2-2", FLAG + ETA + "1m", usage=(1, 10, 800, 20),
              tools=[("y3", "Bash")]),
         {"type": "assistant", "requestId": "a2-3", "message": {
@@ -656,6 +689,7 @@ def section_threads(files):
                 "tools": tools, "blocked": blocked})
         blocked = []
         s.raw("tool_spans", [p], [cr.tool_spans(recs, blocked), blocked])
+        s.raw("agent_diff", [p], cr.agent_diff(recs))
 
         open_ = {}
         ends = {}

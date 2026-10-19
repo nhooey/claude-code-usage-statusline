@@ -149,6 +149,22 @@ class Transcript(NamedTuple):
     idle_at: float = 0.0    # epoch the last answer ended, while no new turn
                             # has opened since; 0 while one is open
     last_seen: float = 0.0  # its last stamped record of any kind
+    # The main thread's OWN figures, off this file alone: the tokens, cache
+    # rate and list-price cost above count the agents' requests as well,
+    # and the redesign's 🤖💬 row is the main thread apart from them.  The
+    # same requests, read the same way, before the agents are added; a
+    # compaction bills through no request, so it is in none of them.
+    own_tok_up: Optional[int] = None
+    own_tok_down: int = 0
+    own_cache_pct: int = -1
+    own_usd: float = 0.0
+    lines_added: int = 0    # what the main thread wrote, off its own tool
+    lines_removed: int = 0  # results; see agent_diff.  The payload's pair is
+                            # the session's, as Claude Code counts it.
+    prompt_id: str = ""     # the promptId and turnIndex of the turn opened
+    turn_index: Optional[int] = None    # last, whether or not it has made
+                            # a call yet: what the start line tags it with.
+                            # See _stamp_turn_id.
 
 
 EMPTY_TRANSCRIPT = Transcript(None, 0, -1, 0, "", "", "", "", 0.0, 0.0)
@@ -305,6 +321,9 @@ class Turn(NamedTuple):
                             # count of THIS file's turns restarts on a resume
                             # and would name a different turn than Claude
                             # Code does.
+    lines_added: int = 0    # what the turn WROTE, off its tool results: the
+    lines_removed: int = 0  # main thread's, and its agents' filed with the
+                            # requests that read them; see diff_lines.
 
 
 class AgentRec(NamedTuple):
@@ -324,6 +343,9 @@ class AgentRec(NamedTuple):
     model_s: float = 0.0    # the agent's 🤖 and 🔧 since its previous billed
     tool_s: float = 0.0     # request, so each second is filed where this
                             # request's tokens are; see split_clock
+    lines_added: int = 0    # what the agent wrote since its previous billed
+    lines_removed: int = 0  # request, filed with this one as its clock is;
+                            # see _read_agent_file
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -534,14 +556,22 @@ def agent_records(transcript: str, seen: Optional[set] = None,
     files = _agent_file_readings(transcript)
     for path, got in files:
         first = len(out)
-        for epoch, pid, model, fresh, cw, cr, o, k, pos in got["recs"]:
+        # A record dropped below hands what its results wrote on to the
+        # next one this file keeps, as split_clock hands on its time.
+        added = removed = 0
+        for (epoch, pid, model, fresh, cw, cr, o, k, pos,
+             la, lr) in got["recs"]:
+            added += la
+            removed += lr
             if k in seen:
                 continue
             seen.add(k)
             if not (fresh or cw or cr or o):
                 continue
             out.append(AgentRec(epoch, pid, model, fresh, cw, cr, o, k,
-                                path, pos))
+                                path, pos, lines_added=added,
+                                lines_removed=removed))
+            added = removed = 0
         if etas is not None and got["eta"] is not None:
             etas.append(tuple(got["eta"]))
         cuts, cut = [], float("-inf")
@@ -566,8 +596,11 @@ def _read_agent_file(path: str) -> Optional[dict]:
     it stops short of the two steps that look across files: `recs` holds
     every record that carries usage, zero bills and repeated requestIds
     included, as (epoch, promptId, model, fresh, cache write, cache read,
-    out, requestId, offset), and agent_records dedupes them against the
-    session and cuts the clock at the ones it keeps.  `work`, `tools` and
+    out, requestId, offset, lines added, lines removed), and agent_records
+    dedupes them against the session and cuts the clock at the ones it
+    keeps.  The lines are what the agent's tool results wrote since the
+    usage record before, so each edit is filed with the request that read
+    its result, as each second is; see diff_lines.  `work`, `tools` and
     `waiting` are that clock's spans, and `eta` is the file's live ETA as
     agent_records hands it on, or None.  None for a file that will not open.
     """
@@ -579,6 +612,8 @@ def _read_agent_file(path: str) -> Optional[dict]:
     tools: List[Tuple[float, float]] = []
     waiting: List[Tuple[float, float]] = []
     recs = []
+    wrote: set = set()
+    added = removed = 0
     try:
         fh = open(path, "rb")
     except OSError:
@@ -596,6 +631,9 @@ def _read_agent_file(path: str) -> Optional[dict]:
             live_eta(r, eta_state)
             agent_span(r, span_state, work)
             scan_tool_spans(r, pending, tools, waiting)
+            a, d = diff_lines(r, wrote)
+            added += a
+            removed += d
             if r.get("type") == "user":
                 pid = r.get("promptId") or pid
                 continue
@@ -610,7 +648,9 @@ def _read_agent_file(path: str) -> Optional[dict]:
                          u.get("cache_creation_input_tokens") or 0,
                          u.get("cache_read_input_tokens") or 0,
                          u.get("output_tokens") or 0,
-                         r.get("requestId") or m.get("id") or "?", pos))
+                         r.get("requestId") or m.get("id") or "?", pos,
+                         added, removed))
+            added = removed = 0
     close_agent_span(span_state, work)
     eta = None
     if eta_state[0] and not eta_state[1]:
@@ -1457,6 +1497,66 @@ def close_agent_span(state: list, spans: list) -> None:
     state[0] = state[1] = None
 
 
+def diff_lines(r: dict, seen: set) -> Tuple[int, int]:
+    """+adds/-removes one record's tool result wrote, counted the way a diff
+    is: over the `structuredPatch` an Edit's result carries, one hunk line
+    at a time, `+` added and `-` removed.  A Write to a NEW file has no
+    patch to count — the result is `type: "create"` with the whole file in
+    `content` — and every line of it is an addition, which is the reading
+    Claude Code's own session total takes of the same call.
+
+    `seen` holds the tool-use ids counted already, for the reason
+    _dedupe_usage dedupes on the request id: a resumed or compacted
+    transcript can carry the same result twice, and counting one edit twice
+    would double the figure.  A result with no id is counted; nothing else
+    identifies it, and dropping it would undercount.
+    """
+    res = r.get("toolUseResult")
+    if not isinstance(res, dict):
+        return 0, 0
+    tid = ""
+    for block in (r.get("message") or {}).get("content") or ():
+        if isinstance(block, dict) and block.get("tool_use_id"):
+            tid = str(block["tool_use_id"])
+            break
+    if tid:
+        if tid in seen:
+            return 0, 0
+        seen.add(tid)
+    added = removed = 0
+    patch = res.get("structuredPatch")
+    if isinstance(patch, list) and patch:
+        for hunk in patch:
+            for line in (hunk or {}).get("lines") or ():
+                if not isinstance(line, str) or not line:
+                    continue
+                if line[0] == "+":
+                    added += 1
+                elif line[0] == "-":
+                    removed += 1
+    elif res.get("type") == "create" and isinstance(res.get("content"), str):
+        added += len(res["content"].splitlines())
+    return added, removed
+
+
+def agent_diff(records: Sequence[dict]) -> Tuple[int, int]:
+    """+adds/-removes across everything one thread wrote, from its tool
+    results: diff_lines over every record, deduped across them.
+
+    The status line took the session's pair from the payload alone, which
+    Claude Code fills in for the session and says nothing about per agent
+    or per turn, so an agent row, the main thread and each turn count their
+    own this way.
+    """
+    added = removed = 0
+    seen: set = set()
+    for r in records:
+        a, d = diff_lines(r, seen)
+        added += a
+        removed += d
+    return added, removed
+
+
 def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
                     agent_etas: Sequence[Tuple[float, Optional[float]]] = (),
                     now: Optional[float] = None) -> Transcript:
@@ -1487,12 +1587,23 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     records = list(_records(path))
     reqs = _dedupe_usage(records)
     fresh = cwrite = cread = down = 0
+    own_usd = 0.0
     for r in reqs:
         u = r["message"]["usage"]
         fresh += u.get("input_tokens") or 0
         cwrite += u.get("cache_creation_input_tokens") or 0
         cread += u.get("cache_read_input_tokens") or 0
         down += u.get("output_tokens") or 0
+        # Priced per record at its own model, as read_turns prices it.
+        own_usd += add_up(_usd(r["message"].get("model"),
+                               u.get("input_tokens") or 0,
+                               u.get("cache_creation_input_tokens") or 0,
+                               u.get("cache_read_input_tokens") or 0,
+                               u.get("output_tokens") or 0))
+    own_in = fresh + cwrite + cread
+    own_up = int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread)
+    own_down = down
+    own_cache = int(100 * cread / own_in) if own_in > 0 else -1
     if agents is None:                  # no caller-supplied walk: do it here,
         own_etas = []                   # and take the agents' ETAs off it too
         agents = agent_records(path, etas=own_etas)
@@ -1569,6 +1680,9 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     blocked = []
     pending = {}
     first = open_at = prev = None
+    opened = _new_turn("", "")  # the open turn, for its promptId alone
+    wrote: set = set()          # tool-use ids diff_lines has counted
+    added = removed = 0
     # The ETA belongs to the turn it was written in: a new prompt clears it,
     # and so does the answer finishing — an assistant record that ends its
     # turn, with no work after it.  A report from a turn that is over is not
@@ -1581,6 +1695,14 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         queued = max(0, queued + queue_step(r))
         compactions += is_compaction(r)
         scan_tool_spans(r, pending, tools, blocked)
+        a, d = diff_lines(r, wrote)
+        added += a
+        removed += d
+        # The tag the start line prints: the promptId and turnIndex of the
+        # turn opened last, read as read_turns reads a turn's.
+        if turn_start_text(r) is not None:
+            opened = _new_turn("", "")
+        _stamp_turn_id(opened, r)
         if r.get("isSidechain") is not True:
             live_eta(r, eta_state)
             scan_background(r, background)
@@ -1650,6 +1772,14 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         wait_at=min(waits) if now is not None and waits else 0.0,
         idle_at=idle_at if now is not None else 0.0,
         last_seen=last_seen if now is not None else 0.0,
+        own_tok_up=own_up,
+        own_tok_down=own_down,
+        own_cache_pct=own_cache,
+        own_usd=own_usd,
+        lines_added=added,
+        lines_removed=removed,
+        prompt_id=opened["pid"],
+        turn_index=opened["tidx"],
     )
 
 
@@ -1980,7 +2110,7 @@ def _new_turn(ts: str, text: str) -> dict:
             "usd": [0.0, 0.0, 0.0, 0.0], "an": 0, "aids": [],
             "t0": ts_epoch(ts), "t1": None, "parts": [],
             "tools": [], "waits": [], "am": 0.0, "at": 0.0,
-            "pid": "", "tidx": None}
+            "pid": "", "tidx": None, "la": 0, "lr": 0}
 
 
 def _stamp_turn_id(cur: dict, r: dict) -> None:
@@ -2119,6 +2249,8 @@ def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],
         cur["aids"].append(a.request_id)
         cur["am"] += a.model_s
         cur["at"] += a.tool_s
+        cur["la"] += a.lines_added
+        cur["lr"] += a.lines_removed
         _add_usd(cur, a.epoch, a.model, a.fresh, a.cache_write, a.cache_read,
                  a.out)
     return late
@@ -2166,8 +2298,13 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
     last_stop = None    # epoch of the last Stop record, for late_agent_turn
     pending = {}        # tool calls asked for and not yet answered; see below
     ends = {}           # agent id → when it last finished; see scan_agent_end
+    wrote = set()       # tool-use ids diff_lines has counted
     for r in _records(path):
         scan_agent_end(r, ends)
+        # What the record's tool result wrote, onto the turn it is filed
+        # under below: the main thread's 💾, turn by turn.  The ids are
+        # deduped across the file, as the requests are.
+        added, removed = diff_lines(r, wrote)
         # Every tool call, onto the turn open when its RESULT arrives: the
         # scan read_transcript makes for the status line's 🔧, so the two
         # readouts count the same calls by the same rule.  `pending` spans
@@ -2193,6 +2330,8 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
                 cur = _new_turn(r.get("timestamp") or "", text)
                 turns.append(cur)
             _stamp_turn_id(cur, r)
+            cur["la"] += added
+            cur["lr"] += removed
             if pid:
                 by_pid[pid] = cur
             continue
@@ -2204,6 +2343,9 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
         if pid and cur is not None and not cur.get("compact"):
             by_pid.setdefault(pid, cur)
             _stamp_turn_id(cur, r)
+        if cur is not None:
+            cur["la"] += added
+            cur["lr"] += removed
         if r.get("subtype") == "compact_boundary":
             # A compaction is the one expensive operation that leaves NO usage
             # record anywhere — the request that summarises the conversation
@@ -2370,7 +2512,8 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
                         tool_s=tool_s, blocked_s=blocked_s,
                         agent_model_s=t["am"], agent_tool_s=t["at"],
                         prompt_id="" if t.get("compact") else t["pid"],
-                        turn_index=None if t.get("compact") else t["tidx"]))
+                        turn_index=None if t.get("compact") else t["tidx"],
+                        lines_added=t["la"], lines_removed=t["lr"]))
         if t["ctx"]:
             prev = t
     if late:
@@ -2419,6 +2562,7 @@ def late_agent_turn(t: dict, path: str = "") -> Turn:
                 parts=tuple(t["parts"]), agent_calls=t["an"],
                 agent_ids=tuple(t["aids"]), agent=True,
                 agent_model_s=t["am"], agent_tool_s=t["at"],
+                lines_added=t["la"], lines_removed=t["lr"],
                 **dict(zip(("agent_id", "agent_name"), agent_label(path))))
 
 

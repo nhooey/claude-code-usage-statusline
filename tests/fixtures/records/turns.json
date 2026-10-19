@@ -21,7 +21,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 1,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 1,
     "start_s": 1787000000.0,
@@ -29,6 +36,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000030.0,
     "user_text": "bg",
     "user_ts": "2026-08-17T20:53:20.000Z",
@@ -56,7 +64,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000032.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 1,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 1,
     "start_s": 1787000000.0,
@@ -64,6 +79,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000030.0,
     "user_text": "bg",
     "user_ts": "2026-08-17T20:53:20.000Z",
@@ -91,7 +107,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000032.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 1,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 1,
     "start_s": 1787000000.0,
@@ -99,8 +122,138 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000030.0,
     "user_text": "bg",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/diffs.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": null
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "done",
+    "asst_ts": "2026-08-17T20:53:29.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 9.0,
+    "cache_pct": 0,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 1,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 0.0,
+    "lines_added": 15,
+    "lines_removed": 1,
+    "monitors": 0,
+    "own_cache_pct": 0,
+    "own_tok_down": 1,
+    "own_tok_up": 1,
+    "own_usd": 3e-05,
+    "prompt_id": "D1",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 1,
+    "tok_up": 1,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": 0,
+    "turn_s": 1787000000.0,
+    "user_text": "write",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/diffs.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787001000.0
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "done",
+    "asst_ts": "2026-08-17T20:53:29.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 9.0,
+    "cache_pct": 0,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 1,
+    "eta": [],
+    "idle_at": 1787000009.0,
+    "last_seen": 1787000009.0,
+    "lines_added": 15,
+    "lines_removed": 1,
+    "monitors": 0,
+    "own_cache_pct": 0,
+    "own_tok_down": 1,
+    "own_tok_up": 1,
+    "own_usd": 3e-05,
+    "prompt_id": "D1",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 1,
+    "tok_up": 1,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": 0,
+    "turn_s": 1787000000.0,
+    "user_text": "write",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/diffs.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787000116.5
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "done",
+    "asst_ts": "2026-08-17T20:53:29.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 9.0,
+    "cache_pct": 0,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 1,
+    "eta": [],
+    "idle_at": 1787000009.0,
+    "last_seen": 1787000009.0,
+    "lines_added": 15,
+    "lines_removed": 1,
+    "monitors": 0,
+    "own_cache_pct": 0,
+    "own_tok_down": 1,
+    "own_tok_up": 1,
+    "own_usd": 3e-05,
+    "prompt_id": "D1",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 1,
+    "tok_up": 1,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": 0,
+    "turn_s": 1787000000.0,
+    "user_text": "write",
     "user_ts": "2026-08-17T20:53:20.000Z",
     "wait_at": 0.0
    }
@@ -129,7 +282,14 @@
     ],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -137,6 +297,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000350.0,
     "user_text": "fourth",
     "user_ts": "2026-08-17T20:58:20.000Z",
@@ -167,7 +328,14 @@
     ],
     "idle_at": 1787000360.0,
     "last_seen": 1787000360.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -175,6 +343,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 890.0,
+    "turn_index": null,
     "turn_s": 1787000350.0,
     "user_text": "fourth",
     "user_ts": "2026-08-17T20:58:20.000Z",
@@ -205,7 +374,14 @@
     ],
     "idle_at": 1787000360.0,
     "last_seen": 1787000360.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -213,6 +389,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 6.5,
+    "turn_index": null,
     "turn_s": 1787000350.0,
     "user_text": "fourth",
     "user_ts": "2026-08-17T20:58:20.000Z",
@@ -240,7 +417,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000001.0,
@@ -248,6 +432,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -275,7 +460,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000003.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000001.0,
@@ -283,6 +475,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -310,7 +503,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000003.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000001.0,
@@ -318,6 +518,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -345,7 +546,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -353,6 +561,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000010.0,
     "user_text": "null source",
     "user_ts": "2026-08-17T20:53:37.000Z",
@@ -380,7 +589,14 @@
     "eta": [],
     "idle_at": 1787000021.0,
     "last_seen": 1787000021.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -388,6 +604,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000010.0,
     "user_text": "null source",
     "user_ts": "2026-08-17T20:53:37.000Z",
@@ -415,7 +632,14 @@
     "eta": [],
     "idle_at": 1787000021.0,
     "last_seen": 1787000021.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -423,6 +647,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000010.0,
     "user_text": "null source",
     "user_ts": "2026-08-17T20:53:37.000Z",
@@ -459,7 +684,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 6,
+    "lines_removed": 1,
     "monitors": 0,
+    "own_cache_pct": 92,
+    "own_tok_down": 931,
+    "own_tok_up": 17725,
+    "own_usd": 0.10528399999999999,
+    "prompt_id": "P6",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -467,6 +699,7 @@
     "tok_up": 24941,
     "tool_at": 0.0,
     "tool_s": 3.0,
+    "turn_index": 3,
     "turn_s": 1787000110.0,
     "user_text": "last",
     "user_ts": "2026-08-17T20:55:10.000Z",
@@ -503,7 +736,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000122.0,
+    "lines_added": 6,
+    "lines_removed": 1,
     "monitors": 0,
+    "own_cache_pct": 92,
+    "own_tok_down": 931,
+    "own_tok_up": 17725,
+    "own_usd": 0.10528399999999999,
+    "prompt_id": "P6",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -511,6 +751,7 @@
     "tok_up": 24941,
     "tool_at": 0.0,
     "tool_s": 3.0,
+    "turn_index": 3,
     "turn_s": 1787000110.0,
     "user_text": "last",
     "user_ts": "2026-08-17T20:55:10.000Z",
@@ -547,7 +788,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000122.0,
+    "lines_added": 6,
+    "lines_removed": 1,
     "monitors": 0,
+    "own_cache_pct": 92,
+    "own_tok_down": 931,
+    "own_tok_up": 17725,
+    "own_usd": 0.10528399999999999,
+    "prompt_id": "P6",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -555,6 +803,7 @@
     "tok_up": 24941,
     "tool_at": 0.0,
     "tool_s": 3.0,
+    "turn_index": 3,
     "turn_s": 1787000110.0,
     "user_text": "last",
     "user_ts": "2026-08-17T20:55:10.000Z",
@@ -582,7 +831,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000042.0,
@@ -590,6 +846,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -617,7 +874,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000042.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000042.0,
@@ -625,6 +889,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -652,7 +917,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000042.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000042.0,
@@ -660,6 +932,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -687,7 +960,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 3,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 91,
+    "own_tok_down": 390,
+    "own_tok_up": 4186,
+    "own_usd": 0.03068,
+    "prompt_id": "P1",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000006.0,
@@ -695,6 +975,7 @@
     "tok_up": 4186,
     "tool_at": 0.0,
     "tool_s": 5.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -722,7 +1003,14 @@
     "eta": [],
     "idle_at": 1787000085.0,
     "last_seen": 1787000085.0,
+    "lines_added": 3,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 91,
+    "own_tok_down": 390,
+    "own_tok_up": 4186,
+    "own_usd": 0.03068,
+    "prompt_id": "P1",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000006.0,
@@ -730,6 +1018,7 @@
     "tok_up": 4186,
     "tool_at": 0.0,
     "tool_s": 5.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -757,7 +1046,14 @@
     "eta": [],
     "idle_at": 1787000085.0,
     "last_seen": 1787000085.0,
+    "lines_added": 3,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 91,
+    "own_tok_down": 390,
+    "own_tok_up": 4186,
+    "own_usd": 0.03068,
+    "prompt_id": "P1",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000006.0,
@@ -765,6 +1061,7 @@
     "tok_up": 4186,
     "tool_at": 0.0,
     "tool_s": 5.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -795,7 +1092,14 @@
     ],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 1,
+    "lines_removed": 2,
     "monitors": 0,
+    "own_cache_pct": 52,
+    "own_tok_down": 92,
+    "own_tok_up": 1509,
+    "own_usd": 0.004541000000000001,
+    "prompt_id": "P2",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000025.0,
@@ -803,6 +1107,7 @@
     "tok_up": 1509,
     "tool_at": 0.0,
     "tool_s": 15.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -833,7 +1138,14 @@
     ],
     "idle_at": 0.0,
     "last_seen": 1787000058.0,
+    "lines_added": 1,
+    "lines_removed": 2,
     "monitors": 0,
+    "own_cache_pct": 52,
+    "own_tok_down": 92,
+    "own_tok_up": 1509,
+    "own_usd": 0.004541000000000001,
+    "prompt_id": "P2",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000025.0,
@@ -841,6 +1153,7 @@
     "tok_up": 1509,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -871,7 +1184,14 @@
     ],
     "idle_at": 0.0,
     "last_seen": 1787000058.0,
+    "lines_added": 1,
+    "lines_removed": 2,
     "monitors": 0,
+    "own_cache_pct": 52,
+    "own_tok_down": 92,
+    "own_tok_up": 1509,
+    "own_usd": 0.004541000000000001,
+    "prompt_id": "P2",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000025.0,
@@ -879,6 +1199,7 @@
     "tok_up": 1509,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -906,7 +1227,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 93,
+    "own_tok_down": 30,
+    "own_tok_up": 1013,
+    "own_usd": 0.005815,
+    "prompt_id": "P4",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000091.0,
@@ -914,6 +1242,7 @@
     "tok_up": 1013,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -941,7 +1270,14 @@
     "eta": [],
     "idle_at": 1787000118.0,
     "last_seen": 1787000118.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 93,
+    "own_tok_down": 30,
+    "own_tok_up": 1013,
+    "own_usd": 0.005815,
+    "prompt_id": "P4",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000091.0,
@@ -949,6 +1285,7 @@
     "tok_up": 1013,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -976,7 +1313,14 @@
     "eta": [],
     "idle_at": 1787000118.0,
     "last_seen": 1787000118.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 93,
+    "own_tok_down": 30,
+    "own_tok_up": 1013,
+    "own_usd": 0.005815,
+    "prompt_id": "P4",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000091.0,
@@ -984,6 +1328,7 @@
     "tok_up": 1013,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1014,7 +1359,14 @@
     ],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "P6",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000116.0,
@@ -1022,6 +1374,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1052,7 +1405,14 @@
     ],
     "idle_at": 0.0,
     "last_seen": 1787000118.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "P6",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000116.0,
@@ -1060,6 +1420,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 882.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1090,7 +1451,14 @@
     ],
     "idle_at": 0.0,
     "last_seen": 1787000118.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "P6",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000116.0,
@@ -1098,6 +1466,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1125,7 +1494,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 0,
+    "own_tok_down": 0,
+    "own_tok_up": 1,
+    "own_usd": 5e-06,
+    "prompt_id": "P4",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000093.0,
@@ -1133,6 +1509,7 @@
     "tok_up": 1,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1160,7 +1537,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000113.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 0,
+    "own_tok_down": 0,
+    "own_tok_up": 1,
+    "own_usd": 5e-06,
+    "prompt_id": "P4",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000093.0,
@@ -1168,6 +1552,7 @@
     "tok_up": 1,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1195,7 +1580,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000113.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 0,
+    "own_tok_down": 0,
+    "own_tok_up": 1,
+    "own_usd": 5e-06,
+    "prompt_id": "P4",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000093.0,
@@ -1203,6 +1595,7 @@
     "tok_up": 1,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1230,7 +1623,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 91,
+    "own_tok_down": 15,
+    "own_tok_up": 495,
+    "own_usd": 0.00213,
+    "prompt_id": "wf-prompt",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000040.0,
@@ -1238,6 +1638,7 @@
     "tok_up": 495,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1265,7 +1666,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000100.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 91,
+    "own_tok_down": 15,
+    "own_tok_up": 495,
+    "own_usd": 0.00213,
+    "prompt_id": "wf-prompt",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000040.0,
@@ -1273,6 +1681,7 @@
     "tok_up": 495,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1300,7 +1709,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000100.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 91,
+    "own_tok_down": 15,
+    "own_tok_up": 495,
+    "own_usd": 0.00213,
+    "prompt_id": "wf-prompt",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000040.0,
@@ -1308,6 +1724,7 @@
     "tok_up": 495,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1335,7 +1752,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000041.0,
@@ -1343,6 +1767,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1370,7 +1795,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000041.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000041.0,
@@ -1378,6 +1810,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1405,7 +1838,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000041.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 33,
+    "own_tok_down": 1,
+    "own_tok_up": 3,
+    "own_usd": 4.05e-05,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000041.0,
@@ -1413,6 +1853,7 @@
     "tok_up": 3,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -1440,7 +1881,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -1448,6 +1896,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 10.0,
+    "turn_index": null,
     "turn_s": 1787000200.0,
     "user_text": "next",
     "user_ts": "2026-08-17T20:56:40.000Z",
@@ -1475,7 +1924,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000215.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -1483,6 +1939,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1787000200.0,
     "user_text": "next",
     "user_ts": "2026-08-17T20:56:40.000Z",
@@ -1510,7 +1967,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1787000215.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1787000000.0,
@@ -1518,6 +1982,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 10.0,
+    "turn_index": null,
     "turn_s": 1787000200.0,
     "user_text": "next",
     "user_ts": "2026-08-17T20:56:40.000Z",
@@ -1545,7 +2010,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 7900,
+    "own_tok_up": 32428,
+    "own_usd": 0.35964,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1553,6 +2025,7 @@
     "tok_up": 32428,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843800.0,
     "user_text": "And the one after that, please.",
     "user_ts": "2026-08-16T01:30:00Z",
@@ -1580,7 +2053,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843860.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 7900,
+    "own_tok_up": 32428,
+    "own_usd": 0.35964,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1588,6 +2068,7 @@
     "tok_up": 32428,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843800.0,
     "user_text": "And the one after that, please.",
     "user_ts": "2026-08-16T01:30:00Z",
@@ -1615,7 +2096,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843860.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 7900,
+    "own_tok_up": 32428,
+    "own_usd": 0.35964,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1623,6 +2111,7 @@
     "tok_up": 32428,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843800.0,
     "user_text": "And the one after that, please.",
     "user_ts": "2026-08-16T01:30:00Z",
@@ -1650,7 +2139,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 2000,
+    "own_tok_up": 46685,
+    "own_usd": 0.2834255,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1658,6 +2154,7 @@
     "tok_up": 46685,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843200.0,
     "user_text": "Carrying on after the compaction.",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -1685,7 +2182,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843260.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 2000,
+    "own_tok_up": 46685,
+    "own_usd": 0.2834255,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1693,6 +2197,7 @@
     "tok_up": 46685,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843200.0,
     "user_text": "Carrying on after the compaction.",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -1720,7 +2225,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843260.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 2000,
+    "own_tok_up": 46685,
+    "own_usd": 0.2834255,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1728,6 +2240,7 @@
     "tok_up": 46685,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843200.0,
     "user_text": "Carrying on after the compaction.",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -1755,7 +2268,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 70,
+    "own_tok_down": 640,
+    "own_tok_up": 11220,
+    "own_usd": 0.0721,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1763,6 +2283,7 @@
     "tok_up": 11220,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "The only thing anyone said.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -1790,7 +2311,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842660.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 70,
+    "own_tok_down": 640,
+    "own_tok_up": 11220,
+    "own_usd": 0.0721,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1798,6 +2326,7 @@
     "tok_up": 11220,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "The only thing anyone said.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -1825,7 +2354,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842660.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 70,
+    "own_tok_down": 640,
+    "own_tok_up": 11220,
+    "own_usd": 0.0721,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1833,6 +2369,7 @@
     "tok_up": 11220,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "The only thing anyone said.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -1860,7 +2397,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 450,
+    "own_tok_up": 6307,
+    "own_usd": 0.042785000000000004,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1868,6 +2412,7 @@
     "tok_up": 6307,
     "tool_at": 0.0,
     "tool_s": 180.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Run the probe and tell me what it said.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -1895,7 +2440,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842840.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 450,
+    "own_tok_up": 6307,
+    "own_usd": 0.042785000000000004,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1903,6 +2455,7 @@
     "tok_up": 6307,
     "tool_at": 0.0,
     "tool_s": 180.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Run the probe and tell me what it said.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -1930,7 +2483,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842840.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 450,
+    "own_tok_up": 6307,
+    "own_usd": 0.042785000000000004,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1938,6 +2498,7 @@
     "tok_up": 6307,
     "tool_at": 0.0,
     "tool_s": 180.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Run the probe and tell me what it said.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -1965,7 +2526,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 99,
+    "own_tok_down": 2700,
+    "own_tok_up": 107416,
+    "own_usd": 0.60458,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -1973,6 +2541,7 @@
     "tok_up": 107416,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Delegate something.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2000,7 +2569,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842660.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 99,
+    "own_tok_down": 2700,
+    "own_tok_up": 107416,
+    "own_usd": 0.60458,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2008,6 +2584,7 @@
     "tok_up": 107416,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Delegate something.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2035,7 +2612,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842660.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 99,
+    "own_tok_down": 2700,
+    "own_tok_up": 107416,
+    "own_usd": 0.60458,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2043,6 +2627,7 @@
     "tok_up": 107416,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Delegate something.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2070,7 +2655,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 1100,
+    "own_tok_up": 9509,
+    "own_usd": 0.075045,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2078,6 +2670,7 @@
     "tok_up": 9509,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Start something and then type over it.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2105,7 +2698,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842720.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 1100,
+    "own_tok_up": 9509,
+    "own_usd": 0.075045,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2113,6 +2713,7 @@
     "tok_up": 9509,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Start something and then type over it.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2140,7 +2741,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842720.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 1100,
+    "own_tok_up": 9509,
+    "own_usd": 0.075045,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2148,6 +2756,7 @@
     "tok_up": 9509,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Start something and then type over it.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2175,7 +2784,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 0.0,
@@ -2183,6 +2799,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2210,7 +2827,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 0.0,
@@ -2218,6 +2842,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2245,7 +2870,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 0.0,
@@ -2253,6 +2885,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2280,7 +2913,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 6250,
+    "own_tok_up": 35630,
+    "own_usd": 0.33440000000000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842300.0,
@@ -2288,6 +2928,7 @@
     "tok_up": 35630,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843800.0,
     "user_text": "Another Claude session sent a message:¶ <cross-session-message from=\"uds:/tmp/cc-socks/54251.sock\" from-name=\"Market\" from-mode=\"prompting\">¶ Second of two, and this one is answered.¶ </cross-session-message>",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2315,7 +2956,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843860.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 6250,
+    "own_tok_up": 35630,
+    "own_usd": 0.33440000000000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842300.0,
@@ -2323,6 +2971,7 @@
     "tok_up": 35630,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843800.0,
     "user_text": "Another Claude session sent a message:¶ <cross-session-message from=\"uds:/tmp/cc-socks/54251.sock\" from-name=\"Market\" from-mode=\"prompting\">¶ Second of two, and this one is answered.¶ </cross-session-message>",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2350,7 +2999,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843860.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 6250,
+    "own_tok_up": 35630,
+    "own_usd": 0.33440000000000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842300.0,
@@ -2358,6 +3014,7 @@
     "tok_up": 35630,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843800.0,
     "user_text": "Another Claude session sent a message:¶ <cross-session-message from=\"uds:/tmp/cc-socks/54251.sock\" from-name=\"Market\" from-mode=\"prompting\">¶ Second of two, and this one is answered.¶ </cross-session-message>",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2385,7 +3042,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 3600,
+    "own_tok_up": 28032,
+    "own_usd": 0.23016,
+    "prompt_id": "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2393,6 +3057,7 @@
     "tok_up": 68399,
     "tool_at": 0.0,
     "tool_s": 180.0,
+    "turn_index": null,
     "turn_s": 1786843200.0,
     "user_text": "Now have a subagent read the strategy.",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2420,7 +3085,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843500.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 3600,
+    "own_tok_up": 28032,
+    "own_usd": 0.23016,
+    "prompt_id": "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2428,6 +3100,7 @@
     "tok_up": 68399,
     "tool_at": 0.0,
     "tool_s": 180.0,
+    "turn_index": null,
     "turn_s": 1786843200.0,
     "user_text": "Now have a subagent read the strategy.",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2455,7 +3128,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843500.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 3600,
+    "own_tok_up": 28032,
+    "own_usd": 0.23016,
+    "prompt_id": "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2463,6 +3143,7 @@
     "tok_up": 68399,
     "tool_at": 0.0,
     "tool_s": 180.0,
+    "turn_index": null,
     "turn_s": 1786843200.0,
     "user_text": "Now have a subagent read the strategy.",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2490,7 +3171,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 4900,
+    "own_tok_up": 26729,
+    "own_usd": 0.256145,
+    "prompt_id": "3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842660.0,
@@ -2498,6 +3186,7 @@
     "tok_up": 26729,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2525,7 +3214,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 4900,
+    "own_tok_up": 26729,
+    "own_usd": 0.256145,
+    "prompt_id": "3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842660.0,
@@ -2533,6 +3229,7 @@
     "tok_up": 26729,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2560,7 +3257,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 4900,
+    "own_tok_up": 26729,
+    "own_usd": 0.256145,
+    "prompt_id": "3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842660.0,
@@ -2568,6 +3272,7 @@
     "tok_up": 26729,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2595,7 +3300,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 90,
+    "own_tok_down": 5500,
+    "own_tok_up": 13638,
+    "own_usd": 0.08227600000000002,
+    "prompt_id": "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843260.0,
@@ -2603,6 +3315,7 @@
     "tok_up": 13638,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2630,7 +3343,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 90,
+    "own_tok_down": 5500,
+    "own_tok_up": 13638,
+    "own_usd": 0.08227600000000002,
+    "prompt_id": "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843260.0,
@@ -2638,6 +3358,7 @@
     "tok_up": 13638,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2665,7 +3386,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 90,
+    "own_tok_down": 5500,
+    "own_tok_up": 13638,
+    "own_usd": 0.08227600000000002,
+    "prompt_id": "5e1f0a77-8c3b-4d2a-a6f9-0b7c4e1d9e22",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843260.0,
@@ -2673,6 +3401,7 @@
     "tok_up": 13638,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -2700,7 +3429,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 96,
+    "own_tok_down": 4400,
+    "own_tok_up": 26625,
+    "own_usd": 0.24312500000000004,
+    "prompt_id": "8f37748e-47ff-492b-888b-0163beb40189",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2708,6 +3444,7 @@
     "tok_up": 26625,
     "tool_at": 0.0,
     "tool_s": 60.0,
+    "turn_index": 12,
     "turn_s": 1786843200.0,
     "user_text": "And this one?",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2735,7 +3472,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843380.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 96,
+    "own_tok_down": 4400,
+    "own_tok_up": 26625,
+    "own_usd": 0.24312500000000004,
+    "prompt_id": "8f37748e-47ff-492b-888b-0163beb40189",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2743,6 +3487,7 @@
     "tok_up": 26625,
     "tool_at": 0.0,
     "tool_s": 60.0,
+    "turn_index": 12,
     "turn_s": 1786843200.0,
     "user_text": "And this one?",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2770,7 +3515,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786843380.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 96,
+    "own_tok_down": 4400,
+    "own_tok_up": 26625,
+    "own_usd": 0.24312500000000004,
+    "prompt_id": "8f37748e-47ff-492b-888b-0163beb40189",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2778,6 +3530,7 @@
     "tok_up": 26625,
     "tool_at": 0.0,
     "tool_s": 60.0,
+    "turn_index": 12,
     "turn_s": 1786843200.0,
     "user_text": "And this one?",
     "user_ts": "2026-08-16T01:20:00Z",
@@ -2805,7 +3558,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 96,
+    "own_tok_down": 2300,
+    "own_tok_up": 14917,
+    "own_usd": 0.132085,
+    "prompt_id": "c0ffee00-1111-4222-8333-444444444444",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2813,6 +3573,7 @@
     "tok_up": 14917,
     "tool_at": 0.0,
     "tool_s": 60.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Run the probe.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2840,7 +3601,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842780.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 96,
+    "own_tok_down": 2300,
+    "own_tok_up": 14917,
+    "own_usd": 0.132085,
+    "prompt_id": "c0ffee00-1111-4222-8333-444444444444",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2848,6 +3616,7 @@
     "tok_up": 14917,
     "tool_at": 0.0,
     "tool_s": 60.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Run the probe.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2875,7 +3644,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786842780.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 96,
+    "own_tok_down": 2300,
+    "own_tok_up": 14917,
+    "own_usd": 0.132085,
+    "prompt_id": "c0ffee00-1111-4222-8333-444444444444",
     "queued": 0,
     "shells": 0,
     "start_s": 1786842600.0,
@@ -2883,6 +3659,7 @@
     "tok_up": 14917,
     "tool_at": 0.0,
     "tool_s": 60.0,
+    "turn_index": null,
     "turn_s": 1786842600.0,
     "user_text": "Run the probe.",
     "user_ts": "2026-08-16T01:10:00Z",
@@ -2910,7 +3687,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 700,
+    "own_tok_up": 6012,
+    "own_usd": 0.047560000000000005,
+    "prompt_id": "p-fork",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -2918,6 +3702,7 @@
     "tok_up": 38462,
     "tool_at": 0.0,
     "tool_s": 600.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Fork off and read the two exhibits.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -2945,7 +3730,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 700,
+    "own_tok_up": 6012,
+    "own_usd": 0.047560000000000005,
+    "prompt_id": "p-fork",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -2953,6 +3745,7 @@
     "tok_up": 38462,
     "tool_at": 0.0,
     "tool_s": 600.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Fork off and read the two exhibits.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -2980,7 +3773,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 97,
+    "own_tok_down": 700,
+    "own_tok_up": 6012,
+    "own_usd": 0.047560000000000005,
+    "prompt_id": "p-fork",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -2988,6 +3788,7 @@
     "tok_up": 38462,
     "tool_at": 0.0,
     "tool_s": 600.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Fork off and read the two exhibits.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3015,7 +3816,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 3500,
+    "own_tok_up": 32450,
+    "own_usd": 0.24975,
+    "prompt_id": "p-fork",
     "queued": 0,
     "shells": 0,
     "start_s": 1786844100.0,
@@ -3023,6 +3831,7 @@
     "tok_up": 32450,
     "tool_at": 0.0,
     "tool_s": 100.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -3050,7 +3859,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 3500,
+    "own_tok_up": 32450,
+    "own_usd": 0.24975,
+    "prompt_id": "p-fork",
     "queued": 0,
     "shells": 0,
     "start_s": 1786844100.0,
@@ -3058,6 +3874,7 @@
     "tok_up": 32450,
     "tool_at": 0.0,
     "tool_s": 100.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -3085,7 +3902,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 95,
+    "own_tok_down": 3500,
+    "own_tok_up": 32450,
+    "own_usd": 0.24975,
+    "prompt_id": "p-fork",
     "queued": 0,
     "shells": 0,
     "start_s": 1786844100.0,
@@ -3093,6 +3917,7 @@
     "tok_up": 32450,
     "tool_at": 0.0,
     "tool_s": 100.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -3120,7 +3945,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 40,
+    "own_tok_down": 1800,
+    "own_tok_up": 184800,
+    "own_usd": 0.9690000000000001,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3128,6 +3960,7 @@
     "tok_up": 184800,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something cheap.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3155,7 +3988,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 40,
+    "own_tok_down": 1800,
+    "own_tok_up": 184800,
+    "own_usd": 0.9690000000000001,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3163,6 +4003,7 @@
     "tok_up": 184800,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something cheap.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3190,7 +4031,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 40,
+    "own_tok_down": 1800,
+    "own_tok_up": 184800,
+    "own_usd": 0.9690000000000001,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3198,6 +4046,7 @@
     "tok_up": 184800,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something cheap.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3225,7 +4074,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 70,
+    "own_tok_down": 1800,
+    "own_tok_up": 86000,
+    "own_usd": 0.475,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3233,6 +4089,7 @@
     "tok_up": 86000,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something cheap.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3260,7 +4117,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 70,
+    "own_tok_down": 1800,
+    "own_tok_up": 86000,
+    "own_usd": 0.475,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3268,6 +4132,7 @@
     "tok_up": 86000,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something cheap.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3295,7 +4160,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 70,
+    "own_tok_down": 1800,
+    "own_tok_up": 86000,
+    "own_usd": 0.475,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3303,6 +4175,7 @@
     "tok_up": 86000,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something cheap.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3330,7 +4203,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 0.0,
@@ -3338,6 +4218,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -3365,7 +4246,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 0.0,
@@ -3373,6 +4261,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -3400,7 +4289,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 0.0,
@@ -3408,6 +4304,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -3435,7 +4332,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 841300,
+    "own_tok_up": 2722123,
+    "own_usd": 34.64311500000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786813520.0,
@@ -3443,6 +4347,7 @@
     "tok_up": 2722123,
     "tool_at": 0.0,
     "tool_s": 3450.0,
+    "turn_index": null,
     "turn_s": 1786846520.0,
     "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
     "user_ts": "2026-08-16T02:15:20Z",
@@ -3470,7 +4375,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786846820.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 841300,
+    "own_tok_up": 2722123,
+    "own_usd": 34.64311500000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786813520.0,
@@ -3478,6 +4390,7 @@
     "tok_up": 2722123,
     "tool_at": 0.0,
     "tool_s": 3450.0,
+    "turn_index": null,
     "turn_s": 1786846520.0,
     "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
     "user_ts": "2026-08-16T02:15:20Z",
@@ -3505,7 +4418,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786846820.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 841300,
+    "own_tok_up": 2722123,
+    "own_usd": 34.64311500000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786813520.0,
@@ -3513,6 +4433,7 @@
     "tok_up": 2722123,
     "tool_at": 0.0,
     "tool_s": 3450.0,
+    "turn_index": null,
     "turn_s": 1786846520.0,
     "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
     "user_ts": "2026-08-16T02:15:20Z",
@@ -3540,7 +4461,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 841300,
+    "own_tok_up": 2722123,
+    "own_usd": 34.64311500000003,
+    "prompt_id": "",
     "queued": 2,
     "shells": 0,
     "start_s": 1786813520.0,
@@ -3548,6 +4476,7 @@
     "tok_up": 2722123,
     "tool_at": 0.0,
     "tool_s": 3450.0,
+    "turn_index": null,
     "turn_s": 1786846520.0,
     "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
     "user_ts": "2026-08-16T02:15:20Z",
@@ -3575,7 +4504,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786846940.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 841300,
+    "own_tok_up": 2722123,
+    "own_usd": 34.64311500000003,
+    "prompt_id": "",
     "queued": 2,
     "shells": 0,
     "start_s": 1786813520.0,
@@ -3583,6 +4519,7 @@
     "tok_up": 2722123,
     "tool_at": 0.0,
     "tool_s": 3450.0,
+    "turn_index": null,
     "turn_s": 1786846520.0,
     "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
     "user_ts": "2026-08-16T02:15:20Z",
@@ -3610,7 +4547,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786846940.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 841300,
+    "own_tok_up": 2722123,
+    "own_usd": 34.64311500000003,
+    "prompt_id": "",
     "queued": 2,
     "shells": 0,
     "start_s": 1786813520.0,
@@ -3618,6 +4562,7 @@
     "tok_up": 2722123,
     "tool_at": 0.0,
     "tool_s": 3450.0,
+    "turn_index": null,
     "turn_s": 1786846520.0,
     "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
     "user_ts": "2026-08-16T02:15:20Z",
@@ -3645,7 +4590,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 93,
+    "own_tok_down": 999600,
+    "own_tok_up": 142000,
+    "own_usd": 25.700000000000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3653,6 +4605,7 @@
     "tok_up": 142000,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something long.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3680,7 +4633,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 93,
+    "own_tok_down": 999600,
+    "own_tok_up": 142000,
+    "own_usd": 25.700000000000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3688,6 +4648,7 @@
     "tok_up": 142000,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something long.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3715,7 +4676,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 1786844600.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 93,
+    "own_tok_down": 999600,
+    "own_tok_up": 142000,
+    "own_usd": 25.700000000000003,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 1786843400.0,
@@ -3723,6 +4691,7 @@
     "tok_up": 142000,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 1786843400.0,
     "user_text": "Something long.",
     "user_ts": "2026-08-16T01:23:20Z",
@@ -3748,7 +4717,14 @@
     "eta": [],
     "idle_at": 0.0,
     "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": -1,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
     "queued": 0,
     "shells": 0,
     "start_s": 0.0,
@@ -3756,6 +4732,7 @@
     "tok_up": 0,
     "tool_at": 0.0,
     "tool_s": 0.0,
+    "turn_index": null,
     "turn_s": 0.0,
     "user_text": "",
     "user_ts": "",
@@ -3788,6 +4765,8 @@
       "dctx": null,
       "dur_s": 20.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -3818,6 +4797,8 @@
       "dctx": null,
       "dur_s": 2.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -3854,6 +4835,8 @@
      "dctx": null,
      "dur_s": 20.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -3891,6 +4874,8 @@
      "dctx": null,
      "dur_s": 20.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -3931,6 +4916,8 @@
      "dctx": null,
      "dur_s": 2.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -3968,6 +4955,8 @@
      "dctx": null,
      "dur_s": 2.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4009,6 +4998,8 @@
       "dctx": null,
       "dur_s": 20.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4039,6 +5030,8 @@
       "dctx": null,
       "dur_s": 2.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4083,6 +5076,8 @@
      "dctx": null,
      "dur_s": 20.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4113,6 +5108,8 @@
      "dctx": null,
      "dur_s": 2.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4125,6 +5122,240 @@
      "usd_cw": 0.0,
      "usd_in": 0.0,
      "usd_out": 0.0
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/diffs.jsonl",
+    null
+   ],
+   "fn": "read_turns",
+   "kw": {},
+   "out": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 0,
+      "cache_write": 0,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1,
+      "dctx": null,
+      "dur_s": 9.0,
+      "fresh": 1,
+      "lines_added": 15,
+      "lines_removed": 1,
+      "out": 1,
+      "parts": [
+       [
+        1787000009.0,
+        3e-05
+       ]
+      ],
+      "prompt_id": "D1",
+      "reported": false,
+      "text": "write",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 0,
+      "usd_cr": 0.0,
+      "usd_cw": 0.0,
+      "usd_in": 5e-06,
+      "usd_out": 2.5e-05
+     }
+    ],
+    {}
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 0,
+     "cache_write": 0,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1,
+     "dctx": null,
+     "dur_s": 9.0,
+     "fresh": 1,
+     "lines_added": 15,
+     "lines_removed": 1,
+     "out": 1,
+     "parts": [
+      [
+       1787000009.0,
+       3e-05
+      ]
+     ],
+     "prompt_id": "D1",
+     "reported": false,
+     "text": "write",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 0,
+     "usd_cr": 0.0,
+     "usd_cw": 0.0,
+     "usd_in": 5e-06,
+     "usd_out": 2.5e-05
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 9.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 0,
+     "cache_write": 0,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1,
+     "dctx": null,
+     "dur_s": 9.0,
+     "fresh": 1,
+     "lines_added": 15,
+     "lines_removed": 1,
+     "out": 1,
+     "parts": [
+      [
+       1787000009.0,
+       3e-05
+      ]
+     ],
+     "prompt_id": "D1",
+     "reported": false,
+     "text": "write",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 0,
+     "usd_cr": 0.0,
+     "usd_cw": 0.0,
+     "usd_in": 5e-06,
+     "usd_out": 2.5e-05
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    9.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 0,
+      "cache_write": 0,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1,
+      "dctx": null,
+      "dur_s": 9.0,
+      "fresh": 1,
+      "lines_added": 15,
+      "lines_removed": 1,
+      "out": 1,
+      "parts": [
+       [
+        1787000009.0,
+        3e-05
+       ]
+      ],
+      "prompt_id": "D1",
+      "reported": false,
+      "text": "write",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 0,
+      "usd_cr": 0.0,
+      "usd_cw": 0.0,
+      "usd_in": 5e-06,
+      "usd_out": 2.5e-05
+     }
+    ]
+   ],
+   "fn": "_settled",
+   "kw": {},
+   "out": true
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/diffs.jsonl",
+    null
+   ],
+   "fn": "read_turns_settled",
+   "kw": {},
+   "out": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 0,
+     "cache_write": 0,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1,
+     "dctx": null,
+     "dur_s": 9.0,
+     "fresh": 1,
+     "lines_added": 15,
+     "lines_removed": 1,
+     "out": 1,
+     "parts": [
+      [
+       1787000009.0,
+       3e-05
+      ]
+     ],
+     "prompt_id": "D1",
+     "reported": false,
+     "text": "write",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 0,
+     "usd_cr": 0.0,
+     "usd_cw": 0.0,
+     "usd_in": 5e-06,
+     "usd_out": 2.5e-05
     }
    ]
   },
@@ -4154,6 +5385,8 @@
       "dctx": null,
       "dur_s": 81.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4184,6 +5417,8 @@
       "dctx": null,
       "dur_s": 11.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4214,6 +5449,8 @@
       "dctx": null,
       "dur_s": 20.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4244,6 +5481,8 @@
       "dctx": null,
       "dur_s": 40.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4274,6 +5513,8 @@
       "dctx": null,
       "dur_s": 10.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4310,6 +5551,8 @@
      "dctx": null,
      "dur_s": 81.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4347,6 +5590,8 @@
      "dctx": null,
      "dur_s": 81.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4387,6 +5632,8 @@
      "dctx": null,
      "dur_s": 11.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4424,6 +5671,8 @@
      "dctx": null,
      "dur_s": 11.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4464,6 +5713,8 @@
      "dctx": null,
      "dur_s": 20.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4501,6 +5752,8 @@
      "dctx": null,
      "dur_s": 20.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4541,6 +5794,8 @@
      "dctx": null,
      "dur_s": 40.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4578,6 +5833,8 @@
      "dctx": null,
      "dur_s": 40.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4618,6 +5875,8 @@
      "dctx": null,
      "dur_s": 10.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4655,6 +5914,8 @@
      "dctx": null,
      "dur_s": 10.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4696,6 +5957,8 @@
       "dctx": null,
       "dur_s": 81.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4726,6 +5989,8 @@
       "dctx": null,
       "dur_s": 11.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4756,6 +6021,8 @@
       "dctx": null,
       "dur_s": 20.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4786,6 +6053,8 @@
       "dctx": null,
       "dur_s": 40.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4816,6 +6085,8 @@
       "dctx": null,
       "dur_s": 10.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -4860,6 +6131,8 @@
      "dctx": null,
      "dur_s": 81.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4890,6 +6163,8 @@
      "dctx": null,
      "dur_s": 11.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4920,6 +6195,8 @@
      "dctx": null,
      "dur_s": 20.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4950,6 +6227,8 @@
      "dctx": null,
      "dur_s": 40.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -4980,6 +6259,8 @@
      "dctx": null,
      "dur_s": 10.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5050,6 +6331,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5080,6 +6363,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5110,6 +6395,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5140,6 +6427,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5170,6 +6459,8 @@
       "dctx": null,
       "dur_s": 3.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5206,6 +6497,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5243,6 +6536,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5283,6 +6578,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5320,6 +6617,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5360,6 +6659,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5397,6 +6698,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5437,6 +6740,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5474,6 +6779,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5514,6 +6821,8 @@
      "dctx": null,
      "dur_s": 3.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5551,6 +6860,8 @@
      "dctx": null,
      "dur_s": 3.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5592,6 +6903,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5622,6 +6935,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5652,6 +6967,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5682,6 +6999,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5712,6 +7031,8 @@
       "dctx": null,
       "dur_s": 3.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -5756,6 +7077,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5786,6 +7109,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5816,6 +7141,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5846,6 +7173,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5876,6 +7205,8 @@
      "dctx": null,
      "dur_s": 3.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -5920,6 +7251,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 19,
+      "lines_added": 2,
+      "lines_removed": 0,
       "out": 390,
       "parts": [
        [
@@ -5973,6 +7306,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 29,
+      "lines_added": 2,
+      "lines_removed": 2,
       "out": 417,
       "parts": [
        [
@@ -6034,8 +7369,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -6071,6 +7408,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -6110,6 +7449,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 19,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 75,
       "parts": [
        [
@@ -6157,6 +7498,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -6190,6 +7533,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -6248,6 +7593,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 30,
       "parts": [
        [
@@ -6299,6 +7646,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -6356,6 +7705,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -6419,6 +7770,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 29,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 417,
      "parts": [
       [
@@ -6495,6 +7848,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 29,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 417,
      "parts": [
       [
@@ -6566,8 +7921,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -6589,7 +7946,7 @@
    ],
    "fn": "turn_model_s",
    "kw": {},
-   "out": 2.0
+   "out": 3.0
   },
   {
    "args": [
@@ -6608,8 +7965,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -6632,7 +7991,7 @@
    "fn": "turn_times",
    "kw": {},
    "out": [
-    2.0,
+    3.0,
     2.0
    ]
   },
@@ -6655,6 +8014,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -6697,6 +8058,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -6746,6 +8109,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -6804,6 +8169,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -6861,6 +8228,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -6898,6 +8267,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -6941,6 +8312,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -7006,6 +8379,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -7074,6 +8449,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -7123,6 +8500,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -7176,6 +8555,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 19,
+      "lines_added": 2,
+      "lines_removed": 0,
       "out": 390,
       "parts": [
        [
@@ -7229,6 +8610,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 29,
+      "lines_added": 2,
+      "lines_removed": 2,
       "out": 417,
       "parts": [
        [
@@ -7290,8 +8673,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -7327,6 +8712,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -7366,6 +8753,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 19,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 75,
       "parts": [
        [
@@ -7413,6 +8802,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -7446,6 +8837,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -7504,6 +8897,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 30,
       "parts": [
        [
@@ -7560,6 +8955,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -7613,6 +9010,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 29,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 417,
      "parts": [
       [
@@ -7674,8 +9073,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -7711,6 +9112,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -7750,6 +9153,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -7797,6 +9202,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -7830,6 +9237,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -7888,6 +9297,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -7916,8 +9327,8 @@
    "args": [
     "tests/fixtures/records/inputs/session.jsonl",
     {
-     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2206,
-     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1641,
+     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2453,
+     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1712,
      "tests/fixtures/records/inputs/session/subagents/workflows/wf_1/agent-w1.jsonl": 391
     }
    ],
@@ -7944,6 +9355,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2,
       "parts": [
        [
@@ -7982,6 +9395,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 19,
+      "lines_added": 2,
+      "lines_removed": 0,
       "out": 390,
       "parts": [
        [
@@ -8034,6 +9449,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 28,
+      "lines_added": 2,
+      "lines_removed": 2,
       "out": 415,
       "parts": [
        [
@@ -8091,8 +9508,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -8128,6 +9547,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -8167,6 +9588,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 19,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 75,
       "parts": [
        [
@@ -8214,6 +9637,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -8247,6 +9672,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -8305,6 +9732,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 30,
       "parts": [
        [
@@ -8355,6 +9784,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2,
      "parts": [
       [
@@ -8399,6 +9830,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2,
      "parts": [
       [
@@ -8447,6 +9880,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -8504,6 +9939,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -8566,6 +10003,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 28,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 415,
      "parts": [
       [
@@ -8637,6 +10076,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 28,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 415,
      "parts": [
       [
@@ -8704,8 +10145,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -8727,7 +10170,7 @@
    ],
    "fn": "turn_model_s",
    "kw": {},
-   "out": 2.0
+   "out": 3.0
   },
   {
    "args": [
@@ -8746,8 +10189,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -8770,7 +10215,7 @@
    "fn": "turn_times",
    "kw": {},
    "out": [
-    2.0,
+    3.0,
     2.0
    ]
   },
@@ -8793,6 +10238,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -8835,6 +10282,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -8884,6 +10333,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -8942,6 +10393,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -8999,6 +10452,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -9036,6 +10491,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -9079,6 +10536,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -9144,6 +10603,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -9212,6 +10673,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -9261,6 +10724,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -9313,6 +10778,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2,
       "parts": [
        [
@@ -9351,6 +10818,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 19,
+      "lines_added": 2,
+      "lines_removed": 0,
       "out": 390,
       "parts": [
        [
@@ -9403,6 +10872,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 28,
+      "lines_added": 2,
+      "lines_removed": 2,
       "out": 415,
       "parts": [
        [
@@ -9460,8 +10931,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -9497,6 +10970,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -9536,6 +11011,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 19,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 75,
       "parts": [
        [
@@ -9583,6 +11060,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -9616,6 +11095,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -9674,6 +11155,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 30,
       "parts": [
        [
@@ -9706,8 +11189,8 @@
    "args": [
     "tests/fixtures/records/inputs/session.jsonl",
     {
-     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2206,
-     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1641,
+     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2453,
+     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1712,
      "tests/fixtures/records/inputs/session/subagents/workflows/wf_1/agent-w1.jsonl": 391
     }
    ],
@@ -9733,6 +11216,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2,
      "parts": [
       [
@@ -9771,6 +11256,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -9823,6 +11310,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 28,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 415,
      "parts": [
       [
@@ -9880,8 +11369,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -9917,6 +11408,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -9956,6 +11449,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -10003,6 +11498,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -10036,6 +11533,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -10094,6 +11593,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -10122,8 +11623,8 @@
    "args": [
     "tests/fixtures/records/inputs/session.jsonl",
     {
-     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2206,
-     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1791,
+     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2453,
+     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1862,
      "tests/fixtures/records/inputs/session/subagents/agent-a3.jsonl": 725,
      "tests/fixtures/records/inputs/session/subagents/agent-a4.jsonl": 519,
      "tests/fixtures/records/inputs/session/subagents/agent-a5.jsonl": 390,
@@ -10154,6 +11655,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 19,
+      "lines_added": 2,
+      "lines_removed": 0,
       "out": 390,
       "parts": [
        [
@@ -10207,6 +11710,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 29,
+      "lines_added": 2,
+      "lines_removed": 2,
       "out": 417,
       "parts": [
        [
@@ -10268,8 +11773,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -10305,6 +11812,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -10346,6 +11855,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 22,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 105,
       "parts": [
        [
@@ -10401,6 +11912,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -10434,6 +11947,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -10498,6 +12013,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -10555,6 +12072,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -10618,6 +12137,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 29,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 417,
      "parts": [
       [
@@ -10694,6 +12215,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 29,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 417,
      "parts": [
       [
@@ -10765,8 +12288,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -10788,7 +12313,7 @@
    ],
    "fn": "turn_model_s",
    "kw": {},
-   "out": 2.0
+   "out": 3.0
   },
   {
    "args": [
@@ -10807,8 +12332,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -10831,7 +12358,7 @@
    "fn": "turn_times",
    "kw": {},
    "out": [
-    2.0,
+    3.0,
     2.0
    ]
   },
@@ -10854,6 +12381,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -10896,6 +12425,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -10947,6 +12478,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 22,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 105,
      "parts": [
       [
@@ -11015,6 +12548,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 22,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 105,
      "parts": [
       [
@@ -11080,6 +12615,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -11117,6 +12654,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -11160,6 +12699,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -11225,6 +12766,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -11294,6 +12837,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 19,
+      "lines_added": 2,
+      "lines_removed": 0,
       "out": 390,
       "parts": [
        [
@@ -11347,6 +12892,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 29,
+      "lines_added": 2,
+      "lines_removed": 2,
       "out": 417,
       "parts": [
        [
@@ -11408,8 +12955,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -11445,6 +12994,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -11486,6 +13037,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 22,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 105,
       "parts": [
        [
@@ -11541,6 +13094,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -11574,6 +13129,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -11622,8 +13179,8 @@
    "args": [
     "tests/fixtures/records/inputs/session.jsonl",
     {
-     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2206,
-     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1791,
+     "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl": 2453,
+     "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl": 1862,
      "tests/fixtures/records/inputs/session/subagents/agent-a3.jsonl": 725,
      "tests/fixtures/records/inputs/session/subagents/agent-a4.jsonl": 519,
      "tests/fixtures/records/inputs/session/subagents/agent-a5.jsonl": 390,
@@ -11653,6 +13210,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 19,
+     "lines_added": 2,
+     "lines_removed": 0,
      "out": 390,
      "parts": [
       [
@@ -11706,6 +13265,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 29,
+     "lines_added": 2,
+     "lines_removed": 2,
      "out": 417,
      "parts": [
       [
@@ -11767,8 +13328,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -11804,6 +13367,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -11845,6 +13410,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 22,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 105,
      "parts": [
       [
@@ -11900,6 +13467,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -11933,6 +13502,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -11999,6 +13570,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 15,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 250,
       "parts": [
        [
@@ -12042,6 +13615,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 6,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 190,
       "parts": [
        [
@@ -12087,6 +13662,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 18,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 275,
       "parts": [
        [
@@ -12138,6 +13715,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 9,
+      "lines_added": 1,
+      "lines_removed": 2,
       "out": 92,
       "parts": [
        [
@@ -12179,8 +13758,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -12216,6 +13797,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -12255,6 +13838,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 19,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 75,
       "parts": [
        [
@@ -12302,6 +13887,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -12335,6 +13922,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -12393,6 +13982,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 30,
       "parts": [
        [
@@ -12441,6 +14032,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 15,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 250,
      "parts": [
       [
@@ -12487,6 +14080,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 15,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 250,
      "parts": [
       [
@@ -12540,6 +14135,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 6,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 190,
      "parts": [
       [
@@ -12594,6 +14191,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 6,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 190,
      "parts": [
       [
@@ -12649,6 +14248,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 18,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 275,
      "parts": [
       [
@@ -12705,6 +14306,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 18,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 275,
      "parts": [
       [
@@ -12766,6 +14369,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 9,
+     "lines_added": 1,
+     "lines_removed": 2,
      "out": 92,
      "parts": [
       [
@@ -12820,6 +14425,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 9,
+     "lines_added": 1,
+     "lines_removed": 2,
      "out": 92,
      "parts": [
       [
@@ -12871,8 +14478,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -12894,7 +14503,7 @@
    ],
    "fn": "turn_model_s",
    "kw": {},
-   "out": 2.0
+   "out": 3.0
   },
   {
    "args": [
@@ -12913,8 +14522,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -12937,7 +14548,7 @@
    "fn": "turn_times",
    "kw": {},
    "out": [
-    2.0,
+    3.0,
     2.0
    ]
   },
@@ -12960,6 +14571,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -13002,6 +14615,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -13051,6 +14666,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -13109,6 +14726,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -13166,6 +14785,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -13203,6 +14824,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -13246,6 +14869,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -13311,6 +14936,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -13379,6 +15006,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -13428,6 +15057,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -13478,6 +15109,8 @@
       "dctx": null,
       "dur_s": 9.0,
       "fresh": 15,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 250,
       "parts": [
        [
@@ -13521,6 +15154,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 6,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 190,
       "parts": [
        [
@@ -13566,6 +15201,8 @@
       "dctx": 1017,
       "dur_s": 46.0,
       "fresh": 18,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 275,
       "parts": [
        [
@@ -13617,6 +15254,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 9,
+      "lines_added": 1,
+      "lines_removed": 2,
       "out": 92,
       "parts": [
        [
@@ -13658,8 +15297,10 @@
       "compact": false,
       "ctx": 6010,
       "dctx": -1112,
-      "dur_s": 4.0,
+      "dur_s": 5.0,
       "fresh": 10,
+      "lines_added": 3,
+      "lines_removed": 1,
       "out": 200,
       "parts": [
        [
@@ -13695,6 +15336,8 @@
       "dctx": 4993,
       "dur_s": 3.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 117,
       "parts": [
        [
@@ -13734,6 +15377,8 @@
       "dctx": 51,
       "dur_s": 6.0,
       "fresh": 19,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 75,
       "parts": [
        [
@@ -13781,6 +15426,8 @@
       "dctx": null,
       "dur_s": 1.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3,
       "parts": [],
       "prompt_id": "",
@@ -13814,6 +15461,8 @@
       "dctx": -11050,
       "dur_s": 11.0,
       "fresh": 14,
+      "lines_added": 3,
+      "lines_removed": 0,
       "out": 87,
       "parts": [
        [
@@ -13872,6 +15521,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 3,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 30,
       "parts": [
        [
@@ -13925,6 +15576,8 @@
      "dctx": null,
      "dur_s": 9.0,
      "fresh": 15,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 250,
      "parts": [
       [
@@ -13968,6 +15621,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 6,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 190,
      "parts": [
       [
@@ -14013,6 +15668,8 @@
      "dctx": 1017,
      "dur_s": 46.0,
      "fresh": 18,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 275,
      "parts": [
       [
@@ -14064,6 +15721,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 9,
+     "lines_added": 1,
+     "lines_removed": 2,
      "out": 92,
      "parts": [
       [
@@ -14105,8 +15764,10 @@
      "compact": false,
      "ctx": 6010,
      "dctx": -1112,
-     "dur_s": 4.0,
+     "dur_s": 5.0,
      "fresh": 10,
+     "lines_added": 3,
+     "lines_removed": 1,
      "out": 200,
      "parts": [
       [
@@ -14142,6 +15803,8 @@
      "dctx": 4993,
      "dur_s": 3.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 117,
      "parts": [
       [
@@ -14181,6 +15844,8 @@
      "dctx": 51,
      "dur_s": 6.0,
      "fresh": 19,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 75,
      "parts": [
       [
@@ -14228,6 +15893,8 @@
      "dctx": null,
      "dur_s": 1.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3,
      "parts": [],
      "prompt_id": "",
@@ -14261,6 +15928,8 @@
      "dctx": -11050,
      "dur_s": 11.0,
      "fresh": 14,
+     "lines_added": 3,
+     "lines_removed": 0,
      "out": 87,
      "parts": [
       [
@@ -14319,6 +15988,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 3,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 30,
      "parts": [
       [
@@ -14601,6 +16272,8 @@
       "dctx": null,
       "dur_s": 130.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -14631,6 +16304,8 @@
       "dctx": null,
       "dur_s": 15.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -14667,6 +16342,8 @@
      "dctx": null,
      "dur_s": 130.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -14704,6 +16381,8 @@
      "dctx": null,
      "dur_s": 130.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -14744,6 +16423,8 @@
      "dctx": null,
      "dur_s": 15.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -14781,6 +16462,8 @@
      "dctx": null,
      "dur_s": 15.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -14822,6 +16505,8 @@
       "dctx": null,
       "dur_s": 130.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -14852,6 +16537,8 @@
       "dctx": null,
       "dur_s": 15.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -14896,6 +16583,8 @@
      "dctx": null,
      "dur_s": 130.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -14926,6 +16615,8 @@
      "dctx": null,
      "dur_s": 15.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -14967,6 +16658,8 @@
       "dctx": null,
       "dur_s": 180.0,
       "fresh": 15,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2400,
       "parts": [
        [
@@ -15006,6 +16699,8 @@
       "dctx": 19805,
       "dur_s": 120.0,
       "fresh": 8,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2100,
       "parts": [
        [
@@ -15041,6 +16736,8 @@
       "dctx": 16097,
       "dur_s": 60.0,
       "fresh": 5,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3400,
       "parts": [
        [
@@ -15082,6 +16779,8 @@
      "dctx": null,
      "dur_s": 180.0,
      "fresh": 15,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2400,
      "parts": [
       [
@@ -15128,6 +16827,8 @@
      "dctx": null,
      "dur_s": 180.0,
      "fresh": 15,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2400,
      "parts": [
       [
@@ -15177,6 +16878,8 @@
      "dctx": 19805,
      "dur_s": 120.0,
      "fresh": 8,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2100,
      "parts": [
       [
@@ -15219,6 +16922,8 @@
      "dctx": 19805,
      "dur_s": 120.0,
      "fresh": 8,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2100,
      "parts": [
       [
@@ -15264,6 +16969,8 @@
      "dctx": 16097,
      "dur_s": 60.0,
      "fresh": 5,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3400,
      "parts": [
       [
@@ -15306,6 +17013,8 @@
      "dctx": 16097,
      "dur_s": 60.0,
      "fresh": 5,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3400,
      "parts": [
       [
@@ -15352,6 +17061,8 @@
       "dctx": null,
       "dur_s": 180.0,
       "fresh": 15,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2400,
       "parts": [
        [
@@ -15391,6 +17102,8 @@
       "dctx": 19805,
       "dur_s": 120.0,
       "fresh": 8,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2100,
       "parts": [
        [
@@ -15426,6 +17139,8 @@
       "dctx": 16097,
       "dur_s": 60.0,
       "fresh": 5,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3400,
       "parts": [
        [
@@ -15475,6 +17190,8 @@
      "dctx": null,
      "dur_s": 180.0,
      "fresh": 15,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2400,
      "parts": [
       [
@@ -15514,6 +17231,8 @@
      "dctx": 19805,
      "dur_s": 120.0,
      "fresh": 8,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2100,
      "parts": [
       [
@@ -15549,6 +17268,8 @@
      "dctx": 16097,
      "dur_s": 60.0,
      "fresh": 5,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3400,
      "parts": [
       [
@@ -15595,6 +17316,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 10,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1200,
       "parts": [
        [
@@ -15630,6 +17353,8 @@
       "dctx": null,
       "dur_s": 41.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 4050,
       "parts": [],
       "prompt_id": "",
@@ -15660,6 +17385,8 @@
       "dctx": -195213,
       "dur_s": 60.0,
       "fresh": 6,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 800,
       "parts": [
        [
@@ -15701,6 +17428,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 10,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1200,
      "parts": [
       [
@@ -15743,6 +17472,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 10,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1200,
      "parts": [
       [
@@ -15788,6 +17519,8 @@
      "dctx": null,
      "dur_s": 41.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 4050,
      "parts": [],
      "prompt_id": "",
@@ -15825,6 +17558,8 @@
      "dctx": null,
      "dur_s": 41.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 4050,
      "parts": [],
      "prompt_id": "",
@@ -15865,6 +17600,8 @@
      "dctx": -195213,
      "dur_s": 60.0,
      "fresh": 6,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 800,
      "parts": [
       [
@@ -15907,6 +17644,8 @@
      "dctx": -195213,
      "dur_s": 60.0,
      "fresh": 6,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 800,
      "parts": [
       [
@@ -15953,6 +17692,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 10,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1200,
       "parts": [
        [
@@ -15988,6 +17729,8 @@
       "dctx": null,
       "dur_s": 41.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 4050,
       "parts": [],
       "prompt_id": "",
@@ -16018,6 +17761,8 @@
       "dctx": -195213,
       "dur_s": 60.0,
       "fresh": 6,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 800,
       "parts": [
        [
@@ -16067,6 +17812,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 10,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1200,
      "parts": [
       [
@@ -16102,6 +17849,8 @@
      "dctx": null,
      "dur_s": 41.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 4050,
      "parts": [],
      "prompt_id": "",
@@ -16132,6 +17881,8 @@
      "dctx": -195213,
      "dur_s": 60.0,
      "fresh": 6,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 800,
      "parts": [
       [
@@ -16178,6 +17929,8 @@
       "dctx": null,
       "dur_s": 60.0,
       "fresh": 20,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 640,
       "parts": [
        [
@@ -16219,6 +17972,8 @@
      "dctx": null,
      "dur_s": 60.0,
      "fresh": 20,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 640,
      "parts": [
       [
@@ -16261,6 +18016,8 @@
      "dctx": null,
      "dur_s": 60.0,
      "fresh": 20,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 640,
      "parts": [
       [
@@ -16307,6 +18064,8 @@
       "dctx": null,
       "dur_s": 60.0,
       "fresh": 20,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 640,
       "parts": [
        [
@@ -16356,6 +18115,8 @@
      "dctx": null,
      "dur_s": 60.0,
      "fresh": 20,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 640,
      "parts": [
       [
@@ -16402,6 +18163,8 @@
       "dctx": null,
       "dur_s": 240.0,
       "fresh": 7,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 450,
       "parts": [
        [
@@ -16443,6 +18206,8 @@
      "dctx": null,
      "dur_s": 240.0,
      "fresh": 7,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 450,
      "parts": [
       [
@@ -16485,6 +18250,8 @@
      "dctx": null,
      "dur_s": 240.0,
      "fresh": 7,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 450,
      "parts": [
       [
@@ -16531,6 +18298,8 @@
       "dctx": null,
       "dur_s": 240.0,
       "fresh": 7,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 450,
       "parts": [
        [
@@ -16580,6 +18349,8 @@
      "dctx": null,
      "dur_s": 240.0,
      "fresh": 7,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 450,
      "parts": [
       [
@@ -16626,6 +18397,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 16,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2700,
       "parts": [
        [
@@ -16671,6 +18444,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 16,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2700,
      "parts": [
       [
@@ -16717,6 +18492,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 16,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2700,
      "parts": [
       [
@@ -16767,6 +18544,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 16,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2700,
       "parts": [
        [
@@ -16820,6 +18599,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 16,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2700,
      "parts": [
       [
@@ -16870,6 +18651,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 9,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1100,
       "parts": [
        [
@@ -16915,6 +18698,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 9,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1100,
      "parts": [
       [
@@ -16961,6 +18746,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 9,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1100,
      "parts": [
       [
@@ -17011,6 +18798,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 9,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1100,
       "parts": [
        [
@@ -17064,6 +18853,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 9,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1100,
      "parts": [
       [
@@ -17143,6 +18934,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 9,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1300,
       "parts": [
        [
@@ -17178,6 +18971,8 @@
       "dctx": 6595,
       "dur_s": 120.0,
       "fresh": 4,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1800,
       "parts": [
        [
@@ -17213,6 +19008,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -17243,6 +19040,8 @@
       "dctx": 15302,
       "dur_s": 60.0,
       "fresh": 6,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2200,
       "parts": [
        [
@@ -17278,6 +19077,8 @@
       "dctx": 3305,
       "dur_s": 60.0,
       "fresh": 11,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 950,
       "parts": [
        [
@@ -17319,6 +19120,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 9,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1300,
      "parts": [
       [
@@ -17361,6 +19164,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 9,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1300,
      "parts": [
       [
@@ -17406,6 +19211,8 @@
      "dctx": 6595,
      "dur_s": 120.0,
      "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -17448,6 +19255,8 @@
      "dctx": 6595,
      "dur_s": 120.0,
      "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -17493,6 +19302,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -17530,6 +19341,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -17570,6 +19383,8 @@
      "dctx": 15302,
      "dur_s": 60.0,
      "fresh": 6,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2200,
      "parts": [
       [
@@ -17612,6 +19427,8 @@
      "dctx": 15302,
      "dur_s": 60.0,
      "fresh": 6,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2200,
      "parts": [
       [
@@ -17657,6 +19474,8 @@
      "dctx": 3305,
      "dur_s": 60.0,
      "fresh": 11,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 950,
      "parts": [
       [
@@ -17699,6 +19518,8 @@
      "dctx": 3305,
      "dur_s": 60.0,
      "fresh": 11,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 950,
      "parts": [
       [
@@ -17745,6 +19566,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 9,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1300,
       "parts": [
        [
@@ -17780,6 +19603,8 @@
       "dctx": 6595,
       "dur_s": 120.0,
       "fresh": 4,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1800,
       "parts": [
        [
@@ -17815,6 +19640,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -17845,6 +19672,8 @@
       "dctx": 15302,
       "dur_s": 60.0,
       "fresh": 6,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2200,
       "parts": [
        [
@@ -17880,6 +19709,8 @@
       "dctx": 3305,
       "dur_s": 60.0,
       "fresh": 11,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 950,
       "parts": [
        [
@@ -17929,6 +19760,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 9,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1300,
      "parts": [
       [
@@ -17964,6 +19797,8 @@
      "dctx": 6595,
      "dur_s": 120.0,
      "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -17999,6 +19834,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -18029,6 +19866,8 @@
      "dctx": 15302,
      "dur_s": 60.0,
      "fresh": 6,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2200,
      "parts": [
       [
@@ -18064,6 +19903,8 @@
      "dctx": 3305,
      "dur_s": 60.0,
      "fresh": 11,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 950,
      "parts": [
       [
@@ -18113,6 +19954,8 @@
       "dctx": null,
       "dur_s": 300.0,
       "fresh": 45,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 6000,
       "parts": [
        [
@@ -18162,6 +20005,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 4,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 900,
       "parts": [
        [
@@ -18200,6 +20045,8 @@
       "dctx": 6797,
       "dur_s": 300.0,
       "fresh": 50,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 7100,
       "parts": [
        [
@@ -18256,6 +20103,8 @@
      "dctx": null,
      "dur_s": 300.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 6000,
      "parts": [
       [
@@ -18313,6 +20162,8 @@
      "dctx": null,
      "dur_s": 300.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 6000,
      "parts": [
       [
@@ -18372,6 +20223,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 900,
      "parts": [
       [
@@ -18416,6 +20269,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 900,
      "parts": [
       [
@@ -18464,6 +20319,8 @@
      "dctx": 6797,
      "dur_s": 300.0,
      "fresh": 50,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 7100,
      "parts": [
       [
@@ -18521,6 +20378,8 @@
      "dctx": 6797,
      "dur_s": 300.0,
      "fresh": 50,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 7100,
      "parts": [
       [
@@ -18582,6 +20441,8 @@
       "dctx": null,
       "dur_s": 300.0,
       "fresh": 45,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 6000,
       "parts": [
        [
@@ -18631,6 +20492,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 4,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 900,
       "parts": [
        [
@@ -18669,6 +20532,8 @@
       "dctx": 6797,
       "dur_s": 300.0,
       "fresh": 50,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 7100,
       "parts": [
        [
@@ -18733,6 +20598,8 @@
      "dctx": null,
      "dur_s": 300.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 6000,
      "parts": [
       [
@@ -18782,6 +20649,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 900,
      "parts": [
       [
@@ -18820,6 +20689,8 @@
      "dctx": 6797,
      "dur_s": 300.0,
      "fresh": 50,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 7100,
      "parts": [
       [
@@ -18936,6 +20807,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 12,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 900,
       "parts": [
        [
@@ -18971,6 +20844,8 @@
       "dctx": 21493,
       "dur_s": 180.0,
       "fresh": 13,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3500,
       "parts": [
        [
@@ -19016,6 +20891,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 12,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 900,
      "parts": [
       [
@@ -19058,6 +20935,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 12,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 900,
      "parts": [
       [
@@ -19103,6 +20982,8 @@
      "dctx": 21493,
      "dur_s": 180.0,
      "fresh": 13,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3500,
      "parts": [
       [
@@ -19149,6 +21030,8 @@
      "dctx": 21493,
      "dur_s": 180.0,
      "fresh": 13,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3500,
      "parts": [
       [
@@ -19199,6 +21082,8 @@
       "dctx": null,
       "dur_s": 120.0,
       "fresh": 12,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 900,
       "parts": [
        [
@@ -19234,6 +21119,8 @@
       "dctx": 21493,
       "dur_s": 180.0,
       "fresh": 13,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3500,
       "parts": [
        [
@@ -19287,6 +21174,8 @@
      "dctx": null,
      "dur_s": 120.0,
      "fresh": 12,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 900,
      "parts": [
       [
@@ -19322,6 +21211,8 @@
      "dctx": 21493,
      "dur_s": 180.0,
      "fresh": 13,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 3500,
      "parts": [
       [
@@ -19372,6 +21263,8 @@
       "dctx": null,
       "dur_s": 180.0,
       "fresh": 17,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2300,
       "parts": [
        [
@@ -19417,6 +21310,8 @@
      "dctx": null,
      "dur_s": 180.0,
      "fresh": 17,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2300,
      "parts": [
       [
@@ -19463,6 +21358,8 @@
      "dctx": null,
      "dur_s": 180.0,
      "fresh": 17,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2300,
      "parts": [
       [
@@ -19513,6 +21410,8 @@
       "dctx": null,
       "dur_s": 180.0,
       "fresh": 17,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 2300,
       "parts": [
        [
@@ -19566,6 +21465,8 @@
      "dctx": null,
      "dur_s": 180.0,
      "fresh": 17,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 2300,
      "parts": [
       [
@@ -19619,6 +21520,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 62,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 4200,
       "parts": [
        [
@@ -19671,6 +21574,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 62,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 4200,
      "parts": [
       [
@@ -19724,6 +21629,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 62,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 4200,
      "parts": [
       [
@@ -19781,6 +21688,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 62,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 4200,
       "parts": [
        [
@@ -19841,6 +21750,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 62,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 4200,
      "parts": [
       [
@@ -19924,6 +21835,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 800,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1800,
       "parts": [
        [
@@ -19969,6 +21882,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 800,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -20015,6 +21930,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 800,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -20065,6 +21982,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 800,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1800,
       "parts": [
        [
@@ -20118,6 +22037,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 800,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -20168,6 +22089,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 800,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1800,
       "parts": [
        [
@@ -20213,6 +22136,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 800,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -20259,6 +22184,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 800,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -20309,6 +22236,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 800,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 1800,
       "parts": [
        [
@@ -20362,6 +22291,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 800,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 1800,
      "parts": [
       [
@@ -20441,6 +22372,8 @@
       "dctx": null,
       "dur_s": 7200.0,
       "fresh": 120,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 240000,
       "parts": [
        [
@@ -20632,6 +22565,8 @@
       "dctx": 0,
       "dur_s": 1800.0,
       "fresh": 45,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 90000,
       "parts": [
        [
@@ -20723,6 +22658,8 @@
       "dctx": 0,
       "dur_s": 4500.0,
       "fresh": 180,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 360000,
       "parts": [
        [
@@ -20994,6 +22931,8 @@
       "dctx": -41901,
       "dur_s": 300.0,
       "fresh": 78,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 151300,
       "parts": [
        [
@@ -21139,6 +23078,8 @@
      "dctx": null,
      "dur_s": 7200.0,
      "fresh": 120,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 240000,
      "parts": [
       [
@@ -21337,6 +23278,8 @@
      "dctx": null,
      "dur_s": 7200.0,
      "fresh": 120,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 240000,
      "parts": [
       [
@@ -21538,6 +23481,8 @@
      "dctx": 0,
      "dur_s": 1800.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 90000,
      "parts": [
       [
@@ -21636,6 +23581,8 @@
      "dctx": 0,
      "dur_s": 1800.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 90000,
      "parts": [
       [
@@ -21737,6 +23684,8 @@
      "dctx": 0,
      "dur_s": 4500.0,
      "fresh": 180,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 360000,
      "parts": [
       [
@@ -22015,6 +23964,8 @@
      "dctx": 0,
      "dur_s": 4500.0,
      "fresh": 180,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 360000,
      "parts": [
       [
@@ -22296,6 +24247,8 @@
      "dctx": -41901,
      "dur_s": 300.0,
      "fresh": 78,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 151300,
      "parts": [
       [
@@ -22442,6 +24395,8 @@
      "dctx": -41901,
      "dur_s": 300.0,
      "fresh": 78,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 151300,
      "parts": [
       [
@@ -22592,6 +24547,8 @@
       "dctx": null,
       "dur_s": 7200.0,
       "fresh": 120,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 240000,
       "parts": [
        [
@@ -22783,6 +24740,8 @@
       "dctx": 0,
       "dur_s": 1800.0,
       "fresh": 45,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 90000,
       "parts": [
        [
@@ -22874,6 +24833,8 @@
       "dctx": 0,
       "dur_s": 4500.0,
       "fresh": 180,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 360000,
       "parts": [
        [
@@ -23145,6 +25106,8 @@
       "dctx": -41901,
       "dur_s": 300.0,
       "fresh": 78,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 151300,
       "parts": [
        [
@@ -23298,6 +25261,8 @@
      "dctx": null,
      "dur_s": 7200.0,
      "fresh": 120,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 240000,
      "parts": [
       [
@@ -23489,6 +25454,8 @@
      "dctx": 0,
      "dur_s": 1800.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 90000,
      "parts": [
       [
@@ -23580,6 +25547,8 @@
      "dctx": 0,
      "dur_s": 4500.0,
      "fresh": 180,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 360000,
      "parts": [
       [
@@ -23851,6 +25820,8 @@
      "dctx": -41901,
      "dur_s": 300.0,
      "fresh": 78,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 151300,
      "parts": [
       [
@@ -24001,6 +25972,8 @@
       "dctx": null,
       "dur_s": 7200.0,
       "fresh": 120,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 240000,
       "parts": [
        [
@@ -24192,6 +26165,8 @@
       "dctx": 0,
       "dur_s": 1800.0,
       "fresh": 45,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 90000,
       "parts": [
        [
@@ -24283,6 +26258,8 @@
       "dctx": 0,
       "dur_s": 4500.0,
       "fresh": 180,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 360000,
       "parts": [
        [
@@ -24554,6 +26531,8 @@
       "dctx": -41901,
       "dur_s": 300.0,
       "fresh": 78,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 151300,
       "parts": [
        [
@@ -24693,6 +26672,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -24729,6 +26710,8 @@
      "dctx": null,
      "dur_s": 7200.0,
      "fresh": 120,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 240000,
      "parts": [
       [
@@ -24927,6 +26910,8 @@
      "dctx": null,
      "dur_s": 7200.0,
      "fresh": 120,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 240000,
      "parts": [
       [
@@ -25128,6 +27113,8 @@
      "dctx": 0,
      "dur_s": 1800.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 90000,
      "parts": [
       [
@@ -25226,6 +27213,8 @@
      "dctx": 0,
      "dur_s": 1800.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 90000,
      "parts": [
       [
@@ -25327,6 +27316,8 @@
      "dctx": 0,
      "dur_s": 4500.0,
      "fresh": 180,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 360000,
      "parts": [
       [
@@ -25605,6 +27596,8 @@
      "dctx": 0,
      "dur_s": 4500.0,
      "fresh": 180,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 360000,
      "parts": [
       [
@@ -25886,6 +27879,8 @@
      "dctx": -41901,
      "dur_s": 300.0,
      "fresh": 78,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 151300,
      "parts": [
       [
@@ -26032,6 +28027,8 @@
      "dctx": -41901,
      "dur_s": 300.0,
      "fresh": 78,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 151300,
      "parts": [
       [
@@ -26181,6 +28178,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -26218,6 +28217,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -26259,6 +28260,8 @@
       "dctx": null,
       "dur_s": 7200.0,
       "fresh": 120,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 240000,
       "parts": [
        [
@@ -26450,6 +28453,8 @@
       "dctx": 0,
       "dur_s": 1800.0,
       "fresh": 45,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 90000,
       "parts": [
        [
@@ -26541,6 +28546,8 @@
       "dctx": 0,
       "dur_s": 4500.0,
       "fresh": 180,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 360000,
       "parts": [
        [
@@ -26812,6 +28819,8 @@
       "dctx": -41901,
       "dur_s": 300.0,
       "fresh": 78,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 151300,
       "parts": [
        [
@@ -26951,6 +28960,8 @@
       "dctx": null,
       "dur_s": 0.0,
       "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 0,
       "parts": [],
       "prompt_id": "",
@@ -26995,6 +29006,8 @@
      "dctx": null,
      "dur_s": 7200.0,
      "fresh": 120,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 240000,
      "parts": [
       [
@@ -27186,6 +29199,8 @@
      "dctx": 0,
      "dur_s": 1800.0,
      "fresh": 45,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 90000,
      "parts": [
       [
@@ -27277,6 +29292,8 @@
      "dctx": 0,
      "dur_s": 4500.0,
      "fresh": 180,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 360000,
      "parts": [
       [
@@ -27548,6 +29565,8 @@
      "dctx": -41901,
      "dur_s": 300.0,
      "fresh": 78,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 151300,
      "parts": [
       [
@@ -27687,6 +29706,8 @@
      "dctx": null,
      "dur_s": 0.0,
      "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 0,
      "parts": [],
      "prompt_id": "",
@@ -27728,6 +29749,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 2000,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 999600,
       "parts": [
        [
@@ -27773,6 +29796,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 2000,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 999600,
      "parts": [
       [
@@ -27819,6 +29844,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 2000,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 999600,
      "parts": [
       [
@@ -27869,6 +29896,8 @@
       "dctx": null,
       "dur_s": 1200.0,
       "fresh": 2000,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 999600,
       "parts": [
        [
@@ -27922,6 +29951,8 @@
      "dctx": null,
      "dur_s": 1200.0,
      "fresh": 2000,
+     "lines_added": 0,
+     "lines_removed": 0,
      "out": 999600,
      "parts": [
       [

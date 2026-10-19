@@ -52,7 +52,7 @@ import {
 } from "./py.ts";
 import { expandUser, pyFloat, pyJsonDumps, pyJsonLoads } from "./sources.ts";
 import {
-  _price, cmpStr, pyJoin, pyStr, tsEpoch, writeAtomic,
+  _price, cmpStr, pyJoin, pyStr, tsEpoch, turnTimes, writeAtomic,
 } from "./claude_records.ts";
 import type { Turn } from "./claude_records.ts";
 import { limitsEqual, NO_LIMITS } from "./claude_sources.ts";
@@ -403,31 +403,60 @@ export interface Accounting {
   readonly week_share: number | null;
   readonly read_share: number | null;
   readonly write_share: number | null;
+  // How its time went and what it wrote, for the redesigned grid's ⌛
+  // split and 💾; today's cells read none of these.
+  readonly model_s: number;
+  readonly tool_s: number;
+  readonly blocked_s: number;
+  readonly lines_added: number;
+  readonly lines_removed: number;
 }
 
 /** What one turn comes to: its cost, its share of each live window and
  * the shares of it spent re-reading and caching.  cost_group draws these.
  * The window shares read the plan snapshot, so this belongs to the first
- * stage, never to a render. */
+ * stage, never to a render.  `model_s` and `tool_s` are turnTimes', the
+ * main thread's and its agents' agent-seconds; `blocked_s` is the main
+ * thread's waiting; the lines are the Turn's own. */
 export function turnAccounting(t: Turn, calib: Calib, snap: Snapshot):
   Accounting {
   const tsh = windowShares(t, calib, snap);
   const [rd, wr] = turnShares(t);
+  const [model_s, tool_s] = turnTimes(t);
   return { cost_usd: turnCost(t), sess_share: tsh.sess,
-    week_share: tsh.week, read_share: rd, write_share: wr };
+    week_share: tsh.week, read_share: rd, write_share: wr, model_s, tool_s,
+    blocked_s: t.blocked_s, lines_added: t.lines_added,
+    lines_removed: t.lines_removed };
+}
+
+/** turnAccounting over the whole session: every turn summed, left to
+ * right, the shares worked out over the sum rather than added up. */
+export function sessionAccounting(turns: readonly Turn[], calib: Calib,
+  snap: Snapshot): Accounting {
+  const sh = sessionShares(turns, calib, snap);
+  const [rd, wr] = sessionCacheShares(turns);
+  let cost = 0, model_s = 0, tool_s = 0, blocked_s = 0;
+  let lines_added = 0, lines_removed = 0;
+  for (const t of turns) cost += turnCost(t);
+  const times = turns.map(turnTimes);
+  for (const [m] of times) model_s += m;
+  for (const [, tl] of times) tool_s += tl;
+  for (const t of turns) {
+    blocked_s += t.blocked_s;
+    lines_added += t.lines_added;
+    lines_removed += t.lines_removed;
+  }
+  return { cost_usd: cost, sess_share: sh.sess, week_share: sh.week,
+    read_share: rd, write_share: wr, model_s, tool_s, blocked_s,
+    lines_added, lines_removed };
 }
 
 /** turnAccounting for each turn, in order, and the same for the session:
  * the figures document's `accounting`. */
 export function costAccounting(turns: readonly Turn[], calib: Calib,
   snap: Snapshot): { turns: Accounting[]; session: Accounting } {
-  const sh = sessionShares(turns, calib, snap);
-  const [rd, wr] = sessionCacheShares(turns);
-  const each = turns.map((t) => turnAccounting(t, calib, snap));
-  let cost = 0;
-  for (const t of turns) cost += turnCost(t);
-  return { turns: each, session: { cost_usd: cost, sess_share: sh.sess,
-    week_share: sh.week, read_share: rd, write_share: wr } };
+  return { turns: turns.map((t) => turnAccounting(t, calib, snap)),
+    session: sessionAccounting(turns, calib, snap) };
 }
 
 // ════════════════════════════════════════════════════════════════════════════

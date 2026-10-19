@@ -24,7 +24,9 @@ import { renderStatus } from "./claude_render.ts";
 import { isDict, pyIsDigit, pyIntDigits } from "./py.ts";
 import type { Dict } from "./py.ts";
 
-export const FIGURES_SCHEMA = 1;
+// 2 since 2026-10-19: the status document's `turn` and `accounting`, and
+// the main thread's own figures on its transcript; claude.py says which.
+export const FIGURES_SCHEMA = 2;
 
 // ════════════════════════════════════════════════════════════════════════════
 // Records.
@@ -54,7 +56,9 @@ const TRANSCRIPT: Fields = {
   blocked_s: "value", turn_s: "value", eta: "value", agent_etas: "value",
   queued: "value", compactions: "value", ctx_est: "value", shells: "value",
   monitors: "value", tool_at: "value", wait_at: "value", idle_at: "value",
-  last_seen: "value",
+  last_seen: "value", own_tok_up: "value", own_tok_down: "value",
+  own_cache_pct: "value", own_usd: "value", lines_added: "value",
+  lines_removed: "value", prompt_id: "str", turn_index: "value",
 };
 
 const GIT: Fields = {
@@ -78,7 +82,7 @@ const CACHE_SHARES: Fields = {
 // writes null.
 const TRANSCRIPT_MISSING: Dict = {
   cache_pct: -1, start_s: 0.0, turn_s: 0.0, tool_at: 0.0, wait_at: 0.0,
-  idle_at: 0.0, last_seen: 0.0,
+  idle_at: 0.0, last_seen: 0.0, own_cache_pct: -1,
 };
 
 /** _epoch_stamp: an epoch as time.strftime(STAMP_FMT, localtime(e)) writes

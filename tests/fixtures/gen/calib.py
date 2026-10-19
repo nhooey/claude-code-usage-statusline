@@ -367,6 +367,16 @@ def made_turns():
         "made/inf": [
             t("2026-08-16T01:00:00Z", usd=(float("inf"), 0.0, 1.0, 1.0))],
         "made/empty": [],
+        # The accounting's time and 💾 figures, which the corpus leaves at
+        # zero: a turn that waited longer than it ran, and agent seconds
+        # past its own span.
+        "made/work": [
+            t("2026-08-16T01:00:00Z")._replace(
+                dur_s=10.0, tool_s=3.5, blocked_s=1.25, agent_model_s=2.0,
+                agent_tool_s=0.5, lines_added=4, lines_removed=1),
+            t("2026-08-16T01:05:00Z")._replace(
+                dur_s=1.0, tool_s=0.75, blocked_s=0.5, agent_model_s=0.1,
+                agent_tool_s=0.2, lines_added=0, lines_removed=7)],
     }
 
 

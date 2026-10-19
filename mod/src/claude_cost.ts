@@ -231,7 +231,8 @@ export function costTotalsGroup(st: Settings, turns: readonly Turn[],
     }
   }
   // Without the accounting there is no share to draw.
-  const sh: Accounting = shares ?? {
+  const sh: Pick<Accounting, "cost_usd" | "sess_share" | "week_share" |
+    "read_share" | "write_share"> = shares ?? {
     cost_usd: addUp(turns.map(turnCost)), sess_share: null,
     week_share: null, read_share: null, write_share: null };
   const c = sh.cost_usd;
@@ -281,7 +282,8 @@ const TURN_FIELDS = ["ts", "text", "fresh", "cache_write", "cache_read",
   "out", "ctx", "calls", "dur_s", "dctx", "usd_in", "usd_out", "usd_cr",
   "usd_cw", "compact", "reported", "parts", "agent_calls", "agent_ids",
   "agent", "tool_s", "blocked_s", "agent_model_s", "agent_tool_s",
-  "agent_id", "agent_name", "prompt_id", "turn_index"];
+  "agent_id", "agent_name", "prompt_id", "turn_index", "lines_added",
+  "lines_removed"];
 
 /** claude.py's decode_record(Turn, d).  Every field must be present: a
  * document missing one is from another schema, not a record with a

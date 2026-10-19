@@ -1,4 +1,30 @@
 {
+  "accounting": {
+    "session": {
+      "blocked_s": 300,
+      "cost_usd": 34.643115000000016,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "model_s": 10050,
+      "read_share": 32,
+      "sess_share": 3.843598181818179,
+      "tool_s": 3450,
+      "week_share": 8.449540243902435,
+      "write_share": 7
+    },
+    "turn": {
+      "blocked_s": 0,
+      "cost_usd": 6.408889999999998,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "model_s": 225,
+      "read_share": 34,
+      "sess_share": 1.1652527272727278,
+      "tool_s": 75,
+      "week_share": 1.563143902439025,
+      "write_share": 7
+    }
+  },
   "cache_shares": {
     "sess_read": 32,
     "sess_write": 7,
@@ -49,7 +75,7 @@
     "transcript": "${FIXTURES}/transcripts/status/main.jsonl"
   },
   "rate": null,
-  "schema": 1,
+  "schema": 2,
   "transcript": {
     "agent_etas": [],
     "asst_text": "Two figures, because one of them is not a duration you spent.¶ ¶ The session age is wall clock 🧩 and the other is 時間 answered.",
@@ -63,7 +89,14 @@
     "eta": [],
     "idle_at": null,
     "last_seen": 1786846820,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": 98,
+    "own_tok_down": 841300,
+    "own_tok_up": 2722123,
+    "own_usd": 34.64311500000003,
+    "prompt_id": null,
     "queued": 0,
     "shells": 0,
     "start_s": 1786813520,
@@ -71,10 +104,152 @@
     "tok_up": 2722123,
     "tool_at": null,
     "tool_s": 3450,
+    "turn_index": null,
     "turn_s": 1786846520,
     "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
     "user_ts": "2026-08-16T02:15:20Z",
     "wait_at": null
+  },
+  "turn": {
+    "agent": false,
+    "agent_calls": 0,
+    "agent_id": null,
+    "agent_ids": [],
+    "agent_model_s": 0,
+    "agent_name": null,
+    "agent_tool_s": 0,
+    "blocked_s": 0,
+    "cache_read": 4312000,
+    "cache_write": 47000,
+    "calls": 27,
+    "compact": false,
+    "ctx": 114902,
+    "dctx": -41901,
+    "dur_s": 300,
+    "fresh": 78,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "out": 151300,
+    "parts": [
+      [
+        1786846532,
+        0.24551499999999998
+      ],
+      [
+        1786846545,
+        0.24551499999999998
+      ],
+      [
+        1786846557,
+        0.24551499999999998
+      ],
+      [
+        1786846570,
+        0.24551499999999998
+      ],
+      [
+        1786846582,
+        0.24551499999999998
+      ],
+      [
+        1786846595,
+        0.24551499999999998
+      ],
+      [
+        1786846607,
+        0.24551499999999998
+      ],
+      [
+        1786846620,
+        0.24551499999999998
+      ],
+      [
+        1786846632,
+        0.24551499999999998
+      ],
+      [
+        1786846645,
+        0.24551499999999998
+      ],
+      [
+        1786846657,
+        0.24551499999999998
+      ],
+      [
+        1786846670,
+        0.24551499999999998
+      ],
+      [
+        1786846682,
+        0.24551499999999998
+      ],
+      [
+        1786846695,
+        0.24551499999999998
+      ],
+      [
+        1786846707,
+        0.24551499999999998
+      ],
+      [
+        1786846720,
+        0.24551499999999998
+      ],
+      [
+        1786846732,
+        0.24551499999999998
+      ],
+      [
+        1786846745,
+        0.24551499999999998
+      ],
+      [
+        1786846757,
+        0.24551499999999998
+      ],
+      [
+        1786846770,
+        0.24551499999999998
+      ],
+      [
+        1786846782,
+        0.24551499999999998
+      ],
+      [
+        1786846795,
+        0.24551499999999998
+      ],
+      [
+        1786846807,
+        0.24551499999999998
+      ],
+      [
+        1786846820,
+        0.24551499999999998
+      ],
+      [
+        1786846800,
+        0.19000999999999998
+      ],
+      [
+        1786846810,
+        0.32652000000000003
+      ],
+      [
+        1786846820,
+        0
+      ]
+    ],
+    "prompt_id": null,
+    "reported": false,
+    "text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
+    "tool_s": 75,
+    "ts": "2026-08-16T02:15:20Z",
+    "turn_index": null,
+    "usd_cr": 2.155999999999999,
+    "usd_cw": 0.4700000000000003,
+    "usd_in": 0.00039,
+    "usd_out": 3.782499999999999
   },
   "usage": {
     "account_text": null,

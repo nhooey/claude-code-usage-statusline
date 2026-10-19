@@ -1,24 +1,39 @@
 {
   "accounting": {
     "session": {
+      "blocked_s": 0,
       "cost_usd": 0.243125,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "model_s": 240,
       "read_share": 34,
       "sess_share": 0.04420454545454546,
+      "tool_s": 60,
       "week_share": 0.05929878048780489,
       "write_share": 21
     },
     "turns": [
       {
+        "blocked_s": 0,
         "cost_usd": 0.06656000000000001,
+        "lines_added": 0,
+        "lines_removed": 0,
+        "model_s": 120,
         "read_share": 30,
         "sess_share": 0.012101818181818184,
+        "tool_s": 0,
         "week_share": 0.016234146341463418,
         "write_share": 36
       },
       {
+        "blocked_s": 0,
         "cost_usd": 0.176565,
+        "lines_added": 0,
+        "lines_removed": 0,
+        "model_s": 120,
         "read_share": 35,
         "sess_share": 0.032102727272727276,
+        "tool_s": 60,
         "week_share": 0.04306463414634147,
         "write_share": 15
       }
@@ -34,7 +49,7 @@
   },
   "context_window": 200000,
   "mode": "cost",
-  "schema": 1,
+  "schema": 2,
   "turns": [
     {
       "agent": false,
@@ -53,6 +68,8 @@
       "dctx": null,
       "dur_s": 120,
       "fresh": 12,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 900,
       "parts": [
         [
@@ -88,6 +105,8 @@
       "dctx": 21493,
       "dur_s": 180,
       "fresh": 13,
+      "lines_added": 0,
+      "lines_removed": 0,
       "out": 3500,
       "parts": [
         [

@@ -1,4 +1,8 @@
 {
+  "accounting": {
+    "session": null,
+    "turn": null
+  },
   "cache_shares": {
     "sess_read": null,
     "sess_write": null,
@@ -49,7 +53,7 @@
     "transcript": "${FIXTURES}/transcripts/status/empty.jsonl"
   },
   "rate": null,
-  "schema": 1,
+  "schema": 2,
   "transcript": {
     "agent_etas": [],
     "asst_text": null,
@@ -63,7 +67,14 @@
     "eta": [],
     "idle_at": null,
     "last_seen": null,
+    "lines_added": 0,
+    "lines_removed": 0,
     "monitors": 0,
+    "own_cache_pct": null,
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0,
+    "prompt_id": null,
     "queued": 0,
     "shells": 0,
     "start_s": null,
@@ -71,11 +82,13 @@
     "tok_up": 0,
     "tool_at": null,
     "tool_s": 0,
+    "turn_index": null,
     "turn_s": null,
     "user_text": null,
     "user_ts": null,
     "wait_at": null
   },
+  "turn": null,
   "usage": {
     "account_text": null,
     "plan": {

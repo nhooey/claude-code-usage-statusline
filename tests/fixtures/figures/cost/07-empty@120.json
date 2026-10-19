@@ -1,9 +1,14 @@
 {
   "accounting": {
     "session": {
+      "blocked_s": 0,
       "cost_usd": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "model_s": 0,
       "read_share": null,
       "sess_share": 0,
+      "tool_s": 0,
       "week_share": 0,
       "write_share": null
     },
@@ -19,7 +24,7 @@
   },
   "context_window": 200000,
   "mode": "cost",
-  "schema": 1,
+  "schema": 2,
   "turns": [],
   "usage": {
     "account_text": null,

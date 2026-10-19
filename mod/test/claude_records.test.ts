@@ -80,6 +80,7 @@ const RUN: Record<string, (c: Case) => unknown> = {
     const blocked: cr.Span[] = [];
     return [cr.toolSpans(cr._records(c.args[0]), blocked), blocked];
   },
+  agent_diff: (c) => cr.agentDiff(cr._records(c.args[0])),
   scan_background: (c) => {
     const open = new Map<string, string>();
     for (const r of cr._records(c.args[0])) cr.scanBackground(r, open);

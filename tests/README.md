@@ -160,7 +160,11 @@ compare, so the text is canonical:
   first cost case to run a `cmd:` source records what the command printed,
   and the later ones read it back from the source cache, which keeps less.
 
-`schema` is 1 and `mode` is `status` or `cost`. Both modes carry:
+`schema` is 2 and `mode` is `status` or `cost`. Schema 2 (2026-10-19) added
+the figures the redesigned grid draws and today's rows do not: the status
+document's `turn` and `accounting`, the accounting's time and 💾 figures, the
+`Turn`'s lines and the `Transcript`'s main-thread figures. No row moved. Both
+modes carry:
 
 | Key | Holds |
 |---|---|
@@ -176,20 +180,27 @@ as `claude_records.py` defines them:
 | Key | Record |
 |---|---|
 | `payload` | `Payload`: the status-line JSON as read, its strings as given |
-| `transcript` | `Transcript`: tokens, cache rate, context, the last exchange, the ⌛ durations and their epochs, ETAs, queue and compactions |
+| `transcript` | `Transcript`: tokens, cache rate, context, the last exchange, the ⌛ durations and their epochs, ETAs, queue and compactions; and the main thread's own, apart from its agents: `own_tok_up`, `own_tok_down`, `own_cache_pct` and `own_usd` over its own requests, `lines_added` and `lines_removed` off its own tool results, and the `prompt_id` and `turn_index` of the turn opened last |
 | `git` | `Git`: branch, dirty, toplevel, worktree |
 | `limits` | `Limits`: the window percentages as the source gave them, this session's and this turn's share of each, the resets as epochs |
 | `cache_shares` | `CacheShares`: 📖 and 📝 for the turn and the session |
 | `rate` | the session's token rate per second, or null |
+| `turn` | the `Turn` the 🎤 figures are about, the last one with main-thread calls that is not a compaction (`_with_shares`' pick), or null |
+| `accounting.turn` | that turn's accounting, as the cost document's per turn, or null |
+| `accounting.session` | the same over every turn of the session, or null |
+
+A status document's window shares in `accounting` are null when there is no
+plan reading, since no calibration is asked for then; `limits` carries the
+same shares rounded into its strings.
 
 A cost document adds:
 
 | Key | Holds |
 |---|---|
-| `turns` | every `Turn` the transcript folds into, in order, agent turns included |
+| `turns` | every `Turn` the transcript folds into, in order, agent turns included; each with its `lines_added` and `lines_removed`, the main thread's tool results in the turn and its agents' filed with the requests that read them |
 | `calibration` | dollars per point of each window, `sess` and `week`, or null |
-| `accounting.turns` | per turn: `cost_usd`, its `sess_share` and `week_share` of each window, and the `read_share` and `write_share` of its cost |
-| `accounting.session` | the same over every turn, for the totals row |
+| `accounting.turns` | per turn: `cost_usd`, its `sess_share` and `week_share` of each window, the `read_share` and `write_share` of its cost, `model_s` and `tool_s` (`turn_times`, the main thread's and its agents' agent-seconds), the main thread's `blocked_s`, and `lines_added` and `lines_removed` |
+| `accounting.session` | the same over every turn, for the totals row: sums, with the shares worked out over the sums |
 
 The cost rows read their shares from `accounting` and work out none
 themselves, so the render stage takes only the percentages from

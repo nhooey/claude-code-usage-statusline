@@ -623,8 +623,14 @@ def stored_ctx_window(session_id: str) -> int:
 
 def _with_shares(lim: Limits, transcript: str,
                  agents: Optional[Sequence[AgentRec]] = None
-                 ) -> Tuple[Limits, CacheShares]:
+                 ) -> Tuple[Limits, CacheShares, dict]:
     """Attach how much of each window this session, and its last turn, used.
+
+    The third value is the status document's `turn` and `accounting`: the
+    turn picked below, as a record, and turn_accounting's figures for it and
+    for the session, worked out off the same read and the same calibration
+    as the strings in Limits.  With no plan reading there is no calibration
+    asked for, as before, and the window shares in it are None.
 
     Returns the 📖 📝 shares of column 3 alongside -- the same turn's, and
     the session's -- off the same read, because they need exactly the turn
@@ -687,8 +693,9 @@ def _with_shares(lim: Limits, transcript: str,
     turns[-1] instead and the two disagree whenever the last thing that
     happened was a compaction or a batch drained without billing.
     """
+    none = {"turn": None, "accounting": {"turn": None, "session": None}}
     if not transcript or not os.path.isfile(transcript):
-        return lim, NO_CACHE_SHARES
+        return lim, NO_CACHE_SHARES, none
     try:
         turns = read_turns(transcript, agents)
         prompts = [t for t in turns if t.calls and not t.compact
@@ -700,9 +707,23 @@ def _with_shares(lim: Limits, transcript: str,
                                   else (None, None)),
                                 *session_cache_shares(turns))
     except Exception:
-        return lim, NO_CACHE_SHARES
+        return lim, NO_CACHE_SHARES, none
+
+    def figures(calib: Dict[str, Optional[float]]) -> dict:
+        # The same catch-all as the reads around it: a figure the grid
+        # cannot have is missing, never a failed render.
+        try:
+            return {"turn": None if last is None else encode_record(last),
+                    "accounting": {
+                        "turn": (None if last is None
+                                 else turn_accounting(last, calib)),
+                        "session": (session_accounting(turns, calib)
+                                    if turns else None)}}
+        except Exception:
+            return none
+
     if not lim.session_pct and not lim.weekly_pct:
-        return lim, cache
+        return lim, cache, figures({})
     try:
         calib = calibration()
         sh = session_shares(turns, calib)
@@ -710,12 +731,13 @@ def _with_shares(lim: Limits, transcript: str,
         if last is not None:
             tn = window_shares(last, calib)
     except Exception:
-        return lim, cache
+        return lim, cache, figures({})
+    extra = figures(calib)
     return (lim._replace(session_share=_pct_str(sh["sess"]),
                          weekly_share=_pct_str(sh["week"]),
                          session_turn=_pct_str(tn["sess"]),
                          weekly_turn=_pct_str(tn["week"])),
-            cache)
+            cache, extra)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -2107,55 +2129,6 @@ def agent_meta(path: str) -> dict:
         return {}
 
 
-def agent_diff(records: Sequence[dict]) -> Tuple[int, int]:
-    """+adds/-removes across everything this agent wrote, from its tool results.
-
-    The status line takes the session's pair from the payload, which Claude
-    Code fills in for the session and says nothing about per agent, so the
-    agent row counts its own the way a diff is counted: over the
-    `structuredPatch` an Edit's result carries, one hunk line at a time, `+`
-    added and `-` removed.  A Write to a NEW file has no patch to count — the
-    result is `type: "create"` with the whole file in `content` — and every
-    line of it is an addition, which is the reading Claude Code's own total
-    takes of the same call.
-
-    Deduped on the tool-use id, for the reason _dedupe_usage dedupes on the
-    request id: a resumed or compacted transcript can carry the same result
-    twice, and counting one edit twice would double the figure the row is
-    for.  A result with no id is counted; nothing else identifies it, and
-    dropping it would undercount.
-    """
-    added = removed = 0
-    seen = set()
-    for r in records:
-        res = r.get("toolUseResult")
-        if not isinstance(res, dict):
-            continue
-        tid = ""
-        for block in (r.get("message") or {}).get("content") or ():
-            if isinstance(block, dict) and block.get("tool_use_id"):
-                tid = str(block["tool_use_id"])
-                break
-        if tid:
-            if tid in seen:
-                continue
-            seen.add(tid)
-        patch = res.get("structuredPatch")
-        if isinstance(patch, list) and patch:
-            for hunk in patch:
-                for line in (hunk or {}).get("lines") or ():
-                    if not isinstance(line, str) or not line:
-                        continue
-                    if line[0] == "+":
-                        added += 1
-                    elif line[0] == "-":
-                        removed += 1
-        elif res.get("type") == "create" and isinstance(res.get("content"),
-                                                        str):
-            added += len(res["content"].splitlines())
-    return added, removed
-
-
 def read_agent_usage(path: str) -> AgentUsage:
     """One pass over an agent's transcript, the way read_transcript reads the
     session's: deduped on requestId, summed, priced per record.
@@ -2484,7 +2457,10 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
 # than only the ones that render from a file.
 # ════════════════════════════════════════════════════════════════════════════
 
-FIGURES_SCHEMA = 1
+# 2 since 2026-10-19: the status document's `turn` and `accounting`, the
+# accounting's time and 💾 figures, the Turn's lines and the Transcript's
+# main-thread figures, for the redesigned grid's rows.
+FIGURES_SCHEMA = 2
 
 # Where a run writes its figures as well as drawing them.  For the shared
 # cases only, like the calibration override above: tests/run-cases.py sets
@@ -2496,7 +2472,7 @@ FIGURES_OUT = os.environ.get("CODING_AGENT_USAGE_LINE_FIGURES_OUT", "")
 _FIG_MISSING = {
     "Transcript": {"cache_pct": -1, "start_s": 0.0, "turn_s": 0.0,
                    "tool_at": 0.0, "wait_at": 0.0, "idle_at": 0.0,
-                   "last_seen": 0.0},
+                   "last_seen": 0.0, "own_cache_pct": -1},
 }
 # Record fields holding a STAMP_FMT local time, written as an epoch: the
 # document carries no zone but the clock's, and a port has no strptime.
@@ -2771,7 +2747,7 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
     seed_limits_snapshot(base_limits, prepared.reading)
     # Session/turn shares still require the one transcript scan performed
     # above; rendering itself receives only the prepared snapshot.
-    lim, cache = _with_shares(base_limits, pay.transcript, agents)
+    lim, cache, extra = _with_shares(base_limits, pay.transcript, agents)
     ctx_window = ctx_window_for(pay.ctx_window, pay.model + pay.model_id)
     publish_ctx_window(pay.session_id, ctx_window)
     tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
@@ -2785,6 +2761,8 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
             "cache_shares": encode_record(cache),
             "context_window": ctx_window,
             "rate": rate,
+            "turn": extra["turn"],
+            "accounting": extra["accounting"],
             "usage": _fig_usage(prepared)}
 
 
@@ -2811,24 +2789,46 @@ def turn_accounting(t: Turn, calib: Dict[str, Optional[float]]) -> dict:
     """What one turn comes to: its cost, its share of each live window and
     the shares of it spent re-reading and caching.  cost_group draws these.
     The window shares read the plan reading through limits_snapshot, so
-    this belongs to the first stage, never to a render."""
+    this belongs to the first stage, never to a render.
+
+    And how its time went and what it wrote, for the redesigned grid's ⌛
+    split and 💾: `model_s` and `tool_s` are turn_times', the main thread's
+    and its agents' agent-seconds; `blocked_s` is the main thread's waiting,
+    which no agent adds to; the lines are the Turn's own.  Today's cells
+    read none of these five."""
     tsh = window_shares(t, calib)
     rd, wr = turn_shares(t)
+    model_s, tool_s = turn_times(t)
     return {"cost_usd": turn_cost(t), "sess_share": tsh["sess"],
-            "week_share": tsh["week"], "read_share": rd, "write_share": wr}
+            "week_share": tsh["week"], "read_share": rd, "write_share": wr,
+            "model_s": model_s, "tool_s": tool_s, "blocked_s": t.blocked_s,
+            "lines_added": t.lines_added, "lines_removed": t.lines_removed}
+
+
+def session_accounting(turns: Sequence[Turn],
+                       calib: Dict[str, Optional[float]]) -> dict:
+    """turn_accounting over the whole session: every turn summed, agents'
+    and compactions' included, the shares worked out over the sum rather
+    than added up."""
+    sh = session_shares(turns, calib)
+    rd, wr = session_cache_shares(turns)
+    times = [turn_times(t) for t in turns]
+    return {"cost_usd": add_up(turn_cost(t) for t in turns),
+            "sess_share": sh["sess"], "week_share": sh["week"],
+            "read_share": rd, "write_share": wr,
+            "model_s": add_up(m for m, _ in times),
+            "tool_s": add_up(tl for _, tl in times),
+            "blocked_s": add_up(t.blocked_s for t in turns),
+            "lines_added": sum(t.lines_added for t in turns),
+            "lines_removed": sum(t.lines_removed for t in turns)}
 
 
 def cost_accounting(turns: Sequence[Turn],
                     calib: Dict[str, Optional[float]]) -> dict:
     """turn_accounting for each turn, in order, and the same for the
     session: the figures document's `accounting`."""
-    sh = session_shares(turns, calib)
-    rd, wr = session_cache_shares(turns)
     return {"turns": [turn_accounting(t, calib) for t in turns],
-            "session": {"cost_usd": add_up(turn_cost(t) for t in turns),
-                        "sess_share": sh["sess"],
-                        "week_share": sh["week"],
-                        "read_share": rd, "write_share": wr}}
+            "session": session_accounting(turns, calib)}
 
 
 def _read_accounting(acc: dict) -> Dict[str, Optional[float]]:
@@ -2837,7 +2837,8 @@ def _read_accounting(acc: dict) -> Dict[str, Optional[float]]:
     integers when they are whole."""
     return {k: (None if v is None
                 else float(v) if k in ("cost_usd", "sess_share",
-                                       "week_share") else v)
+                                       "week_share", "model_s", "tool_s",
+                                       "blocked_s") else v)
             for k, v in acc.items()}
 
 
