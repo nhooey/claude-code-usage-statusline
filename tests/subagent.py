@@ -862,7 +862,7 @@ def run(tmp):
     # in it; then 🟢 running, and the name.  The Doing field is the grid's
     # 🛫 column now, after the model: 🤖, no call waiting on its result, and
     # nothing written for 1.2h, so the quiet time rather than the rate.
-    right = right.replace("\U0001F3C3  ", "\U0001F3C3  \U0001F916 1.2h   ", 1)
+    right = right.replace("\U0001F3C3  ", "\U0001F3C3  \U0001F916 1.2h  ", 1)
     head = "·\U0001F50D\U0001F7E2 "
     # The payload's columns are the terminal's less PANEL_COLUMNS_SHORT, and
     # the rows are laid out for the terminal's, less the chrome Claude Code
@@ -1150,7 +1150,7 @@ def run(tmp):
               ((NOW - 42, "Bash"), (NOW - 5, "Read")),
               ((NOW - 90, "Agent"), (NOW - 5, "Bash")),
               ((NOW - 700, "AskUserQuestion"),))],
-          ["\U0001F527  42s ", "\U0001F6A6 1.5m ", "\U0001F6A6  12m "])
+          ["\U0001F527  42s", "\U0001F6A6 1.5m", "\U0001F6A6  12m"])
     check("🤖 keeps the rate while it writes, and trades it for how long it "
           "has written nothing from a minute, amber from ten",
           ([doing("running", nothing._replace(eta=(), last_seen=NOW - q), rate=200.0)
@@ -1160,7 +1160,7 @@ def run(tmp):
                False, 200.0, NOW)),
            sl.F_AMB in drawn(sr.render_doing("running", quiet, False, 200.0,
                                              NOW))),
-          (["\U0001F916 200/s", "\U0001F916 1.5m ", "\U0001F916  12m "], True, False))
+          (["\U0001F916 200 ", "\U0001F916 1.5m", "\U0001F916  12m"], True, False))
     check("paused or ended, since its last record; not started, since its "
           "startTime; a shell keeps 🛫 and its rate",
           [doing("completed", quiet._replace(background=(("b1", "bash"),))),
@@ -1168,8 +1168,8 @@ def run(tmp):
            doing("pending", nothing, t={"startTime": int((NOW - 20) * 1000)}),
            doing("completed", quiet), doing("killed", quiet),
            doing("running", nothing, rate=80.0), doing("running", nothing)],
-          ["\U0001F4BB 1.5m ", "\U0001F4A4 1.5m ", "\U0001F95A  20s ",
-           "\u2705 1.5m ", "\U0001F6D1 1.5m ", "\U0001F6EB  80/s", ""])
+          ["\U0001F4BB 1.5m", "\U0001F4A4 1.5m", "\U0001F95A  20s",
+           "\u2705 1.5m", "\U0001F6D1 1.5m", "\U0001F6EB  80 ", ""])
     died = nothing._replace(api_error=True)
     check("💥: an agent whose last answer died on an API error, ended or "
           "parked; a killed one is still 🛑, and a running one is running",

@@ -274,7 +274,7 @@ function toolCell(st: Settings, tr: Transcript, now: number): Span[] | null {
   const [mark, since] = mainDoing(tr);
   if (mark !== E_TOOL) return null;
   const secs = Math.max(0.0, now - since);
-  return [span(E_TOOL + " "), span(padVal(st, 5, durFmt(st, secs)), "F_PRW",
+  return [span(E_TOOL + " "), span(padVal(st, 4, durFmt(st, secs)), "F_PRW",
     magDim(secs, MAG_DUR_S))];
 }
 
@@ -288,7 +288,7 @@ function doingCell(st: Settings, tr: Transcript, now: number):
   if (!mark || mark === E_TOOL) return null;
   const secs = Math.max(0.0, now - since);
   const amber = mark === E_WORK && secs >= QUIET_WARN_S;
-  return [span(mark + " "), span(padVal(st, 5, durFmt(st, secs)),
+  return [span(mark + " "), span(padVal(st, 4, durFmt(st, secs)),
     amber ? "F_AMB" : "F_PRW", !amber && magDim(secs, MAG_DUR_S))];
 }
 

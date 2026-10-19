@@ -56,7 +56,7 @@ import {
 import { cellWidth, chrome, draw, layout } from "./grid.ts";
 import type { Piece, Row } from "./grid.ts";
 
-export const A_STATE_W = 2, A_CLOCK_W = 6, A_RATE_W = 8, A_TICK_S = 5.0;
+export const A_STATE_W = 2, A_CLOCK_W = 6, A_RATE_W = 7, A_TICK_S = 5.0;
 // 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 export const A_SPLIT_W = 3 * (2 + GAUGE_W) + 2;
 export const A_LIMIT_W = 2 + LIM_FIG_W;
@@ -461,10 +461,13 @@ export function renderAgentEta(st: Settings, eta: Eta, startMs: unknown,
     "F_ETA", magDim(left, MAG_DUR_S))];
 }
 
+/** 🛫 and the tokens a second, without a "/s" (dropped 2026-10-19, to
+ * narrow the column): a blank stands where a duration's unit does, so the
+ * figures stack with renderDoing's. */
 export function renderAgentRate(st: Settings, rate: number | null,
   mark: string = E_RATE): Span[] {
   return rate === null ? [] : [span(mark + " "),
-    span(padVal(st, 3, rateFig(st, rate)) + "/s", "F_RATE",
+    span(padVal(st, 3, rateFig(st, rate)) + " ", "F_RATE",
       magDim(rate, MAG_RATE))];
 }
 
@@ -507,7 +510,7 @@ export function renderDoing(st: Settings, status: string, usage: unknown,
   const t = now === null ? Date.now() / 1000 : now;
   const since = stateSince(status, usage, phase, mode, task);
   const secs = since === null ? null : Math.max(0.0, t - since);
-  const figW = A_RATE_W - visWidth(mode, st.widths) - 2;
+  const figW = A_RATE_W - visWidth(mode, st.widths) - 1;
   if (mode === E_WORK && status === "running" && rate !== null &&
     (secs === null || secs < A_SILENT_S)) {
     return renderAgentRate(st, rate, mode);
@@ -516,7 +519,7 @@ export function renderDoing(st: Settings, status: string, usage: unknown,
   const style = mode === E_WORK && secs >= A_SILENT_WARN_S ? ink("F_AMB")
     : ink("F_PRW", magDim(secs, MAG_DUR_S));
   return [span(mode + " "),
-    paint(style, padVal(st, figW, durFmt(st, secs)) + " ")];
+    paint(style, padVal(st, figW, durFmt(st, secs)))];
 }
 
 // ════════════════════════════════════════════════════════════════════════════

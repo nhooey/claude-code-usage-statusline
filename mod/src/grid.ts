@@ -23,7 +23,7 @@ import type { Settings } from "./formatting.ts";
 import { cut, span, spans, width } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import {
-  A_CLOCK_W, A_CTX_PCT_W, A_LIMIT_W, A_LIMIT_WEEK_W, A_RATE_W, A_SPLIT_W,
+  A_CLOCK_W, A_LIMIT_W, A_LIMIT_WEEK_W, A_RATE_W, A_SPLIT_W,
   aCtxW, aDiffW, aEtaW,
 } from "./claude_subagent_render.ts";
 
@@ -146,18 +146,36 @@ function shareGone(patterns: readonly string[]): boolean {
   return GRID_SCOPES.every((s) => hidden(patterns, s + ".context.share"));
 }
 
-/** A column's width under `patterns`: 🧠's without the share's room where
- * every scope hides the share (asked 2026-10-19). */
+/** The columns 🧠's size takes without its share: the mark, then three
+ * digits and a unit, "🧠316k", with no blank between (asked 2026-10-19). */
+const CTX_SIZE_W = 4;
+
+/** A column's width under `patterns`: 🧠's, where every scope hides its
+ * share, only its mark and CTX_SIZE_W (asked 2026-10-19). */
 function colWidth(st: Settings, c: { key: string; width: number | string },
   patterns: readonly string[]): number {
-  const w = cellWidth(st, c.width);
-  return c.key === "ctx" && shareGone(patterns) ? w - A_CTX_PCT_W : w;
+  return c.key === "ctx" && shareGone(patterns)
+    ? visWidth(st.sCtx.trimEnd(), st.widths) + CTX_SIZE_W
+    : cellWidth(st, c.width);
+}
+
+/** 🧠's size squeezed into `room`: a growth's "+" goes, then an
+ * estimate's "~", then a figure's one decimal, rounded half up, "-1.5k" to
+ * "-2k". */
+function squeeze(st: Settings, text: string, room: number): string {
+  let t = text.replace(/^\+/, "");
+  if (visWidth(t, st.widths) > room) t = t.replace(/^~/, "");
+  const m = /^(-?)(\d+\.\d)(\D*)$/.exec(t);
+  if (visWidth(t, st.widths) > room && m) {
+    t = m[1] + String(Math.floor(Number(m[2]) + 0.5)) + m[3];
+  }
+  return t;
 }
 
 /** The row's figure for column `key`, `w` wide: 🧠's without the ٪ share
  * of the window that ends it, where a pattern hides `context.share` on the
- * row's scope, its size then set flush right, so the sizes of the rows
- * stack whatever their sign or "~". */
+ * row's scope: the mark, no blank, and the size squeezed and set flush
+ * right, so the sizes of the rows stack. */
 function figure(st: Settings, row: Row, key: string, w: number,
   patterns: readonly string[]): readonly Span[] {
   const f = row.cells[key];
@@ -165,10 +183,12 @@ function figure(st: Settings, row: Row, key: string, w: number,
     !hidden(patterns, row.scope + ".context.share")) return f;
   const [mark, ...rest] = f[f.length - 1].text.trimEnd().endsWith(E_PCT)
     ? f.slice(0, -1) : f;
-  const text = rest.map((s) => s.text).join("").trim();
+  const head = mark.text.trimEnd();
+  const room = w - visWidth(head, st.widths);
+  const text = squeeze(st, rest.map((s) => s.text).join("").trim(), room);
   const style = rest.find((s) => s.text.trim()) ?? mark;
-  return [mark, { ...style, text: padVal(st,
-    w - visWidth(mark.text, st.widths), text) }];
+  return [{ ...mark, text: head }, { ...style,
+    text: padVal(st, room, text) }];
 }
 
 /** The columns every row draws, after --hide and the narrow-window drop,

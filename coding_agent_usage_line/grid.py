@@ -16,6 +16,8 @@ depend on the terminal profile are read from formatting's globals when they
 are asked for, not at import, so a reloaded formatting moves them.  Nothing
 here joins spans into escape codes: that is the printing's job.
 """
+import math
+import re
 from fnmatch import fnmatchcase
 from typing import Dict, List, NamedTuple, Optional, Sequence, Union
 
@@ -129,19 +131,37 @@ def _share_gone(patterns: Sequence[str]) -> bool:
     return all(hidden(patterns, s + ".context.share") for s in GRID_SCOPES)
 
 
+# The columns 🧠's size takes without its share: the mark, then three digits
+# and a unit, "🧠316k", with no blank between (asked 2026-10-19).
+CTX_SIZE_W = 4
+
+
 def _col_width(c: dict, patterns: Sequence[str]) -> int:
-    """A column's width under `patterns`: 🧠's without the share's room
-    where every scope hides the share."""
-    w = cell_width(c["width"])
-    return (w - sub.A_CTX_PCT_W if c["key"] == "ctx" and _share_gone(patterns)
-            else w)
+    """A column's width under `patterns`: 🧠's, where every scope hides its
+    share, only its mark and CTX_SIZE_W."""
+    if c["key"] == "ctx" and _share_gone(patterns):
+        return fmt.vis_width(fmt.S_CTX.rstrip()) + CTX_SIZE_W
+    return cell_width(c["width"])
+
+
+def _squeeze(text: str, room: int) -> str:
+    """🧠's size squeezed into `room`: a growth's "+" goes, then an
+    estimate's "~", then a figure's one decimal, rounded half up, "-1.5k"
+    to "-2k"."""
+    t = text[1:] if text.startswith("+") else text
+    if fmt.vis_width(t) > room and t.startswith("~"):
+        t = t[1:]
+    m = re.match(r"^(-?)(\d+\.\d)(\D*)$", t)
+    if fmt.vis_width(t) > room and m:
+        t = m.group(1) + str(math.floor(float(m.group(2)) + 0.5)) + m.group(3)
+    return t
 
 
 def _figure(row: Row, key: str, w: int, patterns: Sequence[str]) -> List[Span]:
     """The row's figure for column `key`, `w` wide: 🧠's without the ٪ share
     of the window that ends it, where a pattern hides `context.share` on the
-    row's scope, its size then set flush right, so the sizes of the rows
-    stack whatever their sign or "~"."""
+    row's scope: the mark, no blank, and the size squeezed and set flush
+    right, so the sizes of the rows stack."""
     f = spans(list(row.cells[key]))
     if (key != "ctx" or not f
             or not hidden(patterns, row.scope + ".context.share")):
@@ -149,10 +169,12 @@ def _figure(row: Row, key: str, w: int, patterns: Sequence[str]) -> List[Span]:
     if f[-1].text.rstrip().endswith(E_PCT):
         f = f[:-1]
     mark, rest = f[0], f[1:]
-    text = "".join(s.text for s in rest).strip()
+    head = mark.text.rstrip()
+    room = w - fmt.vis_width(head)
+    text = _squeeze("".join(s.text for s in rest).strip(), room)
     style = next((s for s in rest if s.text.strip()), mark)
-    return [mark, style._replace(
-        text=fmt.pad_val(w - fmt.vis_width(mark.text), text))]
+    return [mark._replace(text=head),
+            style._replace(text=fmt.pad_val(room, text))]
 
 
 def layout(rows: Sequence[Row], cols: int, patterns: Sequence[str],

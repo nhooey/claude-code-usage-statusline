@@ -20,7 +20,7 @@ from .claude_records import Limits, squash, eta_finish, WAITING_TOOLS
 from .spans import Span, ink, join, paint, rstrip, spans, width
 from .spec import CHROME_DEPTH, GRID_CELLS, LABEL_MIN, RIGHT_EDGE
 
-A_STATE_W, A_CLOCK_W, A_RATE_W, A_TICK_S = 2, 6, 8, 5.0
+A_STATE_W, A_CLOCK_W, A_RATE_W, A_TICK_S = 2, 6, 7, 5.0
 # 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 A_SPLIT_W = 3 * (2 + GAUGE_W) + 2
 A_LIMIT_W = 2 + LIM_FIG_W
@@ -310,7 +310,10 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
     return [Span(E_ETA), Span(pad_val(A_ETA_FIG_W, dur_fmt(left)), "F_ETA",
                               mag_dim(left, MAG_DUR_S))]
 def render_agent_rate(rate, mark=E_RATE):
-    return [] if rate is None else [Span(mark + " "), Span(pad_val(3, rate_fig(rate)) + "/s", "F_RATE", mag_dim(rate, MAG_RATE))]
+    """🛫 and the tokens a second, without a "/s" (dropped 2026-10-19, to
+    narrow the column): a blank stands where a duration's unit does, so the
+    figures stack with render_doing's."""
+    return [] if rate is None else [Span(mark + " "), Span(pad_val(3, rate_fig(rate)) + " ", "F_RATE", mag_dim(rate, MAG_RATE))]
 def state_since(status, usage, phase, mode, task=None):
     """The epoch the agent entered the state `mode` names, or None.
 
@@ -343,9 +346,9 @@ def state_since(status, usage, phase, mode, task=None):
 def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None):
     """What the agent is doing, and for how long: the mode mark agent_state
     reads, then the time since state_since: the row's 🛫 column, the grid's
-    `rate` — "🔧  42s " where a rate reads "🛫 200/s", a space after the mark
-    either way.  The unit stands where the rate's "/" does,
-    so the figures stack down the panel.
+    `rate` — "🔧  42s" where a rate reads "🛫 200 ", a space after the mark
+    either way.  The unit stands where the rate's blank does, so the
+    figures stack down the panel.
 
     🤖 keeps the rate while the agent's records keep landing: the figure
     says it is moving and how fast.  Once it has written nothing for
@@ -359,7 +362,7 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
     t = time.time() if now is None else now
     since = state_since(status, usage, phase, mode, task)
     secs = None if since is None else max(0.0, t - since)
-    fig_w = A_RATE_W - vis_width(mode) - 2
+    fig_w = A_RATE_W - vis_width(mode) - 1
     if mode == E_WORK and status == "running" and rate is not None and (
             secs is None or secs < A_SILENT_S):
         return render_agent_rate(rate, mode)
@@ -367,7 +370,7 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
         return [Span(mode)]
     style = (ink("F_AMB") if mode == E_WORK and secs >= A_SILENT_WARN_S
              else ink("F_PRW", mag_dim(secs, MAG_DUR_S)))
-    return [Span(mode + " "), paint(style, pad_val(fig_w, dur_fmt(secs)) + " ")]
+    return [Span(mode + " "), paint(style, pad_val(fig_w, dur_fmt(secs)))]
 def spawn_depth(task, meta):
     """1 for a task the session started, 2 for one an agent started, and so on."""
     try: return max(1, int(meta.get("spawnDepth") or task.get("spawnDepth") or 1))
