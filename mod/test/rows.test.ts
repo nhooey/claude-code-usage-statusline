@@ -166,7 +166,10 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   const text = inZone(fig, () => accountText(st, fig, []));
   assert.ok(text.includes("💳"), text);
   const tail = inZone(fig, () => footerTail(st, fig, [], hint, 155));
-  assert.ok(tail.endsWith(text), tail);
+  // Each run of spaces is one space and blanks, since Claude Code draws a
+  // run of them as one.
+  const kept = text.replace(/ {2,}/g, (r) => " " + "\u2800".repeat(r.length - 1));
+  assert.ok(tail.endsWith(kept) && !/  /.test(tail), tail);
   // Two blanks in, the hint, Claude Code's " · ", then the tail: to the
   // band's right edge, padded with blanks no trim takes.
   assert.equal(2 + visWidth(hint, st.widths) +
@@ -180,7 +183,7 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   155 - RIGHT_EDGE);
   assert.equal(tail.trimStart(), tail);
   // Too narrow a row: the " · " alone parts the two.
-  assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)), text);
+  assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)), kept);
   assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 155)),
     "");
   // 🔋 hidden in every row takes its 🔜 with it, and leaves 🪫's.

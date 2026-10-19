@@ -447,7 +447,10 @@ export function accountText(st: Settings, fig: Dict,
  * `mode`, the session's permission mode, is counted apart. */
 export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   hint: string, cols: number, mode?: string): string {
-  const text = accountText(st, fig, hide);
+  // Claude Code draws a run of spaces in the tail as one (seen live
+  // 2026-10-20: "6.6h 📅"), so a run's spaces past its first are blanks.
+  const text = accountText(st, fig, hide).replace(/ {2,}/g,
+    (run) => " " + TAIL_BLANK.repeat(run.length - 1));
   if (!text) return "";
   const pill = MODE_PILLS[mode ?? ""] ?? "";
   const pillW = pill && !hint.includes(pill)
