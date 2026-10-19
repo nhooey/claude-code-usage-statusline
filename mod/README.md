@@ -25,18 +25,19 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `hooks/register.tsx` is its hooks module, and `types/index.d.ts` its
 `$.state` contract. It draws three places, and writes one:
 
-- **The band,** above the prompt, a blank row above it: the grid's rows
+- **The band,** above the prompt, drawn one row into the blank Claude Code
+  keeps above the prompt's border: the grid's rows
   for the session, from the last status figures document, redrawn as the
   session starts, after each tool call, as a turn starts and ends, and
   every 30 seconds. While a turn runs its 🎤 and 🎮 rows are that turn's,
   live.
-- **The closing line,** `✻ Worked for 1m 5s`, as a blank row: the receipt
-  under it says which turn ended and when.
-- **The start line,** under a prompt typed at the composer: 🔻🔖 and the
-  turn's tag, dim.
-- **The receipt,** below: as a turn ends, the band's 🎤 and 🎮 rows
-  stamped into the transcript, frozen, so every turn's receipt stays
-  there to scroll back to.
+- **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
+  ends, the band's 🎤 and 🎮 rows stamped there, frozen, 📊 🎤 with the
+  turn's 🔺🔖 tag, so every turn's receipt stays in the transcript to
+  scroll back to.
+- **The start tag,** beside a prompt typed at the composer, or under it
+  where the prompt fills its row: 🔻🔖, the turn's tag and when it
+  started, dim.
 
 The hooks import the ports from `src/`. The mod's runtime has no Node and
 loads nothing from outside the plugin's folder, so the ports that read
@@ -68,8 +69,7 @@ place of Claude Code's `✻ <word> for <duration>`: the rows the band drew
 live, frozen and dim, in their colours:
 
 ```
-     🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
-     📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
+     📊 🎤 🔺🔖 8f37748e #12  Why is the build slow?  💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
      📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  …
 ```
 

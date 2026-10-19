@@ -153,17 +153,18 @@ back to (whether a resumed session shows them again is for a live session
 to settle):
 
 ```
-     🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
-     📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
+     📊 🎤 🔺🔖 8f37748e #12  Why is the build slow?  💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
      📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 
      📊 … the band
 ```
 
 The receipt is the live rows frozen: `receiptLines` in `mod/src/receipt.ts`,
-the head, 🔺🔖, 🔺 pointing up at the turn that ended, the head of the turn's
-promptId and Claude Code's turn index, then 📅 and 🕐 when it was stamped;
-under it the 📊 🎤 and 📊 🎮 rows on the band's fixed grid.
+the 📊 🎤 and 📊 🎮 rows on the band's fixed grid, 📊 🎤's label opening on
+the turn's tag, 🔺🔖, 🔺 pointing up at the turn that ended, the head of its
+promptId and Claude Code's turn index. Decided 2026-10-19, to save a line a
+turn: no head line of its own, and no 📅 🕐 of when it was stamped, since
+the start tag has when the turn began and ⌛ how long it ran.
 
 - **When.** Found live on 2026-10-19: Claude Code writes a turn's
   assistant records to the transcript only after its Stop hooks have
@@ -216,12 +217,13 @@ handed; that drawing was gone from a session resumed without the mod.
 ### The start line
 
 As the turn starts, the mod redraws the prompt's row (`UserMessage`) with the
-receipt's head under it, dim, 🔻 pointing down at the turn it opens, and
-when it started:
+turn's tag beside it, dim, 🔻 pointing down at the turn it opens, and when
+it started. Decided 2026-10-19, to save a line a turn: on the prompt's own
+row where a one-line prompt leaves the room; else on a line of its own, its
+🔻🔖 in the column the receipt's 🔺🔖 stands in, so the two stack:
 
 ```
-❯ Why is the build slow?
-  🔻🔖 8f37748e #12  📅 2026-10-19  🕐 13:02:00
+❯ Why is the build slow?  🔻🔖 8f37748e #12  📅 2026-10-19  🕐 13:02:00
 ```
 
 So every turn carries its tag at both ends, even one that is interrupted or

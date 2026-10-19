@@ -29,8 +29,8 @@
 //   cut, and runs on over its own row's leading blank columns, up to its
 //   first figure.  --labels clip stops every label where the first column
 //   starts instead, for comparison.
-// - The mod draws 🔻🔖 under the prompt as the turn starts, and the receipt
-//   opens on 🔺🔖 when it ends.
+// - The mod draws 🔻🔖 beside the prompt as the turn starts, and the
+//   receipt's 📊 🎤 row carries 🔺🔖 when it ends.
 //
 // It lives under mod/ beside the code it draws with, and runs on node's
 // own type stripping:
@@ -94,11 +94,10 @@ function cells(st: Settings, f: Figures): { [key: string]: Span[] } {
 
 const TURN_START = NOW - 4 * 60, SESSION_START = NOW - 9 * 3600;
 
-/** The receipt's first line: which turn the rows under it bill, by the
- * head of its promptId and Claude Code's turn index, and when it ended. */
-const RECEIPT_HEAD = turnHead(E_TURN_PAST, "8f37748e", 12, "2026-10-19",
-  "13:06:02");
-/** The line the mod draws under the prompt as the turn starts: the same
+/** The tag on the receipt's 📊 🎤 row: which turn it bills, by the head of
+ * its promptId and Claude Code's turn index. */
+const RECEIPT_TAG = turnHead(E_TURN_PAST, "8f37748e", 12, null, null);
+/** The tag the mod draws beside the prompt as the turn starts: the same
  * tag, 🔻 pointing down at the turn it opens, and when it started. */
 const START_TAG = turnHead(E_TURN_AHEAD, "8f37748e", 12, "2026-10-19",
   "13:02:00");
@@ -158,7 +157,8 @@ export function sample(st: Settings): Sample {
   // The receipt is the band's 🎤 and 🎮 rows as they stood when the turn
   // ended, behind the receipt's 📊.
   const receipt = [
-    { ...turn, label: receiptLabel(turn.label) },
+    { ...turn, label: receiptLabel([turn.label[0],
+      piece("name.tag", RECEIPT_TAG + "  "), ...turn.label.slice(1)]) },
     { ...session, label: receiptLabel(session.label) },
   ];
   return { account, turn, main, session, receipt, agents };
@@ -218,8 +218,7 @@ export function screen(st: Settings, cols: number,
   const rule = "─".repeat(cols);
   const parts = readouts(st, cols, patterns, phase, spill, grid, depth);
   const out: SpanLike[] = [
-    [dim("❯ "), "Why is the build slow?"],
-    [dim("  " + START_TAG)],
+    [dim("❯ "), "Why is the build slow?", dim("  " + START_TAG)],
     "",
     "⏺ Bash(npm run build -- --profile)",
     "  ⎿  compile 31s · bundle 18s · test 3m 12s",
@@ -235,13 +234,12 @@ export function screen(st: Settings, cols: number,
     if (receiptBy === "hook") {
       // Claude Code draws a Stop hook's systemMessage behind "Stop says: ",
       // and no setting changes it, so the receipt opens on a newline.
-      out.push([dim("Stop says: ")], RECEIPT_HEAD, ...parts.receipt, "",
+      out.push([dim("Stop says: ")], ...parts.receipt, "",
         [dim("✻ Worked for 4m 2s · done 1:06 PM")]);
     } else {
-      // The mod redraws the TurnDuration line instead, with the receipt's
-      // head on it and its rows under it, and the Stop hook prints nothing.
-      out.push([dim("✻ Worked for 4m 2s · "), RECEIPT_HEAD],
-        ...parts.receipt);
+      // The mod draws the TurnDuration line as the receipt's rows, and the
+      // Stop hook prints nothing.
+      out.push(...parts.receipt);
     }
   }
   const band: SpanLike[] = [...parts.band];
@@ -366,7 +364,7 @@ export function run(argv: readonly string[], env: Env,
       a.agents);
     let rows: SpanLike[];
     if (a.part === "band") rows = parts.band;
-    else if (a.part === "receipt") rows = [RECEIPT_HEAD, ...parts.receipt];
+    else if (a.part === "receipt") rows = parts.receipt;
     // The agent rows without the panel's chrome, which Claude Code draws.
     else rows = parts.agents.map(([r, row]) => row.slice(chrome(r.depth).length));
     text = rows.map(line).join("\n");

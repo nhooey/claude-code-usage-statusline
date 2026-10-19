@@ -23,7 +23,7 @@ import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
 import type { FiguresDoc } from '../types'
 import * as spec from '../src/spec.ts'
-import { settings, stripAnsi } from '../src/formatting.ts'
+import { settings, visWidth } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
@@ -235,14 +235,11 @@ async function stamp($: $, durationMs: number, prompt: string):
     // 📦 🌿 from the band's last status document (decision 7).
     const ws = doc ? workspaceOf(doc as Dict, where.home) : null
     // Laid out as the band is, with its indent, so the rows' columns are
-    // the band's; the head takes the same indent.
-    const { head, rows } = receiptLines(await settingsOf($), fig, bandCols,
+    // the band's.
+    const { rows } = receiptLines(await settingsOf($), fig, bandCols,
       CONFIG.hide, ws, true, spec.C_CHROME_CONT)
-    const pad: Span = { text: ' '.repeat(spec.C_CHROME_CONT), colour: null,
-      dim: true, bold: false, bg: null }
     await remember($, 'receipts', key, true)
-    await remember($, 'receipts', receiptAt(durationMs),
-      [[pad, ...head], ...rows])
+    await remember($, 'receipts', receiptAt(durationMs), rows)
   } finally {
     stamping.delete(key)
   }
@@ -370,17 +367,19 @@ export const register: Register = on => {
         rate: await read($, rate),
         phase: e.props.isWorking ? 'running' : 'done',
         indent: spec.C_CHROME_CONT })
-    // No margin of its own: Claude Code draws its `[-]` on the band's
-    // first row, and on a blank top row it stood alone.
+    // No top margin: Claude Code draws its `[-]` on the band's first row,
+    // and on a blank top row it stood alone.  A bottom margin of -1 draws
+    // into the blank row Claude Code keeps above the prompt's border, a
+    // line less on screen (decided 2026-10-19, to be seen live).
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginBottom={-1}>
         {lines.map((l, i) => line(Text, l, 'band' + i))}
       </Box>
     )
   })
 
   // Claude Code's closing line, `✻ <word> for <duration>`, drawn as the
-  // turn's receipt: the 🔺🔖 head, then 📊 🎤 and 📊 🎮, dim, on the band's
+  // turn's receipt: 📊 🎤 with its 🔺🔖 tag, then 📊 🎮, dim, on the band's
   // columns, once stamped (decided 2026-10-19: a `$.ui.log` line came with
   // Claude Code's `⏺ usage-band:` before it and a blank row after).  Until
   // then one blank row: a Box one row high around a space, rather than an
@@ -412,12 +411,31 @@ export const register: Register = on => {
       Span[] | undefined
     if (!tag) return row
     const { Box, Text } = $.ui.resolve(e)
-    const pad: Span = { text: '  ', colour: null, dim: true, bold: false,
-      bg: null }
+    const st = await settingsOf($)
+    const blank = (n: number): Span => ({ text: ' '.repeat(n), colour: null,
+      dim: true, bold: false, bg: null })
+    // On the prompt's own row, after it, where a one-line prompt leaves the
+    // room: a line less a turn (decided 2026-10-19).
+    const cols = e.viewport?.columns ?? bandCols
+    const tagW = visWidth(tag.map((s) => s.text).join(''), st.widths)
+    const text = e.props.text
+    if (!text.includes('\n') && 2 + visWidth(text, st.widths) + 2 + tagW <=
+      cols - spec.RIGHT_EDGE) {
+      return (
+        <Box flexDirection="row">
+          {row}
+          <Box flexShrink={0}>{line(Text, [blank(2), ...tag], 'tag', true)}</Box>
+        </Box>
+      )
+    }
+    // Else on a line of its own, its 🔻🔖 over the receipt's 🔺🔖, which
+    // stands after the band's indent and 📊 🎤.
+    const under = spec.C_CHROME_CONT + visWidth(spec.E_COSTLINE + ' ' +
+      spec.E_TURN + ' ', st.widths)
     return (
       <Box flexDirection="column">
         {row}
-        {line(Text, [pad, ...tag], 'tag', true)}
+        {line(Text, [blank(under), ...tag], 'tag', true)}
       </Box>
     )
   })

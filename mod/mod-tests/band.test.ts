@@ -261,6 +261,20 @@ async function drawnRows(ui: { drawn: () => Promise<unknown> }) {
   })
 }
 
+/** Where a prompt's turn tag was drawn: `beside` it on its row, or under
+ * it on a line of its own, and the tag's text with its leading blanks. */
+async function tagDrawn(ui: { drawn: () => Promise<unknown> }) {
+  const tree = await ui.drawn() as Drawn
+  const spans = (row: Drawn) => ((row.children ?? []) as Drawn[])
+    .map((c) => (c.children ?? []).join('')).join('')
+  if (tree.props?.flexDirection === 'row') {
+    const box = (tree.children ?? []).at(-1) as Drawn
+    return { beside: true, text: spans((box.children ?? [])[0] as Drawn) }
+  }
+  const rows = await drawnRows(ui)
+  return { beside: false, text: rows[rows.length - 1]?.text }
+}
+
 function expected(lines: readonly (readonly Span[])[]) {
   const named = spec as unknown as Record<string, string>
   return lines.map((l) => ({ text: text(l),
@@ -353,7 +367,7 @@ test('a turn ends on a blank closing line', async ($, on) => {
   await blankClosing($, 'Worked', 65_000)
 })
 
-test('a prompt from the composer gets its turn tag under it',
+test('a prompt from the composer gets its turn tag beside it, or under it',
   async ($, on) => {
     const w = world(on)
     await start($, 'terminal', STATUS)
@@ -376,8 +390,19 @@ test('a prompt from the composer gets its turn tag under it',
     const typed = await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'UserMessage',
       props: { ...props, origin: { kind: 'composer' } } })
-    const drawn = await drawnRows(typed)
-    expect(drawn[drawn.length - 1]?.text).toBe('  ' + text(tag))
+    // A short prompt has it on its own row, after it.
+    expect(await tagDrawn(typed)).toEqual({ beside: true,
+      text: '  ' + text(tag) })
+    // One too long for the row has it on a line of its own, its 🔻🔖 over
+    // where the receipt's 🔺🔖 stands: the band's indent, then 📊 🎤.
+    const long = 'Go on. '.repeat(40).trim()
+    w.store.set(startKey(long), w.store.get(startKey('Go on.')))
+    const wide = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'UserMessage',
+      props: { text: long, isExpanded: false, origin: { kind: 'composer' } },
+      viewport: { columns: COLS, rows: 40 } })
+    expect(await tagDrawn(wide)).toEqual({ beside: false,
+      text: ' '.repeat(spec.C_CHROME_CONT + 6) + text(tag) })
     const other = await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'UserMessage',
       props: { ...props, origin: { kind: 'unclassified' } } as any })
@@ -505,11 +530,8 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const fig = withEngineDuration(costFigures(turns, windowFor(turns,
     Number(doc.context_window)), CALIB, snap, prepared, now,
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
-  const { head, rows } = receiptLines(settings({}), fig, COLS, [],
-    workspaceOf(doc, HOME), true, spec.C_CHROME_CONT)
-  const pad: Span = { text: ' '.repeat(spec.C_CHROME_CONT), colour: null,
-    dim: true, bold: false, bg: null }
-  return [[pad, ...head], ...rows]
+  return receiptLines(settings({}), fig, COLS, [], workspaceOf(doc, HOME),
+    true, spec.C_CHROME_CONT).rows
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -532,7 +554,8 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    expect(want.length).toBe(3)
+    // 📊 🎤 with its 🔺🔖 tag, and 📊 🎮: no head line of its own.
+    expect(want.length).toBe(2)
     expect(text(want[0])).toContain('p-resume'.slice(0, 8))
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
@@ -593,8 +616,8 @@ async function drewAll($: any, w: World) {
   const typed = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
     component: 'UserMessage', props: { text: ASKED, isExpanded: false,
       origin: { kind: 'composer' } } })
-  const under = await drawnRows(typed)
-  expect(under[under.length - 1]?.text).toBe('  ' + text(tag))
+  expect(await tagDrawn(typed)).toEqual({ beside: true,
+    text: '  ' + text(tag) })
 
   await blankClosing($, 'Crunched', ASKED_MS)
 }

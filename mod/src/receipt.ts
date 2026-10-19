@@ -25,8 +25,8 @@ import type { Accounting } from "./claude_calib.ts";
 import { decodeTranscript } from "./figures.ts";
 import { _readAccounting, decodeTurn } from "./claude_cost.ts";
 import {
-  CELLS, cacheRate, hms, receiptLabel, sessionLabel, turnHead, turnLabel,
-  ymd,
+  CELLS, cacheRate, hms, piece, receiptLabel, sessionLabel, turnHead,
+  turnLabel, ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
@@ -84,7 +84,8 @@ function planPct(plan: unknown, key: string): string {
 }
 
 /** 📊 🎤: the turn the receipt bills, `turns[i]` with
- * `accounting.turns[i]`.  🧠 its growth, `dctx` over `context_window`;
+ * `accounting.turns[i]`, its 🔺🔖 tag on the label before the prompt
+ * (decided 2026-10-19: the receipt has no head line of its own).  🧠 its growth, `dctx` over `context_window`;
  * 🧩 🎯 weighed from its tokens; ⌛ its `dur_s`; ⛳ the last ETA it
  * reported, `eta` (decision 6), read at `clock.now`, when it ended, so a
  * turn that ran past its estimate reads late. */
@@ -103,8 +104,10 @@ function turnRow(st: Settings, t: Turn, acc: Accounting, win: number,
     ...shareCells(st, acc, sessPct, weekPct),
     diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),
   };
-  return { scope: "turn", label: receiptLabel(turnLabel(squash(t.text))),
-    cells };
+  const [mark, ...prompt] = turnLabel(squash(t.text));
+  const tag = turnHead(E_TURN_PAST, t.prompt_id, t.turn_index, null, null);
+  return { scope: "turn", label: receiptLabel([mark,
+    ...(tag ? [piece("name.tag", tag + "  ")] : []), ...prompt]), cells };
 }
 
 /** sum() of floats, left to right, as the receipt's totals add up. */
@@ -182,30 +185,17 @@ export function withEngineDuration(fig: Dict, durationMs: number): Dict {
   return { ...fig, turns: t, accounting: { ...acc, turns: accTurns } };
 }
 
-/** The receipt's head, "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02": the
- * billed turn's tag and `clock.now`, when it was stamped. */
-export function receiptHead(fig: Dict): Span[] {
-  const now = (fig.clock as Dict).now as number;
-  const turns = (fig.turns as Dict[]).map(decodeTurn);
-  const i = receiptTurn(turns);
-  const t = i < 0 ? null : turns[i];
-  return [span(turnHead(E_TURN_PAST, t ? t.prompt_id : "",
-    t ? t.turn_index : null, ymd(now), hms(now)))];
-}
-
-/** The receipt as drawn at `cols` under `hide`: the head, on a line of its
- * own, and the rows under it, on the band's fixed grid.  A hidden scope's
+/** The receipt as drawn at `cols` under `hide`: its rows, on the band's
+ * fixed grid.  A hidden scope's
  * row is left out.  `dim` draws every span dim, as the stamped receipt is
  * drawn, its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null, dim = false, indent = 0):
-  { head: Span[]; rows: Span[][] } {
+  { rows: Span[][] } {
   const { turn, session } = receiptRows(st, fig, ws);
-  const head = receiptHead(fig);
   const rows = drawRows(st, [...(turn ? [turn] : []), session]
     .map((r) => indented(r, indent)), cols, hide);
-  return dim ? { head: dimmed(head), rows: rows.map(dimmed) }
-    : { head, rows };
+  return { rows: dim ? rows.map(dimmed) : rows };
 }
 
 /** `spans`, each drawn dim. */

@@ -1338,9 +1338,10 @@ export const HIDE_GROUPS = {
                                                         //  what a thread does
   "workspace": ["project", "branch", "dir", "pr", "style"],  // 📦 🌿 📁 🔀 🎨
   "clock": ["date", "time"],                            // 📅 🕐
-  "name": ["label", "kind", "receipt"],                 // the row's name, an
+  "name": ["label", "kind", "receipt", "tag"],          // the row's name, an
                                                         //  agent's kind, the
-                                                        //  receipt's 📊
+                                                        //  receipt's 📊 and
+                                                        //  its 🔺🔖 tag
 };
 
 // The columns, in the order every row draws them.  `key` names the column,
