@@ -63,22 +63,21 @@ reads it.
 
 ### The receipt
 
-As a turn ends the mod stamps its receipt into the transcript with
-`$.ui.log`, a line each, the rows the band drew live, frozen:
+As a turn ends the mod stamps its receipt as the turn's closing line, in
+place of Claude Code's `✻ <word> for <duration>`: the rows the band drew
+live, frozen and dim, in their colours:
 
 ```
-                                   (the closing line, a blank row)
      🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
      📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
      📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  …
 ```
 
-Claude Code draws a `$.ui.log` line as a system notice: plain text, dim,
-not sent to the model. So the receipt has no colours, and its rows are
-laid out at the width the band last drew at with the band's indent, then
-logged without it: a notice's text is taken to stand five columns in, as
-a hook's message does, so the notice's chrome stands in for the indent
-and puts each column under the band's.
+The rows are laid out at the width the band last drew at, with the band's
+five-column indent, so each column is under the band's. Until the stamp
+lands the closing line is a blank row. A `$.ui.log` line was tried first:
+Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
+blank row after, in plain dim text.
 
 Claude Code writes a turn's records to the transcript only after its Stop
 hooks have run, after the mod hears `turn.complete`, so the stamp waits
@@ -158,8 +157,8 @@ the runner collects every `*.test.ts` under the folder it is given and
 `test/` holds Node's. Each test answers `$.fs` from the fixture
 transcripts (`mod-tests/fixtures.gen.ts`, written by
 `node tools/gen-mod-fixtures.ts`; `test/mod-fixtures.test.ts` fails when it
-is stale) and checks what the mod drew, and the receipt's `$.ui.log`
-lines, against the `src/` functions over the same bytes. It needs the
+is stale) and checks what the mod drew, the receipt's closing line among
+them, against the `src/` functions over the same bytes. It needs the
 `claude` command, which CI does not have.
 
 The hooks type-check against the engine's types, which it writes into

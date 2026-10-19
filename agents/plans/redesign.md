@@ -147,13 +147,12 @@ close up; hidden on some rows, it is left blank there.
 
 Decided 2026-10-19: live, then stamped. While a turn runs, the band's 🎤 and
 🎮 rows are that turn's and the session's, live. Once it has ended and its
-records are in the transcript, the mod stamps them there frozen, a
-`$.ui.log` line each, so every turn's receipt stays in the transcript to
-scroll back to (whether a resumed session shows them again is for a live
-session to settle):
+records are in the transcript, the mod stamps them frozen as the turn's
+closing line, so every turn's receipt stays in the transcript to scroll
+back to (whether a resumed session shows them again is for a live session
+to settle):
 
 ```
-                                         (the closing line, a blank row)
      🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
      📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
      📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
@@ -186,30 +185,24 @@ under it the 📊 🎤 and 📊 🎮 rows on the band's fixed grid.
   band's last context window; the billed turn timed by the engine's
   duration (`withEngineDuration`, `turn.complete`'s `durationMs`); 📦 🌿
   from the band's last status document (D7).
-- **The chrome.** `$.ui.log` takes a string, drawn as a system notice: a
-  dim row of its own, not sent to the model. So the receipt is plain
-  text, its colours lost; the types give no styled form. The rows are laid
-  out at the width the band last drew at, with the band's indent,
-  `C_CHROME_CONT` blanks before the label, and logged without it: a
-  notice's text is taken to stand those five columns in, as a hook's
-  message does, so the 📊 and every column after it fall under the band's.
-  The types do not say where a notice's text starts; a live session
-  checks it, and a different chrome is a different indent in one place
-  (`NOTICE_INDENT` in `hooks/register.tsx`).
+- **Where.** Decided 2026-10-19: the closing line (`TurnDuration`) draws
+  the receipt filed for its turn's duration, in place of `✻ <word> for
+  <duration>`, dim, in its colours, laid out at the width the band last
+  drew at with the band's indent, so its columns are the band's; a blank
+  row until the stamp lands. A `$.ui.log` line each was tried first and
+  dropped the same day: Claude Code draws each as its own notice,
+  `⏺ usage-band:` before it and a blank row after, plain and dim, so the
+  rows split apart and stood 14 columns right of the band's.
 - **Once per turn.** The stamp keeps each turn it stamped in the mod's
   store, by session and by the turn's tag, first stamp and calls
-  (`turnKey`), and one over the same turn logs nothing; one that went on
-  and billed more is stamped again. The key is filed before the lines are
-  logged.
-- **Failure.** A turn whose records never land, and any failure, logs
-  nothing to the transcript and says why in the mod's log.
-- **The closing line** (`TurnDuration`) is drawn as a blank row: the
-  receipt under it carries the tag and the clock, and the blank parts the
-  answer from it.
+  (`turnKey`), and one over the same turn stamps nothing new; one that
+  went on and billed more is stamped again.
+- **Failure.** A turn whose records never land, and any failure, leaves
+  its closing line blank and says why in the mod's log.
 - **The band** has no margin of its own: Claude Code draws its `[-]` on the
   band's first row, and on a blank top row it stood alone.
 - The desktop app is out of scope (decided 2026-10-19): it raises no
-  `TurnDuration`, and how it shows a `$.ui.log` line is not checked.
+  `TurnDuration`, so it draws no receipt.
 
 Before this, for a day, the receipt was a Stop hook's,
 `mod/tools/receipt-hook.ts`, printed as its `systemMessage` behind
@@ -373,8 +366,8 @@ same version-1 reading as its output and shared cases pinning it.
    and the agent offsets are read from the file the status line writes,
    and not written. The receipt's cost document is built through the same
    edges (`costDoc`), once the transcript bills the turn ("The
-   receipt"). `mod/mod-tests/` checks each drawn place, and the
-   receipt's `$.ui.log` lines, against the
+   receipt"). `mod/mod-tests/` checks each drawn place, the receipt's
+   closing line among them, against the
    `src/` functions over the same fixture bytes (`npm run test:plugin`;
    CI has no `claude` to run it).
 6. **The switch.** The band runs beside the status line until the two agree;

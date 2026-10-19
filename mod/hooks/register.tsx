@@ -5,13 +5,13 @@
 //   AbovePrompt   the band, bandLines over the last status document, at the
 //                 body's width plus the five columns the gutter takes, a
 //                 blank row above it;
-//   TurnDuration  the turn's closing line, as a blank row;
+//   TurnDuration  the turn's closing line: the turn's receipt, blank until
+//                 it is stamped;
 //   UserMessage   under a prompt typed at the composer, its turn's tag.
 //
-// And one is written: the receipt.  The band's 🎤 and 🎮 rows are live
-// while a turn runs; once the turn has ended and Claude Code has written
-// its records, the mod stamps them into the transcript, frozen, a
-// `$.ui.log` line each, under the blank closing line (stamp).
+// The band's 🎤 and 🎮 rows are live while a turn runs; once the turn has
+// ended and Claude Code has written its records, the mod stamps them,
+// frozen, as the receipt its closing line draws (stamp).
 //
 // The handlers do the reading (edges.ts) and file what they read: the
 // status document in `$.state`, so a new one redraws the band, and each
@@ -33,7 +33,6 @@ import {
   withEngineDuration,
 } from '../src/receipt.ts'
 import { sha256Hex } from '../src/sha256.ts'
-import { pyRstrip } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
 import { costDoc, placesOf, seen, statusDoc, turnsNow } from './edges.ts'
@@ -178,15 +177,6 @@ async function remember($: $, index: string, key: string, value: unknown) {
 // at it, so its columns are the band's.  80 until the band has drawn.
 let bandCols = 80
 
-/** The columns Claude Code draws a `$.ui.log` line's text from.  The line
- * is drawn as a system notice, a dim row of its own taking plain text,
- * and a notice's text is taken to stand where a hook's message does,
- * C_CHROME_CONT columns in (the types do not say; a live session checks
- * it): the band's rows open with as many blanks, so a receipt row laid out
- * with that indent and logged without it puts its 📊 under the band's,
- * and every column after it. */
-const NOTICE_INDENT = spec.C_CHROME_CONT
-
 /** The store's key for a stamped receipt: its session and its turn. */
 export const receiptKey = (session: string, turn: string) =>
   'receipt:' + sha256Hex(session + '\0' + turn).slice(0, 32)
@@ -195,16 +185,9 @@ export const receiptKey = (session: string, turn: string) =>
 // once even before the first has filed its key.
 const stamping = new Set<string>()
 
-/** A receipt row as a `$.ui.log` line: its spans' text, plain (the line
- * takes a string, drawn dim), without the NOTICE_INDENT blanks `indented`
- * put first, which Claude Code draws. */
-function logged(row: readonly Span[], indent: number): string {
-  const pad = ' '.repeat(indent)
-  const [first, ...rest] = row
-  const spans = indent && first?.text.startsWith(pad)
-    ? [{ ...first, text: first.text.slice(pad.length) }, ...rest] : row
-  return pyRstrip(stripAnsi(spans.map((s) => s.text).join('')))
-}
+/** The store's key for the receipt a closing line draws: the turn's
+ * duration, which the line is drawn with and turn.complete carries. */
+const receiptAt = (durationMs: number) => 'receipt-at:' + durationMs
 
 /** Stamps the receipt of the turn that opened with `prompt` (its id, ""
  * for any) into the transcript.  Claude Code writes a turn's assistant
@@ -212,7 +195,7 @@ function logged(row: readonly Span[], indent: number): string {
  * transcript is read every CONFIG.receiptPollMs until the newest prompt's
  * turn is billed and two reads agree on what it billed, for up to
  * CONFIG.receiptWaitMs.  Then the cost document, the head and the 📊 rows,
- * a `$.ui.log` line each.  Each turn is stamped once (receiptKey); one
+ * filed for the closing line to draw.  Each turn is stamped once (receiptKey); one
  * whose records never land is logged, and nothing stamped. */
 async function stamp($: $, durationMs: number, prompt: string):
   Promise<void> {
@@ -251,14 +234,15 @@ async function stamp($: $, durationMs: number, prompt: string):
       got!.turns, published), durationMs)
     // 📦 🌿 from the band's last status document (decision 7).
     const ws = doc ? workspaceOf(doc as Dict, where.home) : null
+    // Laid out as the band is, with its indent, so the rows' columns are
+    // the band's; the head takes the same indent.
     const { head, rows } = receiptLines(await settingsOf($), fig, bandCols,
-      CONFIG.hide, ws, true, NOTICE_INDENT)
-    const lines = [logged(head, 0), ...rows.map((r) =>
-      logged(r, NOTICE_INDENT))]
-    // Filed before it is logged: a receipt stamped twice is the worse
-    // failure than one lost to a log that failed after it.
+      CONFIG.hide, ws, true, spec.C_CHROME_CONT)
+    const pad: Span = { text: ' '.repeat(spec.C_CHROME_CONT), colour: null,
+      dim: true, bold: false, bg: null }
     await remember($, 'receipts', key, true)
-    for (const l of lines) $.ui.log(l)
+    await remember($, 'receipts', receiptAt(durationMs),
+      [[pad, ...head], ...rows])
   } finally {
     stamping.delete(key)
   }
@@ -395,13 +379,24 @@ export const register: Register = on => {
     )
   })
 
-  // Claude Code's closing line, `✻ <word> for <duration>`, drawn as one
-  // blank row: the receipt stamped under it carries the turn's 🔺🔖 tag
-  // and when it ended, and the blank parts the answer from it.  A Box one
-  // row high around a space, rather than an empty Text, which Ink measures
-  // as no row at all.
+  // Claude Code's closing line, `✻ <word> for <duration>`, drawn as the
+  // turn's receipt: the 🔺🔖 head, then 📊 🎤 and 📊 🎮, dim, on the band's
+  // columns, once stamped (decided 2026-10-19: a `$.ui.log` line came with
+  // Claude Code's `⏺ usage-band:` before it and a blank row after).  Until
+  // then one blank row: a Box one row high around a space, rather than an
+  // empty Text, which Ink measures as no row at all.
   on('ui.render', { component: 'TurnDuration' }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
+    await read($, filed)
+    const got = (await $.store.get(receiptAt(e.props.durationMs))) as
+      Span[][] | undefined
+    if (got) {
+      return (
+        <Box flexDirection="column">
+          {got.map((l, i) => line(Text, l, 'receipt' + i))}
+        </Box>
+      )
+    }
     return (
       <Box height={1}>
         <Text> </Text>

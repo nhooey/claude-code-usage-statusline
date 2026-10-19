@@ -47,7 +47,6 @@ import {
 } from '../src/receipt.ts'
 import type { Span } from '../src/spans.ts'
 import * as spec from '../src/spec.ts'
-import { pyRstrip } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
 
 const HOME = '/home/fixture'
@@ -475,22 +474,27 @@ async function askLive($: any, w: World, land: boolean) {
   await $.turn.start({ text: ASKED, turnId: 't-resume' })
   await $.turn.complete(COMPLETE)
   await w.clock.settle()
-  expect(w.logged).toEqual([])
+  expect(stamped(w)).toBe(false)
   if (land) grow(w, ANSWER)
 }
 
-/** Moves the clock on in the mod's polling steps until it has logged, or
+/** Whether the mod has filed a receipt for a closing line to draw. */
+function stamped(w: World): boolean {
+  return [...w.store.keys()].some((k) => k.startsWith('receipt-at:'))
+}
+
+/** Moves the clock on in the mod's polling steps until it has stamped, or
  * `ms` have passed. */
 async function until(w: World, ms: number) {
-  for (let t = 0; t < ms && !w.logged.length; t += 500) {
+  for (let t = 0; t < ms && !stamped(w); t += 500) {
     await w.clock.advance(500)
   }
 }
 
-/** The receipt's lines as the mod should log them at `now`, worked out
- * from the transcript's bytes: receiptLines over the cost document, at the
- * band's width, its rows' indent left to Claude Code's notice chrome. */
-async function receiptOf(w: World, now: number): Promise<string[]> {
+/** The receipt's lines as the closing line should draw them at `now`,
+ * worked out from the transcript's bytes: receiptLines over the cost
+ * document, at the band's width with the band's indent, the head too. */
+async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const doc = lastDoc(w)
   const records = _recordsOf(bytesOf(w, RESUMED))
   const readings = readingsOf(w, RESUMED)
@@ -503,15 +507,20 @@ async function receiptOf(w: World, now: number): Promise<string[]> {
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
   const { head, rows } = receiptLines(settings({}), fig, COLS, [],
     workspaceOf(doc, HOME), true, spec.C_CHROME_CONT)
-  const pad = ' '.repeat(spec.C_CHROME_CONT)
-  return [text(head), ...rows.map((r) => {
-    const t = text(r)
-    expect(t.startsWith(pad)).toBe(true)
-    return t.slice(pad.length)
-  })].map((l) => pyRstrip(l))
+  const pad: Span = { text: ' '.repeat(spec.C_CHROME_CONT), colour: null,
+    dim: true, bold: false, bg: null }
+  return [[pad, ...head], ...rows]
 }
 
-test('a turn whose records land after turn.complete gets its receipt, once',
+/** The closing line of a turn that took `durationMs`, as drawn. */
+async function closing($: any, durationMs: number) {
+  return drawnRows(await $.ui.mount({ plugin: 'usage-band',
+    surface: 'terminal', component: 'TurnDuration',
+    props: { word: 'Worked', durationMs },
+    viewport: { columns: COLS, rows: 40 } }))
+}
+
+test('a turn whose records land after turn.complete gets its receipt drawn as its closing line',
   async ($, on) => {
     const w = world(on)
     resumed(w)
@@ -524,12 +533,15 @@ test('a turn whose records land after turn.complete gets its receipt, once',
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
     expect(want.length).toBe(3)
-    expect(want[0]).toContain('p-resume'.slice(0, 8))
-    expect(w.logged).toEqual(want)
-    // turn.complete again over the same turn: nothing more.
+    expect(text(want[0])).toContain('p-resume'.slice(0, 8))
+    // The closing line draws it, on the band's columns, and nothing goes
+    // to the transcript as a notice.
+    expect(await closing($, ASKED_MS)).toEqual(expected(want))
+    expect(w.logged).toEqual([])
+    // turn.complete again over the same turn: the same receipt, once.
     await $.turn.complete(COMPLETE)
     await w.clock.advance(5_000)
-    expect(w.logged).toEqual(want)
+    expect(await closing($, ASKED_MS)).toEqual(expected(want))
     expect(logOf(w)).not.toContain('no receipt')
   })
 
@@ -541,7 +553,8 @@ test('a turn whose records never land logs why and stamps nothing',
       isInteractive: true })
     await askLive($, w, false)
     await until(w, 31_000)
-    expect(w.logged).toEqual([])
+    expect(stamped(w)).toBe(false)
+    await blankClosing($, 'Worked', ASKED_MS)
     expect(logOf(w)).toContain('no receipt: the turn was not billed ' +
       'within 30s')
   })
