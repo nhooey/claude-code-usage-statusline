@@ -144,13 +144,15 @@ test("📁 draws the project's root as 📦", () => {
     git: { ...(fig.git as Dict), in_git: true, ...git },
     payload: { ...(fig.payload as Dict), current_dir: dir } }, "/home/u").dir;
   const repo = { toplevel: "/home/u/repo", main_root: "/home/u/repo" };
-  assert.equal(at("/home/u/repo", repo), "📦");
-  assert.equal(at("/home/u/repo/mod", repo), "📦/mod");
+  assert.equal(at("/home/u/repo", repo), "~/📦");
+  assert.equal(at("/home/u/repo/mod", repo), "~/📦/mod");
   assert.equal(at("/home/u/repository", repo), "~/repository");
+  assert.equal(at("/srv/repo/mod", { toplevel: "/srv/repo",
+    main_root: "/srv/repo" }), "/srv/📦/mod");
   // A worktree's paths are the main checkout's project, under its root.
   assert.equal(at("/home/u/repo/.claude/worktrees/w/mod",
     { toplevel: "/home/u/repo/.claude/worktrees/w", main_root: "/home/u/repo" }),
-  "📦/.claude/worktrees/w/mod");
+  "~/📦/.claude/worktrees/w/mod");
 });
 
 test("🎤 carries the model and 🛫, and a running tool's time in 🛫's column", () => {
@@ -162,8 +164,11 @@ test("🎤 carries the model and 🛫, and a running tool's time in 🛫's colum
   const rows = inZone(fig, () => bandRows(st, fig, opts));
   assert.ok(text(rows.turn.cells.model).length > 0);
   assert.ok(text(rows.turn.cells.rate).includes("/s"));
-  assert.equal(rows.main.cells.model, undefined);
-  assert.equal(rows.main.cells.rate, undefined);
+  // 🤖 has blank model and 🛫 columns, so its reply ends at the model's,
+  // and while it answers, 🤖 and how long in 🛫's.
+  assert.equal(text(rows.main.cells.model), "");
+  assert.match(text(rows.main.cells.rate), /^(🤖 +\S+)?$/);
+  assert.ok(!rows.main.label.some((p) => p.path === "chat.doing"));
   // A tool running for 90 seconds: 🔧 and its time where the rate was, and
   // not on 🤖's label.
   const now = ((fig.clock as Dict).now as number);

@@ -198,14 +198,15 @@ function homeDir(dir: string, home: string): string {
   return dir;
 }
 
-/** `dir` with the project's root, `root`, drawn as 📦, the project's own
- * mark (asked 2026-10-19), "📦/mod" for its mod/ folder; outside it, as
- * homeDir draws it. */
+/** `dir`, as homeDir draws it, with the project's root, `root`, drawn as
+ * 📦, the project's own mark, under its parent (asked 2026-10-19):
+ * "~/git/📦/mod" for its mod/ folder. */
 function projectDir(dir: string, root: string, home: string): string {
   const r = pyRstrip(root, "/");
-  if (r && dir === r) return E_PROJ;
-  if (r && dir.startsWith(r + "/")) return E_PROJ + pySlice(dir, pyLen(r));
-  return homeDir(dir, home);
+  if (!r || (dir !== r && !dir.startsWith(r + "/"))) return homeDir(dir, home);
+  const parent = r.slice(0, r.lastIndexOf("/"));
+  return (parent ? homeDir(parent, home) : "") + "/" + E_PROJ +
+    pySlice(dir, pyLen(r));
 }
 
 /** Where the session works, off the document's `git` and `payload`.  The
@@ -306,17 +307,14 @@ function toolCell(st: Settings, tr: Transcript, now: number): Span[] | null {
  * of its state and how long it has been in it, amber once it has worked
  * QUIET_WARN_S without a word.  Null on an offline read, and while a tool
  * runs, which 🎤's 🛫 column says (toolCell). */
-function doingPiece(st: Settings, tr: Transcript, now: number):
-  Piece | null {
+function doingCell(st: Settings, tr: Transcript, now: number):
+  Span[] | null {
   const [mark, since] = mainDoing(tr);
   if (!mark || mark === E_TOOL) return null;
   const secs = Math.max(0.0, now - since);
   const amber = mark === E_WORK && secs >= QUIET_WARN_S;
-  return { path: "chat.doing", drop: 0, spans: [
-    span(mark + st.doingPad),
-    span(durFmt(st, secs), amber ? "F_AMB" : "F_PRW",
-      !amber && magDim(secs, MAG_DUR_S)),
-    span("  ")] };
+  return [span(mark + " "), span(padVal(st, 5, durFmt(st, secs)),
+    amber ? "F_AMB" : "F_PRW", !amber && magDim(secs, MAG_DUR_S))];
 }
 
 /** 🤖: the main thread alone, before its agents' figures are added.  The
@@ -354,8 +352,12 @@ function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
       diff: CELLS.diff(st, tr.lines_added, tr.lines_removed),
     });
   }
-  const doing = opts.phase === "running" ? doingPiece(st, tr, now) : null;
-  return { scope: "main", label: mainLabel(tr.asst_text, doing), cells };
+  // Running, what it is doing and for how long in 🛫's column, as 🎤 draws
+  // a running tool's (asked 2026-10-19); the model's column left blank, so
+  // the reply ends where 🎤's model starts.
+  const doing = opts.phase === "running" ? doingCell(st, tr, now) : null;
+  Object.assign(cells, { model: [], rate: doing ?? [] });
+  return { scope: "main", label: mainLabel(tr.asst_text), cells };
 }
 
 /** 🎮: the main thread and every agent, summed.  💰 💾 the accounting's
