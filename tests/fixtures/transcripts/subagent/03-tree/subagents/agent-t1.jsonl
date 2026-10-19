@@ -1,0 +1,5 @@
+{"isSidechain": true, "message": {"content": "do a thing"}, "promptId": "p1", "timestamp": "2026-08-16T01:50:00Z", "type": "user", "userType": "external"}
+{"subtype": "compact_boundary", "timestamp": "2026-08-16T01:51:40Z", "type": "system"}
+{"subtype": "compact_boundary", "timestamp": "2026-08-16T01:58:20Z", "type": "system"}
+{"effort": "high", "isSidechain": true, "message": {"content": [{"id": "u1", "name": "Agent", "type": "tool_use"}], "id": "t1a", "model": "claude-opus-5", "usage": {"cache_creation_input_tokens": 8000, "cache_read_input_tokens": 90000, "input_tokens": 500, "output_tokens": 2000}}, "requestId": "t1a", "timestamp": "2026-08-16T02:00:00Z", "type": "assistant"}
+{"effort": "high", "isSidechain": true, "message": {"content": [{"id": "u2", "name": "Agent", "type": "tool_use"}], "id": "t1b", "model": "claude-opus-5", "usage": {"cache_creation_input_tokens": 2000, "cache_read_input_tokens": 30000, "input_tokens": 100, "output_tokens": 400}}, "requestId": "t1b", "timestamp": "2026-08-16T02:00:10Z", "type": "assistant"}

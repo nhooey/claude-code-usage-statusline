@@ -1,0 +1,2 @@
+{"isSidechain": true, "message": {"content": "do a thing"}, "promptId": "p1", "timestamp": "2026-08-16T02:03:20Z", "type": "user", "userType": "external"}
+{"effort": "high", "isSidechain": true, "message": {"content": [{"text": "deep", "type": "text"}], "id": "t5a", "model": "claude-opus-5", "usage": {"cache_creation_input_tokens": 2000, "cache_read_input_tokens": 30000, "input_tokens": 100, "output_tokens": 400}}, "requestId": "t5a", "timestamp": "2026-08-16T02:23:10Z", "type": "assistant"}
