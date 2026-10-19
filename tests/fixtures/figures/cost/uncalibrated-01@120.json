@@ -8,6 +8,7 @@
       "model_s": 360,
       "read_share": 31,
       "sess_share": null,
+      "start_s": 1786842600,
       "tool_s": 0,
       "week_share": 0.08771707317073171,
       "write_share": 14
@@ -61,7 +62,7 @@
   },
   "context_window": 200000,
   "mode": "cost",
-  "schema": 2,
+  "schema": 3,
   "turns": [
     {
       "agent": false,
@@ -79,6 +80,7 @@
       "ctx": 43003,
       "dctx": null,
       "dur_s": 180,
+      "eta": [],
       "fresh": 15,
       "lines_added": 0,
       "lines_removed": 0,
@@ -120,6 +122,7 @@
       "ctx": 62808,
       "dctx": 19805,
       "dur_s": 120,
+      "eta": [],
       "fresh": 8,
       "lines_added": 0,
       "lines_removed": 0,
@@ -157,6 +160,7 @@
       "ctx": 78905,
       "dctx": 16097,
       "dur_s": 60,
+      "eta": [],
       "fresh": 5,
       "lines_added": 0,
       "lines_removed": 0,

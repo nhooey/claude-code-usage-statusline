@@ -25,8 +25,10 @@ import { isDict, pyIsDigit, pyIntDigits } from "./py.ts";
 import type { Dict } from "./py.ts";
 
 // 2 since 2026-10-19: the status document's `turn` and `accounting`, and
-// the main thread's own figures on its transcript; claude.py says which.
-export const FIGURES_SCHEMA = 2;
+// the main thread's own figures on its transcript.  3 the same day:
+// `open_turn`, `accounting.own`, the session's `start_s`, the transcript's
+// `own_parts` and `own_est`, and the Turn's `eta`.  claude.py says which.
+export const FIGURES_SCHEMA = 3;
 
 // ════════════════════════════════════════════════════════════════════════════
 // Records.
@@ -57,7 +59,8 @@ const TRANSCRIPT: Fields = {
   queued: "value", compactions: "value", ctx_est: "value", shells: "value",
   monitors: "value", tool_at: "value", wait_at: "value", idle_at: "value",
   last_seen: "value", own_tok_up: "value", own_tok_down: "value",
-  own_cache_pct: "value", own_usd: "value", lines_added: "value",
+  own_cache_pct: "value", own_usd: "value", own_parts: "value",
+  own_est: "value", lines_added: "value",
   lines_removed: "value", prompt_id: "str", turn_index: "value",
 };
 

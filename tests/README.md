@@ -160,11 +160,16 @@ compare, so the text is canonical:
   first cost case to run a `cmd:` source records what the command printed,
   and the later ones read it back from the source cache, which keeps less.
 
-`schema` is 2 and `mode` is `status` or `cost`. Schema 2 (2026-10-19) added
+`schema` is 3 and `mode` is `status` or `cost`. Schema 2 (2026-10-19) added
 the figures the redesigned grid draws and today's rows do not: the status
 document's `turn` and `accounting`, the accounting's time and 💾 figures, the
-`Turn`'s lines and the `Transcript`'s main-thread figures. No row moved. Both
-modes carry:
+`Turn`'s lines and the `Transcript`'s main-thread figures. Schema 3, the same
+day, added what the decisions in the plan's
+[Where each row's figures come from](../agents/plans/redesign.md#where-each-rows-figures-come-from)
+need: the status document's `open_turn` and `accounting.open_turn`,
+`accounting.own`, the session's `start_s`, the `Transcript`'s `own_parts` and
+`own_est` with the compactions in its own cost, and the `Turn`'s `eta`. No row
+moved either time. Both modes carry:
 
 | Key | Holds |
 |---|---|
@@ -180,14 +185,17 @@ as `claude_records.py` defines them:
 | Key | Record |
 |---|---|
 | `payload` | `Payload`: the status-line JSON as read, its strings as given |
-| `transcript` | `Transcript`: tokens, cache rate, context, the last exchange, the ⌛ durations and their epochs, ETAs, queue and compactions; and the main thread's own, apart from its agents: `own_tok_up`, `own_tok_down`, `own_cache_pct` and `own_usd` over its own requests, `lines_added` and `lines_removed` off its own tool results, and the `prompt_id` and `turn_index` of the turn opened last |
+| `transcript` | `Transcript`: tokens, cache rate, context, the last exchange, the ⌛ durations and their epochs, ETAs, queue and compactions; and the main thread's own, apart from its agents: `own_tok_up`, `own_tok_down` and `own_cache_pct` over its own requests; `own_parts`, an `[epoch, dollars]` pair for each of those requests and each compaction in the order written, a compaction's stamped where its turn is (at a `/compact` prompt with no calls, else at its boundary); `own_usd`, the parts totalled; `own_est`, true when a compaction is in them, whose summary's cost is an estimate; `lines_added` and `lines_removed` off its own tool results; and the `prompt_id` and `turn_index` of the turn opened last |
 | `git` | `Git`: branch, dirty, toplevel, worktree |
 | `limits` | `Limits`: the window percentages as the source gave them, this session's and this turn's share of each, the resets as epochs |
 | `cache_shares` | `CacheShares`: 📖 and 📝 for the turn and the session |
 | `rate` | the session's token rate per second, or null |
 | `turn` | the `Turn` the 🎤 figures are about, the last one with main-thread calls that is not a compaction (`_with_shares`' pick), or null |
-| `accounting.turn` | that turn's accounting, as the cost document's per turn, or null |
-| `accounting.session` | the same over every turn of the session, or null |
+| `open_turn` | the `Turn` opened last, whether or not it has called yet (`open_turn`), which the running 🎤 row draws: a fresh turn reads zeros, and its `text` is its opener, a queued message or a notification included; or null |
+| `accounting.turn` | `turn`'s accounting, as the cost document's per turn, or null |
+| `accounting.open_turn` | `open_turn`'s, the same way, or null |
+| `accounting.session` | the same over every turn of the session, with `start_s`, or null |
+| `accounting.own` | the main thread's own: `cost_usd`, its `own_usd`, and its `sess_share` and `week_share` of each window over `own_parts` (`parts_shares`), null for a window with no start; or null with no transcript |
 
 A status document's window shares in `accounting` are null when there is no
 plan reading, since no calibration is asked for then; `limits` carries the
@@ -197,10 +205,10 @@ A cost document adds:
 
 | Key | Holds |
 |---|---|
-| `turns` | every `Turn` the transcript folds into, in order, agent turns included; each with its `lines_added` and `lines_removed`, the main thread's tool results in the turn and its agents' filed with the requests that read them |
+| `turns` | every `Turn` the transcript folds into, in order, agent turns included; each with its `lines_added` and `lines_removed`, the main thread's tool results in the turn and its agents' filed with the requests that read them, and its `eta`, `[epoch, seconds]` off the last ETA the main thread reported in it, kept after the turn ends, or `[]` |
 | `calibration` | dollars per point of each window, `sess` and `week`, or null |
 | `accounting.turns` | per turn: `cost_usd`, its `sess_share` and `week_share` of each window, the `read_share` and `write_share` of its cost, `model_s` and `tool_s` (`turn_times`, the main thread's and its agents' agent-seconds), the main thread's `blocked_s`, and `lines_added` and `lines_removed` |
-| `accounting.session` | the same over every turn, for the totals row: sums, with the shares worked out over the sums |
+| `accounting.session` | the same over every turn, for the totals row: sums, with the shares worked out over the sums; and `start_s`, the earliest turn's stamp, which the 🎮 rows' ⌛ counts the session's age from, or null |
 
 The cost rows read their shares from `accounting` and work out none
 themselves, so the render stage takes only the percentages from

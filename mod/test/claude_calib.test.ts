@@ -124,6 +124,16 @@ suite("values", {
 // shares.json
 // ════════════════════════════════════════════════════════════════════════════
 
+/** calib.py's own(): every part of the turns, taken as the main
+ * thread's own, and their total. */
+function own(ts: readonly Turn[]):
+  { own_usd: number; own_parts: (readonly [number | null, number])[] } {
+  const own_parts = ts.flatMap((t) => t.parts);
+  let own_usd = 0;
+  for (const [, c] of own_parts) own_usd += c;
+  return { own_usd, own_parts };
+}
+
 const shareCases = load("shares");
 const TURNS: Record<string, Turn[]> = shareCases[0].out;
 
@@ -148,6 +158,8 @@ suite("shares", {
           attempt(() => cc.windowShares(t, calib, c.snap))),
         session_shares: attempt(() => cc.sessionShares(ts, calib, c.snap)),
         cost_accounting: attempt(() => cc.costAccounting(ts, calib, c.snap)),
+        own_accounting: attempt(() => cc.ownAccounting(own(ts), calib,
+          c.snap)),
       })),
     };
   },

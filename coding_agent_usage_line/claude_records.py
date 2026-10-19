@@ -152,12 +152,25 @@ class Transcript(NamedTuple):
     # The main thread's OWN figures, off this file alone: the tokens, cache
     # rate and list-price cost above count the agents' requests as well,
     # and the redesign's 🤖💬 row is the main thread apart from them.  The
-    # same requests, read the same way, before the agents are added; a
-    # compaction bills through no request, so it is in none of them.
+    # same requests, read the same way, before the agents are added.  A
+    # compaction bills through no request, so it is in none of the token
+    # figures; its cost is in the dollars, since 2026-10-19, charged to the
+    # thread whose window it compacts.
     own_tok_up: Optional[int] = None
     own_tok_down: int = 0
     own_cache_pct: int = -1
-    own_usd: float = 0.0
+    own_usd: float = 0.0    # the parts below, totalled
+    own_parts: Tuple[Tuple[Optional[float], float], ...] = ()
+                            # (epoch, dollars) for each of the main thread's
+                            # own requests and each compaction, in the order
+                            # the file wrote them: Turn.parts for the main
+                            # thread alone, so 🔋 🪫 can split its cost at a
+                            # window boundary.  A compaction's part is
+                            # stamped where read_turns stamps its turn; see
+                            # read_transcript.
+    own_est: bool = False   # own_usd counts a compaction, whose summary's
+                            # cost is an ESTIMATE (see read_turns): marked
+                            # "~" as ctx_est marks 🧠
     lines_added: int = 0    # what the main thread wrote, off its own tool
     lines_removed: int = 0  # results; see agent_diff.  The payload's pair is
                             # the session's, as Claude Code counts it.
@@ -324,6 +337,14 @@ class Turn(NamedTuple):
     lines_added: int = 0    # what the turn WROTE, off its tool results: the
     lines_removed: int = 0  # main thread's, and its agents' filed with the
                             # requests that read them; see diff_lines.
+    eta: Tuple[float, ...] = ()
+                            # (epoch, seconds left) off the last ETA the
+                            # main thread reported in this turn, read as
+                            # live_eta reads one, or ().  Unlike
+                            # Transcript.eta it is KEPT when the answer
+                            # ends, a 0s sign-off included: the receipt's ⛳
+                            # is what the turn last said, not a live
+                            # estimate.
 
 
 class AgentRec(NamedTuple):
@@ -1587,19 +1608,63 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     records = list(_records(path))
     reqs = _dedupe_usage(records)
     fresh = cwrite = cread = down = 0
-    own_usd = 0.0
-    for r in reqs:
+    # The main thread's own parts, its requests and its compactions, in one
+    # walk over the records so each compaction falls in its place.  A
+    # compaction is priced as read_turns prices its turn: preTokens at the
+    # cache-read rate, and the summary's estimated output once its record
+    # arrives, while no turn has opened since.  Its part is stamped where
+    # read_turns stamps that turn, so turn_cost_since and the own shares
+    # put it in the same window: at the /compact prompt that asked for it,
+    # where one is open with no calls yet, else at the boundary.
+    kept = {id(r) for r in reqs}
+    own_parts = []          # [epoch, dollars], or for a compaction
+                            # [epoch, [cache-read dollars, output dollars]]
+    compacting = None       # the compaction a summary would price
+    opener = None           # [stamp, text, calls] of the turn open
+    own_est = False
+    for r in records:
+        text = turn_start_text(r)
+        if text is not None:
+            opener = [r.get("timestamp") or "", text, 0]
+            compacting = None
+        elif r.get("subtype") == "compact_boundary":
+            md = r.get("compactMetadata") or {}
+            at = (opener[0] if opener is not None and not opener[2]
+                  and opener[1].strip() == "/compact"
+                  else r.get("timestamp") or "")
+            compacting = [ts_epoch(at), [(md.get("preTokens") or 0) * P_CR,
+                                         0.0]]
+            own_parts.append(compacting)
+            own_est = True
+            # The compaction is the open turn now, with a call, as
+            # read_turns makes it: a second boundary opens another.
+            opener = [at, "", 1]
+        elif r.get("isCompactSummary") and compacting is not None:
+            c = (r.get("message") or {}).get("content")
+            if isinstance(c, str):
+                compacting[1][1] = int(len(c) / SUMMARY_CPT) * P_OUT
+        if id(r) not in kept:
+            continue
         u = r["message"]["usage"]
         fresh += u.get("input_tokens") or 0
         cwrite += u.get("cache_creation_input_tokens") or 0
         cread += u.get("cache_read_input_tokens") or 0
         down += u.get("output_tokens") or 0
+        if opener is not None:
+            opener[2] += 1
         # Priced per record at its own model, as read_turns prices it.
-        own_usd += add_up(_usd(r["message"].get("model"),
-                               u.get("input_tokens") or 0,
-                               u.get("cache_creation_input_tokens") or 0,
-                               u.get("cache_read_input_tokens") or 0,
-                               u.get("output_tokens") or 0))
+        own_parts.append([ts_epoch(r.get("timestamp") or ""),
+                          add_up(_usd(r["message"].get("model"),
+                                      u.get("input_tokens") or 0,
+                                      u.get("cache_creation_input_tokens")
+                                      or 0,
+                                      u.get("cache_read_input_tokens") or 0,
+                                      u.get("output_tokens") or 0))])
+    # A compaction's two halves summed as turn_cost sums its turn's: the
+    # output, then the cache read.
+    own_parts = tuple((e, c[1] + c[0] if isinstance(c, list) else c)
+                      for e, c in own_parts)
+    own_usd = add_up(c for _, c in own_parts) if own_parts else 0.0
     own_in = fresh + cwrite + cread
     own_up = int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread)
     own_down = down
@@ -1776,6 +1841,8 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         own_tok_down=own_down,
         own_cache_pct=own_cache,
         own_usd=own_usd,
+        own_parts=own_parts,
+        own_est=own_est,
         lines_added=added,
         lines_removed=removed,
         prompt_id=opened["pid"],
@@ -2110,7 +2177,7 @@ def _new_turn(ts: str, text: str) -> dict:
             "usd": [0.0, 0.0, 0.0, 0.0], "an": 0, "aids": [],
             "t0": ts_epoch(ts), "t1": None, "parts": [],
             "tools": [], "waits": [], "am": 0.0, "at": 0.0,
-            "pid": "", "tidx": None, "la": 0, "lr": 0}
+            "pid": "", "tidx": None, "la": 0, "lr": 0, "eta": ()}
 
 
 def _stamp_turn_id(cur: dict, r: dict) -> None:
@@ -2346,6 +2413,14 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
         if cur is not None:
             cur["la"] += added
             cur["lr"] += removed
+            # The last ETA the main thread reported in the turn, read as
+            # live_eta reads one, and here before the dedupe below can skip
+            # the record that carries it: a message's text block shares
+            # its requestId with the rest of the message.
+            if r.get("isSidechain") is not True:
+                report = eta_report([r])
+                if report:
+                    cur["eta"] = report
         if r.get("subtype") == "compact_boundary":
             # A compaction is the one expensive operation that leaves NO usage
             # record anywhere — the request that summarises the conversation
@@ -2513,13 +2588,29 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
                         agent_model_s=t["am"], agent_tool_s=t["at"],
                         prompt_id="" if t.get("compact") else t["pid"],
                         turn_index=None if t.get("compact") else t["tidx"],
-                        lines_added=t["la"], lines_removed=t["lr"]))
+                        lines_added=t["la"], lines_removed=t["lr"],
+                        eta=t["eta"]))
         if t["ctx"]:
             prev = t
     if late:
         out.extend(late_agent_turn(t, path) for path, t in late.items())
         out.sort(key=lambda t: t.ts)
     return tuple(out)
+
+
+def open_turn(turns: Sequence[Turn]) -> Optional[Turn]:
+    """The turn opened last, whether or not it has called yet: what the
+    redesign's running 🎤 row draws.  Not _with_shares' pick, the last turn
+    with main-thread calls, which the receipt keeps: for the first seconds
+    of a turn that one is still the turn before, and the band would show
+    the last answer's figures under the new prompt.  A fresh turn reads
+    zeros instead.  A compaction is no prompt, and a late agent turn holds
+    spend from turns already reported, so neither is one; None for a
+    transcript with no prompt."""
+    for t in reversed(turns):
+        if not t.compact and not t.agent:
+            return t
+    return None
 
 
 def agent_label_id(path: str) -> str:

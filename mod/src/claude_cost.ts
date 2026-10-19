@@ -283,7 +283,7 @@ const TURN_FIELDS = ["ts", "text", "fresh", "cache_write", "cache_read",
   "usd_cw", "compact", "reported", "parts", "agent_calls", "agent_ids",
   "agent", "tool_s", "blocked_s", "agent_model_s", "agent_tool_s",
   "agent_id", "agent_name", "prompt_id", "turn_index", "lines_added",
-  "lines_removed"];
+  "lines_removed", "eta"];
 
 /** claude.py's decode_record(Turn, d).  Every field must be present: a
  * document missing one is from another schema, not a record with a

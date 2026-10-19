@@ -1,5 +1,22 @@
 {
   "accounting": {
+    "open_turn": {
+      "blocked_s": 0,
+      "cost_usd": 0.475,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "model_s": 1200,
+      "read_share": 10,
+      "sess_share": 0.08636363636363636,
+      "tool_s": 0,
+      "week_share": 0.11585365853658537,
+      "write_share": 80
+    },
+    "own": {
+      "cost_usd": 0.475,
+      "sess_share": 0.08636363636363636,
+      "week_share": 0.11585365853658537
+    },
     "session": {
       "blocked_s": 0,
       "cost_usd": 0.475,
@@ -8,6 +25,7 @@
       "model_s": 1200,
       "read_share": 10,
       "sess_share": 0.08636363636363636,
+      "start_s": 1786843400,
       "tool_s": 0,
       "week_share": 0.11585365853658537,
       "write_share": 80
@@ -55,6 +73,48 @@
     "weekly_turn": "0.115854"
   },
   "mode": "status",
+  "open_turn": {
+    "agent": false,
+    "agent_calls": 0,
+    "agent_id": null,
+    "agent_ids": [],
+    "agent_model_s": 0,
+    "agent_name": null,
+    "agent_tool_s": 0,
+    "blocked_s": 0,
+    "cache_read": 92000,
+    "cache_write": 38000,
+    "calls": 2,
+    "compact": false,
+    "ctx": 65400,
+    "dctx": null,
+    "dur_s": 1200,
+    "eta": [],
+    "fresh": 800,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "out": 1800,
+    "parts": [
+      [
+        1786844000,
+        0.2375
+      ],
+      [
+        1786844600,
+        0.2375
+      ]
+    ],
+    "prompt_id": null,
+    "reported": false,
+    "text": "Something cheap.",
+    "tool_s": 0,
+    "ts": "2026-08-16T01:23:20Z",
+    "turn_index": null,
+    "usd_cr": 0.046,
+    "usd_cw": 0.38,
+    "usd_in": 0.004,
+    "usd_out": 0.045000000000000005
+  },
   "payload": {
     "cost_usd": "114.63436755000001",
     "ctx_window": "1000000",
@@ -75,7 +135,7 @@
     "transcript": "${FIXTURES}/transcripts/status/cache-warn.jsonl"
   },
   "rate": null,
-  "schema": 2,
+  "schema": 3,
   "transcript": {
     "agent_etas": [],
     "asst_text": "Done.",
@@ -93,6 +153,17 @@
     "lines_removed": 0,
     "monitors": 0,
     "own_cache_pct": 70,
+    "own_est": false,
+    "own_parts": [
+      [
+        1786844000,
+        0.2375
+      ],
+      [
+        1786844600,
+        0.2375
+      ]
+    ],
     "own_tok_down": 1800,
     "own_tok_up": 86000,
     "own_usd": 0.475,
@@ -126,6 +197,7 @@
     "ctx": 65400,
     "dctx": null,
     "dur_s": 1200,
+    "eta": [],
     "fresh": 800,
     "lines_added": 0,
     "lines_removed": 0,

@@ -8,6 +8,7 @@
       "model_s": 0,
       "read_share": null,
       "sess_share": 0,
+      "start_s": null,
       "tool_s": 0,
       "week_share": 0,
       "write_share": null
@@ -24,7 +25,7 @@
   },
   "context_window": 200000,
   "mode": "cost",
-  "schema": 2,
+  "schema": 3,
   "turns": [],
   "usage": {
     "account_text": null,

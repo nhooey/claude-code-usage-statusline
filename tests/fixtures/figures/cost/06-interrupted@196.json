@@ -8,6 +8,7 @@
       "model_s": 120,
       "read_share": 34,
       "sess_share": 0.013644545454545454,
+      "start_s": 1786842600,
       "tool_s": 0,
       "week_share": 0.018303658536585367,
       "write_share": 29
@@ -37,7 +38,7 @@
   },
   "context_window": 200000,
   "mode": "cost",
-  "schema": 2,
+  "schema": 3,
   "turns": [
     {
       "agent": false,
@@ -55,6 +56,7 @@
       "ctx": 53209,
       "dctx": null,
       "dur_s": 120,
+      "eta": [],
       "fresh": 9,
       "lines_added": 0,
       "lines_removed": 0,

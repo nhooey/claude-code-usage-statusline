@@ -622,14 +622,17 @@ def stored_ctx_window(session_id: str) -> int:
 
 
 def _with_shares(lim: Limits, transcript: str,
-                 agents: Optional[Sequence[AgentRec]] = None
+                 agents: Optional[Sequence[AgentRec]] = None,
+                 main: Transcript = EMPTY_TRANSCRIPT
                  ) -> Tuple[Limits, CacheShares, dict]:
     """Attach how much of each window this session, and its last turn, used.
 
-    The third value is the status document's `turn` and `accounting`: the
-    turn picked below, as a record, and turn_accounting's figures for it and
-    for the session, worked out off the same read and the same calibration
-    as the strings in Limits.  With no plan reading there is no calibration
+    The third value is the status document's `turn`, `open_turn` and
+    `accounting`: the turn picked below and the turn opened last
+    (open_turn), as records, and turn_accounting's figures for each and for
+    the session, worked out off the same read and the same calibration as
+    the strings in Limits; and own_accounting's for `main`, the main
+    thread's own Transcript.  With no plan reading there is no calibration
     asked for, as before, and the window shares in it are None.
 
     Returns the 📖 📝 shares of column 3 alongside -- the same turn's, and
@@ -693,7 +696,9 @@ def _with_shares(lim: Limits, transcript: str,
     turns[-1] instead and the two disagree whenever the last thing that
     happened was a compaction or a batch drained without billing.
     """
-    none = {"turn": None, "accounting": {"turn": None, "session": None}}
+    none = {"turn": None, "open_turn": None,
+            "accounting": {"turn": None, "open_turn": None, "session": None,
+                           "own": None}}
     if not transcript or not os.path.isfile(transcript):
         return lim, NO_CACHE_SHARES, none
     try:
@@ -701,6 +706,7 @@ def _with_shares(lim: Limits, transcript: str,
         prompts = [t for t in turns if t.calls and not t.compact
                    and not t.agent]
         last = prompts[-1] if prompts else None
+        opened = open_turn(turns)
         cache = NO_CACHE_SHARES
         if turns:
             cache = CacheShares(*(turn_shares(last) if last is not None
@@ -714,11 +720,16 @@ def _with_shares(lim: Limits, transcript: str,
         # cannot have is missing, never a failed render.
         try:
             return {"turn": None if last is None else encode_record(last),
+                    "open_turn": (None if opened is None
+                                  else encode_record(opened)),
                     "accounting": {
                         "turn": (None if last is None
                                  else turn_accounting(last, calib)),
+                        "open_turn": (None if opened is None
+                                      else turn_accounting(opened, calib)),
                         "session": (session_accounting(turns, calib)
-                                    if turns else None)}}
+                                    if turns else None),
+                        "own": own_accounting(main, calib)}}
         except Exception:
             return none
 
@@ -2389,19 +2400,45 @@ def render_subagent(prepared_tasks, cols: Optional[int], lim: Limits,
     return "".join(line + "\n" for line in out)
 
 
-def emit_source_diagnose(spec: str, prepared) -> None:
-    """Emit redacted collector state without contaminating hook stdout."""
+def emit_source_diagnose(spec: str, prepared, check: str = "") -> None:
+    """Emit redacted collector state without contaminating hook stdout.
+    `check` is _cost_check's figures, appended where a status render has
+    them."""
     reading = prepared.reading if prepared is not None else {}
     source = str((reading.get("source") if isinstance(reading, dict) else "")
                  or spec or "auto")
     if source.startswith("cmd:"):
         source = "cmd"
     source = source.replace("\n", " ").replace("\r", " ")[:48]
-    sys.stderr.write("diagnose source=%s reading=%s stale=%s as_of=%s retry_at=%s\n" %
+    sys.stderr.write("diagnose source=%s reading=%s stale=%s as_of=%s retry_at=%s%s\n" %
                      (source, "available" if reading else "unavailable",
                       bool(reading.get("stale")) if isinstance(reading, dict) else False,
                       reading.get("as_of", "") if isinstance(reading, dict) else "",
-                      reading.get("retry_at", "") if isinstance(reading, dict) else ""))
+                      reading.get("retry_at", "") if isinstance(reading, dict) else "",
+                      check))
+
+
+def _cost_check(pay: Payload, session: Optional[dict]) -> str:
+    """The session's 💰 and 💾 two ways, for --diagnose: ours, the
+    accounting's over the transcript and the agent files, which the band
+    and the receipt draw (decided 2026-10-19), and Claude Code's own off the
+    payload, as a check on them.  Numbers only, each blank where its side
+    has none; a payload string that is no number is blank too, so nothing
+    but figures reaches the line."""
+    def num(v, fmt_: str) -> str:
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return ""
+        return fmt_ % f if f == f and abs(f) != float("inf") else ""
+    acc = session or {}
+    return (" cost_usd=%s claude_cost_usd=%s lines=+%s/-%s"
+            " claude_lines=+%s/-%s" % (
+                num(acc.get("cost_usd"), "%.4f"),
+                num(pay.cost_usd, "%.4f"),
+                num(acc.get("lines_added"), "%d"),
+                num(acc.get("lines_removed"), "%d"),
+                num(pay.lines_added, "%d"), num(pay.lines_removed, "%d")))
 
 
 def main_subagent(argv: Sequence[str], raw: str) -> int:
@@ -2459,8 +2496,12 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
 
 # 2 since 2026-10-19: the status document's `turn` and `accounting`, the
 # accounting's time and 💾 figures, the Turn's lines and the Transcript's
-# main-thread figures, for the redesigned grid's rows.
-FIGURES_SCHEMA = 2
+# main-thread figures, for the redesigned grid's rows.  3 the same day, for
+# the decisions in the plan's "Where each row's figures come from": the
+# status document's `open_turn` and its accounting, `accounting.own`, the
+# session's `start_s`, the Transcript's `own_parts` and `own_est` with
+# compactions in its own cost, and the Turn's last reported `eta`.
+FIGURES_SCHEMA = 3
 
 # Where a run writes its figures as well as drawing them.  For the shared
 # cases only, like the calibration override above: tests/run-cases.py sets
@@ -2737,8 +2778,6 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
             pass
     prepared = prepare_claude_reading(source_spec, account, period,
                                       source_context, frozen_now())
-    if "--diagnose" in argv:
-        emit_source_diagnose(source_spec, prepared)
     # `none` disables external collection, not the native payload that Claude
     # already supplied.  Only a named external source supersedes that intake,
     # and a failed named source is unavailable, not permission to quote an
@@ -2747,7 +2786,10 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
     seed_limits_snapshot(base_limits, prepared.reading)
     # Session/turn shares still require the one transcript scan performed
     # above; rendering itself receives only the prepared snapshot.
-    lim, cache, extra = _with_shares(base_limits, pay.transcript, agents)
+    lim, cache, extra = _with_shares(base_limits, pay.transcript, agents, tr)
+    if "--diagnose" in argv:
+        emit_source_diagnose(source_spec, prepared,
+                             _cost_check(pay, extra["accounting"]["session"]))
     ctx_window = ctx_window_for(pay.ctx_window, pay.model + pay.model_id)
     publish_ctx_window(pay.session_id, ctx_window)
     tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
@@ -2762,6 +2804,7 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
             "context_window": ctx_window,
             "rate": rate,
             "turn": extra["turn"],
+            "open_turn": extra["open_turn"],
             "accounting": extra["accounting"],
             "usage": _fig_usage(prepared)}
 
@@ -2809,11 +2852,20 @@ def session_accounting(turns: Sequence[Turn],
                        calib: Dict[str, Optional[float]]) -> dict:
     """turn_accounting over the whole session: every turn summed, agents'
     and compactions' included, the shares worked out over the sum rather
-    than added up."""
+    than added up.
+
+    The split is agent-seconds, so it can add up to more than the session's
+    age, which is ⌛ on the 🎮 rows: `start_s`, when its earliest turn
+    opened, against the document's clock.  The band and the receipt both
+    read it there so the two agree; Transcript.start_s, the first stamped
+    record of any kind, is what the 🤖💬 row's ⌛ counts from, and it can
+    be earlier by the records written before the first prompt."""
     sh = session_shares(turns, calib)
     rd, wr = session_cache_shares(turns)
     times = [turn_times(t) for t in turns]
+    stamps = [e for e in (ts_epoch(t.ts) for t in turns) if e is not None]
     return {"cost_usd": add_up(turn_cost(t) for t in turns),
+            "start_s": min(stamps) if stamps else None,
             "sess_share": sh["sess"], "week_share": sh["week"],
             "read_share": rd, "write_share": wr,
             "model_s": add_up(m for m, _ in times),
@@ -2821,6 +2873,38 @@ def session_accounting(turns: Sequence[Turn],
             "blocked_s": add_up(t.blocked_s for t in turns),
             "lines_added": sum(t.lines_added for t in turns),
             "lines_removed": sum(t.lines_removed for t in turns)}
+
+
+def parts_shares(parts: Sequence[Tuple[Optional[float], float]],
+                 calib: Dict[str, Optional[float]]
+                 ) -> Dict[str, Optional[float]]:
+    """session_shares for (epoch, dollars) parts rather than turns: each
+    part in the window or not by its own stamp, and an unstamped one in, as
+    turn_cost_since takes a turn's.  None for a window with no start, as
+    session_shares leaves it: a running total with no bound on it is not a
+    share of anything live."""
+    out = {"sess": None, "week": None}
+    if not calib:
+        return out
+    starts = dict(zip(("sess", "week"), _window_starts()))
+    for key, start in starts.items():
+        unit = calib.get(key)
+        if not unit or start is None:
+            continue
+        edge = start.timestamp()
+        out[key] = add_up(c for e, c in parts
+                          if e is None or e >= edge) / unit
+    return out
+
+
+def own_accounting(tr: Transcript, calib: Dict[str, Optional[float]]
+                   ) -> dict:
+    """The main thread's own cost and its share of each live window, apart
+    from its agents: the redesign's 🤖💬 row.  Its compactions are in both
+    (see Transcript.own_parts), and `own_est` on the Transcript says so."""
+    sh = parts_shares(tr.own_parts, calib)
+    return {"cost_usd": tr.own_usd, "sess_share": sh["sess"],
+            "week_share": sh["week"]}
 
 
 def cost_accounting(turns: Sequence[Turn],
@@ -2838,7 +2922,7 @@ def _read_accounting(acc: dict) -> Dict[str, Optional[float]]:
     return {k: (None if v is None
                 else float(v) if k in ("cost_usd", "sess_share",
                                        "week_share", "model_s", "tool_s",
-                                       "blocked_s") else v)
+                                       "blocked_s", "start_s") else v)
             for k, v in acc.items()}
 
 

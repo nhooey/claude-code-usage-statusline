@@ -54,7 +54,7 @@ import { expandUser, pyFloat, pyJsonDumps, pyJsonLoads } from "./sources.ts";
 import {
   _price, cmpStr, pyJoin, pyStr, tsEpoch, turnTimes, writeAtomic,
 } from "./claude_records.ts";
-import type { Turn } from "./claude_records.ts";
+import type { Transcript, Turn } from "./claude_records.ts";
 import { limitsEqual, NO_LIMITS } from "./claude_sources.ts";
 import type { Limits } from "./claude_sources.ts";
 
@@ -410,6 +410,9 @@ export interface Accounting {
   readonly blocked_s: number;
   readonly lines_added: number;
   readonly lines_removed: number;
+  // The session's alone: when its earliest turn opened, the 🎮 rows' ⌛
+  // start, or null with none stamped.
+  readonly start_s?: number | null;
 }
 
 /** What one turn comes to: its cost, its share of each live window and
@@ -430,7 +433,9 @@ export function turnAccounting(t: Turn, calib: Calib, snap: Snapshot):
 }
 
 /** turnAccounting over the whole session: every turn summed, left to
- * right, the shares worked out over the sum rather than added up. */
+ * right, the shares worked out over the sum rather than added up.  The
+ * split is agent-seconds and can add up to more than the session's age,
+ * which the 🎮 rows count from `start_s`, its earliest turn's stamp. */
 export function sessionAccounting(turns: readonly Turn[], calib: Calib,
   snap: Snapshot): Accounting {
   const sh = sessionShares(turns, calib, snap);
@@ -438,6 +443,8 @@ export function sessionAccounting(turns: readonly Turn[], calib: Calib,
   let cost = 0, model_s = 0, tool_s = 0, blocked_s = 0;
   let lines_added = 0, lines_removed = 0;
   for (const t of turns) cost += turnCost(t);
+  const stamps = turns.map((t) => tsEpoch(t.ts))
+    .filter((e): e is number => e !== null);
   const times = turns.map(turnTimes);
   for (const [m] of times) model_s += m;
   for (const [, tl] of times) tool_s += tl;
@@ -446,9 +453,40 @@ export function sessionAccounting(turns: readonly Turn[], calib: Calib,
     lines_added += t.lines_added;
     lines_removed += t.lines_removed;
   }
-  return { cost_usd: cost, sess_share: sh.sess, week_share: sh.week,
+  return { cost_usd: cost, start_s: stamps.length ? Math.min(...stamps)
+    : null, sess_share: sh.sess, week_share: sh.week,
     read_share: rd, write_share: wr, model_s, tool_s, blocked_s,
     lines_added, lines_removed };
+}
+
+/** sessionShares for (epoch, dollars) parts rather than turns: each part
+ * in the window or not by its own stamp, an unstamped one in, and null for
+ * a window with no start, as sessionShares leaves it. */
+export function partsShares(parts: readonly (readonly [number | null,
+  number])[], calib: Calib, snap: Snapshot):
+  { sess: number | null; week: number | null } {
+  const out: { sess: number | null; week: number | null } =
+    { sess: null, week: null };
+  if (!pyTruthy(calib)) return out;
+  const [ss, ws] = _windowStarts(snap);
+  for (const [key, start] of [["sess", ss], ["week", ws]] as const) {
+    const unit = pyGet(calib, key);
+    if (!pyTruthy(unit) || start === null) continue;
+    const edge = _naiveTimestamp(start);
+    let sum = 0;
+    for (const [e, c] of parts) if (e === null || e >= edge) sum += c;
+    out[key] = pyDiv(sum, unit);
+  }
+  return out;
+}
+
+/** The main thread's own cost and its share of each live window, apart
+ * from its agents and with its compactions: the redesign's 🤖💬 row. */
+export function ownAccounting(tr: Pick<Transcript, "own_usd" | "own_parts">,
+  calib: Calib, snap: Snapshot):
+  { cost_usd: number; sess_share: number | null; week_share: number | null } {
+  const sh = partsShares(tr.own_parts, calib, snap);
+  return { cost_usd: tr.own_usd, sess_share: sh.sess, week_share: sh.week };
 }
 
 /** turnAccounting for each turn, in order, and the same for the session:
