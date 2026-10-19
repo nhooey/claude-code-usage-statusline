@@ -15,9 +15,7 @@
 // Pure, as band.ts is: the 📦 🌿 on the 🎮 row are the caller's, since
 // cost_figures runs no git (the mod takes the band's), and the clock is
 // drawn in the TZ the edge sets.
-import {
-  E_DATE, E_TIME, E_TURN_AHEAD, E_TURN_ID, E_TURN_PAST, TURN_ID_HEX,
-} from "./spec.ts";
+import { E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
@@ -33,11 +31,8 @@ import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
 import type { Row } from "./grid.ts";
 import {
-  HEAD_GAP, HEAD_SEP, accountingSplit, fixedKeys, headCols, headIndent,
-  shareCells, turnCache, turnTokens,
+  accountingSplit, fixedKeys, shareCells, turnCache, turnTokens,
 } from "./band.ts";
-import { visWidth } from "./formatting.ts";
-import { pyIntStr, pySlice } from "./py.ts";
 import type { Dict } from "./py.ts";
 
 type Cells = { [key: string]: Span[] };
@@ -186,54 +181,32 @@ export function withEngineDuration(fig: Dict, durationMs: number): Dict {
   return { ...fig, turns: t, accounting: { ...acc, turns: accTurns } };
 }
 
-/** The receipt's head, its two lines (decided 2026-10-19): a column of
- * 🔺🔖 the billed turn's id over its #index, right-aligned, then one of 📅
- * the date over 🕐 the time of `clock.now`, when it was stamped.  The tag
- * is left out under the hide path `name.tag`; its 🔺🔖 starts at no
- * indent, so it stacks with the start line's 🔻🔖. */
-export function receiptHead(st: Settings, fig: Dict,
-  hide: readonly string[]): [string, string] {
+/** The receipt's tag line, drawn as the start line is, at no indent, so the
+ * two stack: "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02", the billed
+ * turn's tag and `clock.now`, when it was stamped; none under the hide path
+ * `name.tag`. */
+export function receiptHead(fig: Dict, hide: readonly string[]): Span[] {
+  if (hidden(hide, "name.tag")) return [];
   const now = (fig.clock as Dict).now as number;
   const turns = (fig.turns as Dict[]).map(decodeTurn);
   const i = receiptTurn(turns);
-  const t = i < 0 || hidden(hide, "name.tag") ? null : turns[i];
-  const id = t && t.prompt_id ? E_TURN_PAST + E_TURN_ID + " " +
-    pySlice(t.prompt_id, null, TURN_ID_HEX) : "";
-  const index = t && t.turn_index !== null ? "#" + pyIntStr(t.turn_index)
-    : "";
-  const [tag] = headCols(st);
-  const right = (s: string) =>
-    " ".repeat(Math.max(0, tag - visWidth(s, st.widths))) + s;
-  const sep = " ".repeat(HEAD_SEP);
-  return [right(id) + sep + E_DATE + " " + ymd(now),
-    right(index) + sep + E_TIME + " " + hms(now)];
+  const t = i < 0 ? null : turns[i];
+  const text = turnHead(E_TURN_PAST, t ? t.prompt_id : "",
+    t ? t.turn_index : null, ymd(now), hms(now));
+  return text ? [span(text)] : [];
 }
 
-/** `row` with `head` in front of its label, padded to the band's indent,
- * headIndent, and never closer to the row than HEAD_GAP. */
-function headed(st: Settings, row: Row, head: string): Row {
-  const n = Math.max(headIndent(st),
-    visWidth(head, st.widths) + (head ? HEAD_GAP : 0));
-  const pad = " ".repeat(Math.max(0, n - visWidth(head, st.widths)));
-  return { ...row, label: [{ path: "indent", spans: [span(head + pad)],
-    drop: 0 }, ...row.label] };
-}
-
-/** The receipt as drawn at `cols` under `hide`: two lines, the head
- * (receiptHead) beside 🎤 and 🎮, the rows on the band's fixed grid at the
- * band's indent (decided 2026-10-19: two lines in place of three).  A
- * hidden scope's row is left out, and a head line with no row beside it
- * drawn alone.  `dim` draws every span dim, as the stamped receipt is
- * drawn, its colours kept. */
+/** The receipt as drawn at `cols` under `hide`: 🎤 and 🎮 on the band's
+ * fixed grid, at no indent, as the band's rows are, then the tag line
+ * (receiptHead) under them (decided 2026-10-19).  A hidden scope's row is
+ * left out.  `dim` draws every span dim, as the stamped receipt is drawn,
+ * its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null, dim = false): Span[][] {
   const { turn, session } = receiptRows(st, fig, ws);
-  const rows = [...(turn ? [turn] : []), session]
-    .filter((r) => !hidden(hide, r.scope));
-  const heads = receiptHead(st, fig, hide);
-  const lines = drawRows(st, rows.map((r, i) => headed(st, r, heads[i])),
-    cols, hide);
-  for (const h of heads.slice(lines.length)) lines.push([span(h)]);
+  const lines = drawRows(st, [...(turn ? [turn] : []), session], cols, hide);
+  const head = receiptHead(fig, hide);
+  if (head.length) lines.push(head);
   return dim ? lines.map(dimmed) : lines;
 }
 

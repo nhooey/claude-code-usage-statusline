@@ -25,6 +25,7 @@ import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
 import { fromBase64 } from '../hooks/edges.ts'
 import { startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
+import { CONFIG } from '../hooks/config.ts'
 import {
   _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, readPayload,
   transcriptOf, turnsOf,
@@ -41,7 +42,7 @@ import {
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
-import { bandLines, headIndent, workspaceOf } from '../src/band.ts'
+import { bandLines, workspaceOf } from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
 } from '../src/receipt.ts'
@@ -315,8 +316,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
         .toEqual(JSON.parse(JSON.stringify(want)))
       const ui = await $.ui.mount({ plugin: 'usage-band', surface,
         component: 'AbovePrompt', props: BAND })
-      const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
-        rate: null, phase: 'done', indent: headIndent(settings({})) })
+      const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
+        rate: null, phase: 'done' })
       expect(lines.length).toBeGreaterThan(0)
       expect(await drawnRows(ui)).toEqual(expected(lines))
       // No blank top row, where Claude Code's `[-]` would stand alone.
@@ -330,8 +331,8 @@ test('a turn running draws the running phase', async ($, on) => {
   const doc = lastDoc(w)
   const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
     component: 'AbovePrompt', props: { ...BAND, isWorking: true } })
-  const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
-    rate: null, phase: 'running', indent: headIndent(settings({})) })
+  const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
+    rate: null, phase: 'running' })
   expect(await drawnRows(ui)).toEqual(expected(lines))
 })
 
@@ -521,7 +522,7 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const fig = withEngineDuration(costFigures(turns, windowFor(turns,
     Number(doc.context_window)), CALIB, snap, prepared, now,
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
-  return receiptLines(settings({}), fig, COLS, [], workspaceOf(doc, HOME),
+  return receiptLines(settings({}), fig, COLS, CONFIG.hide, workspaceOf(doc, HOME),
     true)
 }
 
@@ -545,28 +546,25 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // Two lines: 🔺🔖 the turn's id, at no indent, over its index, then 📅
-    // the date over 🕐 the time, then 🎤 over 🎮, each at least four blanks
-    // from the head.
-    expect(want.length).toBe(2)
-    expect(text(want[0])).toContain('p-resume'.slice(0, 8))
-    expect(text(want[0]).startsWith(spec.E_TURN_PAST)).toBe(true)
-    expect(text(want[0])).toMatch(new RegExp(spec.E_DATE + ' \\S+ {4,}' +
-      spec.E_TURN))
-    expect(text(want[1])).toMatch(new RegExp(spec.E_TIME + ' \\S+ {4,}' +
-      spec.E_SESSION))
-    expect(text(want[0]).indexOf(spec.E_DATE))
-      .toBe(text(want[1]).indexOf(spec.E_TIME))
-    expect(text(want[1])).not.toContain(spec.E_ACCT)
+    // 🎤 and 🎮 at no indent, then the 🔺🔖 tag line, drawn as the start
+    // line is.
+    expect(want.length).toBe(3)
+    expect(text(want[0]).startsWith(spec.E_TURN)).toBe(true)
+    expect(text(want[1]).startsWith(spec.E_SESSION)).toBe(true)
+    expect(text(want[2])).toContain('p-resume'.slice(0, 8))
+    expect(text(want[2]).startsWith(spec.E_TURN_PAST)).toBe(true)
+    expect(text(want[2])).toContain(spec.E_DATE)
+    expect(text(want[2])).not.toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
-    // A blank row above it, apart from the answer.
+    // A blank row above it, apart from the answer, and one under it.
     const drawn = await (await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'TurnDuration',
       props: { word: 'Worked', durationMs: ASKED_MS },
       viewport: { columns: COLS, rows: 40 } })).drawn() as Drawn
     expect(drawn.props?.marginTop).toBe(1)
+    expect(drawn.props?.marginBottom).toBe(1)
     expect(w.logged).toEqual([])
     // turn.complete again over the same turn: the same receipt, once.
     await $.turn.complete(COMPLETE)
@@ -617,7 +615,7 @@ async function drewAll($: any, w: World) {
     const now = Math.max(Number((doc.clock as Dict).now),
       w.clock.now() / 1000)
     return bandLines(st, { ...doc, clock: { ...(doc.clock as Dict), now } },
-      COLS, [], { home: HOME, rate: null, phase, indent: headIndent(st) })
+      COLS, CONFIG.hide, { home: HOME, rate: null, phase })
   }
   // The turn has ended, but until its receipt is stamped, and a second
   // more, the band keeps its 🎤 and 🎮 rows.
@@ -638,7 +636,7 @@ async function drewAll($: any, w: World) {
   expect(await tagDrawn(typed)).toEqual({ beside: false, text: text(tag) })
 
   // The receipt the hold waited for: its two lines on the closing line.
-  expect((await closing($, ASKED_MS)).length).toBe(2)
+  expect((await closing($, ASKED_MS)).length).toBe(3)
 }
 
 test('a resumed session whose first turn calls no tool draws all three',

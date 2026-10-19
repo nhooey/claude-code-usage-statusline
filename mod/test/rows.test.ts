@@ -136,6 +136,10 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
     .startsWith("  " + text.slice(0, 1)));
   assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 155)),
     "");
+  // 🔋 hidden in every row takes its 🔜 with it, and leaves 🪫's.
+  const no5h = inZone(fig, () => accountText(st, fig, ["*.plan.five_hour"]));
+  assert.ok(!no5h.includes("🔋") && no5h.includes("🪫"), no5h);
+  assert.equal(no5h.split("🔜").length, text.split("🔜").length - 1, no5h);
 });
 
 test("📁 draws the project's root as 📦", () => {

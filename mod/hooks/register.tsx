@@ -26,7 +26,7 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { bandLines, footerTail, headIndent, workspaceOf } from '../src/band.ts'
+import { bandLines, footerTail, workspaceOf } from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, turnKey,
   withEngineDuration,
@@ -428,14 +428,11 @@ export const register: Register = on => {
     if (e.props.hasSurvey || doc === null) return next(e)
     const { Box, Text } = $.ui.resolve(e)
     bandCols = e.props.bodyColumns + 5
-    const st = await settingsOf($)
-    // At the receipt's indent, past its head column, so 🤖 stacks under
-    // the receipt's 🎤 and 🎮.
-    const lines = bandLines(st, at(doc as Dict, await read($, clockNow)),
-      bandCols, CONFIG.hide, { home: await home($),
-        rate: await read($, rate),
-        phase: e.props.isWorking || await read($, held) ? 'running' : 'done',
-        indent: headIndent(st) })
+    // At no indent, as the receipt's rows are (asked 2026-10-19).
+    const lines = bandLines(await settingsOf($),
+      at(doc as Dict, await read($, clockNow)), bandCols, CONFIG.hide,
+      { home: await home($), rate: await read($, rate),
+        phase: e.props.isWorking || await read($, held) ? 'running' : 'done' })
     // No margin: Claude Code draws its `[-]` on the band's first row, and
     // on a blank top row it stood alone.  A bottom margin of -1, into the
     // blank row above the prompt's border, hid the band's last row under
@@ -459,10 +456,10 @@ export const register: Register = on => {
     const got = (await $.store.get(receiptAt(e.props.durationMs))) as
       Span[][] | undefined
     if (got) {
-      // A blank row above, so the receipt stands apart from the answer
-      // (asked 2026-10-19).
+      // A blank row above, so the receipt stands apart from the answer,
+      // and one under its tag line (asked 2026-10-19).
       return (
-        <Box flexDirection="column" marginTop={1}>
+        <Box flexDirection="column" marginTop={1} marginBottom={1}>
           {got.map((l, i) => line(Text, l, 'receipt' + i))}
         </Box>
       )

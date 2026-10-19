@@ -36,8 +36,8 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   💳 account details at its right end, dim, after Claude Code's own line,
   whose pills stay live.
 - **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
-  ends, the band's 🎤 and 🎮 rows stamped there, frozen, the turn's 🔺🔖
-  tag and when it was stamped to their left, so every turn's receipt
+  ends, the band's 🎤 and 🎮 rows stamped there, frozen, and under them
+  the turn's 🔺🔖 tag and when it was stamped, so every turn's receipt
   stays in the transcript to scroll back to. 📁 draws the project's root
   as 📦 under its parent, so `📁~/git/📦/mod` is the project's `mod/`
   folder. While a turn runs, 🤖's answering or waiting time is in 🛫's
@@ -54,7 +54,8 @@ files keep their reads in `src/*_node.ts`, which only Node imports, and
 
 `hooks/config.ts` holds it, in one place: the usage source
 (`claude-usage-tracker` by default, as `--usage-source` names it), the
-account and period, the `--hide` paths, `--mark-spacing` and
+account and period, the `--hide` paths (here `*.plan.five_hour`, 🔋 in
+every row), `--mark-spacing` and
 `--subscript-decimals`, the ticks (idle, running, and the clocks'), how many start lines are kept, how long
 the receipt waits for its turn, and the version the mod's caches are
 keyed by. Set them to what your status line runs with, so the two read
@@ -75,18 +76,20 @@ place of Claude Code's `✻ <word> for <duration>`: the rows the band drew
 live, frozen and dim, in their colours:
 
 ```
-🔺🔖 8f37748e #12              🎤 Why is the build slow?          💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
-📅 2026-10-19  🕐 13:06:02    🎮 📦app 🌿main                     💰 115                 🧩 ▴2.7M ▾841k  …
+
+🎤 Why is the build slow?                 💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
+🎮 📦app 🌿main                            💰 115                 🧩 ▴2.7M ▾841k  …
+🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
+
 ```
 
-Two lines: a head column, the turn's tag beside 🎤 and when it was
-stamped beside 🎮, then the rows, laid out at the width the band last drew
-at. The band takes the same indent, the head column's width and four
-blanks, so its 🤖 stacks under 🎤 and 🎮 and each column is under the
-band's. The tag is at no indent, as the start tag is, so its 🔺🔖 is
-under the 🔻🔖. Until the stamp lands the closing line is a blank row, and
-the band keeps the turn's 🎤 and 🎮 rows until a second after it lands
-(`receiptHoldMs`), so neither place is ever without them. A `$.ui.log` line was tried first:
+A blank row, 🎤 and 🎮 laid out at the width the band last drew at, at no
+indent as the band's rows are, so each column is under the band's; then
+the turn's tag line, drawn as the start tag is, so its 🔺🔖 is under the
+🔻🔖; then a blank row. Until the stamp lands the closing line is a blank
+row, and the band keeps the turn's 🎤 and 🎮 rows until a second after it
+lands (`receiptHoldMs`), so neither place is ever without them. A
+`$.ui.log` line was tried first:
 Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
 blank row after, in plain dim text.
 

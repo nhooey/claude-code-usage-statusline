@@ -15,8 +15,8 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_DATE, E_PROJ, E_TOOL, E_TURN_ID, E_TURN_PAST, E_WORK,
-  GRID_CELLS, MAG_DUR_S, QUIET_WARN_S, RIGHT_EDGE, TURN_ID_HEX,
+  CHROME_DEPTH, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
+  RIGHT_EDGE,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -102,31 +102,6 @@ function skeleton(scope: string, depth?: number): Row {
 export function indented(row: Row, n: number): Row {
   return n ? { ...row, label: [{ path: "indent",
     spans: [span(" ".repeat(n))], drop: 0 }, ...row.label] } : row;
-}
-
-/** The blank columns between the receipt's head column and its rows. */
-export const HEAD_GAP = 4;
-
-/** The blank columns between the receipt's two head columns. */
-export const HEAD_SEP = 2;
-
-/** The widths of the receipt's two head columns: the turn's tag over its
- * index, as wide as "🔺🔖 8f37748e", and the date over the time, as wide as
- * "📅 2026-10-19". */
-export function headCols(st: Settings): [number, number] {
-  return [
-    visWidth(E_TURN_PAST + E_TURN_ID + " " + "0".repeat(TURN_ID_HEX),
-      st.widths),
-    visWidth(E_DATE + " 2026-10-19", st.widths),
-  ];
-}
-
-/** The indent of the band's rows and the receipt's: the receipt's head
- * columns, then HEAD_GAP, so the band's 🤖 stacks under the receipt's 🎤
- * and 🎮 (asked 2026-10-19). */
-export function headIndent(st: Settings): number {
-  const [tag, when] = headCols(st);
-  return tag + HEAD_SEP + when + HEAD_GAP;
 }
 
 /** The columns at `cols` under `hide`, laid out over every row the band,
@@ -423,9 +398,16 @@ export function accountText(st: Settings, fig: Dict,
   hide: readonly string[]): string {
   if (hidden(hide, "account")) return "";
   const now = (fig.clock as Dict).now as number;
-  return accountRow(st, fig, now).label
-    .filter((p) => !hidden(hide, p.path))
-    .flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
+  const shown: Piece[] = [];
+  let dropped = false;
+  for (const p of accountRow(st, fig, now).label) {
+    // A window's 🔜 goes with its window.
+    const gone: boolean = hidden(hide, "account." + p.path) ||
+      (dropped && p.path === "plan.reset");
+    dropped = gone && p.path !== "plan.reset";
+    if (!gone) shown.push(p);
+  }
+  return shown.flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
 }
 
 /** What the footer under the prompt gets after Claude Code's own line,
