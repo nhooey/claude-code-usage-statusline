@@ -55,34 +55,16 @@ from coding_agent_usage_line.formatting import (  # noqa: E402
 from coding_agent_usage_line.claude_render import (  # noqa: E402
     render_cost, render_tokens)
 from coding_agent_usage_line.spans import join  # noqa: E402
+# The grid's rules, spec/layout.jsonc's: each is explained there.
+from coding_agent_usage_line.spec import (  # noqa: E402
+    CHROME_DEPTH, DROP_ORDER, E_TURN_AHEAD, GRID_CELLS, LABEL_MIN, RIGHT_EDGE)
 from coding_agent_usage_line.claude_subagent_render import (  # noqa: E402
-    A_CLOCK_W, A_CTX_W, A_DIFF_W, A_ETA_W, A_GAP, A_LIMIT_W, A_LIMIT_WEEK_W,
+    A_CLOCK_W, A_CTX_W, A_DIFF_W, A_ETA_W, A_LIMIT_W, A_LIMIT_WEEK_W,
     A_RATE_W, A_SPLIT_W, render_agent_cache, render_agent_ctx, render_agent_diff,
     render_agent_elapsed, render_agent_eta, render_agent_limit,
     render_agent_model, render_agent_rate, render_agent_split, render_kind)
 
 NOW = 1_792_000_000.0
-# The five columns Claude Code keeps for the band's [-] button.  The panel's
-# rows and the receipt end there too, so all three readouts share one edge.
-RIGHT_EDGE = 5
-# The fewest columns a row's label keeps before columns start to drop.
-LABEL_MIN = 20
-# The panel's chrome before a row of the session's own, drawn by Claude
-# Code: two blanks, its pointer and one blank, "  ◯ ", measured with the
-# align-probe mod on 2026-10-19.  A nested row's is a guess: two more blanks
-# per level.
-PANEL_CHROME = 4
-# What the panel's payload calls `columns`: the terminal's width less this.
-# Measured on 2026-10-19: 154 in a 160-column terminal.
-PANEL_COLUMNS_SHORT = 6
-# The deepest nesting the grid keeps room for with --grid fixed.  A deeper
-# row cuts its own label instead of moving the columns.
-CHROME_DEPTH = 2
-# 🔻 before 🔖 on the line under a prompt: the turn BELOW, the one it starts,
-# as the receipt's 🔺 points up at the turn that ended.  Wide, one code
-# point, Emoji_Presentation=Yes, Unicode 6, as 🔺 is; it would join
-# spec/layout.jsonc beside E_TURN_PAST, after a run of tests/probe-advance.sh.
-E_TURN_AHEAD = "\U0001F53B"
 
 
 def ctx_growth(tokens, points):
@@ -95,30 +77,32 @@ def limit(mark, colour, digits=3):
     return lambda share: render_agent_limit(mark, "1", share, colour, digits=digits)
 
 
-# key, hide path (group.metric), width, gap before it, renderer.  The gaps
-# are the panel row's: two between cells, one inside the ⌛ group.
-CELLS = [
-    ("model", "state.model", 6, A_GAP, lambda a: render_agent_model(*a)),
-    ("rate", "state.rate", A_RATE_W, A_GAP, render_agent_rate),
-    ("cost", "cost.cost", vis_width(S_COST) + 4, A_GAP, lambda c: render_cost("%.4f" % c)),
-    ("ctx", "context.size", A_CTX_W, A_GAP,
-     lambda a: ctx_growth(*a[1:]) if a[0] == "+" else render_agent_ctx(*a)),
-    ("tok", "tokens.io", vis_width(S_TOK) + VAL_W + VAL2_W, A_GAP, lambda a: render_tokens(*a)),
-    ("cache", "tokens.cache", 5, A_GAP, render_agent_cache),
-    ("clock", "time.elapsed", A_CLOCK_W, A_GAP,
-     lambda start: render_agent_elapsed(start * 1000, NOW)),
-    ("eta", "time.eta", A_ETA_W, 1,
-     lambda a: render_agent_eta((NOW, a[1]), a[0] * 1000, NOW)),
-    ("split", "time.split", A_SPLIT_W, 1, lambda a: render_agent_split(*a)),
-    ("five", "plan.five_hour", A_LIMIT_W, A_GAP, limit(E_SESS, "F_LIM_SESS")),
-    ("week", "plan.week", A_LIMIT_WEEK_W, A_GAP, limit(E_WEEK, "F_LIM_WEEK", 4)),
-    ("diff", "work.diff", A_DIFF_W, A_GAP,
-     lambda a: render_agent_diff(SimpleNamespace(lines_added=a[0], lines_removed=a[1]))),
-]
-# Least important first: the order whole columns drop in when labels run
-# short.  💰, then 🔋 and 🪫, are the last to go.
-DROP_ORDER = ["rate", "diff", "cache", "split", "model", "tok", "eta", "clock", "ctx",
-              "week", "five", "cost"]
+# Each column's width rule, by the name GRID_CELLS gives it: the rules that
+# depend on the terminal profile, computed here as the renderers measure.
+WIDTH_RULES = dict(
+    A_RATE_W=A_RATE_W, COST_W=vis_width(S_COST) + 4, A_CTX_W=A_CTX_W,
+    TOK_W=vis_width(S_TOK) + VAL_W + VAL2_W, A_CLOCK_W=A_CLOCK_W,
+    A_ETA_W=A_ETA_W, A_SPLIT_W=A_SPLIT_W, A_LIMIT_W=A_LIMIT_W,
+    A_LIMIT_WEEK_W=A_LIMIT_WEEK_W, A_DIFF_W=A_DIFF_W)
+# Each column's renderer, by key, from the sample figures.
+RENDER = dict(
+    model=lambda a: render_agent_model(*a),
+    rate=render_agent_rate,
+    cost=lambda c: render_cost("%.4f" % c),
+    ctx=lambda a: ctx_growth(*a[1:]) if a[0] == "+" else render_agent_ctx(*a),
+    tok=lambda a: render_tokens(*a),
+    cache=render_agent_cache,
+    clock=lambda start: render_agent_elapsed(start * 1000, NOW),
+    eta=lambda a: render_agent_eta((NOW, a[1]), a[0] * 1000, NOW),
+    split=lambda a: render_agent_split(*a),
+    five=limit(E_SESS, "F_LIM_SESS"),
+    week=limit(E_WEEK, "F_LIM_WEEK", 4),
+    diff=lambda a: render_agent_diff(
+        SimpleNamespace(lines_added=a[0], lines_removed=a[1])))
+# key, hide path (group.metric), width, gap before it, renderer.
+CELLS = [(c["key"], c["hide"],
+          WIDTH_RULES.get(c["width"], c["width"]), c["gap"], RENDER[c["key"]])
+         for c in GRID_CELLS]
 
 
 def piece(path, text, colour="", drop=0):

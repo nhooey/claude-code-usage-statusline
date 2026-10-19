@@ -316,7 +316,18 @@ the explanations moved with the values, and both languages still read a
 literal beside its name. Values computed at import (the `S_*` forms,
 `RIGHT_GRID`) are rules, and each language computes them.
 
-Still to come, with the new grid: each cell's key, `--hide` path, width, gap and drop rank; each glyph by code
+Done 2026-10-19: the grid's rules joined it, 182 constants now. The grid's
+constants (`RIGHT_EDGE`, `LABEL_MIN`, `PANEL_CHROME`,
+`PANEL_COLUMNS_SHORT`, `CHROME_DEPTH`), 🔻 as `E_TURN_AHEAD` beside 🔺, the
+scopes (`GRID_SCOPES`), the `--hide` groups and their metrics
+(`HIDE_GROUPS`), each column's key, `--hide` path, width and gap
+(`GRID_CELLS`) and the order columns drop in (`DROP_ORDER`). A column's
+width is a number where it is fixed and otherwise names its rule (`A_CTX_W`,
+`COST_W`, …), since `_PAD` and the marks' spacing move it; each language
+computes the rules. The label pieces' drop ranks stay with the rows that
+carry them: a rank belongs to a row's own label, not to a column.
+
+Still to come: each glyph by code
 point; each colour as its RGB triple and the cut-offs that dim it (`mag_dim`,
 `cache_color`). Three things vary at run time and go in the spec as rules,
 not numbers:

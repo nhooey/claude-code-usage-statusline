@@ -1061,8 +1061,14 @@ E_TURN_PAST = "🔺"            # 🔺  before 🔖: the turn ABOVE, the one tha
                               # Unicode 6, as 🔖 is.  Not ↑, ⇧ or ▲: all
                               # three are Ambiguous, the class E_UP's note
                               # retired ↑ from the token field for.
-TURN_ID_HEX = 8               # how much of the promptId 🔖 prints: a UUID's
-                              # first group, enough to grep the transcript.
+E_TURN_AHEAD = "🔻"           # 🔻  before 🔖 on the line under a prompt:
+                              # the turn BELOW, the one it starts, as 🔺
+                              # points up at the turn that ended.  Wide,
+                              # one code point, Emoji_Presentation=Yes,
+                              # Unicode 6, as 🔺 is.  Not yet measured by
+                              # tests/probe-advance.sh.
+TURN_ID_HEX = 8              # how much of the promptId 🔖 prints: a UUID's
+                             # first group, enough to grep the transcript.
 
 # ════════════════════════════════════════════════════════════════════════════
 # Width tables.
@@ -1279,3 +1285,97 @@ MONTH_S = 2629800.0
 # family name with its last letter eaten, which reads as a bug in the
 # status line rather than as a model.
 MODEL_FAMILIES = ("Opus", "Sonnet", "Haiku", "Fable", "Mythos")
+
+# ════════════════════════════════════════════════════════════════════════════
+# The redesigned grid.
+#
+# One scope per row, one column per metric: the band, the receipt and the
+# agent panel draw these columns in this order on every row.  The design is
+# agents/plans/redesign.md's; tools/layout-mockup.py draws it from made-up
+# figures.  Nothing the program draws today reads these yet.
+# ════════════════════════════════════════════════════════════════════════════
+
+# The five columns Claude Code keeps for the band's [-] button.  The panel's
+# rows and the receipt end there too, so all three readouts share one edge.
+RIGHT_EDGE = 5
+# The fewest columns a row's label keeps before columns start to drop.
+LABEL_MIN = 20
+# The panel's chrome before a row of the session's own, drawn by Claude
+# Code: two blanks, its pointer and one blank, "  ◯ ", measured with the
+# align-probe mod on 2026-10-19.  A nested row's is a guess: two more blanks
+# per level.
+PANEL_CHROME = 4
+# What the panel's payload calls `columns`: the terminal's width less this.
+# Measured on 2026-10-19: 154 in a 160-column terminal.
+PANEL_COLUMNS_SHORT = 6
+# The deepest nesting the grid keeps room for.  The chrome is kept for this
+# many levels whether any agent runs or not, so the columns follow from the
+# width and --hide alone and do not move when an agent starts; a deeper row
+# cuts its own label instead.
+CHROME_DEPTH = 2
+
+# The scopes a row can be, the first part of a --hide path.  A row's label
+# names its scope; its figures do not carry the scope's glyph.
+GRID_SCOPES = ("account", "turn", "main", "session", "agent")
+
+# The groups and metrics of a --hide path, scope.group.metric, with * for
+# any one part.  A cell's metric is its column; a label piece's is the part
+# of the label it is.  One renderer draws all three readouts, so one path
+# means the same everywhere.
+HIDE_GROUPS = {
+    "plan": ("five_hour", "week", "reset"),               # 🔋 🪫, and their 🔜
+                                                          #  on the 💳 label
+    "cost": ("cost",),                                    # 💰
+    "tokens": ("io", "cache"),                            # 🧩 ▴ ▾, 🎯
+    "context": ("size",),                                 # 🧠
+    "time": ("elapsed", "eta", "split"),                  # ⌛, ⛳, 🤖 🔧 🚦
+    "work": ("diff",),                                    # 💾
+    "state": ("model", "rate"),                           # model, 🛫
+    "chat": ("prompt", "reply", "doing"),                 # the 🎤 row's prompt,
+                                                          #  the 🤖💬 row's reply,
+                                                          #  what a thread does
+    "workspace": ("project", "branch", "dir", "pr", "style"),  # 📦 🌿 📁 🔀 🎨
+    "clock": ("date", "time"),                            # 📅 🕐
+}
+
+# The columns, in the order every row draws them.  `key` names the column,
+# `hide` its path under the row's scope, and `gap` the blanks before it: the
+# panel row's, two between cells (A_GAP) and one inside the ⌛ group.
+#
+# `width` is the cell's own, gap aside.  A number is fixed.  A name is a
+# rule computed in code, since the terminal profile widens 🧩, 🧠 and 💰 by a
+# column (_PAD) and the marks' spacing moves them: the A_* widths are
+# claude_subagent_render's, COST_W is vis_width(S_COST) + 4 and TOK_W is
+# vis_width(S_TOK) + VAL_W + VAL2_W.
+GRID_CELLS = (
+    {"key": "model", "hide": "state.model", "width": 6, "gap": 2},
+    {"key": "rate", "hide": "state.rate", "width": "A_RATE_W", "gap": 2},
+    {"key": "cost", "hide": "cost.cost", "width": "COST_W", "gap": 2},
+    {"key": "ctx", "hide": "context.size", "width": "A_CTX_W", "gap": 2},
+    {"key": "tok", "hide": "tokens.io", "width": "TOK_W", "gap": 2},
+    {"key": "cache", "hide": "tokens.cache", "width": 5, "gap": 2},
+    {"key": "clock", "hide": "time.elapsed", "width": "A_CLOCK_W", "gap": 2},
+    {"key": "eta", "hide": "time.eta", "width": "A_ETA_W", "gap": 1},
+    {"key": "split", "hide": "time.split", "width": "A_SPLIT_W", "gap": 1},
+    {"key": "five", "hide": "plan.five_hour", "width": "A_LIMIT_W", "gap": 2},
+    {"key": "week", "hide": "plan.week", "width": "A_LIMIT_WEEK_W", "gap": 2},
+    {"key": "diff", "hide": "work.diff", "width": "A_DIFF_W", "gap": 2},
+)
+# Least important first: the order whole columns drop in, from every row at
+# once, when a label would keep fewer than LABEL_MIN columns.  💰, then 🔋
+# and 🪫, are the last to go.  Which columns drop is worked out without a
+# label's spill, so the spill never changes the grid.
+DROP_ORDER = (
+    "rate",
+    "diff",
+    "cache",
+    "split",
+    "model",
+    "tok",
+    "eta",
+    "clock",
+    "ctx",
+    "week",
+    "five",
+    "cost",
+)
