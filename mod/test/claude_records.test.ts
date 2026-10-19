@@ -11,8 +11,10 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cr from "../src/claude_records_node.ts";
+import { execFileSync } from "node:child_process";
 import {
-  agentReadingOf, foldAgentBytes, newAgentFold,
+  agentFoldOf, agentFoldText, agentReadingOf, foldAgentBytes,
+  foldAgentRecord, newAgentFold,
 } from "../src/claude_records.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
@@ -239,4 +241,57 @@ test("an agent file folded as it grows reads as it does whole", () => {
     }
   }
   assert.ok(files > 0, "no _read_agent_file cases");
+});
+
+/** Each `_read_agent_file` case with a reading: its file, and the reading
+ * the Python made of it whole. */
+function agentCases(): Case[] {
+  return fs.readdirSync(DIR).filter((f) => f.endsWith(".json")).flatMap((f) =>
+    (revive(JSON.parse(fs.readFileSync(path.join(DIR, f), "utf-8")))
+      .cases as Case[]).filter((c) =>
+      c.fn === "_read_agent_file" && c.out !== null));
+}
+
+// What mod/scripts/agent_lines.py cuts a file down to folds as the file
+// does whole, a piece at a time, as the mod reads a large stretch.
+test("an agent file's lines cut down by agent_lines.py read as it does whole",
+  () => {
+    const script = path.join(REPO, "mod/scripts/agent_lines.py");
+    for (const c of agentCases()) {
+      const data = fs.readFileSync(c.args[0]);
+      const whole = data.lastIndexOf(10) + 1;
+      const fold = newAgentFold();
+      while (fold.pos < whole) {
+        const out = execFileSync("python3", [script, c.args[0],
+          String(fold.pos), String(data.length)]).toString().split("\n");
+        for (const l of out.slice(1).filter(Boolean)) {
+          const tab = l.indexOf("\t");
+          let r: unknown = null;
+          try {
+            r = JSON.parse(l.slice(tab + 1));
+          } catch {
+            // Skipped, as the line itself is.
+          }
+          foldAgentRecord(fold, Number(l.slice(0, tab)), r);
+        }
+        assert.equal(fold.pos, Number(out[0]), c.args[0]);
+      }
+      foldAgentBytes(fold, data.subarray(fold.pos), true);
+      assert.deepEqual(agentReadingOf(fold), c.out, c.args[0]);
+    }
+  });
+
+// A fold saved halfway and read back goes on to the same reading, and one
+// saved under another tag is not read back.
+test("an agent fold saved and read back reads on as before", () => {
+  for (const c of agentCases()) {
+    const data = fs.readFileSync(c.args[0]);
+    const fold = newAgentFold();
+    foldAgentBytes(fold, data.subarray(0, data.length >> 1));
+    const text = agentFoldText(fold, "v1");
+    assert.equal(agentFoldOf(text, "v2"), null);
+    const back = agentFoldOf(text, "v1")!;
+    foldAgentBytes(back, data.subarray(back.pos), true);
+    assert.deepEqual(agentReadingOf(back), c.out, c.args[0]);
+  }
 });

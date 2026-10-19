@@ -39,6 +39,13 @@ export const CONFIG = {
   // The version the mod's caches are keyed by, apart from the Python's
   // digest of its source: a change to the accounting is a new version.
   version: "usage-band 0.2.0",
+  // How long scripts/agent_lines.py may take over one piece of an agent's
+  // file, its output at most 3 MiB: the first read of a session's agents
+  // goes through gigabytes, and runs in that process, outside any hook's
+  // 10s budget (asked 2026-10-20, so the first read does not crash it).
+  agentLinesTimeoutMs: 300_000,
+  // How often a live agent's fold is saved, so a reload reads on from it.
+  foldSaveMs: 60_000,
   // How often the band reads its figures again with nothing else
   // happening, so the clocks and the 🔜 resets move while idle.
   tickMs: 30_000,

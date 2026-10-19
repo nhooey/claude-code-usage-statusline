@@ -1370,36 +1370,73 @@ export function foldAgentBytes(fold: AgentFold, data: Uint8Array,
   last = false): void {
   for (const line of byteLines(data)) {
     if (!last && line[line.length - 1] !== 10) break;
-    fold.pos += line.length;
     let r: unknown;
     try {
       r = JSON.parse(DECODE_STRICT.decode(line));
     } catch {
-      continue;
+      r = null;
     }
-    if (!isDict(r)) continue;
-    liveEta(r, fold.etaState);
-    agentSpan(r, fold.spanState, fold.work);
-    scanToolSpans(r, fold.pending, fold.tools, fold.waiting);
-    const [a, d] = diffLines(r, fold.wrote);
-    fold.added += a;
-    fold.removed += d;
-    if (pyGet(r, "type") === "user") {
-      fold.pid = pyOr(pyGet(r, "promptId"), fold.pid);
-      continue;
+    foldAgentRecord(fold, line.length, r);
+  }
+}
+
+/** Fold one line of the file into `fold`: `length` its bytes, its newline
+ * included, and `r` what it parsed to, null for a line that did not. */
+export function foldAgentRecord(fold: AgentFold, length: number,
+  r: unknown): void {
+  fold.pos += length;
+  if (!isDict(r)) return;
+  liveEta(r, fold.etaState);
+  agentSpan(r, fold.spanState, fold.work);
+  scanToolSpans(r, fold.pending, fold.tools, fold.waiting);
+  const [a, d] = diffLines(r, fold.wrote);
+  fold.added += a;
+  fold.removed += d;
+  if (pyGet(r, "type") === "user") {
+    fold.pid = pyOr(pyGet(r, "promptId"), fold.pid);
+    return;
+  }
+  if (pyGet(r, "type") !== "assistant") return;
+  const m = pyOr(pyGet(r, "message"), {});
+  const u = pyGet(m, "usage");
+  if (!pyTruthy(u)) return;
+  fold.recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), fold.pid,
+    pyGet(m, "model") ?? null, num0(pyGet(u, "input_tokens")),
+    num0(pyGet(u, "cache_creation_input_tokens")),
+    num0(pyGet(u, "cache_read_input_tokens")),
+    num0(pyGet(u, "output_tokens")),
+    pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), fold.pos,
+    fold.added, fold.removed]);
+  fold.added = fold.removed = 0;
+}
+
+/** What a saved fold is saved as, so a change to the fold's shape or to
+ * what it folds reads no fold saved before it. */
+export const AGENT_FOLD_VERSION = "agent-fold 1";
+
+/** `fold` as text to save: its Map and Set as lists.  `tag` names what
+ * saved it, which agentFoldOf must be asked for to read it back. */
+export function agentFoldText(fold: AgentFold, tag = ""): string {
+  return JSON.stringify({ version: AGENT_FOLD_VERSION + "\0" + tag, ...fold,
+    pending: [...fold.pending], wrote: [...fold.wrote] });
+}
+
+/** The fold agentFoldText saved under `tag`, or null for one of another
+ * version or tag, or none at all. */
+export function agentFoldOf(text: string, tag = ""): AgentFold | null {
+  try {
+    // Read back as agentFoldText wrote it: the version says its shape.
+    const o = JSON.parse(text) as any;
+    if (o === null || typeof o !== "object" ||
+      o.version !== AGENT_FOLD_VERSION + "\0" + tag) {
+      return null;
     }
-    if (pyGet(r, "type") !== "assistant") continue;
-    const m = pyOr(pyGet(r, "message"), {});
-    const u = pyGet(m, "usage");
-    if (!pyTruthy(u)) continue;
-    fold.recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), fold.pid,
-      pyGet(m, "model") ?? null, num0(pyGet(u, "input_tokens")),
-      num0(pyGet(u, "cache_creation_input_tokens")),
-      num0(pyGet(u, "cache_read_input_tokens")),
-      num0(pyGet(u, "output_tokens")),
-      pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), fold.pos,
-      fold.added, fold.removed]);
-    fold.added = fold.removed = 0;
+    return { pid: o.pid, etaState: o.etaState, spanState: o.spanState,
+      work: o.work, pending: new Map(o.pending), tools: o.tools,
+      waiting: o.waiting, recs: o.recs, wrote: new Set(o.wrote),
+      added: o.added, removed: o.removed, pos: o.pos };
+  } catch {
+    return null;
   }
 }
 

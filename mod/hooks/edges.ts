@@ -17,9 +17,10 @@
 import type { EngineInterface } from 'claude-code'
 
 import {
-  _agentDir, _agentStatePath, _recordsOf, agentLabelOf, agentOffsetsOf,
-  agentReadingOf, agentRecordsOf, cmpStr, EMPTY_TRANSCRIPT, foldAgentBytes,
-  newAgentFold, pyJoin, readPayload, transcriptOf, turnsOf,
+  _agentDir, _agentStatePath, _recordsOf, agentFoldOf, agentFoldText,
+  agentLabelOf, agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr,
+  EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, newAgentFold, pyJoin,
+  readPayload, transcriptOf, turnsOf,
 } from '../src/claude_records.ts'
 import type {
   AgentEta, AgentFold, AgentReading, AgentRec, Payload, Rec, Transcript,
@@ -48,6 +49,7 @@ import { sha256Hex } from '../src/sha256.ts'
 import { isDict, pyGet } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
+import { log } from './log.ts'
 
 type $ = EngineInterface
 
@@ -265,31 +267,41 @@ export async function agentFiles($: $, transcript: string):
   return out.sort((a, b) => cmpStr(a.path, b.path))
 }
 
-/** The session's agent readings, as _agentFileReadings makes them, each
- * file read again only when its size or mtime moved; and each agent's
- * label from its sidecar, kept once read. */
+/** Each agent file's reading, each read from where the last read of it
+ * stopped: in this load, or saved by an earlier one (savedFold), so a
+ * reload reads none of it again.  An agent's file is only ever appended
+ * to, and reading each whole, 2.7 GB over a session's 231 agents, left the
+ * mod dead in that session (seen live 2026-10-20).  A file that shrank was
+ * rewritten, and is read from its start. */
 export async function agentReadings($: $, transcript: string):
   Promise<[string, AgentReading][]> {
-  const out: [string, AgentReading][] = []
-  for (const f of await agentFiles($, transcript)) {
-    const stamp = f.size + ':' + f.mtimeMs
-    let got = agentKept.get(f.path)
-    if (!got || got.stamp !== stamp) {
-      // Only what was appended since the last read: an agent's file is
-      // only ever appended to, and re-reading each whole, 2.7 GB over a
-      // session's 231 agents, outran the hooks' 10s budget and left the
-      // mod dead in that session (seen live 2026-10-20).  A file that
-      // shrank was rewritten, and is read from its start.
-      const fold = got && got.fold.pos <= f.size ? got.fold : newAgentFold()
-      try {
-        foldAgentBytes(fold, await readRange($, f.path, fold.pos, f.size))
-      } catch {
-        agentKept.delete(f.path)
-        continue
+  const files = await agentFiles($, transcript)
+  const stamp = (f: { size: number; mtimeMs: number }) =>
+    f.size + ':' + f.mtimeMs
+  const stale = files.filter((f) => agentKept.get(f.path)?.stamp !== stamp(f))
+  const { stateDir } = await placesOf($)
+  await atOnce(stale, AGENT_READS_AT_ONCE, async (f) => {
+    let fold = agentKept.get(f.path)?.fold ??
+      await savedFold($, stateDir, transcript, f.path)
+    if (!fold || fold.pos > f.size) fold = newAgentFold()
+    const from = fold.pos
+    try {
+      if (f.size - fold.pos >= AGENT_LINES_MIN) {
+        await agentLines($, f.path, fold, f.size)
       }
-      got = { stamp, fold, reading: agentReadingOf(fold) }
-      agentKept.set(f.path, got)
+      foldAgentBytes(fold, await readRange($, f.path, fold.pos, f.size))
+    } catch {
+      agentKept.delete(f.path)
+      return
     }
+    agentKept.set(f.path, { stamp: stamp(f), fold,
+      reading: agentReadingOf(fold) })
+    if (fold.pos > from) await saveFold($, stateDir, transcript, f.path, fold)
+  })
+  const out: [string, AgentReading][] = []
+  for (const f of files) {
+    const got = agentKept.get(f.path)
+    if (!got) continue
     out.push([f.path, got.reading])
     if (!agentLabels.has(f.path)) {
       // No sidecar yet reads as the id for now; it is asked for again
@@ -302,6 +314,95 @@ export async function agentReadings($: $, transcript: string):
     }
   }
   return out
+}
+
+/** An appended stretch this long or longer is read through
+ * scripts/agent_lines.py, cut down to what the fold reads; a shorter one
+ * as its bytes. */
+const AGENT_LINES_MIN = 1024 * 1024
+/** How many agent files are read at once. */
+const AGENT_READS_AT_ONCE = 4
+
+/** `f` over each of `items`, `n` at a time. */
+async function atOnce<T>(items: readonly T[], n: number,
+  f: (item: T) => Promise<void>): Promise<void> {
+  let next = 0
+  const lane = async () => {
+    while (next < items.length) await f(items[next++])
+  }
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, lane))
+}
+
+let agentLinesFailed = false
+
+/** Fold `path`'s whole lines from `fold.pos` to `end` into `fold`, through
+ * scripts/agent_lines.py: its parsing is the process's time, which no
+ * hook's budget counts and which leaves the hooks worker free to draw.
+ * Where Python fails, logged once, the bytes are read instead. */
+async function agentLines($: $, path: string, fold: AgentFold, end: number):
+  Promise<void> {
+  if (agentLinesFailed) return
+  while (fold.pos < end) {
+    const r = await timed($, 'lines', () => $.process.run(['/usr/bin/env',
+      'python3', $.plugin.root + '/scripts/agent_lines.py', path,
+      String(fold.pos), String(end)],
+      { timeoutMs: CONFIG.agentLinesTimeoutMs }))
+    if (r.exitCode !== 0 || r.isStdoutTruncated) {
+      agentLinesFailed = true
+      void log($, 'agent lines: python3 exited ' + r.exitCode + ', reading ' +
+        'the bytes instead: ' + r.stderr.slice(-300))
+      return
+    }
+    const lines = r.stdout.split('\n')
+    const stop = Number(lines[0])
+    await timed($, 'parse', async () => {
+      for (const l of lines.slice(1)) {
+        if (!l) continue
+        const tab = l.indexOf('\t')
+        let rec: unknown = null
+        try {
+          rec = JSON.parse(l.slice(tab + 1))
+        } catch {
+          // Skipped, as the line itself is.
+        }
+        foldAgentRecord(fold, Number(l.slice(0, tab)), rec)
+      }
+    })
+    if (fold.pos !== stop) throw new Error('agent lines out of step: ' + path)
+    steps.linePieces = ((steps.linePieces as number) || 0) + 1
+    if (stop >= end || lines.length <= 2) return
+  }
+}
+
+/** Where an agent file's fold is saved: per session, per file, under
+ * digests, as the Python keeps its agent offsets. */
+function foldPath(stateDir: string, transcript: string, path: string) {
+  return pyJoin(stateDir, 'claude-agent-folds-mod/' +
+    sha256Hex(transcript).slice(0, 32) + '/' +
+    sha256Hex(path).slice(0, 32) + '.json')
+}
+
+async function savedFold($: $, stateDir: string, transcript: string,
+  path: string): Promise<AgentFold | null> {
+  const text = await readText($, foldPath(stateDir, transcript, path))
+  return text === null ? null : agentFoldOf(text, CONFIG.version)
+}
+
+// When each file's fold was last saved: a live agent's at most once per
+// CONFIG.foldSaveMs, a reload reading on from there.
+const foldSaved = new Map<string, number>()
+
+async function saveFold($: $, stateDir: string, transcript: string,
+  path: string, fold: AgentFold): Promise<void> {
+  const now = await $.clock.now()
+  if (now - (foldSaved.get(path) ?? -Infinity) < CONFIG.foldSaveMs) return
+  foldSaved.set(path, now)
+  try {
+    await $.fs.write(foldPath(stateDir, transcript, path),
+      agentFoldText(fold, CONFIG.version))
+  } catch (err) {
+    void log($, 'agent fold not saved', err)
+  }
 }
 
 /** agent_label's reading of a file's sidecar, as agentReadings read it. */
