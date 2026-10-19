@@ -549,11 +549,13 @@ def run(tmp):
                           lambda t: t.blocked_s)),
           (round(st.busy_s - st.tool_s - st.blocked_s), round(st.tool_s),
            round(st.blocked_s)))
-    row = sl.cost_group(t2, {}, 200000, sl.PLAIN_INK, sl.ts_epoch(ts(50)))
+    row = sl.join(sl.cost_group(t2, sl.turn_accounting(t2, {}), 200000,
+                                False, sl.ts_epoch(ts(50))))
     check("the 🎤 row draws the two figures in their signed cells",
           "⌛🤖+  4m  🔧+  2m" in row, True)
-    tot = sl.cost_totals_group((t1, t2), {}, 200000, sl.PLAIN_INK,
-                               sl.ts_epoch(ts(50)))
+    tot = sl.join(sl.cost_totals_group(
+        (t1, t2), {}, 200000, False, sl.ts_epoch(ts(50)),
+        sl.cost_accounting((t1, t2), {})["session"]))
     check("and the 🎮 row their sums, a blank where the sign was",
           "⌛🤖   7m  🔧   6m" in tot, True)
     check("the two rows are one width, so the cells stack",
@@ -573,8 +575,8 @@ def run(tmp):
            for t in cp], [(False, 0, 60), (True, 0, 41)])
     check("the 👥 row times its agents as the 🎤 row does: a2's ten "
           "minutes since a1, none of them in a tool",
-          "⌛🤖+ 10m  🔧+  0s" in sl.cost_group(late, {}, 200000,
-                                               sl.PLAIN_INK), True)
+          "⌛🤖+ 10m  🔧+  0s" in sl.join(sl.cost_group(
+              late, sl.turn_accounting(late, {}), 200000, False)), True)
 
     print("--- agent time goes where its tokens go ---")
     # An agent's 🤖 and 🔧 are cut at each of its billed requests and filed
@@ -810,8 +812,9 @@ def run(tmp):
 
     # And the rendered rows: the label, and the blanks in ⌛ and 📅.
     calib = {"sess": 5.5, "week": 4.1}
-    row = sl.strip_ansi(sl.cost_group(late, calib, sl.CTX_1M, sl.PLAIN_INK,
-                                      1786847000.0))
+    row = sl.strip_ansi(sl.join(sl.cost_group(
+        late, sl.turn_accounting(late, calib), sl.CTX_1M, False,
+        1786847000.0)))
     check("agents row times its agents and blanks its date",
           (sl.S_WORK + "+ 10m" in row, "2026-08-16" in row), (True, False))
     opts = sl.CostOpts(prefix="P", label="L", totals_label="T", cols=0,

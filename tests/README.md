@@ -186,9 +186,9 @@ A cost document adds:
 | `accounting.turns` | per turn: `cost_usd`, its `sess_share` and `week_share` of each window, and the `read_share` and `write_share` of its cost |
 | `accounting.session` | the same over every turn, for the totals row |
 
-The cost rows still work `accounting` out again from `turns` while drawing,
-so for now it is checked as a figure rather than read. Once the cells take
-it from the document, the render stage stops needing `usage.plan`.
+The cost rows read their shares from `accounting` and work out none
+themselves, so the render stage takes only the percentages from
+`usage.plan`, for the totals row's 💳 figures, and not the window ends.
 
 ## Status cases
 
