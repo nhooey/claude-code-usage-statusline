@@ -239,6 +239,34 @@ appearing there drops 🤖 🔧 🚦 from every row and moves every label.
    then the status line leaves `settings.json` and
    [Layout](../../docs/layout.md) is rewritten.
 
+### What the accounting port has to mirror
+
+`claude_records.py` (about 2,500 lines) and the calibration in `claude.py`:
+payload fields, request deduplication, prices, turn classification and
+folding, tool spans and clocks, agent files and the inbox, and the window
+shares with their calibration cache. The I/O in them, file reads that seek
+to byte offsets, recursive globs, atomic cache writes, the clock and the
+poll in `read_turns_settled`, moves to the mod's edges; the rest ports as
+pure functions.
+
+What does not carry over by itself, so each needs a decision written once
+and a shared case that pins it:
+
+- **Rounding.** Python's `round` rounds half to even; `Math.round` rounds
+  half up. The share percentages use it.
+- **Time.** The Python side uses naive local datetimes and `strptime`;
+  TypeScript has neither, so the port works in epochs throughout.
+- **Records.** `NamedTuple`s compare by value (`lim == NO_LIMITS`); the port
+  uses readonly records and an explicit equality.
+- **Keys.** Tuple keys in sets and dicts deduplicate in Python; a JavaScript
+  `Set` of arrays does not, so the port joins keys into strings.
+- **Numbers.** `_num` prints the way `jq -r` does, which leans on Python's
+  int/float split.
+- **Bytes.** Marks are found by byte substring and agent files are read from
+  byte offsets; the port reads `Uint8Array`s, not decoded strings.
+- **Cache keys.** `sha256` digests of the package's own source key the
+  caches; the TypeScript caches are keyed apart, by the mod's version.
+
 ## The whole screen
 
 After the turn, `python3 tools/layout-mockup.py --cols 150 --plain`, made-up
