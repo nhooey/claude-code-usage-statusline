@@ -1,0 +1,198 @@
+{
+  "accounting": {
+    "session": {
+      "cost_usd": 0.35964,
+      "read_share": 31,
+      "sess_share": 0.06538909090909091,
+      "week_share": 0.08771707317073171,
+      "write_share": 14
+    },
+    "turns": [
+      {
+        "cost_usd": 0.125575,
+        "read_share": 33,
+        "sess_share": 0.02283181818181818,
+        "week_share": 0.030628048780487804,
+        "write_share": 19
+      },
+      {
+        "cost_usd": 0.10104,
+        "read_share": 30,
+        "sess_share": 0.01837090909090909,
+        "week_share": 0.024643902439024392,
+        "write_share": 18
+      },
+      {
+        "cost_usd": 0.133025,
+        "read_share": 29,
+        "sess_share": 0.024186363636363638,
+        "week_share": 0.03244512195121951,
+        "write_share": 7
+      }
+    ]
+  },
+  "calibration": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 200000,
+  "mode": "cost",
+  "schema": 1,
+  "turns": [
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 83000,
+      "cache_write": 2400,
+      "calls": 2,
+      "compact": false,
+      "ctx": 43003,
+      "dctx": null,
+      "dur_s": 180,
+      "fresh": 15,
+      "out": 2400,
+      "parts": [
+        [
+          1786842660,
+          0.06656000000000001
+        ],
+        [
+          1786842720,
+          0.059015
+        ]
+      ],
+      "prompt_id": null,
+      "reported": true,
+      "text": "Explain the width table.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:10:00Z",
+      "turn_index": null,
+      "usd_cr": 0.041499999999999995,
+      "usd_cw": 0.024,
+      "usd_in": 0.00007500000000000001,
+      "usd_out": 0.06
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 61000,
+      "cache_write": 1800,
+      "calls": 1,
+      "compact": false,
+      "ctx": 62808,
+      "dctx": 19805,
+      "dur_s": 120,
+      "fresh": 8,
+      "out": 2100,
+      "parts": [
+        [
+          1786843260,
+          0.10104
+        ]
+      ],
+      "prompt_id": null,
+      "reported": true,
+      "text": "Now do the same for the escape table.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:20:00Z",
+      "turn_index": null,
+      "usd_cr": 0.0305,
+      "usd_cw": 0.018000000000000002,
+      "usd_in": 0.00004,
+      "usd_out": 0.052500000000000005
+    },
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 78000,
+      "cache_write": 900,
+      "calls": 1,
+      "compact": false,
+      "ctx": 78905,
+      "dctx": 16097,
+      "dur_s": 60,
+      "fresh": 5,
+      "out": 3400,
+      "parts": [
+        [
+          1786843860,
+          0.133025
+        ]
+      ],
+      "prompt_id": null,
+      "reported": false,
+      "text": "And the one after that, please.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:30:00Z",
+      "turn_index": null,
+      "usd_cr": 0.039,
+      "usd_cw": 0.009000000000000001,
+      "usd_in": 0.000025,
+      "usd_out": 0.085
+    }
+  ],
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 99.6,
+      "session_resets_at": 1786847400,
+      "weekly_pct": 100,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "account_name": "session:01-plain",
+      "agent": "claude",
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786847400,
+              "used_percent": 99.6
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 100
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-plan-full",
+      "stale": false
+    }
+  }
+}
