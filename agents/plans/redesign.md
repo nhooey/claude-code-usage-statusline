@@ -24,7 +24,7 @@ nothing hides the agent panel; see [Claude Code's limits](#claude-codes-limits).
 
 | Row | Scope | Drawn by |
 |---|---|---|
-| 💳 account | the plan's two windows, when each resets, 📅 🕐 | the mod, in the band |
+| 💳 account | 📅 🕐, then the plan's two windows, each its share and when it resets, all on the label | the mod, in the band |
 | 🎤 and the prompt | the turn | the mod, in the band, while the turn runs |
 | 🤖💬 and the reply, or what it is doing | the main thread alone | the mod, in the band |
 | 🎮 session, 📦 project, 🌿 branch, 📁 directory, 🔀 PR, 🎨 output style | the main thread and every agent, summed | the mod, in the band, while the turn runs |
@@ -57,8 +57,8 @@ rows fill it.
 
 A row with nothing for a column leaves it blank, so the columns hold. A
 label runs on over its own row's leading blank columns, up to its first
-figure: the 💳 row has no figures before 🔋, so its label has room for both
-resets and the clock. Labels therefore end at different points on different
+figure: the 💳 row has no figures at all, so its label has the whole row.
+Labels therefore end at different points on different
 rows; the figures never move. Which columns drop on a narrow terminal is
 worked out without this extra room, so a label's spill never changes the
 grid. Every
@@ -66,12 +66,14 @@ row's cells end five columns short of the terminal's right edge, the columns
 Claude Code keeps for the band's `[-]` button, so all three readouts share one
 right edge.
 
-Two cells read differently on one row:
+Two rows read differently:
 
 - **🧠 on the 🎤 row** is how much the context grew in the turn, in tokens and
   points: `🧠 +34k +3٪`.
-- **The 🔋 and 🪫 resets** are on the 💳 row's label, after 🔜; the figures
-  are in the plan columns.
+- **The 💳 row is all label** (decided 2026-10-19): the clock, then 💳, then
+  each window's share and when it resets, `📅 2026-10-19  🕐 13:06:02  💳 🔋
+  15٪ 🔜 6.7m  🪫 87٪ 🔜 1.8d`. It draws nothing in the plan columns, and
+  both shares take three digits, so 🪫 reads `87٪` as 🔋 does.
 
 ### The metrics hierarchy
 

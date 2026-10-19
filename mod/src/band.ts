@@ -23,7 +23,9 @@ import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import { pyLen, pySlice } from "./py.ts";
 import { pyFloat } from "./sources.ts";
-import { W_CACHE_READ, W_CACHE_WRITE, etaFinish } from "./claude_records.ts";
+import {
+  W_CACHE_READ, W_CACHE_WRITE, etaFinish, squash,
+} from "./claude_records.ts";
 import type { Git, Payload, Transcript, Turn } from "./claude_records.ts";
 import type { Accounting } from "./claude_calib.ts";
 import {
@@ -72,10 +74,10 @@ const ALL = GRID_CELLS.map((c) => c.key);
 
 /** The columns each scope can draw, whatever its figures: 🛫 and the
  * model are state, on agent-shaped rows only; the session has no context
- * and no ⛳ of its own; the account only its plan.  The receipt's rows are
+ * and no ⛳ of its own; the account none, its plan being on its label.  The receipt's rows are
  * the turn's and the session's. */
 export const SCOPE_KEYS: { readonly [scope: string]: readonly string[] } = {
-  account: ["five", "week"],
+  account: [],
   turn: ALL.filter((k) => k !== "model" && k !== "rate"),
   main: ALL,
   session: ALL.filter((k) => !["model", "rate", "ctx", "eta"].includes(k)),
@@ -188,12 +190,13 @@ function accountRow(st: Settings, fig: Dict, now: number): Row {
   const raw = fig.limits as Dict;
   const reset = (k: string): string | null =>
     untilReset(st, raw[k] as number | null, now);
-  const cells: Cells = {
-    five: CELLS.five(st, lim.session_pct, pyFloat(lim.session_pct)),
-    week: CELLS.week(st, lim.weekly_pct, pyFloat(lim.weekly_pct)),
+  const pct = (s: string): number | null => {
+    const v = pyFloat(s);
+    return v === null || Number.isNaN(v) ? null : v;
   };
-  return { scope: "account", label: accountLabel(reset("session_reset"),
-    reset("weekly_reset"), ymd(now), hms(now)), cells };
+  return { scope: "account", label: accountLabel(st,
+    pct(lim.session_pct), pct(lim.weekly_pct), reset("session_reset"),
+    reset("weekly_reset"), ymd(now), hms(now)), cells: {} };
 }
 
 /** 🎤: the turn opened last, `open_turn`, with `accounting.open_turn`
@@ -223,7 +226,10 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
       diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),
     });
   }
-  return { scope: "turn", label: turnLabel(t.text), cells };
+  // The opener as the transcript holds it, newlines and all: a queued or
+  // pasted prompt, or a message from another session, runs to many lines.
+  // squash folds it to one, as the status line's 🎤 text is.
+  return { scope: "turn", label: turnLabel(squash(t.text)), cells };
 }
 
 /** What the main thread is doing, as today's Doing cell says it: the mark

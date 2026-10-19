@@ -460,7 +460,8 @@ def inherited_etas(prepared_tasks):
 # own rows, whose figures the panel never reads: only which keys a row holds,
 # and its scope for --hide, decide the columns.
 SCOPE_CELLS = (
-    ("account", ("five", "week")),
+    # The account's plan is on its label, so it has no column.
+    ("account", ()),
     ("turn", ("cost", "ctx", "tok", "cache", "clock", "eta", "split", "five",
               "week", "diff")),
     ("main", tuple(c["key"] for c in GRID_CELLS)),

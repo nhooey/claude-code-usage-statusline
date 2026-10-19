@@ -22,7 +22,7 @@ import {
   E_TIME, E_TURN, E_TURN_ID, E_WEEK, K, MAG_COST, MAG_DUR_S, TURN_ID_HEX,
 } from "./spec.ts";
 import {
-  durFmt, humanize, magDim, moneyFig, padVal, visWidth,
+  durFmt, humanize, limitPct, magDim, moneyFig, padVal, visWidth,
 } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
@@ -208,15 +208,42 @@ export function untilReset(st: Settings, epoch: number | null,
 
 /** 💳 account, then each window's 🔜 reset where it has one, then 📅 and 🕐,
  * which leave first on a narrow terminal. */
-export function accountLabel(sessReset: string | null,
-  weekReset: string | null, date: string, time: string): Piece[] {
-  const resets = [[E_SESS, sessReset], [E_WEEK, weekReset]]
-    .filter(([, r]) => r !== null)
-    .map(([mark, r]) => mark + " " + E_RESET + " " + r + "  ").join("");
-  return [piece("name.label", E_ACCT + " account  "),
-    ...(resets ? [piece("plan.reset", resets, null, 0, true)] : []),
+export function accountLabel(st: Settings, sess: number | null,
+  week: number | null, sessReset: string | null, weekReset: string | null,
+  date: string, time: string): Piece[] {
+  // Each window whole on the label, its share then its reset, since the
+  // row has no figure in the plan columns to sit under: 🔋 15٪ 🔜 6.7m.
+  // Three digits for both, so 🪫 reads 87٪ as 🔋 does, not the 87.0٪ the
+  // wider 🪫 column draws for an agent's small share.
+  const plan = (path: string, mark: string, colour: string,
+    v: number | null, reset: string | null): Piece[] => {
+    if (v === null && reset === null) return [];
+    const out: Piece[] = [];
+    out.push({ path, spans: [span(mark + " "), ...(v === null ? [] :
+      [span(limitPct(st, v, 3) + E_PCT, colour)]), span(" ")], drop: 0 });
+    if (reset !== null) {
+      out.push(piece("plan.reset", E_RESET + " " + reset + "  ", null, 0,
+        true));
+    } else {
+      out.push(piece(path, " "));
+    }
+    return out;
+  };
+  const windows = [
+    ...plan("plan.five_hour", E_SESS, "F_LIM_SESS", sess, sessReset),
+    ...plan("plan.week", E_WEEK, "F_LIM_WEEK", week, weekReset)];
+  // No blanks after the last window: they would only take room a cut
+  // label needs.
+  const last = windows.at(-1);
+  if (last) {
+    const s = last.spans.at(-1)!;
+    windows[windows.length - 1] = { ...last, spans: [...last.spans.slice(0,
+      -1), { ...s, text: s.text.replace(/ +$/, "") }] };
+  }
+  return [
     piece("clock.date", E_DATE + " " + date + "  ", null, 2, true),
-    piece("clock.time", E_TIME + " " + time, null, 3, true)];
+    piece("clock.time", E_TIME + " " + time + "  ", null, 3, true),
+    piece("name.label", E_ACCT + " "), ...windows];
 }
 
 /** 🎤 and the turn's prompt, or today's placeholder, dim, for none. */

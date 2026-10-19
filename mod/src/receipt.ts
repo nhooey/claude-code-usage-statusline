@@ -16,6 +16,7 @@ import { E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
+import { squash } from "./claude_records.ts";
 import type { Turn } from "./claude_records.ts";
 import type { Accounting } from "./claude_calib.ts";
 import { decodeTranscript } from "./figures.ts";
@@ -73,7 +74,8 @@ function turnRow(st: Settings, t: Turn, acc: Accounting, win: number,
     ...shareCells(st, acc, sessPct, weekPct),
     diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),
   };
-  return { scope: "turn", label: receiptLabel(turnLabel(t.text)), cells };
+  return { scope: "turn", label: receiptLabel(turnLabel(squash(t.text))),
+    cells };
 }
 
 /** sum() of floats, left to right, as the receipt's totals add up. */
