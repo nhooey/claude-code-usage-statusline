@@ -273,8 +273,11 @@ same version-1 reading as its output and shared cases pinning it.
    mockup's output byte for byte before that was deleted. Its cases,
    `tests/fixtures/grid/`, are written by the TypeScript
    (`mod/tools/gen-grid-cases.ts`), the first fixtures that are, and
-   `grid.test.ts` fails when they are not what the generator writes. Left:
-   the Python cells brought to the grid, checked against those cases.
+   `grid.test.ts` fails when they are not what the generator writes. The
+   Python grid engine, `coding_agent_usage_line/grid.py`, is a port of
+   `grid.ts` function for function and passes every one of those cases under
+   each profile (`tests/grid.py`, 11,919 checks). Left: the agent panel's
+   rows moved onto it, which changes the panel's goldens.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
 6. **The switch.** The band runs beside the status line until the two agree;

@@ -69,6 +69,8 @@ jobs:
         run: python3 tests/subagent.py && python3 tests/claude-subagent-render.py
       - name: token rate
         run: python3 tests/rate.py
+      - name: the redesigned grid
+        run: python3 tests/grid.py
 
   floor:
     # The 3.9 claim in README.md, checked against a real 3.9. Separate from

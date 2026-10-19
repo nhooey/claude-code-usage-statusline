@@ -354,6 +354,11 @@ shapes are in the generator's header.
 and runs the generator again in memory, failing if what it writes differs
 from what is committed, so regenerating and reading the diff is the only way
 to change them.
+`grid.py` replays the same cases against `coding_agent_usage_line/grid.py`,
+the Python port: each profile's environment is set and `formatting.py`
+reloaded, as a process with it would have it, and the kept keys, the spans
+and the joined line must match. It only reads the cases; a disagreement is
+the port's to fix.
 
 ## Assertion suites
 
@@ -377,6 +382,8 @@ These pin values rather than rows, so they assert instead of comparing files.
   depth, a damaged history file) and its cell; column 3's 📖 📝 shares and
   🧠's alignment; the per-kind brightness cuts; and the ⌛ row's 🔧 🤖 🚦
   partition of Σ, with and without a blocking question.
+- **`grid.py`** — the Python grid engine against the TypeScript-written
+  [grid cases](#grid-cases), under each profile they name.
 - **`usage-source.py`** — the Claude Usage Tracker reader, `cmd:` sources,
   normalization, and the scoped cache. Its fixture store is the tracker's
   schema as last observed; a pre-migration store is a separate case, because
