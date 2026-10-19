@@ -20,7 +20,7 @@ if not os.path.exists(os.path.join(HERE, "align-probe.on")):
 pay = json.loads(raw)
 # The payload's columns are the terminal's less 6; the mockup wants the terminal's.
 cols = int(pay.get("columns") or 154) + 6
-rows = subprocess.run(["/usr/bin/python3", os.path.join(REPO, "tools/layout-mockup.py"),
+rows = subprocess.run(["node", os.path.join(REPO, "mod/tools/layout-mockup.ts"),
                        "--plain", "--part", "panel", "--phase", "running", "--agents", "1",
                        "--cols", str(cols)], capture_output=True, text=True).stdout.splitlines()
 for task in pay.get("tasks") or ():

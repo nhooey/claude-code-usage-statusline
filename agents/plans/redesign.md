@@ -2,7 +2,7 @@
 
 A proposal, not built yet. Nothing here changes what the program draws today;
 [Layout](../../docs/layout.md) is still the reference for that. This document collects
-the design as it is decided, and `tools/layout-mockup.py` draws it.
+the design as it is decided, and `mod/tools/layout-mockup.ts` draws it.
 
 ## Why
 
@@ -267,8 +267,14 @@ same version-1 reading as its output and shared cases pinning it.
    status goldens and 3,958 cell cases), `claude_cost_render.ts` and
    `claude_cost.ts` (the 87 cost goldens and 256 receipt cases), and
    `claude_subagent_render.ts` (the panel's 242 render cases) match the
-   Python byte for byte. Left: the redesigned grid, then the Python cells
-   brought to it.
+   Python byte for byte. The redesigned grid is built too: `grid.ts` lays
+   out rows given as plain data, a label's pieces and the cells as spans,
+   and `mod/tools/layout-mockup.ts` draws the mockup with it, the Python
+   mockup's output byte for byte before that was deleted. Its cases,
+   `tests/fixtures/grid/`, are written by the TypeScript
+   (`mod/tools/gen-grid-cases.ts`), the first fixtures that are, and
+   `grid.test.ts` fails when they are not what the generator writes. Left:
+   the Python cells brought to the grid, checked against those cases.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
 6. **The switch.** The band runs beside the status line until the two agree;
@@ -316,7 +322,18 @@ the explanations moved with the values, and both languages still read a
 literal beside its name. Values computed at import (the `S_*` forms,
 `RIGHT_GRID`) are rules, and each language computes them.
 
-Still to come, with the new grid: each cell's key, `--hide` path, width, gap and drop rank; each glyph by code
+Done 2026-10-19: the grid's rules joined it, 182 constants now. The grid's
+constants (`RIGHT_EDGE`, `LABEL_MIN`, `PANEL_CHROME`,
+`PANEL_COLUMNS_SHORT`, `CHROME_DEPTH`), 🔻 as `E_TURN_AHEAD` beside 🔺, the
+scopes (`GRID_SCOPES`), the `--hide` groups and their metrics
+(`HIDE_GROUPS`), each column's key, `--hide` path, width and gap
+(`GRID_CELLS`) and the order columns drop in (`DROP_ORDER`). A column's
+width is a number where it is fixed and otherwise names its rule (`A_CTX_W`,
+`COST_W`, …), since `_PAD` and the marks' spacing move it; each language
+computes the rules. The label pieces' drop ranks stay with the rows that
+carry them: a rank belongs to a row's own label, not to a column.
+
+Still to come: each glyph by code
 point; each colour as its RGB triple and the cut-offs that dim it (`mag_dim`,
 `cache_color`). Three things vary at run time and go in the spec as rules,
 not numbers:
@@ -536,7 +553,7 @@ What schema 2 counts, and how:
 
 ## The whole screen
 
-After the turn, `python3 tools/layout-mockup.py --cols 150 --plain`, made-up
+After the turn, `node mod/tools/layout-mockup.ts --cols 150 --plain`, made-up
 figures; `--phase running` draws it mid-turn:
 
 ```
@@ -599,7 +616,7 @@ The probe is in `tools/align-probe/`:
 - **`mod/`** is a throwaway mod. Its `AbovePrompt` hook draws a ruler and the
   mockup's band rows. Its `TurnDuration` hook draws the whole closing line
   with the receipt rows under it. Its `UserMessage` hook adds a dim 🔻 line
-  under the prompt. It runs `tools/layout-mockup.py` from the usual checkout
+  under the prompt. It runs `mod/tools/layout-mockup.ts` from the usual checkout
   path.
 - **`align-panel.py`** is a `subagentStatusLine` command. While
   `align-probe.on` (git-ignored) sits beside it, each task's row is the
