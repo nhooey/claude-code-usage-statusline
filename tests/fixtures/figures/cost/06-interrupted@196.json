@@ -1,0 +1,114 @@
+{
+  "accounting": {
+    "session": {
+      "cost_usd": 0.075045,
+      "read_share": 34,
+      "sess_share": 0.013644545454545454,
+      "week_share": 0.018303658536585367,
+      "write_share": 29
+    },
+    "turns": [
+      {
+        "cost_usd": 0.075045,
+        "read_share": 34,
+        "sess_share": 0.013644545454545454,
+        "week_share": 0.018303658536585367,
+        "write_share": 29
+      }
+    ]
+  },
+  "calibration": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 200000,
+  "mode": "cost",
+  "schema": 1,
+  "turns": [
+    {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": null,
+      "agent_ids": [],
+      "agent_model_s": 0,
+      "agent_name": null,
+      "agent_tool_s": 0,
+      "blocked_s": 0,
+      "cache_read": 51000,
+      "cache_write": 2200,
+      "calls": 2,
+      "compact": false,
+      "ctx": 53209,
+      "dctx": null,
+      "dur_s": 120,
+      "fresh": 9,
+      "out": 1100,
+      "parts": [
+        [
+          1786842660,
+          0.075045
+        ],
+        [
+          1786842720,
+          0
+        ]
+      ],
+      "prompt_id": null,
+      "reported": false,
+      "text": "Start something and then type over it.",
+      "tool_s": 0,
+      "ts": "2026-08-16T01:10:00Z",
+      "turn_index": null,
+      "usd_cr": 0.0255,
+      "usd_cw": 0.022000000000000002,
+      "usd_in": 0.000045,
+      "usd_out": 0.0275
+    }
+  ],
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 41,
+      "session_resets_at": 1786852800,
+      "weekly_pct": 63,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "account_name": "session:06-interrupted",
+      "agent": "claude",
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786852800,
+              "used_percent": 41
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 63
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-app-41-63",
+      "stale": false
+    }
+  }
+}

@@ -58,6 +58,19 @@ def near(name, got, want, tol=1e-6):
 
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def drawn(cell):
+    """A cell's spans joined into escape codes, as the terminal gets them."""
+    if isinstance(cell, str):
+        return cell
+    from coding_agent_usage_line.spans import join
+    return join(cell)
+
+
+def unpainted(cell):
+    """A cell's text alone, its escape codes dropped."""
+    return ANSI.sub("", drawn(cell))
 NOW = 1786847000.0      # the shared cases' PIN_NOW, for no reason but habit
 
 
@@ -131,7 +144,7 @@ def run(sl, sr, scratch):
           sl.session_rate("s4", 7, NOW), None)
 
     print("the cell")
-    cell = lambda rate, pct: ANSI.sub("", sl.render_rate_cache(rate, pct))
+    cell = lambda rate, pct: unpainted(sl.render_rate_cache(rate, pct))
     check("🛫 the rate, /s, then 🎯 and the hit rate: column 2's shape, 13 wide",
           (cell(200.0, 98), sl.vis_width(cell(200.0, 98))),
           ("\U0001F6EB200/s \U0001F3AF98٪", 13))
@@ -147,7 +160,7 @@ def run(sl, sr, scratch):
     check("a full cache clamps at 99 like the cell it replaced",
           cell(0.0, 100), "\U0001F6EB  0/s \U0001F3AF99٪")
     check("no usage at all: no cell", cell(50.0, -1), "")
-    tcell = lambda t, m=sl.E_TOOL, r=200.0: ANSI.sub("", sl.render_rate_cache(r, 98, m, t))
+    tcell = lambda t, m=sl.E_TOOL, r=200.0: unpainted(sl.render_rate_cache(r, 98, m, t))
     check("a tool running: 🔧 and its age in place of 🛫 and the rate, the "
           "unit where the rate's / stood so the figures stack, still 13",
           ([tcell(t) for t in (5, 42, 90, 754)], sl.vis_width(tcell(42))),
@@ -162,9 +175,9 @@ def run(sl, sr, scratch):
           ["\U0001F6A6 42s  \U0001F3AF98٪", "\U0001F916200/s \U0001F3AF98٪",
            "\U0001F9161.5m  \U0001F3AF98٪", "\U0001F916 30s  \U0001F3AF98٪"])
     check("amber from ten minutes quiet, and only for 🤖",
-          (sl.F_AMB in sl.render_rate_cache(200.0, 98, sl.E_WORK, 700),
-           sl.F_AMB in sl.render_rate_cache(200.0, 98, sl.E_WORK, 90),
-           sl.F_AMB in sl.render_rate_cache(200.0, 98, sl.E_TOOL, 700)),
+          (sl.F_AMB in drawn(sl.render_rate_cache(200.0, 98, sl.E_WORK, 700)),
+           sl.F_AMB in drawn(sl.render_rate_cache(200.0, 98, sl.E_WORK, 90)),
+           sl.F_AMB in drawn(sl.render_rate_cache(200.0, 98, sl.E_TOOL, 700))),
           (True, False, False))
     # tool_at: the oldest call of the open turn still waiting on its result.
     def stamp(sec):
@@ -247,13 +260,13 @@ def run(sl, sr, scratch):
            (sl.E_WORK, 9.0), (sl.E_WORK, 30.0), ("", 0.0)])
     check("the model: 🤖, the two-character spec with its superscript "
           "version, and the effort's glyph against it",
-          [ANSI.sub("", sl.render_model(m, e)) for m, e in
+          [unpainted(sl.render_model(m, e)) for m, e in
            (("Opus 5 (1M context)", "high"), ("Haiku 4.5", "max"),
             ("Sonnet 4.6", ""), ("Fable 5", "null"), ("Opus 5", "odd"),
             ("", "high"))],
           ["\U0001F916O⁵\U0001F3C3", "\U0001F916H⁴\U0001F525",
            "\U0001F916S⁴", "\U0001F916F⁵", "\U0001F916O⁵\U0001F6B6", ""])
-    mc = lambda m, e, c: ANSI.sub("", sl.render_model_cost(m, e, c))
+    mc = lambda m, e, c: unpainted(sl.render_model_cost(m, e, c))
     check("and beside the 💰 on column 2's first row since 2026-09-16: the "
           "model held at its full width, one space, the cost — the column",
           (mc("Opus 5", "high", "115.2"), mc("Opus 5", "", "1234.5"),
@@ -265,7 +278,7 @@ def run(sl, sr, scratch):
            sl.RIGHT_GRID[1], sl.RIGHT_GRID[1]))
     check("the tokens and the 🛫 cell under it fill the same column",
           (sl.vis_width(cell(200.0, 98)),
-           sl.vis_width(ANSI.sub("", sl.render_tokens(2700000, 841000)))),
+           sl.vis_width(unpainted(sl.render_tokens(2700000, 841000)))),
           (sl.RIGHT_GRID[1], sl.RIGHT_GRID[1]))
     # The padded profile, where each mark takes a column of air: the
     # profile is read at import, so it is a process of its own.
@@ -276,7 +289,7 @@ def run(sl, sr, scratch):
     padded = subprocess.run([sys.executable, "-c", (
         "import re, sys; sys.path.insert(0, %r)\n"
         "from coding_agent_usage_line import claude as sl\n"
-        "A = lambda s: re.sub(r'\\x1b\\[[0-9;]*m', '', s)\n"
+        "A = lambda s: re.sub(r'\\x1b\\[[0-9;]*m', '', sl.join(s))\n"
         "for c in (sl.render_model_cost('Opus 5', 'medium', '5100'),\n"
         "          sl.render_tokens(1.6e9, 6.2e6, sl.COL2_VAL2_W),\n"
         "          sl.render_rate_cache(234.0, 96)):\n"
@@ -288,8 +301,8 @@ def run(sl, sr, scratch):
           (["\U0001F916 O⁵\U0001F6B6  \U0001F4B05.1k",
             "\U0001F9E9 ▴1.6G  ▾6.2M",
             "\U0001F6EB 234/s \U0001F3AF 96٪"], [15, 15, 15]))
-    ctx = lambda: ANSI.sub("", sl.render_ctx(11, 115000))
-    share = lambda mark, t, s_: ANSI.sub("", sl.render_cache_share(mark, t, s_))
+    ctx = lambda: unpainted(sl.render_ctx(11, 115000))
+    share = lambda mark, t, s_: unpainted(sl.render_cache_share(mark, t, s_))
     # Where a figure ENDS: the columns up to and including its last glyph.
     end = lambda s_, last: sl.vis_width(s_.split(last)[0]) + 1
     check("🧠 heads column 3, its unit under the 🎤 figures' ٪ and its "
@@ -298,8 +311,8 @@ def run(sl, sr, scratch):
            end(ctx(), "k"), end(share(sl.S_READ, 34, 32), "٪")),
           ("🧠   115k    11٪", 16, 16, 9, 9))
     check("an estimated 🧠 carries a ~ on both fields and keeps both edges",
-          (ANSI.sub("", sl.render_ctx(7, 71000, True)),
-           ANSI.sub("", sl.render_ctx(11, 115000, True))),
+          (unpainted(sl.render_ctx(7, 71000, True)),
+           unpainted(sl.render_ctx(11, 115000, True))),
           ("🧠   ~71k    ~7٪", "🧠  ~115k   ~11٪"))
 
     print("column 3: where the bill went, at two scopes")
@@ -352,17 +365,17 @@ def run(sl, sr, scratch):
     # and a dim first field reset before the second — so a re-bless cannot
     # quietly bless a rate that dims the 🎯 beside it.
     D = sl.DIM
-    check("mag_dim: DIM under the cut, nothing at it, nothing over it, "
-          "nothing for no reading",
+    check("mag_dim: dim under the cut, not at it, not over it, "
+          "not for no reading",
           [sl.mag_dim(v, 100.0) for v in (99.9, 100.0, 1e9, None)],
-          [D, "", "", ""])
+          [True, False, False, False])
     def dims(s):
         # which fields carry DIM, reading the escapes as a list of
         # (dim?, text) runs, stripped of colour
         # (dim?, text) runs, stripped of colour; a mark drawn ahead of the
         # colour, outside it, is not part of the run
         runs, cur, dim = [], "", False
-        for tok in re.split(r"(\x1b\[[0-9;]*m)", s):
+        for tok in re.split(r"(\x1b\[[0-9;]*m)", drawn(s)):
             if tok == D:
                 dim = True
             elif tok == sl.R:
@@ -398,32 +411,32 @@ def run(sl, sr, scratch):
           (0.2, True))
     check("🔋 row: 🎤 and 🎮 dim on the caller's word, 💳 as before",
           [d for d, _ in dims(sl.render_limit(
-              sl.S_SESS, "38", "5", "", "0.4", sl.F_LIM_SESS, True, NOW,
+              sl.S_SESS, "38", "5", "", "0.4", "F_LIM_SESS", True, NOW,
               True, True))],
           [True, True, True])
     check("🪫 row: bright when told nothing, whatever the figures",
           [d for d, _ in dims(sl.render_limit(
-              sl.S_WEEK, "84", "0.01", "", "0.001", sl.F_LIM_WEEK, False,
+              sl.S_WEEK, "84", "0.01", "", "0.001", "F_LIM_WEEK", False,
               NOW))],
           [False, False, False])
     check("agent 🔋 🪫: dim as a pair, the mark outside the DIM",
-          [(sl.DIM in sr.render_agent_limit(sl.E_SESS, "38", 3.0,
-                                             sl.F_LIM_SESS, True, dim),
-            sr.render_agent_limit(sl.E_SESS, "38", 3.0, sl.F_LIM_SESS,
-                                  True, dim).startswith(sl.E_SESS))
+          [(sl.DIM in drawn(sr.render_agent_limit(sl.E_SESS, "38", 3.0,
+                                                   "F_LIM_SESS", True, dim)),
+            drawn(sr.render_agent_limit(sl.E_SESS, "38", 3.0, "F_LIM_SESS",
+                                        True, dim)).startswith(sl.E_SESS))
            for dim in (True, False)],
           [(True, True), (False, True)])
     check("🎯: green is dim, amber and red are not, on the status line",
           [dims(sl.render_rate_cache(None, p))[0][0] for p in (81, 80, 50)],
           [True, False, False])
     check("🎯: the same on the agent row, and the mark stays bright",
-          [(sl.DIM in sr.render_agent_cache(p),
-            sr.render_agent_cache(p).startswith(sl.E_CACHE))
+          [(sl.DIM in drawn(sr.render_agent_cache(p)),
+            drawn(sr.render_agent_cache(p)).startswith(sl.E_CACHE))
            for p in (81, 80)],
           [(True, True), (False, True)])
     check("🛫: 1k/s is full flight; no slope is no DIM either",
           [dims(sl.render_rate_cache(1000.0, 70))[0][0],
-           D in sl.render_rate_cache(None, 70)],
+           D in drawn(sl.render_rate_cache(None, 70))],
           [False, False])
     check("🧠: the size takes the token cut, and the percentage with it",
           [dims(sl.render_ctx(45, sl.MAG_TOK - 1000)),
@@ -451,7 +464,7 @@ def run(sl, sr, scratch):
     # left: an estimated run of eight, five gone, three to go.
     check("⌛ row: ⛳ counts the turn's ETA down, with no bar: that is the "
           "agent rows' alone",
-          re.sub(r"\s+", " ", ANSI.sub("", sl.render_elapsed(
+          re.sub(r"\s+", " ", unpainted(sl.render_elapsed(
               3600.0, NOW - 7200.0, 900.0, NOW, 0.0, (NOW - 60, 240.0),
               NOW - 300))),
           "\u231B \u26F3 3m \U0001F916 45m "
@@ -464,11 +477,11 @@ def run(sl, sr, scratch):
            ((66, 67), (67, 66), (None, 10), (90, None))],
           [(True, False), (False, True), (False, True), (False, False)])
     check("and both rows take the caller's word, so 📝 flips with 📖",
-          [dims(sl.render_cache_share(sl.S_READ, 34, 80, sl.F_SHARE, True, False)),
-           dims(sl.render_cache_share(sl.S_WRITE, 7, 20, sl.F_SHARE, True, False))],
+          [dims(sl.render_cache_share(sl.S_READ, 34, 80, "F_SHARE", True, False)),
+           dims(sl.render_cache_share(sl.S_WRITE, 7, 20, "F_SHARE", True, False))],
           [[(True, "34٪"), (False, "80٪")], [(True, "7٪"), (False, "20٪")]])
     check("a ? is dim whatever the caller says; 💯 is bright",
-          dims(sl.render_cache_share(sl.S_READ, None, 100, sl.F_SHARE, False, False)),
+          dims(sl.render_cache_share(sl.S_READ, None, 100, "F_SHARE", False, False)),
           [(True, "?"), (False, "💯٪")])
     check("the agent row's ⌛ 🛫 🧠 take the same cuts",
           [dims(sr.render_agent_elapsed(1000 * (NOW - 599), NOW))[0][0],

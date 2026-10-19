@@ -33,17 +33,10 @@ def _pct_num(value):
 # ════════════════════════════════════════════════════════════════════════════
 # ANSI truecolor escapes.
 # ════════════════════════════════════════════════════════════════════════════
-R = "\033[0m"                              # reset
-DIM = "\033[2m"                            # dim attribute.  Two jobs, one
-                                           # per kind of figure: on the limit
-                                           # rows it is scope and urgency (see
-                                           # render_limit); on every unbounded
-                                           # figure it is MAGNITUDE — dim under
-                                           # a fixed cut, bright over it (see
-                                           # MAG_TOK).  Never a hue of its own.
-BOLD, UNBOLD = "\033[1m", "\033[22m"       # UNBOLD is 22 (bold off) and not 0
-                                           # (all attributes off), so it cannot
-                                           # stomp colour set around it.
+# The reset and the attributes live with the spans that use them, and are
+# re-exported here for the Codex renderer, which still writes escapes itself.
+from .spans import BOLD, DIM, R, UNBOLD  # noqa: F401
+from . import spans as _sp
 
 
 # Erase the whole line before painting it, and again past the end afterwards.
@@ -569,7 +562,7 @@ def vis_width(s: str, w: Widths = WIDTHS) -> int:
     return total
 
 
-def pad_val(want: int, txt: str, left: bool = False) -> str:
+def pad_val(want: int, txt, left: bool = False):
     """`txt` padded into a field of `want` COLUMNS, right-aligned by default.
 
     Never use a plain format width for a value on these rows.  Python's `%-5s`
@@ -590,7 +583,16 @@ def pad_val(want: int, txt: str, left: bool = False) -> str:
     It never truncates.  A value that outgrows its field pushes the cell's
     later fields right rather than corrupting anything else; only the fit_*
     helpers cut.
+
+    A string comes back a string, and spans come back spans with the pad as
+    a plain span of its own, outside the colour.
     """
+    if not isinstance(txt, str):
+        have = _sp.width(txt)
+        if have >= want:
+            return _sp.spans(txt)
+        pad = _sp.Span(" " * (want - have))
+        return _sp.spans(txt) + [pad] if left else [pad] + _sp.spans(txt)
     have = vis_width(txt)
     if have >= want:
         return txt
@@ -598,7 +600,7 @@ def pad_val(want: int, txt: str, left: bool = False) -> str:
     return txt + pad if left else pad + txt
 
 
-def seg(want: int, txt: str = "", left: bool = True) -> str:
+def seg(want: int, txt="", left: bool = True):
     """One grid cell of exactly `want` columns.
 
     `left=True` (the status line) puts the slack to the RIGHT of the segment,
@@ -613,13 +615,19 @@ def seg(want: int, txt: str = "", left: bool = True) -> str:
     do not move.  It never truncates — erring one column wide is cheaper than
     erring one narrow, because wide only shifts the row and narrow corrupts the
     alignment of everything after it.
+
+    Spans in, spans out, the pad a plain span; a string, which the receipt's
+    metric groups still are, comes back a string.
     """
+    if not isinstance(txt, str):
+        pad = _sp.Span(" " * max(0, want - _sp.width(txt)))
+        return _sp.spans(txt) + [pad] if left else [pad] + _sp.spans(txt)
     have = vis_width(strip_ansi(txt)) if txt else 0
     pad = " " * max(0, want - have)
     return txt + pad if left else pad + txt
 
 
-def pair(a: str, b: str, want: int, gap: int = PAIR_GAP) -> str:
+def pair(a, b, want: int, gap: int = PAIR_GAP) -> List[_sp.Span]:
     """Join two segments into one cell of `want` columns, `a` flush left and
     `b` flush right, with the slack between them.
 
@@ -642,7 +650,7 @@ def pair(a: str, b: str, want: int, gap: int = PAIR_GAP) -> str:
     It never truncates, for seg's reason: a cell one column wide only shifts
     its row, where one column narrow corrupts every alignment after it.
     """
-    return seg(want - vis_width(strip_ansi(b)), a + " " * gap if a else "") + b
+    return seg(want - _sp.width(b), [a, " " * gap] if a else []) + _sp.spans(b)
 
 
 def rules_on(cols: Optional[int]) -> bool:
@@ -672,7 +680,7 @@ def rules_on(cols: Optional[int]) -> bool:
     return bool(MARK_SP) and cols is not None and cols >= RULE_MIN
 
 
-def seg_gap(rule: bool = False) -> str:
+def seg_gap(rule: bool = False) -> List[_sp.Span]:
     """The SEG_GAP columns between two grid cells, ruled or blank.
 
     Exactly SEG_GAP columns wide in both forms — the rule is painted into the
@@ -681,12 +689,14 @@ def seg_gap(rule: bool = False) -> str:
     row and a blank one stack to the column.
     """
     if not rule:
-        return " " * SEG_GAP
-    return "  %s%s%s%s" % (F_RULE, SEG_RULE, R, " " * (SEG_GAP - 3))
+        return [_sp.Span(" " * SEG_GAP)]
+    return [_sp.Span("  "), _sp.Span(SEG_RULE, "F_RULE"),
+            _sp.Span(" " * (SEG_GAP - 3))]
 
 
-def grid_row(cells: Sequence[str], grid: Optional[Sequence[int]] = None,
-             rule: bool = False) -> str:
+def grid_row(cells: Sequence[_sp.SpanLike],
+             grid: Optional[Sequence[int]] = None,
+             rule: bool = False) -> List[_sp.Span]:
     """Lay segments onto the column grid — one per slot, empty for unused.
 
     The grid is resolved on the CALL and not bound as a default argument,
@@ -699,6 +709,9 @@ def grid_row(cells: Sequence[str], grid: Optional[Sequence[int]] = None,
     agree on is known once, where the readout is assembled.  Off by default so
     that a grid_row built outside that assembly, as --selftest does, gets the
     plain gaps it is measuring.
+
+    The row's closing reset, which every escape-code row carried, is written
+    where the row is printed: see spans.join's `close`.
     """
     if grid is None:
         grid = RIGHT_GRID
@@ -706,10 +719,9 @@ def grid_row(cells: Sequence[str], grid: Optional[Sequence[int]] = None,
     out = []
     for i, want in enumerate(grid):
         if i:
-            out.append(gap)
-        out.append(seg(want, cells[i] if i < len(cells) else ""))
-    out.append(R)
-    return "".join(out)
+            out.extend(gap)
+        out.extend(seg(want, _sp.spans(cells[i]) if i < len(cells) else []))
+    return out
 
 
 def fit_head(t: str, max_chars: int) -> str:
@@ -1383,8 +1395,8 @@ def pct(p: float) -> str:
 # Colour tiers.
 # ════════════════════════════════════════════════════════════════════════════
 
-def reset_dim(d: str) -> str:
-    """DIM a reset countdown unless it is under an hour away.
+def reset_dim(d: str) -> bool:
+    """Whether a reset countdown dims: unless it is under an hour away.
 
     Reading the unit rather than re-deriving the seconds keeps this to one
     branch and keeps dur_fmt the only place that knows the arithmetic.
@@ -1397,20 +1409,20 @@ def reset_dim(d: str) -> str:
     else.  short_dur returns "now" for a moment already passed, which has no
     unit and so lands here as imminent, which it is.
     """
-    return DIM if d.endswith(("d", "h")) else ""
+    return d.endswith(("d", "h"))
 
 
-def mag_dim(v: Optional[float], cut: float) -> str:
-    """DIM for a figure under its magnitude cut; nothing at or over it.
+def mag_dim(v: Optional[float], cut: float) -> bool:
+    """Whether a figure dims: under its magnitude cut, not at or over it.
 
-    Prefixed to the figure's colour the way render_limit builds `tcol`, and
-    reset with the figure, so a dim first field never dims the second: DIM
-    reaches a pictograph where a foreground colour does not, and would take
-    the 🎯 inside the rate cell's second field with it.  None — no reading —
-    is left alone; the caller blanks or omits those itself.  The cuts and
-    the reasoning are at MAG_TOK.
+    The figure's span carries it with its colour, the way render_limit
+    builds `tcol`, and is reset with it, so a dim first field never dims the
+    second: DIM reaches a pictograph where a foreground colour does not, and
+    would take the 🎯 inside the rate cell's second field with it.  None —
+    no reading — is left alone; the caller blanks or omits those itself.
+    The cuts and the reasoning are at MAG_TOK.
     """
-    return "" if v is None or v >= cut else DIM
+    return not (v is None or v >= cut)
 
 
 def share_dims(week_turn: str, week_sess: str) -> Tuple[bool, bool]:
@@ -1463,7 +1475,7 @@ def cache_dims(turn_read: Optional[int], sess_read: Optional[int]
             sess_read is not None and sess_read < MAG_SHARE_READ)
 
 
-def cache_color(p: int) -> str:
+def cache_color(p: int) -> _sp.Span:
     """Colour the cache-hit rate.  INVERTED against the other tiers: a high
     number is the healthy one.  A collapse means something invalidated the
     cached prefix and the same work now bills about ten times over.
@@ -1475,12 +1487,13 @@ def cache_color(p: int) -> str:
     The same reading as the magnitude cuts (MAG_TOK) from the other side:
     there the small figure is the quiet one, here the large one is.  Callers
     put the 🎯 ahead of this, outside it, so the DIM reaches the figure and
-    not the mark — as mag_dim's callers do."""
+    not the mark — as mag_dim's callers do.  The tier comes back as a style
+    with no text, for spans.paint to put the figure in."""
     if p <= CACHE_CRIT:
-        return F_RED
+        return _sp.ink("F_RED")
     if p <= CACHE_WARN:
-        return F_AMB
-    return DIM + F_GRN
+        return _sp.ink("F_AMB")
+    return _sp.ink("F_GRN", True)
 
 
 # ════════════════════════════════════════════════════════════════════════════

@@ -8,6 +8,7 @@ behaviours are deliberate.
 - [Golden files](#golden-files)
 - [The pinned environment](#the-pinned-environment)
 - [The generated corpora](#the-generated-corpora)
+- [Figures](#figures)
 - [Status cases](#status-cases)
 - [Cost cases](#cost-cases)
 - [Assertion suites](#assertion-suites)
@@ -33,7 +34,8 @@ sed -E 's/\x1b\[[0-9;]*[A-Za-z]//g' tests/golden/status/01-baseline@196.txt
 
 A layout change is supposed to show up as a golden diff. Re-record with
 `--regen`, read `git diff tests/golden/` line by line, and commit the goldens
-with the change. There is no second implementation to agree with: a golden is
+with the change. `--regen` rewrites the case's [figures](#figures) as well,
+and a layout change leaves them alone. There is no second implementation to agree with: a golden is
 a claim about what the program prints, and the reviewed diff is what keeps it
 honest.
 
@@ -88,6 +90,8 @@ fixtures/
   payloads/status/       status-line payloads
   transcripts/status/    the transcripts and agent files they point at
   transcripts/cost/      the Stop hook's transcripts
+  figures/<suite>/       each case's figures, written by run-cases.py; see
+                         Figures below
   gen/                   the generators
 ```
 
@@ -103,6 +107,88 @@ reaches by accident:
   counts under 🚦 rather than 🔧;
 - timestamps chosen so the ⌛ row's 🔧 🤖 🚦 partition reads `58m 3h 6h` over
   a 9.3-hour session.
+
+## Figures
+
+The program runs each readout in two stages, and `run-cases.py` checks each
+on its own as well as the two together:
+
+1. **Figures.** The inputs read -- payload, transcript and agent files, usage
+   source, calibration cache, repository, the clock -- and every figure the
+   rows draw worked out from them: `status_figures` in `claude.py` for the
+   status line, and `cost_figures`, after the transcript read in
+   `main_cost`, for the cost line. Everything that reads a file or a cache,
+   runs a command, reads the clock or writes session state happens here.
+2. **Render.** `render_status_figures` and `render_cost_figures` draw a
+   figures document at a width, under the flags and the terminal profile,
+   and read nothing else. The live path goes through the document too, so a
+   figure the rows need and the document lacks fails every golden.
+
+Between them is a figures document, one per case, committed as
+`fixtures/figures/<suite>/<id>.json`. A normal run compares the document
+each case writes with the committed one, byte for byte, then draws the
+committed one alone and compares that with the golden. `--regen` rewrites
+the documents with the goldens; `--regen-figures` rewrites only the
+documents, for a change to their shape that must not move a row. To draw
+one by hand, its placeholders filled in first:
+
+```sh
+coding-agent-usage-line.py --agent claude --mode status --cols 120 \
+    --from-figures FILE [render flags]
+```
+
+The documents are written for a second implementation to produce and
+compare, so the text is canonical:
+
+- **Keys sorted**, two-space indent, UTF-8 unescaped, a newline at the end.
+- **Numbers exact**: the shortest decimal that reads back as the same double,
+  positional (`0.00001`, never `1e-05`), and a whole number as an integer
+  (`300`, not `300.0`). That is JavaScript's `Number#toString` for every
+  figure here. Nothing is rounded, so a port has to sum in the same order.
+- **Missing is null**, never 0 or "": a string field with no value, the
+  transcript's `cache_pct` of -1 and its epochs of 0 are written null.
+- **Times are epochs**; `clock.tz` is the zone the clock cells are drawn in.
+- **Paths are placeholders**: `${HOME}`, `${FIXTURES}`, and `${SCRATCH}` for
+  the suite's scratch directory (the fixture repos, the `cmd:` sources).
+- **No width and no flags.** A case drawn at five widths has five identical
+  documents, except where the cases' shared state makes them differ: the
+  first cost case to run a `cmd:` source records what the command printed,
+  and the later ones read it back from the source cache, which keeps less.
+
+`schema` is 1 and `mode` is `status` or `cost`. Both modes carry:
+
+| Key | Holds |
+|---|---|
+| `clock` | `now`, the epoch every duration and clock cell is drawn from, and `tz` |
+| `context_window` | the window the 🧠 percentages divide by, in tokens |
+| `usage.reading` | the version-1 reading the usage source gave ([docs/usage-sources.md](../docs/usage-sources.md)), or null |
+| `usage.plan` | the plan figures the accounting divided by: `session_pct`, `weekly_pct`, `session_resets_at`, `weekly_resets_at` |
+| `usage.account_text` | the account summary row, when one is drawn |
+
+A status document adds the records `render_status` takes, field for field
+as `claude_records.py` defines them:
+
+| Key | Record |
+|---|---|
+| `payload` | `Payload`: the status-line JSON as read, its strings as given |
+| `transcript` | `Transcript`: tokens, cache rate, context, the last exchange, the ⌛ durations and their epochs, ETAs, queue and compactions |
+| `git` | `Git`: branch, dirty, toplevel, worktree |
+| `limits` | `Limits`: the window percentages as the source gave them, this session's and this turn's share of each, the resets as epochs |
+| `cache_shares` | `CacheShares`: 📖 and 📝 for the turn and the session |
+| `rate` | the session's token rate per second, or null |
+
+A cost document adds:
+
+| Key | Holds |
+|---|---|
+| `turns` | every `Turn` the transcript folds into, in order, agent turns included |
+| `calibration` | dollars per point of each window, `sess` and `week`, or null |
+| `accounting.turns` | per turn: `cost_usd`, its `sess_share` and `week_share` of each window, and the `read_share` and `write_share` of its cost |
+| `accounting.session` | the same over every turn, for the totals row |
+
+The cost rows still work `accounting` out again from `turns` while drawing,
+so for now it is checked as a figure rather than read. Once the cells take
+it from the document, the render stage stops needing `usage.plan`.
 
 ## Status cases
 

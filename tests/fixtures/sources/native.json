@@ -1,0 +1,3217 @@
+[
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude payload (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude payload (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude payload (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude payload (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude payload (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude payload (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": "2026-08-16T04:00:00Z",
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "reset_at": "2026-08-18T01:00:00Z",
+     "used_percent": 3
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787014800.0,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude, iso resets (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": "2026-08-16T04:00:00Z",
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "reset_at": "2026-08-18T01:00:00Z",
+     "used_percent": 3
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787014800.0,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude, iso resets (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": "2026-08-16T04:00:00Z",
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "reset_at": "2026-08-18T01:00:00Z",
+     "used_percent": 3
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787014800.0,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude, iso resets (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": "2026-08-16T04:00:00Z",
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "reset_at": "2026-08-18T01:00:00Z",
+     "used_percent": 3
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787014800.0,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude, iso resets (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "resets_at": "2026-08-16T04:00:00Z",
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "reset_at": "2026-08-18T01:00:00Z",
+     "used_percent": 3
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787014800.0,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude, iso resets (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "resets_at": "2026-08-16T04:00:00Z",
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "reset_at": "2026-08-18T01:00:00Z",
+     "used_percent": 3
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787014800.0,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "claude, iso resets (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "used_percent": 5,
+     "used_percentage": null
+    }
+   }
+  },
+  "expected": {},
+  "name": "used_percentage null beats used_percent (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "used_percent": 5,
+     "used_percentage": null
+    }
+   }
+  },
+  "expected": {},
+  "name": "used_percentage null beats used_percent (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "used_percent": 5,
+     "used_percentage": null
+    }
+   }
+  },
+  "expected": {},
+  "name": "used_percentage null beats used_percent (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "used_percent": 5,
+     "used_percentage": null
+    }
+   }
+  },
+  "expected": {},
+  "name": "used_percentage null beats used_percent (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "used_percent": 5,
+     "used_percentage": null
+    }
+   }
+  },
+  "expected": {},
+  "name": "used_percentage null beats used_percent (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "used_percent": 5,
+     "used_percentage": null
+    }
+   }
+  },
+  "expected": {},
+  "name": "used_percentage null beats used_percent (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "primary": {
+     "used_percent": 4,
+     "window_minutes": 300
+    },
+    "secondary": {
+     "limit_window_seconds": 99,
+     "used_percent": 6,
+     "window_minutes": 10080
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 4.0
+      },
+      {
+       "duration_seconds": 99.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 6.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "window minutes (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "primary": {
+     "used_percent": 4,
+     "window_minutes": 300
+    },
+    "secondary": {
+     "limit_window_seconds": 99,
+     "used_percent": 6,
+     "window_minutes": 10080
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 4.0
+      },
+      {
+       "duration_seconds": 99.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 6.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "window minutes (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "primary": {
+     "used_percent": 4,
+     "window_minutes": 300
+    },
+    "secondary": {
+     "limit_window_seconds": 99,
+     "used_percent": 6,
+     "window_minutes": 10080
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 4.0
+      },
+      {
+       "duration_seconds": 99.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 6.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "window minutes (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "primary": {
+     "used_percent": 4,
+     "window_minutes": 300
+    },
+    "secondary": {
+     "limit_window_seconds": 99,
+     "used_percent": 6,
+     "window_minutes": 10080
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 4.0
+      },
+      {
+       "duration_seconds": 99.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 6.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "window minutes (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "primary": {
+     "used_percent": 4,
+     "window_minutes": 300
+    },
+    "secondary": {
+     "limit_window_seconds": 99,
+     "used_percent": 6,
+     "window_minutes": 10080
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 4.0
+      },
+      {
+       "duration_seconds": 99.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 6.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "window minutes (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "primary": {
+     "used_percent": 4,
+     "window_minutes": 300
+    },
+    "secondary": {
+     "limit_window_seconds": 99,
+     "used_percent": 6,
+     "window_minutes": 10080
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 4.0
+      },
+      {
+       "duration_seconds": 99.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 6.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "window minutes (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "duration_seconds": null,
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "explicit null duration (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "duration_seconds": null,
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "explicit null duration (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "duration_seconds": null,
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "explicit null duration (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "duration_seconds": null,
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "explicit null duration (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "duration_seconds": null,
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "explicit null duration (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "duration_seconds": null,
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "explicit null duration (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "bucket_id": "",
+     "heading": "H",
+     "used_percentage": 1
+    },
+    "limit_id": 7,
+    "seven_day": {
+     "limit_id": "L",
+     "used_percentage": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "7",
+     "label": "H",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "id": "L",
+     "label": "7",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limit ids (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "bucket_id": "",
+     "heading": "H",
+     "used_percentage": 1
+    },
+    "limit_id": 7,
+    "seven_day": {
+     "limit_id": "L",
+     "used_percentage": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "7",
+     "label": "H",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "id": "L",
+     "label": "7",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limit ids (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "bucket_id": "",
+     "heading": "H",
+     "used_percentage": 1
+    },
+    "limit_id": 7,
+    "seven_day": {
+     "limit_id": "L",
+     "used_percentage": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "7",
+     "label": "H",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "id": "L",
+     "label": "7",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limit ids (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "bucket_id": "",
+     "heading": "H",
+     "used_percentage": 1
+    },
+    "limit_id": 7,
+    "seven_day": {
+     "limit_id": "L",
+     "used_percentage": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "7",
+     "label": "H",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "id": "L",
+     "label": "7",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limit ids (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "bucket_id": "",
+     "heading": "H",
+     "used_percentage": 1
+    },
+    "limit_id": 7,
+    "seven_day": {
+     "limit_id": "L",
+     "used_percentage": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "7",
+     "label": "H",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "id": "L",
+     "label": "7",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limit ids (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "bucket_id": "",
+     "heading": "H",
+     "used_percentage": 1
+    },
+    "limit_id": 7,
+    "seven_day": {
+     "limit_id": "L",
+     "used_percentage": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "7",
+     "label": "H",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "id": "L",
+     "label": "7",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limit ids (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "used_percentage": 1
+    },
+    "limitId": "codex"
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "codex",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limitId fallback (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "used_percentage": 1
+    },
+    "limitId": "codex"
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "codex",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limitId fallback (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "used_percentage": 1
+    },
+    "limitId": "codex"
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "codex",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limitId fallback (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "used_percentage": 1
+    },
+    "limitId": "codex"
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "codex",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limitId fallback (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "used_percentage": 1
+    },
+    "limitId": "codex"
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "codex",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limitId fallback (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "used_percentage": 1
+    },
+    "limitId": "codex"
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "codex",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "limitId fallback (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": [
+      1,
+      2
+     ],
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "list in resets_at (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": [
+      1,
+      2
+     ],
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "list in resets_at (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": [
+      1,
+      2
+     ],
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "list in resets_at (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": [
+      1,
+      2
+     ],
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "list in resets_at (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "resets_at": [
+      1,
+      2
+     ],
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "list in resets_at (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "resets_at": [
+      1,
+      2
+     ],
+     "used_percentage": 1
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "list in resets_at (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": 5,
+     "used_percentage": 1
+    },
+    "primary": {
+     "duration_seconds": 18000,
+     "resets_at": 5,
+     "used_percent": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 5.0,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 5.0,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "duplicates (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "five_hour": {
+     "resets_at": 5,
+     "used_percentage": 1
+    },
+    "primary": {
+     "duration_seconds": 18000,
+     "resets_at": 5,
+     "used_percent": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 5.0,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 5.0,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "duplicates (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": 5,
+     "used_percentage": 1
+    },
+    "primary": {
+     "duration_seconds": 18000,
+     "resets_at": 5,
+     "used_percent": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 5.0,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 5.0,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "duplicates (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": 5,
+     "used_percentage": 1
+    },
+    "primary": {
+     "duration_seconds": 18000,
+     "resets_at": 5,
+     "used_percent": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 5.0,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 5.0,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "duplicates (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "five_hour": {
+     "resets_at": 5,
+     "used_percentage": 1
+    },
+    "primary": {
+     "duration_seconds": 18000,
+     "resets_at": 5,
+     "used_percent": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 5.0,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 5.0,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "duplicates (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "five_hour": {
+     "resets_at": 5,
+     "used_percentage": 1
+    },
+    "primary": {
+     "duration_seconds": 18000,
+     "resets_at": 5,
+     "used_percent": 2
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 5.0,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 5.0,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "duplicates (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "limitName": "General",
+     "primary": {
+      "resetsAt": 1786847100,
+      "usedPercent": 12,
+      "windowDurationMins": 300
+     },
+     "secondary": {
+      "resetsAt": 1786856000,
+      "usedPercent": 40,
+      "windowDurationMins": 0
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 1786847100.0,
+       "used_percent": 12.0
+      },
+      {
+       "duration_seconds": null,
+       "id": "secondary",
+       "resets_at": 1786856000.0,
+       "used_percent": 40.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex snapshot (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "limitName": "General",
+     "primary": {
+      "resetsAt": 1786847100,
+      "usedPercent": 12,
+      "windowDurationMins": 300
+     },
+     "secondary": {
+      "resetsAt": 1786856000,
+      "usedPercent": 40,
+      "windowDurationMins": 0
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 1786847100.0,
+       "used_percent": 12.0
+      },
+      {
+       "duration_seconds": null,
+       "id": "secondary",
+       "resets_at": 1786856000.0,
+       "used_percent": 40.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex snapshot (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "limitName": "General",
+     "primary": {
+      "resetsAt": 1786847100,
+      "usedPercent": 12,
+      "windowDurationMins": 300
+     },
+     "secondary": {
+      "resetsAt": 1786856000,
+      "usedPercent": 40,
+      "windowDurationMins": 0
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 1786847100.0,
+       "used_percent": 12.0
+      },
+      {
+       "duration_seconds": null,
+       "id": "secondary",
+       "resets_at": 1786856000.0,
+       "used_percent": 40.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex snapshot (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "limitName": "General",
+     "primary": {
+      "resetsAt": 1786847100,
+      "usedPercent": 12,
+      "windowDurationMins": 300
+     },
+     "secondary": {
+      "resetsAt": 1786856000,
+      "usedPercent": 40,
+      "windowDurationMins": 0
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 1786847100.0,
+       "used_percent": 12.0
+      },
+      {
+       "duration_seconds": null,
+       "id": "secondary",
+       "resets_at": 1786856000.0,
+       "used_percent": 40.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex snapshot (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "rateLimits": {
+     "limitId": "codex",
+     "limitName": "General",
+     "primary": {
+      "resetsAt": 1786847100,
+      "usedPercent": 12,
+      "windowDurationMins": 300
+     },
+     "secondary": {
+      "resetsAt": 1786856000,
+      "usedPercent": 40,
+      "windowDurationMins": 0
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 1786847100.0,
+       "used_percent": 12.0
+      },
+      {
+       "duration_seconds": null,
+       "id": "secondary",
+       "resets_at": 1786856000.0,
+       "used_percent": 40.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex snapshot (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "rateLimits": {
+     "limitId": "codex",
+     "limitName": "General",
+     "primary": {
+      "resetsAt": 1786847100,
+      "usedPercent": 12,
+      "windowDurationMins": 300
+     },
+     "secondary": {
+      "resetsAt": 1786856000,
+      "usedPercent": 40,
+      "windowDurationMins": 0
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": 1786847100.0,
+       "used_percent": 12.0
+      },
+      {
+       "duration_seconds": null,
+       "id": "secondary",
+       "resets_at": 1786856000.0,
+       "used_percent": 40.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex snapshot (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "primary": {
+      "usedPercent": 1,
+      "windowDurationMins": 300
+     }
+    },
+    "rateLimitsByLimitId": {
+     "codex": {
+      "limitName": "General",
+      "primary": {
+       "usedPercent": 1,
+       "windowDurationMins": 300
+      }
+     },
+     "spark": {
+      "feature": "spark",
+      "limitId": "spark",
+      "normalModelSlug": "gpt-spark",
+      "secondary": {
+       "usedPercent": 99,
+       "windowDurationMins": 10080
+      }
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "feature": "spark",
+     "id": "spark",
+     "label": "spark",
+     "model": "gpt-spark",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 99.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex keyed map (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "primary": {
+      "usedPercent": 1,
+      "windowDurationMins": 300
+     }
+    },
+    "rateLimitsByLimitId": {
+     "codex": {
+      "limitName": "General",
+      "primary": {
+       "usedPercent": 1,
+       "windowDurationMins": 300
+      }
+     },
+     "spark": {
+      "feature": "spark",
+      "limitId": "spark",
+      "normalModelSlug": "gpt-spark",
+      "secondary": {
+       "usedPercent": 99,
+       "windowDurationMins": 10080
+      }
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "feature": "spark",
+     "id": "spark",
+     "label": "spark",
+     "model": "gpt-spark",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 99.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex keyed map (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "primary": {
+      "usedPercent": 1,
+      "windowDurationMins": 300
+     }
+    },
+    "rateLimitsByLimitId": {
+     "codex": {
+      "limitName": "General",
+      "primary": {
+       "usedPercent": 1,
+       "windowDurationMins": 300
+      }
+     },
+     "spark": {
+      "feature": "spark",
+      "limitId": "spark",
+      "normalModelSlug": "gpt-spark",
+      "secondary": {
+       "usedPercent": 99,
+       "windowDurationMins": 10080
+      }
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "feature": "spark",
+     "id": "spark",
+     "label": "spark",
+     "model": "gpt-spark",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 99.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex keyed map (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "rateLimits": {
+     "limitId": "codex",
+     "primary": {
+      "usedPercent": 1,
+      "windowDurationMins": 300
+     }
+    },
+    "rateLimitsByLimitId": {
+     "codex": {
+      "limitName": "General",
+      "primary": {
+       "usedPercent": 1,
+       "windowDurationMins": 300
+      }
+     },
+     "spark": {
+      "feature": "spark",
+      "limitId": "spark",
+      "normalModelSlug": "gpt-spark",
+      "secondary": {
+       "usedPercent": 99,
+       "windowDurationMins": 10080
+      }
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "feature": "spark",
+     "id": "spark",
+     "label": "spark",
+     "model": "gpt-spark",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 99.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex keyed map (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "rateLimits": {
+     "limitId": "codex",
+     "primary": {
+      "usedPercent": 1,
+      "windowDurationMins": 300
+     }
+    },
+    "rateLimitsByLimitId": {
+     "codex": {
+      "limitName": "General",
+      "primary": {
+       "usedPercent": 1,
+       "windowDurationMins": 300
+      }
+     },
+     "spark": {
+      "feature": "spark",
+      "limitId": "spark",
+      "normalModelSlug": "gpt-spark",
+      "secondary": {
+       "usedPercent": 99,
+       "windowDurationMins": 10080
+      }
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "feature": "spark",
+     "id": "spark",
+     "label": "spark",
+     "model": "gpt-spark",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 99.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex keyed map (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "rateLimits": {
+     "limitId": "codex",
+     "primary": {
+      "usedPercent": 1,
+      "windowDurationMins": 300
+     }
+    },
+    "rateLimitsByLimitId": {
+     "codex": {
+      "limitName": "General",
+      "primary": {
+       "usedPercent": 1,
+       "windowDurationMins": 300
+      }
+     },
+     "spark": {
+      "feature": "spark",
+      "limitId": "spark",
+      "normalModelSlug": "gpt-spark",
+      "secondary": {
+       "usedPercent": 99,
+       "windowDurationMins": 10080
+      }
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "codex",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "primary",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "feature": "spark",
+     "id": "spark",
+     "label": "spark",
+     "model": "gpt-spark",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "secondary",
+       "resets_at": null,
+       "used_percent": 99.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "codex keyed map (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "rate_limits": {
+     "five_hour": {
+      "resets_at": 1786847400,
+      "used_percentage": 15
+     },
+     "seven_day": {
+      "resets_at": 1787007000,
+      "used_percentage": 87.5
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "rate_limits key nested (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "rate_limits": {
+     "five_hour": {
+      "resets_at": 1786847400,
+      "used_percentage": 15
+     },
+     "seven_day": {
+      "resets_at": 1787007000,
+      "used_percentage": 87.5
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "rate_limits key nested (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "rate_limits": {
+     "five_hour": {
+      "resets_at": 1786847400,
+      "used_percentage": 15
+     },
+     "seven_day": {
+      "resets_at": 1787007000,
+      "used_percentage": 87.5
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "rate_limits key nested (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "rate_limits": {
+     "five_hour": {
+      "resets_at": 1786847400,
+      "used_percentage": 15
+     },
+     "seven_day": {
+      "resets_at": 1787007000,
+      "used_percentage": 87.5
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "rate_limits key nested (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "rate_limits": {
+     "five_hour": {
+      "resets_at": 1786847400,
+      "used_percentage": 15
+     },
+     "seven_day": {
+      "resets_at": 1787007000,
+      "used_percentage": 87.5
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "rate_limits key nested (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "rate_limits": {
+     "five_hour": {
+      "resets_at": 1786847400,
+      "used_percentage": 15
+     },
+     "seven_day": {
+      "resets_at": 1787007000,
+      "used_percentage": 87.5
+     }
+    }
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "rate_limits key nested (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {
+    "rate_limits": null
+   }
+  },
+  "expected": {},
+  "name": "rate_limits null (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {
+    "rate_limits": null
+   }
+  },
+  "expected": {},
+  "name": "rate_limits null (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {
+    "rate_limits": null
+   }
+  },
+  "expected": {},
+  "name": "rate_limits null (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {
+    "rate_limits": null
+   }
+  },
+  "expected": {},
+  "name": "rate_limits null (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {
+    "rate_limits": null
+   }
+  },
+  "expected": {},
+  "name": "rate_limits null (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {
+    "rate_limits": null
+   }
+  },
+  "expected": {},
+  "name": "rate_limits null (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": [
+    1
+   ]
+  },
+  "expected": {},
+  "name": "not a dict (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": [
+    1
+   ]
+  },
+  "expected": {},
+  "name": "not a dict (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": [
+    1
+   ]
+  },
+  "expected": {},
+  "name": "not a dict (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": [
+    1
+   ]
+  },
+  "expected": {},
+  "name": "not a dict (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": [
+    1
+   ]
+  },
+  "expected": {},
+  "name": "not a dict (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": [
+    1
+   ]
+  },
+  "expected": {},
+  "name": "not a dict (quota, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rate_limits": {}
+  },
+  "expected": {},
+  "name": "empty (rate_limits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rate_limits": {}
+  },
+  "expected": {},
+  "name": "empty (rate_limits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "rateLimits": {}
+  },
+  "expected": {},
+  "name": "empty (rateLimits, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "rateLimits": {}
+  },
+  "expected": {},
+  "name": "empty (rateLimits, as_of None)"
+ },
+ {
+  "context": {
+   "as_of": 1786847000,
+   "quota": {}
+  },
+  "expected": {},
+  "name": "empty (quota, as_of 1786847000)"
+ },
+ {
+  "context": {
+   "as_of": null,
+   "quota": {}
+  },
+  "expected": {},
+  "name": "empty (quota, as_of None)"
+ },
+ {
+  "context": {
+   "quota": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   },
+   "rate_limits": {}
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "fallthrough {'rate_limits': {}, 'quota': {'five_hour': {'used_percentage': 15, 'resets_at': 1786847400}, 'seven_day': {'used_percentage': 87.5, 'resets_at': 1787007000}}}"
+ },
+ {
+  "context": {
+   "rateLimits": {
+    "five_hour": {
+     "resets_at": 1786847400,
+     "used_percentage": 15
+    },
+    "seven_day": {
+     "resets_at": 1787007000,
+     "used_percentage": 87.5
+    }
+   },
+   "rate_limits": []
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400.0,
+       "used_percent": 15.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000.0,
+       "used_percent": 87.5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "native"
+  },
+  "name": "fallthrough {'rate_limits': [], 'rateLimits': {'five_hour': {'used_percentage': 15, 'resets_at': 1786847400}, 'seven_day': {'used_percentage': 87.5, 'resets_at': 1787007000}}}"
+ },
+ {
+  "context": {
+   "rate_limits": 0
+  },
+  "expected": {},
+  "name": "fallthrough {'rate_limits': 0}"
+ },
+ {
+  "context": {},
+  "expected": {},
+  "name": "fallthrough {}"
+ },
+ {
+  "context": null,
+  "expected": {},
+  "name": "fallthrough None"
+ }
+]

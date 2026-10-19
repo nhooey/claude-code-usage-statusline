@@ -1,0 +1,121 @@
+{
+  "cache_shares": {
+    "sess_read": 32,
+    "sess_write": 7,
+    "turn_read": 34,
+    "turn_write": 7
+  },
+  "clock": {
+    "now": 1786847000,
+    "tz": "UTC"
+  },
+  "context_window": 1000000,
+  "git": {
+    "branch": "golden-clean",
+    "dirty": false,
+    "in_git": true,
+    "is_worktree": false,
+    "main_root": "${SCRATCH}/repo",
+    "toplevel": "${SCRATCH}/repo"
+  },
+  "limits": {
+    "session_pct": "41",
+    "session_reset": 1786852800,
+    "session_share": "3.6204",
+    "session_turn": "1.16525",
+    "weekly_pct": "63",
+    "weekly_reset": 1787014800,
+    "weekly_share": "8.44954",
+    "weekly_turn": "1.56314"
+  },
+  "mode": "status",
+  "payload": {
+    "cost_usd": "114.63436755000001",
+    "ctx_window": "1000000",
+    "current_dir": "${HOME}/src/statusline-fixture/deep/tree",
+    "effort": "high",
+    "lines_added": "3443",
+    "lines_removed": "214",
+    "model": "Opus 5 (1M context)",
+    "model_id": "claude-opus-5[1m]",
+    "output_style": "default",
+    "pr_number": null,
+    "project_dir": "${HOME}/src/statusline-fixture/deep/tree",
+    "rl_session_pct": null,
+    "rl_session_reset": null,
+    "rl_weekly_pct": null,
+    "rl_weekly_reset": null,
+    "session_id": "f1xture0-0000-4000-8000-00000000c0de",
+    "transcript": "${FIXTURES}/transcripts/status/main.jsonl"
+  },
+  "rate": null,
+  "schema": 1,
+  "transcript": {
+    "agent_etas": [],
+    "asst_text": "Two figures, because one of them is not a duration you spent.¶ ¶ The session age is wall clock 🧩 and the other is 時間 answered.",
+    "asst_ts": "2026-08-16T02:20:00Z",
+    "blocked_s": 300,
+    "busy_s": 13800,
+    "cache_pct": 98,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 114902,
+    "eta": [],
+    "idle_at": null,
+    "last_seen": 1786846820,
+    "monitors": 0,
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1786813520,
+    "tok_down": 841300,
+    "tok_up": 2722123,
+    "tool_at": null,
+    "tool_s": 3450,
+    "turn_s": 1786846520,
+    "user_text": "Why does the elapsed row report two durations when the session age is one number, and which of them is the one I should be reading when the window is about to reset?",
+    "user_ts": "2026-08-16T02:15:20Z",
+    "wait_at": null
+  },
+  "usage": {
+    "account_text": null,
+    "plan": {
+      "session_pct": 41,
+      "session_resets_at": 1786852800,
+      "weekly_pct": 63,
+      "weekly_resets_at": 1787014800
+    },
+    "reading": {
+      "account": {},
+      "account_name": "session:f1xture0-0000-4000-8000-00000000c0de",
+      "agent": "claude",
+      "as_of": 1786847000,
+      "attempted_at": 1786847000,
+      "buckets": [
+        {
+          "id": "default",
+          "label": "default",
+          "windows": [
+            {
+              "duration_seconds": 18000,
+              "id": "session",
+              "resets_at": 1786852800,
+              "used_percent": 41
+            },
+            {
+              "duration_seconds": 604800,
+              "id": "week",
+              "resets_at": 1787014800,
+              "used_percent": 63
+            }
+          ]
+        }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "cmd:${SCRATCH}/tmp/claude-source-app-41-63",
+      "stale": false
+    }
+  }
+}

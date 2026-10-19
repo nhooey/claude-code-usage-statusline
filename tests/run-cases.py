@@ -4,6 +4,7 @@
     python3 tests/run-cases.py                  # every case
     python3 tests/run-cases.py --suite status   # or cost
     python3 tests/run-cases.py --regen          # re-record, then read the diff
+    python3 tests/run-cases.py --regen-figures  # the figures alone
 
 Each case is an input, a width, flags and a named environment from
 tests/fixtures/env/.  This file turns the environment into what the program
@@ -11,6 +12,19 @@ reads -- variables, a calibration cache, a usage-source command, a tracker
 store, a git repository to run in -- renders, and compares stdout byte for
 byte with tests/golden/<suite>/<id>.txt.  The cost suite compares the hook's
 systemMessage, not the JSON around it, so a diff is readable.
+
+Each case is checked in the two stages the program runs in besides
+(tests/README.md, "Figures"):
+
+  figures  the figures document the run wrote, compared byte for byte with
+           tests/fixtures/figures/<suite>/<id>.json;
+  render   that committed document alone, drawn again with
+           --from-figures at the case's width and flags, compared with the
+           same golden.  Nothing but the document goes in, so this is the
+           drawing checked apart from the accounting.
+
+--regen rewrites the goldens and the figures; --regen-figures the figures
+only, for when the document's shape changes and the drawing must not.
 
 The program runs under the interpreter given by --python, /usr/bin/python3 by
 default, the version floor on macOS.
@@ -25,6 +39,7 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(HERE, "fixtures")
+FIGURES = os.path.join(FIXTURES, "figures")
 PROGRAM = os.path.join(os.path.dirname(HERE), "coding-agent-usage-line.py")
 
 
@@ -118,13 +133,41 @@ class Suite:
         return env, self.repos[e["repo"]]
 
 
-def fill(text):
-    return (text.replace("${HOME}", os.path.expanduser("~"))
+def fill(text, scratch=None):
+    text = (text.replace("${HOME}", os.path.expanduser("~"))
                 .replace("${FIXTURES}", FIXTURES))
+    return text if scratch is None else text.replace("${SCRATCH}", scratch)
+
+
+def unfill(text, scratch):
+    """fill's inverse, for what a run wrote: the paths that differ between
+    machines and runs go back to placeholders.  The most specific first,
+    since the fixtures sit under HOME, and the scratch directory's real path
+    before the one it was given, since a repository reports the real one."""
+    for path, mark in ((os.path.realpath(scratch), "${SCRATCH}"),
+                       (scratch, "${SCRATCH}"),
+                       (FIXTURES, "${FIXTURES}"),
+                       (os.path.expanduser("~"), "${HOME}")):
+        text = text.replace(path, mark)
+    return text
+
+
+def stdout_of(case, got):
+    if case["suite"] == "cost":
+        got = (json.loads(got).get("systemMessage", "")
+               .encode("utf-8") if got.strip() else b"")
+    # The shell suites captured with $( ), which drops trailing newlines.
+    return got.rstrip(b"\n")
 
 
 def render(python, suite, case):
+    """Both stages, as the program runs them: the drawn rows, and the
+    figures document they were drawn from, with placeholders in."""
     env, cwd = suite.environ(case["env"])
+    out = os.path.join(suite.scratch, "figures.json")
+    if os.path.exists(out):
+        os.remove(out)
+    env["CODING_AGENT_USAGE_LINE_FIGURES_OUT"] = out
     argv = [python, PROGRAM, "--agent", "claude",
             "--mode", case["suite"], "--cols", str(case["cols"])]
     path = os.path.join(FIXTURES, case["input"])
@@ -137,29 +180,64 @@ def render(python, suite, case):
     argv += case["flags"]
     got = subprocess.run(argv, input=stdin, cwd=cwd, env=env,
                          capture_output=True).stdout
-    if case["suite"] == "cost":
-        got = (json.loads(got).get("systemMessage", "")
-               .encode("utf-8") if got.strip() else b"")
-    # The shell suites captured with $( ), which drops trailing newlines.
-    return got.rstrip(b"\n")
+    figures = None
+    if os.path.exists(out):
+        with open(out, encoding="utf-8") as fh:
+            figures = unfill(fh.read(), suite.scratch)
+    return stdout_of(case, got), figures
+
+
+def render_figures(python, suite, case, figures):
+    """Stage two alone: the document drawn at the case's width and flags.
+
+    The environment still carries the terminal profile, which the drawing
+    reads.  It carries the case's clock too, which the drawing must not
+    read: the document's own is the one drawn.  No stdin, and no state
+    shared with the full run.
+    """
+    env, cwd = suite.environ(case["env"])
+    path = os.path.join(suite.scratch, "from-figures.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(fill(figures, suite.scratch))
+    argv = [python, PROGRAM, "--agent", "claude", "--mode", case["suite"],
+            "--cols", str(case["cols"]), "--from-figures", path]
+    argv += case["flags"]
+    got = subprocess.run(argv, stdin=subprocess.DEVNULL, cwd=cwd, env=env,
+                         capture_output=True).stdout
+    return stdout_of(case, got)
+
+
+def read(path, mode="r"):
+    if not os.path.exists(path):
+        return None
+    with open(path, mode, **({} if "b" in mode else
+                             {"encoding": "utf-8"})) as fh:
+        return fh.read()
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--suite", choices=("status", "cost"))
     ap.add_argument("--regen", action="store_true")
+    ap.add_argument("--regen-figures", action="store_true")
     ap.add_argument("--python", default="/usr/bin/python3")
     args = ap.parse_args()
+    regen_figures = args.regen or args.regen_figures
 
     with open(os.path.join(FIXTURES, "cases.json")) as fh:
         cases = json.load(fh)["cases"]
     totals = {"pass": 0, "fail": 0, "missing": 0, "wrote": 0}
+    stages = {s: {"pass": 0, "fail": 0} for s in ("figures", "render")}
     for name in ("status", "cost"):
         if args.suite and args.suite != name:
             continue
         gold = os.path.join(HERE, "golden", name)
         out = os.path.join(HERE, "out" if name == "status" else "out-cost")
         os.makedirs(gold, exist_ok=True)
+        # By suite, as the goldens are: a status and a cost case can share
+        # an id.
+        figs = os.path.join(FIGURES, name)
+        os.makedirs(figs, exist_ok=True)
         os.makedirs(out, exist_ok=True)
         for f in os.listdir(out):   # else a stale failure looks like a live one
             if f.endswith((".got", ".want")):
@@ -169,39 +247,73 @@ def main():
         try:
             suite = Suite(scratch)
             for case in (c for c in cases if c["suite"] == name):
-                got = render(args.python, suite, case)
-                want_path = os.path.join(gold, case["id"] + ".txt")
+                cid = case["id"]
+                got, figures = render(args.python, suite, case)
+                want_path = os.path.join(gold, cid + ".txt")
+                fig_path = os.path.join(figs, cid + ".json")
+                if regen_figures and figures is not None:
+                    with open(fig_path, "w", encoding="utf-8") as fh:
+                        fh.write(figures)
                 if args.regen:
                     with open(want_path, "wb") as fh:
                         fh.write(got)
                     totals["wrote"] += 1
-                elif not os.path.exists(want_path):
-                    print("  MISS  %-32s (no golden — run --regen)"
-                          % case["id"])
+                    continue
+                want = read(want_path, "rb")
+                if want is None:
+                    print("  MISS  %-32s (no golden — run --regen)" % cid)
                     totals["missing"] += 1
+                    continue
+                want = want.rstrip(b"\n")
+                fails = []
+                if got != want:
+                    fails.append("rows")
+                    with open(os.path.join(out, cid + ".got"), "wb") as fh:
+                        fh.write(got)
+                # Figures: what the run wrote against what is committed.
+                kept = read(fig_path)
+                if kept is None:
+                    print("  MISS  %-32s (no figures — run --regen-figures)"
+                          % cid)
+                    totals["missing"] += 1
+                    continue
+                if figures == kept:
+                    stages["figures"]["pass"] += 1
                 else:
-                    with open(want_path, "rb") as fh:
-                        want = fh.read().rstrip(b"\n")
-                    if got == want:
-                        print("  ok    %s" % case["id"])
-                        totals["pass"] += 1
-                    else:
-                        print("  FAIL  %s" % case["id"])
-                        shutil.copy(want_path,
-                                    os.path.join(out, case["id"] + ".want"))
-                        with open(os.path.join(out, case["id"] + ".got"),
-                                  "wb") as fh:
-                            fh.write(got)
-                        totals["fail"] += 1
+                    stages["figures"]["fail"] += 1
+                    fails.append("figures")
+                    with open(os.path.join(out, cid + ".figures.got"), "w",
+                              encoding="utf-8") as fh:
+                        fh.write(figures or "")
+                # Render: the committed figures alone, drawn again.
+                drawn = render_figures(args.python, suite, case, kept)
+                if drawn == want:
+                    stages["render"]["pass"] += 1
+                else:
+                    stages["render"]["fail"] += 1
+                    fails.append("render")
+                    with open(os.path.join(out, cid + ".render.got"),
+                              "wb") as fh:
+                        fh.write(drawn)
+                if not fails:
+                    print("  ok    %s" % cid)
+                    totals["pass"] += 1
+                else:
+                    print("  FAIL  %-32s (%s)" % (cid, ", ".join(fails)))
+                    shutil.copy(want_path, os.path.join(out, cid + ".want"))
+                    totals["fail"] += 1
         finally:
             shutil.rmtree(scratch, ignore_errors=True)
     print()
     if args.regen:
-        print("wrote %d goldens under tests/golden/" % totals["wrote"])
+        print("wrote %d goldens under tests/golden/, and their figures"
+              % totals["wrote"])
         print("READ THE DIFF before accepting them: this is the step where a")
         print("layout regression gets blessed as the new expected output.")
         return 0
     print("pass %(pass)d   fail %(fail)d   missing %(missing)d" % totals)
+    print("  figures  pass %(pass)d   fail %(fail)d" % stages["figures"])
+    print("  render   pass %(pass)d   fail %(fail)d" % stages["render"])
     return 0 if totals["fail"] == 0 and totals["missing"] == 0 else 1
 
 

@@ -323,6 +323,22 @@ in `formatting.py`. Moving them to spans touches:
   `cache_color`, which return colour prefixes), and about 8 that measure a
   drawn string through `strip_ansi`. With spans, a width is the sum of the
   spans' text widths, and the `F_*` constants become a colour map.
+  Done 2026-10-19: `spans.py` holds the `Span` record (text, a colour
+  key naming an `F_*` constant, dim, bold and a `B_*` background), `width`
+  and `join`. Every cell in `claude_render.py` and
+  `claude_subagent_render.py`, the receipt's labels and tags in
+  `claude_cost_render.py`, and `pad_val`, `seg`, `pair`, `grid_row`,
+  `seg_gap`, `mag_dim` (now a bool), `reset_dim` (a bool) and `cache_color`
+  (a style span) work in spans, and the strip_ansi measurements are span
+  widths. `join` writes escapes only where a line is printed:
+  `render_status`, `render_task_rows`, and where the receipt's labels meet
+  its groups. Two bytes of the old output are kept by `join` itself: a
+  chat row's prefix runs unreset into its body on the dark band, and a
+  grid row's closing reset. The goldens did not move, and every renderer
+  call the panel and rate suites make returns the bytes it did before.
+  Still strings: the receipt's metric groups (`cost_group` and
+  `cost_totals_group` in `claude.py`), which `claude_cost_render.Ink`
+  colours, and the Codex renderer in `render.py`.
 - **State read at import.** `term_profile` reads `TMUX`,
   `TERMINAL_EMULATOR` and `TERM_PROGRAM` when the module loads, and the
   width table and every `S_*` mark are fixed from it then.
@@ -339,8 +355,17 @@ The golden inputs are committed data now, the first part of build step 2:
 `tests/fixtures/gen/` writes the payloads, transcripts, environments and
 `cases.json`, and `tests/run-cases.py` replays all 228 cases against the
 unchanged goldens. `golden.sh` and `golden-cost.sh` are wrappers around it,
-and `pin-env.sh` is gone. What is left of step 2 splits each case in two, so
-the accounting and the cells can be checked apart:
+and `pin-env.sh` is gone.
+
+Each case is split in two now as well, so the accounting and the cells can be
+checked apart. `claude.py` runs each readout in two stages:
+`status_figures` and `cost_figures` read the inputs and return a figures
+document, and `render_status_figures` and `render_cost_figures` draw one and
+read nothing else; the live path goes through the document too.
+`run-cases.py` checks every case three ways: the whole run against the
+golden, the document it wrote against `figures/<suite>/<id>.json`, and that
+committed document alone, drawn with `--from-figures`, against the golden
+again. The schema is in [tests/README.md](../../tests/README.md#figures).
 
 ```
 tests/fixtures/
@@ -349,19 +374,27 @@ tests/fixtures/
                                 calibration, tracker store, repo               (done)
   transcripts/<suite>/…         session JSONL, agent files and sidecars        (done)
   payloads/status/<name>.json   with ${HOME} and ${FIXTURES} placeholders      (done)
-  figures/<case>.json           transcript and env in, figures out
-  render/<case>/figures.json    figures in
-  render/<case>/@<width>.txt    drawn rows out, escape codes included
+  figures/<suite>/<id>.json     inputs in, figures out; and figures in for
+                                tests/golden/<suite>/<id>.txt                  (done)
   gen/*.py                      the generators, writing the above              (done)
 ```
+
+The figures stage of the cost line is not yet whole: its rows still work out
+each turn's window shares while drawing, from the turns, the calibration and
+the plan reading in the document. The document carries those shares as
+`accounting`, checked but not read, and the cost cells read them once they
+return spans. Until then the render stage puts the plan reading back where
+`window_shares` looks for it.
 
 The cases of one suite share one state directory in the order listed, as
 the shell suites did: a payload with `rate_limits` writes the cache a later
 payload without them reads. The TypeScript runner has to keep the order, or
 the cases have to stop depending on it.
 
-- **Figures are canonical JSON:** sorted keys, floats to a stated precision,
-  times as epochs. That is the contract between the two languages.
+- **Figures are canonical JSON:** sorted keys, numbers exact (the shortest
+  decimal that reads back as the same double, positional, a whole one as an
+  integer), null for missing, times as epochs. That is the contract between
+  the two languages. Nothing is rounded, so the port sums in Python's order.
 - **The drawn rows stay `.txt` with escape codes,** so the 141 status and 87
   cost goldens in `tests/golden/` move rather than being recorded again; the
   TypeScript runner joins its spans into escape codes to compare.

@@ -5,13 +5,18 @@ totals.  This module deliberately does not read transcripts, caches, account
 sources, clocks or process state.  The metric-group builders are arguments so
 the remaining Claude accounting move can retain its exact tested arithmetic
 while this layout seam is adopted.
+
+The labels and tags drawn here are spans (see spans.py).  The metric groups
+the builders return are still strings with their escape codes in them, so
+the spans are joined where they meet a group, in place and render_cost_line.
 """
 from typing import Callable, Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 from . import formatting as fmt
-from .formatting import (BOLD, C_CHROME_CONT, C_CHROME_LEFT, C_MIN_GAP,
+from .formatting import (C_CHROME_CONT, C_CHROME_LEFT, C_MIN_GAP,
                          C_RIGHT_MARGIN, E_TURN_ID, E_TURN_PAST, R,
-                         TURN_ID_HEX, UNBOLD, fit_cols, trunc, vis_width)
+                         TURN_ID_HEX, fit_cols, trunc, vis_width)
+from .spans import Span, join, spans, width
 
 
 class CostOpts(NamedTuple):
@@ -48,23 +53,36 @@ COLOUR_INK = Ink(R, fmt.F_GRN, fmt.F_AMB, fmt.F_RED, fmt.F_TUP, fmt.F_TDN,
 PLAIN_INK = Ink("", "", "", "", "", "", "", "", "", "")
 
 
+def ink_colour(ink: Ink, colour: str) -> Optional[str]:
+    """The name of `colour`, "F_CRM", where `ink` paints, None where it is
+    PLAIN_INK.  The groups claude.py draws read the Ink's escapes; a span
+    names its colour instead."""
+    return colour if ink.r else None
+
+
+def painted(prefix: str, value: str) -> List[Span]:
+    """The row's prefix, then its label in bold: "P " and a bold "A"."""
+    out = spans(prefix)
+    if value:
+        out += ([Span(" ")] if out else []) + [Span(value, bold=True)]
+    return out
+
+
 def place(group: str, opts: CostOpts, label: str, chrome: int) -> str:
     """Place one finished cost row without touching terminal/process state."""
-    def painted(value: str) -> str:
-        parts = [part for part in (opts.prefix,
-                                   BOLD + value + UNBOLD if value else "") if part]
-        return " ".join(parts)
+    def painted_s(value: str) -> str:
+        return join(painted(opts.prefix, value))
 
     if opts.cols and opts.right_align:
         room = opts.cols - chrome - C_RIGHT_MARGIN - vis_width(group)
         plain = " ".join(part for part in (opts.prefix, label) if part)
         pad = room - vis_width(plain) - C_MIN_GAP
         if pad >= 0:
-            return " " * pad + painted(label) + " " * C_MIN_GAP + group
+            return " " * pad + painted_s(label) + " " * C_MIN_GAP + group
         keep = trunc(label, max(0, room - vis_width(opts.prefix) - 1 - C_MIN_GAP))
-        head = painted(keep) if keep else opts.prefix
+        head = painted_s(keep) if keep else opts.prefix
         return head + " " * C_MIN_GAP + group
-    head = painted(label)
+    head = painted_s(label)
     return head + " " + group if head else group
 
 
@@ -80,29 +98,27 @@ def stack_metrics(rows: Sequence[Tuple[str, str, int]],
 
 def place_stacked(rows: Sequence[Tuple[str, str, int]], opts: CostOpts) -> List[str]:
     """Place several rows as one aligned block."""
-    def painted(value: str) -> str:
-        parts = [part for part in (opts.prefix,
-                                   BOLD + value + UNBOLD if value else "") if part]
-        return " ".join(parts)
+    def painted_s(value: str) -> str:
+        return join(painted(opts.prefix, value))
 
     if not (opts.cols and opts.right_align):
-        return [(painted(label) + " " + group).strip() if painted(label) else group
+        return [(painted_s(label) + " " + group).strip() if painted_s(label) else group
                 for group, label, _ in rows]
     tight, room, base = stack_metrics(rows, opts)
     output = []
     for group, label, chrome in rows:
         shift = tight - chrome - vis_width(group)
         if base >= 0:
-            output.append(" " * (base + shift) + painted(label)
+            output.append(" " * (base + shift) + painted_s(label)
                           + " " * C_MIN_GAP + group)
             continue
         keep = trunc(label, max(0, room - vis_width(opts.prefix) - 1 - C_MIN_GAP))
-        head = painted(keep) if keep else opts.prefix
+        head = painted_s(keep) if keep else opts.prefix
         output.append(" " * shift + head + " " * C_MIN_GAP + group)
     return output
 
 
-def turn_tag(turn: object, ink: Ink) -> str:
+def turn_tag(turn: object, ink: Ink) -> List[Span]:
     """🔺🔖 8f37748e #12: the turn the 🎤 row bills, by the head of its
     promptId and Claude Code's turn index.  Each half is drawn only where the
     transcript wrote it, and the tag not at all where it wrote neither."""
@@ -111,9 +127,9 @@ def turn_tag(turn: object, ink: Ink) -> str:
     parts = ([pid[:TURN_ID_HEX]] if pid else []) + (
         ["#%d" % idx] if idx is not None else [])
     if not parts:
-        return ""
-    return "%s%s %s%s%s" % (E_TURN_PAST, E_TURN_ID, ink.crm, " ".join(parts),
-                            ink.r)
+        return []
+    return [Span(E_TURN_PAST + E_TURN_ID + " "),
+            Span(" ".join(parts), ink_colour(ink, "F_CRM"))]
 
 
 # The agent id on a 👥 row, cut as the agent panel cuts it, and the fewest
@@ -121,20 +137,20 @@ def turn_tag(turn: object, ink: Ink) -> str:
 AGENT_ID_W, AGENT_NAME_MIN = 10, 6
 
 
-def agent_tag(turn: object, ink: Ink, room: int) -> str:
+def agent_tag(turn: object, ink: Ink, room: int) -> List[Span]:
     """The name and id of the agent a 👥 row bills, in at most `room`
     columns: as much of the name as fits, then the id padded to AGENT_ID_W,
     so the ids of a block of 👥 rows stand in one column beside their 📊s.
     The id whole or nothing."""
     aid = getattr(turn, "agent_id", "")
     if not aid or room < AGENT_ID_W:
-        return ""
-    aid = "%s%s%s" % (ink.crm, fit_cols(aid, AGENT_ID_W), ink.r)
-    aid += " " * (AGENT_ID_W - vis_width(aid))
+        return []
+    aid = [Span(fit_cols(aid, AGENT_ID_W), ink_colour(ink, "F_CRM"))]
+    aid.append(Span(" " * (AGENT_ID_W - width(aid))))
     name = getattr(turn, "agent_name", "")
     left = room - AGENT_ID_W - 1
     name = trunc(name, left) if name and left >= AGENT_NAME_MIN else ""
-    return (name + " " if name else "") + aid
+    return spans([name + " " if name else "", aid])
 
 
 def render_cost_line(
@@ -201,18 +217,18 @@ def render_cost_line(
                 # Flush left there is no pad, and no column to keep: the
                 # tag leads the row.
                 tag = agent_tag(turn, ink, AGENT_ID_W + 1 + 40)
-                rows[index] = tag + " " + row if tag else row
+                rows[index] = join(tag) + " " + row if tag else row
                 continue
             chart = len(row) - len(row.lstrip(" "))
             tag = agent_tag(turn, ink, chart - C_MIN_GAP)
             if tag:
-                rows[index] = (" " * (chart - C_MIN_GAP - vis_width(tag)) + tag
-                               + " " * C_MIN_GAP + row.lstrip(" "))
+                rows[index] = (" " * (chart - C_MIN_GAP - width(tag))
+                               + join(tag) + " " * C_MIN_GAP + row.lstrip(" "))
         if lead and len(rows) > lead:
             rows.insert(lead, "")
         return rows
 
-    tag = "" if getattr(last, "compact", False) else turn_tag(last, ink)
+    tag = [] if getattr(last, "compact", False) else turn_tag(last, ink)
     if not tag:
         rows = laid_out(lead_newline)
         return ("\n" if lead_newline else "") + "\n".join(rows)
@@ -224,9 +240,9 @@ def render_cost_line(
     rows = laid_out(lead_newline)
     at = lead + 1 if lead and len(rows) > lead else 0
     chart = len(rows[at]) - len(rows[at].lstrip(" "))
-    room = chart - vis_width(tag) - C_MIN_GAP
+    room = chart - width(tag) - C_MIN_GAP
     if room >= 0:
-        rows[at] = (" " * room + tag + " " * C_MIN_GAP
+        rows[at] = (" " * room + join(tag) + " " * C_MIN_GAP
                     + rows[at].lstrip(" "))
         return ("\n" if lead_newline else "") + "\n".join(rows)
     # No room: the tag takes a line of its own directly above the 🎤 row,
@@ -234,7 +250,7 @@ def render_cost_line(
     # compaction rows that is the blank line between them and the 🎤 row,
     # a continuation line like the row itself.
     if at:
-        rows[at - 1] = " " * max(0, chart - vis_width(E_TURN_PAST)) + tag
+        rows[at - 1] = " " * max(0, chart - vis_width(E_TURN_PAST)) + join(tag)
         return ("\n" if lead_newline else "") + "\n".join(rows)
     # With the 🎤 row first, it is the first line, the one beside Claude
     # Code's chrome, so the rows below it are all continuation lines.  The
@@ -244,4 +260,4 @@ def render_cost_line(
     rows = laid_out(True)
     chart = len(rows[0]) - len(rows[0].lstrip(" "))
     pad = chart - (C_CHROME_LEFT - C_CHROME_CONT) - vis_width(E_TURN_PAST)
-    return " " * max(0, pad) + tag + "\n" + "\n".join(rows)
+    return " " * max(0, pad) + join(tag) + "\n" + "\n".join(rows)

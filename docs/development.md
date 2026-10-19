@@ -25,6 +25,7 @@ coding-agent-usage-line.py        launcher
 
 shared by all of the above:
    formatting.py                  widths, palette, number formats, terminal geometry
+   spans.py                       the spans cells return, joined into escape codes
    spec.py                        the layout's constants, generated from spec/layout.jsonc
    models.py                      immutable, vendor-neutral token/request records
 ```
@@ -37,14 +38,15 @@ Every module above lives in `coding_agent_usage_line/`.
 | `claude.py` | Claude's three modes (`status`, `cost`, `subagent`) and `--selftest`: reads the hook payload and transcripts, takes one usage-source snapshot, derives calibration and window shares, keeps the per-session context and rate files, and prints. |
 | `claude_records.py` | Claude JSONL interpretation: payload fields, request deduplication, per-model prices, turns, tool spans, agent files. No terminal output. |
 | `claude_sources.py` | Turns a normalised usage-source reading into the `Limits` pair (5-hour and weekly) the Claude rows draw. |
-| `claude_render.py` | Every status-line cell and the three-row grid, with its fourth line on a narrow terminal. |
-| `claude_cost_render.py` | Placement and stacking of the cost rows. |
-| `claude_subagent_render.py` | One agent-panel row per task. |
+| `claude_render.py` | Every status-line cell and the three-row grid, with its fourth line on a narrow terminal. Each cell returns spans; `render_status` joins them into escape codes, line by line. |
+| `claude_cost_render.py` | Placement and stacking of the cost rows. Its labels and tags are spans, joined where they meet the metric groups, which `claude.py` still draws as strings. |
+| `claude_subagent_render.py` | One agent-panel row per task. Each cell returns spans; `render_task_rows` joins each row. |
 | `codex.py` | Codex rollout records: thread identity, child discovery, request deduplication, turn attribution. Read-only. |
 | `render.py` | Codex status, history and Stop reports, and account-period rows. |
 | `sources.py` | `--usage-source` selection, the version-1 custom-command contract, the HTTP and app-server collectors, refresh policy. See [Usage sources](usage-sources.md). |
 | `state.py` | The private state directory: scoped source cache, refresh locks, atomic claims so a Codex Stop reports each request once. |
-| `formatting.py` | The `S_*` glyph forms and the widths computed from the constants, `vis_width`, the ANSI escapes, `humanize` and the other fixed-width formatters, terminal-width detection, and the two display switches. It star-imports `spec.py`. |
+| `formatting.py` | The `S_*` glyph forms and the widths computed from the constants, `vis_width`, `humanize` and the other fixed-width formatters, the grid helpers (`pad_val`, `seg`, `pair`, `grid_row`, which take spans or strings), the dim and tier rules (`mag_dim`, `reset_dim`, `cache_color`), terminal-width detection, and the two display switches. It star-imports `spec.py`. |
+| `spans.py` | `Span`: a run of text with a colour named by its `F_*` constant (`"F_PNK"`, not the escape), dim, bold and a `B_*` background. `width` measures spans, and `join` writes their escape codes, once, where a line is printed. The mod's cells return the same spans. |
 | `spec.py` | Generated from `spec/layout.jsonc`, never edited: the glyphs (`E_*`), colours, widths and cuts, the wide-character table and the terminal profiles. |
 | `models.py` | `TokenUsage` and `UsageRequest`. A missing token category is `None`, not `0`. |
 

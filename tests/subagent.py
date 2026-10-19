@@ -73,6 +73,19 @@ def load_renderer():
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
+
+def drawn(cell):
+    """A cell's spans joined into escape codes, as the terminal gets them."""
+    if isinstance(cell, str):
+        return cell
+    from coding_agent_usage_line.spans import join
+    return join(cell)
+
+
+def unpainted(cell):
+    """A cell's text alone, its escape codes dropped."""
+    return ANSI.sub("", drawn(cell))
+
 # 2026-08-16 02:23:20 UTC — the shared cases' PIN_NOW, so the two suites agree
 # about what "now" is and the plan cache below is read as fresh.
 NOW = 1786847000.0
@@ -210,7 +223,7 @@ def render(sl, payload, argv=()):
     rows = {}
     for line in buf.getvalue().splitlines():
         d = json.loads(line)
-        rows[d["id"]] = ANSI.sub("", d["content"])
+        rows[d["id"]] = unpainted(d["content"])
     return rc, rows
 
 
@@ -389,7 +402,7 @@ def run(tmp):
             task("d", status="running", startTime=int(sl.ts_epoch(ts(11)) * 1000))]},
         cnow), sl.NO_LIMITS, 200, cnow))
     split = lambda r: re.search("\u231B *(\\S+).*?(\U0001F916\\S+ \U0001F527\\S+ \U0001F6A6\\S+)",
-                                ANSI.sub("", r)).groups()
+                                unpainted(r)).groups()
     check("a coordinator parked on its agents keeps its \u231B running, and "
           "the wait is its \U0001F6A6: two minutes working of twenty",
           split(crows["c"]),
@@ -406,15 +419,15 @@ def run(tmp):
           [[5, 3, 0], [4, 4, 0], [1, 7, 0], [0, 8, 0], [0, 0, 0]])
     check("each mark takes a gauge of its share of \u231B, two cells of the "
           "middle dot rows, and \U0001F6A6 is what the other two leave",
-          [ANSI.sub("", sr.render_agent_split(e, m, t)) for e, m, t in (
+          [unpainted(sr.render_agent_split(e, m, t)) for e, m, t in (
               (900.0, 600.0, 300.0), (3600.0, 900.0, 450.0), (60.0, 0.0, 0.0))],
           ["\U0001F916\u2836\u2804 \U0001F527\u2826\u2800 \U0001F6A6\u2800\u2800",
            "\U0001F916\u2806\u2800 \U0001F527\u2804\u2800 \U0001F6A6\u2836\u2804",
            "\U0001F916\u2800\u2800 \U0001F527\u2800\u2800 \U0001F6A6\u2836\u2836"])
     check("a tool reading larger than the run is shared against the sum, "
           "and a task with no transcript draws no split",
-          [ANSI.sub("", sr.render_agent_split(60.0, 0.0, 9999.0)),
-           sr.render_agent_split(60.0, None, 0.0)],
+          [unpainted(sr.render_agent_split(60.0, 0.0, 9999.0)),
+           unpainted(sr.render_agent_split(60.0, None, 0.0))],
           ["\U0001F916\u2800\u2800 \U0001F527\u2836\u2836 \U0001F6A6\u2800\u2800", ""])
     # Resumed: it worked 01:10-01:20 with a 3-minute tool, ended its turn,
     # sat finished until SendMessage woke it at 01:50, and has been working
@@ -445,7 +458,7 @@ def run(tmp):
     [(rtask, ru, rm, rsh)] = sl.prepare_subagent_tasks(
         {"transcript_path": rt, "tasks": [task(
             "r", status="running", startTime=int(at(50) * 1000))]}, at(58))
-    rrow = ANSI.sub("", sr.render_agent_row(rtask, ru, rm, rsh, sl.NO_LIMITS,
+    rrow = unpainted(sr.render_agent_row(rtask, ru, rm, rsh, sl.NO_LIMITS,
                                             200, at(58)))
     check("its \u231B runs from its first record, not the restarted "
           "startTime, and the 30 minutes it sat finished are \U0001F6A6's: "
@@ -572,7 +585,7 @@ def run(tmp):
           (sl.read_agent_usage(sl.agent_file_for(et, "n")).eta,
            sl.read_agent_usage("").eta),
           ((), None))
-    eta = lambda *a, **k: ANSI.sub("", sr.render_agent_eta(*a, **k))
+    eta = lambda *a, **k: unpainted(sr.render_agent_eta(*a, **k))
     start = int((NOW - 600) * 1000)
     check("the figure is what is left of the ETA, counted down since the "
           "report", eta((NOW - 120, 480.0), start, NOW), "\u26F3   6m")
@@ -592,8 +605,8 @@ def run(tmp):
           ("\u26F3   0s", "\u26F3  +1m", "\u26F3  10m", "\u26F3   5m"))
     from types import SimpleNamespace as NS
     over = lambda own, shown=False: [
-        c in sr.render_agent_row(task("o", startTime=start), NS(eta=own), {},
-                                 {}, sl.NO_LIMITS, now=NOW, eta=shown)
+        c in drawn(sr.render_agent_row(task("o", startTime=start), NS(eta=own),
+                                       {}, {}, sl.NO_LIMITS, now=NOW, eta=shown))
         for c in (sl.F_OVER, sl.F_AMB)]
     check("late past a sign-off is bright red, late past an estimate amber, "
           "and a sign-off a child's later finish overruns is amber too",
@@ -637,7 +650,7 @@ def run(tmp):
                       NOW - 600)),
            sr.eta_reading(inh["q"], int((NOW - 50) * 1000), NOW)),
           (1200, ()))
-    row = lambda *agents: re.sub(r"\s+", " ", ANSI.sub("", sl.render_elapsed(
+    row = lambda *agents: re.sub(r"\s+", " ", unpainted(sl.render_elapsed(
         3600.0, NOW - 7200.0, 900.0, NOW, 0.0, (NOW - 60, 240.0), NOW - 300,
         agents)))
     check("the status line inherits the same way from every agent still "
@@ -646,8 +659,8 @@ def run(tmp):
            ((), ((NOW + 600, NOW - 5),), ((NOW + 600, NOW - 4000),))],
           ["\u231B \u26F3 3m", "\u231B \u26F3 10m",
            "\u231B \u26F3 3m"])
-    flag = lambda own, *agents: [c in sl.render_elapsed(
-        3600.0, NOW - 7200.0, 900.0, NOW, 0.0, own, NOW - 300, agents)
+    flag = lambda own, *agents: [c in drawn(sl.render_elapsed(
+        3600.0, NOW - 7200.0, 900.0, NOW, 0.0, own, NOW - 300, agents))
         for c in (sl.F_OVER, sl.F_AMB)]
     check("the status line's \u26F3 late past the main thread's sign-off is "
           "bright red, past its estimate amber, and amber too when a live "
@@ -756,27 +769,29 @@ def run(tmp):
            sr.token_rate([100], "running"), sr.token_rate(None, "running")),
           (None, None, None))
     check("the type cell: sidecar type first, then the task kind, then 👥",
-          [ANSI.sub("", sr.render_kind(a, k)) for a, k in (
+          [unpainted(sr.render_kind(a, k)) for a, k in (
               ("Explore", "local_agent"), ("", "local_bash"),
               ("", "local_agent"), ("my-reviewer", "local_agent"))],
           ["\U0001F50D", "\U0001F41A", "\U0001F465", "\U0001F465"])
     read = sl.NO_AGENT_USAGE._replace(eta=())
     check("the state cell: the phase's circle, then what it is doing in it, "
           "or two letters for a state never seen",
-          [ANSI.sub("", sr.render_state(x)) for x in
+          [unpainted(sr.render_state(x)) for x in
            ("running", "completed", "killed", "failed", "pending", "odd", "")],
           ["\U0001F7E2", "\u26AB\u2705", "\u26AB\U0001F6D1", "\u26AB\u274C",
            "\U0001F7E1\U0001F95A", "od", ""])
     check("running, the mode is who has the floor: the model, a tool, or a "
           "question or agent it waits on",
-          [sr.render_state("running", read._replace(pending=p)) for p in (
+          [unpainted(sr.render_state("running", read._replace(pending=p)))
+           for p in (
               (), ((NOW, "Bash"),), ((NOW, "Bash"), (NOW, "Agent")),
               ((NOW, "AskUserQuestion"),))],
           ["\U0001F7E2\U0001F916", "\U0001F7E2\U0001F527",
            "\U0001F7E2\U0001F6A6", "\U0001F7E2\U0001F6A6"])
     check("completed but paused, on what it would wake for: its agents first, "
           "then a shell, a Monitor, and last only the ETA it gave",
-          [sr.render_state("completed", read._replace(eta=e, background=b), w)
+          [unpainted(sr.render_state("completed",
+                                 read._replace(eta=e, background=b), w))
            for e, b, w in (
                ((NOW, 60.0), (("b1", "bash"),), True),
                ((NOW, 60.0), (("m1", "monitor"), ("b1", "bash")), False),
@@ -803,7 +818,7 @@ def run(tmp):
               "fable", "claude-fable-5-1", "Opus 5 (1M context)", "")],
           ["O\u2075", "H\u2074", "So", "Fa", "F\u2075", "O\u2075", ""])
     check("the cache cell: two characters, 💯 for a full one, blank for none",
-          [ANSI.sub("", sr.render_agent_cache(v)) for v in (94, 100, 5, -1)],
+          [unpainted(sr.render_agent_cache(v)) for v in (94, 100, 5, -1)],
           ["\U0001F3AF94٪", "\U0001F3AF\U0001F4AF٪", "\U0001F3AF 5٪", ""])
 
     print("--- the rows ---")
@@ -828,7 +843,7 @@ def run(tmp):
         # 🧠, then its share of the 200k window the payload gives.
         "\U0001F9E0 41k  20\u066A",
         sl.seg(sl.vis_width(sl.S_TOK) + sl.VAL_W + sl.VAL2_W,
-               ANSI.sub("", sl.render_tokens(u.tok_up, u.tok_down))),
+               unpainted(sl.render_tokens(u.tok_up, u.tok_down))),
         "\U0001F3AF%d%s" % (u.cache_pct, sl.E_PCT),
         # Then the time, before the 5h and 1w: ⌛ runs from its first record; ⛳ is ? because a1 has reported
         # no ETA; and it has been working since 01:10 with no tool paired
@@ -838,7 +853,7 @@ def run(tmp):
         "\U0001F50B" + sl.pad_val(4, pct(want)),
         # 🪫 a column wider, for limit_pct's fourth digit.
         "\U0001FAAB" + sl.pad_val(5, sl.limit_pct(want / 10.0, 4) + sl.E_PCT),
-        ANSI.sub("", sl.render_diff("12", "4"))))
+        unpainted(sl.render_diff("12", "4"))))
     # The spinner's first frame, for a transcript with no text or tool call
     # in it; then 🟢 running, and the Doing field after it: 🤖, no call
     # waiting on its result, and nothing written for 1.2h, so the quiet
@@ -864,7 +879,7 @@ def run(tmp):
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
     check("an agent that wrote nothing still states it; a task with no "
           "transcript to count states nothing, as its 💰 does",
-          ("\U0001F4BE +   0 -   0" in ANSI.sub("", rows["a2"]),
+          ("\U0001F4BE +   0 -   0" in unpainted(rows["a2"]),
            "\U0001F4BE" in rows["bash-1"]),
           (True, False))
     check("and its clock stopped at its last record, not at now",
@@ -878,12 +893,12 @@ def run(tmp):
           "\u25EF  \u231B 13m")
     check("a name and its activity, and a label that only repeats the "
           "description is not drawn",
-          [ANSI.sub("", sr.render_who(n, a, 40)) for n, a in (
+          [unpainted(sr.render_who(n, a, 40)) for n, a in (
               ("Marigold", "Reading the plan"), ("Marigold", ""),
               ("", "Reading the plan"), ("", ""))],
           ["Marigold Reading the plan", "Marigold", "Reading the plan", ""])
     check("the activity gives way first, then the name",
-          [ANSI.sub("", sr.render_who("Marigold", "Reading the plan, slowly",
+          [unpainted(sr.render_who("Marigold", "Reading the plan, slowly",
                                       w)) for w in (30, 20, 12, 6)],
           ["Marigold Reading the plan, sl…", "Marigold Reading th…",
            "Marigold", "Marig…"])
@@ -905,7 +920,7 @@ def run(tmp):
     check("👶🏻 counts the rows under each one, and every row keeps a cell for it "
           "once any row has one",
           # Past each row's lead, the blank a shallower row opens with.
-          [ANSI.sub("", rows_n[t])[sr.A_TREE_W * (3 - d):ANSI.sub("", rows_n[t]).index(t) + 2]
+          [unpainted(rows_n[t])[sr.A_TREE_W * (3 - d):unpainted(rows_n[t]).index(t) + 2]
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
           # The cells only some panels draw follow the kind and state, 👶🏻
           # first.  E_KIDS is two codepoints, and its width the terminal's.
@@ -920,7 +935,7 @@ def run(tmp):
                                   {"type": "tool_use", "id": "t1", "name": "Read",
                                    "input": {}}]
     write_jsonl(spun, [agent_says(10, "Plan."), agent_says(11, "Go."), tool])
-    spin = lambda st, eta, n: ANSI.sub("", sr.render_spin(st, NS(eta=eta, blocks=n)))
+    spin = lambda st, eta, n: unpainted(sr.render_spin(st, NS(eta=eta, blocks=n)))
     check("a running agent's spinner steps one frame for each ⏺ it has "
           "written, a text or tool-call block and not a thought or a blank, "
           "forward through Claude Code's glyphs and back; a row not running, "
@@ -1083,7 +1098,7 @@ def run(tmp):
            == sl.vis_width(irows["b2"][:irows["b2"].index("⌛")])),
           (True, True, True, True))
     wide = {"inbox": 3, "compact": 3}
-    plain, padded = (ANSI.sub("", sr.render_agent_row(task("x"), sl.NO_AGENT_USAGE, {}, {},
+    plain, padded = (unpainted(sr.render_agent_row(task("x"), sl.NO_AGENT_USAGE, {}, {},
                                                      sl.NO_LIMITS, now=NOW, kids_w=kw,
                                                      widths=w))
                      for kw, w in ((0, {}), (3, wide)))
@@ -1101,8 +1116,8 @@ def run(tmp):
     bg = nothing._replace(background=(("s1", "bash"), ("s2", "bash"), ("m1", "monitor")))
     check("💻 and 📡 count its open shells and Monitors while it runs and while "
           "it is paused on them, and not once it failed or was killed",
-          [(ANSI.sub("", sr.render_background(sr.E_MODE_SHELL, sr.background_count(st, bg, "bash"))),
-            ANSI.sub("", sr.render_background(sr.E_MODE_MONITOR, sr.background_count(st, bg, "monitor"))))
+          [(unpainted(sr.render_background(sr.E_MODE_SHELL, sr.background_count(st, bg, "bash"))),
+            unpainted(sr.render_background(sr.E_MODE_MONITOR, sr.background_count(st, bg, "monitor"))))
            for st in ("running", "completed", "failed", "killed")],
           [("\U0001F4BB2", "\U0001F4E11"), ("\U0001F4BB2", "\U0001F4E11"),
            ("", ""), ("", "")])
@@ -1112,12 +1127,11 @@ def run(tmp):
                                ("s%d" % i, "bash") for i in range(12))), {}, None),
                            (task("z", status="killed"), bg, {}, None)], NOW),
           {"inbox": 0, "compact": 0, "shells": 4, "monitors": 3})
-    bgrow = ANSI.sub("", sr.render_agent_row(task("x"), bg, {}, {}, sl.NO_LIMITS, now=NOW,
+    bgrow = unpainted(sr.render_agent_row(task("x"), bg, {}, {}, sl.NO_LIMITS, now=NOW,
                                              widths={"shells": 3, "monitors": 3}))
     check("on the row after 🤏's place and before 📨's, right of the state",
           bgrow[:bgrow.index(" x ")].split()[-2:], ["\U0001F4BB2", "\U0001F4E11"])
-    doing = lambda st, u, w=False, rate=None, t=None: ANSI.sub(
-        "", sr.render_doing(st, u, w, rate, NOW, t))
+    doing = lambda st, u, w=False, rate=None, t=None: unpainted(sr.render_doing(st, u, w, rate, NOW, t))
     quiet = nothing._replace(eta=(), last_seen=NOW - 90)
     check("the Doing cell says what a running agent is doing and for how "
           "long: 🔧 or 🚦 since the oldest call of its kind, the unit where "
@@ -1131,9 +1145,11 @@ def run(tmp):
           "has written nothing from a minute, amber from ten",
           ([doing("running", nothing._replace(eta=(), last_seen=NOW - q), rate=200.0)
             for q in (30, 90, 700)],
-           sl.F_AMB in sr.render_doing("running", nothing._replace(eta=(), last_seen=NOW - 700),
-                                       False, 200.0, NOW),
-           sl.F_AMB in sr.render_doing("running", quiet, False, 200.0, NOW)),
+           sl.F_AMB in drawn(sr.render_doing(
+               "running", nothing._replace(eta=(), last_seen=NOW - 700),
+               False, 200.0, NOW)),
+           sl.F_AMB in drawn(sr.render_doing("running", quiet, False, 200.0,
+                                             NOW))),
           (["\U0001F916 200/s", "\U0001F916 1.5m ", "\U0001F916  12m "], True, False))
     check("paused or ended, since its last record; not started, since its "
           "startTime; a shell keeps 🛫 and its rate",
@@ -1147,7 +1163,7 @@ def run(tmp):
     died = nothing._replace(api_error=True)
     check("💥: an agent whose last answer died on an API error, ended or "
           "parked; a killed one is still 🛑, and a running one is running",
-          [sr.render_state(st, u, w) for st, u, w in (
+          [unpainted(sr.render_state(st, u, w)) for st, u, w in (
               ("completed", died, False), ("completed", died, True),
               ("failed", died, False), ("killed", died, False),
               ("running", died, False))],
@@ -1191,7 +1207,7 @@ def run(tmp):
           ["fix-inbox", "", "", "0123456"])
     check("🌿 and the branch after the name, drawn whole or not at all, "
           "ahead of the activity",
-          [ANSI.sub("", sr.render_who("Marigold", "Reading", w, "fix-inbox"))
+          [unpainted(sr.render_who("Marigold", "Reading", w, "fix-inbox"))
            for w in (40, 25, 12)],
           ["Marigold \U0001F33Ffix-inbox Reading",
            "Marigold \U0001F33Ffix-inbox", "Marigold"])

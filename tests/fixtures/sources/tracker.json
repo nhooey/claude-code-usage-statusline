@@ -1,0 +1,678 @@
+[
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786846800.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 41.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787015000.0,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "golden store",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n",
+  "tracker_reading": {
+   "as_of": 1786846800.0,
+   "session_pct": 41,
+   "session_resets_at": 1786852800.0,
+   "weekly_opus_pct": null,
+   "weekly_pct": 63,
+   "weekly_resets_at": 1787015000.0
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786846940.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1788864600.363,
+       "used_percent": 98.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1789434000.363,
+       "used_percent": 10.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day_opus",
+       "resets_at": 1789434000.363,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "app store",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>P1</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
+  "tracker_reading": {
+   "as_of": 1786846940.0,
+   "session_pct": 98,
+   "session_resets_at": 1788864600.363,
+   "weekly_opus_pct": 3,
+   "weekly_pct": 10,
+   "weekly_resets_at": 1789434000.363
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "active P0",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>P0</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
+  "tracker_reading": {
+   "as_of": null,
+   "session_pct": 1,
+   "session_resets_at": null,
+   "weekly_opus_pct": null,
+   "weekly_pct": 1,
+   "weekly_resets_at": null
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "selected fallback",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>gone</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tdHJ1ZX0sIHsiaWQiOiAiUDEiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50\n\tYWdlIjogOTgsICJzZXNzaW9uUmVzZXRUaW1lIjogODEwNTU3NDAwLjM2Mjk5OTksICJ3\n\tZWVrbHlQZXJjZW50YWdlIjogMTAsICJvcHVzV2Vla2x5UGVyY2VudGFnZSI6IDMsICJ3\n\tZWVrbHlSZXNldFRpbWUiOiA4MTExMjY4MDAuMzYyOTk5OSwgImxhc3RVcGRhdGVkIjog\n\tODA4NTM5NzQwfSwgIm9hdXRoQWNjb3VudEpTT04iOiAib2F1dGgtY2FuYXJ5LW11c3Qt\n\tbmV2ZXItYmUtY29waWVkIn1d\n\t</data>\n</dict>\n</plist>\n",
+  "tracker_reading": {
+   "as_of": null,
+   "session_pct": 1,
+   "session_resets_at": null,
+   "weekly_opus_pct": null,
+   "weekly_pct": 1,
+   "weekly_resets_at": null
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "first fallback",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>gone</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
+  "tracker_reading": {
+   "as_of": null,
+   "session_pct": 1,
+   "session_resets_at": null,
+   "weekly_opus_pct": null,
+   "weekly_pct": 1,
+   "weekly_resets_at": null
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "no active id",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
+  "tracker_reading": {
+   "as_of": null,
+   "session_pct": 1,
+   "session_resets_at": null,
+   "weekly_opus_pct": null,
+   "weekly_pct": 1,
+   "weekly_resets_at": null
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787015000.0,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "weekly only",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"weeklyPercentage\":63,\"weeklyResetTime\":808707800}}]</string>\n</dict></plist>\n",
+  "tracker_reading": {
+   "as_of": null,
+   "session_pct": null,
+   "session_resets_at": null,
+   "weekly_opus_pct": null,
+   "weekly_pct": 63,
+   "weekly_resets_at": 1787015000.0
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 2765168400.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 41.5
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 2765336400.0,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "stamps and strings",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":\"41.5\",\"sessionResetTime\":\" 808545600 \",\"weeklyPercentage\":63,\"weeklyResetTime\":\"2026-08-18 01:00\",\"lastUpdated\":\"2026-08-16  2:20\"}}]</string>\n</dict></plist>\n",
+  "tracker_reading": {
+   "as_of": 2765168400.0,
+   "session_pct": "41.5",
+   "session_resets_at": 1786852800.0,
+   "weekly_opus_pct": null,
+   "weekly_pct": 63,
+   "weekly_resets_at": 2765336400.0
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": null,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "bad stamps",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":1,\"sessionResetTime\":\"2026-02-30 01:00\",\"weeklyPercentage\":2,\"weeklyResetTime\":true,\"lastUpdated\":\"nan\"}}]</string>\n</dict></plist>\n",
+  "tracker_reading": {
+   "as_of": NaN,
+   "session_pct": 1,
+   "session_resets_at": null,
+   "weekly_opus_pct": null,
+   "weekly_pct": 2,
+   "weekly_resets_at": null
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786846800.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786846995.0,
+       "used_percent": 41.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787015000.0,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "reset passed",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808539795,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n",
+  "tracker_reading": {
+   "as_of": 1786846800.0,
+   "session_pct": 41,
+   "session_resets_at": 1786846995.0,
+   "weekly_opus_pct": null,
+   "weekly_pct": 63,
+   "weekly_resets_at": 1787015000.0
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "malformed profiles json",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{</string>\n</dict></plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "profiles not a list",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>{}</string>\n</dict></plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "profiles empty",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[]</string>\n</dict></plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "usage missing",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\"}]</string>\n</dict></plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "first profile empty",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{}, 5]</string>\n</dict></plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "pre-migration store",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>usageHistory_ABC</key>\n\t<string>{}</string>\n</dict>\n</plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "data with a BOM",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>profiles_v3</key>\n\t<data>\n\t77u/W3siY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjogOTgsICJzZXNz\n\taW9uUmVzZXRUaW1lIjogODEwNTU3NDAwLjM2Mjk5OTksICJ3ZWVrbHlQZXJjZW50YWdl\n\tIjogMTAsICJvcHVzV2Vla2x5UGVyY2VudGFnZSI6IDMsICJ3ZWVrbHlSZXNldFRpbWUi\n\tOiA4MTExMjY4MDAuMzYyOTk5OSwgImxhc3RVcGRhdGVkIjogODA4NTM5NzQwfX1d\n\t</data>\n</dict>\n</plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "data, invalid utf-8",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>profiles_v3</key>\n\t<data>\n\t/1tbeyJjbGF1ZGVVc2FnZSI6IHsic2Vzc2lvblBlcmNlbnRhZ2UiOiA5OCwgInNlc3Np\n\tb25SZXNldFRpbWUiOiA4MTA1NTc0MDAuMzYyOTk5OSwgIndlZWtseVBlcmNlbnRhZ2Ui\n\tOiAxMCwgIm9wdXNXZWVrbHlQZXJjZW50YWdlIjogMywgIndlZWtseVJlc2V0VGltZSI6\n\tIDgxMTEyNjgwMC4zNjI5OTk5LCAibGFzdFVwZGF0ZWQiOiA4MDg1Mzk3NDB9fV0=\n\t</data>\n</dict>\n</plist>\n",
+  "tracker_reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786846940.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1788864600.363,
+       "used_percent": 98.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1789434000.363,
+       "used_percent": 10.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day_opus",
+       "resets_at": 1789434000.363,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "data, ragged base64",
+  "plist": "<?xml version=\"1.0\"?><plist version=\"1.0\"><dict><key>profiles_v3</key><data>\n\tW3siaWQiOiAiUDEiLCAiY2xhdWRlVX\n\tNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjogOTgsICJzZXNzaW9uUmVzZXRUaW1lIjogODEwNTU3NDAwLjM2Mjk5OTksICJ3ZWVrbHlQZXJjZW50YWdlIjogMTAsICJvcHVzV2Vla2x5UGVyY2VudGFnZSI6IDMsICJ3ZWVrbHlSZXNldFRpbWUiOiA4MTExMjY4MDAuMzYyOTk5OSwgImxhc3RVcGRhdGVkIjogODA4NTM5NzQwfX1d !\n</data></dict></plist>",
+  "tracker_reading": {
+   "as_of": 1786846940.0,
+   "session_pct": 98,
+   "session_resets_at": 1788864600.363,
+   "weekly_opus_pct": 3,
+   "weekly_pct": 10,
+   "weekly_resets_at": 1789434000.363
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {},
+  "name": "data, bad padding",
+  "plist": "<plist><dict><key>profiles_v3</key><data>W3siaWQiOiAiUDEiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjogOTgsICJzZXNzaW9uUmVzZXRUaW1lIjogODEwNTU3NDAwLjM2Mjk5OTksICJ3ZWVrbHlQZXJjZW50YWdlIjogMTAsICJvcHVzV2Vla2x5UGVyY2VudGFnZSI6IDMsICJ3ZWVrbHlSZXNldFRpbWUiOiA4MTExMjY4MDAuMzYyOTk5OSwgImxhc3RVcGRhdGVkIjogODA4NTM5NzQwf</data></dict></plist>",
+  "tracker_reading": {
+   "raises": "Error"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786846800.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786852800.0,
+       "used_percent": 41.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787015000.0,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "claude-usage-tracker"
+  },
+  "name": "types",
+  "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a comment -->\n<plist version=\"1.0\"><dict>\n<key>n</key><integer>0x1F</integer><key>m</key><integer>-1_0</integer><key>r</key><real>2.5e1</real><key>t</key><true/><key>f</key><false/><key>d</key><date>2026-08-16T02:23:20Z</date><key>a</key><array><string>x &amp; &#x3c;y&#62;</string><string><![CDATA[<z>]]></string></array><key>activeProfileId</key><string>golden</string><key>profiles_v3</key><string>[{\"id\": \"golden\", \"claudeUsage\": {\"sessionPercentage\": 41, \"sessionResetTime\": 808545600, \"weeklyPercentage\": 63, \"weeklyResetTime\": 808707800, \"lastUpdated\": 808539600}}]</string></dict></plist>\r\n",
+  "tracker_reading": {
+   "as_of": 1786846800.0,
+   "session_pct": 41,
+   "session_resets_at": 1786852800.0,
+   "weekly_opus_pct": null,
+   "weekly_pct": 63,
+   "weekly_resets_at": 1787015000.0
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {},
+  "name": "not a plist",
+  "plist": "hello",
+  "tracker_reading": {
+   "raises": "InvalidFileException"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {},
+  "name": "binary plist refused",
+  "plist": "bplist00",
+  "tracker_reading": {
+   "raises": "InvalidFileException"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {},
+  "name": "entity declaration",
+  "plist": "<?xml version=\"1.0\"?><!DOCTYPE plist [<!ENTITY e \"x\">]><plist><dict><key>a</key><string>&e;</string></dict></plist>",
+  "tracker_reading": {
+   "raises": "InvalidFileException"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {},
+  "name": "missing value",
+  "plist": "<plist><dict><key>a</key></dict></plist>",
+  "tracker_reading": {
+   "raises": "ValueError"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "raises": "ExpatError"
+  },
+  "name": "mismatched tags",
+  "plist": "<plist><dict></plist>",
+  "tracker_reading": {
+   "raises": "ExpatError"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "raises": "ExpatError"
+  },
+  "name": "undefined entity",
+  "plist": "<plist><dict><key>a</key><string>&nope;</string></dict></plist>",
+  "tracker_reading": {
+   "raises": "ExpatError"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "raises": "AttributeError"
+  },
+  "name": "root array",
+  "plist": "<plist><array/></plist>",
+  "tracker_reading": {
+   "raises": "AttributeError"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "raises": "AttributeError"
+  },
+  "name": "empty plist",
+  "plist": "<plist></plist>",
+  "tracker_reading": {
+   "raises": "AttributeError"
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {},
+  "name": "bad integer",
+  "plist": "<plist><dict><key>a</key><integer> 0x1F </integer></dict></plist>",
+  "tracker_reading": {
+   "raises": "ValueError"
+  },
+  "tz": "UTC"
+ }
+]

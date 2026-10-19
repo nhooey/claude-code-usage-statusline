@@ -49,11 +49,12 @@ from coding_agent_usage_line import formatting as fmt  # noqa: E402
 from coding_agent_usage_line.formatting import (  # noqa: E402
     DIM, E_ACCT, E_BOT, E_COSTLINE, E_CTX, E_DATE, E_DIR, E_GIT_OK, E_PR, E_PROJ,
     E_RESET, E_STY, E_TIME, E_TURN_ID, E_TURN_PAST, F_CYN,
-    E_SESS, E_SESSION, E_TURN, E_WEEK, F_BLU, F_CHAT_B, F_GRN, F_LIM_SESS,
-    F_LIM_WEEK, F_PNK, R, S_COST, S_CTX, S_TOK, VAL2_W, VAL_W, dur_fmt,
+    E_SESS, E_SESSION, E_TURN, E_WEEK, F_BLU, F_CHAT_B, F_GRN,
+    F_PNK, R, S_COST, S_CTX, S_TOK, VAL2_W, VAL_W, dur_fmt,
     fit_cols, humanize, pad_val, seg, strip_ansi, vis_width)
 from coding_agent_usage_line.claude_render import (  # noqa: E402
     render_cost, render_tokens)
+from coding_agent_usage_line.spans import join  # noqa: E402
 from coding_agent_usage_line.claude_subagent_render import (  # noqa: E402
     A_CLOCK_W, A_CTX_W, A_DIFF_W, A_ETA_W, A_GAP, A_LIMIT_W, A_LIMIT_WEEK_W,
     A_RATE_W, A_SPLIT_W, render_agent_cache, render_agent_ctx, render_agent_diff,
@@ -109,8 +110,8 @@ CELLS = [
     ("eta", "time.eta", A_ETA_W, 1,
      lambda a: render_agent_eta((NOW, a[1]), a[0] * 1000, NOW)),
     ("split", "time.split", A_SPLIT_W, 1, lambda a: render_agent_split(*a)),
-    ("five", "plan.five_hour", A_LIMIT_W, A_GAP, limit(E_SESS, F_LIM_SESS)),
-    ("week", "plan.week", A_LIMIT_WEEK_W, A_GAP, limit(E_WEEK, F_LIM_WEEK, 4)),
+    ("five", "plan.five_hour", A_LIMIT_W, A_GAP, limit(E_SESS, "F_LIM_SESS")),
+    ("week", "plan.week", A_LIMIT_WEEK_W, A_GAP, limit(E_WEEK, "F_LIM_WEEK", 4)),
     ("diff", "work.diff", A_DIFF_W, A_GAP,
      lambda a: render_agent_diff(SimpleNamespace(lines_added=a[0], lines_removed=a[1]))),
 ]
@@ -257,7 +258,10 @@ def draw(row, keys, cols, patterns, spill=True):
         if k not in keys:
             continue
         show = k in row["cells"] and not hidden(patterns, row["scope"] + "." + path)
-        cells.append((gap + w, " " * gap + seg(w, render(row["cells"][k])) if show else None))
+        # The renderers return spans; ctx_growth here still a string.
+        cell = render(row["cells"][k]) if show else None
+        cell = cell if cell is None or isinstance(cell, str) else join(cell)
+        cells.append((gap + w, " " * gap + seg(w, cell) if show else None))
     head = chrome(row)
     room = cols - RIGHT_EDGE - vis_width(strip_ansi(head)) - sum(w for w, _ in cells)
     while spill and cells and cells[0][1] is None:

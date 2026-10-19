@@ -50,6 +50,7 @@ to run on Python 3.9 — the macOS Command Line Tools interpreter — so it work
 in any project, not only one whose devshell supplies newer packages.
 """
 
+import decimal
 import fcntl
 import functools
 import glob
@@ -63,6 +64,7 @@ import subprocess
 import sys
 import termios
 import time
+import typing
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 
@@ -1801,13 +1803,13 @@ def selftest() -> int:
         ("cache-share", render_cache_share(S_READ, 100, 34)),
         ("limit-session", render_limit(S_SESS, "38", "5", "", "0.4")),
         ("limit-weekly", render_limit(S_WEEK, "84", "2", "", "0.05",
-                                      F_LIM_WEEK)),
+                                      "F_LIM_WEEK")),
         # Both fields in their fraction form.  Every limit_pct branch fills
         # its four characters, so this one is not wider than the whole
         # percentages above — it is the one whose glyphs are all punctuation
         # and digits with no leading pad to hide a miscount.
         ("limit-fractional",
-         render_limit(S_WEEK, "0.384", "0.04", "", "0.004", F_LIM_WEEK)),
+         render_limit(S_WEEK, "0.384", "0.04", "", "0.004", "F_LIM_WEEK")),
         ("elapsed-clock", pair(S_IDLE + pad_val(RST_W, "45s", True),
                                render_time(), fmt.RIGHT_GRID[-1])),
         # The same cell with nothing elapsed to report, which is how every
@@ -1870,6 +1872,8 @@ def selftest() -> int:
     try:
         ttymod.setcbreak(fd)
         for name, row in rows:
+            # The cells are spans and the receipt's groups strings.
+            row = row if isinstance(row, str) else join(row)
             expect = vis_width(strip_ansi(row))
             tty.write(("\r\033[K%s\033[6n" % row).encode("utf-8"))
             resp = b""
@@ -2431,7 +2435,257 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
     return 0
 
 
-def main_status(argv: Sequence[str], raw: str) -> int:
+# ════════════════════════════════════════════════════════════════════════════
+# The figures boundary.
+#
+# Each readout runs in two stages.  The first reads the inputs -- the
+# payload, the transcript and its agent files, the usage source, the
+# calibration cache, git and the clock -- and works out every figure the
+# rows draw.  The second draws them, at a width, under flags and a terminal
+# profile, and reads nothing.  Between the two is a FIGURES document: plain
+# JSON, the same document a TypeScript port of either stage writes or reads,
+# so each stage can be checked against the shared cases on its own.
+# tests/README.md, "Figures", is its schema.
+#
+# The live path goes through the document too, not around it, so a figure
+# the renderers need and the document lacks fails every golden case rather
+# than only the ones that render from a file.
+# ════════════════════════════════════════════════════════════════════════════
+
+FIGURES_SCHEMA = 1
+
+# Where a run writes its figures as well as drawing them.  For the shared
+# cases only, like the calibration override above: tests/run-cases.py sets
+# it, and nothing a user runs does.
+FIGURES_OUT = os.environ.get("CODING_AGENT_USAGE_LINE_FIGURES_OUT", "")
+
+# Record fields whose value stands for "missing" in the record and is written
+# null in the document, which says missing one way only and never as a 0.
+_FIG_MISSING = {
+    "Transcript": {"cache_pct": -1, "start_s": 0.0, "turn_s": 0.0,
+                   "tool_at": 0.0, "wait_at": 0.0, "idle_at": 0.0,
+                   "last_seen": 0.0},
+}
+# Record fields holding a STAMP_FMT local time, written as an epoch: the
+# document carries no zone but the clock's, and a port has no strptime.
+_FIG_STAMPS = {"Limits": ("session_reset", "weekly_reset")}
+
+
+def _stamp_epoch(s: str) -> Optional[int]:
+    if not s:
+        return None
+    try:
+        return int(time.mktime(time.strptime(s, STAMP_FMT)))
+    except (ValueError, OverflowError):
+        return None
+
+
+def _epoch_stamp(e: Optional[float]) -> str:
+    return "" if e is None else time.strftime(STAMP_FMT, time.localtime(e))
+
+
+def _fig_plain(v):
+    """Tuples as lists, all the way down: the shape JSON has."""
+    if isinstance(v, (tuple, list)):
+        return [_fig_plain(x) for x in v]
+    if isinstance(v, dict):
+        return {k: _fig_plain(x) for k, x in v.items()}
+    return v
+
+
+def encode_record(rec) -> dict:
+    """A NamedTuple record as a figures object, field for field."""
+    name = type(rec).__name__
+    hints = typing.get_type_hints(type(rec))
+    missing = _FIG_MISSING.get(name, {})
+    stamps = _FIG_STAMPS.get(name, ())
+    out = {}
+    for field, v in zip(rec._fields, rec):
+        if field in stamps:
+            out[field] = _stamp_epoch(v)
+        elif field in missing and v == missing[field]:
+            out[field] = None
+        elif hints[field] is str and v == "":
+            out[field] = None
+        else:
+            out[field] = _fig_plain(v)
+    return out
+
+
+def _fig_typed(tp, v):
+    """A JSON value back as the annotation says: a whole float written as an
+    integer is a float again, and a list is a tuple."""
+    if v is None:
+        return None
+    origin, args = typing.get_origin(tp), typing.get_args(tp)
+    if origin is typing.Union:
+        return _fig_typed(next(a for a in args if a is not type(None)), v)
+    if origin is tuple:
+        if len(args) == 2 and args[1] is Ellipsis:
+            return tuple(_fig_typed(args[0], x) for x in v)
+        return tuple(_fig_typed(a, x) for a, x in zip(args, v))
+    if tp is float:
+        return float(v)
+    if tp is int:
+        return int(v)
+    return v
+
+
+def decode_record(cls, d: dict):
+    """encode_record's inverse.  Every field must be present: a document
+    missing one is from another schema, not a record with a default."""
+    name = cls.__name__
+    hints = typing.get_type_hints(cls)
+    missing = _FIG_MISSING.get(name, {})
+    stamps = _FIG_STAMPS.get(name, ())
+    vals = []
+    for field in cls._fields:
+        v = d[field]
+        if field in stamps:
+            vals.append(_epoch_stamp(v))
+        elif v is None and field in missing:
+            vals.append(missing[field])
+        elif v is None and hints[field] is str:
+            vals.append("")
+        else:
+            vals.append(_fig_typed(hints[field], v))
+    return cls(*vals)
+
+
+def _fig_number(x) -> str:
+    """A number as the document writes it: the shortest decimal that reads
+    back as the same double, positional, and a whole one as an integer.
+    That is what JavaScript's Number#toString writes for every figure these
+    readouts hold, so both languages can write the document byte for byte."""
+    if isinstance(x, bool):
+        return "true" if x else "false"
+    if isinstance(x, int):
+        return str(x)
+    if x != x or x in (float("inf"), float("-inf")):
+        raise ValueError("a figure is not a finite number: %r" % x)
+    if x.is_integer() and abs(x) < 2 ** 53:
+        return str(int(x))
+    r = repr(x)
+    if "e" in r:
+        r = format(decimal.Decimal(r), "f")
+    return r
+
+
+def _fig_dump(v, indent: str = "") -> str:
+    inner = indent + "  "
+    if isinstance(v, dict):
+        if not v:
+            return "{}"
+        return "{\n%s\n%s}" % (",\n".join(
+            "%s%s: %s" % (inner, json.dumps(k, ensure_ascii=False),
+                          _fig_dump(v[k], inner))
+            for k in sorted(v)), indent)
+    if isinstance(v, (list, tuple)):
+        if not v:
+            return "[]"
+        return "[\n%s\n%s]" % (",\n".join(
+            inner + _fig_dump(x, inner) for x in v), indent)
+    if v is None:
+        return "null"
+    if isinstance(v, str):
+        return json.dumps(v, ensure_ascii=False)
+    return _fig_number(v)
+
+
+def figures_json(fig: dict) -> str:
+    """The canonical text of a figures document: keys sorted, two-space
+    indent, UTF-8 unescaped, numbers by _fig_number, a newline at the end."""
+    return _fig_dump(fig) + "\n"
+
+
+def _write_figures(fig: dict) -> None:
+    if FIGURES_OUT:
+        with open(FIGURES_OUT, "w", encoding="utf-8") as fh:
+            fh.write(figures_json(fig))
+
+
+def _fig_clock() -> dict:
+    """The one clock reading a render draws from.  Live, the clock is read
+    here, once, rather than by each renderer that falls back to it."""
+    now = frozen_now()
+    return {"now": time.time() if now is None else now,
+            "tz": os.environ.get("TZ") or None}
+
+
+def _fig_plan() -> dict:
+    """The plan reading the accounting divided by: limits_snapshot, with
+    its window ends as epochs.  All null when there was none."""
+    snap = limits_snapshot()
+    return {"session_pct": snap.get("session_pct"),
+            "session_resets_at": _stamp_epoch(
+                snap.get("session_resets_at") or ""),
+            "weekly_pct": snap.get("weekly_pct"),
+            "weekly_resets_at": _stamp_epoch(
+                snap.get("weekly_resets_at") or "")}
+
+
+def _shows_account(prepared) -> bool:
+    """Whether the account summary gets a row of its own.  A sole default
+    bucket is already the grid's 🔋 and 🪫; only organization or account
+    metrics, or a bucket the grid cannot hold, need one."""
+    reading = prepared.reading if isinstance(prepared.reading, dict) else {}
+    data = reading.get("account")
+    has_account = (isinstance(data, dict) and
+                   any(data.get(key) is not None
+                       for key in ("input_tokens", "output_tokens",
+                                   "cost_usd")))
+    return bool(prepared.account_text) and (has_account or
+                                            prepared.limits == NO_LIMITS)
+
+
+def _fig_usage(prepared) -> dict:
+    """What the usage source gave: its version-1 reading, the plan figures
+    taken from it, and the account summary row when one is drawn."""
+    reading = prepared.reading if isinstance(prepared.reading, dict) else {}
+    return {"reading": _fig_plain(reading) or None,
+            "plan": _fig_plan(),
+            "account_text": (prepared.account_text
+                             if _shows_account(prepared) else None)}
+
+
+def _fig_apply(fig: dict) -> None:
+    """Put back the two things a render still reads from outside its
+    arguments: the zone the clock is drawn in, and the plan reading that
+    window_shares and plan_totals read through limits_snapshot.  The cost
+    rows still work their shares out while drawing; once they take them
+    from the document's `accounting`, the snapshot goes from here."""
+    global _SNAPSHOT
+    tz = fig["clock"]["tz"]
+    if tz and os.environ.get("TZ") != tz:
+        os.environ["TZ"] = tz
+        time.tzset()
+    plan = fig["usage"]["plan"]
+    if plan["session_pct"] is None and plan["weekly_pct"] is None:
+        _SNAPSHOT = {}
+        return
+    _SNAPSHOT = {"session_pct": _pct_num(plan["session_pct"]),
+                 "session_resets_at": _epoch_stamp(plan["session_resets_at"]),
+                 "weekly_pct": _pct_num(plan["weekly_pct"]),
+                 "weekly_resets_at": _epoch_stamp(plan["weekly_resets_at"]),
+                 # Live, the scope the edge seeded stays: the calibration
+                 # cache is keyed by it.
+                 "_scope": limits_snapshot().get("_scope", "")}
+
+
+def _cols(argv: Sequence[str]) -> Optional[int]:
+    cols_s = _flag(argv, "--cols")
+    # "--cols 0" means "pretend the width is unknown", which is the only way to
+    # exercise the fallback layout deterministically from a test.
+    return (int(cols_s) or None) if cols_s.isdigit() else term_cols()
+
+
+def status_figures(argv: Sequence[str], raw: str) -> dict:
+    """Stage one of the status line: its inputs read, its figures out.
+
+    Everything that reads a file, a cache, a command or the clock, or writes
+    session state, happens here, and what comes back is the figures document
+    render_status_figures draws.
+    """
     pay = read_payload(raw)
     # An explicit transcript is an offline invocation.  It deliberately does
     # not require a hook payload (and therefore must not make the launcher
@@ -2490,39 +2744,145 @@ def main_status(argv: Sequence[str], raw: str) -> int:
     if "--diagnose" in argv:
         emit_source_diagnose(source_spec, prepared)
     # `none` disables external collection, not the native payload that Claude
-    # already supplied.  Only a named external source supersedes that intake.
-    explicit_source = source_spec not in ("", "auto", "native", "none", "off")
-    if prepared.reading:
-        base_limits = prepared.limits
-    elif explicit_source:
-        # A failed named source is unavailable, not permission to quote an
-        # unrelated legacy cache or to retry the command by another route.
-        base_limits = NO_LIMITS
-    else:
-        base_limits = NO_LIMITS
+    # already supplied.  Only a named external source supersedes that intake,
+    # and a failed named source is unavailable, not permission to quote an
+    # unrelated legacy cache or to retry the command by another route.
+    base_limits = prepared.limits if prepared.reading else NO_LIMITS
     seed_limits_snapshot(base_limits, prepared.reading)
     # Session/turn shares still require the one transcript scan performed
     # above; rendering itself receives only the prepared snapshot.
     lim, cache = _with_shares(base_limits, pay.transcript, agents)
-    cols_s = _flag(argv, "--cols")
-    # "--cols 0" means "pretend the width is unknown", which is the only way to
-    # exercise the fallback layout deterministically from a test.
-    cols = (int(cols_s) or None) if cols_s.isdigit() else term_cols()
-    # Stateful measurements are prepared at the adapter boundary; the pure
-    # renderer only receives their already-computed values.
     ctx_window = ctx_window_for(pay.ctx_window, pay.model + pay.model_id)
     publish_ctx_window(pay.session_id, ctx_window)
     tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
     rate = session_rate(pay.session_id, tokens, frozen_now())
-    output = render_status(pay, tr, git, lim, cols, frozen_now(),
-                           column_rules(argv), ctx_window, rate, cache)
-    account_data = prepared.reading.get("account")
-    has_account = (isinstance(account_data, dict) and
-                   any(account_data.get(key) is not None
-                       for key in ("input_tokens", "output_tokens", "cost_usd")))
-    if prepared.account_text and (has_account or prepared.limits == NO_LIMITS):
-        output += prepared.account_text + "\n"
-    sys.stdout.write(output)
+    return {"schema": FIGURES_SCHEMA, "mode": "status",
+            "clock": _fig_clock(),
+            "payload": encode_record(pay),
+            "transcript": encode_record(tr),
+            "git": encode_record(git),
+            "limits": encode_record(lim),
+            "cache_shares": encode_record(cache),
+            "context_window": ctx_window,
+            "rate": rate,
+            "usage": _fig_usage(prepared)}
+
+
+def render_status_figures(fig: dict, argv: Sequence[str]) -> str:
+    """Stage two of the status line: its figures drawn at --cols, under the
+    flags in argv.  Reads no file and no clock."""
+    _fig_apply(fig)
+    rate = fig["rate"]
+    output = render_status(decode_record(Payload, fig["payload"]),
+                           decode_record(Transcript, fig["transcript"]),
+                           decode_record(Git, fig["git"]),
+                           decode_record(Limits, fig["limits"]),
+                           _cols(argv), fig["clock"]["now"],
+                           column_rules(argv), int(fig["context_window"]),
+                           None if rate is None else float(rate),
+                           decode_record(CacheShares, fig["cache_shares"]))
+    text = fig["usage"]["account_text"]
+    if text:
+        output += text + "\n"
+    return output
+
+
+def _turn_accounting(t: Turn, calib: Dict[str, Optional[float]]) -> dict:
+    tsh = window_shares(t, calib)
+    rd, wr = turn_shares(t)
+    return {"cost_usd": turn_cost(t), "sess_share": tsh["sess"],
+            "week_share": tsh["week"], "read_share": rd, "write_share": wr}
+
+
+def cost_figures(turns: Sequence[Turn], session_id: str, prepared) -> dict:
+    """Stage one of the cost line, past the transcript read: the context
+    window, the calibration and the plan reading the turns are divided by,
+    and what each turn and the session come to.
+
+    `accounting` is what the cost rows draw from the turns.  The rows still
+    work it out again while drawing, so for now it is a figure the shared
+    cases check, for a port to match before its renderer reads it.
+    """
+    win = window_for(turns, session_id)
+    calib = calibration()
+    sh = session_shares(turns, calib)
+    rd, wr = session_cache_shares(turns)
+    return {"schema": FIGURES_SCHEMA, "mode": "cost",
+            "clock": _fig_clock(),
+            "turns": [encode_record(t) for t in turns],
+            "context_window": win,
+            "calibration": {"sess": calib.get("sess"),
+                            "week": calib.get("week")},
+            "accounting": {
+                "turns": [_turn_accounting(t, calib) for t in turns],
+                "session": {"cost_usd": sum(turn_cost(t) for t in turns),
+                            "sess_share": sh["sess"],
+                            "week_share": sh["week"],
+                            "read_share": rd, "write_share": wr}},
+            "usage": _fig_usage(prepared)}
+
+
+def _cost_opts(argv: Sequence[str], session_id: str = "") -> CostOpts:
+    # --no-usage-text keeps each row's marker glyph and drops the words.
+    # The glyph is what tells the three rows apart at a glance; the words
+    # are the part that reads identically every turn, which is what makes
+    # them the half worth being able to switch off.
+    words = "--no-usage-text" not in argv
+    return CostOpts(
+        prefix=_flag(argv, "--prefix", E_COSTLINE),
+        label=_flag(argv, "--label", C_LABEL if words else E_ROW_PROMPT),
+        totals_label=C_TOTALS_LABEL if words else E_ROW_TOTAL,
+        compact_label=C_COMPACT_LABEL if words else E_ROW_COMPACT,
+        agents_label=C_AGENTS_LABEL if words else E_ROW_AGENTS,
+        account_totals="--no-account-totals" not in argv,
+        stamps="--no-datetime" not in argv,
+        force_newline="--force-newline" in argv,
+        cols=_cols(argv),
+        colour="--color" in argv,
+        totals="--no-totals" not in argv,
+        right_align="--no-right-align" not in argv,
+        session_id=session_id,
+    )
+
+
+def render_cost_figures(fig: dict, argv: Sequence[str]) -> str:
+    """Stage two of the cost line: the systemMessage, or "" for none."""
+    _fig_apply(fig)
+    turns = [decode_record(Turn, t) for t in fig["turns"]]
+    calib = {k: (None if v is None else float(v))
+             for k, v in fig["calibration"].items()}
+    line = _pure_cost_render(turns, _cost_opts(argv),
+                             int(fig["context_window"]), calib,
+                             plan_totals(), fig["clock"]["now"],
+                             cost_group, cost_totals_group)
+    if not line.strip():
+        return ""
+    text = fig["usage"]["account_text"]
+    if text:
+        line += "\n" + text
+    return line
+
+
+def main_figures(argv: Sequence[str]) -> int:
+    """--from-figures PATH: stage two alone, from a figures document."""
+    with open(_flag(argv, "--from-figures"), encoding="utf-8") as fh:
+        fig = json.load(fh)
+    if fig.get("schema") != FIGURES_SCHEMA:
+        sys.stderr.write("figures schema %r, not %d\n"
+                         % (fig.get("schema"), FIGURES_SCHEMA))
+        return 2
+    if fig["mode"] == "cost":
+        line = render_cost_figures(fig, argv)
+        print(json.dumps({"systemMessage": line}) if line else "{}")
+    else:
+        sys.stdout.write(render_status_figures(fig, argv))
+    return 0
+
+
+def main_status(argv: Sequence[str], raw: str) -> int:
+    fig = status_figures(argv, raw)
+    _write_figures(fig)
+    sys.stdout.write(render_status_figures(fig, argv))
     return 0
 
 
@@ -2540,35 +2900,14 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
         if not transcript or not os.path.isfile(transcript):
             print("{}")
             return 0
-        cols_s = _flag(argv, "--cols")
-        # "--cols 0" means "pretend the width is unknown", which is the only
-        # way to exercise the fallback layout deterministically from a test.
-        cols = (int(cols_s) or None) if cols_s.isdigit() else term_cols()
-        # --no-usage-text keeps each row's marker glyph and drops the words.
-        # The glyph is what tells the three rows apart at a glance; the words
-        # are the part that reads identically every turn, which is what makes
-        # them the half worth being able to switch off.
-        words = "--no-usage-text" not in argv
-        opts = CostOpts(
-            prefix=_flag(argv, "--prefix", E_COSTLINE),
-            label=_flag(argv, "--label", C_LABEL if words else E_ROW_PROMPT),
-            totals_label=C_TOTALS_LABEL if words else E_ROW_TOTAL,
-            compact_label=C_COMPACT_LABEL if words else E_ROW_COMPACT,
-            agents_label=C_AGENTS_LABEL if words else E_ROW_AGENTS,
-            account_totals="--no-account-totals" not in argv,
-            stamps="--no-datetime" not in argv,
-            force_newline="--force-newline" in argv,
-            cols=cols,
-            colour="--color" in argv,
-            totals="--no-totals" not in argv,
-            right_align="--no-right-align" not in argv,
+        opts = _cost_opts(
+            argv,
             # The transcript's BASENAME, not the payload's session_id, so the
             # live hook and --transcript take the same path — they are the
             # same string, and a lookup that only runs in production is a
             # lookup no harness can check.
-            session_id=os.path.basename(transcript)[:-len(".jsonl")]
-                       if transcript.endswith(".jsonl") else "",
-        )
+            os.path.basename(transcript)[:-len(".jsonl")]
+            if transcript.endswith(".jsonl") else "")
         source_spec = _flag(argv, "--usage-source",
                             os.environ.get("CODING_AGENT_USAGE_LINE_USAGE_SOURCE", "auto"))
         account = _flag(argv, "--account", "default")
@@ -2613,19 +2952,12 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
                     opts, opts.totals_label, C_CHROME_CONT).rstrip())
             return 0
 
-        line = render_cost_line(turns, opts, frozen_now())
-        if not line.strip():
+        fig = cost_figures(turns, opts.session_id, prepared)
+        _write_figures(fig)
+        line = render_cost_figures(fig, argv)
+        if not line:
             print("{}")
             return 0
-        account_data = prepared.reading.get("account") if isinstance(prepared.reading, dict) else {}
-        has_account = (isinstance(account_data, dict) and
-                       any(account_data.get(key) is not None
-                           for key in ("input_tokens", "output_tokens", "cost_usd")))
-        # A sole default bucket is already represented by the historical cost
-        # grid.  Only organization/account metrics or an unprojectable bucket
-        # receive a separate row.
-        if prepared.account_text and (has_account or prepared.limits == NO_LIMITS):
-            line += "\n" + prepared.account_text
         print(json.dumps({"systemMessage": line}))
         # The LIVE hook only, as with the settle wait: a golden case renders
         # one transcript at five widths in one TMPDIR, and a state file
@@ -2748,6 +3080,10 @@ def main(argv: Sequence[str]) -> int:
     # emit, and every field on both readouts is measured from that.
     set_subscript_decimals("--subscript-decimals" in argv)
     mode = _flag(argv, "--mode", "status")
+    # Stage two alone, from a figures document: no stdin, no transcript, no
+    # source and no clock.  See "The figures boundary".
+    if _flag(argv, "--from-figures"):
+        return main_figures(argv)
     # A named transcript is a complete offline input.  In particular, do not
     # wait for the still-open stdin pipe used by command-line callers.
     explicit_transcript = bool(_flag(argv, "--transcript"))

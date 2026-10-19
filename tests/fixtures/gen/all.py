@@ -16,6 +16,7 @@ sys.path.insert(0, HERE)
 
 import cases  # noqa: E402
 import cost  # noqa: E402
+import sources  # noqa: E402
 import status  # noqa: E402
 
 # Written whole each time, so a fixture whose generator entry is gone does
@@ -25,3 +26,6 @@ for d in ("env", "payloads", "transcripts"):
 status.main(ROOT)
 cost.main(ROOT)
 cases.main(ROOT)
+# Last, since it sets TZ for the process.  Under /usr/bin/python3: its
+# expected epochs are 3.9's fromisoformat, quirks included.
+sources.main()
