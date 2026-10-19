@@ -16,9 +16,11 @@ export const CONFIG = {
   account: "default",
   period: "day",
   // --hide paths, `scope[.group[.metric]]` with `*` for any one part.
-  // 🔋 the 5-hour limit, and 🧠's ٪ of the window, in every row (asked
-  // 2026-10-19).
-  hide: ['*.plan.five_hour', '*.context.share'] as readonly string[],
+  // 🔋 the 5-hour limit, 🧠's ٪ of the window, and 🎯 the cache hit rate,
+  // in every row (asked 2026-10-19).  Keep subagentStatusLine's --hide
+  // flags in ~/.claude/settings.json the same, so the panel stacks.
+  hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache'] as
+    readonly string[],
   // --mark-spacing and --subscript-decimals.
   markSpacing: true,
   subscriptDecimals: false,
