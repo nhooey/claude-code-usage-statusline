@@ -387,14 +387,14 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
   };
 }
 
-/** The rows a phase draws, top to bottom: 🎤, 🎮 and 🤖💬 while a turn
- * runs, and 🤖💬 once it ends.  🎤 and 🎮 lead, so they sit nearest the
- * receipt they become when the turn ends.  💳 is not among them: it is drawn
+/** The rows a phase draws, top to bottom: 🎤, 🤖💬 and 🎮 while a turn
+ * runs, the order the receipt stamps them in (asked 2026-10-20), and 🤖💬
+ * once it ends.  💳 is not among them: it is drawn
  * on the footer under the prompt, right-aligned, as `accountText` gives it
  * (decided 2026-10-19). */
 export function phaseRows(rows: BandRows, phase: Phase): Row[] {
   return phase === "running"
-    ? [rows.turn, rows.session, rows.main]
+    ? [rows.turn, rows.main, rows.session]
     : [rows.main];
 }
 

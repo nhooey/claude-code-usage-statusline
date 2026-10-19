@@ -152,7 +152,7 @@ test("a hidden context.share leaves 🧠's size and drops its ٪", () => {
   const all = ctx([]);
   const less = ctx(["*.context.share"]);
   // 🎤's growth and 🤖's size both lose their ٪; the columns stay put.
-  for (const i of [0, 2]) {
+  for (const i of [0, 1]) {
     assert.match(all[i], /🧠[^🧩]*٪/);
     assert.doesNotMatch(less[i], /🧠[^🧩]*٪/);
     const col = (s: string) =>
@@ -206,7 +206,8 @@ test("🎤 carries the model and 🛫, and a running tool's time in 🛫's colum
     (spans ?? []).map((s) => s.text).join("");
   const rows = inZone(fig, () => bandRows(st, fig, opts));
   assert.ok(text(rows.turn.cells.model).length > 0);
-  assert.match(text(rows.turn.cells.rate), /^🛫 +\S+ $/);
+  // Three columns of figure, its decimal among them, then the unit.
+  assert.match(text(rows.turn.cells.rate), /^🛫 [ \d.]{3}[kM ]$/);
   // 🤖 has blank model and 🛫 columns, so its reply ends at the model's,
   // and while it answers, 🤖 and how long in 🛫's.
   assert.equal(text(rows.main.cells.model), "");

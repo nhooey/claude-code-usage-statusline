@@ -310,9 +310,10 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
                               mag_dim(left, MAG_DUR_S))]
 def render_agent_rate(rate, mark=E_RATE):
     """🛫 and the tokens a second, without a "/s" (dropped 2026-10-19, to
-    narrow the column): a blank stands where a duration's unit does, so the
-    figures stack with render_doing's."""
-    return [] if rate is None else [Span(mark + " "), Span(pad_val(3, rate_fig(rate)) + " ", "F_RATE", mag_dim(rate, MAG_RATE))]
+    narrow the column), as humanize writes a count: three columns of figure,
+    its decimal among them, then the unit, "1.2k" and "632 " (asked
+    2026-10-20), so the unit stacks with render_doing's."""
+    return [] if rate is None else [Span(mark + " "), Span(pad_val(4, humanize(rate)), "F_RATE", mag_dim(rate, MAG_RATE))]
 def state_since(status, usage, phase, mode, task=None):
     """The epoch the agent entered the state `mode` names, or None.
 

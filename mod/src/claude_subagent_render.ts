@@ -29,7 +29,7 @@ import {
   E_CACHE, E_DIFF, CHROME_DEPTH, GRID_CELLS, LABEL_MIN, RIGHT_EDGE,
 } from "./spec.ts";
 import {
-  cacheColor, durFmt, fitCols, humanize, limitPct, magDim, padVal, rateFig,
+  cacheColor, durFmt, fitCols, humanize, limitPct, magDim, padVal,
   seg, visWidth,
 } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -460,13 +460,13 @@ export function renderAgentEta(st: Settings, eta: Eta, startMs: unknown,
     "F_ETA", magDim(left, MAG_DUR_S))];
 }
 
-/** 🛫 and the tokens a second, without a "/s" (dropped 2026-10-19, to
- * narrow the column): a blank stands where a duration's unit does, so the
- * figures stack with renderDoing's. */
+/** 🛫 and the tokens a second, without a "/s" (dropped 2026-10-19), as
+ * humanize writes a count: three columns of figure, its decimal among them,
+ * then the unit, "1.2k" and "632 " (asked 2026-10-20). */
 export function renderAgentRate(st: Settings, rate: number | null,
   mark: string = E_RATE): Span[] {
   return rate === null ? [] : [span(mark + " "),
-    span(padVal(st, 3, rateFig(st, rate)) + " ", "F_RATE",
+    span(padVal(st, 4, humanize(st, rate)), "F_RATE",
       magDim(rate, MAG_RATE))];
 }
 

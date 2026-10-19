@@ -549,12 +549,12 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 🎤, 🎮 and 🤖 at no indent, then the 🔺🔖 tag line, drawn as the
+    // 🎤, 🤖 and 🎮 at no indent, then the 🔺🔖 tag line, drawn as the
     // start line is.
     expect(want.length).toBe(4)
     expect(text(want[0]).startsWith(spec.E_TURN)).toBe(true)
-    expect(text(want[1]).startsWith(spec.E_SESSION)).toBe(true)
-    expect(text(want[2]).startsWith(spec.E_BOT)).toBe(true)
+    expect(text(want[1]).startsWith(spec.E_BOT)).toBe(true)
+    expect(text(want[2]).startsWith(spec.E_SESSION)).toBe(true)
     expect(text(want[3])).toContain('p-resume'.slice(0, 8))
     expect(text(want[3]).startsWith(spec.E_TURN_PAST)).toBe(true)
     expect(text(want[3])).toContain(spec.E_DATE)
