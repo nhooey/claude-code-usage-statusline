@@ -221,12 +221,14 @@ On an agent row:
 | `agent.chat.doing` | what it is doing, the panel's activity text |
 | `agent.state.kids`, `.compact`, `.shells`, `.monitors`, `.inbox` | 👶🏻, 🤏, 💻, 📡, 📨 |
 | `agent.state.model`, `.rate`, `agent.cost`, `agent.context`, `agent.tokens.io`, `.cache`, `agent.time.elapsed`, `.eta`, `.split`, `agent.plan.five_hour`, `.week`, `agent.work` | the columns |
+| `agent.context.share` | 🧠's ٪ of the window, its size set flush right; hidden on every scope (`*.context.share`), 🧠's column narrows by the ٪'s room |
 
 ```
 --hide agent                  every agent row, empty
 --hide '*.work'               💾 on every row
 --hide agent.time.eta         ⛳ on the agent rows, blank in its column
 --hide '*.state.rate'         🛫 everywhere
+--hide '*.context.share'      🧠's ٪ everywhere, its column narrower
 ```
 
 ## Environment variables
