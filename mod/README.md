@@ -107,11 +107,10 @@ or from GitHub, in a session:
 
     /plugin install usage-band --marketplace nhooey/claude-code-usage-statusline
 
-The install is a copy, under `~/.claude/plugins/cache/`, so a change here
-reaches it only through an update, then `/reload-plugins` in each session:
-
-    claude plugin marketplace update claude-code-usage-statusline
-    claude plugin update usage-band@claude-code-usage-statusline
+Installed from a local marketplace, the mod is read from `mod/` itself: a
+change here takes effect at the next session start or `/reload-plugins`,
+with nothing to update. Installed from GitHub, it is a copy, and
+`claude plugin update` brings it up to date.
 
 The mod replaces the status line and the Stop hook's receipt: leave
 `statusLine` and the `--mode cost` Stop hook out of `settings.json`. The
