@@ -236,10 +236,11 @@ async function stamp($: $, durationMs: number, prompt: string):
     const ws = doc ? workspaceOf(doc as Dict, where.home) : null
     // Laid out as the band is, with its indent, so the rows' columns are
     // the band's.
-    const { rows } = receiptLines(await settingsOf($), fig, bandCols,
+    const { head, rows } = receiptLines(await settingsOf($), fig, bandCols,
       CONFIG.hide, ws, true, spec.C_CHROME_CONT)
     await remember($, 'receipts', key, true)
-    await remember($, 'receipts', receiptAt(durationMs), rows)
+    await remember($, 'receipts', receiptAt(durationMs),
+      head.length ? [head, ...rows] : rows)
   } finally {
     stamping.delete(key)
   }

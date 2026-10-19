@@ -82,7 +82,8 @@ if (part === "band") {
   lines = [startLine(fig)];
 } else if (part === "receipt") {
   const ws = wsFile ? workspaceOf(read(wsFile), home) : null;
-  lines = receiptLines(st, fig, cols, hide, ws).rows;
+  const got = receiptLines(st, fig, cols, hide, ws);
+  lines = [...(got.head.length ? [got.head] : []), ...got.rows];
 } else {
   fail("--part: invalid choice: '" + part + "'");
 }

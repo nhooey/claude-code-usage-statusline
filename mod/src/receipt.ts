@@ -15,7 +15,8 @@
 // Pure, as band.ts is: the 📦 🌿 on the 📊 🎮 row are the caller's, since
 // cost_figures runs no git (the mod takes the band's), and the clock is
 // drawn in the TZ the edge sets.
-import { E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
+import { E_COSTLINE, E_TURN, E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
+import { visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
@@ -25,8 +26,8 @@ import type { Accounting } from "./claude_calib.ts";
 import { decodeTranscript } from "./figures.ts";
 import { _readAccounting, decodeTurn } from "./claude_cost.ts";
 import {
-  CELLS, cacheRate, hms, piece, receiptLabel, sessionLabel, turnHead,
-  turnLabel, ymd,
+  CELLS, accountLabel, cacheRate, hms, receiptLabel, sessionLabel,
+  turnHead, turnLabel, untilReset, ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
@@ -84,8 +85,7 @@ function planPct(plan: unknown, key: string): string {
 }
 
 /** 📊 🎤: the turn the receipt bills, `turns[i]` with
- * `accounting.turns[i]`, its 🔺🔖 tag on the label before the prompt
- * (decided 2026-10-19: the receipt has no head line of its own).  🧠 its growth, `dctx` over `context_window`;
+ * `accounting.turns[i]`.  🧠 its growth, `dctx` over `context_window`;
  * 🧩 🎯 weighed from its tokens; ⌛ its `dur_s`; ⛳ the last ETA it
  * reported, `eta` (decision 6), read at `clock.now`, when it ended, so a
  * turn that ran past its estimate reads late. */
@@ -104,10 +104,8 @@ function turnRow(st: Settings, t: Turn, acc: Accounting, win: number,
     ...shareCells(st, acc, sessPct, weekPct),
     diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),
   };
-  const [mark, ...prompt] = turnLabel(squash(t.text));
-  const tag = turnHead(E_TURN_PAST, t.prompt_id, t.turn_index, null, null);
-  return { scope: "turn", label: receiptLabel([mark,
-    ...(tag ? [piece("name.tag", tag + "  ")] : []), ...prompt]), cells };
+  return { scope: "turn", label: receiptLabel(turnLabel(squash(t.text))),
+    cells };
 }
 
 /** sum() of floats, left to right, as the receipt's totals add up. */
@@ -185,17 +183,56 @@ export function withEngineDuration(fig: Dict, durationMs: number): Dict {
   return { ...fig, turns: t, accounting: { ...acc, turns: accTurns } };
 }
 
-/** The receipt as drawn at `cols` under `hide`: its rows, on the band's
- * fixed grid.  A hidden scope's
- * row is left out.  `dim` draws every span dim, as the stamped receipt is
- * drawn, its colours kept. */
+/** The plan reading's figure as accountLabel takes it, null for none. */
+function planNum(plan: unknown, key: string): number | null {
+  const v = plan && typeof plan === "object" ? (plan as Dict)[key] : null;
+  return typeof v === "number" && !Number.isNaN(v) ? v : null;
+}
+
+/** The receipt's head, drawn as the start line is, so the two stack:
+ * "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02  💳 🔋 15٪ 🔜 6.7m  🪫 87٪
+ * 🔜 1.8d", the billed turn's tag, then the band's 💳 row as it stood at
+ * `clock.now`, when it was stamped, from `usage.plan` (decided 2026-10-19:
+ * the account details beside the closing tag).  It stands after `indent`
+ * and the width of 📊 🎤, so its 🔺🔖 is over the 📊 🎤 row's prompt; none
+ * under the hide path `name.tag`, and each piece of the 💳 part hidden by
+ * its own path, and no tag where the transcript wrote neither the
+ * promptId nor the turn index. */
+export function receiptHead(st: Settings, fig: Dict, hide: readonly string[],
+  indent = 0): Span[] {
+  if (hidden(hide, "name.tag")) return [];
+  const now = (fig.clock as Dict).now as number;
+  const turns = (fig.turns as Dict[]).map(decodeTurn);
+  const i = receiptTurn(turns);
+  const t = i < 0 ? null : turns[i];
+  const text = turnHead(E_TURN_PAST, t ? t.prompt_id : "",
+    t ? t.turn_index : null, null, null);
+  const plan = (fig.usage as Dict | null)?.plan;
+  const account = accountLabel(st, planNum(plan, "session_pct"),
+    planNum(plan, "weekly_pct"),
+    untilReset(st, planNum(plan, "session_resets_at"), now),
+    untilReset(st, planNum(plan, "weekly_resets_at"), now), ymd(now),
+    hms(now)).filter((p) => !hidden(hide, p.path)).flatMap((p) => p.spans);
+  const under = indent + visWidth(E_COSTLINE + " " + E_TURN + " ", st.widths);
+  // A transcript that wrote no tag still gets the 💳 part.
+  return [span(" ".repeat(under)), ...(text ? [span(text + "  ")] : []),
+    ...account];
+}
+
+/** The receipt as drawn at `cols` under `hide`: the head, on a line of its
+ * own (decided 2026-10-19, stacking with the start line), and the rows
+ * under it, on the band's fixed grid.  A hidden scope's row is left out.
+ * `dim` draws every span dim, as the stamped receipt is drawn, its colours
+ * kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null, dim = false, indent = 0):
-  { rows: Span[][] } {
+  { head: Span[]; rows: Span[][] } {
   const { turn, session } = receiptRows(st, fig, ws);
+  const head = receiptHead(st, fig, hide, indent);
   const rows = drawRows(st, [...(turn ? [turn] : []), session]
     .map((r) => indented(r, indent)), cols, hide);
-  return { rows: dim ? rows.map(dimmed) : rows };
+  return dim ? { head: dimmed(head), rows: rows.map(dimmed) }
+    : { head, rows };
 }
 
 /** `spans`, each drawn dim. */

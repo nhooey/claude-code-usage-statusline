@@ -31,9 +31,9 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   every 30 seconds. While a turn runs its 🎤 and 🎮 rows are that turn's,
   live.
 - **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
-  ends, the band's 🎤 and 🎮 rows stamped there, frozen, 📊 🎤 with the
-  turn's 🔺🔖 tag, so every turn's receipt stays in the transcript to
-  scroll back to.
+  ends, the band's 🎤 and 🎮 rows stamped there, frozen, under a head
+  line with the turn's 🔺🔖 tag and the 💳 account details, so every
+  turn's receipt stays in the transcript to scroll back to.
 - **The start tag,** beside a prompt typed at the composer, or under it
   where the prompt fills its row: 🔻🔖, the turn's tag and when it
   started, dim.
@@ -68,12 +68,16 @@ place of Claude Code's `✻ <word> for <duration>`: the rows the band drew
 live, frozen and dim, in their colours:
 
 ```
-     📊 🎤 🔺🔖 8f37748e #12  Why is the build slow?  💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
+           🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02  💳 🔋 15٪ 🔜 4.6h  🪫 87٪ 🔜 1.8d
+     📊 🎤 Why is the build slow?                 💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
      📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  …
 ```
 
 The rows are laid out at the width the band last drew at, with the band's
-five-column indent, so each column is under the band's. Until the stamp
+five-column indent, so each column is under the band's. The head stands
+where the start tag does on a line of its own, so its 🔺🔖 is under the
+🔻🔖: the turn's tag, then the band's 💳 row as it stood at the stamp,
+from the cost document's plan reading. Until the stamp
 lands the closing line is a blank row. A `$.ui.log` line was tried first:
 Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
 blank row after, in plain dim text.

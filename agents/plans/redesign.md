@@ -153,18 +153,22 @@ back to (whether a resumed session shows them again is for a live session
 to settle):
 
 ```
-     📊 🎤 🔺🔖 8f37748e #12  Why is the build slow?  💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
+           🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02  💳 🔋 15٪ 🔜 4.6h  🪫 87٪ 🔜 1.8d
+     📊 🎤 Why is the build slow?                 💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
      📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 
      📊 … the band
 ```
 
 The receipt is the live rows frozen: `receiptLines` in `mod/src/receipt.ts`,
-the 📊 🎤 and 📊 🎮 rows on the band's fixed grid, 📊 🎤's label opening on
-the turn's tag, 🔺🔖, 🔺 pointing up at the turn that ended, the head of its
-promptId and Claude Code's turn index. Decided 2026-10-19, to save a line a
-turn: no head line of its own, and no 📅 🕐 of when it was stamped, since
-the start tag has when the turn began and ⌛ how long it ran.
+the 📊 🎤 and 📊 🎮 rows on the band's fixed grid, under a head line drawn
+as the start tag is: the turn's tag, 🔺🔖, 🔺 pointing up at the turn that
+ended, the head of its promptId and Claude Code's turn index, then the
+band's 💳 row as it stood when the receipt was stamped, 📅 🕐 and the plan
+windows. The head's 🔺🔖 stands in the start tag's column, after the band's
+indent and 📊 🎤, so the two stack. Decided 2026-10-19: the tag was folded
+into 📊 🎤's label to save a line a turn, then given its own line again,
+with the account details on it, at the user's asking.
 
 - **When.** Found live on 2026-10-19: Claude Code writes a turn's
   assistant records to the transcript only after its Stop hooks have

@@ -530,8 +530,9 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const fig = withEngineDuration(costFigures(turns, windowFor(turns,
     Number(doc.context_window)), CALIB, snap, prepared, now,
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
-  return receiptLines(settings({}), fig, COLS, [], workspaceOf(doc, HOME),
-    true, spec.C_CHROME_CONT).rows
+  const { head, rows } = receiptLines(settings({}), fig, COLS, [],
+    workspaceOf(doc, HOME), true, spec.C_CHROME_CONT)
+  return [head, ...rows]
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -554,9 +555,11 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 📊 🎤 with its 🔺🔖 tag, and 📊 🎮: no head line of its own.
-    expect(want.length).toBe(2)
+    // The head, its 🔺🔖 tag with the 💳 account details, then 📊 🎤 and
+    // 📊 🎮.
+    expect(want.length).toBe(3)
     expect(text(want[0])).toContain('p-resume'.slice(0, 8))
+    expect(text(want[0])).toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
