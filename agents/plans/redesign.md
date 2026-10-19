@@ -200,3 +200,13 @@ Read from the 2.1.302 binary:
    by a point (33 against 34): another source, not rounding. Whether the band
    calls the Python renderer through `$.process.run` or a TypeScript port
    draws the cells is also open.
+5. **A tag line under each prompt.** The mod could redraw the prompt's row
+   (`UserMessage`) with the receipt's head under it, as the turn starts:
+   `🔖 31fe78e5 #35  📅 2026-10-19  🕐 13:43:55`. Tried with a throwaway mod
+   on 2026-10-19, and it draws, dim, under the prompt. The mod's own
+   `turnId` is not the transcript's `promptId`, but the transcript holds the
+   prompt's record by the time `turn.start` reaches the mod, so the id is read
+   from there. `$.session.turns()` counts differently from the receipt (39
+   against #35), so the number has to come from the receipt's own count. A
+   `UserPromptSubmit` hook cannot do it: its payload carries no prompt id, and
+   its message would sit behind `UserPromptSubmit says:`.
