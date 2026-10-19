@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { CONFIG } from "../hooks/config.ts";
 import { C_CHROME_CONT } from "../src/spec.ts";
 import { settings, stripAnsi } from "../src/formatting.ts";
@@ -96,9 +96,14 @@ async function expected(d: Dirs, published: number,
     if (durationMs) fig = withEngineDuration(fig, durationMs);
     const ws = { project: "work", branch: "trunk", dirty: false, dir: "",
       pr: "", style: "" };
-    const { head, rows } = receiptLines(settings({}), fig,
-      COLS - C_CHROME_CONT, [], ws, true);
-    return "\n" + [head, ...rows].map((l) => pyRstrip(join(l))).join("\n");
+    // Laid out with the band's indent, printed without it: Claude Code
+    // draws it.
+    const { head, rows } = receiptLines(settings({}), fig, COLS, [], ws,
+      true, C_CHROME_CONT);
+    const pad = " ".repeat(C_CHROME_CONT);
+    const bare = rows.map(([f, ...rest]) => [{ ...f,
+      text: f.text.replace(pad, "") }, ...rest]);
+    return "\n" + [head, ...bare].map((l) => pyRstrip(join(l))).join("\n");
   } finally {
     if (was === undefined) delete process.env.TZ;
     else process.env.TZ = was;
@@ -130,7 +135,7 @@ test("a Stop prints the receipt, dimmed; a second for the same turn nothing",
     assert.equal(lines.length, 4);
     assert.ok(stripAnsi(lines[1]).startsWith("🔺🔖 "));
     assert.ok(stripAnsi(lines[2]).startsWith("📊 🎤 "));
-    assert.match(stripAnsi(lines[3]), /^📊 🎮 session  📦work +🌿trunk /);
+    assert.match(stripAnsi(lines[3]), /^📊 🎮 📦work +🌿trunk /);
     for (const l of lines.slice(1)) assert.ok(l.startsWith(DIM), l);
     // The Python Stop hook's agent offsets, and the turn reported.
     const state = fs.readdirSync(d.state);
@@ -178,4 +183,44 @@ test("a Stop that fails prints nothing, exits 0 and logs why", () => {
   assert.equal(flag.status, 0);
   assert.equal(flag.stdout, "");
   assert.match(logOf(d), /receipt-hook: no receipt: --cols/);
+});
+
+test("a Stop waits for the transcript to hold the turn's last message",
+  async () => {
+    // Claude Code runs the hook before it writes the turn's records: read
+    // at once, the receipt would be the turn before's.
+    const d = scratch();
+    const lines = fs.readFileSync(TRANSCRIPT, "utf8").split("\n")
+      .filter((l) => l);
+    // The corpus's turns end on calls with no text, so the last record's
+    // request id stands in for the message: held back, the turn is a call
+    // short.
+    const last = "req-k4";
+    const at = lines.length - 2;
+    assert.ok(lines[at + 1].includes(last));
+    const copy = path.join(d.root, SESSION + ".jsonl");
+    fs.writeFileSync(copy, lines.slice(0, at).join("\n") + "\n");
+    fs.cpSync(TRANSCRIPT.slice(0, -".jsonl".length),
+      path.join(d.root, SESSION), { recursive: true });
+    const want = stop(scratch(), payloadOf(d)).stdout;
+    const child = spawn(process.execPath, [HOOK, "--cols", String(COLS),
+      "--usage-source", "none"], { env: envOf(d) });
+    let out = "";
+    child.stdout.on("data", (b) => out += b);
+    child.stdin.end(payloadOf(d, { transcript_path: copy,
+      last_assistant_message: last }));
+    setTimeout(() => fs.appendFileSync(copy,
+      lines.slice(at).join("\n") + "\n"), 300);
+    await new Promise((ok) => child.on("close", ok));
+    assert.ok(want);
+    assert.equal(out, want);
+  });
+
+test("a Stop whose last message never lands prints nothing and logs", () => {
+  const d = scratch();
+  const r = stop(d, payloadOf(d, { last_assistant_message: "not there" }),
+    ["--wait", "0.2"]);
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout, "");
+  assert.match(logOf(d), /no receipt: the transcript lacks the turn's last/);
 });

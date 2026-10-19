@@ -278,7 +278,7 @@ export type Workspace = {
  * 🎨 the output style, the last three leaving first, 🎨 before 🔀 before
  * 📁. */
 export function sessionLabel(ws: Workspace | null): Piece[] {
-  const out = [piece("name.label", E_SESSION + " session  ")];
+  const out = [piece("name.label", E_SESSION + " ")];
   if (!ws) return out;
   if (ws.project) {
     out.push(piece("workspace.project", E_PROJ + ws.project + " ", "F_BLU"));

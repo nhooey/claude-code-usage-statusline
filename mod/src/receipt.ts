@@ -32,7 +32,7 @@ import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
 import type { Row } from "./grid.ts";
 import {
-  accountingSplit, fixedKeys, shareCells, turnCache, turnTokens,
+  accountingSplit, fixedKeys, indented, shareCells, turnCache, turnTokens,
 } from "./band.ts";
 import type { Dict } from "./py.ts";
 
@@ -172,11 +172,12 @@ export function receiptHead(fig: Dict): Span[] {
  * row is left out.  `dim` draws every span dim, as the stamped receipt is
  * drawn, its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
-  hide: readonly string[], ws: Workspace | null, dim = false):
+  hide: readonly string[], ws: Workspace | null, dim = false, indent = 0):
   { head: Span[]; rows: Span[][] } {
   const { turn, session } = receiptRows(st, fig, ws);
   const head = receiptHead(fig);
-  const rows = drawRows(st, [...(turn ? [turn] : []), session], cols, hide);
+  const rows = drawRows(st, [...(turn ? [turn] : []), session]
+    .map((r) => indented(r, indent)), cols, hide);
   return dim ? { head: dimmed(head), rows: rows.map(dimmed) }
     : { head, rows };
 }

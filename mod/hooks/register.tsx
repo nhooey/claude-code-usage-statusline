@@ -283,11 +283,13 @@ export const register: Register = on => {
     const lines = bandLines(await settingsOf($), doc as Dict,
       e.props.bodyColumns + 5, CONFIG.hide, { home: await home($),
         rate: await read($, rate),
-        phase: e.props.isWorking ? 'running' : 'done' })
-    // A blank row above the band, between it and the transcript's last
-    // message, which is the stamped receipt once a turn has ended.
+        phase: e.props.isWorking ? 'running' : 'done',
+        indent: spec.C_CHROME_CONT })
+    // No margin of its own: Claude Code draws its `[-]` on the band's
+    // first row, and on a blank top row it stood alone.  The blank closing
+    // line parts the band from the stamped receipt.
     return (
-      <Box flexDirection="column" marginTop={1}>
+      <Box flexDirection="column">
         {lines.map((l, i) => line(Text, l, 'band' + i))}
       </Box>
     )

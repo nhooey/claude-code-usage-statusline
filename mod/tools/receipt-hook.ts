@@ -1,6 +1,6 @@
 // The receipt's Stop hook: each turn's receipt, stamped into the transcript.
 //
-//   node mod/tools/receipt-hook.ts [--cols N] [--plain]
+//   node mod/tools/receipt-hook.ts [--cols N] [--plain] [--wait S]
 //        [--usage-source SPEC] [--hide PATH ...]
 //
 // agents/plans/redesign.md has the design ("The receipt"): while a turn
@@ -9,10 +9,15 @@
 // the transcript to scroll back to.  Claude Code draws `Stop says: ` before
 // the message and indents each line C_CHROME_CONT columns, so the message
 // opens with a newline, the label alone on its line, and the rows are laid
-// out C_CHROME_CONT short of the terminal.
+// out as the band lays its own, indented C_CHROME_CONT, and printed
+// without the indent.
 //
 // stdin    the Stop payload: transcript_path (the session is its basename,
-//          as the Python hook takes it, else session_id), cwd, and the
+//          as the Python hook takes it, else session_id), cwd,
+//          last_assistant_message, which the transcript is waited on to
+//          hold (Claude Code runs the hook before it has written the
+//          turn's records, and without the wait the last turn read is the
+//          one before), and the
 //          engine's duration of the turn where a payload carries one
 //          (duration_ms or durationMs; Claude Code's does not yet, and the
 //          billed turn is then timed as the transcript gives).
@@ -22,6 +27,8 @@
 // --cols   the terminal's width, else found as the Python's term_cols
 //          finds it, else 80.
 // --plain  the same rows with no escapes.
+// --wait   how long to wait for the transcript to hold the turn's last
+//          message, in seconds (8, inside the Stop hook's 20 s timeout).
 //
 // The reads are the mod's, through Node's edges (src/*_node.ts): the
 // transcript after read_turns_settled's wait, the agent files, the usage
@@ -48,6 +55,7 @@ import { C_CHROME_CONT } from "../src/spec.ts";
 import { settings, stripAnsi } from "../src/formatting.ts";
 import type { Env } from "../src/formatting.ts";
 import { join } from "../src/spans.ts";
+import type { Span } from "../src/spans.ts";
 import { pyRstrip } from "../src/py.ts";
 import type { Dict } from "../src/py.ts";
 import { sha256Hex } from "../src/sha256.ts";
@@ -70,11 +78,15 @@ import {
 import { LOG_NAME, logAppended, logLine } from "../src/modlog.ts";
 
 /** What the command line gives. */
+/** How long a Stop waits for the transcript to hold its turn's last
+ * message, inside the hook's 20 s timeout. */
+const WRITTEN_S = 8;
+
 export type Options = { cols: number | null; plain: boolean;
-  usageSource: string; hide: string[] };
+  wait: number; usageSource: string; hide: string[] };
 
 export function parseArgs(argv: readonly string[]): Options {
-  const o: Options = { cols: null, plain: false,
+  const o: Options = { cols: null, plain: false, wait: WRITTEN_S,
     usageSource: CONFIG.usageSource, hide: [...CONFIG.hide] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -87,6 +99,11 @@ export function parseArgs(argv: readonly string[]): Options {
       if (!Number.isInteger(n) || n <= 0) throw new Error("--cols " + n);
       o.cols = n;
     } else if (a === "--plain") o.plain = true;
+    else if (a === "--wait") {
+      const n = Number(next());
+      if (!(n >= 0)) throw new Error("--wait " + n);
+      o.wait = n;
+    }
     else if (a === "--usage-source") o.usageSource = next();
     else if (a === "--hide") o.hide.push(next());
     else throw new Error("unrecognized argument " + a);
@@ -176,6 +193,47 @@ function publishedWindow(state: string, session: string): number {
 
 /** 📦 🌿 for the 📊 🎮 row: detect_git in `cwd`, the project named as the
  * band names it, under CLAUDE_PROJECT_DIR when Claude Code sets it. */
+
+
+/** Whether the transcript's tail holds `message`, polled until it does or
+ * `budget` seconds pass.  The message is matched by its first 200
+ * characters as JSON encodes them, which is how the transcript holds a
+ * text block. */
+/** A receipt row without the C_CHROME_CONT blanks `indented` put first. */
+function unindent(row: Span[]): Span[] {
+  const pad = " ".repeat(C_CHROME_CONT);
+  const [first, ...rest] = row;
+  return first?.text.startsWith(pad)
+    ? [{ ...first, text: first.text.slice(pad.length) }, ...rest] : row;
+}
+
+async function holds(path: string, message: string, budget: number):
+  Promise<boolean> {
+  const needle = JSON.stringify(Array.from(message).slice(0, 200).join(""))
+    .slice(1, -1);
+  const deadline = performance.now() + budget * 1000;
+  for (;;) {
+    let tail = "";
+    try {
+      const fd = fs.openSync(path, "r");
+      try {
+        const size = fs.fstatSync(fd).size;
+        const n = Math.min(size, 4 << 20);
+        const buf = Buffer.alloc(n);
+        fs.readSync(fd, buf, 0, n, size - n);
+        tail = buf.toString("utf8");
+      } finally {
+        fs.closeSync(fd);
+      }
+    } catch {
+      return false;
+    }
+    if (tail.includes(needle)) return true;
+    if (performance.now() >= deadline) return false;
+    await new Promise((ok) => setTimeout(ok, 50));
+  }
+}
+
 async function workspaceIn(cwd: string, env: Env): Promise<Workspace> {
   const git = await detectGit(async (args) => {
     const r = spawnSync("git", ["--no-optional-locks", ...args],
@@ -235,6 +293,13 @@ export async function receiptMessage(raw: string, o: Options, env: Env,
   const state = stateDir(env);
   // The agent files read once, so the offsets published are the extent of
   // the reading the receipt was made from.
+  const last = typeof pay.last_assistant_message === "string"
+    ? pay.last_assistant_message : "";
+  if (last && !await holds(transcript, last, o.wait)) {
+    note("no receipt: the transcript lacks the turn's last message after " +
+      o.wait + "s");
+    return "";
+  }
   const agents = agentRecords(transcript);
   const held = new Map<string, number>();
   const turns = await readTurnsSettled(transcript, SETTLE_S, SETTLE_POLL_S,
@@ -258,11 +323,15 @@ export async function receiptMessage(raw: string, o: Options, env: Env,
   if (ms > 0) fig = withEngineDuration(fig, ms);
 
   const st = settings(env, CONFIG.markSpacing, CONFIG.subscriptDecimals);
-  const cols = (o.cols ?? termCols() ?? 80) - C_CHROME_CONT;
+  const cols = o.cols ?? termCols() ?? 80;
   const ws = await workspaceIn(typeof pay.cwd === "string" ? pay.cwd : "",
     env);
-  const { head, rows } = receiptLines(st, fig, cols, o.hide, ws, true);
-  const text = [head, ...rows].map((l) => pyRstrip(join(l))).join("\n");
+  // Laid out as the band is, at the terminal's width with its indent, then
+  // printed without the indent, which Claude Code draws.
+  const { head, rows } = receiptLines(st, fig, cols, o.hide, ws, true,
+    C_CHROME_CONT);
+  const text = [head, ...rows.map(unindent)]
+    .map((l) => pyRstrip(join(l))).join("\n");
   // Kept before it is printed: a receipt printed twice is the worse
   // failure than one lost to a write that failed after it.
   writeAtomic(reported, JSON.stringify({ turn: key }) + "\n");

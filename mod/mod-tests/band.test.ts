@@ -292,11 +292,11 @@ for (const surface of ['terminal', 'desktop'] as const) {
       const ui = await $.ui.mount({ plugin: 'usage-band', surface,
         component: 'AbovePrompt', props: BAND })
       const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
-        rate: null, phase: 'done' })
+        rate: null, phase: 'done', indent: spec.C_CHROME_CONT })
       expect(lines.length).toBeGreaterThan(0)
       expect(await drawnRows(ui)).toEqual(expected(lines))
-      // A blank row between the transcript's last message and the band.
-      expect(((await ui.drawn()) as Drawn).props?.marginTop).toBe(1)
+      // No blank top row, where Claude Code's `[-]` would stand alone.
+      expect(((await ui.drawn()) as Drawn).props?.marginTop).toBeUndefined()
     })
 }
 
@@ -307,7 +307,7 @@ test('a turn running draws the running phase', async ($, on) => {
   const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
     component: 'AbovePrompt', props: { ...BAND, isWorking: true } })
   const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
-    rate: null, phase: 'running' })
+    rate: null, phase: 'running', indent: spec.C_CHROME_CONT })
   expect(await drawnRows(ui)).toEqual(expected(lines))
 })
 
@@ -490,7 +490,7 @@ async function drewAll($: any, w: World) {
   const band = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
     component: 'AbovePrompt', props: BAND })
   const lines = bandLines(st, doc, COLS, [], { home: HOME, rate: null,
-    phase: 'done' })
+    phase: 'done', indent: spec.C_CHROME_CONT })
   expect(lines.length).toBeGreaterThan(0)
   expect(await drawnRows(band)).toEqual(expected(lines))
 

@@ -27,7 +27,7 @@ nothing hides the agent panel; see [Claude Code's limits](#claude-codes-limits).
 | 💳 account | 📅 🕐, then the plan's two windows, each its share and when it resets, all on the label | the mod, in the band |
 | 🎤 and the prompt | the turn | the mod, in the band, while the turn runs |
 | 🤖💬 and the reply, or what it is doing | the main thread alone | the mod, in the band |
-| 🎮 session, 📦 project, 🌿 branch, 📁 directory, 🔀 PR, 🎨 output style | the main thread and every agent, summed | the mod, in the band, while the turn runs |
+| 🎮, 📦 project, 🌿 branch, 📁 directory, 🔀 PR, 🎨 output style | the main thread and every agent, summed | the mod, in the band, while the turn runs |
 | one per agent | that agent's life | `subagentStatusLine`, in the panel |
 | 📊 🎤 and 📊 🎮 | the turn and the session as they stood when it ended | the mod, on the turn's closing line |
 
@@ -163,7 +163,7 @@ the transcript to scroll back to, a resumed session's included:
   Stop says:
      🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
      📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
-     📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+     📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 
 📊 … the band, a blank row above it
 ```
@@ -688,7 +688,7 @@ figures; `--phase running` draws it mid-turn:
 
 ✻ Worked for 4m 2s · 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
 📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
-📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 📅 2026-10-19  🕐 13:06:02  💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.8d                                                                                      [-]
 🤖💬 The test step takes 8…  🤖O⁵🏃  💰  92   🧠 115k  11٪  🧩 ▴2.1M ▾640k  🎯98٪  ⌛  9h ⛳   2m 🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋.90٪  🪫2.10٪  💾 +3.1k - 180
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

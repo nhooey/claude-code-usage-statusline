@@ -54,6 +54,8 @@ export type BandOpts = {
   readonly home: string;
   readonly rate: number | null;
   readonly phase: Phase;
+  /** Blank columns before each row's label (`indented`). */
+  readonly indent?: number;
 };
 
 /** The band's four rows, whichever the phase draws. */
@@ -88,6 +90,17 @@ export const SCOPE_KEYS: { readonly [scope: string]: readonly string[] } = {
 function skeleton(scope: string, depth?: number): Row {
   return { scope, ...(depth === undefined ? {} : { depth }), label: [],
     cells: Object.fromEntries(SCOPE_KEYS[scope].map((k) => [k, []])) };
+}
+
+/** `row` with `n` blank columns before its label, as the label's first
+ * piece: the label's room is `n` less, so the columns stay where an
+ * unindented row's are, and only on a terminal too narrow for the label
+ * is the indent cut.  Claude Code indents each line of a Stop message
+ * C_CHROME_CONT columns; the band takes the same indent, so the two
+ * readouts start at one column. */
+export function indented(row: Row, n: number): Row {
+  return n ? { ...row, label: [{ path: "indent",
+    spans: [span(" ".repeat(n))], drop: 0 }, ...row.label] } : row;
 }
 
 /** The columns at `cols` under `hide`, laid out over every row the band,
@@ -351,5 +364,5 @@ export function bandLines(st: Settings, fig: Dict, cols: number,
   const keys = fixedKeys(st, cols, hide);
   return phaseRows(bandRows(st, fig, opts), opts.phase)
     .filter((r) => !hidden(hide, r.scope))
-    .map((r) => draw(st, r, keys, cols, hide));
+    .map((r) => draw(st, indented(r, opts.indent ?? 0), keys, cols, hide));
 }
