@@ -48,12 +48,13 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       # The suites shell out to `python3`. setup-python puts the selected one
-      # first on PATH, so this is what they get.
+      # first on PATH, so this is what they get.  run-cases.py renders under
+      # /usr/bin/python3 unless told otherwise, so it is told.
       - run: python3 -VV
       - name: status mode
-        run: bash tests/golden.sh
+        run: bash tests/golden.sh --python "$(command -v python3)"
       - name: cost mode
-        run: bash tests/golden-cost.sh
+        run: bash tests/golden-cost.sh --python "$(command -v python3)"
       - name: usage sources
         run: python3 tests/usage-source.py
       - name: normalized source contracts
@@ -84,6 +85,21 @@ jobs:
           python-version: "3.9"
       - name: floor check
         run: PY39="${{ steps.py39.outputs.python-path }}" bash tests/py39-floor.sh
+
+  mod:
+    # The TypeScript port's tests, against the cases the Python writes.
+    # Node 23.6 and later run .ts directly, so there is nothing to install.
+    runs-on: ubuntu-latest
+    name: mod (node)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: node --test
+        run: cd mod && node --test test/
+      - name: spec.py and spec.ts are generated from spec/layout.jsonc
+        run: python3 tools/gen-spec.py --check
 
   shellcheck:
     # The suites ARE the shell scripts, so a syntax error in one is a suite

@@ -20,6 +20,20 @@ from .formatting import *
 
 _UTC = fmt._UTC
 
+
+def add_up(values):
+    """sum(), adding left to right on every Python.
+
+    3.12 made sum() of floats compensate for rounding, so the same costs
+    summed under 3.9 and 3.13 can differ in the last digit.  The figures
+    documents compare exactly, and the TypeScript port adds left to right,
+    so every float total in the accounting goes through here instead.
+    """
+    total = 0
+    for v in values:
+        total += v
+    return total
+
 # Billing weights relative to a fresh input token.  Raw ▴ traffic is ~99% cache
 # reads in a typical session, so an unweighted sum says nothing about either
 # cost or context size.  The write weight is TTL-dependent — 1.25x at the
@@ -1340,7 +1354,7 @@ def eta_report(records: Sequence[dict]) -> Tuple[float, ...]:
             hits = ETA_LINE.findall(str(block.get("text") or ""))
             epoch = ts_epoch(r.get("timestamp") or "")
             if hits and epoch is not None:
-                last = (epoch, sum(float(n) * ETA_UNIT_S[unit]
+                last = (epoch, add_up(float(n) * ETA_UNIT_S[unit]
                                    for n, unit in ETA_SPLIT.findall(hits[-1])))
     return last
 
@@ -1988,7 +2002,7 @@ def _add_usd(cur: dict, epoch: Optional[float], model: Optional[str],
     d = _usd(model, fresh, cw, cr, out)
     for i in range(4):
         cur["usd"][i] += d[i]
-    cur["parts"].append((epoch, sum(d)))
+    cur["parts"].append((epoch, add_up(d)))
 
 
 def _fold_agents(turns: List[dict], by_pid: Dict[str, dict],

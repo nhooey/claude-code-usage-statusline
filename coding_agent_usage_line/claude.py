@@ -777,7 +777,7 @@ def turn_cost_since(t: Turn, start: Optional[datetime]) -> float:
     if t.compact or not t.parts:
         ts = _local_naive(t.ts)
         return turn_cost(t) if ts is None or ts >= start else 0.0
-    return sum(c for e, c in t.parts if e is None or e >= edge)
+    return add_up(c for e, c in t.parts if e is None or e >= edge)
 
 
 def window_shares(t: Turn, calib: Dict[str, Optional[float]]
@@ -847,11 +847,11 @@ def session_cache_shares(turns: Sequence[Turn]
     the plan windows are column 4's business, and this column is about the
     session's own bill, however old the session is.
     """
-    c = sum(turn_cost(t) for t in turns)
+    c = add_up(turn_cost(t) for t in turns)
     if c <= 0:
         return None, None
-    return (int(round(100 * sum(t.usd_cr for t in turns) / c)),
-            int(round(100 * sum(t.usd_cw for t in turns) / c)))
+    return (int(round(100 * add_up(t.usd_cr for t in turns) / c)),
+            int(round(100 * add_up(t.usd_cw for t in turns) / c)))
 
 
 def window_for(turns: Sequence[Turn], session_id: str = "") -> int:
@@ -1560,7 +1560,7 @@ def session_shares(turns: Sequence[Turn],
         unit = calib.get(key)
         if not unit or start is None:
             continue
-        out[key] = sum(turn_cost_since(t, start) for t in turns) / unit
+        out[key] = add_up(turn_cost_since(t, start) for t in turns) / unit
     return out
 
 
@@ -1680,7 +1680,7 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     fractional by construction, and humanize() formats it to three significant
     digits whether or not it arrives whole.
     """
-    up = sum(t.fresh + W_CACHE_WRITE * t.cache_write
+    up = add_up(t.fresh + W_CACHE_WRITE * t.cache_write
              + W_CACHE_READ * t.cache_read for t in turns)
     out_tok = sum(t.out for t in turns)
     cr = sum(t.cache_read for t in turns)
@@ -1697,7 +1697,7 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     # cache refresh merely because a direct caller omitted an optional value:
     # without the accounting there is no share to draw.
     if shares is None:
-        shares = {"cost_usd": sum(turn_cost(t) for t in turns),
+        shares = {"cost_usd": add_up(turn_cost(t) for t in turns),
                   "sess_share": None, "week_share": None}
     c = shares["cost_usd"]
     mine = {"sess": shares["sess_share"], "week": shares["week_share"]}
@@ -1709,8 +1709,8 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     # The status line is where the age belongs, and it has it, beside its
     # own 🤖 and 🔧 and the 🚦 that is the rest of it.  Those two are the
     # main thread's; these add every agent's, as 🧩 and 💰 do.
-    work_s = sum(turn_times(t)[0] for t in turns)
-    tool_s = sum(turn_times(t)[1] for t in turns)
+    work_s = add_up(turn_times(t)[0] for t in turns)
+    tool_s = add_up(turn_times(t)[1] for t in turns)
     lim_w = fmt.C_SESS if acct else fmt.C_SESS - fmt.C_LIM_TOT
     cells = [
         seg(fmt.C_TOK, [
@@ -2221,7 +2221,7 @@ def read_agent_usage(path: str) -> AgentUsage:
         down += o
         if f + cw + cr:
             ctx = f + cw + cr
-        usd = sum(_usd(m.get("model"), f, cw, cr, o))
+        usd = add_up(_usd(m.get("model"), f, cw, cr, o))
         cost += usd
         epoch = ts_epoch(r.get("timestamp") or "")
         parts.append((epoch, usd))
@@ -2298,7 +2298,7 @@ def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
         if not unit:
             continue
         edge = start.timestamp() if start is not None else None
-        spent = sum(c for e, c in u.parts
+        spent = add_up(c for e, c in u.parts
                     if edge is None or e is None or e >= edge)
         out[key] = spent / unit
     return out
@@ -2825,7 +2825,7 @@ def cost_accounting(turns: Sequence[Turn],
     sh = session_shares(turns, calib)
     rd, wr = session_cache_shares(turns)
     return {"turns": [turn_accounting(t, calib) for t in turns],
-            "session": {"cost_usd": sum(turn_cost(t) for t in turns),
+            "session": {"cost_usd": add_up(turn_cost(t) for t in turns),
                         "sess_share": sh["sess"],
                         "week_share": sh["week"],
                         "read_share": rd, "write_share": wr}}
