@@ -73,7 +73,7 @@ def load_renderer():
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
-# 2026-08-16 02:23:20 UTC — pin-env.sh's PIN_NOW, so the two suites agree
+# 2026-08-16 02:23:20 UTC — the shared cases' PIN_NOW, so the two suites agree
 # about what "now" is and the plan cache below is read as fresh.
 NOW = 1786847000.0
 

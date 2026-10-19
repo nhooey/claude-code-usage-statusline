@@ -71,7 +71,7 @@ def load_program():
 
 # ── Fixture records ─────────────────────────────────────────────────────────
 #
-# The same minimum shapes mkcorpus-cost.py writes, plus the two fields this
+# The same minimum shapes tests/fixtures/gen/cost.py writes, plus the two fields this
 # file is about: promptId on the main side's user records, and the agent
 # side's user/assistant pair.
 

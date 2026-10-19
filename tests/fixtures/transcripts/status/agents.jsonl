@@ -1,0 +1,4 @@
+{"message": {"content": "Fork off and read the two exhibits."}, "promptId": "p-fork", "promptSource": "typed", "timestamp": "2026-08-16T01:23:20Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"content": [{"text": "Done.", "type": "text"}, {"id": "tu-fork", "name": "Bash", "type": "tool_use"}], "id": "req-m1", "usage": {"cache_creation_input_tokens": 1000, "cache_read_input_tokens": 40000, "input_tokens": 12, "output_tokens": 700}}, "requestId": "req-m1", "timestamp": "2026-08-16T01:33:20Z", "type": "assistant"}
+{"message": {"content": "<tool_use_result>ok</tool_use_result>"}, "promptId": "p-fork", "timestamp": "2026-08-16T01:43:20Z", "type": "user", "userType": "external"}
+{"message": {"content": [{"content": "ok", "tool_use_id": "tu-fork", "type": "tool_result"}]}, "promptId": "p-fork", "timestamp": "2026-08-16T01:43:20Z", "type": "user", "userType": "external"}

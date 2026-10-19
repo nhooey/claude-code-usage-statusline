@@ -1,0 +1,2 @@
+{"message": {"content": "The only thing anyone said."}, "promptSource": "typed", "timestamp": "2026-08-16T01:10:00Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"id": "req-f1", "usage": {"cache_creation_input_tokens": 5000, "cache_read_input_tokens": 12000, "input_tokens": 20, "output_tokens": 640}}, "requestId": "req-f1", "timestamp": "2026-08-16T01:11:00Z", "type": "assistant"}

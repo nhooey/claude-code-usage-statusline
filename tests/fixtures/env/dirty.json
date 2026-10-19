@@ -1,0 +1,21 @@
+{
+  "calib": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "locale": "en_US.UTF-8",
+  "now": 1786847000,
+  "repo": "dirty",
+  "source": null,
+  "terminal": {
+    "TERMINAL_EMULATOR": "JetBrains-JediTerm"
+  },
+  "tracker": {
+    "lastUpdated": 808539600,
+    "sessionPercentage": 41,
+    "sessionResetTime": 808545600,
+    "weeklyPercentage": 63,
+    "weeklyResetTime": 808707800
+  },
+  "tz": "UTC"
+}

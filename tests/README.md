@@ -16,8 +16,9 @@ behaviours are deliberate.
 
 ## Golden files
 
-`golden.sh` and `golden-cost.sh` render a payload and compare stdout, byte for
-byte, with a file under `golden/status/` or `golden/cost/`. A golden's name is
+`run-cases.py` renders each case in `fixtures/cases.json` and compares stdout,
+byte for byte, with a file under `golden/status/` or `golden/cost/`.
+`golden.sh` and `golden-cost.sh` run one suite each through it. A golden's name is
 `CASE@WIDTH.txt`, where `WIDTH` is the `--cols` it was rendered at and `none`
 means `--cols 0`, the program's "terminal width unknown" path. The cost suite
 compares the hook's `systemMessage`, not the JSON envelope around it, so a diff
@@ -36,15 +37,16 @@ with the change. There is no second implementation to agree with: a golden is
 a claim about what the program prints, and the reviewed diff is what keeps it
 honest.
 
-To add a case, add the payload or transcript to the generator
-(`mkcorpus-status.py` or `mkcorpus-cost.py`), or a `check` line to the suite
-for a flag or a planted source, then run `--regen` and read what it wrote.
+To add a case, add the payload or transcript to its generator
+(`fixtures/gen/status.py` or `fixtures/gen/cost.py`), or the case and any new
+environment to `fixtures/gen/cases.py`. Then run
+`python3 tests/fixtures/gen/all.py`, then `--regen`, and read both diffs.
 
 ## The pinned environment
 
-`pin-env.sh` is sourced by both golden suites. It holds still everything the
-readout reads that is not the payload; a golden is only as reproducible as
-this list.
+Each case names an environment in `fixtures/env/`, and `run-cases.py` turns
+it into what the program reads. It holds still everything the readout reads
+that is not the payload; a golden is only as reproducible as this list.
 
 | Pinned | Without it |
 |---|---|
@@ -53,7 +55,7 @@ this list.
 | `TMPDIR` and `CODING_AGENT_USAGE_LINE_STATE_DIR` in a fresh scratch directory | context, rate samples and source caches written by one case leak into the next, or into your real state |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE`, planted as `{"sess": 5.50, "week": 4.10}` | the window shares depend on your own history |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST`, a fixture Claude Usage Tracker store | `auto` could read the tracker app installed on this machine |
-| `set_claude_fixture`, which plants a `cmd:` usage source with a fixed `as_of` | the plan percentages come from whatever source the host has |
+| an environment's `source`, served as a `cmd:` usage source with a fixed `as_of`, one command per environment | the plan percentages come from whatever source the host has |
 | `TERMINAL_EMULATOR=JetBrains-JediTerm`, `TMUX` and `TERM_PROGRAM` unset | the width profile depends on the terminal that ran the suite |
 | a clean fixture repo (branch `golden-clean`) and a dirty one (`golden-dirty`) as the working directory | 🌿, 💾 and the project name record your checkout |
 
@@ -61,16 +63,33 @@ The pinned instant is 6.7 minutes before `01-baseline`'s 5-hour reset and 1.9
 days before its weekly one, so both 🔜 countdowns draw real figures, and it is
 after every generated record, so every elapsed figure is positive.
 
-The golden suites run the program with `/usr/bin/python3`, not the first
-`python3` on `PATH`.
+The cases of one suite share one state directory, in the order
+`cases.json` lists them: a payload with `rate_limits` writes the cache that a
+later payload without them reads. Anything else that runs the cases has to
+keep that order.
+
+`run-cases.py` runs the program with `/usr/bin/python3`, not the first
+`python3` on `PATH`; `--python` picks another.
 
 ## The generated corpora
 
-`mkcorpus-status.py` and `mkcorpus-cost.py` write their fixtures into the
-scratch directory at the start of every run. Nothing is kept between runs, so
-a fixture cannot drift from its generator, and a change to a fixture arrives
-as a golden diff. Payload paths are built from the running user's home and
-printed as `~`, so no golden carries a username.
+`fixtures/gen/all.py` writes everything under `fixtures/` but `gen/`, and the
+output is committed, so a second implementation can read the same inputs.
+Only the generators change it: a hand edit is lost on the next run. Payload
+paths are `${HOME}` and `${FIXTURES}` placeholders that `run-cases.py` fills
+in, and the readout prints the home as `~`, so neither the fixtures nor the
+goldens carry a username.
+
+```
+fixtures/
+  cases.json             every case, in order: id, suite, input, cols, env, flags
+  env/<name>.json        clock, zone, locale, terminal, usage source,
+                         calibration, tracker store, which repo
+  payloads/status/       status-line payloads
+  transcripts/status/    the transcripts and agent files they point at
+  transcripts/cost/      the Stop hook's transcripts
+  gen/                   the generators
+```
 
 The main status transcript is built to reach branches a recorded session only
 reaches by accident:
@@ -87,8 +106,8 @@ reaches by accident:
 
 ## Status cases
 
-`golden.sh` renders each of the 18 payloads at widths 196, 150, 120, 92, 60 and
-unknown (108 goldens), then:
+The status suite renders each of the 19 payloads at widths 196, 150, 120, 92, 60 and
+unknown (114 goldens), then:
 
 | Case | What it checks |
 |---|---|
@@ -109,6 +128,7 @@ unknown (108 goldens), then:
 | `15-cache-warn`, `16-cache-crit` | 🎯's amber and red tiers |
 | `17-rounding-boundary` | 999,600 output tokens, which must print `1M`, not `1000k` |
 | `18-agents` | a session whose agents billed |
+| `19-queue-and-compact` | two queued messages and a compaction, the 📨 and 🤏 cells |
 | `dirty-01@*` | `01-baseline` inside the dirty repo: 🍂 and `✱` |
 | `stale-plan-*@196` | an explicitly selected `cmd:` source replaces the native reading the main loop left in the cache |
 | `tight-*@*` | `--no-mark-spacing` |
@@ -127,7 +147,7 @@ own (`02`, `10`) quote that cached reading — `💳 15٪` and `87٪`.
 
 ## Cost cases
 
-`mkcorpus-cost.py` writes nine transcripts, one per branch of the turn reader:
+`fixtures/gen/cost.py` writes eleven transcripts, one per branch of the turn reader:
 
 | Transcript | Branch |
 |---|---|
@@ -140,8 +160,10 @@ own (`02`, `10`) quote that cached reading — `💳 15٪` and `87٪`.
 | `07-empty` | an empty file |
 | `08-woken` | turns opened by messages nobody typed (task notifications, peer messages), including a batch where only the second message is answered |
 | `09-agents` | agent files beside the transcript, and a 👥 row for spend the 🎤 row cannot carry; an `Agent` call the first turn waits on, which is in neither ⌛🤖 nor 🔧, and a Bash call in the second |
+| `10-turn-id` | the turn tag: a real `promptId` and a `turnIndex` past 9, and the first turn's ids kept off the second's row |
+| `11-turn-id-late` | an opener with no ids, as a queue operation writes it: the tag prints the hash alone |
 
-Each renders at 196, 150, 120, 92 and unknown (45 goldens), then:
+Each renders at 196, 150, 120, 92 and unknown (55 goldens), then:
 
 | Case | What it checks |
 |---|---|

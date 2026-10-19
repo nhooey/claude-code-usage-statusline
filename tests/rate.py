@@ -58,7 +58,7 @@ def near(name, got, want, tol=1e-6):
 
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
-NOW = 1786847000.0      # pin-env.sh's PIN_NOW, for no reason but habit
+NOW = 1786847000.0      # the shared cases' PIN_NOW, for no reason but habit
 
 
 

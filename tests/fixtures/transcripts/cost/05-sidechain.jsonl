@@ -1,0 +1,3 @@
+{"message": {"content": "Delegate something."}, "promptSource": "typed", "timestamp": "2026-08-16T01:10:00Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"id": "req-h1", "usage": {"cache_creation_input_tokens": 1000, "cache_read_input_tokens": 40000, "input_tokens": 12, "output_tokens": 700}}, "requestId": "req-h1", "timestamp": "2026-08-16T01:11:00Z", "type": "assistant"}
+{"isSidechain": true, "message": {"id": "req-h2", "usage": {"cache_creation_input_tokens": 6000, "cache_read_input_tokens": 894000, "input_tokens": 4, "output_tokens": 2000}}, "requestId": "req-h2", "timestamp": "2026-08-16T01:12:00Z", "type": "assistant"}

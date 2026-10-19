@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Write the synthetic transcripts golden-cost.sh renders.
+"""Write the synthetic transcripts the shared cost cases render.
 
-    python3 ~/.claude/tests/mkcorpus-cost.py DIRECTORY
+    python3 tests/fixtures/gen/all.py      # this and the rest, together
 
-Generated on every run rather than kept on disk, so the fixtures cannot drift
-away from the generator: what the goldens describe is provably this file's
-output.  A change here shows up as a golden diff, which is where a change to a
-fixture belongs.
+They land under transcripts/cost/ and are committed, so a second
+implementation can read them; they are regenerated from this file only.  A
+change here shows up as a fixture diff and then a golden diff, which is where
+a change to a fixture belongs.
 
 WHY SYNTHETIC.  The differential test this replaces took real transcripts on
 its command line — `difftest-cost.sh TRANSCRIPT [TRANSCRIPT...]` — and had no
@@ -348,11 +348,12 @@ def write_jsonl(path, records):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         for r in records:
-            fh.write(json.dumps(r, sort_keys=True) + "\n")
+            fh.write(json.dumps(r, sort_keys=True, ensure_ascii=False) + "\n")
 
 
-def main(out_dir):
-    os.makedirs(out_dir, exist_ok=True)
+def main(root):
+    """Write under ROOT/transcripts/cost/."""
+    out_dir = os.path.join(root, "transcripts", "cost")
     for name, records in sorted(CASES.items()):
         write_jsonl(os.path.join(out_dir, name + ".jsonl"), records)
     for name, files in sorted(AGENTS.items()):
@@ -364,12 +365,6 @@ def main(out_dir):
             # subset of it.
             with open(path[:-len(".jsonl")] + ".meta.json", "w") as fh:
                 json.dump({"agentType": "fork" if "fork" in rel
-                           else "workflow-subagent", "spawnDepth": 1}, fh)
-    return 0
-
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.stderr.write(__doc__)
-        sys.exit(2)
-    sys.exit(main(sys.argv[1]))
+                           else "workflow-subagent", "spawnDepth": 1}, fh,
+                          sort_keys=True)
+                fh.write("\n")

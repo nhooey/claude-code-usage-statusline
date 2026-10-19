@@ -1,0 +1,3 @@
+{"message": {"content": "Something cheap."}, "promptSource": "typed", "timestamp": "2026-08-16T01:23:20Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"content": [{"text": "Done.", "type": "text"}], "id": "req-c1", "usage": {"cache_creation_input_tokens": 44500, "cache_read_input_tokens": 30000, "input_tokens": 400, "output_tokens": 900}}, "requestId": "req-c1", "timestamp": "2026-08-16T01:33:20Z", "type": "assistant"}
+{"isSidechain": false, "message": {"content": [], "id": "req-c2", "usage": {"cache_creation_input_tokens": 44500, "cache_read_input_tokens": 30000, "input_tokens": 400, "output_tokens": 900}}, "requestId": "req-c2", "timestamp": "2026-08-16T01:43:20Z", "type": "assistant"}

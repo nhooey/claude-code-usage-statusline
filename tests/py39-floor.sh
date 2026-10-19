@@ -13,8 +13,8 @@
 # macOS would make this check vacuous rather than wrong, and it says so.
 #
 # Two things are checked, because they fail differently:
-#   1. py_compile over the program and tests/*.py — catches SYNTAX that 3.9
-#      does not have.  Cheap, and covers every line including ones no test
+#   1. py_compile over the program, tests/*.py and tests/fixtures/gen/*.py —
+#      catches SYNTAX that 3.9 does not have.  Cheap, and covers every line including ones no test
 #      reaches.
 #   2. One render in each mode under 3.9 — catches a NAME 3.9 does not have,
 #      which compiles fine and raises at import or at call.
@@ -42,7 +42,8 @@ case "$ver" in
 esac
 
 # 1. syntax, over the launcher, package, and offline fixtures.
-for f in "$PROG" "$DIR"/*.py "$DIR"/../coding_agent_usage_line/*.py; do
+for f in "$PROG" "$DIR"/*.py "$DIR"/fixtures/gen/*.py \
+         "$DIR"/../coding_agent_usage_line/*.py; do
     if out=$("$PY" -m py_compile "$f" 2>&1); then
         ok "compile $(basename "$f")"
     else

@@ -1,0 +1,1907 @@
+{
+  "cases": [
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "01-baseline@196",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "01-baseline@150",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "01-baseline@120",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "01-baseline@92",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "01-baseline@60",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "01-baseline@none",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "02-no-limits@196",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "02-no-limits@150",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "02-no-limits@120",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "02-no-limits@92",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "02-no-limits@60",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "02-no-limits@none",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "03-no-transcript@196",
+      "input": "payloads/status/03-no-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "03-no-transcript@150",
+      "input": "payloads/status/03-no-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "03-no-transcript@120",
+      "input": "payloads/status/03-no-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "03-no-transcript@92",
+      "input": "payloads/status/03-no-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "03-no-transcript@60",
+      "input": "payloads/status/03-no-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "03-no-transcript@none",
+      "input": "payloads/status/03-no-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "04-pr-and-style@196",
+      "input": "payloads/status/04-pr-and-style.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "04-pr-and-style@150",
+      "input": "payloads/status/04-pr-and-style.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "04-pr-and-style@120",
+      "input": "payloads/status/04-pr-and-style.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "04-pr-and-style@92",
+      "input": "payloads/status/04-pr-and-style.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "04-pr-and-style@60",
+      "input": "payloads/status/04-pr-and-style.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "04-pr-and-style@none",
+      "input": "payloads/status/04-pr-and-style.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "05-haiku-max@196",
+      "input": "payloads/status/05-haiku-max.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "05-haiku-max@150",
+      "input": "payloads/status/05-haiku-max.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "05-haiku-max@120",
+      "input": "payloads/status/05-haiku-max.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "05-haiku-max@92",
+      "input": "payloads/status/05-haiku-max.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "05-haiku-max@60",
+      "input": "payloads/status/05-haiku-max.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "05-haiku-max@none",
+      "input": "payloads/status/05-haiku-max.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "06-zero-cost@196",
+      "input": "payloads/status/06-zero-cost.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "06-zero-cost@150",
+      "input": "payloads/status/06-zero-cost.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "06-zero-cost@120",
+      "input": "payloads/status/06-zero-cost.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "06-zero-cost@92",
+      "input": "payloads/status/06-zero-cost.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "06-zero-cost@60",
+      "input": "payloads/status/06-zero-cost.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "06-zero-cost@none",
+      "input": "payloads/status/06-zero-cost.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "07-big-numbers@196",
+      "input": "payloads/status/07-big-numbers.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "07-big-numbers@150",
+      "input": "payloads/status/07-big-numbers.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "07-big-numbers@120",
+      "input": "payloads/status/07-big-numbers.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "07-big-numbers@92",
+      "input": "payloads/status/07-big-numbers.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "07-big-numbers@60",
+      "input": "payloads/status/07-big-numbers.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "07-big-numbers@none",
+      "input": "payloads/status/07-big-numbers.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "08-limits-critical@196",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "08-limits-critical@150",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "08-limits-critical@120",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "08-limits-critical@92",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "08-limits-critical@60",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "08-limits-critical@none",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "09-no-session-id@196",
+      "input": "payloads/status/09-no-session-id.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "09-no-session-id@150",
+      "input": "payloads/status/09-no-session-id.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "09-no-session-id@120",
+      "input": "payloads/status/09-no-session-id.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "09-no-session-id@92",
+      "input": "payloads/status/09-no-session-id.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "09-no-session-id@60",
+      "input": "payloads/status/09-no-session-id.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "09-no-session-id@none",
+      "input": "payloads/status/09-no-session-id.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "10-empty-payload@196",
+      "input": "payloads/status/10-empty-payload.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "10-empty-payload@150",
+      "input": "payloads/status/10-empty-payload.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "10-empty-payload@120",
+      "input": "payloads/status/10-empty-payload.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "10-empty-payload@92",
+      "input": "payloads/status/10-empty-payload.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "10-empty-payload@60",
+      "input": "payloads/status/10-empty-payload.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "10-empty-payload@none",
+      "input": "payloads/status/10-empty-payload.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "11-sonnet-200k@196",
+      "input": "payloads/status/11-sonnet-200k.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "11-sonnet-200k@150",
+      "input": "payloads/status/11-sonnet-200k.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "11-sonnet-200k@120",
+      "input": "payloads/status/11-sonnet-200k.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "11-sonnet-200k@92",
+      "input": "payloads/status/11-sonnet-200k.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "11-sonnet-200k@60",
+      "input": "payloads/status/11-sonnet-200k.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "11-sonnet-200k@none",
+      "input": "payloads/status/11-sonnet-200k.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "12-root-cwd@196",
+      "input": "payloads/status/12-root-cwd.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "12-root-cwd@150",
+      "input": "payloads/status/12-root-cwd.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "12-root-cwd@120",
+      "input": "payloads/status/12-root-cwd.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "12-root-cwd@92",
+      "input": "payloads/status/12-root-cwd.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "12-root-cwd@60",
+      "input": "payloads/status/12-root-cwd.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "12-root-cwd@none",
+      "input": "payloads/status/12-root-cwd.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "13-empty-transcript@196",
+      "input": "payloads/status/13-empty-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "13-empty-transcript@150",
+      "input": "payloads/status/13-empty-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "13-empty-transcript@120",
+      "input": "payloads/status/13-empty-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "13-empty-transcript@92",
+      "input": "payloads/status/13-empty-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "13-empty-transcript@60",
+      "input": "payloads/status/13-empty-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "13-empty-transcript@none",
+      "input": "payloads/status/13-empty-transcript.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "14-limits-full@196",
+      "input": "payloads/status/14-limits-full.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "14-limits-full@150",
+      "input": "payloads/status/14-limits-full.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "14-limits-full@120",
+      "input": "payloads/status/14-limits-full.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "14-limits-full@92",
+      "input": "payloads/status/14-limits-full.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "14-limits-full@60",
+      "input": "payloads/status/14-limits-full.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "14-limits-full@none",
+      "input": "payloads/status/14-limits-full.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "15-cache-warn@196",
+      "input": "payloads/status/15-cache-warn.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "15-cache-warn@150",
+      "input": "payloads/status/15-cache-warn.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "15-cache-warn@120",
+      "input": "payloads/status/15-cache-warn.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "15-cache-warn@92",
+      "input": "payloads/status/15-cache-warn.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "15-cache-warn@60",
+      "input": "payloads/status/15-cache-warn.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "15-cache-warn@none",
+      "input": "payloads/status/15-cache-warn.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "16-cache-crit@196",
+      "input": "payloads/status/16-cache-crit.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "16-cache-crit@150",
+      "input": "payloads/status/16-cache-crit.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "16-cache-crit@120",
+      "input": "payloads/status/16-cache-crit.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "16-cache-crit@92",
+      "input": "payloads/status/16-cache-crit.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "16-cache-crit@60",
+      "input": "payloads/status/16-cache-crit.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "16-cache-crit@none",
+      "input": "payloads/status/16-cache-crit.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "17-rounding-boundary@196",
+      "input": "payloads/status/17-rounding-boundary.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "17-rounding-boundary@150",
+      "input": "payloads/status/17-rounding-boundary.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "17-rounding-boundary@120",
+      "input": "payloads/status/17-rounding-boundary.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "17-rounding-boundary@92",
+      "input": "payloads/status/17-rounding-boundary.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "17-rounding-boundary@60",
+      "input": "payloads/status/17-rounding-boundary.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "17-rounding-boundary@none",
+      "input": "payloads/status/17-rounding-boundary.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "18-agents@196",
+      "input": "payloads/status/18-agents.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "18-agents@150",
+      "input": "payloads/status/18-agents.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "18-agents@120",
+      "input": "payloads/status/18-agents.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "18-agents@92",
+      "input": "payloads/status/18-agents.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "18-agents@60",
+      "input": "payloads/status/18-agents.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "18-agents@none",
+      "input": "payloads/status/18-agents.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "19-queue-and-compact@196",
+      "input": "payloads/status/19-queue-and-compact.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "default",
+      "flags": [],
+      "id": "19-queue-and-compact@150",
+      "input": "payloads/status/19-queue-and-compact.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "default",
+      "flags": [],
+      "id": "19-queue-and-compact@120",
+      "input": "payloads/status/19-queue-and-compact.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [],
+      "id": "19-queue-and-compact@92",
+      "input": "payloads/status/19-queue-and-compact.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "default",
+      "flags": [],
+      "id": "19-queue-and-compact@60",
+      "input": "payloads/status/19-queue-and-compact.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [],
+      "id": "19-queue-and-compact@none",
+      "input": "payloads/status/19-queue-and-compact.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "dirty",
+      "flags": [],
+      "id": "dirty-01@196",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 150,
+      "env": "dirty",
+      "flags": [],
+      "id": "dirty-01@150",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 120,
+      "env": "dirty",
+      "flags": [],
+      "id": "dirty-01@120",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "dirty",
+      "flags": [],
+      "id": "dirty-01@92",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 60,
+      "env": "dirty",
+      "flags": [],
+      "id": "dirty-01@60",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "dirty",
+      "flags": [],
+      "id": "dirty-01@none",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "stale-plan-02-no-limits@196",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "stale-plan-10-empty-payload@196",
+      "input": "payloads/status/10-empty-payload.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01@196",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-08@196",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01@92",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-08@92",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01@none",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-08@none",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [
+        "--column-rules"
+      ],
+      "id": "rules-01@196",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [
+        "--column-rules"
+      ],
+      "id": "rules-04@196",
+      "input": "payloads/status/04-pr-and-style.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "straddle",
+      "flags": [],
+      "id": "straddle-02@196",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "coarse",
+      "flags": [],
+      "id": "uncalibrated-02@196",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-01@196",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-08@196",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-01@92",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 92,
+      "env": "default",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-08@92",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-01@none",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 0,
+      "env": "default",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-08@none",
+      "input": "payloads/status/08-limits-critical.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "straddle",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-sub1-02@196",
+      "input": "payloads/status/02-no-limits.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "model-fable@196",
+      "input": "payloads/status/model-fable.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "default",
+      "flags": [],
+      "id": "model-mythos@196",
+      "input": "payloads/status/model-mythos.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-plain@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-plain@150",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-plain@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-plain@92",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-plain@none",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-compaction@196",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-compaction@150",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-compaction@120",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-compaction@92",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-compaction@none",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-single-turn@196",
+      "input": "transcripts/cost/03-single-turn.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-single-turn@150",
+      "input": "transcripts/cost/03-single-turn.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-single-turn@120",
+      "input": "transcripts/cost/03-single-turn.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-single-turn@92",
+      "input": "transcripts/cost/03-single-turn.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-single-turn@none",
+      "input": "transcripts/cost/03-single-turn.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-tool-result@196",
+      "input": "transcripts/cost/04-tool-result.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-tool-result@150",
+      "input": "transcripts/cost/04-tool-result.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-tool-result@120",
+      "input": "transcripts/cost/04-tool-result.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-tool-result@92",
+      "input": "transcripts/cost/04-tool-result.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-tool-result@none",
+      "input": "transcripts/cost/04-tool-result.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "05-sidechain@196",
+      "input": "transcripts/cost/05-sidechain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "05-sidechain@150",
+      "input": "transcripts/cost/05-sidechain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "05-sidechain@120",
+      "input": "transcripts/cost/05-sidechain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "05-sidechain@92",
+      "input": "transcripts/cost/05-sidechain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "05-sidechain@none",
+      "input": "transcripts/cost/05-sidechain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "06-interrupted@196",
+      "input": "transcripts/cost/06-interrupted.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "06-interrupted@150",
+      "input": "transcripts/cost/06-interrupted.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "06-interrupted@120",
+      "input": "transcripts/cost/06-interrupted.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "06-interrupted@92",
+      "input": "transcripts/cost/06-interrupted.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "06-interrupted@none",
+      "input": "transcripts/cost/06-interrupted.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "07-empty@196",
+      "input": "transcripts/cost/07-empty.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "07-empty@150",
+      "input": "transcripts/cost/07-empty.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "07-empty@120",
+      "input": "transcripts/cost/07-empty.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "07-empty@92",
+      "input": "transcripts/cost/07-empty.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "07-empty@none",
+      "input": "transcripts/cost/07-empty.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "08-woken@196",
+      "input": "transcripts/cost/08-woken.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "08-woken@150",
+      "input": "transcripts/cost/08-woken.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "08-woken@120",
+      "input": "transcripts/cost/08-woken.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "08-woken@92",
+      "input": "transcripts/cost/08-woken.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "08-woken@none",
+      "input": "transcripts/cost/08-woken.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "09-agents@196",
+      "input": "transcripts/cost/09-agents.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "09-agents@150",
+      "input": "transcripts/cost/09-agents.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "09-agents@120",
+      "input": "transcripts/cost/09-agents.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "09-agents@92",
+      "input": "transcripts/cost/09-agents.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "09-agents@none",
+      "input": "transcripts/cost/09-agents.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "10-turn-id@196",
+      "input": "transcripts/cost/10-turn-id.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "10-turn-id@150",
+      "input": "transcripts/cost/10-turn-id.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "10-turn-id@120",
+      "input": "transcripts/cost/10-turn-id.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "10-turn-id@92",
+      "input": "transcripts/cost/10-turn-id.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "10-turn-id@none",
+      "input": "transcripts/cost/10-turn-id.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "11-turn-id-late@196",
+      "input": "transcripts/cost/11-turn-id-late.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "11-turn-id-late@150",
+      "input": "transcripts/cost/11-turn-id-late.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "11-turn-id-late@120",
+      "input": "transcripts/cost/11-turn-id-late.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "11-turn-id-late@92",
+      "input": "transcripts/cost/11-turn-id-late.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "11-turn-id-late@none",
+      "input": "transcripts/cost/11-turn-id-late.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01@none",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-02@150",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-cache",
+      "flags": [],
+      "id": "plan-cache-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "plan-cache",
+      "flags": [],
+      "id": "plan-cache-01@150",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "plan-cache",
+      "flags": [],
+      "id": "plan-cache-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "plan-cache",
+      "flags": [],
+      "id": "plan-cache-01@92",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 0,
+      "env": "plan-cache",
+      "flags": [],
+      "id": "plan-cache-01@none",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-full",
+      "flags": [],
+      "id": "plan-full-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "plan-full",
+      "flags": [],
+      "id": "plan-full-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-full",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "plan-full-tight-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-full",
+      "flags": [
+        "--no-account-totals"
+      ],
+      "id": "no-acct-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "plan-full",
+      "flags": [
+        "--no-account-totals"
+      ],
+      "id": "no-acct-01@150",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "plan-full",
+      "flags": [
+        "--no-account-totals"
+      ],
+      "id": "no-acct-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "plan-full",
+      "flags": [
+        "--no-account-totals"
+      ],
+      "id": "no-acct-01@92",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-full",
+      "flags": [
+        "--no-datetime"
+      ],
+      "id": "no-datetime-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-full",
+      "flags": [
+        "--no-usage-text"
+      ],
+      "id": "no-usage-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-full",
+      "flags": [
+        "--force-newline"
+      ],
+      "id": "force-nl-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "plan-full",
+      "flags": [
+        "--no-datetime"
+      ],
+      "id": "no-datetime-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "plan-full",
+      "flags": [
+        "--no-usage-text"
+      ],
+      "id": "no-usage-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "plan-full",
+      "flags": [
+        "--force-newline"
+      ],
+      "id": "force-nl-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 150,
+      "env": "plan-full",
+      "flags": [
+        "--no-usage-text"
+      ],
+      "id": "no-usage-02@150",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "plan-full",
+      "flags": [
+        "--no-account-totals",
+        "--no-datetime",
+        "--no-usage-text",
+        "--force-newline"
+      ],
+      "id": "all-off-01@92",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 92,
+      "env": "plan-full",
+      "flags": [
+        "--no-account-totals",
+        "--no-datetime",
+        "--no-usage-text",
+        "--force-newline"
+      ],
+      "id": "all-off-02@92",
+      "input": "transcripts/cost/02-compaction.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "straddle-cost",
+      "flags": [],
+      "id": "straddle-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "straddle-cost",
+      "flags": [],
+      "id": "straddle-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "coarse-cost",
+      "flags": [],
+      "id": "uncalibrated-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "coarse-cost",
+      "flags": [],
+      "id": "uncalibrated-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-cache",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 120,
+      "env": "plan-cache",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-01@120",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
+      "cols": 196,
+      "env": "plan-cache",
+      "flags": [
+        "--subscript-decimals",
+        "--no-mark-spacing"
+      ],
+      "id": "subdec-tight-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    }
+  ]
+}

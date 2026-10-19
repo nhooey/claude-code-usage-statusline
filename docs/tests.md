@@ -26,9 +26,10 @@ the program and is not.
 
 | Command | Checks | Result line |
 |---|---|---|
+| `python3 tests/run-cases.py` | both suites below, from the committed cases in `tests/fixtures/` | `pass 228   fail 0   missing 0` |
 | `bash tests/golden.sh` | `--mode status` output, byte for byte, against 141 golden files | `pass 141   fail 0   missing 0` |
 | `bash tests/golden-cost.sh` | `--mode cost` output against 87 golden files | `pass 87   fail 0   missing 0` |
-| `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 37   fail 0   missing 0` |
+| `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 40   fail 0   missing 0` |
 | `python3 tests/usage-source.py` | the Claude Usage Tracker reader, `cmd:` sources, and the scoped source cache | `pass 39   fail 0   missing 0` |
 | `python3 tests/sources-v1.py` | the normalized v1 reading: schema, timestamps, separate quota buckets | `ok …` |
 | `python3 tests/source-cache.py` | source precedence, freshness, refresh backoff, cache isolation | `ok …` |
@@ -81,9 +82,13 @@ See [tests/README.md](../tests/README.md#manual-checks) for how to run each.
 Edit the program, then re-record and read the diff:
 
 ```sh
-bash tests/golden.sh --regen        # or golden-cost.sh --regen
+python3 tests/run-cases.py --regen  # or golden.sh / golden-cost.sh --regen
 git diff tests/golden/
 ```
+
+A change to a test input goes in its generator under `tests/fixtures/gen/`;
+run `python3 tests/fixtures/gen/all.py` and read `git diff tests/fixtures/`
+before re-recording.
 
 Accept the new goldens only if every line that moved is one you meant to move,
 and commit them with the change. `--regen` is the step where a regression gets

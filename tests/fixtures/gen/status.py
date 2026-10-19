@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Write the synthetic corpus golden.sh renders.
+"""Write the synthetic status corpus the shared cases render.
 
-    python3 tests/mkcorpus-status.py DIRECTORY
+    python3 tests/fixtures/gen/all.py      # this and the rest, together
 
-Both halves of it: the transcripts the reader walks, and the status-line
-payloads that point at them.  Generated on every run rather than kept on
-disk, so a fixture cannot drift away from its generator -- what the goldens
-describe is provably this file's output, and a change here shows up as a
-golden diff, which is where a change to a fixture belongs.
+Both halves of it: the transcripts the reader walks, under
+transcripts/status/, and the status-line payloads that point at them, under
+payloads/status/.  The output is committed, so a second implementation can
+read it, and is regenerated from this file only; a change here shows up as a
+fixture diff and then a golden diff, which is where a change to a fixture
+belongs.
 
 WHY SYNTHETIC, AND WHY THIS EXISTS AT ALL.  The status corpus used to point
 at one real 8.7 MB finished session under ~/.claude/projects/, and eleven of
@@ -20,10 +21,10 @@ diff would blame the program.  The corpus below replaces both: it is small,
 it is nobody's conversation, and it is rebuilt from this file every run, so
 there is nothing left to guard.
 
-The paths it writes into payloads are derived from the running user's home
-rather than hard-coded, and the readout collapses that prefix to "~" before
-it prints -- so the goldens carry no username and are the same on any
-machine.  Nothing here has to exist on disk: current_dir is a display string
+The paths it writes into payloads are ${HOME} and ${FIXTURES} placeholders,
+which tests/run-cases.py fills in, and the readout collapses the home prefix
+to "~" before it prints -- so neither the fixtures nor the goldens carry a
+username, and both are the same on any machine.  Nothing here has to exist on disk: current_dir is a display string
 and a project name, not a directory anyone opens.
 
 WHAT EACH RECORD IS FOR.  Every record is the minimum shape the reader
@@ -41,11 +42,7 @@ import os
 import sys
 import time
 
-# pin-env.sh's PIN_NOW, 2026-08-16 02:23:20 UTC.  Repeated rather than
-# imported because this file is run by a shell script that has already
-# exported it; if the two ever disagree the durations go negative and every
-# golden says so at once, which is a loud enough failure.
-PIN_NOW = 1786847000
+from cases import PIN_NOW   # 2026-08-16 02:23:20 UTC
 
 # The session's whole span, and how much of it was spent answering.  Both are
 # READINGS on the ⌛ row -- Σ 9.3h against 🤖 3.8h and 🚦 5.5h -- so they are
@@ -321,11 +318,11 @@ def payloads(corpus):
     the input a reader is handed and a test that assembles its own input from
     fragments is testing the assembler.
     """
-    home = os.path.expanduser("~")
+    home = "${HOME}"
     # Under the home directory on purpose: the readout collapses that prefix
     # to "~", so the golden holds no username.  It does not have to exist.
-    cwd = os.path.join(home, "src", "statusline-fixture", "deep", "tree")
-    main = os.path.join(corpus, "main.jsonl")
+    cwd = home + "/src/statusline-fixture/deep/tree"
+    main = corpus + "/main.jsonl"
     base = {
         "session_id": "f1xture0-0000-4000-8000-00000000c0de",
         "transcript_path": main,
@@ -407,27 +404,36 @@ def payloads(corpus):
         "12-root-cwd": case(workspace={"current_dir": "/",
                                        "project_dir": "/"}),
         "13-empty-transcript": case(
-            transcript_path=os.path.join(corpus, "empty.jsonl")),
+            transcript_path=corpus + "/empty.jsonl"),
         "14-limits-full": case(rate_limits={
             "five_hour": {"used_percentage": 100, "resets_at": PIN_NOW + 400},
             "seven_day": {"used_percentage": 100,
                           "resets_at": PIN_NOW + 167800}}),
         # The two 🎯 tiers the recorded corpus never reached.
         "15-cache-warn": case(
-            transcript_path=os.path.join(corpus, "cache-warn.jsonl")),
+            transcript_path=corpus + "/cache-warn.jsonl"),
         "16-cache-crit": case(
-            transcript_path=os.path.join(corpus, "cache-crit.jsonl")),
+            transcript_path=corpus + "/cache-crit.jsonl"),
         # The unit ladder's rounding cut, which no other payload reaches.
         "17-rounding-boundary": case(
-            transcript_path=os.path.join(corpus, "rounding-boundary.jsonl")),
+            transcript_path=corpus + "/rounding-boundary.jsonl"),
         # A fork's spend in a file beside the transcript: 🧩 and 🎯 count it,
         # 🧠 does not, and the 🔋/🪫 session shares are priced with it.
         "18-agents": case(
-            transcript_path=os.path.join(corpus, "agents.jsonl")),
+            transcript_path=corpus + "/agents.jsonl"),
         # 📨 and 🤏 in column 1's third row, the one cell nothing else uses.
         "19-queue-and-compact": case(
-            transcript_path=os.path.join(corpus, "queue.jsonl")),
+            transcript_path=corpus + "/queue.jsonl"),
     }
+    # The model label, one payload per branch of short_model that no other
+    # payload reaches.  Fable is a five-letter family with one version
+    # anybody runs, drawn as "Fabl5" before the rule was rewritten on
+    # 2026-09-07; Mythos was not in the family list at all and fell through
+    # to "Mytho".  The cases run them at one width, not the main sweep's six.
+    out["model-fable"] = case(model={"id": "claude-fable-5",
+                                     "display_name": "Fable 5"})
+    out["model-mythos"] = case(model={"id": "claude-mythos-5",
+                                      "display_name": "Mythos 5"})
     # The cost fields of 06 are dropped, not set to None; case() cannot spell
     # that inside a nested dict, so it is done here.
     for k in ("total_duration_ms", "total_api_duration_ms"):
@@ -435,32 +441,29 @@ def payloads(corpus):
     return out
 
 
-def main(out_dir):
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir)
-    for name, recs in TRANSCRIPTS.items():
-        with open(os.path.join(out_dir, name + ".jsonl"), "w") as fh:
-            for r in recs:
-                fh.write(json.dumps(r, sort_keys=True) + "\n")
-    for name, files in AGENT_FILES.items():
-        for rel, recs in files.items():
-            path = os.path.join(out_dir, name, "subagents", rel)
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w") as fh:
-                for r in recs:
-                    fh.write(json.dumps(r, sort_keys=True) + "\n")
+def write_jsonl(path, records):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        for r in records:
+            fh.write(json.dumps(r, sort_keys=True, ensure_ascii=False) + "\n")
+
+
+def main(root):
+    """Write under ROOT/transcripts/status/ and ROOT/payloads/status/."""
+    corpus = os.path.join(root, "transcripts", "status")
+    for name, recs in sorted(TRANSCRIPTS.items()):
+        write_jsonl(os.path.join(corpus, name + ".jsonl"), recs)
+    for name, files in sorted(AGENT_FILES.items()):
+        for rel, recs in sorted(files.items()):
+            path = os.path.join(corpus, name, "subagents", rel)
+            write_jsonl(path, recs)
             with open(path[:-len(".jsonl")] + ".meta.json", "w") as fh:
                 json.dump({"agentType": "fork", "isFork": True,
-                           "spawnDepth": 1}, fh)
-    for name, pay in payloads(out_dir).items():
-        with open(os.path.join(out_dir, name + ".json"), "w") as fh:
-            json.dump(pay, fh, indent=2, sort_keys=True)
+                           "spawnDepth": 1}, fh, sort_keys=True)
+                fh.write("\n")
+    out = os.path.join(root, "payloads", "status")
+    os.makedirs(out, exist_ok=True)
+    for name, pay in sorted(payloads("${FIXTURES}/transcripts/status").items()):
+        with open(os.path.join(out, name + ".json"), "w") as fh:
+            json.dump(pay, fh, indent=2, sort_keys=True, ensure_ascii=False)
             fh.write("\n")
-    return 0
-
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.stderr.write(__doc__)
-        sys.exit(2)
-    sys.exit(main(sys.argv[1]))

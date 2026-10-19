@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+"""Regenerate everything under tests/fixtures/ but gen/ itself.
+
+    python3 tests/fixtures/gen/all.py
+
+Then read `git diff tests/fixtures/` before committing: the fixtures are
+inputs, so a change to them is a change to every golden that reads them.
+"""
+import os
+import shutil
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+
+import cases  # noqa: E402
+import cost  # noqa: E402
+import status  # noqa: E402
+
+# Written whole each time, so a fixture whose generator entry is gone does
+# not linger.
+for d in ("env", "payloads", "transcripts"):
+    shutil.rmtree(os.path.join(ROOT, d), ignore_errors=True)
+status.main(ROOT)
+cost.main(ROOT)
+cases.main(ROOT)

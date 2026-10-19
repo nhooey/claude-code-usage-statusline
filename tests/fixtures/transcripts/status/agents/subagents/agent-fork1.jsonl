@@ -1,0 +1,4 @@
+{"isSidechain": true, "message": {"content": "read them"}, "promptId": "p-fork", "timestamp": "2026-08-16T01:35:00Z", "type": "user"}
+{"isSidechain": true, "message": {"content": [{"id": "tu-fk", "name": "Bash", "type": "tool_use"}], "id": "req-fk1", "usage": {"cache_creation_input_tokens": 6000, "cache_read_input_tokens": 80000, "input_tokens": 40, "output_tokens": 2000}}, "requestId": "req-fk1", "timestamp": "2026-08-16T01:36:40Z", "type": "assistant"}
+{"isSidechain": true, "message": {"content": [{"content": "ok", "tool_use_id": "tu-fk", "type": "tool_result"}]}, "timestamp": "2026-08-16T01:38:20Z", "type": "user"}
+{"isSidechain": true, "message": {"content": [], "id": "req-fk2", "usage": {"cache_creation_input_tokens": 2000, "cache_read_input_tokens": 84000, "input_tokens": 10, "output_tokens": 1500}}, "requestId": "req-fk2", "timestamp": "2026-08-16T01:38:20Z", "type": "assistant"}

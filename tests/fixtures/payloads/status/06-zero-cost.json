@@ -1,0 +1,43 @@
+{
+  "context_window": {
+    "context_window_size": 1000000
+  },
+  "cost": {
+    "total_cost_usd": 0.4,
+    "total_lines_added": 0,
+    "total_lines_removed": 0
+  },
+  "cwd": "${HOME}/src/statusline-fixture/deep/tree",
+  "effort": {
+    "level": "high"
+  },
+  "exceeds_200k_tokens": true,
+  "model": {
+    "display_name": "Opus 5 (1M context)",
+    "id": "claude-opus-5[1m]"
+  },
+  "output_style": {
+    "name": "default"
+  },
+  "rate_limits": {
+    "five_hour": {
+      "resets_at": 1786847400,
+      "used_percentage": 15
+    },
+    "seven_day": {
+      "resets_at": 1787014800,
+      "used_percentage": 87
+    }
+  },
+  "session_id": "f1xture0-0000-4000-8000-00000000c0de",
+  "thinking": {
+    "enabled": true
+  },
+  "transcript_path": "${FIXTURES}/transcripts/status/main.jsonl",
+  "version": "2.1.233",
+  "workspace": {
+    "added_dirs": [],
+    "current_dir": "${HOME}/src/statusline-fixture/deep/tree",
+    "project_dir": "${HOME}/src/statusline-fixture/deep/tree"
+  }
+}

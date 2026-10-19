@@ -1241,7 +1241,7 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
         # them still.  The goldens need that: the real form is keyed by
         # window boundaries the payloads move on every case, so a fixture in
         # the real form would miss on all thirteen and send the suite off to
-        # scan this machine's transcripts.  See tests/pin-env.sh.
+        # scan this machine's transcripts.  See tests/fixtures/env/.
         return {"sess": cached.get("sess"), "week": cached.get("week")}
     if cached is not None:
         # BOTH HALVES OFF THE CACHE, which is the 2026-09-03 change and the

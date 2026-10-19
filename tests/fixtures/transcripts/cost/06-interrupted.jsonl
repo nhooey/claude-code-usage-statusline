@@ -1,0 +1,3 @@
+{"message": {"content": "Start something and then type over it."}, "promptSource": "typed", "timestamp": "2026-08-16T01:10:00Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"id": "req-i1", "usage": {"cache_creation_input_tokens": 2200, "cache_read_input_tokens": 51000, "input_tokens": 9, "output_tokens": 1100}}, "requestId": "req-i1", "timestamp": "2026-08-16T01:11:00Z", "type": "assistant"}
+{"isSidechain": false, "message": {"id": "req-i2", "usage": {"cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "input_tokens": 0, "output_tokens": 0}}, "requestId": "req-i2", "timestamp": "2026-08-16T01:12:00Z", "type": "assistant"}

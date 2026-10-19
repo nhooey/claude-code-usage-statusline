@@ -1,0 +1,38 @@
+{
+  "calib": {
+    "sess": 5.5,
+    "week": 4.1
+  },
+  "locale": "en_US.UTF-8",
+  "now": 1786847000,
+  "repo": "clean",
+  "source": {
+    "as_of": 1786847000,
+    "schema_version": 1,
+    "windows": [
+      {
+        "duration_seconds": 18000,
+        "id": "session",
+        "resets_at": "2026-08-16T04:00:00Z",
+        "used_percent": 41
+      },
+      {
+        "duration_seconds": 604800,
+        "id": "week",
+        "resets_at": "2026-08-18T01:00:00Z",
+        "used_percent": 63
+      }
+    ]
+  },
+  "terminal": {
+    "TERMINAL_EMULATOR": "JetBrains-JediTerm"
+  },
+  "tracker": {
+    "lastUpdated": 808539600,
+    "sessionPercentage": 41,
+    "sessionResetTime": 808545600,
+    "weeklyPercentage": 63,
+    "weeklyResetTime": 808707800
+  },
+  "tz": "UTC"
+}

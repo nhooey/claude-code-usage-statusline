@@ -1,0 +1,9 @@
+{"message": {"content": "Explain the width table."}, "promptSource": "typed", "timestamp": "2026-08-16T01:10:00Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"id": "req-a1", "usage": {"cache_creation_input_tokens": 2400, "cache_read_input_tokens": 40000, "input_tokens": 12, "output_tokens": 900}}, "requestId": "req-a1", "timestamp": "2026-08-16T01:11:00Z", "type": "assistant"}
+{"isSidechain": false, "message": {"id": "req-a2", "usage": {"cache_creation_input_tokens": 0, "cache_read_input_tokens": 43000, "input_tokens": 3, "output_tokens": 1500}}, "requestId": "req-a2", "timestamp": "2026-08-16T01:12:00Z", "type": "assistant"}
+{"isSidechain": false, "subtype": "stop_hook_summary", "timestamp": "2026-08-16T01:13:00Z", "type": "system"}
+{"message": {"content": "Now do the same for the escape table."}, "promptSource": "typed", "timestamp": "2026-08-16T01:20:00Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"id": "req-b1", "usage": {"cache_creation_input_tokens": 1800, "cache_read_input_tokens": 61000, "input_tokens": 8, "output_tokens": 2100}}, "requestId": "req-b1", "timestamp": "2026-08-16T01:21:00Z", "type": "assistant"}
+{"isSidechain": false, "subtype": "stop_hook_summary", "timestamp": "2026-08-16T01:22:00Z", "type": "system"}
+{"message": {"content": "And the one after that, please."}, "promptSource": "typed", "timestamp": "2026-08-16T01:30:00Z", "type": "user", "userType": "external"}
+{"isSidechain": false, "message": {"id": "req-c1", "usage": {"cache_creation_input_tokens": 900, "cache_read_input_tokens": 78000, "input_tokens": 5, "output_tokens": 3400}}, "requestId": "req-c1", "timestamp": "2026-08-16T01:31:00Z", "type": "assistant"}

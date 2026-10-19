@@ -309,31 +309,36 @@ in `formatting.py`. Moving them to spans touches:
 
 ### The shared test cases
 
-Nothing the suites read is checked in today: `mkcorpus-status.py` and
-`mkcorpus-cost.py` write the payloads and transcripts on every run,
-`tests/pin-env.sh` plants the clock, time zone, usage reading, calibration
-cache and git repos as side effects, and `agents.py` and `subagent.py` keep
-their expected values as `check` literals. A second language cannot run any
-of that, so build step 2 turns it into committed data:
+The golden inputs are committed data now, the first part of build step 2:
+`tests/fixtures/gen/` writes the payloads, transcripts, environments and
+`cases.json`, and `tests/run-cases.py` replays all 228 cases against the
+unchanged goldens. `golden.sh` and `golden-cost.sh` are wrappers around it,
+and `pin-env.sh` is gone. What is left of step 2 splits each case in two, so
+the accounting and the cells can be checked apart:
 
 ```
 tests/fixtures/
-  cases.json                    each case: id, mode, inputs, env, flags, widths
-  env/<name>.json               clock, time zone, usage reading, calibration,
-                                repo as {branch, dirty, project}
-  transcripts/<name>/…          session JSONL, agent files and sidecars
-  payloads/<name>.json          with ${HOME} and ${FIXTURES} placeholders
+  cases.json                    each case: id, suite, input, cols, env, flags  (done)
+  env/<name>.json               clock, zone, locale, terminal, usage source,
+                                calibration, tracker store, repo               (done)
+  transcripts/<suite>/…         session JSONL, agent files and sidecars        (done)
+  payloads/status/<name>.json   with ${HOME} and ${FIXTURES} placeholders      (done)
   figures/<case>.json           transcript and env in, figures out
   render/<case>/figures.json    figures in
   render/<case>/@<width>.txt    drawn rows out, escape codes included
-  gen/*.py                      the corpus generators, writing the above
+  gen/*.py                      the generators, writing the above              (done)
 ```
+
+The cases of one suite share one state directory in the order listed, as
+the shell suites did: a payload with `rate_limits` writes the cache a later
+payload without them reads. The TypeScript runner has to keep the order, or
+the cases have to stop depending on it.
 
 - **Figures are canonical JSON:** sorted keys, floats to a stated precision,
   times as epochs. That is the contract between the two languages.
 - **The drawn rows stay `.txt` with escape codes,** so the 141 status and 87
-  cost goldens move rather than being recorded again; the TypeScript runner
-  joins its spans into escape codes to compare.
+  cost goldens in `tests/golden/` move rather than being recorded again; the
+  TypeScript runner joins its spans into escape codes to compare.
 - **Only Python regenerates** at first (`--regen`, then reading the diff);
   the TypeScript runner only compares.
 - **The existing figures-to-rows test,** `claude-subagent-render.py`, is
