@@ -194,12 +194,12 @@ export function readouts(st: Settings, cols: number,
   // nearest the receipt they become.  Once it ends the receipt carries
   // them, and the band keeps the account and the main thread.
   const lead = (r: Row) => r.scope === "turn" || r.scope === "session";
-  let band = phase === "running"
-    ? [...every.filter(lead), ...every.filter((r) => !lead(r))]
-    : every.filter((r) => r.scope === "account" || r.scope === "main");
-  if (phase === "running") {
-    band = band.map((r) => r !== s.main ? r : runningMain(r));
-  }
+  // 🤖💬 then 💳, the account last; once the turn ends 🤖💬 has no 🛫, as
+  // the band draws it.
+  const idle = { ...s.main, cells: { ...s.main.cells, rate: [] } };
+  const band = phase === "running"
+    ? [...every.filter(lead), runningMain(s.main), s.account]
+    : [idle, s.account];
   const d = (r: Row): Span[] => draw(st, r, keys, cols, patterns, spill);
   return { band: band.map(d), receipt: receipt.map(d),
     agents: agents.map((r) => [r, d(r)]) };

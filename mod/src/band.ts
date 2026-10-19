@@ -262,7 +262,9 @@ function doingPiece(st: Settings, tr: Transcript, now: number):
 }
 
 /** 🤖💬: the main thread alone, before its agents' figures are added.
- * The model and effort off the payload; 🛫 the caller's; 💰 🔋 🪫
+ * The model and effort off the payload; 🛫 the caller's, while the turn
+ * runs only, since once it ends the sampler's window only decays from
+ * the last tokens to nothing; 💰 🔋 🪫
  * `accounting.own`, its compactions in, the 💰 marked an estimate by
  * `own_est` (decision 2); 🧠 its context, `ctx_est` marking an estimate;
  * 🧩 🎯 `own_tok_*` and `own_cache_pct`; ⌛ its age from `start_s` and the
@@ -276,7 +278,7 @@ function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   const win = Math.trunc(fig.context_window as number);
   const cells: Cells = {
     model: CELLS.model(st, pay.model_id || pay.model, pay.effort),
-    rate: CELLS.rate(st, opts.rate),
+    rate: CELLS.rate(st, opts.phase === "running" ? opts.rate : null),
     eta: threadEta(st, tr, now),
   };
   if (own) {
