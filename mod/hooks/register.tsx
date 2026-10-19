@@ -11,7 +11,8 @@
 // The handlers do the reading (edges.ts) and file what they read: the
 // status document in `$.state`, so a new one redraws the band, and each
 // receipt and start line in `$.store`, so they outlive the module and a
-// reload draws them again.  The drawings read only what was filed.
+// reload draws them again.  The drawings read only what was filed.  What
+// a handler catches goes to the mod's log (log.ts), never to the engine.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
@@ -30,6 +31,7 @@ import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
 import { costDoc, placesOf, seen, statusDoc } from './edges.ts'
 import type { Places } from './edges.ts'
+import { log } from './log.ts'
 
 type $ = EngineInterface
 
@@ -85,13 +87,25 @@ async function refresh($: $): Promise<void> {
   refreshing = (async () => {
     do {
       again = false
+      let doc: Dict
       try {
-        const doc = await statusDoc($, await placesFor($))
+        doc = await statusDoc($, await placesFor($))
+      } catch (err) {
+        // A read that failed leaves the last document up, and the next
+        // event reads again.
+        await log($, 'refresh: no status document', err)
+        continue
+      }
+      try {
         await update($, status, () => doc as FiguresDoc)
         await update($, rate, () => (doc.rate as number | null) ?? null)
+      } catch (err) {
+        await log($, 'refresh: the band was not updated', err)
+      }
+      try {
         await fileStart($, doc)
-      } catch {
-        // A read that failed leaves the last document up.
+      } catch (err) {
+        await log($, 'refresh: no start line', err)
       }
     } while (again)
   })()
@@ -119,6 +133,29 @@ async function tick($: $, mine: number) {
     await $.clock.sleep(CONFIG.tickMs)
     if ((await read($, generation)) !== mine) return
     await refresh($)
+  }
+}
+
+// Whether this load of the module has started its tick.
+let started = false
+
+/** Starts this load's tick, once, from whichever event comes first: the
+ * engine sends session.start at a process's start and at a reload, but a
+ * mod must not lean on its coming before a turn's events.  The log's line
+ * says which load ran in which session, so a live test can tell a mod that
+ * failed from one that was never loaded (a `claude --resume` without
+ * `--plugin-dir`). */
+async function start($: $, by: string): Promise<void> {
+  if (started) return
+  started = true
+  try {
+    const cwd = await $.session.cwd().catch(() => '?')
+    await log($, `started by ${by} in ${cwd}`)
+    const mine = (await read($, generation)) + 1
+    await update($, generation, () => mine)
+    void tick($, mine).catch((err) => log($, 'tick stopped', err))
+  } catch (err) {
+    await log($, 'no tick', err)
   }
 }
 
@@ -171,10 +208,13 @@ export function duration(ms: number): string {
   return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`
 }
 
-/** The transcript's path, from a classic event's envelope. */
-async function learn($: $, e: { transcript_path?: string }) {
+/** The transcript's path, from a classic event's envelope, and the session
+ * it is the one for. */
+async function learn($: $, e: { transcript_path?: string;
+  session_id?: string }) {
   if (e.transcript_path) {
     seen.transcript = e.transcript_path
+    seen.session = e.session_id ?? ''
   }
 }
 
@@ -183,8 +223,9 @@ async function home($: $): Promise<string> {
 }
 
 export const register: Register = on => {
-  // Where the transcript is: every classic event names it.
-  // Only the envelope is read, and nothing here can refuse the event.
+  // Where the transcript is: every classic event names it, when it comes
+  // (transcriptPath says why it may not).  Only the envelope is read, and
+  // nothing here can refuse the event.
   on('classic.SessionStart', async ($, e, next) => {
     await learn($, e).catch(() => {})
     return next(e)
@@ -207,18 +248,18 @@ export const register: Register = on => {
     return yield* next(e)
   })
 
+  // Each event below starts this load's tick if no event has yet (start).
   on('session.start', async ($, e, next) => {
     const result = await next(e)
+    await start($, 'session.start')
     await refresh($)
-    const mine = (await read($, generation)) + 1
-    await update($, generation, () => mine)
-    void tick($, mine).catch(() => {})
     return result
   })
 
   on('tool.call', async ($, e, next) => {
     const result = await next(e)
-    void refresh($).catch(() => {})
+    await start($, 'tool.call')
+    void refresh($).catch((err) => log($, 'refresh', err))
     return result
   })
 
@@ -226,6 +267,7 @@ export const register: Register = on => {
   // a document shows the prompt's record, this one or a later one.
   on('turn.start', async ($, e, next) => {
     const result = await next(e)
+    await start($, 'turn.start')
     if (e.agentId) return result
     const tr = (await read($, status))?.transcript as Dict | undefined
     pending = { text: e.text, before: tr?.prompt_id ?? '' }
@@ -237,7 +279,12 @@ export const register: Register = on => {
   // duration for the closing line to find.  A subagent's turn has none.
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
-    void refresh($).catch(() => {})
+    await start($, 'turn.complete')
+    // The receipt's 📦 🌿 come from a status document, so a turn that ends
+    // before any was read waits for one; otherwise the band reads again
+    // beside the receipt.
+    if ((await read($, status)) === null) await refresh($)
+    else void refresh($).catch((err) => log($, 'refresh', err))
     if (e.agentId) return result
     try {
       const where = await placesFor($)
@@ -253,9 +300,12 @@ export const register: Register = on => {
         const value: Filed = { head: receiptHead(doc),
           rows: [...(turn ? [turn] : []), session] }
         await remember($, 'receipts', receiptKey(e.durationMs), value)
+      } else {
+        await log($, 'no receipt: no transcript found for this session')
       }
-    } catch {
+    } catch (err) {
       // No receipt: the engine's own closing line stands.
+      await log($, 'no receipt', err)
     }
     return result
   })

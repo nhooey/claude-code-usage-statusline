@@ -20,7 +20,8 @@ import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
 import { fromBase64 } from '../hooks/edges.ts'
-import { duration, receiptKey } from '../hooks/register.tsx'
+import { duration, receiptKey, startKey } from '../hooks/register.tsx'
+import { LOG_NAME } from '../hooks/log.ts'
 import {
   _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, readPayload,
   transcriptOf, turnsOf,
@@ -39,7 +40,7 @@ import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
 import { bandLines, workspaceOf } from '../src/band.ts'
 import {
-  drawRows, receiptHead, receiptRows, startLine,
+  drawRows, receiptHead, receiptRows, startLine, withEngineDuration,
 } from '../src/receipt.ts'
 import type { Span } from '../src/spans.ts'
 import * as spec from '../src/spec.ts'
@@ -68,6 +69,8 @@ type World = {
   store: Map<string, unknown>
   // Each status document the mod filed in `$.state`, oldest first.
   docs: Dict[]
+  // Each line the mod sent the debug log.
+  debug: string[]
 }
 
 type Run = { argv: readonly string[] }
@@ -78,8 +81,10 @@ const NO_GIT_HERE: Ran = { exitCode: 128, stdout: '',
   isStderrTruncated: false }
 
 /** The engine beneath the mod, answered from memory; `run` answers
- * `$.process.run`, a directory with no git by default. */
-function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE): World {
+ * `$.process.run`, a directory with no git by default, and the first
+ * `usageFails` reads of `$.session.usage` are refused. */
+function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
+  usageFails = 0): World {
   const files = new Map<string, Uint8Array>()
   for (const [p, b64] of Object.entries(FILES)) files.set(p, fromBase64(b64))
   files.set('/tracker.plist', encoder.encode(TRACKER))
@@ -158,15 +163,23 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE): World {
   on('session.root', () => ({ value: CWD }))
   on('session.model', () => ({ value: MODEL }))
   on('session.id', () => ({ value: SESSION }))
-  on('session.usage', () => ({ value: { startedAt: NOW * 1000,
-    context: { tokens: 1000, window: WINDOW }, rateLimits: [] } }))
+  on('session.usage', () => usageFails-- > 0
+    ? { deny: 'usage unavailable' } as any
+    : { value: { startedAt: NOW * 1000,
+      context: { tokens: 1000, window: WINDOW }, rateLimits: [] } })
   // The engine's own drawings, and the events beneath the mod.
   on('ui.render', () => h('Box', null) as RenderElement)
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', () => ({ text: '' }))
   on('classic.SessionStart', () => ({}))
-  return { files, store, docs }
+  // The debug log's lines, which `$.ui.log(…, { to: 'debug' })` sends.
+  const debug: string[] = []
+  on('ui.log', ($, e: any) => {
+    debug.push(e.text)
+    return { value: undefined }
+  })
+  return { files, store, docs, debug }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -273,7 +286,7 @@ const MAIN = '/fixtures/transcripts/status/main.jsonl'
 
 async function start($: any, surface: 'terminal' | 'desktop',
   transcript: string) {
-  await $.classic.SessionStart({ source: 'startup',
+  await $.classic.SessionStart({ source: 'startup', session_id: SESSION,
     transcript_path: transcript })
   await $.session.start({ cwd: CWD, surface, isInteractive: true })
 }
@@ -419,4 +432,142 @@ test('a transcript over 4 MiB is read in pieces through the shell',
     const want = await statusOf(w, MAIN, doc.rate as number | null)
     expect(JSON.parse(JSON.stringify(doc)))
       .toEqual(JSON.parse(JSON.stringify(want)))
+  })
+
+// ════════════════════════════════════════════════════════════════════════════
+// A resumed session, and the events a live one sends in another order.
+//
+// In a live session Claude Code's security plugin passes the classic
+// events by a user's mod, so these send none: the mod finds the transcript
+// by the session's id under the projects directory, as it must there.
+// ════════════════════════════════════════════════════════════════════════════
+
+const RESUMED = `/claude/projects/-work/${SESSION}.jsonl`
+const ASKED = 'Say done.'
+const ASKED_MS = 5_000
+
+/** The history a resume opens on: the status fixture, where the session's
+ * id would put it. */
+function resumed(w: World) {
+  w.files.set(RESUMED, w.files.get(STATUS)!)
+}
+
+/** The transcript grown by `recs`, one line each, as the engine appends. */
+function grow(w: World, ...recs: object[]) {
+  const add = encoder.encode(recs.map((r) => JSON.stringify(r) + '\n')
+    .join(''))
+  const before = w.files.get(RESUMED)!
+  const grown = new Uint8Array(before.length + add.length)
+  grown.set(before)
+  grown.set(add, before.length)
+  w.files.set(RESUMED, grown)
+}
+
+/** A turn that calls no tool: the prompt's record as it opens, the
+ * answer's as it ends. */
+async function askAndAnswer($: any, w: World) {
+  grow(w, { message: { content: ASKED }, promptId: 'p-resume',
+    promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z', type: 'user',
+    userType: 'external' })
+  await $.turn.start({ text: ASKED, turnId: 't-resume' })
+  grow(w, { isSidechain: false, message: { content: [{ text: 'Done.',
+    type: 'text' }], id: 'req-r1', usage: { cache_creation_input_tokens: 500,
+    cache_read_input_tokens: 41000, input_tokens: 3, output_tokens: 40 } },
+  requestId: 'req-r1', timestamp: '2026-08-16T02:20:05Z', type: 'assistant' })
+  await $.turn.complete({ answer: 'Done.', durationMs: ASKED_MS,
+    isAborted: false, turnId: 't-resume', reason: 'answer' })
+}
+
+/** The mod's log file, as the world holds it. */
+function logOf(w: World): string {
+  const f = w.files.get(STATE + '/' + LOG_NAME)
+  return f ? new TextDecoder().decode(f) : ''
+}
+
+/** All three places drawn for the turn askAndAnswer ran: the band over
+ * the last document, the start line under the prompt, the receipt on the
+ * closing line, each against the src/ functions over the same bytes. */
+async function drewAll($: any, w: World) {
+  const doc = lastDoc(w)
+  expect((doc.transcript as Dict).prompt_id).toBe('p-resume')
+  // The transcript as read straight off its bytes.  Not the whole
+  // document: by now the usage reading comes from the cache the first
+  // refresh wrote, which carries its scope fields, where a fresh reading
+  // does not.
+  const want = await statusOf(w, RESUMED, doc.rate as number | null)
+  expect(JSON.parse(JSON.stringify(doc.transcript)))
+    .toEqual(JSON.parse(JSON.stringify(want.transcript)))
+  const st = settings({})
+
+  const band = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'AbovePrompt', props: BAND })
+  const lines = bandLines(st, doc, COLS, [], { home: HOME, rate: null,
+    phase: 'done' })
+  expect(lines.length).toBeGreaterThan(0)
+  expect(await drawnRows(band)).toEqual(expected(lines))
+
+  const tag = startLine(doc)
+  expect(tag.length).toBeGreaterThan(0)
+  expect(w.store.get(startKey(ASKED))).toBeDefined()
+  const typed = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'UserMessage', props: { text: ASKED, isExpanded: false,
+      origin: { kind: 'composer' } } })
+  const under = await drawnRows(typed)
+  expect(under[under.length - 1]?.text).toBe('  ' + text(tag))
+
+  const filed = w.store.get(receiptKey(ASKED_MS)) as Dict
+  expect(filed).toBeDefined()
+  const cost = withEngineDuration(await costOf(w, RESUMED,
+    doc.context_window as number), ASKED_MS)
+  const { turn, session } = receiptRows(st, cost, workspaceOf(doc, HOME))
+  expect(turn).toBeDefined()
+  expect(JSON.parse(JSON.stringify(filed))).toEqual(JSON.parse(
+    JSON.stringify({ head: receiptHead(cost),
+      rows: [...(turn ? [turn] : []), session] })))
+  const closing = await $.ui.mount({ plugin: 'usage-band',
+    surface: 'terminal', component: 'TurnDuration', props: {
+      word: 'Crunched', durationMs: ASKED_MS },
+    viewport: { columns: COLS, rows: 40 } })
+  const [head, ...rows] = await drawnRows(closing)
+  expect(head.text).toBe(`✻ Crunched for ${duration(ASKED_MS)} · ` +
+    text(receiptHead(cost)))
+  expect(rows).toEqual(expected(drawRows(st,
+    [...(turn ? [turn] : []), session], COLS, [])))
+}
+
+test('a resumed session whose first turn calls no tool draws all three',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await askAndAnswer($, w)
+    await drewAll($, w)
+    expect(logOf(w)).toContain('started by session.start in ' + CWD)
+  })
+
+test('a turn before any session.start still draws all three',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await askAndAnswer($, w)
+    await drewAll($, w)
+    // The first event started the load's tick, and said so.
+    expect(logOf(w)).toContain('started by turn.start')
+  })
+
+test('a refresh that throws once is logged, and the next one draws',
+  async ($, on) => {
+    const w = world(on, undefined, 1)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    // The first read failed: nothing filed, and the log says why, in its
+    // file and in the debug log.
+    expect(w.docs.length).toBe(0)
+    const why = /refresh: no status document: .*usage unavailable/
+    expect(logOf(w)).toMatch(why)
+    expect(w.debug.some((l) => why.test(l))).toBe(true)
+    await askAndAnswer($, w)
+    await drewAll($, w)
   })

@@ -76,6 +76,37 @@ folder it loads.
 and in the session, `/reload-plugins`. To remove it, delete that folder
 and `/reload-plugins` again.
 
+`--plugin-dir` holds for the one process it is given to: a session
+resumed with `claude --resume <id>` alone runs without the mod, and draws
+neither the band, the start line nor the receipt. Resume with both:
+
+    claude --plugin-dir "$PWD/mod" --resume <id>
+
+### Its log
+
+The mod's handlers catch what fails, so a failed read leaves the last
+drawing up instead of failing Claude Code's event; what they catch is
+logged, with what was thrown and where. Each line names its time and the
+first eight characters of its session's id, and goes two ways:
+
+- `usage-band.log` in the state directory
+  (`~/.local/state/coding-agent-usage-line/usage-band.log` by default),
+  always: the newest 500 lines from every session.
+- Claude Code's debug log, as `[usage-band] $.ui.log (to debug):` lines,
+  when Claude Code runs with `--debug-file <path>` (or `--debug`), beside
+  the engine's own lines about the mod's hooks: when each settled, and
+  each `$` call that failed.
+
+Each load of the mod writes one line when its first event comes,
+`started by session.start in <cwd>`: a session whose turns drew nothing
+and that has no such line never loaded the mod. A turn that drew no
+receipt says why (`no receipt: …`), as does a status read that failed
+(`refresh: no status document: …`).
+
+In the debug log, `classic.SessionStart bypassed by cc-plugin-sec-default`
+is expected: Claude Code's security plugin passes the classic events by a
+mod a user loads, so the mod finds the transcript by the session's id.
+
 ### Its tests
 
 `mod-tests/` runs in Claude Code's own test runner, which loads the mod as
