@@ -182,7 +182,10 @@ def command_reading(path, context, timeout=5):
         for key in ("period_start", "period_end"):
             value = epoch(context.get(key))
             if value is not None: safe_context[key] = value
-        proc.stdin.write(json.dumps(safe_context, separators=(",", ":")).encode("utf-8")); proc.stdin.close()
+        # A command need not read its input, and one that does not may have
+        # exited before it is written: its output still counts.
+        try: proc.stdin.write(json.dumps(safe_context, separators=(",", ":")).encode("utf-8")); proc.stdin.close()
+        except BrokenPipeError: pass
         deadline = time.monotonic() + max(.01, timeout); output = bytearray()
         selector = selectors.DefaultSelector(); selector.register(proc.stdout.fileno(), selectors.EVENT_READ)
         while time.monotonic() < deadline:
