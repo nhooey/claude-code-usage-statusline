@@ -25,8 +25,9 @@ The proposal it draws:
   "account", "*.work", "turn.time.eta".  A column hidden on every row it
   could show on is removed; hidden on some, it is left blank there.
 - A label sheds its ranked parts whole (🎨, 🔀, 📁; 📅, 🕐) before it is
-  cut.  --labels spill lets it run on over its own row's leading blank
-  columns instead of stopping where the first column starts.
+  cut, and runs on over its own row's leading blank columns, up to its
+  first figure.  --labels clip stops every label where the first column
+  starts instead, for comparison.
 - The mod draws 🔻🔖 under the prompt as the turn starts, and the receipt
   opens on 🔺🔖 when it ends.
 
@@ -231,7 +232,7 @@ def layout(rows, cols, patterns):
     return keys
 
 
-def draw(row, keys, cols, patterns, spill=False):
+def draw(row, keys, cols, patterns, spill=True):
     """One row.  With `spill`, the label runs on over the row's own leading
     blank columns, up to its first figure, instead of stopping where the
     first column starts."""
@@ -249,7 +250,7 @@ def draw(row, keys, cols, patterns, spill=False):
     return head + seg(room, label_text(row, patterns, room)) + right
 
 
-def screen(cols, patterns, receipt_by="hook", phase="done", spill=False):
+def screen(cols, patterns, receipt_by="hook", phase="done", spill=True):
     rule = "─" * cols
     every = [r for r in (ACCOUNT, TURN, MAIN, SESSION) if not hidden(patterns, r["scope"])]
     receipt = [r for r in RECEIPT if not hidden(patterns, r["scope"])]
@@ -314,9 +315,9 @@ def main(argv=None):
                          "mod's rewrite of the turn's closing line")
     ap.add_argument("--phase", choices=("running", "done"), default="done",
                     help="draw the screen while the turn runs, or after it ended")
-    ap.add_argument("--labels", choices=("clip", "spill"), default="clip",
-                    help="stop every label where the first column starts, or let it "
-                         "run on over its own row's leading blank columns")
+    ap.add_argument("--labels", choices=("spill", "clip"), default="spill",
+                    help="let a label run on over its own row's leading blank "
+                         "columns, or stop every label where the first column starts")
     ap.add_argument("--plain", action="store_true", help="no colour")
     a = ap.parse_args(argv)
     text = screen(a.cols, a.hide, a.receipt, a.phase, a.labels == "spill")

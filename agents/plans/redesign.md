@@ -54,7 +54,13 @@ model  🛫  💰  🧠  🧩 ▴ ▾  🎯  ⌛ ⛳ 🤖 🔧 🚦  🔋  🪫 
 🛫, the token rate, is a state value, so only the 🤖💬 row and the agent
 rows fill it.
 
-A row with nothing for a column leaves it blank, so the columns hold. Every
+A row with nothing for a column leaves it blank, so the columns hold. A
+label runs on over its own row's leading blank columns, up to its first
+figure: the 💳 row has no figures before 🔋, so its label has room for both
+resets and the clock. Labels therefore end at different points on different
+rows; the figures never move. Which columns drop on a narrow terminal is
+worked out without this extra room, so a label's spill never changes the
+grid. Every
 row's cells end five columns short of the terminal's right edge, the columns
 Claude Code keeps for the band's `[-]` button, so all three readouts share one
 right edge.
@@ -85,7 +91,8 @@ only agent-shaped rows draw them. Workspace (📦 📁 🌿 🔀 🎨) and the c
 
 A row's label shrinks first, down to 20 columns. It sheds its ranked parts
 whole before anything is cut, least important first: 🎨, then 🔀, then 📁
-on the 🎮 row; 📅, then 🕐 on the 💳 row. What is left is cut with `…`.
+on the 🎮 row; 📅, then 🕐 on the 💳 row. A part leaves whole rather than
+showing as `📁~/sr…`. What is left is cut with `…`.
 
 Past 20 columns, whole columns drop, from every row at once, so the grid
 never breaks. Least important first:
@@ -124,8 +131,8 @@ receipt's head after it and its two rows under it:
 
 ```
 ✻ Worked for 4m 2s · 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
-📊 🎤 Why is the build slo…          💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
-📊 🎮 session  📦app 🌿mai…          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
+📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 ```
 
 The head is 🔺🔖, 🔺 pointing up at the turn that ended, the head of the turn's promptId and Claude Code's turn
@@ -201,9 +208,9 @@ figures; `--phase running` draws it mid-turn:
   because maxWorkers is 1 in jest.config.js.
 
 ✻ Worked for 4m 2s · 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
-📊 🎤 Why is the build slo…          💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
-📊 🎮 session  📦app 🌿mai…          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
-💳 account  🔋 🔜 6.7m  🪫…                                                                                       🔋 15٪  🪫87.0٪                  [-]
+📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
+📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+💳 account  🔋 🔜 6.7m  🪫 🔜 1.8d  📅 2026-10-19  🕐 13:06:02                                                    🔋 15٪  🪫87.0٪                  [-]
 🤖💬 The test step takes 8…  🤖O⁵🏃  💰  92   🧠 115k  11٪  🧩 ▴2.1M ▾640k  🎯98٪  ⌛  9h ⛳   2m 🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋.90٪  🪫2.10٪  💾 +3.1k - 180
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯
@@ -237,11 +244,6 @@ Read from the 2.1.302 binary:
 
 ## Open
 
-1. **Labels in blank columns.** A label stops where the first column starts,
-   even on a row whose first columns are blank: the 💳 row cuts its reset
-   times while 💰 to ⛳ are empty on it. A label could run on into its own
-   row's blank columns, up to its first figure. `--labels spill` draws that;
-   `--labels clip`, the default, draws what this document shows.
-2. **The band's weekly share.** `$.session.usage()` gives a weekly share a
+1. **The band's weekly share.** `$.session.usage()` gives a weekly share a
    point off the status line's (33 against 34): another source, not
    rounding.
