@@ -235,6 +235,21 @@ let hintSeen = ''
 // the footer's `hint` leaves its pill out, so footerTail counts it apart.
 let permissionMode: string | undefined
 
+// The events seen carrying no mode, logged once each.
+const modeless = new Set<string>()
+
+/** Records the permission mode an event carries, logging each change, and
+ * each kind of event that carries none, once. */
+function noteMode($: $, from: string, mode: string | undefined): void {
+  if (mode === undefined && !modeless.has(from)) {
+    modeless.add(from)
+    void log($, 'no permission mode on ' + from)
+  }
+  if (mode === undefined || mode === permissionMode) return
+  permissionMode = mode
+  void log($, 'permission mode ' + mode + ' from ' + from)
+}
+
 /** The store's key for a stamped receipt: its session and its turn. */
 export const receiptKey = (session: string, turn: string) =>
   'receipt:' + sha256Hex(session + '\0' + turn).slice(0, 32)
@@ -355,12 +370,12 @@ export const register: Register = on => {
     return next(e)
   })
   on('classic.UserPromptSubmit', async ($, e, next) => {
-    permissionMode = e.permission_mode ?? permissionMode
+    noteMode($, 'UserPromptSubmit', e.permission_mode)
     await learn($, e).catch(() => {})
     return next(e)
   })
   on('classic.Stop', async ($, e, next) => {
-    permissionMode = e.permission_mode ?? permissionMode
+    noteMode($, 'Stop', e.permission_mode)
     await learn($, e).catch(() => {})
     return next(e)
   })
@@ -378,7 +393,7 @@ export const register: Register = on => {
   // turn's end, above, and each tool call, so a mode cycled with shift+tab
   // is known by the next one.
   on('classic.PostToolUse', async ($, e, next) => {
-    permissionMode = e.permission_mode ?? permissionMode
+    noteMode($, 'PostToolUse', e.permission_mode)
     return next(e)
   })
 
