@@ -15,7 +15,7 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  FOOTER_JOIN, MODE_PILLS, accountText, bandLines, bandRows, fixedKeys, footerTail,
+  FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, accountText, footerParts, bandLines, bandRows, fixedKeys, footerTail,
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
@@ -171,9 +171,14 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   assert.ok(!inZone(fig, () => accountText(st, fig, ["account.workspace"]))
     .includes("📦"));
   const tail = inZone(fig, () => footerTail(st, fig, [], hint, 240));
-  // Each run of spaces is one space and blanks, since Claude Code draws a
-  // run of them as one.
-  const kept = text.replace(/ {2,}/g, (r) => " " + "\u2800".repeat(r.length - 1));
+  // The workspace, 💳 and 📅 🕐, FOOTER_GAP apart where the row has room,
+  // each run of spaces one space and blanks, since Claude Code draws a run
+  // of them as one.
+  const blanked = (t: string) =>
+    t.replace(/ {2,}/g, (r) => " " + "\u2800".repeat(r.length - 1));
+  const parts = footerParts(text);
+  assert.equal(parts.length, 3, text);
+  const kept = blanked(parts.join(" ".repeat(FOOTER_GAP)));
   assert.ok(tail.endsWith(kept) && !/  /.test(tail), tail);
   // Two blanks in, the hint, Claude Code's " · ", then the tail: to the
   // band's right edge, padded with blanks no trim takes.
@@ -187,8 +192,10 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
     visWidth(FOOTER_JOIN, st.widths) + visWidth(auto, st.widths),
   240 - RIGHT_EDGE);
   assert.equal(tail.trimStart(), tail);
-  // Too narrow a row: the " · " alone parts the two.
-  assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)), kept);
+  // Too narrow a row: the gaps down to one, and the " · " alone parts the
+  // two.
+  assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)),
+    blanked(parts.join(" ")));
   assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 240)),
     "");
   // 🔋 hidden in every row takes its 🔜 with it, and leaves 🪫's.

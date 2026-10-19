@@ -15,7 +15,7 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
+  CHROME_DEPTH, E_ACCT, E_DATE, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
   RIGHT_EDGE,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
@@ -454,17 +454,46 @@ export function accountText(st: Settings, fig: Dict,
  * `mode`, the session's permission mode, is counted apart. */
 export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   hint: string, cols: number, mode?: string, home = ""): string {
-  // Claude Code draws a run of spaces in the tail as one (seen live
-  // 2026-10-20: "6.6h 📅"), so a run's spaces past its first are blanks.
-  const text = accountText(st, fig, hide, home).replace(/ {2,}/g,
-    (run) => " " + TAIL_BLANK.repeat(run.length - 1));
-  if (!text) return "";
+  const plain = accountText(st, fig, hide, home);
+  if (!plain) return "";
   const pill = MODE_PILLS[mode ?? ""] ?? "";
   const pillW = pill && !hint.includes(pill)
     ? visWidth(pill + FOOTER_JOIN, st.widths) : 0;
-  const pad = cols - RIGHT_EDGE - 2 - pillW - visWidth(hint, st.widths) -
-    visWidth(FOOTER_JOIN, st.widths) - visWidth(text, st.widths);
-  return TAIL_BLANK.repeat(Math.max(0, pad)) + text;
+  const room = cols - RIGHT_EDGE - 2 - pillW - visWidth(hint, st.widths) -
+    visWidth(FOOTER_JOIN, st.widths);
+  // The workspace, the 💳 account and 📅 🕐, FOOTER_GAP columns apart,
+  // both gaps fewer, down to one, where the row is short (asked
+  // 2026-10-20).
+  const parts = footerParts(plain);
+  const gapless = visWidth(parts.join(""), st.widths);
+  const gaps = parts.length - 1;
+  const gap = gaps ? Math.max(1, Math.min(FOOTER_GAP,
+    Math.floor((room - gapless) / gaps))) : 0;
+  // Claude Code draws a run of spaces in the tail as one (seen live
+  // 2026-10-20: "6.6h 📅"), so a run's spaces past its first are blanks.
+  const text = parts.join(" ".repeat(gap)).replace(/ {2,}/g,
+    (run) => " " + TAIL_BLANK.repeat(run.length - 1));
+  return TAIL_BLANK.repeat(Math.max(0, room - visWidth(text, st.widths))) +
+    text;
+}
+
+/** The columns between the footer's workspace, its account and its 📅 🕐,
+ * at most. */
+export const FOOTER_GAP = 4;
+
+/** accountText cut into the workspace, the 💳 account and 📅 🕐, each
+ * trimmed, leaving out any that is not there. */
+export function footerParts(text: string): string[] {
+  const cuts = [E_ACCT, E_DATE].map((m) => text.indexOf(m))
+    .filter((i) => i > 0);
+  const out: string[] = [];
+  let from = 0;
+  for (const i of cuts) {
+    out.push(text.slice(from, i));
+    from = i;
+  }
+  out.push(text.slice(from));
+  return out.map((p) => p.trim()).filter((p) => p);
 }
 
 /** What Claude Code puts between its footer line and a hook's tail. */
