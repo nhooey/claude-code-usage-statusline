@@ -32,8 +32,10 @@ export const CONFIG = {
   // transcript's reads cannot crowd the session.
   tickRunningMs: 5_000,
   readSpacing: 3,
-  // A read that takes longer is logged, with how long it took.
+  // A read that takes longer is logged and shown as a toast, with how
+  // long each of its steps took; a toast at most once per slowToastMs.
   slowReadMs: 2_000,
+  slowToastMs: 60_000,
   // How often the band and the footer redraw their clocks (🔧 ⌛ ⛳ 🕐 🔜)
   // against the time now, between reads, without reading anything.
   clockMs: 1_000,

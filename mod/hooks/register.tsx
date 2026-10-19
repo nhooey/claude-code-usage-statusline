@@ -35,7 +35,7 @@ import {
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import { costDoc, placesOf, seen, statusDoc, turnsNow } from './edges.ts'
+import { costDoc, placesOf, seen, statusDoc, steps, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -78,6 +78,22 @@ let again = false
 let readAt = 0
 let readMs = 0
 let turnRunning = false
+// When the last slow read's toast was shown, in ms.
+let toastAt = 0
+
+/** A read that took `ms`: logged, with each step's ms, and shown as a
+ * toast at most once per slowToastMs, so a slow read is seen as it happens
+ * (asked 2026-10-19: the mod times itself and warns when it is slow). */
+async function slow($: $, ms: number): Promise<void> {
+  const parts = Object.entries(steps).map(([k, v]) => `${k} ${v}`)
+  const text = `slow read: ${Math.round(ms)}ms (${parts.join(', ')})`
+  await log($, text)
+  const now = await $.clock.now()
+  if (now - toastAt >= CONFIG.slowToastMs) {
+    toastAt = now
+    $.ui.toast(text)
+  }
+}
 // The prompt a turn opened with, until the transcript holds its record:
 // its text, which the start line is filed under, and the tag that stood
 // before it, which the new one must differ from.
@@ -99,9 +115,7 @@ async function refresh($: $): Promise<void> {
         doc = await statusDoc($, await placesFor($))
         readAt = await $.clock.now()
         readMs = readAt - began
-        if (readMs > CONFIG.slowReadMs) {
-          await log($, `slow read: ${Math.round(readMs)}ms`)
-        }
+        if (readMs > CONFIG.slowReadMs) await slow($, readMs)
       } catch (err) {
         // A read that failed leaves the last document up, and the next
         // event reads again.

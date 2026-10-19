@@ -116,13 +116,15 @@ export async function readRange($: $, path: string, start: number,
     return fromBase64(got.base64).subarray(start, end)
   }
   const parts: Uint8Array[] = []
+  steps.native = 'fromBase64' in Uint8Array ? 'yes' : 'no'
   for (let at = start; at < end;) {
     const want = Math.min(PIECE, end - at)
-    const r = await $.process.run(['/bin/sh', '-c',
+    const r = await timed($, 'shell', () => $.process.run(['/bin/sh', '-c',
       'tail -c +"$1" "$2" | head -c "$3" | base64', 'sh',
-      String(at + 1), path, String(want)], { timeoutMs: 30_000 })
+      String(at + 1), path, String(want)], { timeoutMs: 30_000 }))
     if (r.exitCode !== 0) throw new Error('could not read ' + path)
-    const piece = fromBase64(r.stdout)
+    steps.pieces = ((steps.pieces as number) || 0) + 1
+    const piece = await timed($, 'decode', async () => fromBase64(r.stdout))
     if (!piece.length) break
     parts.push(piece)
     at += piece.length
@@ -177,6 +179,23 @@ let costsRead = false
 let scanning = false
 let samples: RateSample[] = []
 
+/** How long each step of the last statusDoc took, in ms, in the order they
+ * ran, with how many shell pieces its transcript read took and whether
+ * the runtime decodes base64 natively: what a slow read's log line says,
+ * so the cost of a first read after a reload can be found. */
+export const steps: { [step: string]: number | string } = {}
+
+/** `f`, its length added to `steps` under `name`. */
+async function timed<T>($: $, name: string, f: () => Promise<T>): Promise<T> {
+  const began = await $.clock.now()
+  try {
+    return await f()
+  } finally {
+    steps[name] = ((steps[name] as number) || 0) +
+      Math.round((await $.clock.now()) - began)
+  }
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // The transcripts.
 // ════════════════════════════════════════════════════════════════════════════
@@ -201,8 +220,9 @@ export async function recordsOf($: $, path: string): Promise<Rec[]> {
   }
   const nl = data.lastIndexOf(10)
   if (nl >= 0) {
-    got = { stable: got.stable + nl + 1,
-      records: [...got.records, ..._recordsOf(data.subarray(0, nl + 1))] }
+    const fresh = await timed($, 'parse', async () =>
+      _recordsOf(data.subarray(0, nl + 1)))
+    got = { stable: got.stable + nl + 1, records: [...got.records, ...fresh] }
   }
   parsed.set(path, got)
   const rest = data.subarray(nl + 1)
@@ -707,31 +727,36 @@ export function localZone(): string | null {
 
 /** status_figures through `$`. */
 export async function statusDoc($: $, places: Places): Promise<Dict> {
+  for (const k of Object.keys(steps)) delete steps[k]
   const now = (await $.clock.now()) / 1000
   const path = await transcriptPath($, places)
   const { raw, payload } = await payloadOf($, path)
   let tr: Transcript = EMPTY_TRANSCRIPT
   let turns: Turn[] | null = null
   if (path && await fileSize($, path) !== null) {
-    const records = await recordsOf($, path)
-    const readings = await agentReadings($, path)
+    const records = await timed($, 'records', () => recordsOf($, path))
+    const readings = await timed($, 'agents', () => agentReadings($, path))
     const etas: AgentEta[] = []
     const agents: AgentRec[] = agentRecordsOf(readings, null, etas)
     // A tool call still running counts to now: this is a live session.
-    tr = transcriptOf(records, agents, etas, now)
-    turns = await turnsVia($, places, path, records, readings)
+    tr = await timed($, 'sum', async () =>
+      transcriptOf(records, agents, etas, now))
+    turns = await timed($, 'turns', () =>
+      turnsVia($, places, path, records, readings))
   }
-  const prepared = await preparedVia($, places, raw, payload.session_id,
-    payload.model_id || payload.model, now)
+  const prepared = await timed($, 'usage', () => preparedVia($, places, raw,
+    payload.session_id, payload.model_id || payload.model, now))
   const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
-  const calib = await calibrationVia($, places, snap, now)
+  const calib = await timed($, 'calib', () =>
+    calibrationVia($, places, snap, now))
   // Decision 1: the main thread's own tokens, sampled in memory.
   const tokens = tr.own_tok_up === null ? null
     : tr.own_tok_up + tr.own_tok_down
   const [kept, rate] = sessionRate(samples, tokens, now)
   samples = kept
   return statusFigures({ payload, transcript: tr, turns,
-    git: await gitVia($, payload.current_dir), prepared, snap, calib, now,
+    git: await timed($, 'git', () => gitVia($, payload.current_dir)),
+    prepared, snap, calib, now,
     tz: localZone(), rate })
 }
 

@@ -163,8 +163,11 @@ Each load of the mod writes one line when its first event comes,
 `started by session.start in <cwd>`: a session whose turns drew nothing
 and that has no such line never loaded the mod. A status read that failed
 says why (`refresh: no status document: …`), as does a turn that got no
-receipt (`no receipt: …`), and a read over two seconds says how long it
-took (`slow read: 2410ms`).
+receipt (`no receipt: …`). The mod times each read, step by step, and a
+read over two seconds is logged and shown as a toast, at most one a
+minute, with each step's length in ms: `slow read: <ms> (records,
+shell, pieces, decode, parse, agents, sum, turns, usage, calib, git)`,
+each followed by its figure; `pieces` counts the shell reads.
 
 In the debug log, `classic.SessionStart bypassed by cc-plugin-sec-default`
 is expected: Claude Code's security plugin passes the classic events by a
