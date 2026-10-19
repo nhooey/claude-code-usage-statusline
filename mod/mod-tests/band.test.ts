@@ -42,7 +42,7 @@ import {
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
-import { bandLines, workspaceOf } from '../src/band.ts'
+import { bandLines, bandRows, workspaceOf } from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
 } from '../src/receipt.ts'
@@ -522,8 +522,11 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const fig = withEngineDuration(costFigures(turns, windowFor(turns,
     Number(doc.context_window)), CALIB, snap, prepared, now,
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
-  return receiptLines(settings({}), fig, COLS, CONFIG.hide, workspaceOf(doc, HOME),
-    true)
+  const st = settings({})
+  const main = bandRows(st, doc, { home: HOME, rate: null, phase: 'done' })
+    .main
+  return receiptLines(st, fig, COLS, CONFIG.hide, workspaceOf(doc, HOME),
+    true, main)
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -546,15 +549,16 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 🎤 and 🎮 at no indent, then the 🔺🔖 tag line, drawn as the start
-    // line is.
-    expect(want.length).toBe(3)
+    // 🎤, 🎮 and 🤖 at no indent, then the 🔺🔖 tag line, drawn as the
+    // start line is.
+    expect(want.length).toBe(4)
     expect(text(want[0]).startsWith(spec.E_TURN)).toBe(true)
     expect(text(want[1]).startsWith(spec.E_SESSION)).toBe(true)
-    expect(text(want[2])).toContain('p-resume'.slice(0, 8))
-    expect(text(want[2]).startsWith(spec.E_TURN_PAST)).toBe(true)
-    expect(text(want[2])).toContain(spec.E_DATE)
-    expect(text(want[2])).not.toContain(spec.E_ACCT)
+    expect(text(want[2]).startsWith(spec.E_BOT)).toBe(true)
+    expect(text(want[3])).toContain('p-resume'.slice(0, 8))
+    expect(text(want[3]).startsWith(spec.E_TURN_PAST)).toBe(true)
+    expect(text(want[3])).toContain(spec.E_DATE)
+    expect(text(want[3])).not.toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
@@ -635,8 +639,9 @@ async function drewAll($: any, w: World) {
       origin: { kind: 'composer' } } })
   expect(await tagDrawn(typed)).toEqual({ beside: false, text: text(tag) })
 
-  // The receipt the hold waited for: its two lines on the closing line.
-  expect((await closing($, ASKED_MS)).length).toBe(3)
+  // The receipt the hold waited for: its three rows and its tag line on
+  // the closing line.
+  expect((await closing($, ASKED_MS)).length).toBe(4)
 }
 
 test('a resumed session whose first turn calls no tool draws all three',

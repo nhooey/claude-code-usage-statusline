@@ -26,7 +26,7 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { bandLines, footerTail, workspaceOf } from '../src/band.ts'
+import { bandLines, bandRows, footerTail, workspaceOf } from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, turnKey,
   withEngineDuration,
@@ -287,10 +287,13 @@ async function stamp($: $, durationMs: number, prompt: string):
       got!.turns, published), durationMs)
     // 📦 🌿 from the band's last status document (decision 7).
     const ws = doc ? workspaceOf(doc as Dict, where.home) : null
-    // Laid out as the band is, with its indent, so the rows' columns are
-    // the band's.
-    const lines = receiptLines(await settingsOf($), fig, bandCols,
-      CONFIG.hide, ws, true)
+    // 🤖 as the band drew it once the turn ended, from the same document.
+    const st = await settingsOf($)
+    const main = doc ? bandRows(st, doc as Dict,
+      { home: where.home, rate: null, phase: 'done' }).main : null
+    // Laid out as the band is, so the rows' columns are the band's.
+    const lines = receiptLines(st, fig, bandCols, CONFIG.hide, ws, true,
+      main)
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs), lines)
   } finally {

@@ -197,14 +197,19 @@ export function receiptHead(fig: Dict, hide: readonly string[]): Span[] {
 }
 
 /** The receipt as drawn at `cols` under `hide`: 🎤 and 🎮 on the band's
- * fixed grid, at no indent, as the band's rows are, then the tag line
+ * fixed grid, at no indent, as the band's rows are, and `main`, the band's
+ * 🤖 row, where there is one, then the tag line
  * (receiptHead) under them (decided 2026-10-19).  A hidden scope's row is
  * left out.  `dim` draws every span dim, as the stamped receipt is drawn,
  * its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
-  hide: readonly string[], ws: Workspace | null, dim = false): Span[][] {
+  hide: readonly string[], ws: Workspace | null, dim = false,
+  main: Row | null = null): Span[][] {
   const { turn, session } = receiptRows(st, fig, ws);
-  const lines = drawRows(st, [...(turn ? [turn] : []), session], cols, hide);
+  // 🤖 under 🎮, as the band stacks them, where the caller has the band's
+  // row for it (asked 2026-10-20).
+  const lines = drawRows(st, [...(turn ? [turn] : []), session,
+    ...(main ? [main] : [])], cols, hide);
   const head = receiptHead(fig, hide);
   if (head.length) lines.push(head);
   return dim ? lines.map(dimmed) : lines;
