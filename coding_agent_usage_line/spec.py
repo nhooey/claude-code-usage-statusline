@@ -963,12 +963,12 @@ C_MIN_GAP = 4          # floor between the label and the metrics — the four
 E_ROW_PROMPT = E_TURN                 # 🎤  the prompt just answered
 E_ROW_TOTAL = E_SESSION                 # 🎮  the session tally
 E_ROW_COMPACT = "🤏"          # 🤏  the compaction
-# The agent panel's tree, drawn again beside an agent row's right group.
+# The agent panel's tree, which Claude Code draws before every agent row.
 # These break rule 2 in docs/glyphs-and-terminals.md on purpose: they are
-# Ambiguous, and they are the panel's own glyphs. Claude Code draws them
-# one column wide at the left edge of every agent row, and tree_cols
-# already bets on that. A copy in different glyphs would read as a second
-# tree and not the same one.  Named E_* so probe-advance.sh measures them.
+# Ambiguous, and they are the panel's own glyphs, drawn one column wide.
+# The panel no longer copies the tree; the grid counts Claude Code's
+# chrome toward a row's width instead (PANEL_CHROME), so its width still
+# matters.  Named E_* so probe-advance.sh measures them.
 E_TREE_NODE = "◯"        # ◯  an agent
 E_TREE_OPEN = "⏺"        # ⏺  an agent whose children are showing: the
                          #    panel expands only the selected row
@@ -1330,7 +1330,17 @@ HIDE_GROUPS = {
     "context": ("size",),                                 # 🧠
     "time": ("elapsed", "eta", "split"),                  # ⌛, ⛳, 🤖 🔧 🚦
     "work": ("diff",),                                    # 💾
-    "state": ("model", "rate"),                           # model, 🛫
+    "state": (
+        "model",
+        "rate",
+        "kids",
+        "compact",
+        "shells",
+        "monitors",
+        "inbox",
+    ),                                                    # model, 🛫, and an
+                                                          #  agent's 👶🏻 🤏 💻
+                                                          #  📡 📨
     "chat": ("prompt", "reply", "doing"),                 # the 🎤 row's prompt,
                                                           #  the 🤖💬 row's reply,
                                                           #  what a thread does

@@ -50,8 +50,8 @@ def cell_width(rule: Union[int, str]) -> int:
     """The cell's own width under the current profile, gap aside:
     GRID_CELLS names a fixed number or the rule the width is computed by,
     since the terminal profile widens 🧩, 🧠 and 💰 by a column.  The A_*
-    rules that move with the profile are worked out here as the panel's
-    module works them out at import, so they follow a reload."""
+    rules that move with the profile are worked out here each time, so
+    they follow a reload of formatting."""
     if isinstance(rule, int):
         return rule
     if rule == "A_RATE_W":
