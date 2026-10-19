@@ -46,6 +46,7 @@ const generation = atom({ plugin: 'usage-band', key: 'generation' } as const, 0)
 const status = atom({ plugin: 'usage-band', key: 'status' } as const, null)
 const rate = atom({ plugin: 'usage-band', key: 'rate' } as const, null)
 const filed = atom({ plugin: 'usage-band', key: 'filed' } as const, 0)
+const clockNow = atom({ plugin: 'usage-band', key: 'now' } as const, 0)
 
 /** The store's key for a start line: its prompt's text. */
 export const startKey = (text: string) =>
@@ -136,6 +137,25 @@ async function tick($: $, mine: number) {
   }
 }
 
+// Moves the time the band draws at every clockMs, so its clocks run
+// between reads (decided 2026-10-19); the figures wait for the next read.
+async function clock($: $, mine: number) {
+  while ((await read($, generation)) === mine) {
+    await $.clock.sleep(CONFIG.clockMs)
+    if ((await read($, generation)) !== mine) return
+    const now = (await $.clock.now()) / 1000
+    await update($, clockNow, () => now)
+  }
+}
+
+/** `doc` drawn at `now` where that is later than when it was read: its
+ * figures as read, its clocks as they stand now. */
+function at(doc: Dict, now: number): Dict {
+  const clock = doc.clock as Dict | undefined
+  const then = clock ? Number(clock.now) : NaN
+  return clock && now > then ? { ...doc, clock: { ...clock, now } } : doc
+}
+
 // Whether this load of the module has started its tick.
 let started = false
 
@@ -154,6 +174,7 @@ async function start($: $, by: string): Promise<void> {
     const mine = (await read($, generation)) + 1
     await update($, generation, () => mine)
     void tick($, mine).catch((err) => log($, 'tick stopped', err))
+    void clock($, mine).catch((err) => log($, 'clock stopped', err))
   } catch (err) {
     await log($, 'no tick', err)
   }
@@ -363,7 +384,8 @@ export const register: Register = on => {
     if (e.props.hasSurvey || doc === null) return next(e)
     const { Box, Text } = $.ui.resolve(e)
     bandCols = e.props.bodyColumns + 5
-    const lines = bandLines(await settingsOf($), doc as Dict,
+    const lines = bandLines(await settingsOf($),
+      at(doc as Dict, await read($, clockNow)),
       bandCols, CONFIG.hide, { home: await home($),
         rate: await read($, rate),
         phase: e.props.isWorking ? 'running' : 'done',
@@ -410,7 +432,8 @@ export const register: Register = on => {
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     const doc = await read($, status)
     if (doc === null) return next(e)
-    const tail = footerTail(await settingsOf($), doc as Dict, CONFIG.hide,
+    const tail = footerTail(await settingsOf($),
+      at(doc as Dict, await read($, clockNow)), CONFIG.hide,
       e.props.hint, e.viewport?.columns ?? bandCols)
     return tail ? next({ ...e, props: { ...e.props, tail } }) : next(e)
   })

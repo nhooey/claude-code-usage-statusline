@@ -26,6 +26,9 @@ export const CONFIG = {
   // How often the band reads its figures again with nothing else
   // happening, so the clocks and the 🔜 resets move while idle.
   tickMs: 30_000,
+  // How often the band and the footer redraw their clocks (🔧 ⌛ ⛳ 🕐 🔜)
+  // against the time now, between reads, without reading anything.
+  clockMs: 1_000,
   // How many start lines the store keeps, and as many keys of receipts
   // stamped, newest first: each is a few hundred bytes, and the store
   // holds 4 MiB in all.

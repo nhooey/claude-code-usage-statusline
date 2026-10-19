@@ -16,6 +16,9 @@ declare module 'claude-code' {
       /** Bumped when a receipt or a start line is filed in the store, so
        * the rows that look for one draw again. */
       filed: number;
+      /** Seconds since the epoch the band and the footer draw their clocks
+       * at, moved each second between reads; 0 before the first. */
+      now: number;
     }
   }
 }
