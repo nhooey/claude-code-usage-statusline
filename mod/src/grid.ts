@@ -168,7 +168,10 @@ export function layout(st: Settings, rows: readonly Row[], cols: number,
 /** One row on the columns `keys`.  With `spill`, the label runs on over
  * the row's own leading blank columns, up to its first figure, instead of
  * stopping where the first column starts.  Every row ends RIGHT_EDGE
- * columns short of the terminal's edge. */
+ * columns short of the terminal's edge, and never runs past that: a label
+ * with no room draws nothing, not even a `…`, and a row whose chrome and
+ * cells are wider than the terminal leaves, at a width too narrow for the
+ * drop to help, is cut there like a label. */
 export function draw(st: Settings, row: Row, keys: readonly string[],
   cols: number, patterns: readonly string[], spill = true): Span[] {
   const cells: [number, Span[] | null][] = [];
@@ -186,6 +189,8 @@ export function draw(st: Settings, row: Row, keys: readonly string[],
     room += cells.shift()![0];
   }
   const right = cells.flatMap(([w, c]) => c ?? [span(" ".repeat(w))]);
-  return [...head, ...seg(st, room, labelText(st, row, patterns, room)),
+  const out = [...head, ...seg(st, room, labelText(st, row, patterns, room)),
     ...right];
+  const edge = cols - RIGHT_EDGE;
+  return width(out, st.widths) > edge ? cut(out, edge, st.widths) : out;
 }

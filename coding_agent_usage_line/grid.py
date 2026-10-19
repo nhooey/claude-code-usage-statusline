@@ -152,7 +152,10 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
     """One row on the columns `keys`.  With `spill`, the label runs on over
     the row's own leading blank columns, up to its first figure, instead of
     stopping where the first column starts.  Every row ends RIGHT_EDGE
-    columns short of the terminal's edge."""
+    columns short of the terminal's edge, and never runs past that: a label
+    with no room draws nothing, not even a `…`, and a row whose chrome and
+    cells are wider than the terminal leaves, at a width too narrow for the
+    drop to help, is cut there like a label."""
     cells = []
     for c in GRID_CELLS:
         if c["key"] not in keys:
@@ -170,4 +173,6 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
     right = []
     for w, c in cells:
         right.extend(c if c is not None else [Span(" " * w)])
-    return head + fmt.seg(room, label_text(row, patterns, room)) + right
+    out = head + fmt.seg(room, label_text(row, patterns, room)) + right
+    edge = cols - RIGHT_EDGE
+    return cut(out, edge) if width(out) > edge else out
