@@ -15,7 +15,8 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  accountText, bandLines, bandRows, fixedKeys, footerTail, phaseRows,
+  FOOTER_JOIN, accountText, bandLines, bandRows, fixedKeys, footerTail,
+  phaseRows,
   workspaceOf,
 } from "../src/band.ts";
 import { receiptLines, receiptTurn } from "../src/receipt.ts";
@@ -152,12 +153,14 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   assert.ok(text.includes("💳"), text);
   const tail = inZone(fig, () => footerTail(st, fig, [], hint, 155));
   assert.ok(tail.endsWith(text), tail);
-  // Two blanks in, the hint, then the tail: to the band's right edge.
-  assert.equal(2 + visWidth(hint, st.widths) + visWidth(tail, st.widths),
-    155 - RIGHT_EDGE);
-  // Too narrow a row still parts the two by two blanks.
-  assert.ok(inZone(fig, () => footerTail(st, fig, [], hint, 40))
-    .startsWith("  " + text.slice(0, 1)));
+  // Two blanks in, the hint, Claude Code's " · ", then the tail: to the
+  // band's right edge, padded with blanks no trim takes.
+  assert.equal(2 + visWidth(hint, st.widths) +
+    visWidth(FOOTER_JOIN, st.widths) + visWidth(tail, st.widths),
+  155 - RIGHT_EDGE);
+  assert.equal(tail.trimStart(), tail);
+  // Too narrow a row: the " · " alone parts the two.
+  assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)), text);
   assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 155)),
     "");
   // 🔋 hidden in every row takes its 🔜 with it, and leaves 🪫's.

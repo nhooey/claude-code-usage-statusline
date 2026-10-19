@@ -437,7 +437,9 @@ export function accountText(st: Settings, fig: Dict,
 
 /** What the footer under the prompt gets after Claude Code's own line,
  * `hint`, at `cols`: `accountText`, after blanks that end it where the
- * band's rows end, at least two; "" with no account text.  The line is two
+ * band's rows end; "" with no account text.  Claude Code trims the tail's
+ * leading spaces and joins it to the line with FOOTER_JOIN, so the blanks
+ * are TAIL_BLANK, which it keeps (seen live 2026-10-20).  The line is two
  * blanks in, and `hint` is read with one space between its parts, so the
  * padding is a guess at the drawn width; a tail too wide is cut where the
  * row ends. */
@@ -446,9 +448,14 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   const text = accountText(st, fig, hide);
   if (!text) return "";
   const pad = cols - RIGHT_EDGE - 2 - visWidth(hint, st.widths) -
-    visWidth(text, st.widths);
-  return " ".repeat(Math.max(2, pad)) + text;
+    visWidth(FOOTER_JOIN, st.widths) - visWidth(text, st.widths);
+  return TAIL_BLANK.repeat(Math.max(0, pad)) + text;
 }
+
+/** What Claude Code puts between its footer line and a hook's tail. */
+export const FOOTER_JOIN = " · ";
+/** U+2800, a blank cell that is not whitespace, so no trim takes it. */
+export const TAIL_BLANK = "⠀";
 
 /** The band as drawn at `cols` under `hide`: its rows' spans, top to
  * bottom, on the fixed grid.  A hidden scope's row is left out. */
