@@ -262,6 +262,16 @@ function reportedPath(state: string, session: string): string {
 /** The billed turn, as one key: its tag, its first stamp and how many
  * calls it has billed, so the same turn read again is the same key and a
  * turn that went on is not. */
+/** Whether the billed turn is the newest of the main thread's turns. */
+function newest(turns: readonly Turn[]): boolean {
+  const i = receiptTurn(turns);
+  if (i < 0) return false;
+  for (let j = turns.length - 1; j > i; j--) {
+    if (!turns[j].agent && !turns[j].compact) return false;
+  }
+  return true;
+}
+
 function turnKey(turns: readonly Turn[]): string {
   const i = receiptTurn(turns);
   if (i < 0) return "";
@@ -302,16 +312,32 @@ export async function receiptMessage(raw: string, o: Options, env: Env,
   // the reading the receipt was made from.
   const last = typeof pay.last_assistant_message === "string"
     ? pay.last_assistant_message : "";
+  const start = performance.now();
   if (last && !await holds(transcript, last, o.wait)) {
-    // The text it looked for, so a miss can be told from a write behind.
-    note("no receipt: the transcript lacks the turn's last message after " +
-      o.wait + "s: " + JSON.stringify(needleOf(last).slice(0, 40)));
-    return "";
+    // Not fatal: the payload's text need not be the transcript's byte for
+    // byte.  The text it looked for, so a miss can be read.
+    note("the transcript lacks the turn's last message after " + o.wait +
+      "s: " + JSON.stringify(needleOf(last).slice(0, 40)));
   }
   const agents = agentRecords(transcript);
   const held = new Map<string, number>();
-  const turns = await readTurnsSettled(transcript, SETTLE_S, SETTLE_POLL_S,
+  let turns = await readTurnsSettled(transcript, SETTLE_S, SETTLE_POLL_S,
     agents, held, state);
+  // The billed turn must be the newest prompt's: one before it is the turn
+  // before's receipt again, read before this turn's records were written.
+  while (!newest(turns) && performance.now() - start < o.wait * 1000) {
+    await new Promise((ok) => setTimeout(ok, 100));
+    held.clear();
+    turns = await readTurnsSettled(transcript, 0, SETTLE_POLL_S, agents,
+      held, state);
+  }
+  if (!newest(turns)) {
+    const t = turns.at(-1);
+    note("no receipt: the newest turn is not billed: " + JSON.stringify(t
+      ? [t.prompt_id.slice(0, 8), t.turn_index, t.calls, t.agent ?? null,
+        t.compact ?? null] : null));
+    return "";
+  }
   const key = turnKey(turns);
   const reported = reportedPath(state, session);
   if (!key || key === lastReported(reported)) return "";

@@ -216,14 +216,35 @@ test("a Stop waits for the transcript to hold the turn's last message",
     assert.equal(out, want);
   });
 
-test("a Stop whose last message never lands prints nothing and logs", () => {
-  const d = scratch();
-  const r = stop(d, payloadOf(d, { last_assistant_message: "not there" }),
-    ["--wait", "0.2"]);
-  assert.equal(r.status, 0);
-  assert.equal(r.stdout, "");
-  assert.match(logOf(d), /no receipt: the transcript lacks the turn's last/);
-});
+test("a Stop whose message never matches still prints, and logs the miss",
+  () => {
+    // The payload's text need not be the transcript's byte for byte.
+    const d = scratch();
+    const r = stop(d, payloadOf(d, { last_assistant_message: "not there" }),
+      ["--wait", "0.2"]);
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, stop(scratch(), payloadOf(d)).stdout);
+    assert.match(logOf(d), /the transcript lacks the turn's last message/);
+  });
+
+test("a Stop whose newest turn is not billed yet prints nothing and logs",
+  () => {
+    // The newest prompt with none of its calls written: the receipt would
+    // be the turn before's.
+    const d = scratch();
+    const copy = path.join(d.root, SESSION + ".jsonl");
+    fs.writeFileSync(copy, fs.readFileSync(TRANSCRIPT, "utf8") +
+      JSON.stringify({ type: "user", promptId: "f00dbabe-0000",
+        timestamp: "2026-08-16T01:30:00Z", userType: "external",
+        message: { content: "One more thing." } }) + "\n");
+    fs.cpSync(TRANSCRIPT.slice(0, -".jsonl".length),
+      path.join(d.root, SESSION), { recursive: true });
+    const r = stop(d, payloadOf(d, { transcript_path: copy }),
+      ["--wait", "0.2"]);
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, "");
+    assert.match(logOf(d), /no receipt: the newest turn is not billed/);
+  });
 
 test("the wait matches the message's first line, trimmed, as JSON holds it",
   async () => {
