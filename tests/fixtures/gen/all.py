@@ -19,6 +19,7 @@ import cases  # noqa: E402
 import cost  # noqa: E402
 import formatting  # noqa: E402
 import records  # noqa: E402
+import render  # noqa: E402
 import sources  # noqa: E402
 import status  # noqa: E402
 
@@ -32,6 +33,7 @@ cases.main(ROOT)
 # Under 3.9 as well: 3.12's sum() of floats rounds differently.
 calib.main()
 formatting.main()
+render.main()
 records.main()
 # Last, since it sets TZ for the process.  Under /usr/bin/python3: its
 # expected epochs are 3.9's fromisoformat, quirks included.

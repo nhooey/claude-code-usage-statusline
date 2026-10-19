@@ -342,9 +342,11 @@ export function renderDate(st: Settings, now: number): Span[] {
 export type EtaReading = null | readonly [] | readonly [number, number];
 
 /** (share done, seconds left) off the latest ETA and the elapsed time;
- * `eta` is (epoch, seconds left), or null for no transcript. */
+ * `eta` is (epoch, seconds left), or null for no transcript.  `startMs`
+ * is whatever the task record held, read as float() reads it: what it
+ * cannot read is no start. */
 export function etaReading(eta: readonly number[] | null,
-  startMs: number | null, now: number, status = "running",
+  startMs: unknown, now: number, status = "running",
   end: number | null = null): EtaReading {
   if (eta === null) return null;
   if (!eta.length) return [];
@@ -352,7 +354,8 @@ export function etaReading(eta: readonly number[] | null,
   if (end !== null && (status === "killed" || status === "failed")) {
     t = Math.min(t, end);
   }
-  let t0 = startMs === null ? null : startMs / 1000.0;
+  const ms = pyFloat(startMs);
+  let t0 = ms === null ? null : ms / 1000.0;
   const [at, said] = eta;
   // A report older than the start is a resumed agent: read from the
   // report instead.
