@@ -2,52 +2,49 @@
 
 Preparation (sidecar lookup, usage parsing, limits/source selection and JSON
 serialization) belongs to orchestration.  This module only lays out supplied
-task facts.  Its cells return spans (see spans.py), and render_task_rows
-joins each row into escape codes, where the panel prints it.
+task facts.  Its cells return spans (see spans.py); render_task_rows hands
+each row to the redesigned grid (grid.py, agents/plans/redesign.md) as its
+label's pieces and its cells, and joins what the grid draws into escape
+codes, where the panel prints it.
 """
 import time
 from typing import Optional, Sequence
 
 from . import formatting as fmt
+from . import grid
 from .formatting import *
 from .claude_render import (render_cost, render_diff, render_tokens, model_spec,
                             effort_glyph, eta_reading,
                             inherit_eta)
 from .claude_records import Limits, squash, eta_finish, WAITING_TOOLS
 from .spans import Span, ink, join, paint, rstrip, spans, width
+from .spec import CHROME_DEPTH, GRID_CELLS, LABEL_MIN, RIGHT_EDGE
 
-A_KIND_W, A_ID_W, A_STATE_W = 2, 10, 2
-A_HEAD_GAP, A_NAME_MIN, A_ACT_MIN, A_CLOCK_W, A_RATE_W, A_GAP, A_TICK_S = 1, 8, 8, 6, 8, 2, 5.0
+A_STATE_W, A_CLOCK_W, A_RATE_W, A_TICK_S = 2, 6, 8, 5.0
 # 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 A_SPLIT_W = 3 * (2 + GAUGE_W) + 2
-A_LIMIT_W, A_TREE_W = 2 + LIM_FIG_W, 2
+A_LIMIT_W = 2 + LIM_FIG_W
 # 🪫 one column wider than 🔋, for the decimal limit_pct adds at digits=4.
 A_LIMIT_WEEK_W = A_LIMIT_W + 1
 # ⛳ and five for the figure: dur_fmt's widest is four, and an overrun
-# spends one more on its "+".
+# spends one more on its "+".  The cell's whole width, ⛳ measured on this
+# terminal, is grid.cell_width("A_ETA_W").
 A_ETA_FIG_W = 5
-A_ETA_W = vis_width(E_ETA) + A_ETA_FIG_W
 A_SPIN_W = 1
-# The name room a row must still have after paying for the tree beside its
-# right group.  The copy is for a wide window, where the panel's own tree is
-# far from the figures; in a narrow one the two are close, and the activity
-# is the better use of the columns.
-A_TREE_ROOM = 40
-# 💾 and the eleven columns render_diff lays after it: a blank, two signs
-# and two figures of four.  The status line's own cell, unnarrowed — the
-# pair means the same thing on both readouts and reads as one shape.
-A_DIFF_W = vis_width(S_DIFF) + 11
 # 🧠's two fields, the size and its share of the agent's window: the status
-# line's cell, "🧠 124k 12٪", with its widest share, "100٪".
+# line's cell, "🧠 124k 12٪", with its widest share, "100٪".  The cell's
+# whole width is grid.cell_width("A_CTX_W"), and 💾's, the status line's own
+# cell unnarrowed, grid.cell_width("A_DIFF_W").
 A_CTX_PCT_W = 4
-A_CTX_W = vis_width(S_CTX) + 4 + 1 + A_CTX_PCT_W
 # The 🤖 state trades its rate for how long the agent has written nothing
 # once that is A_SILENT_S, and turns amber at A_SILENT_WARN_S: long enough
 # that no tool round or request it is still waiting on explains it by itself.
 # See render_doing.
 A_SILENT_S, A_SILENT_WARN_S = QUIET_S, QUIET_WARN_S
-# The most a worktree's branch spends of the name's room, 🌿 not counted.
+# The most a worktree's branch spends of the label, 🌿 not counted.
 A_BRANCH_W = 16
+# The blanks between the label's name, branch and activity.
+A_LABEL_GAP = 2
 KIND_MARK = {"general-purpose":"🔩", "claude":"🎩", "Explore":"🔍", "Plan":"📐",
              "claude-code-guide":"📚", "statusline-setup":"📟", "fork":"🍴",
              "local_agent":"👥", "local_bash":"🐚", "local_workflow":"🔗",
@@ -121,8 +118,8 @@ def render_state(status, usage=None, waiting_on=False):
     phase, mode = agent_state(status, usage, waiting_on)
     return spans([_phase_span(phase), mode])
 def render_phase(status, usage=None, waiting_on=False):
-    """The phase circle alone: the mode after it is the Doing cell's now,
-    beside how long the agent has been in it; see render_doing."""
+    """The phase circle alone: the mode is the 🛫 column's now, beside how
+    long the agent has been in it; see render_doing."""
     return spans(_phase_span(agent_state(status, usage, waiting_on)[0]))
 def _phase_span(phase):
     """The phase circle, or a status never seen in amber."""
@@ -344,9 +341,9 @@ def state_since(status, usage, phase, mode, task=None):
     return None
 def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None):
     """What the agent is doing, and for how long: the mode mark agent_state
-    reads, then the time since state_since: the Doing cell, in the head right
-    after the phase circle and a space — "🟢 🔧  42s " where a rate reads "🛫 200/s",
-    a space after the mark either way.  The unit stands where the rate's "/" does,
+    reads, then the time since state_since: the row's 🛫 column, the grid's
+    `rate` — "🔧  42s " where a rate reads "🛫 200/s", a space after the mark
+    either way.  The unit stands where the rate's "/" does,
     so the figures stack down the panel.
 
     🤖 keeps the rate while the agent's records keep landing: the figure
@@ -370,41 +367,6 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
     style = (ink("F_AMB") if mode == E_WORK and secs >= A_SILENT_WARN_S
              else ink("F_PRW", mag_dim(secs, MAG_DUR_S)))
     return [Span(mode + " "), paint(style, pad_val(fig_w, dur_fmt(secs)) + " ")]
-def render_who(name, act, room, branch=""):
-    """The name, then 🌿 and the branch of a worktree the agent works in
-    apart from the session's, then what it is doing, in that order of claim
-    on `room`.  The first is cut to fit; the branch is drawn whole or not at
-    all; the activity needs A_ACT_MIN."""
-    tag = E_GIT_OK + fit_cols(branch, A_BRANCH_W) if branch else ""
-    out, left = [], room
-    for col, text, least in (("F_BLU", name, 0), ("F_GRN", tag, None), ("F_CHAT_B", act, A_ACT_MIN)):
-        if not text: continue
-        have = left - (A_HEAD_GAP if out else 0)
-        if not out: text = fit_cols(text, have)
-        elif least is None:
-            if have < vis_width(text): continue
-        elif have < least: continue
-        else: text = fit_cols(text, have)
-        out += ([Span(" " * A_HEAD_GAP)] if out else []) + [Span(text, col)]
-        left = have - vis_width(text)
-    return out
-
-def tree_cols(task, meta, depth=None):
-    """The columns the panel spends before a NESTED row, which `cols` is not net of.
-
-    The payload's width is already net of the panel's chrome for a row the
-    session itself started — the ◯ pointer and two columns after it — and says
-    nothing about the `├ ` the panel draws for a row under another agent, one
-    per level of nesting and before the pointer.  Left unpaid, a child's right
-    group runs A_TREE_W past the edge its parent's lands on and the panel cuts
-    the 🪫 cell off to get the row back inside the terminal.  `depth` is the
-    row's depth as the panel draws it (see tree_shape); without one it is the
-    agent's own `spawnDepth`, 1 for a task the session started, and a task
-    with no sidecar (a shell, a remote agent) hangs off nothing and pays
-    nothing.
-    """
-    return A_TREE_W * ((spawn_depth(task, meta) if depth is None else depth) - 1)
-
 def spawn_depth(task, meta):
     """1 for a task the session started, 2 for one an agent started, and so on."""
     try: return max(1, int(meta.get("spawnDepth") or task.get("spawnDepth") or 1))
@@ -449,40 +411,6 @@ def tree_shape(prepared_tasks):
         out[tid] = (parent[tid], depth)
     return out
 
-def tree_marks(prepared_tasks, shape=None):
-    """The panel's tree, drawn again for each task id: `⏺`, `├ ◯`, `│ └ ◯`.
-
-    Only as much of it as the sidecars say, with each row's parent and depth
-    from tree_shape.  A child is the last of its siblings when none started
-    after it, which is the panel's order: siblings by `startTime`, the
-    payload's order breaking a tie.  An ancestor carries a `│` down its
-    column while one of its own siblings is still to come.
-
-    The panel marks the row the cursor is on with `❯ ⏺`, and the payload does
-    not say which row that is.  But the panel shows a row's children only once
-    that row is expanded, and only the selected row is, so a row with a child
-    on the panel takes the filled `⏺`.  The `❯` goes in the gutter left of the
-    panel's tree, which the copy has no counterpart for.
-    """
-    shape = tree_shape(prepared_tasks) if shape is None else shape
-    tasks = [t for t, _, _, _ in prepared_tasks if isinstance(t, dict) and t.get("id")]
-    def started(t):
-        try: return float(t.get("startTime") or 0)
-        except (TypeError, ValueError): return 0.0
-    order = [str(t["id"]) for _, t in sorted(enumerate(tasks), key=lambda it: (started(it[1]), it[0]))]
-    parent = {tid: shape[tid][0] for tid in order}
-    open_ = set(parent.values())
-    last = {tid: not any(parent[q] == parent[tid] for q in order[i + 1:]) for i, tid in enumerate(order)}
-    out = {}
-    for tid in order:
-        p, depth = shape[tid]
-        marks, up = [E_TREE_END if last[tid] else E_TREE_MID] if depth > 1 else [], p
-        for _ in range(depth - 2):
-            marks.append(" " if last.get(up, True) else E_TREE_BAR)
-            up = parent.get(up, "")
-        out[tid] = " ".join(list(reversed(marks)) + [E_TREE_OPEN if tid in open_ else E_TREE_NODE])
-    return out
-
 def inherited_etas(prepared_tasks):
     """Each task's ETA, pushed out to the latest finish below it on the panel.
 
@@ -494,7 +422,7 @@ def inherited_etas(prepared_tasks):
     descendant counts for nothing.  A completed one counts only while its
     transcript still holds a live ETA, which is an agent parked on
     background work (see live_eta); one that finished has nothing left.
-    The tree is the sidecars' `parentAgentId`, as tree_marks reads it; a
+    The tree is the sidecars' `parentAgentId`, as tree_shape reads it; a
     task whose parent is not on the panel is a root.
     """
     rows = {str(t["id"]): (t, u, m or {}) for t, u, m, _ in prepared_tasks
@@ -522,30 +450,57 @@ def inherited_etas(prepared_tasks):
                                [finish(k) for k in kids.get(tid, ())], start)
     return out
 
-def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tree="", tree_w=0,
-                     eta=False, waiting_on=False, depth=None, kids=0, kids_w=0, lead=0,
-                     widths=None):
-    """Render one fully prepared task; it performs no reads or accounting.
+# The cells each scope's rows can carry, as agents/plans/redesign.md's
+# "Where each row's figures come from" has them: the band's 💳, 🎤, 🤖💬 and
+# 🎮 rows, the receipt's 📊 🎤 and 📊 🎮 (scopes turn and session again), and
+# an agent's.  The panel lays its rows out over a template of each, a row
+# with no label and every cell it can carry, empty, so that it reaches the
+# columns the mod reaches from the same width and --hide without either
+# drawing the other's rows; see grid.layout.  Templates rather than the mod's
+# own rows, whose figures the panel never reads: only which keys a row holds,
+# and its scope for --hide, decide the columns.
+SCOPE_CELLS = (
+    ("account", ("five", "week")),
+    ("turn", ("cost", "ctx", "tok", "cache", "clock", "eta", "split", "five",
+              "week", "diff")),
+    ("main", tuple(c["key"] for c in GRID_CELLS)),
+    ("session", ("cost", "tok", "cache", "clock", "split", "five", "week",
+                 "diff")),
+    ("agent", tuple(c["key"] for c in GRID_CELLS)),
+)
 
-    `tree` is this row's copy of the panel's tree and `tree_w` the widest
-    copy on the panel, which every row pads to so the right groups still
-    share their columns.  It opens the right group, and only when the
-    name keeps A_TREE_ROOM after paying for it.  Every row has the same
-    room, so the panel draws the copy on all of its rows or on none.
-    `waiting_on` says an agent under it is still running; see parked.
-    `depth` is the row's depth as the panel draws it; see tree_shape.
-    `kids` is how many rows hang under it, and `kids_w` the widest 👶🏻 cell
-    on the panel, 0 where no row has any, which drops the cell from all.
-    `lead` is the blank a row opens with so that its cells start where the
-    deepest row's do; see render_task_rows.  `widths` holds the panel's
-    widest 📨, 📡, 💻 and 🤏 cells, as `kids_w` does 👶🏻's; see panel_widths.
+
+def possible_rows():
+    """The templates of SCOPE_CELLS, as grid rows."""
+    return [grid.Row(scope, (), {k: () for k in keys})
+            for scope, keys in SCOPE_CELLS]
+
+
+def panel_layout(cols=None, hide=()):
+    """`(cols, keys)`: the terminal width a row is drawn for, and the
+    columns every row draws there, as GRID_CELLS keys.
+
+    `cols` is the terminal's width, which the caller works out from the
+    payload's `columns` and PANEL_COLUMNS_SHORT; the chrome Claude Code draws
+    before a row counts toward it.  With no width known, it is the narrowest
+    that drops no column: every column --hide leaves, and LABEL_MIN for the
+    label of a row CHROME_DEPTH deep.
     """
-    task, meta, shares, widths = task or {}, meta or {}, shares or {}, widths or {}
-    if cols: cols = max(0, cols - tree_cols(task, meta, depth) - lead)
-    tid, status, kind = str(task.get("id") or ""), str(task.get("status") or ""), str(task.get("type") or "")
+    rows = possible_rows()
+    if not cols:
+        keys = grid.layout(rows, 1 << 30, hide)
+        room = {c["key"]: grid.cell_width(c["width"]) + c["gap"] for c in GRID_CELLS}
+        cols = (RIGHT_EDGE + width(grid.chrome(CHROME_DEPTH)) + LABEL_MIN
+                + sum(room[k] for k in keys))
+    return cols, grid.layout(rows, cols, hide)
+
+
+def agent_cells(task, usage, meta, shares, limits, now=None, eta=False, waiting_on=False):
+    """The row's figures by GRID_CELLS key, each only where it has one: a
+    key left out is a blank the label may run on over (grid.draw)."""
+    status = str(task.get("status") or "")
     model = str(task.get("model") or "") or getattr(usage, "model", "") or str(meta.get("model") or "")
     light = shares.get("week") is not None and shares["week"] < MAG_SHARE_AGENT
-    gap=" " * A_GAP
     billed=bool(getattr(usage,"parts",()))
     live=status == "running" or parked(status, getattr(usage,"eta",None), waiting_on, getattr(usage,"background",()))
     # A finished row stops at its last billed stamp, else at its last working
@@ -565,59 +520,103 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, tre
     # Signed off: its own last report is zero and no descendant pushed the
     # finish past it, so the zero is what the figure counts to.
     signed_off=bool(own_eta) and own_eta[1] == 0 and bool(shown_eta) and eta_finish(shown_eta) <= eta_finish(own_eta) + 1e-6
-    eta_args=(shown_eta, task.get("startTime"), now, status, getattr(usage,"last_epoch",None), signed_off)
-    right=_gapped(gap, (seg(w,c) for w,c in (
+    cells = (
         # The model and effort, right before the 💰 they priced.
-        (6, render_agent_model(model, str(task.get("effort") or "") or getattr(usage,"effort", ""))),
-        (vis_width(S_COST)+4, render_cost("%.4f" % getattr(usage,"cost",0)) if billed else []),
-        (A_CTX_W, render_agent_ctx(getattr(usage,"ctx_tokens",0), getattr(usage,"ctx_window",0))),
-        (vis_width(S_TOK)+VAL_W+VAL2_W, render_tokens(getattr(usage,"tok_up",None), getattr(usage,"tok_down",0))),
-        (5, render_agent_cache(getattr(usage,"cache_pct",-1))),
-        # ⌛ ⛳ 🤖 🔧 🚦, one space apart as one segment, right before the
-        # 5h and 1w it spent: how long it has run, how long it says it has
-        # left, and how the run split — the status line's ⌛ row in the same
-        # order, with shares where it has figures.
-        (A_CLOCK_W + A_ETA_W + A_SPLIT_W + 2, spans([
-         seg(A_CLOCK_W, render_agent_elapsed(task.get("startTime"), now, end, first) if clocked else []), " ",
-         seg(A_ETA_W, render_agent_eta(*eta_args)), " ",
-         render_agent_split(agent_elapsed(task.get("startTime"), now, end, first) if clocked else None,
-                            getattr(usage,"model_s",None), getattr(usage,"tool_s",0.0))])),
-        (A_LIMIT_W, render_agent_limit(E_SESS, limits.session_pct, shares.get("sess"), "F_LIM_SESS", billed, light)),
-        (A_LIMIT_WEEK_W, render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), "F_LIM_WEEK", billed, light, 4)),
-        (A_DIFF_W, render_agent_diff(usage) if billed else [])) if w))
+        ("model", render_agent_model(model, str(task.get("effort") or "") or getattr(usage,"effort", ""))),
+        # What it is doing and for how long, or its token rate: render_doing.
+        ("rate", render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"), status), now, task)),
+        ("cost", render_cost("%.4f" % getattr(usage,"cost",0)) if billed else []),
+        ("ctx", render_agent_ctx(getattr(usage,"ctx_tokens",0), getattr(usage,"ctx_window",0))),
+        ("tok", render_tokens(getattr(usage,"tok_up",None), getattr(usage,"tok_down",0))),
+        ("cache", render_agent_cache(getattr(usage,"cache_pct",-1))),
+        # ⌛ ⛳ 🤖 🔧 🚦, right before the 5h and 1w it spent: how long it has
+        # run, how long it says it has left, and how the run split — the
+        # status line's ⌛ row in the same order, with shares where it has
+        # figures.
+        ("clock", render_agent_elapsed(task.get("startTime"), now, end, first) if clocked else []),
+        ("eta", render_agent_eta(shown_eta, task.get("startTime"), now, status,
+                                 getattr(usage,"last_epoch",None), signed_off)),
+        ("split", render_agent_split(agent_elapsed(task.get("startTime"), now, end, first) if clocked else None,
+                                     getattr(usage,"model_s",None), getattr(usage,"tool_s",0.0))),
+        ("five", render_agent_limit(E_SESS, limits.session_pct, shares.get("sess"), "F_LIM_SESS", billed, light)),
+        ("week", render_agent_limit(E_WEEK, limits.weekly_pct, shares.get("week"), "F_LIM_WEEK", billed, light, 4)),
+        ("diff", render_agent_diff(usage) if billed else []))
+    return {k: spans(v) for k, v in cells if spans(v)}
+
+
+def agent_label(task, usage, meta, waiting_on=False, kids=0, kids_w=0, widths=None):
+    """The row's label, as grid pieces under the agent scope.
+
+    The kind's mark, with the spinner before it and the phase circle after
+    (`name.kind`); the counts a panel draws only while some row needs one,
+    each padded to the panel's widest so the names after them hold their
+    column (`state.kids`, `state.compact`, `state.shells`, `state.monitors`,
+    `state.inbox`); then the name (`name.label`), 🌿 and the branch of a
+    worktree the agent works in apart from the session's
+    (`workspace.branch`), and what it is doing (`chat.doing`).
+
+    The kind, the name, the branch and the activity have no drop rank, as on
+    the mockup's agent rows: a label too long for its room is cut from the
+    end, the activity first, then the branch, then the name.  The counts
+    leave whole before anything is cut, the quickest to pass first, so a
+    narrow label keeps its name rather than the blanks that hold another
+    row's 📨.  The steadiest stand first — 👶🏻 and 🤏 stay once they come;
+    💻 and 📡 last as long as a shell or a Monitor runs; 📨 passes quickest
+    — so the passing ones shift the fewest.
+    """
+    widths = widths or {}
+    status, kind = str(task.get("status") or ""), str(task.get("type") or "")
+    head = spans([seg(A_SPIN_W, render_spin(status, usage)),
+                  render_kind(str(meta.get("agentType") or ""), kind),
+                  seg(A_STATE_W, render_phase(status, usage, waiting_on)), " "])
+    out = [grid.Piece("name.kind", head, 0)]
+    for path, w, cell, drop in (
+            ("state.kids", kids_w, render_kids(kids), 5),
+            ("state.compact", widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0)), 4),
+            ("state.shells", widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash")), 3),
+            ("state.monitors", widths.get("monitors", 0), render_background(E_MODE_MONITOR, background_count(status, usage, "monitor")), 2),
+            ("state.inbox", widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0)), 1)):
+        if w: out.append(grid.Piece(path, seg(w, cell) + [Span(" ")], drop))
     desc=squash(str(task.get("description") or "")); name=str(task.get("name") or "") or desc; act=squash(str(task.get("label") or ""))
     if act == desc: act=""
-    # The cells a panel draws only while some row needs one sit together,
-    # right after the kind and state, which keep their column however many
-    # of them the panel draws; what comes and goes moves only the id, the
-    # name and nothing of the right group.  The steadiest first — 👶🏻 and 🤏
-    # stay once they come; 💻 and 📡 last as long as a shell or a Monitor
-    # runs; 📨 passes quickest — so the passing ones shift the fewest.
-    head=_gapped(" "*A_HEAD_GAP, (seg(w,c) for w,c in ((A_SPIN_W+A_KIND_W+A_STATE_W+1+A_RATE_W, spans([seg(A_SPIN_W, render_spin(status, usage)), render_kind(str(meta.get("agentType") or ""),kind), seg(A_STATE_W, render_phase(status, usage, waiting_on)),
-                                                      " ", seg(A_RATE_W, render_doing(status, usage, waiting_on, token_rate(task.get("tokenSamples"),status), now, task))])),
-                                                     (kids_w, render_kids(kids)),
-                                                     (widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
-                                                     (widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),
-                                                     (widths.get("monitors", 0), render_background(E_MODE_MONITOR, background_count(status, usage, "monitor"))),
-                                                     (widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0))),
-                                                     (A_ID_W, [Span(fit_cols(tid,A_ID_W), "F_BLU2", True)])) if w))
-    room=A_NAME_MIN if not cols else max(A_NAME_MIN, cols-width(head)-A_HEAD_GAP-width(right)-A_GAP)
     branch=str(getattr(usage,"branch","") or "")
-    # Decided on the room a row would have with neither the panel's indent
-    # nor the lead: those add up to the same on every row, and deciding on
-    # its own room would drop the copy from some rows alone in a window a
-    # few columns past the line.
-    if tree and room + tree_cols(task, meta, depth) + lead - tree_w - A_HEAD_GAP >= A_TREE_ROOM:
-        room -= tree_w + A_HEAD_GAP
-        right = seg(tree_w, [Span(tree, dim=True)]) + [Span(" " * A_HEAD_GAP)] + right
-    return rstrip([" "*lead, head, " "*A_HEAD_GAP, seg(room,render_who(name,act,room,branch)), gap, right])
-
-def _gapped(gap, cells):
-    """`cells`' spans in one list, `gap` between each two: str.join for spans."""
-    out = []
-    for i, c in enumerate(cells):
-        out += ([Span(gap)] if i else []) + spans(c)
+    words = [(p, t, c) for p, t, c in (
+        ("name.label", name, "F_BLU"),
+        ("workspace.branch", E_GIT_OK + fit_cols(branch, A_BRANCH_W) if branch else "", "F_GRN"),
+        ("chat.doing", act, "F_CHAT_B")) if t]
+    for i, (path, text, colour) in enumerate(words):
+        gap = [Span(" " * A_LABEL_GAP)] if i < len(words) - 1 else []
+        out.append(grid.Piece(path, [Span(text, colour)] + gap, 0))
     return out
+
+
+def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, eta=False,
+                     waiting_on=False, depth=None, kids=0, kids_w=0, widths=None, hide=()):
+    """Render one fully prepared task on the grid; it performs no reads or
+    accounting.
+
+    `cols` is the terminal's width, None where it is not known; see
+    panel_layout.  `eta` is the ⛳ the row draws, its own where False; see
+    inherited_etas.  `waiting_on` says an agent under it is still running;
+    see parked.  `depth` is the row's depth as the panel draws it (see
+    tree_shape), its own spawnDepth where None: Claude Code indents a nested
+    row's chrome two columns a level, and the grid takes them from its
+    label.  `kids` is how many rows hang under it, and `kids_w` the widest
+    👶🏻 cell on the panel, 0 where no row has any, which drops the piece
+    from all; `widths` holds the panel's widest 📨, 📡, 💻 and 🤏, as
+    `kids_w` does 👶🏻's (panel_widths).  `hide` is the --hide paths.
+
+    The chrome, "  ◯ " and its indent, is Claude Code's: the grid counts it
+    toward the width, and it is not printed.  Nor is a copy of the panel's
+    tree, which the design does not draw.
+    """
+    task, meta, shares = task or {}, meta or {}, shares or {}
+    cols, keys = panel_layout(cols, hide)
+    row = grid.Row("agent",
+                   agent_label(task, usage, meta, waiting_on, kids, kids_w, widths),
+                   agent_cells(task, usage, meta, shares, limits, now, eta, waiting_on),
+                   spawn_depth(task, meta) if depth is None else depth)
+    return rstrip(grid.draw(row, keys, cols, hide)[len(grid.chrome(row.depth)):])
 
 def panel_widths(prepared_tasks, now=None):
     """The widest 📨, 📡, 💻 and 🤏 cell on the panel, each 0 where no row
@@ -637,14 +636,16 @@ def panel_widths(prepared_tasks, now=None):
             "monitors": max([vis_width(E_MODE_MONITOR) + len(str(background_count(st, u, "monitor")))
                              for st, u in live if background_count(st, u, "monitor")] or [0])}
 
-def render_task_rows(prepared_tasks, limits, cols=None, now=None):
-    """Return `(task_id, row)` pairs for prepared `(task, usage, meta, shares)` facts."""
+def render_task_rows(prepared_tasks, limits, cols=None, now=None, hide=()):
+    """Return `(task_id, row)` pairs for prepared `(task, usage, meta, shares)` facts.
+
+    `cols` is the terminal's width, the payload's `columns` plus
+    PANEL_COLUMNS_SHORT, and `hide` the --hide paths; see render_agent_row.
+    """
     rows=[]
     shape=tree_shape(prepared_tasks)
-    trees=tree_marks(prepared_tasks, shape)
     etas=inherited_etas(prepared_tasks)
     busy=running_parents(prepared_tasks)
-    tree_w=max([vis_width(t) for t in trees.values()] or [0])
     # 👶🏻 counts the rows hanging directly under each one, as tree_shape
     # resolves them, finished or not.  The panel's own count, the dim
     # " (+N)" after a collapsed row's name, is part of the row this line
@@ -653,15 +654,9 @@ def render_task_rows(prepared_tasks, limits, cols=None, now=None):
     for p, _ in shape.values():
         if p: kids[p]=kids.get(p, 0) + 1
     kids_w=max([vis_width(E_KIDS) + len(str(n)) for n in kids.values()] or [0])
-    # The panel indents a nested row by its `├ ` and nothing else, so a
-    # parent's cells started A_TREE_W left of its children's and the kind,
-    # state, id and name columns broke at every level.  Each row opens with
-    # the blank the deepest row spends on its tree, less its own, and every
-    # row's cells start on one column, as its right group's end on one.
-    deep=max([d for _, d in shape.values()] or [1])
     widths=panel_widths(prepared_tasks, now)
     for task, usage, meta, shares in prepared_tasks:
         if isinstance(task, dict) and task.get("id"):
             tid=str(task["id"])
-            rows.append((tid, join(render_agent_row(task, usage, meta, shares, limits, cols, now, trees.get(tid, ""), tree_w, etas.get(tid, False), tid in busy, shape[tid][1], kids.get(tid, 0), kids_w, A_TREE_W * (deep - shape[tid][1]), widths))))
+            rows.append((tid, join(render_agent_row(task, usage, meta, shares, limits, cols, now, etas.get(tid, False), tid in busy, shape[tid][1], kids.get(tid, 0), kids_w, widths, hide))))
     return rows

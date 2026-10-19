@@ -33,6 +33,10 @@ Shared options:
   --diagnose             Redacted source/coverage diagnostics on stderr.
   --from-figures PATH    Claude: draw a figures document (tests/README.md,
                          "Figures") instead of reading any input.
+  --hide PATH            Repeatable. Leave out a column or a label part,
+                         scope[.group[.metric]] with * for any one part
+                         (docs/options.md). The agent panel only, for now;
+                         the other modes accept it and ignore it.
 
 Claude display options:
   --color, --column-rules, --no-totals, --no-right-align,
@@ -46,7 +50,7 @@ vendor credentials or transcript required.
 
 _VALUE_FLAGS = set(("--agent", "--mode", "--transcript", "--usage-source", "--account",
                     "--account-period", "--cols", "--prefix", "--label",
-                    "--from-figures"))
+                    "--from-figures", "--hide"))
 _COMMON_FLAGS = _VALUE_FLAGS | set(("--all", "--diagnose", "--selftest", "-h", "--help"))
 _CLAUDE_FLAGS = _COMMON_FLAGS | set(("--subscript-decimals", "--no-mark-spacing", "--mark-spacing",
     "--no-column-rules", "--column-rules", "--color", "--no-totals", "--no-right-align",
