@@ -162,10 +162,12 @@ type CostKept = { off: number; tail: string | null; recs: Priced[] }
 
 /** What the session tells the mod that the status line's payload carries,
  * as handlers learn it: the transcript from a classic event, the model's
- * effort from a turn's step. */
-export type Seen = { transcript: string; effort: string }
+ * effort from a turn's step.  `session` is the id the transcript is the
+ * one for, where that is known: a /clear or a /resume in the same process
+ * moves the session on, and the transcript with it. */
+export type Seen = { transcript: string; session: string; effort: string }
 
-export const seen: Seen = { transcript: '', effort: '' }
+export const seen: Seen = { transcript: '', session: '', effort: '' }
 const parsed = new Map<string, Parsed>()
 const agentKept = new Map<string, AgentKept>()
 const agentLabels = new Map<string, [string, string]>()
@@ -655,16 +657,25 @@ export async function payloadOf($: $, transcript: string): Promise<{
 }
 
 /** The transcript's path: the one a classic event named, else the file
- * named for the session's id under the projects directory. */
+ * named for the session's id under the projects directory.
+ *
+ * The classic events are the lesser source: Claude Code's own security
+ * plugin passes them by a user's mod (its debug log says "classic.
+ * SessionStart bypassed by cc-plugin-sec-default"), so in a live session
+ * the path is found by the session's id, and found again when the id
+ * moves on. */
 export async function transcriptPath($: $, places: Places):
   Promise<string> {
-  if (seen.transcript) return seen.transcript
   const id = await $.session.id()
+  if (seen.transcript && (!seen.session || seen.session === id)) {
+    return seen.transcript
+  }
   for (const p of await listDir($, places.projectsDir)) {
     if (p.kind !== 'dir') continue
     const path = pyJoin(pyJoin(places.projectsDir, p.name), id + '.jsonl')
     if (await fileSize($, path) !== null) {
       seen.transcript = path
+      seen.session = id
       return path
     }
   }
