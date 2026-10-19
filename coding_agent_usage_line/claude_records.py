@@ -11,7 +11,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 from . import formatting as fmt

@@ -51,7 +51,6 @@ in any project, not only one whose devshell supplies newer packages.
 """
 
 import decimal
-import fcntl
 import functools
 import glob
 import hashlib
@@ -59,13 +58,12 @@ import json
 import os
 import plistlib
 import re
-import struct
 import subprocess
 import sys
 import termios
 import time
 import typing
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 
@@ -76,8 +74,8 @@ _UTC = fmt._UTC
 
 # Claude records/parsing is separate from all terminal rendering.
 from .claude_records import *
-from .claude_records import (_agent_dir, _dedupe_usage, _num, _price,
-                             _records, _stamp_utc, _usd, ts_epoch)
+from .claude_records import (_agent_dir, _dedupe_usage, _price, _records,
+                             _usd, ts_epoch)
 from .claude_render import *
 from .claude_cost_render import (CostOpts, ink_colour as _c, place,
                                  render_cost_line as _pure_cost_render,
