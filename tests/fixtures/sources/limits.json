@@ -1,0 +1,1763 @@
+[
+ {
+  "expected": {
+   "session_pct": "41",
+   "session_reset": "2026-08-16 02:30",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "63",
+   "weekly_reset": "2026-08-17 22:50",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "both",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400,
+       "used_percent": 41.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "33.333333",
+   "session_reset": "2026-08-16 02:40",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "99.6",
+   "weekly_reset": "2026-08-16 02:40",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "fractions",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 1786848000.5,
+       "used_percent": 33.3333333
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": 1786847999.9999995,
+       "used_percent": 99.6
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "0.007812",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "0.023438",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "ties to even",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 0.0078125
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": null,
+       "used_percent": 0.0234375
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "0",
+   "session_reset": "1970-01-01 00:00",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "100",
+   "weekly_reset": "2100-01-01 00:00",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "tiny and whole",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 0,
+       "used_percent": 4e-07
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": 4102444800,
+       "used_percent": 100
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "3",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "first of each",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      },
+      {
+       "duration_seconds": 18000,
+       "id": "b",
+       "resets_at": null,
+       "used_percent": 2
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "c",
+       "resets_at": null,
+       "used_percent": 3
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "d",
+       "resets_at": null,
+       "used_percent": 4
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "8",
+   "session_reset": "1970-01-01 00:00",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "9",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "missing and expired skipped",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 5,
+       "used_percent": null
+      },
+      {
+       "duration_seconds": 18000,
+       "expired": true,
+       "id": "b",
+       "resets_at": 5,
+       "used_percent": 7
+      },
+      {
+       "duration_seconds": 18000,
+       "id": "c",
+       "resets_at": 6,
+       "used_percent": 8
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "d",
+       "resets_at": null,
+       "used_percent": 9
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "63",
+   "weekly_reset": "2026-08-16 02:23",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "weekly only",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 604800,
+       "id": "w",
+       "resets_at": 1786847000,
+       "used_percent": 63
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "other durations",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 3600,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "labelled bucket",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty label",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "null label",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": null,
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "model bucket",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "model": "m",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty model",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "model": "",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "other id",
+  "reading": {
+   "buckets": [
+    {
+     "id": "general",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "two buckets",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    },
+    {
+     "id": "b",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "no buckets",
+  "reading": {
+   "buckets": [],
+   "schema_version": 1
+  },
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty",
+  "reading": {},
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "not a dict",
+  "reading": [
+   1
+  ],
+  "tz": "UTC"
+ },
+ {
+  "expected": {
+   "session_pct": "41",
+   "session_reset": "2026-08-15 22:30",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "63",
+   "weekly_reset": "2026-08-17 18:50",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "both",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400,
+       "used_percent": 41.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "33.333333",
+   "session_reset": "2026-08-15 22:40",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "99.6",
+   "weekly_reset": "2026-08-15 22:40",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "fractions",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 1786848000.5,
+       "used_percent": 33.3333333
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": 1786847999.9999995,
+       "used_percent": 99.6
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "0.007812",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "0.023438",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "ties to even",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 0.0078125
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": null,
+       "used_percent": 0.0234375
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "0",
+   "session_reset": "1969-12-31 19:00",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "100",
+   "weekly_reset": "2099-12-31 19:00",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "tiny and whole",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 0,
+       "used_percent": 4e-07
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": 4102444800,
+       "used_percent": 100
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "3",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "first of each",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      },
+      {
+       "duration_seconds": 18000,
+       "id": "b",
+       "resets_at": null,
+       "used_percent": 2
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "c",
+       "resets_at": null,
+       "used_percent": 3
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "d",
+       "resets_at": null,
+       "used_percent": 4
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "8",
+   "session_reset": "1969-12-31 19:00",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "9",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "missing and expired skipped",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 5,
+       "used_percent": null
+      },
+      {
+       "duration_seconds": 18000,
+       "expired": true,
+       "id": "b",
+       "resets_at": 5,
+       "used_percent": 7
+      },
+      {
+       "duration_seconds": 18000,
+       "id": "c",
+       "resets_at": 6,
+       "used_percent": 8
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "d",
+       "resets_at": null,
+       "used_percent": 9
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "63",
+   "weekly_reset": "2026-08-15 22:23",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "weekly only",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 604800,
+       "id": "w",
+       "resets_at": 1786847000,
+       "used_percent": 63
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "other durations",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 3600,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "labelled bucket",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty label",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "null label",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": null,
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "model bucket",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "model": "m",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty model",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "model": "",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "other id",
+  "reading": {
+   "buckets": [
+    {
+     "id": "general",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "two buckets",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    },
+    {
+     "id": "b",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "no buckets",
+  "reading": {
+   "buckets": [],
+   "schema_version": 1
+  },
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty",
+  "reading": {},
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "not a dict",
+  "reading": [
+   1
+  ],
+  "tz": "America/New_York"
+ },
+ {
+  "expected": {
+   "session_pct": "41",
+   "session_reset": "2026-08-16 08:00",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "63",
+   "weekly_reset": "2026-08-18 04:20",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "both",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847400,
+       "used_percent": 41.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "seven_day",
+       "resets_at": 1787007000,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "33.333333",
+   "session_reset": "2026-08-16 08:10",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "99.6",
+   "weekly_reset": "2026-08-16 08:10",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "fractions",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 1786848000.5,
+       "used_percent": 33.3333333
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": 1786847999.9999995,
+       "used_percent": 99.6
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "0.007812",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "0.023438",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "ties to even",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 0.0078125
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": null,
+       "used_percent": 0.0234375
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "0",
+   "session_reset": "1970-01-01 05:30",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "100",
+   "weekly_reset": "2100-01-01 05:30",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "tiny and whole",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 0,
+       "used_percent": 4e-07
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "b",
+       "resets_at": 4102444800,
+       "used_percent": 100
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "3",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "first of each",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      },
+      {
+       "duration_seconds": 18000,
+       "id": "b",
+       "resets_at": null,
+       "used_percent": 2
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "c",
+       "resets_at": null,
+       "used_percent": 3
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "d",
+       "resets_at": null,
+       "used_percent": 4
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "8",
+   "session_reset": "1970-01-01 05:30",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "9",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "missing and expired skipped",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": 5,
+       "used_percent": null
+      },
+      {
+       "duration_seconds": 18000,
+       "expired": true,
+       "id": "b",
+       "resets_at": 5,
+       "used_percent": 7
+      },
+      {
+       "duration_seconds": 18000,
+       "id": "c",
+       "resets_at": 6,
+       "used_percent": 8
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "d",
+       "resets_at": null,
+       "used_percent": 9
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "63",
+   "weekly_reset": "2026-08-16 07:53",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "weekly only",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 604800,
+       "id": "w",
+       "resets_at": 1786847000,
+       "used_percent": 63
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "other durations",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 3600,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "labelled bucket",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty label",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "null label",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": null,
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "model bucket",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "model": "m",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "1",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty model",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "model": "",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "other id",
+  "reading": {
+   "buckets": [
+    {
+     "id": "general",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "two buckets",
+  "reading": {
+   "buckets": [
+    {
+     "id": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    },
+    {
+     "id": "b",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": 1
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "no buckets",
+  "reading": {
+   "buckets": [],
+   "schema_version": 1
+  },
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "empty",
+  "reading": {},
+  "tz": "Asia/Kolkata"
+ },
+ {
+  "expected": {
+   "session_pct": "",
+   "session_reset": "",
+   "session_share": "",
+   "session_turn": "",
+   "weekly_pct": "",
+   "weekly_reset": "",
+   "weekly_share": "",
+   "weekly_turn": ""
+  },
+  "name": "not a dict",
+  "reading": [
+   1
+  ],
+  "tz": "Asia/Kolkata"
+ }
+]
