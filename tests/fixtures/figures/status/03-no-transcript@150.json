@@ -1,5 +1,7 @@
 {
   "accounting": {
+    "open_turn": null,
+    "own": null,
     "session": null,
     "turn": null
   },
@@ -33,6 +35,7 @@
     "weekly_turn": null
   },
   "mode": "status",
+  "open_turn": null,
   "payload": {
     "cost_usd": "114.63436755000001",
     "ctx_window": "1000000",
@@ -53,7 +56,7 @@
     "transcript": "/nonexistent/x.jsonl"
   },
   "rate": null,
-  "schema": 2,
+  "schema": 3,
   "transcript": {
     "agent_etas": [],
     "asst_text": null,
@@ -71,6 +74,8 @@
     "lines_removed": 0,
     "monitors": 0,
     "own_cache_pct": null,
+    "own_est": false,
+    "own_parts": [],
     "own_tok_down": 0,
     "own_tok_up": null,
     "own_usd": 0,

@@ -287,11 +287,16 @@ export interface Transcript {
   readonly idle_at: number;         // the last answer's end, while idle
   readonly last_seen: number;       // its last stamped record of any kind
   // The main thread's own figures, off this file alone, before the agents'
-  // requests are added: what the redesign's 🤖💬 row counts.
+  // requests are added: what the redesign's 🤖💬 row counts.  Its
+  // compactions are in the dollars, not in the tokens.
   readonly own_tok_up: number | null;
   readonly own_tok_down: number;
   readonly own_cache_pct: number;   // -1 when it billed nothing
-  readonly own_usd: number;
+  readonly own_usd: number;         // the parts below, totalled
+  readonly own_parts: readonly (readonly [number | null, number])[];
+                                    // (epoch, dollars) per own request and
+                                    // compaction, as Turn.parts
+  readonly own_est: boolean;        // own_usd counts a compaction's estimate
   readonly lines_added: number;     // what the main thread wrote; agentDiff
   readonly lines_removed: number;
   readonly prompt_id: string;       // the turn opened last: its promptId
@@ -308,6 +313,7 @@ export function transcript(
     queued: 0, compactions: 0, ctx_est: false, shells: 0, monitors: 0,
     tool_at: 0.0, wait_at: 0.0, idle_at: 0.0, last_seen: 0.0,
     own_tok_up: null, own_tok_down: 0, own_cache_pct: -1, own_usd: 0.0,
+    own_parts: [], own_est: false,
     lines_added: 0, lines_removed: 0, prompt_id: "", turn_index: null, ...t,
   };
 }
@@ -388,6 +394,8 @@ export interface Turn {
   readonly turn_index: number | null;
   readonly lines_added: number;     // what the turn wrote, its agents'
   readonly lines_removed: number;   // included; see diffLines
+  readonly eta: readonly number[];  // (epoch, seconds left) off the last ETA
+                                    // the turn reported, kept when it ends
 }
 
 type TurnFirst = "ts" | "text" | "fresh" | "cache_write" | "cache_read" |
@@ -400,7 +408,7 @@ export function turn(t: Pick<Turn, TurnFirst> & Partial<Turn>): Turn {
     compact: false, reported: false, parts: [], agent_calls: 0, agent_ids: [],
     agent: false, tool_s: 0.0, blocked_s: 0.0, agent_model_s: 0.0,
     agent_tool_s: 0.0, agent_id: "", agent_name: "", prompt_id: "",
-    turn_index: null, lines_added: 0, lines_removed: 0, ...t,
+    turn_index: null, lines_added: 0, lines_removed: 0, eta: [], ...t,
   };
 }
 
@@ -1903,21 +1911,63 @@ export function transcriptOf(records: readonly Rec[],
   now: number | null = null): Transcript {
   const reqs = _dedupeUsage(records);
   let fresh = 0, cwrite = 0, cread = 0, down = 0;
-  let ownUsd = 0.0;
-  for (const r of reqs) {
+  // The main thread's own parts, its requests and its compactions, in one
+  // walk so each compaction falls in its place.  A compaction is priced as
+  // readTurns prices its turn, preTokens at the cache-read rate and the
+  // summary's estimated output once it arrives while no turn has opened
+  // since, and stamped where readTurns stamps that turn: at the /compact
+  // prompt that asked for it, where one is open with no calls, else at the
+  // boundary.
+  const kept = new Set(reqs);
+  type Compacting = [number | null, [number, number]];
+  const parts: ([number | null, number] | Compacting)[] = [];
+  let compacting: Compacting | null = null;
+  let opener: [unknown, string, number] | null = null;
+  let own_est = false;
+  for (const r of records) {
+    const text = turnStartText(r);
+    if (text !== null) {
+      opener = [pyOr(pyGet(r, "timestamp"), ""), text, 0];
+      compacting = null;
+    } else if (pyGet(r, "subtype") === "compact_boundary") {
+      const md = pyOr(pyGet(r, "compactMetadata"), {});
+      const at: unknown = opener !== null && !opener[2] &&
+        pyStrip(opener[1]) === "/compact" ? opener[0]
+        : pyOr(pyGet(r, "timestamp"), "");
+      compacting = [tsEpoch(at), [num0(pyGet(md, "preTokens")) * P_CR, 0.0]];
+      parts.push(compacting);
+      own_est = true;
+      // The compaction is the open turn now, with a call, as readTurns
+      // makes it: a second boundary opens another.
+      opener = [at, "", 1];
+    } else if (pyTruthy(pyGet(r, "isCompactSummary")) && compacting !== null) {
+      const c = pyDig(r, "message", "content");
+      if (typeof c === "string") {
+        compacting[1][1] = Math.trunc(pyLen(c) / SUMMARY_CPT) * P_OUT;
+      }
+    }
+    if (!kept.has(r)) continue;
     const u = pyDig(r, "message", "usage");
     fresh += num0(pyGet(u, "input_tokens"));
     cwrite += num0(pyGet(u, "cache_creation_input_tokens"));
     cread += num0(pyGet(u, "cache_read_input_tokens"));
     down += num0(pyGet(u, "output_tokens"));
+    if (opener !== null) opener[2] += 1;
     // Priced per record at its own model, as readTurns prices it.
     const d = _usd(pyDig(r, "message", "model"),
       num0(pyGet(u, "input_tokens")),
       num0(pyGet(u, "cache_creation_input_tokens")),
       num0(pyGet(u, "cache_read_input_tokens")),
       num0(pyGet(u, "output_tokens")));
-    ownUsd += 0 + d[0] + d[1] + d[2] + d[3];
+    parts.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")),
+      0 + d[0] + d[1] + d[2] + d[3]]);
   }
+  // A compaction's two halves summed as turnCost sums its turn's: the
+  // output, then the cache read.
+  const own_parts = parts.map(([e, c]): [number | null, number] =>
+    [e, Array.isArray(c) ? c[1] + c[0] : c]);
+  let ownUsd = 0;
+  for (const [, c] of own_parts) ownUsd += c;
   // The main thread's own figures, before the agents are added.
   const ownIn = fresh + cwrite + cread;
   const ownUp = Math.trunc(fresh + W_CACHE_WRITE * cwrite +
@@ -1934,7 +1984,6 @@ export function transcriptOf(records: readonly Rec[],
 
   // Walked over `records` rather than `reqs` so a compaction boundary falls
   // in its place among the readings; `kept` is the dedupe's choice of them.
-  const kept = new Set(reqs);
   let ctx = 0, firstCtx = 0;
   let ctx_est = false;
   for (const r of records) {
@@ -2090,6 +2139,8 @@ export function transcriptOf(records: readonly Rec[],
     own_tok_down: ownDown,
     own_cache_pct: ownCache,
     own_usd: ownUsd,
+    own_parts,
+    own_est,
     lines_added: added,
     lines_removed: removed,
     prompt_id: opened.pid,
@@ -2147,6 +2198,7 @@ interface TurnBuild {
   tidx: number | null;
   la: number;
   lr: number;
+  eta: number[];
   dur?: number;
   compact?: boolean;
 }
@@ -2155,7 +2207,7 @@ export function _newTurn(ts: string, text: string): TurnBuild {
   return { ts, text, fresh: 0, cw: 0, cr: 0, out: 0, ctx: 0, n: 0,
     usd: [0.0, 0.0, 0.0, 0.0], an: 0, aids: [], t0: tsEpoch(ts), t1: null,
     parts: [], tools: [], waits: [], am: 0.0, at: 0.0, pid: "", tidx: null,
-    la: 0, lr: 0 };
+    la: 0, lr: 0, eta: [] };
 }
 
 /** Take the turn's promptId and turnIndex off `r`, where the turn has none
@@ -2331,6 +2383,13 @@ export function turnsOf(records: readonly Rec[],
     if (cur !== null) {
       cur.la += added;
       cur.lr += removed;
+      // The last ETA the main thread reported in the turn, read as liveEta
+      // reads one, and here before the dedupe below can skip the record
+      // that carries it.
+      if (pyGet(r, "isSidechain") !== true) {
+        const report = etaReport([r]);
+        if (report.length) cur.eta = report;
+      }
     }
     if (pyGet(r, "subtype") === "compact_boundary") {
       // A compaction leaves NO usage record anywhere; its boundary record's
@@ -2425,7 +2484,7 @@ export function turnsOf(records: readonly Rec[],
       tool_s, blocked_s, agent_model_s: t.am, agent_tool_s: t.at,
       prompt_id: pyTruthy(t.compact) ? "" : t.pid,
       turn_index: pyTruthy(t.compact) ? null : t.tidx,
-      lines_added: t.la, lines_removed: t.lr,
+      lines_added: t.la, lines_removed: t.lr, eta: t.eta,
     }));
     if (t.ctx) prev = t;
   }
@@ -2464,6 +2523,17 @@ export function lateAgentTurn(t: TurnBuild, path = "",
     agent: true, agent_model_s: t.am, agent_tool_s: t.at,
     lines_added: t.la, lines_removed: t.lr, agent_id, agent_name,
   });
+}
+
+/** The turn opened last, whether or not it has called yet: what the
+ * redesign's running 🎤 row draws, so a fresh turn reads zeros rather than
+ * the turn before.  Neither a compaction nor a late agent turn is a
+ * prompt; null for a transcript with none. */
+export function openTurn(turns: readonly Turn[]): Turn | null {
+  for (let i = turns.length - 1; i >= 0; i--) {
+    if (!turns[i].compact && !turns[i].agent) return turns[i];
+  }
+  return null;
 }
 
 // How long the Stop hook waits for the turn it is about to report to appear

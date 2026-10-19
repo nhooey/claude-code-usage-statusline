@@ -377,6 +377,42 @@ def handmade():
         queue(350, "remove", "queued prompt"),
         asst(360, "m16", FLAG + ETA + "1m", stop="end_turn"),
     ])
+    # The main thread's own parts, its last reported ETA and the turn
+    # opened last.  An ETA on a second record of one request, which the
+    # dedupe skips, then the answer ending; a /compact that called before
+    # its boundary, so its part is stamped at the boundary, then a second
+    # boundary with no summary and a summary that is no string; a /compact
+    # with no calls, stamped at its prompt; a summary after a new prompt,
+    # which prices nothing; and a last prompt with no calls yet.
+    def boundary(sec, pre, trigger="manual"):
+        return {"type": "system", "subtype": "compact_boundary",
+                "timestamp": stamp(sec),
+                "compactMetadata": {"trigger": trigger, "preTokens": pre}}
+
+    def summary(sec, body):
+        return {"type": "user", "isCompactSummary": True,
+                "timestamp": stamp(sec), "message": {"content": body}}
+
+    put("own.jsonl", [
+        prompt(0, "first", promptId="O1", turnPosition={"turnIndex": 0}),
+        asst(5, "o1", "Plan.", usage=(10, 100, 1000, 50)),
+        asst(6, "o1", FLAG + ETA + "2m", usage=(10, 100, 1000, 50)),
+        asst(8, "o2", "done", usage=(1, 10, 1100, 20), stop="end_turn"),
+        prompt(20, "/compact"),
+        asst(21, "o3", "x", usage=(2, 0, 1200, 5),
+             model="claude-sonnet-5"),
+        boundary(22, 30000),
+        summary(23, "Summary of the session. " * 3),
+        boundary(24, 1000, "auto"),
+        summary(25, [{"type": "text", "text": "not a string"}]),
+        asst(26, "o4", FLAG + ETA + "1m", usage=(1, 0, 900, 9)),
+        prompt(40, " /compact "),
+        boundary(45, 2000),
+        prompt(60, "after"),
+        summary(61, "too late to count"),
+        asst(62, "o5", "ok", usage=(3, 30, 1300, 30), stop="end_turn"),
+        prompt(80, "fresh", promptId="O2", turnPosition={"turnIndex": 4}),
+    ])
     put("tools.jsonl", [
         prompt(0, "tools"),
         asst(10, "a", None, tools=[("a1", "Bash"), ("a2", "Read"),
@@ -859,11 +895,13 @@ def section_turns(files):
                 s.case("turn_model_s", t)
                 s.case("turn_times", t)
             s.case("_settled", turns)
+            s.case("open_turn", turns)
             s.raw("read_turns_settled", [p, offsets],
                   cr.read_turns_settled(p, 0))
     if os.path.exists(state):
         os.remove(state)
     s.case("_settled", [])
+    s.case("open_turn", [])
     return s
 
 

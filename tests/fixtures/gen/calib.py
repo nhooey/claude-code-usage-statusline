@@ -395,6 +395,13 @@ def snapshots(tz):
     return out
 
 
+def own(ts):
+    """A Transcript whose own parts are every part of `ts`, in order."""
+    parts = tuple(p for t in ts for p in t.parts)
+    return cr.EMPTY_TRANSCRIPT._replace(
+        own_parts=parts, own_usd=cr.add_up(c for _, c in parts))
+
+
 def shares():
     cases = []
     turns = dict(corpus_turns(), **made_turns())
@@ -427,7 +434,13 @@ def shares():
                             "session_shares": out(run(
                                 claude.session_shares, ts, units)),
                             "cost_accounting": out(run(
-                                claude.cost_accounting, ts, units))}
+                                claude.cost_accounting, ts, units)),
+                            # The main thread's own shares, over the
+                            # turns' parts taken as its own: a part on
+                            # either side of a window's start, unstamped
+                            # ones, and none at all.
+                            "own_accounting": out(run(
+                                claude.own_accounting, own(ts), units))}
                             for units in UNITS]}})
     # The turns go in once each, not once per case.
     by_name = {}

@@ -452,24 +452,25 @@ Audited 2026-10-19, for the grid to be drawn from the figures documents and
 not from today's cells. **S** is the status document (`status_figures`), what
 the band's rows read while a turn runs; **C** is the cost document
 (`cost_figures`), what the receipt reads when it ends. *Added* marks what
-schema 2 brought in; **MISSING** has no source yet, and its number is the open
-question below. A figure "at render" is worked out from the document's own
-fields by today's cells, as `cost_group` weighs the 🧩 tokens; nothing there
-reads outside the document.
+schemas 2 and 3 brought in, and **D***n* the decision below that settled the
+cell. **Mod** is a figure the mod works out or keeps itself, in step 5, from
+the documents it has been given; nothing in a document stands for it. A figure
+"at render" is worked out from the document's own fields by today's cells, as
+`cost_group` weighs the 🧩 tokens; nothing there reads outside the document.
 
 | Column | 🎤 (S) | 🤖💬 (S) | 🎮 (S) | 📊 🎤 (C) | 📊 🎮 (C) |
 |---|---|---|---|---|---|
 | model | | `payload.model`, `model_id`, `effort` | | | |
-| 🛫 | | `rate`, but the session's tokens, agents included (`session_rate`); **MISSING** the main thread's own (Q1) | | | |
-| 💰 | `accounting.turn.cost_usd` *added* | `transcript.own_usd` *added* (Q2) | `accounting.session.cost_usd` *added*, or `payload.cost_usd` as today (Q3) | `accounting.turns[i].cost_usd` | `accounting.session.cost_usd` |
-| 🧠 | `turn.dctx` *added*, points over `context_window` at render | `transcript.ctx_tokens`, `ctx_est`, `context_window` | | `turns[i].dctx` over `context_window` | |
-| 🧩 ▴ ▾ | `turn` fresh, cache write, cache read, out *added*, weighed at render | `transcript.own_tok_up`, `own_tok_down` *added* | `transcript.tok_up`, `tok_down` | `turns[i]`, weighed at render | the turns summed at render |
-| 🎯 | `turn`'s tokens at render *added* | `transcript.own_cache_pct` *added* | `transcript.cache_pct` | `turns[i]` at render | the turns at render |
-| ⌛ | `turn.dur_s` *added* | `transcript.busy_s`, `start_s`, `clock.now` | **MISSING** what it counts (Q4) | `turns[i].dur_s` | **MISSING** (Q4) |
-| ⛳ | `transcript.eta`, `agent_etas` (the open turn's, `inherit_eta`) | the same | | **MISSING** (Q5) | |
-| 🤖 🔧 🚦 | `accounting.turn.model_s`, `tool_s`, `blocked_s` *added* | `transcript.busy_s`, `tool_s`, `blocked_s`, `start_s` | `accounting.session.*` *added* (Q4) | `accounting.turns[i].*` *added* (today `turn_times` at render) | `accounting.session.*` *added* |
-| 🔋 🪫 | `accounting.turn.sess_share`, `week_share` *added*; `limits.session_turn`, `weekly_turn` round them | **MISSING** (Q2) | `accounting.session.*_share` *added*; `limits.session_share`, `weekly_share` round them | `accounting.turns[i].*_share` | `accounting.session.*_share` |
-| 💾 | `accounting.turn.lines_added`, `lines_removed` *added* | `transcript.lines_added`, `lines_removed` *added* | `payload.lines_added`, `lines_removed`, or `accounting.session.lines_*` *added* (Q3) | `accounting.turns[i].lines_*` *added* | `accounting.session.lines_*` *added* (Q3) |
+| 🛫 | | **Mod**: the rise in `transcript.own_tok_up + own_tok_down` between successive documents, over their `clock.now` (D1) | | | |
+| 💰 | `accounting.open_turn.cost_usd` *added* (D8) | `accounting.own.cost_usd` *added*, which is `transcript.own_usd`, compactions included and marked by `own_est` (D2) | `accounting.session.cost_usd` *added* (D4) | `accounting.turns[i].cost_usd` | `accounting.session.cost_usd` |
+| 🧠 | `open_turn.dctx` *added*, points over `context_window` at render (D8) | `transcript.ctx_tokens`, `ctx_est`, `context_window` | | `turns[i].dctx` over `context_window` | |
+| 🧩 ▴ ▾ | `open_turn` fresh, cache write, cache read, out *added*, weighed at render (D8) | `transcript.own_tok_up`, `own_tok_down` *added* | `transcript.tok_up`, `tok_down` | `turns[i]`, weighed at render | the turns summed at render |
+| 🎯 | `open_turn`'s tokens at render *added* (D8) | `transcript.own_cache_pct` *added* | `transcript.cache_pct` | `turns[i]` at render | the turns at render |
+| ⌛ | `open_turn.dur_s` *added* (D8) | `transcript.busy_s`, `start_s`, `clock.now` | `clock.now` less `accounting.session.start_s` *added* (D5) | `turns[i].dur_s` | `clock.now` less `accounting.session.start_s` *added* (D5) |
+| ⛳ | `transcript.eta`, `agent_etas` (the open turn's, `inherit_eta`) | the same | | `turns[i].eta` *added*, the last the turn reported (D6) | |
+| 🤖 🔧 🚦 | `accounting.open_turn.model_s`, `tool_s`, `blocked_s` *added* (D8) | `transcript.busy_s`, `tool_s`, `blocked_s`, `start_s` | `accounting.session.*` *added*, drawn as proportions (D5) | `accounting.turns[i].*` *added* (today `turn_times` at render) | `accounting.session.*` *added*, as proportions (D5) |
+| 🔋 🪫 | `accounting.open_turn.sess_share`, `week_share` *added* (D8); `limits.session_turn`, `weekly_turn` round `accounting.turn`'s | `accounting.own.sess_share`, `week_share` *added*, over `transcript.own_parts` (D2, D3) | `accounting.session.*_share` *added*; `limits.session_share`, `weekly_share` round them | `accounting.turns[i].*_share` | `accounting.session.*_share` |
+| 💾 | `accounting.open_turn.lines_added`, `lines_removed` *added* (D8) | `transcript.lines_added`, `lines_removed` *added* | `accounting.session.lines_*` *added* (D4) | `accounting.turns[i].lines_*` *added* | `accounting.session.lines_*` *added* (D4) |
 
 The 💳 row's 🔋 and 🪫 are `limits.session_pct` and `weekly_pct` in S and
 `usage.plan.session_pct` and `weekly_pct` in C, and the 📅 🕐 on every row
@@ -478,17 +479,22 @@ that draws them are `clock.now` in `clock.tz`. The labels and heads:
 | Part | Source |
 |---|---|
 | 💳 🔜 resets | `limits.session_reset`, `weekly_reset` (S); `usage.plan.*_resets_at` (C) |
-| 🎤 prompt | `transcript.user_text`, the last prompt typed; `turn.text` *added* is the turn's opener, a queued message or a notification included (Q7) |
+| 🎤 prompt | `open_turn.text` *added*, the turn's opener, a queued message or a notification included (D8); `transcript.user_text` is the last prompt typed |
 | 🤖💬 reply, activity | `transcript.asst_text`; `main_doing` off `tool_at`, `wait_at`, `idle_at`, `last_seen`, `shells`, `monitors`, `queued` |
 | 🎮 📦 🌿 📁 🔀 🎨 | `git.main_root` or `toplevel` and `payload.project_dir`; `git.branch`; `payload.current_dir`; `payload.pr_number`; `payload.output_style` |
 | 📊 🎤 prompt | `turns[i].text` |
-| 📊 🎮 📦 🌿 | **MISSING**: the cost document has no `git` and no payload (Q6) |
+| 📊 🎮 📦 🌿 | **Mod**: the band's last status document's `git` and `payload`, kept until the receipt is drawn (D7) |
 | receipt head 🔖 # 📅 🕐 | `turns[i].prompt_id` and `turn_index`; `clock.now`, when the Stop ran |
 | start line 🔖 # 📅 🕐 | `transcript.prompt_id` and `turn_index` *added*, the turn opened last even before it calls; `transcript.turn_s`, its prompt's stamp |
 
-`turn` is the last turn with main-thread calls that is not a compaction,
-`_with_shares`' pick and the receipt's. Until a new turn's first request
-lands it is still the turn before (Q7).
+`open_turn` is the turn opened last, calls or not (`open_turn` in
+`claude_records.py`): not a compaction and not a late agent turn. `turn`, the
+last turn with main-thread calls that is not a compaction, `_with_shares'`
+pick and the receipt's, stays in S beside it, with its accounting, and
+`limits` still rounds that turn's shares for today's status line. An auto
+compaction in the middle of a turn opens a turn of its own in `read_turns`,
+and the requests after it are filed there, so either pick shows the prompt's
+figures only up to the compaction.
 
 The agent rows stay Python's and are in no figures document: the panel's
 `AgentUsage` gives 🧩, 🎯, 🧠 with the payload's window, 💰 and its `parts` for
@@ -497,7 +503,7 @@ life (`agent_diff`), 🤖 🔧 off `agent_clock` and 🚦 off its waiting spans,
 off its ETA; 🛫 is `token_rate` over the payload's samples. Their shared
 cases are `tests/fixtures/panel/`.
 
-What schema 2 counts, and how:
+What schemas 2 and 3 count, and how:
 
 - **💾 per turn** is `diff_lines` over the turn's tool results: the main
   thread's in the turn, and each agent's filed with the billed request that
@@ -505,54 +511,65 @@ What schema 2 counts, and how:
   as a duplicate hands its lines on to the next one kept. Lines written after
   an agent's last request are in no turn, as its time is not.
 - **🤖💬's own** figures are the main transcript's requests and tool results
-  alone, before the agents' are added; a compaction bills through no request
-  and is in none of them.
+  alone, before the agents' are added. Its tokens leave out the compactions,
+  which bill through no request; its dollars charge them to it (D2).
+- **The own parts** (`transcript.own_parts`) are `(epoch, dollars)` for each
+  own request and each compaction, gathered in the pass that finds the
+  requests. A compaction is priced as `read_turns` prices its turn, preTokens
+  at the cache-read rate and the summary's estimated output, and stamped
+  where that turn is: at a `/compact` prompt that has made no call, else at
+  the boundary, so it falls in the same window on both rows. `parts_shares`
+  splits them at each window's start as `session_shares` splits the turns,
+  and leaves a window with no start null.
 - **The 🎮 split** in `accounting.session` is each turn's `turn_times` summed:
   agent-seconds, which can outrun the wall clock, and only the main thread's
   🚦.
+- **A turn's ⛳** (`Turn.eta`) is the last ETA the main thread reported in
+  it, `(epoch, seconds)`, read off the assistant records as `live_eta` reads
+  them, before the request dedupe so a report on a later record of one
+  message counts. The answer ending does not clear it, and a 0s sign-off is a
+  report like any other.
 
-#### Open questions
+#### Decided 2026-10-19
 
-1. **🛫 on the 🤖💬 row** reads `session_rate` over the session's tokens,
-   agents included, kept in a per-session state file. (a) Keep it, and call
-   🛫 on 🤖💬 the session's rate. (b) A second rate kept over
-   `own_tok_up + own_tok_down`, a new state file beside the first. (c) Let
-   the mod work it out from successive documents, with no state file.
-2. **What "the main thread's own" 💰, 🔋 and 🪫 leave out.** `own_usd` leaves
-   out every agent file and every compaction. (a) Keep that. (b) Charge the
-   compactions to the main thread, whose window they compact. Either way 🔋
-   🪫 need the own requests' `(epoch, dollars)` parts to split at a window
-   boundary: (c) add them to `Transcript` as `own_parts`, or (d) take them
-   off the turns' parts less the agents', which needs `AgentRec`'s parts
-   filed per turn.
-3. **🎮 💰 and 💾: Claude Code's or ours.** `payload.cost_usd` and the
-   payload's lines are Claude Code's totals; the accounting's are this
-   program's, over the transcript and the agent files, and the receipt has
-   only ours. (a) Ours on both, so 🎮 is the column's sum. (b) Claude Code's in
-   the band, ours on the receipt. (c) Ours, with Claude Code's as a check in
-   `--diagnose`. Whether Claude Code's lines count its agents' is not known.
-4. **What 🎮 ⌛ and its split count.** Today's ⌛ is the main thread's clock:
-   the session's age split by 🤖 🔧 🚦 into a partition of it. The mockup's 🎮
-   is "the main thread and every agent summed". (a) The wall clock, as
-   today's ⌛, with the agents left to their rows. (b) Agent-seconds,
-   `accounting.session`, which can read more than the session's age, with 🚦
-   the main thread's alone. (c) The main thread's age for ⌛ and
-   agent-seconds for the split. The 📊 🎮 row needs the same answer.
-5. **⛳ on the receipt.** `eta` is cleared when the answer ends, so a turn
-   that is over has none. (a) Blank on 📊 🎤, as the mockup's 🎮 row is. (b)
-   The last ETA the turn reported and when, a new `Turn` field, read the way
-   `live_eta` reads it. (c) How far off it was: the reported finish against
-   the turn's end.
-6. **The receipt's 📦 🌿.** The Stop hook's payload has `cwd`; the cost
-   document carries no `git`. (a) `detect_git` in `cost_figures`, which runs
-   git at every Stop. (b) The mod takes them from the band's last status
-   document. (c) Drop them from the 📊 🎮 label.
-7. **Which turn the running 🎤 row is.** `turn` is the last turn that has
-   called, so for the first seconds of a new turn the 🎤 row shows the one
-   before; and `user_text` is the last typed prompt, not a queued message or
-   a notification that opened the turn. (a) Keep the receipt's pick. (b) The
-   turn opened last, calls or not, so a fresh turn reads zeros; the band's
-   prompt is then `turn.text`.
+1. **🛫 on the 🤖💬 row** is the main thread's own rate, which the mod works
+   out in memory from successive status documents' `transcript.own_tok_up +
+   own_tok_down` against their `clock.now`, with no state file. Every
+   document carries the counts already; the rate is step 5's.
+   `session_rate` and its state file stay with today's status line.
+2. **The main thread's own 💰, 🔋 and 🪫 include its compactions,** which
+   compact its window. `own_usd` counts them, and `own_est` marks it an
+   estimate, as `ctx_est` marks 🧠: a summary's output is estimated from its
+   length. The tokens leave them out, as they leave out every compaction.
+3. **The own 🔋 🪫 split at a window boundary off `own_parts`,** a new
+   `Transcript` field, and the accounting works out the shares as it does
+   the turn's and the session's: `accounting.own` in S, by `own_accounting`
+   and `parts_shares`.
+4. **🎮 💰 and 💾 are the accounting's** in the band and on the receipt, so
+   🎮 is the column's sum and the two readouts agree. Claude Code's
+   `payload.cost_usd` and lines are shown by `--diagnose` on the status
+   line beside ours (`cost_usd`, `lines`, `claude_cost_usd`,
+   `claude_lines`), as a check; [Options](../../docs/options.md) has the
+   line. Whether Claude Code's lines count its agents' is still not known,
+   and the check is where to find out.
+5. **🎮 ⌛ is the session's age** on the wall clock, as today's ⌛, from
+   `accounting.session.start_s`, the earliest turn's stamp, to `clock.now`;
+   the band and the receipt read the same start, so the two agree.
+   `transcript.start_s`, the first stamped record of any kind, stays the
+   🤖💬 row's. The 🤖 🔧 🚦 split is `accounting.session`'s agent-seconds,
+   with 🚦 the main thread's alone. It is drawn as proportions of itself,
+   the bars of today's split, and need not add up to ⌛: agents running side
+   by side put more seconds in it than the session has been open.
+6. **⛳ on the receipt** is the last ETA the turn reported, `Turn.eta`, kept
+   after the turn ends. Comparing it with the turn's end, how far off it
+   was, is left to the cell.
+7. **The receipt's 📦 🌿** come from the band's last status document, which
+   the mod keeps; `cost_figures` runs no git. Step 5's.
+8. **The running 🎤 row is the turn opened last,** calls or not, so a fresh
+   turn reads zeros, and its prompt is that turn's opener, `turn.text`,
+   queued messages and notifications included. S carries it as `open_turn`
+   with `accounting.open_turn`; `turn` and its accounting stay for the
+   receipt's pick and today's status line, whose rows did not move.
 
 ## The whole screen
 

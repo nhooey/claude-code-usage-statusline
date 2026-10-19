@@ -174,6 +174,7 @@ const RUN: Record<string, (c: Case) => unknown> = {
   turn_model_s: (c) => cr.turnModelS(c.args[0]),
   turn_times: (c) => cr.turnTimes(c.args[0]),
   _settled: (c) => cr._settled(c.args[0]),
+  open_turn: (c) => cr.openTurn(c.args[0]),
 };
 
 /** readTurns' core over the file at `p`, with the offsets the Python read
