@@ -68,6 +68,26 @@ export function pyStrip(s: string): string {
   return s.replace(STRIP, "");
 }
 
+/** The value of a Unicode decimal digit, which Python's int() and float()
+ * accept and \d matches: every Nd run is 0..9 in order, so a digit's value
+ * is how far it sits from the start of its run, modulo ten. */
+function digitValue(ch: string): number {
+  let cp = ch.codePointAt(0)!;
+  if (cp >= 48 && cp <= 57) return cp - 48;
+  let n = 0;
+  while (/\p{Nd}/u.test(String.fromCodePoint(cp - 1))) {
+    cp--;
+    n++;
+  }
+  return n % 10;
+}
+
+/** Unicode digits as ASCII ones, for parseInt and parseFloat, as int()
+ * and float() read them. */
+export function pyAsciiDigits(s: string): string {
+  return s.replace(/\p{Nd}/gu, (c) => String(digitValue(c)));
+}
+
 /** repr(float): the shortest digits that round-trip, as both languages
  * find them, laid out Python's way: fixed between 1e-4 and 1e16 with a
  * ".0" when integral, else d.ddde+XX. */

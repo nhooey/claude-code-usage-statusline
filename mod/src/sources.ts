@@ -34,7 +34,9 @@ import * as nodePath from "node:path";
 import { readTracker } from "./claude_sources.ts";
 
 import type { Dict } from "./py.ts";
-import { isDict, pyFloatRepr, pyGet, pyStrip, pyTruthy } from "./py.ts";
+import {
+  isDict, pyAsciiDigits, pyFloatRepr, pyGet, pyStrip, pyTruthy,
+} from "./py.ts";
 
 export type { Dict };
 export type Reading = Dict;
@@ -54,11 +56,10 @@ const PY_FLOAT = new RegExp(
   "^[+-]?(?:(?:" + DIGITS + "(?:\\.(?:" + DIGITS + ")?)?|\\." + DIGITS +
   ")(?:[eE][+-]?" + DIGITS + ")?|inf|infinity|nan)$", "i");
 
-// float(text), or null where Python raises ValueError.  Unicode digits,
-// which Python also accepts, are not: nothing that writes a reading uses
-// them.
+// float(text), or null where Python raises ValueError.  Like float(), it
+// reads any Unicode decimal digit as its ASCII one.
 export function pyFloatText(text: string): number | null {
-  const s = pyStrip(text);
+  const s = pyStrip(pyAsciiDigits(text));
   if (!PY_FLOAT.test(s)) return null;
   const body = s.replace(/^[+-]/, "").toLowerCase();
   const sign = s.startsWith("-") ? -1 : 1;

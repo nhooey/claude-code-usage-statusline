@@ -35,8 +35,8 @@ import * as fs from "node:fs";
 import * as crypto from "node:crypto";
 import { E_FOLD, E_ETA_REPORT, E_ETA_REPORT_OLD } from "./spec.ts";
 import {
-  isDict, PY_SPACE, pyDig, pyFloatRepr, pyGet, pyHas, pyOr, pyStrip,
-  pyTruthy,
+  isDict, PY_SPACE, pyAsciiDigits, pyDig, pyFloatRepr, pyGet, pyHas, pyOr,
+  pyStrip, pyTruthy,
 } from "./py.ts";
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -76,25 +76,6 @@ export function pyLen(s: string): number {
   let n = 0;
   for (const _ of s) n++;
   return n;
-}
-
-/** The value of a Unicode decimal digit, which Python's int() and float()
- * accept and \d matches: every Nd run is 0..9 in order, so a digit's value
- * is how far it sits from the start of its run, modulo ten. */
-function digitValue(ch: string): number {
-  let cp = ch.codePointAt(0)!;
-  if (cp >= 48 && cp <= 57) return cp - 48;
-  let n = 0;
-  while (/\p{Nd}/u.test(String.fromCodePoint(cp - 1))) {
-    cp--;
-    n++;
-  }
-  return n % 10;
-}
-
-/** Unicode digits as ASCII ones, for parseInt and parseFloat. */
-function asciiDigits(s: string): string {
-  return s.replace(/\p{Nd}/gu, (c) => String(digitValue(c)));
 }
 
 // What isprintable() refuses, which repr() escapes: the C and Z categories
@@ -563,7 +544,8 @@ export function _dedupeUsage(records: readonly Rec[]): Rec[] {
   const out: Rec[] = [];
   for (const r of records) {
     if (!pyTruthy(pyDig(r, "message", "usage"))) continue;
-    const k = pyOr(pyOr(pyGet(r, "requestId"), pyDig(r, "message", "id")), "?");
+    const k = pyOr(pyOr(pyGet(r, "requestId"), pyDig(r, "message", "id")),
+      "?");
     if (seen.has(k)) continue;
     seen.add(k);
     out.push(r);
@@ -675,7 +657,7 @@ export function tsEpoch(ts: unknown): number | null {
   const m = STRPTIME.exec(s);
   if (!m || m[0].length !== s.length) return null;
   const [y, mo, d, h, mi, sec] = m.slice(1).map(
-    (g) => parseInt(asciiDigits(g.trim()), 10));
+    (g) => parseInt(pyAsciiDigits(g.trim()), 10));
   if (y < 1 || d > daysIn(y, mo) || sec > 59) return null;
   return utcEpoch(y, mo, d, h, mi, sec);
 }
@@ -775,7 +757,8 @@ export function scanToolSpans(r: Rec, pending: Pending, out: Span[],
     const kind = pyGet(b, "type");
     if (kind === "tool_use") {
       if (pyTruthy(pyGet(b, "id"))) {
-        pending.set(pyStr(pyGet(b, "id")), [t, pyStr(pyOr(pyGet(b, "name"), ""))]);
+        pending.set(pyStr(pyGet(b, "id")),
+          [t, pyStr(pyOr(pyGet(b, "name"), ""))]);
       }
     } else if (kind === "tool_result") {
       const id = pyStr(pyOr(pyGet(b, "tool_use_id"), ""));
@@ -814,7 +797,8 @@ export function notificationText(r: Rec): string {
   let c: unknown = pyGet(a, "type") === "queued_command" ? pyGet(a, "prompt")
     : pyGet(r, "type") === "user" ? pyDig(r, "message", "content") : null;
   if (Array.isArray(c)) {
-    c = c.filter(isDict).map((b) => pyStr(pyOr(pyGet(b, "text"), ""))).join("");
+    c = c.filter(isDict).map((b) => pyStr(pyOr(pyGet(b, "text"), "")))
+      .join("");
   }
   return typeof c === "string" && c.includes("<task-notification>") ? c : "";
 }
@@ -1024,13 +1008,13 @@ export function etaReport(records: readonly unknown[]): number[] {
     if (!Array.isArray(content)) continue;
     for (const block of content) {
       if (!isDict(block) || pyGet(block, "type") !== "text") continue;
-      const hits = [...pyStr(pyOr(pyGet(block, "text"), "")).matchAll(ETA_LINE)]
-        .map((m) => m[1]);
+      const hits = [...pyStr(pyOr(pyGet(block, "text"), ""))
+        .matchAll(ETA_LINE)].map((m) => m[1]);
       const epoch = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
       if (hits.length && epoch !== null) {
         let secs = 0;
         for (const [, n, unit] of hits[hits.length - 1].matchAll(ETA_SPLIT)) {
-          secs += parseFloat(asciiDigits(n)) * ETA_UNIT_S[unit];
+          secs += parseFloat(pyAsciiDigits(n)) * ETA_UNIT_S[unit];
         }
         last = [epoch, secs];
       }
@@ -1330,7 +1314,8 @@ export function agentRecordsOf(
     for (const [epoch, pid, model, fresh, cw, cr, o, k, pos] of got.recs) {
       if (seen.has(k)) continue;
       seen.add(k);
-      if (!(pyTruthy(fresh) || pyTruthy(cw) || pyTruthy(cr) || pyTruthy(o))) continue;
+      if (!(pyTruthy(fresh) || pyTruthy(cw) || pyTruthy(cr) ||
+            pyTruthy(o))) continue;
       out.push({ epoch, prompt_id: pid, model, fresh, cache_write: cw,
         cache_read: cr, out: o, request_id: k, path, offset: pos,
         model_s: 0.0, tool_s: 0.0 });
@@ -1415,10 +1400,11 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
     const m = pyOr(pyGet(r, "message"), {});
     const u = pyGet(m, "usage");
     if (!pyTruthy(u)) continue;
-    recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), pid, pyGet(m, "model") ??
-      null, num0(pyGet(u, "input_tokens")),
+    recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), pid,
+      pyGet(m, "model") ?? null, num0(pyGet(u, "input_tokens")),
       num0(pyGet(u, "cache_creation_input_tokens")),
-      num0(pyGet(u, "cache_read_input_tokens")), num0(pyGet(u, "output_tokens")),
+      num0(pyGet(u, "cache_read_input_tokens")),
+      num0(pyGet(u, "output_tokens")),
       pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), pos]);
   }
   closeAgentSpan(spanState, work);
@@ -1533,17 +1519,23 @@ export function _agentFileReadings(transcript: string,
 }
 
 /** Write `text` to `path` through a temporary file renamed over it, private
- * to the user, as the Python does; a failure leaves the old file. */
-function writeAtomic(path: string, text: string): void {
+ * to the user, as the Python does; a failure leaves the old file.  True
+ * when it was written. */
+export function writeAtomic(path: string, text: string): boolean {
   const tmp = `${path}.${process.pid}`;
+  const slash = path.lastIndexOf("/");
   try {
-    fs.mkdirSync(path.slice(0, path.lastIndexOf("/")) || "/",
-      { recursive: true, mode: 0o700 });
+    if (slash >= 0) {
+      fs.mkdirSync(path.slice(0, slash) || "/",
+        { recursive: true, mode: 0o700 });
+    }
     fs.writeFileSync(tmp, text);
     fs.chmodSync(tmp, 0o600);
     fs.renameSync(tmp, path);
+    return true;
   } catch {
     // Unwritable state is a slower next render, not a failure.
+    return false;
   }
 }
 
@@ -1619,8 +1611,8 @@ export function agentLabel(path: string): [string, string] {
     const meta: unknown = JSON.parse(DECODE_FATAL_BOM.decode(
       fs.readFileSync(path.slice(0, -".jsonl".length) + ".meta.json")));
     if (isDict(meta)) {
-      name = pyStr(pyOr(pyOr(pyGet(meta, "description"), pyGet(meta, "agentType")),
-        ""));
+      name = pyStr(pyOr(pyOr(pyGet(meta, "description"),
+        pyGet(meta, "agentType")), ""));
     }
   } catch {
     // No sidecar, or one that will not parse: the id alone.
@@ -1671,7 +1663,9 @@ export function queuedSend(r: Rec): string {
 export function inboxDelivery(r: Rec): boolean {
   const a = pyGet(r, "attachment");
   let o: unknown;
-  if (isDict(a) && pyGet(a, "type") === "queued_command") o = pyGet(a, "origin");
+  if (isDict(a) && pyGet(a, "type") === "queued_command") {
+    o = pyGet(a, "origin");
+  }
   else if (pyGet(r, "type") === "user") o = pyGet(r, "origin");
   else return false;
   if (!isDict(o)) return false;
