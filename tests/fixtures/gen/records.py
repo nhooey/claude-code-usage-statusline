@@ -793,7 +793,46 @@ def section_agents(files):
     return s
 
 
-SECTIONS = (section_basics, section_threads, section_agents)
+def section_turns(files):
+    s = Section("turns")
+    every = sorted(set(corpus()) | set(files.values()))
+    for p in every:
+        for now in (None, BASE + 1000.0, BASE + 116.5):
+            s.case("read_transcript", p, now=now)
+    s.case("read_transcript", "missing.jsonl")
+
+    main = files["session.jsonl"]
+    agents = cr.agent_records(main)
+    state = cr._agent_state_path(main)
+    # Offsets as a Stop would have stored them: none, the extent of every
+    # record stamped before the last Stop record, and everything.
+    cut = [a for a in agents if a.epoch is not None and a.epoch <= BASE + 96]
+    for p in every:
+        sets = [None]
+        if p == main:
+            sets += [cut, agents, []]
+        for reported in sets:
+            if os.path.exists(state):
+                os.remove(state)
+            if reported is not None:
+                cr.publish_agent_offsets(main, reported)
+            offsets = cr.agent_offsets(p)
+            held = {}
+            turns = cr.read_turns(p, None, held)
+            s.raw("read_turns", [p, offsets], [turns, held])
+            for t in turns:
+                s.case("turn_model_s", t)
+                s.case("turn_times", t)
+            s.case("_settled", turns)
+            s.raw("read_turns_settled", [p, offsets],
+                  cr.read_turns_settled(p, 0))
+    if os.path.exists(state):
+        os.remove(state)
+    s.case("_settled", [])
+    return s
+
+
+SECTIONS = (section_basics, section_threads, section_agents, section_turns)
 
 
 def main():

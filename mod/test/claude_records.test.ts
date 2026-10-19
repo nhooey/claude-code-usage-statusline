@@ -169,7 +169,28 @@ const RUN: Record<string, (c: Case) => unknown> = {
     c.args[1].map((m: string) => new TextEncoder().encode(m))),
   inbox_counts: (c) => dict(cr.inboxCounts(c.args[0],
     new Map(Object.entries(c.args[1])), c.args[2] ?? null)),
+
+  read_transcript: (c) => snake(cr.readTranscript(c.args[0], null, [],
+    c.kw.now ?? null)),
+  read_turns: (c) => {
+    const held = new Map<string, number>();
+    const turns = turnsWith(c.args[0], c.args[1], held);
+    return [turns.map(snake), dict(held)];
+  },
+  read_turns_settled: (c) => turnsWith(c.args[0], c.args[1], null)
+    .map(snake),
+  turn_model_s: (c) => cr.turnModelS(unsnake(c.args[0])),
+  turn_times: (c) => cr.turnTimes(unsnake(c.args[0])),
+  _settled: (c) => cr._settled(c.args[0].map(unsnake)),
 };
+
+/** readTurns' core over the file at `p`, with the offsets the Python read
+ * from its state directory handed in. */
+function turnsWith(p: string, offsets: Record<string, number> | null,
+  held: Map<string, number> | null): cr.Turn[] {
+  return cr.turnsOf(cr._records(p), (seen) => cr.agentRecords(p, seen),
+    offsets && new Map(Object.entries(offsets)), held);
+}
 
 /** A fresh private directory, for state a case writes. */
 function tmp(): string {

@@ -1876,3 +1876,592 @@ export function inboxCounts(files: readonly string[],
   }
   return out;
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// The status line's pass over the transcript.
+// ════════════════════════════════════════════════════════════════════════════
+
+export type AgentEta = readonly [number | null, number | null];
+
+/** One pass for the status line: totals, cache rate, context, last texts.
+ *
+ * The token totals and the cache rate count what the session's AGENTS
+ * billed as well — `agents` is agentRecords' reading of the files beside
+ * the transcript — because it was billed.  Time does NOT, since
+ * 2026-09-27: busy, tool and waiting time are this thread's own, off this
+ * file alone — see threadClock.  With a `now`, a tool call still running
+ * counts to it; see openToolSpans.  Context size does NOT either: it is a
+ * reading of THIS window, the one 🧠 is watched to decide when to compact.
+ *
+ * The pure core; readTranscript reads the file and the agents. */
+export function transcriptOf(records: readonly Rec[],
+  agents: readonly AgentRec[], agentEtas: readonly AgentEta[] = [],
+  now: number | null = null): Transcript {
+  const reqs = _dedupeUsage(records);
+  let fresh = 0, cwrite = 0, cread = 0, down = 0;
+  for (const r of reqs) {
+    const u = dig(r, "message", "usage");
+    fresh += num0(get(u, "input_tokens"));
+    cwrite += num0(get(u, "cache_creation_input_tokens"));
+    cread += num0(get(u, "cache_read_input_tokens"));
+    down += num0(get(u, "output_tokens"));
+  }
+  for (const a of agents) {
+    fresh += a.fresh;
+    cwrite += a.cacheWrite;
+    cread += a.cacheRead;
+    down += a.out;
+  }
+  const inAll = fresh + cwrite + cread;
+
+  // Walked over `records` rather than `reqs` so a compaction boundary falls
+  // in its place among the readings; `kept` is the dedupe's choice of them.
+  const kept = new Set(reqs);
+  let ctx = 0, firstCtx = 0;
+  let ctxEst = false;
+  for (const r of records) {
+    if (get(r, "isSidechain") === true) continue;
+    if (isCompaction(r)) {
+      // A compaction writes no usage record, so until the next request the
+      // last reading is the size from BEFORE it.  postTokens is the
+      // compacted conversation alone; what it leaves out is the system
+      // prompt, the tools and the files re-attached after it, which the
+      // session's first reading carries too, or COMPACT_OVERHEAD without
+      // one.  The Python's comment has the measurements.
+      const post = num0(dig(r, "compactMetadata", "postTokens"));
+      if (post) {
+        ctx = post + (firstCtx || COMPACT_OVERHEAD);
+        ctxEst = true;
+      }
+      continue;
+    }
+    if (!kept.has(r)) continue;
+    const u = dig(r, "message", "usage");
+    // Skip a request whose usage is all zero: that is how an interrupted
+    // request is recorded, and letting it win the last-write would blank
+    // the 🧠 cell for the rest of the session.
+    const c = num0(get(u, "input_tokens")) +
+      num0(get(u, "cache_creation_input_tokens")) +
+      num0(get(u, "cache_read_input_tokens"));
+    if (c) {
+      ctx = c;
+      ctxEst = false;
+      firstCtx = firstCtx || c;
+    }
+  }
+
+  let userTs: unknown = "", userText = "", asstTs: unknown = "";
+  let asstText: unknown = "";
+  for (const r of records) {
+    const c = dig(r, "message", "content");
+    if (get(r, "type") === "user" && get(r, "userType") === "external" &&
+      typeof c === "string" && c.length > 0 && !c.startsWith("<")) {
+      userTs = or(get(r, "timestamp"), "");
+      userText = c;
+    }
+    if (get(r, "type") === "assistant") {
+      const blocks = or(dig(r, "message", "content"), []);
+      if (Array.isArray(blocks)) {
+        const texts = blocks.filter((b) => isDict(b) &&
+          get(b, "type") === "text");
+        if (texts.length) {
+          asstText = or(get(texts[texts.length - 1], "text"), "");
+          asstTs = or(get(r, "timestamp"), "");
+        }
+      }
+    }
+  }
+
+  // Time spent ANSWERING, which is not the time the session has existed.
+  // A turn runs from the prompt that opens it to the last record before
+  // the next prompt, so summing those spans counts the working time and
+  // skips every gap where the session sat waiting for someone to type.
+  const spans: Span[] = [];
+  const tools: Span[] = [];
+  const blocked: Span[] = [];
+  const pending: Pending = new Map();
+  let first: number | null = null, openAt: number | null = null;
+  let prev: number | null = null;
+  // The ETA belongs to the turn it was written in; see liveEta.
+  const etaState = newEtaState();
+  let queued = 0, compactions = 0;
+  const background = new Map<string, string>();
+  let idleAt = 0.0, lastSeen = 0.0;
+  for (const r of records) {
+    queued = Math.max(0, queued + queueStep(r));
+    compactions += isCompaction(r) ? 1 : 0;
+    scanToolSpans(r, pending, tools, blocked);
+    if (get(r, "isSidechain") !== true) {
+      liveEta(r, etaState);
+      scanBackground(r, background);
+    }
+    const t = tsEpoch(or(get(r, "timestamp"), ""));
+    if (t === null) continue;
+    if (first === null) first = t;
+    if (get(r, "isSidechain") !== true) {
+      lastSeen = t;
+      // The answer ending opens the idle; the next request or tool
+      // result, or a prompt, closes it.  Not any work record: Claude Code
+      // writes system records after the end.
+      if (endsTurn(r)) idleAt = t;
+      else if (get(r, "type") === "assistant" || turnStartText(r) !== null ||
+        (get(r, "type") === "user" &&
+          Array.isArray(dig(r, "message", "content")))) {
+        idleAt = 0.0;
+      }
+    }
+    if (turnStartText(r) !== null) {
+      if (openAt !== null && prev! > openAt) spans.push([openAt, prev!]);
+      openAt = prev = t;
+    } else if (openAt !== null && isWork(r)) {
+      prev = t;
+    }
+  }
+  if (openAt !== null && prev! > openAt) spans.push([openAt, prev!]);
+  // The oldest call still running, for the 🛫 cell: only one asked for in
+  // the turn still open, since an older one left unanswered was cut off.
+  const running: number[] = [], waits: number[] = [];
+  for (const [t, name] of pending.values()) {
+    if (!truthy(openAt) || t < openAt!) continue;
+    (WAITING_TOOLS.has(name) ? waits : running).push(t);
+  }
+  if (now !== null) openToolSpans(pending, now, tools, blocked);
+  const [busy, tool, blockedS] = threadClock(spans, tools, blocked);
+  const min = (xs: number[]) => xs.reduce((a, b) => pyMin(a, b));
+
+  return transcript({
+    busyS: busy,
+    // The first STAMPED record, not records[0]: a transcript can open with
+    // an unstamped one.
+    startS: or(first, 0.0) as number,
+    tokUp: Math.trunc(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread),
+    tokDown: down,
+    // -1 is a sentinel meaning "no usage data at all", which renders as no
+    // segment rather than as a zero.
+    cachePct: inAll > 0 ? Math.trunc(100 * cread / inAll) : -1,
+    ctxTokens: ctx,
+    ctxEst,
+    userTs: pyStr(userTs),
+    userText: squash(userText),
+    asstTs: pyStr(asstTs),
+    asstText: squash(pyStr(asstText)),
+    toolS: tool,
+    blockedS,
+    turnS: or(openAt, 0.0) as number,
+    eta: etaState[1] ? [] : etaState[0],
+    agentEtas: [...agentEtas],
+    queued,
+    compactions,
+    shells: [...background.values()].filter((k) => k === "bash").length,
+    monitors: [...background.values()].filter((k) => k === "monitor").length,
+    toolAt: now !== null && running.length ? min(running) : 0.0,
+    waitAt: now !== null && waits.length ? min(waits) : 0.0,
+    idleAt: now !== null ? idleAt : 0.0,
+    lastSeen: now !== null ? lastSeen : 0.0,
+  });
+}
+
+/** transcriptOf over the file at `path`.  `agents` is agentRecords'
+ * reading of the files beside it, or null to read them here, taking their
+ * ETAs off the same walk. */
+export function readTranscript(path: string,
+  agents: readonly AgentRec[] | null = null,
+  agentEtas: readonly AgentEta[] = [], now: number | null = null,
+  cache: AgentCache | null = null): Transcript {
+  const records = _records(path);
+  if (agents === null) {
+    const own: AgentEta[] = [];
+    agents = agentRecords(path, null, own, cache);
+    agentEtas = [...agentEtas, ...own];
+  }
+  return transcriptOf(records, agents, agentEtas, now);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// The cost line's turns.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Characters per token for the compaction summary, calibrated against the
+// metadata: two compactions summarised to 16,201 and 23,659 characters
+// against postTokens of 6,597 and 8,737, which is the summary plus the
+// handful of preserved messages.
+export const SUMMARY_CPT = 4.0;
+
+/** The mutable turn readTurns builds up, before it is frozen. */
+interface TurnBuild {
+  ts: string;
+  text: string;
+  fresh: number;
+  cw: number;
+  cr: number;
+  out: number;
+  ctx: number;
+  n: number;
+  usd: [number, number, number, number];
+  an: number;
+  aids: unknown[];
+  t0: number | null;
+  t1: number | null;
+  parts: [number | null, number][];
+  tools: Span[];
+  waits: Span[];
+  am: number;
+  at: number;
+  pid: string;
+  tidx: number | null;
+  dur?: number;
+  compact?: boolean;
+}
+
+export function _newTurn(ts: string, text: string): TurnBuild {
+  return { ts, text, fresh: 0, cw: 0, cr: 0, out: 0, ctx: 0, n: 0,
+    usd: [0.0, 0.0, 0.0, 0.0], an: 0, aids: [], t0: tsEpoch(ts), t1: null,
+    parts: [], tools: [], waits: [], am: 0.0, at: 0.0, pid: "", tidx: null };
+}
+
+/** Take the turn's promptId and turnIndex off `r`, where the turn has none
+ * yet.  First one wins: every user record of a turn carries the same
+ * promptId, and a turn a queue-operation record opened gets its id from
+ * the first tool result instead of from its opener.  A bool is not an
+ * index, though Python's int would take it. */
+export function _stampTurnId(cur: TurnBuild, r: Rec): void {
+  const pid = get(r, "promptId");
+  if (truthy(pid) && !cur.pid) cur.pid = pyStr(pid);
+  const idx = dig(r, "turnPosition", "turnIndex");
+  if (cur.tidx === null && typeof idx === "number" && Number.isInteger(idx)) {
+    cur.tidx = idx;
+  }
+}
+
+/** Bill one record to a turn: the four dollar sums, and one part. */
+export function _addUsd(cur: TurnBuild, epoch: number | null, model: unknown,
+  fresh: number, cw: number, cr: number, out: number): void {
+  const d = _usd(model, fresh, cw, cr, out);
+  for (let i = 0; i < 4; i++) cur.usd[i] += d[i];
+  cur.parts.push([epoch, 0 + d[0] + d[1] + d[2] + d[3]]);
+}
+
+/** File every agent record under a turn of the main transcript.
+ *
+ * By promptId where a main record carried it — the turn that spawned the
+ * agent, or resumed it, whenever it finished.  By stamp only where no main
+ * record carries the id: the last NON-COMPACTION turn open at that moment,
+ * so agent spend never prints on the 🤏 row.  Dropped where no turn
+ * precedes the record.  Into the turn: the token sums, the dollar sums, a
+ * part and agentCalls — not `n`, not `ctx`, not `t1`.
+ *
+ * EXCEPT when the record is NEW and its turn is not the one the next Stop
+ * will report: it would be counted in the totals and printed on no row.
+ * Those records go into a turn of their own instead, one per agent file,
+ * returned here by path for readTurns to freeze — once the agent has
+ * FINISHED, by `ends`; until then they stay on their spawning turn and go
+ * into `held`.  "New" is exact with `offsets`, the byte counts the last
+ * Stop stored; without them, a record stamped after the last Stop record.
+ * The Python's docstring has the measurements. */
+export function _foldAgents(turns: TurnBuild[],
+  byPid: ReadonlyMap<unknown, TurnBuild>, agents: readonly AgentRec[],
+  lastStop: number | null = null,
+  offsets: ReadonlyMap<string, number> | null = null,
+  ends: ReadonlyMap<string, number> | null = null,
+  held: Map<string, number> | null = null): Map<string, TurnBuild> {
+  const late = new Map<string, TurnBuild>();
+  if (agents.length === 0 || turns.length === 0) return late;
+  const stamped = turns.filter((t) => t.t0 !== null && !truthy(t.compact));
+  // The turn the 🎤 row will be about: the same selection render_cost_line
+  // and _with_shares make.  `n` is main-thread calls, so folding agents in
+  // cannot move it.
+  let prompt: TurnBuild | null = null;
+  for (const t of turns) if (t.n && !truthy(t.compact)) prompt = t;
+  for (const a of agents) {
+    let cur = truthy(a.promptId) ? byPid.get(a.promptId) ?? null : null;
+    if (cur === null) {
+      for (let i = stamped.length - 1; i >= 0; i--) {
+        if (a.epoch === null || stamped[i].t0! <= a.epoch) {
+          cur = stamped[i];
+          break;
+        }
+      }
+      if (cur === null) continue;
+    }
+    if (prompt !== null && cur !== prompt) {
+      const isNew = offsets !== null
+        ? a.offset > (offsets.get(a.path) ?? 0)
+        : lastStop === null || (a.epoch !== null && a.epoch > lastStop);
+      if (isNew && !_endedAfter(a, ends)) {
+        // Still running: its 👥 row waits for its end, and the record stays
+        // on its spawning turn for the totals until then.  `held` keeps
+        // publishAgentOffsets from marking it reported.
+        if (held !== null && a.offset < (held.get(a.path) ?? a.offset + 1)) {
+          held.set(a.path, a.offset);
+        }
+      } else if (isNew) {
+        if (!late.has(a.path)) {
+          late.set(a.path, _newTurn(_stampUtc(a.epoch), "agents (other)"));
+        }
+        cur = late.get(a.path)!;
+      }
+    }
+    cur.fresh += a.fresh;
+    cur.cw += a.cacheWrite;
+    cur.cr += a.cacheRead;
+    cur.out += a.out;
+    cur.an += 1;
+    cur.aids.push(a.requestId);
+    cur.am += a.modelS;
+    cur.at += a.toolS;
+    _addUsd(cur, a.epoch, a.model, a.fresh, a.cacheWrite, a.cacheRead, a.out);
+  }
+  return late;
+}
+
+/** Has the agent that billed `a` finished since, by `ends`?  An agent file
+ * is named `agent-<id>.jsonl`; a record with no stamp counts as before any
+ * end. */
+export function _endedAfter(a: AgentRec,
+  ends: ReadonlyMap<string, number> | null): boolean {
+  const end = ends?.get(agentLabelId(a.path));
+  return end !== undefined && (a.epoch === null || a.epoch <= end);
+}
+
+/** Segment the transcript into prompts, with each turn's billed usage.
+ *
+ * `ctx` is LAST-WRITE-WINS within a turn and is the MAIN THREAD's — an
+ * instantaneous reading of how big the window is, not a sum of anything.
+ * Agent usage never touches it.  Every agent record is folded into the turn
+ * whose promptId it carries, or the turn open at its stamp; its tokens and
+ * dollars go into the same sums and its cost into `parts`, but its stamp
+ * does NOT move the turn's end.  Assistant records before the first
+ * recognised prompt are dropped: there is no turn to attribute them to.
+ *
+ * The pure core: `agentsOf` gives the agent records, handed the set of
+ * request ids the main thread billed so the two dedupe together; `offsets`
+ * is what agentOffsets read; `label` names a late agent turn's file. */
+export function turnsOf(records: readonly Rec[],
+  agentsOf: (seen: Set<unknown>) => readonly AgentRec[],
+  offsets: ReadonlyMap<string, number> | null = null,
+  held: Map<string, number> | null = null,
+  label: (path: string) => [string, string] = agentLabel): Turn[] {
+  const turns: TurnBuild[] = [];
+  let settled = 0;      // turns that a Stop hook has already run past
+  let cur: TurnBuild | null = null;
+  const seen = new Set<unknown>();
+  const byPid = new Map<unknown, TurnBuild>();
+  let lastStop: number | null = null;
+  const pending: Pending = new Map();
+  const ends = new Map<string, number>();
+  for (const r of records) {
+    scanAgentEnd(r, ends);
+    // Every tool call, onto the turn open when its RESULT arrives: the scan
+    // transcriptOf makes for the status line's 🔧, so the two readouts
+    // count the same calls by the same rule.  A record before the first
+    // prompt is still scanned, and its own spans go nowhere.
+    scanToolSpans(r, pending, cur ? cur.tools : [], cur ? cur.waits : []);
+    const pid = get(r, "promptId");
+    const text = turnStartText(r);
+    if (text !== null) {
+      // A queued message can be recorded BOTH ways — once typed, once
+      // delivered.  The earlier of the two has no records under it yet, so
+      // replacing it in place keeps one turn, with the later timestamp.
+      if (cur !== null && cur.n === 0 && cur.t1 === null &&
+        cur.text === text) {
+        cur.ts = or(get(r, "timestamp"), cur.ts) as string;
+        cur.t0 = tsEpoch(or(get(r, "timestamp"), ""));
+      } else {
+        cur = _newTurn(pyStr(or(get(r, "timestamp"), "")), text);
+        turns.push(cur);
+      }
+      _stampTurnId(cur, r);
+      if (truthy(pid)) byPid.set(pid, cur);
+      continue;
+    }
+    // Every user record of a turn carries the turn's promptId, so the index
+    // is built from all of them, not from the opener alone.
+    if (truthy(pid) && cur !== null && !truthy(cur.compact)) {
+      if (!byPid.has(pid)) byPid.set(pid, cur);
+      _stampTurnId(cur, r);
+    }
+    if (get(r, "subtype") === "compact_boundary") {
+      // A compaction leaves NO usage record anywhere; its boundary record's
+      // preTokens is what was fed to the summariser, charged at the
+      // cache-read rate, and its durationMs how long it took.  An AUTO
+      // compaction lands inside whatever turn was running, so it gets a
+      // turn of its own unless the one open is the /compact that asked for
+      // it.  The Python's comment has the measurements.
+      const md = or(get(r, "compactMetadata"), {});
+      if (cur === null || cur.n || pyStrip(cur.text) !== "/compact") {
+        cur = _newTurn(pyStr(or(get(r, "timestamp"), "")),
+          `/compact (${pyStr(or(get(md, "trigger"), "auto"))})`);
+        turns.push(cur);
+      }
+      cur.cr = num0(get(md, "preTokens"));
+      cur.usd[2] = cur.cr * P_CR;
+      cur.n = 1;
+      cur.dur = num0(get(md, "durationMs")) / 1000.0;
+      cur.compact = true;
+    } else if (get(r, "subtype") === "stop_hook_summary" &&
+      !truthy(get(r, "isSidechain"))) {
+      lastStop = or(tsEpoch(or(get(r, "timestamp"), "")), lastStop);
+      // The transcript's own record that a Stop hook RAN: the only mark in
+      // the file of where a previous cost line drew its window.
+      settled = turns.length;
+    } else if (truthy(get(r, "isCompactSummary")) && cur !== null &&
+      truthy(cur.compact)) {
+      // What the summariser WROTE, estimated from the text: the only
+      // estimate on either row.
+      const c = dig(r, "message", "content");
+      if (typeof c === "string") {
+        cur.out = Math.trunc(pyLen(c) / SUMMARY_CPT);
+        cur.usd[1] = cur.out * P_OUT;
+      }
+    } else if (get(r, "type") === "assistant" &&
+      truthy(dig(r, "message", "usage"))) {
+      const k = or(get(r, "requestId"), dig(r, "message", "id")) ?? null;
+      if (seen.has(k) || cur === null) continue;
+      seen.add(k);
+      const u = dig(r, "message", "usage");
+      const f = numGet(u, "input_tokens");
+      const cw = numGet(u, "cache_creation_input_tokens");
+      const cr = numGet(u, "cache_read_input_tokens");
+      const o = numGet(u, "output_tokens");
+      cur.fresh += f;
+      cur.cw += cw;
+      cur.cr += cr;
+      cur.out += o;
+      cur.n += 1;
+      // Priced here, per record, at the record's own model: `parts` carries
+      // the same figure, so the parts total the whole EXACTLY.
+      _addUsd(cur, tsEpoch(or(get(r, "timestamp"), "")),
+        dig(r, "message", "model") ?? null, f, cw, cr, o);
+      if (!truthy(get(r, "isSidechain"))) {
+        // LAST-WRITE-WINS, but only over readings that exist: an
+        // interrupted request is written with every usage field zero.
+        const c = f + cw + cr;
+        if (c) cur.ctx = c;
+      }
+    }
+    // Every stamped record of the ANSWER moves the turn's end, not just the
+    // billed ones; isWork keeps the user's own time out of it.
+    if (cur !== null && isWork(r)) {
+      const t = tsEpoch(or(get(r, "timestamp"), ""));
+      if (t !== null) cur.t1 = t;
+    }
+  }
+
+  const late = _foldAgents(turns, byPid, agentsOf(seen), lastStop, offsets,
+    ends, held);
+
+  // Context growth per turn.  The first turn gets null rather than its own
+  // absolute size, and `prev` SKIPS a turn that carries no reading, so the
+  // prompt after a /compact reports the drop across it.
+  const out: Turn[] = [];
+  let prev: TurnBuild | null = null;
+  for (const t of turns) {
+    const dctx = prev !== null && t.ctx ? t.ctx - prev.ctx : null;
+    // A compaction's time is its durationMs, the summariser's, which runs
+    // no tool.
+    const [toolS, blockedS] = truthy(t.compact) ? [0.0, 0.0]
+      : turnClock(t.tools, t.waits, t.t0, t.t1);
+    out.push(turn({
+      ts: t.ts, text: t.text, fresh: t.fresh, cacheWrite: t.cw,
+      cacheRead: t.cr, out: t.out, ctx: t.ctx, calls: t.n, dctx,
+      usdIn: t.usd[0], usdOut: t.usd[1], usdCr: t.usd[2], usdCw: t.usd[3],
+      compact: truthy(t.compact), reported: out.length < settled,
+      parts: [...t.parts], agentCalls: t.an, agentIds: [...t.aids],
+      durS: truthy(t.dur) ? t.dur!
+        : truthy(t.t0) && truthy(t.t1) && t.t1! > t.t0! ? t.t1! - t.t0!
+        : 0.0,
+      toolS, blockedS, agentModelS: t.am, agentToolS: t.at,
+      promptId: truthy(t.compact) ? "" : t.pid,
+      turnIndex: truthy(t.compact) ? null : t.tidx,
+    }));
+    if (t.ctx) prev = t;
+  }
+  if (late.size) {
+    for (const [path, t] of late) out.push(lateAgentTurn(t, path, label));
+    out.sort((a, b) => cmpStr(a.ts, b.ts));
+  }
+  return out;
+}
+
+/** turnsOf over the file at `path`, with the agent files beside it and the
+ * offsets the last Stop stored under `stateDir`. */
+export function readTurns(path: string,
+  agents: readonly AgentRec[] | null = null,
+  held: Map<string, number> | null = null, stateDir: string | null = null,
+  cache: AgentCache | null = null): Turn[] {
+  return turnsOf(_records(path),
+    (seen) => agents ?? agentRecords(path, seen, null, cache),
+    stateDir === null ? null : agentOffsets(path, stateDir), held);
+}
+
+/** Freeze the synthetic turn _foldAgents built for late agent records.
+ *
+ * `calls` is 0 and `agent` is set, which between them keep it out of every
+ * "the prompt to report" selection and out of the settle wait; `ctx` is 0
+ * so the Δctx walk steps over it; `reported` is false because the records
+ * in it are, by construction, ones no Stop has seen. */
+export function lateAgentTurn(t: TurnBuild, path = "",
+  label: (path: string) => [string, string] = agentLabel): Turn {
+  const [agentId, agentName] = label(path);
+  return turn({
+    ts: t.ts, text: t.text, fresh: t.fresh, cacheWrite: t.cw,
+    cacheRead: t.cr, out: t.out, ctx: 0, calls: 0, durS: 0.0, dctx: null,
+    usdIn: t.usd[0], usdOut: t.usd[1], usdCr: t.usd[2], usdCw: t.usd[3],
+    parts: [...t.parts], agentCalls: t.an, agentIds: [...t.aids],
+    agent: true, agentModelS: t.am, agentToolS: t.at, agentId, agentName,
+  });
+}
+
+// How long the Stop hook waits for the turn it is about to report to appear
+// in the transcript, and how often it looks: room for the write to land,
+// nowhere near the hook's budget.
+export const SETTLE_S = 1.5;
+export const SETTLE_POLL_S = 0.025;
+
+/** readTurns, having waited for the turn being reported to be written.
+ *
+ * The transcript is NOT flushed in step with the Stop hook: the records the
+ * turn just produced can still be missing when it reads, and a turn with no
+ * usage record looks like a prompt never answered.  Waiting is the only
+ * stateless fix; the file's size gates the re-read, so a wait that spans
+ * the whole budget parses it once.  Asynchronous here: the mod's handlers
+ * must not block its event loop. */
+export async function readTurnsSettled(path: string, budget = SETTLE_S,
+  poll = SETTLE_POLL_S, agents: readonly AgentRec[] | null = null,
+  held: Map<string, number> | null = null, stateDir: string | null = null,
+  cache: AgentCache | null = null): Promise<Turn[]> {
+  let turns = readTurns(path, agents, held, stateDir, cache);
+  if (!budget || _settled(turns)) return turns;
+  const deadline = performance.now() + budget * 1000;
+  let size: number;
+  try {
+    size = fs.statSync(path).size;
+  } catch {
+    return turns;
+  }
+  while (performance.now() < deadline) {
+    await new Promise((ok) => setTimeout(ok, poll * 1000));
+    let grown: number;
+    try {
+      grown = fs.statSync(path).size;
+    } catch {
+      break;
+    }
+    if (grown === size) continue;
+    size = grown;
+    held?.clear();
+    turns = readTurns(path, agents, held, stateDir, cache);
+    if (_settled(turns)) break;
+  }
+  return turns;
+}
+
+/** Has the turn being reported billed anything yet?  The last turn that is
+ * not a synthetic agents turn, which sorts in by stamp and bills no
+ * calls. */
+export function _settled(turns: readonly Turn[]): boolean {
+  for (let i = turns.length - 1; i >= 0; i--) {
+    if (!turns[i].agent) return Boolean(turns[i].calls);
+  }
+  return false;
+}
