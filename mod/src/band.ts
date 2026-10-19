@@ -15,8 +15,8 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
-  RIGHT_EDGE,
+  CHROME_DEPTH, E_DATE, E_PROJ, E_TOOL, E_TURN_ID, E_TURN_PAST, E_WORK,
+  GRID_CELLS, MAG_DUR_S, QUIET_WARN_S, RIGHT_EDGE, TURN_ID_HEX,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -38,7 +38,7 @@ import {
 import { decodeTurn } from "./claude_cost.ts";
 import {
   CELLS, accountLabel, cacheRate, hms, mainLabel, sessionLabel, turnLabel,
-  turnWhen, untilReset, ymd,
+  untilReset, ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
 import { draw, hidden, layout } from "./grid.ts";
@@ -107,12 +107,26 @@ export function indented(row: Row, n: number): Row {
 /** The blank columns between the receipt's head column and its rows. */
 export const HEAD_GAP = 4;
 
+/** The blank columns between the receipt's two head columns. */
+export const HEAD_SEP = 2;
+
+/** The widths of the receipt's two head columns: the turn's tag over its
+ * index, as wide as "🔺🔖 8f37748e", and the date over the time, as wide as
+ * "📅 2026-10-19". */
+export function headCols(st: Settings): [number, number] {
+  return [
+    visWidth(E_TURN_PAST + E_TURN_ID + " " + "0".repeat(TURN_ID_HEX),
+      st.widths),
+    visWidth(E_DATE + " 2026-10-19", st.widths),
+  ];
+}
+
 /** The indent of the band's rows and the receipt's: the receipt's head
- * column, as wide as its date and time, "📅 2026-10-19  🕐 13:06:02", then
- * HEAD_GAP, so the band's 🤖 stacks under the receipt's 🎤 and 🎮 (asked
- * 2026-10-19). */
+ * columns, then HEAD_GAP, so the band's 🤖 stacks under the receipt's 🎤
+ * and 🎮 (asked 2026-10-19). */
 export function headIndent(st: Settings): number {
-  return visWidth(turnWhen("2026-10-19", "00:00:00"), st.widths) + HEAD_GAP;
+  const [tag, when] = headCols(st);
+  return tag + HEAD_SEP + when + HEAD_GAP;
 }
 
 /** The columns at `cols` under `hide`, laid out over every row the band,

@@ -545,14 +545,18 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // Two lines: 🔺🔖 the tag beside 🎤, at no indent, then 📅 🕐 beside
-    // 🎮, each at least four blanks from its row.
+    // Two lines: 🔺🔖 the turn's id, at no indent, over its index, then 📅
+    // the date over 🕐 the time, then 🎤 over 🎮, each at least four blanks
+    // from the head.
     expect(want.length).toBe(2)
     expect(text(want[0])).toContain('p-resume'.slice(0, 8))
     expect(text(want[0]).startsWith(spec.E_TURN_PAST)).toBe(true)
-    expect(text(want[0])).toMatch(new RegExp(' {4,}' + spec.E_TURN))
-    expect(text(want[1]).startsWith(spec.E_DATE)).toBe(true)
-    expect(text(want[1])).toMatch(new RegExp(' {4,}' + spec.E_SESSION))
+    expect(text(want[0])).toMatch(new RegExp(spec.E_DATE + ' \\S+ {4,}' +
+      spec.E_TURN))
+    expect(text(want[1])).toMatch(new RegExp(spec.E_TIME + ' \\S+ {4,}' +
+      spec.E_SESSION))
+    expect(text(want[0]).indexOf(spec.E_DATE))
+      .toBe(text(want[1]).indexOf(spec.E_TIME))
     expect(text(want[1])).not.toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
