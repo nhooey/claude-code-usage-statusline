@@ -426,6 +426,114 @@ the cases have to stop depending on it.
 - **The existing figures-to-rows test,** `claude-subagent-render.py`, is
   already the second stage's shape.
 
+### Where each row's figures come from
+
+Audited 2026-10-19, for the grid to be drawn from the figures documents and
+not from today's cells. **S** is the status document (`status_figures`), what
+the band's rows read while a turn runs; **C** is the cost document
+(`cost_figures`), what the receipt reads when it ends. *Added* marks what
+schema 2 brought in; **MISSING** has no source yet, and its number is the open
+question below. A figure "at render" is worked out from the document's own
+fields by today's cells, as `cost_group` weighs the 🧩 tokens; nothing there
+reads outside the document.
+
+| Column | 🎤 (S) | 🤖💬 (S) | 🎮 (S) | 📊 🎤 (C) | 📊 🎮 (C) |
+|---|---|---|---|---|---|
+| model | | `payload.model`, `model_id`, `effort` | | | |
+| 🛫 | | `rate`, but the session's tokens, agents included (`session_rate`); **MISSING** the main thread's own (Q1) | | | |
+| 💰 | `accounting.turn.cost_usd` *added* | `transcript.own_usd` *added* (Q2) | `accounting.session.cost_usd` *added*, or `payload.cost_usd` as today (Q3) | `accounting.turns[i].cost_usd` | `accounting.session.cost_usd` |
+| 🧠 | `turn.dctx` *added*, points over `context_window` at render | `transcript.ctx_tokens`, `ctx_est`, `context_window` | | `turns[i].dctx` over `context_window` | |
+| 🧩 ▴ ▾ | `turn` fresh, cache write, cache read, out *added*, weighed at render | `transcript.own_tok_up`, `own_tok_down` *added* | `transcript.tok_up`, `tok_down` | `turns[i]`, weighed at render | the turns summed at render |
+| 🎯 | `turn`'s tokens at render *added* | `transcript.own_cache_pct` *added* | `transcript.cache_pct` | `turns[i]` at render | the turns at render |
+| ⌛ | `turn.dur_s` *added* | `transcript.busy_s`, `start_s`, `clock.now` | **MISSING** what it counts (Q4) | `turns[i].dur_s` | **MISSING** (Q4) |
+| ⛳ | `transcript.eta`, `agent_etas` (the open turn's, `inherit_eta`) | the same | | **MISSING** (Q5) | |
+| 🤖 🔧 🚦 | `accounting.turn.model_s`, `tool_s`, `blocked_s` *added* | `transcript.busy_s`, `tool_s`, `blocked_s`, `start_s` | `accounting.session.*` *added* (Q4) | `accounting.turns[i].*` *added* (today `turn_times` at render) | `accounting.session.*` *added* |
+| 🔋 🪫 | `accounting.turn.sess_share`, `week_share` *added*; `limits.session_turn`, `weekly_turn` round them | **MISSING** (Q2) | `accounting.session.*_share` *added*; `limits.session_share`, `weekly_share` round them | `accounting.turns[i].*_share` | `accounting.session.*_share` |
+| 💾 | `accounting.turn.lines_added`, `lines_removed` *added* | `transcript.lines_added`, `lines_removed` *added* | `payload.lines_added`, `lines_removed`, or `accounting.session.lines_*` *added* (Q3) | `accounting.turns[i].lines_*` *added* | `accounting.session.lines_*` *added* (Q3) |
+
+The 💳 row's 🔋 and 🪫 are `limits.session_pct` and `weekly_pct` in S and
+`usage.plan.session_pct` and `weekly_pct` in C, and the 📅 🕐 on every row
+that draws them are `clock.now` in `clock.tz`. The labels and heads:
+
+| Part | Source |
+|---|---|
+| 💳 🔜 resets | `limits.session_reset`, `weekly_reset` (S); `usage.plan.*_resets_at` (C) |
+| 🎤 prompt | `transcript.user_text`, the last prompt typed; `turn.text` *added* is the turn's opener, a queued message or a notification included (Q7) |
+| 🤖💬 reply, activity | `transcript.asst_text`; `main_doing` off `tool_at`, `wait_at`, `idle_at`, `last_seen`, `shells`, `monitors`, `queued` |
+| 🎮 📦 🌿 📁 🔀 🎨 | `git.main_root` or `toplevel` and `payload.project_dir`; `git.branch`; `payload.current_dir`; `payload.pr_number`; `payload.output_style` |
+| 📊 🎤 prompt | `turns[i].text` |
+| 📊 🎮 📦 🌿 | **MISSING**: the cost document has no `git` and no payload (Q6) |
+| receipt head 🔖 # 📅 🕐 | `turns[i].prompt_id` and `turn_index`; `clock.now`, when the Stop ran |
+| start line 🔖 # 📅 🕐 | `transcript.prompt_id` and `turn_index` *added*, the turn opened last even before it calls; `transcript.turn_s`, its prompt's stamp |
+
+`turn` is the last turn with main-thread calls that is not a compaction,
+`_with_shares`' pick and the receipt's. Until a new turn's first request
+lands it is still the turn before (Q7).
+
+The agent rows stay Python's and are in no figures document: the panel's
+`AgentUsage` gives 🧩, 🎯, 🧠 with the payload's window, 💰 and its `parts` for
+🔋 🪫 (`agent_window_shares`), model and effort, 💾 over the agent's whole
+life (`agent_diff`), 🤖 🔧 off `agent_clock` and 🚦 off its waiting spans, ⛳
+off its ETA; 🛫 is `token_rate` over the payload's samples. Their shared
+cases are `tests/fixtures/panel/`.
+
+What schema 2 counts, and how:
+
+- **💾 per turn** is `diff_lines` over the turn's tool results: the main
+  thread's in the turn, and each agent's filed with the billed request that
+  read the result, the way `split_clock` files its seconds; a request dropped
+  as a duplicate hands its lines on to the next one kept. Lines written after
+  an agent's last request are in no turn, as its time is not.
+- **🤖💬's own** figures are the main transcript's requests and tool results
+  alone, before the agents' are added; a compaction bills through no request
+  and is in none of them.
+- **The 🎮 split** in `accounting.session` is each turn's `turn_times` summed:
+  agent-seconds, which can outrun the wall clock, and only the main thread's
+  🚦.
+
+#### Open questions
+
+1. **🛫 on the 🤖💬 row** reads `session_rate` over the session's tokens,
+   agents included, kept in a per-session state file. (a) Keep it, and call
+   🛫 on 🤖💬 the session's rate. (b) A second rate kept over
+   `own_tok_up + own_tok_down`, a new state file beside the first. (c) Let
+   the mod work it out from successive documents, with no state file.
+2. **What "the main thread's own" 💰, 🔋 and 🪫 leave out.** `own_usd` leaves
+   out every agent file and every compaction. (a) Keep that. (b) Charge the
+   compactions to the main thread, whose window they compact. Either way 🔋
+   🪫 need the own requests' `(epoch, dollars)` parts to split at a window
+   boundary: (c) add them to `Transcript` as `own_parts`, or (d) take them
+   off the turns' parts less the agents', which needs `AgentRec`'s parts
+   filed per turn.
+3. **🎮 💰 and 💾: Claude Code's or ours.** `payload.cost_usd` and the
+   payload's lines are Claude Code's totals; the accounting's are this
+   program's, over the transcript and the agent files, and the receipt has
+   only ours. (a) Ours on both, so 🎮 is the column's sum. (b) Claude Code's in
+   the band, ours on the receipt. (c) Ours, with Claude Code's as a check in
+   `--diagnose`. Whether Claude Code's lines count its agents' is not known.
+4. **What 🎮 ⌛ and its split count.** Today's ⌛ is the main thread's clock:
+   the session's age split by 🤖 🔧 🚦 into a partition of it. The mockup's 🎮
+   is "the main thread and every agent summed". (a) The wall clock, as
+   today's ⌛, with the agents left to their rows. (b) Agent-seconds,
+   `accounting.session`, which can read more than the session's age, with 🚦
+   the main thread's alone. (c) The main thread's age for ⌛ and
+   agent-seconds for the split. The 📊 🎮 row needs the same answer.
+5. **⛳ on the receipt.** `eta` is cleared when the answer ends, so a turn
+   that is over has none. (a) Blank on 📊 🎤, as the mockup's 🎮 row is. (b)
+   The last ETA the turn reported and when, a new `Turn` field, read the way
+   `live_eta` reads it. (c) How far off it was: the reported finish against
+   the turn's end.
+6. **The receipt's 📦 🌿.** The Stop hook's payload has `cwd`; the cost
+   document carries no `git`. (a) `detect_git` in `cost_figures`, which runs
+   git at every Stop. (b) The mod takes them from the band's last status
+   document. (c) Drop them from the 📊 🎮 label.
+7. **Which turn the running 🎤 row is.** `turn` is the last turn that has
+   called, so for the first seconds of a new turn the 🎤 row shows the one
+   before; and `user_text` is the last typed prompt, not a queued message or
+   a notification that opened the turn. (a) Keep the receipt's pick. (b) The
+   turn opened last, calls or not, so a fresh turn reads zeros; the band's
+   prompt is then `turn.text`.
+
 ## The whole screen
 
 After the turn, `python3 tools/layout-mockup.py --cols 150 --plain`, made-up
