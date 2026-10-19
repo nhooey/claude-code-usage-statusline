@@ -1,0 +1,2 @@
+{"isSidechain": true, "message": {"content": "do a thing"}, "promptId": "p1", "timestamp": "2026-08-16T02:13:20Z", "type": "user", "userType": "external"}
+{"effort": "", "isSidechain": true, "message": {"content": [{"text": "step", "type": "text"}], "id": "w1a", "model": "claude-haiku-4-5", "usage": {"cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "input_tokens": 10, "output_tokens": 10}}, "requestId": "w1a", "timestamp": "2026-08-16T02:15:00Z", "type": "assistant"}

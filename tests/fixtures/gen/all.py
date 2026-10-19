@@ -17,6 +17,7 @@ sys.path.insert(0, HERE)
 import calib  # noqa: E402
 import cases  # noqa: E402
 import cost  # noqa: E402
+import panel  # noqa: E402
 import records  # noqa: E402
 import sources  # noqa: E402
 import status  # noqa: E402
@@ -27,9 +28,12 @@ for d in ("env", "payloads", "transcripts"):
     shutil.rmtree(os.path.join(ROOT, d), ignore_errors=True)
 status.main(ROOT)
 cost.main(ROOT)
+panel.main(ROOT)
 cases.main(ROOT)
 # Under 3.9 as well: 3.12's sum() of floats rounds differently.
 calib.main()
+# After cases.json, whose subagent cases it runs to capture the corpus.
+panel.main_panel()
 records.main()
 # Last, since it sets TZ for the process.  Under /usr/bin/python3: its
 # expected epochs are 3.9's fromisoformat, quirks included.

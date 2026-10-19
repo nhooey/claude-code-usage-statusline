@@ -1,0 +1,91 @@
+{
+  "columns": 160,
+  "cwd": "${SCRATCH}/repo",
+  "session_id": "subagent-04-bare",
+  "tasks": [
+    {
+      "contextWindowSize": 200000,
+      "cwd": "${SCRATCH}/repo",
+      "description": "npm test",
+      "effort": "high",
+      "id": "b1",
+      "label": "",
+      "model": "claude-opus-5",
+      "name": "",
+      "startTime": 1786846940000,
+      "status": "running",
+      "tokenCount": 0,
+      "tokenSamples": [
+        0,
+        100
+      ],
+      "type": "local_bash"
+    },
+    {
+      "contextWindowSize": 200000,
+      "cwd": "${SCRATCH}/repo",
+      "description": "sleep 5",
+      "effort": "high",
+      "id": "b2",
+      "label": "",
+      "model": "claude-opus-5",
+      "name": "",
+      "startTime": 1786846400000,
+      "status": "completed",
+      "tokenCount": 0,
+      "tokenSamples": [],
+      "type": "local_bash"
+    },
+    {
+      "contextWindowSize": 200000,
+      "cwd": "${SCRATCH}/repo",
+      "description": "Review the remote plan",
+      "effort": "high",
+      "id": "ra",
+      "label": "",
+      "model": "claude-opus-5",
+      "name": "Remote",
+      "startTime": 1786846995000,
+      "status": "pending",
+      "tokenCount": 0,
+      "tokenSamples": [],
+      "type": "remote_agent"
+    },
+    {
+      "contextWindowSize": 200000,
+      "cwd": "${SCRATCH}/repo",
+      "description": "Review the oddity plan",
+      "effort": "high",
+      "id": "xx",
+      "label": "",
+      "model": "claude-opus-5",
+      "name": "Oddity",
+      "startTime": 1786846995000,
+      "status": "paused",
+      "tokenCount": 0,
+      "tokenSamples": [],
+      "type": "local_agent"
+    },
+    {
+      "contextWindowSize": 200000,
+      "cwd": "${SCRATCH}/repo",
+      "description": "A description for a name",
+      "effort": "high",
+      "id": "nn",
+      "label": "A description for a name",
+      "model": "claude-opus-5",
+      "name": "",
+      "startTime": 1786846995000,
+      "status": "running",
+      "tokenCount": 0,
+      "tokenSamples": [],
+      "type": "local_agent"
+    },
+    {
+      "name": "no id",
+      "status": "running"
+    },
+    "not a task"
+  ],
+  "transcript_path": "${FIXTURES}/transcripts/subagent/04-bare.jsonl"
+}

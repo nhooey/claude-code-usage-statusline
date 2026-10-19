@@ -2,7 +2,7 @@
 """Run the shared golden cases in tests/fixtures/cases.json.
 
     python3 tests/run-cases.py                  # every case
-    python3 tests/run-cases.py --suite status   # or cost
+    python3 tests/run-cases.py --suite status   # or cost, subagent, panel
     python3 tests/run-cases.py --regen          # re-record, then read the diff
     python3 tests/run-cases.py --regen-figures  # the figures alone
 
@@ -25,6 +25,14 @@ Each case is checked in the two stages the program runs in besides
 
 --regen rewrites the goldens and the figures; --regen-figures the figures
 only, for when the document's shape changes and the drawing must not.
+
+The subagent suite is the agent panel's: a subagentStatusLine payload on
+stdin, the JSON lines the program prints compared whole with
+tests/golden/subagent/<id>.txt.  The panel writes no figures document, so
+its two stages are the `panel` suite instead: tests/fixtures/panel/, the
+renderer's inputs and the rows it draws for them, written again by
+fixtures/gen/panel.py and compared with what is committed.  --regen
+rewrites those too.
 
 The program runs under the interpreter given by --python, /usr/bin/python3 by
 default, the version floor on macOS.
@@ -174,6 +182,10 @@ def render(python, suite, case):
     if case["suite"] == "status":
         with open(path, encoding="utf-8") as fh:
             stdin = fill(fh.read()).encode("utf-8")
+    elif case["suite"] == "subagent":
+        # The tasks' working directories are the fixture repositories.
+        with open(path, encoding="utf-8") as fh:
+            stdin = fill(fh.read(), suite.scratch).encode("utf-8")
     else:
         argv += ["--transcript", path]
         stdin = b""
@@ -217,7 +229,7 @@ def read(path, mode="r"):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--suite", choices=("status", "cost"))
+    ap.add_argument("--suite", choices=("status", "cost", "subagent", "panel"))
     ap.add_argument("--regen", action="store_true")
     ap.add_argument("--regen-figures", action="store_true")
     ap.add_argument("--python", default="/usr/bin/python3")
@@ -228,11 +240,11 @@ def main():
         cases = json.load(fh)["cases"]
     totals = {"pass": 0, "fail": 0, "missing": 0, "wrote": 0}
     stages = {s: {"pass": 0, "fail": 0} for s in ("figures", "render")}
-    for name in ("status", "cost"):
+    for name in ("status", "cost", "subagent"):
         if args.suite and args.suite != name:
             continue
         gold = os.path.join(HERE, "golden", name)
-        out = os.path.join(HERE, "out" if name == "status" else "out-cost")
+        out = os.path.join(HERE, "out" if name == "status" else "out-" + name)
         os.makedirs(gold, exist_ok=True)
         # By suite, as the goldens are: a status and a cost case can share
         # an id.
@@ -270,6 +282,11 @@ def main():
                     fails.append("rows")
                     with open(os.path.join(out, cid + ".got"), "wb") as fh:
                         fh.write(got)
+                if name == "subagent":
+                    # No figures document: the panel suite checks the
+                    # drawing apart.
+                    report(cid, fails, want_path, out, totals)
+                    continue
                 # Figures: what the run wrote against what is committed.
                 kept = read(fig_path)
                 if kept is None:
@@ -295,15 +312,21 @@ def main():
                     with open(os.path.join(out, cid + ".render.got"),
                               "wb") as fh:
                         fh.write(drawn)
-                if not fails:
-                    print("  ok    %s" % cid)
-                    totals["pass"] += 1
-                else:
-                    print("  FAIL  %-32s (%s)" % (cid, ", ".join(fails)))
-                    shutil.copy(want_path, os.path.join(out, cid + ".want"))
-                    totals["fail"] += 1
+                report(cid, fails, want_path, out, totals)
         finally:
             shutil.rmtree(scratch, ignore_errors=True)
+    panel = None
+    if not args.suite or args.suite == "panel":
+        print("=== panel: the agent panel's rows from its inputs ===")
+        sys.path.insert(0, os.path.join(FIXTURES, "gen"))
+        import panel as gen_panel
+        if args.regen:
+            gen_panel.main_panel(args.python)
+        else:
+            n, fails = gen_panel.check(args.python)
+            for f in fails:
+                print("  FAIL  " + f)
+            panel = (n, len(fails))
     print()
     if args.regen:
         print("wrote %d goldens under tests/golden/, and their figures"
@@ -314,7 +337,20 @@ def main():
     print("pass %(pass)d   fail %(fail)d   missing %(missing)d" % totals)
     print("  figures  pass %(pass)d   fail %(fail)d" % stages["figures"])
     print("  render   pass %(pass)d   fail %(fail)d" % stages["render"])
-    return 0 if totals["fail"] == 0 and totals["missing"] == 0 else 1
+    if panel is not None:
+        print("  panel    %d cases   %d files differ" % panel)
+    return 0 if (totals["fail"] == 0 and totals["missing"] == 0
+                 and not (panel and panel[1])) else 1
+
+
+def report(cid, fails, want_path, out, totals):
+    if not fails:
+        print("  ok    %s" % cid)
+        totals["pass"] += 1
+    else:
+        print("  FAIL  %-32s (%s)" % (cid, ", ".join(fails)))
+        shutil.copy(want_path, os.path.join(out, cid + ".want"))
+        totals["fail"] += 1
 
 
 if __name__ == "__main__":

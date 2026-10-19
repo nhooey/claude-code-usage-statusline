@@ -11,6 +11,7 @@ behaviours are deliberate.
 - [Figures](#figures)
 - [Status cases](#status-cases)
 - [Cost cases](#cost-cases)
+- [Agent panel cases](#agent-panel-cases)
 - [Assertion suites](#assertion-suites)
 - [Manual checks](#manual-checks)
 - [Behaviours that look like bugs](#behaviours-that-look-like-bugs)
@@ -90,8 +91,12 @@ fixtures/
   payloads/status/       status-line payloads
   transcripts/status/    the transcripts and agent files they point at
   transcripts/cost/      the Stop hook's transcripts
+  payloads/subagent/     the agent panel's payloads, and under
+  transcripts/subagent/  the sessions and agent files they point at
   figures/<suite>/       each case's figures, written by run-cases.py; see
                          Figures below
+  panel/<group>.json     the agent panel's rows from the renderer's inputs;
+                         see Agent panel cases below
   gen/                   the generators
 ```
 
@@ -264,6 +269,51 @@ Each renders at 196, 150, 120, 92 and unknown (55 goldens), then:
 
 `force-nl-01` is checked at 196 on purpose: the program adds that newline by
 itself when the window is narrow, so a narrow case would pass without the flag.
+
+## Agent panel cases
+
+`--mode subagent` is checked at two levels, both written by
+`fixtures/gen/panel.py`.
+
+**End to end**, the `subagent` suite in `cases.json`, after the status and
+cost cases. Each case is a `subagentStatusLine` payload on stdin, and the
+golden under `golden/subagent/` is the whole of what the program prints, one
+`{"id", "content"}` line per row. The payloads' working directories are
+`${SCRATCH}` paths, the fixture repositories, so an agent in the dirty one
+draws its 🌿 branch. Every case reads the `app-41-63` source; the three
+terminal environments, `tmux`, `iterm` and `unknown-term`, read the same one.
+
+| Session | What it holds |
+|---|---|
+| `01-mixed` | the running modes (🔧 a tool, 🤖 with a 🛫 rate and quiet in amber, 🚦 a question), ✅ ❌ 🛑, 💥 an API error, 🥚 a queued task, a shell with no transcript, a workflow agent one directory down |
+| `02-parked` | completed agents only waiting: 💻 a shell, 📡 a Monitor beside one, ⛳ their own ETA, 💤 an agent under them, whose ETA the parent inherits; an ETA gone stale (amber `+`), one signed off at 0s and running over (red `+`) |
+| `03-tree` | the tree four deep with a `│` carried down, 👶🏻 🤏 📨 counts, a worktree's 🌿, a finished ancestor stepped over, a parent not on the panel |
+| `04-bare` | the payload alone: shells, a remote agent, a status never seen, tasks with no id or not an object, a label that repeats the description |
+| `05-empty` | no tasks: nothing printed |
+
+Each of 01 to 04 renders at 220, 160, 120, 92, 60 and unknown, 05 at unknown
+only, and 01 and 03 again at 220 and 120 under `--no-mark-spacing`,
+`--subscript-decimals` and each other terminal: 45 goldens.
+
+**Render**, `fixtures/panel/<group>.json`: `render_task_rows`' inputs and the
+rows it draws, each as the joined string and as its spans. The inputs are
+the prepared `(task, usage, meta, shares)` records, the `Limits`, `cols` and
+`now`; a group is one terminal profile and one setting of the two switches,
+since the program fixes those per process. The shapes are in the generator's
+docstring. `corpus*.json` are the end-to-end cases' own inputs, captured on
+their way into the renderer, so their rows are the goldens' rows and the
+generator refuses to write them otherwise. The rest are made by hand for
+what the corpus does not reach: `states`, `eta`, `counts`, `tree`,
+`gauges`, `figures`, `who` (the name, branch and activity), `widths` (one
+mixed panel from 400 columns down to 20), `missing` (no usage, a partial
+one, no meta or shares, tasks that are skipped), and the mixed panel again
+under each switch and terminal (`tight`, `subdec`, `tmux`, `iterm`,
+`unknown`).
+
+`run-cases.py` runs the render cases as its `panel` suite: the generator run
+again in memory, under `--python`, and compared with what is committed. It
+is the panel's counterpart of the figures and render stages, which the
+subagent suite skips, having no figures document.
 
 ## Assertion suites
 

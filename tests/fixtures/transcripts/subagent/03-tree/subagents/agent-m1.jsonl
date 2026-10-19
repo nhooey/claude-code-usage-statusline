@@ -1,0 +1,2 @@
+{"isSidechain": true, "message": {"content": "do a thing"}, "promptId": "p1", "timestamp": "2026-08-16T02:15:00Z", "type": "user", "userType": "external"}
+{"effort": "high", "isSidechain": true, "message": {"content": [{"id": "u6", "name": "Bash", "type": "tool_use"}], "id": "m1a", "model": "claude-opus-5", "usage": {"cache_creation_input_tokens": 2000, "cache_read_input_tokens": 30000, "input_tokens": 100, "output_tokens": 400}}, "requestId": "m1a", "timestamp": "2026-08-16T02:16:40Z", "type": "assistant"}

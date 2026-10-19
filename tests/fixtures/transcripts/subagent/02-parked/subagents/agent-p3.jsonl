@@ -1,0 +1,2 @@
+{"isSidechain": true, "message": {"content": "do a thing"}, "promptId": "p1", "timestamp": "2026-08-16T02:13:20Z", "type": "user", "userType": "external"}
+{"effort": "high", "isSidechain": true, "message": {"content": [{"text": "parked\n⛳ skills/coding-agent-usage-line-report-eta: ETA 20m", "type": "text"}], "id": "p3a", "model": "claude-opus-5", "stop_reason": "end_turn", "usage": {"cache_creation_input_tokens": 2000, "cache_read_input_tokens": 30000, "input_tokens": 100, "output_tokens": 400}}, "requestId": "p3a", "timestamp": "2026-08-16T02:18:20Z", "type": "assistant"}
