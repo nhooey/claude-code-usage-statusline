@@ -79,8 +79,8 @@ from .claude_records import *
 from .claude_records import (_agent_dir, _dedupe_usage, _num, _price,
                              _records, _stamp_utc, _usd, ts_epoch)
 from .claude_render import *
-from .claude_cost_render import (COLOUR_INK, PLAIN_INK, CostOpts, Ink,
-                                 place, render_cost_line as _pure_cost_render,
+from .claude_cost_render import (CostOpts, ink_colour as _c, place,
+                                 render_cost_line as _pure_cost_render,
                                  turn_tag)
 from .claude_sources import prepare_claude_reading
 from . import claude_subagent_render as subagent_render
@@ -1341,15 +1341,16 @@ def _write_calib_cache(windows: str, sc: float, wc: float,
         pass
 
 
-def plan_totals() -> Dict[str, Optional[float]]:
-    """The selected collector projection as numeric cost-grid totals."""
-    lim = limits_snapshot()
+def plan_totals(plan: Optional[dict] = None) -> Dict[str, Optional[float]]:
+    """The selected collector projection as numeric cost-grid totals: off
+    `plan`, a figures document's plan reading, or limits_snapshot."""
+    lim = limits_snapshot() if plan is None else plan
     sp, wp = _pct_num(lim.get("session_pct")), _pct_num(lim.get("weekly_pct"))
     if sp is None or wp is None:
         return {}
     return {"sess": sp, "week": wp}
 
-def share_half(emoji: str, share: Optional[int], ink: Ink) -> str:
+def share_half(emoji: str, share: Optional[int], colour: bool) -> SpanLike:
     """The fmt.C_LIM_TOT half of a PER-PROMPT limit cell, under limit_cell's.
 
     Same shape as the half it stacks on -- a leading blank, the mark, fmt.MARK_SP,
@@ -1367,14 +1368,18 @@ def share_half(emoji: str, share: Optional[int], ink: Ink) -> str:
     """
     if share is None:
         return " " * fmt.C_LIM_TOT
-    return " %s%s%s%s%s" % (emoji, fmt.MARK_SP, ink.amb, pad_val(3, pct(share)),
-                            ink.r)
+    return [" " + emoji + fmt.MARK_SP,
+            Span(pad_val(3, pct(share)), _c(colour, "F_AMB"))]
 
 
-def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
-               now: Optional[float] = None, acct: bool = True,
-               stamps: bool = True) -> str:
+def cost_group(t: Turn, shares: Dict[str, Optional[float]], win: int,
+               colour: bool, now: Optional[float] = None, acct: bool = True,
+               stamps: bool = True) -> List[Span]:
     """The constant-width segment group for one prompt.
+
+    `shares` is the turn's accounting (turn_accounting): its cost, and what
+    it put into each window and spent re-reading and caching.  They are
+    worked out before drawing, so this reads no plan reading of its own.
 
     Every value is padded to its field width HERE rather than by seg(), so the
     emoji column is fixed too.  Padding the segment as a whole would hold each
@@ -1387,8 +1392,8 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
     up = t.fresh + W_CACHE_WRITE * t.cache_write + W_CACHE_READ * t.cache_read
     in_all = t.fresh + t.cache_write + t.cache_read
     cpct = int(100 * t.cache_read / in_all) if in_all else -1
-    c = turn_cost(t)
-    rd, wr = turn_shares(t)
+    c = shares["cost_usd"]
+    rd, wr = shares["read_share"], shares["write_share"]
     # 🔋 and 🪫 below report this prompt's share of each PLAN WINDOW, so what
     # they divide is the part of it billed inside that window — not `c`, which
     # is the whole turn and is what 💰 to their left is for.  The two differ
@@ -1396,32 +1401,34 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
     # is the whole figure: see turn_cost_since.  The totals row underneath
     # sums the same split over every turn, which is what lets these deltas
     # total the figure beneath them across a reset as well as within one.
-    tsh = window_shares(t, calib)
+    tsh = {"sess": shares["sess_share"], "week": shares["week_share"]}
     model_s, tool_s = turn_times(t)
     stamp = time.localtime(now) if now is not None else time.localtime()
     lim_w = fmt.C_SESS if acct else fmt.C_SESS - fmt.C_LIM_TOT
     cells = [
-        seg(fmt.C_TOK, "%s%s%s%s%s%s" % (
-            E_TOK + fmt.MARK_SP, ink.tup, E_UP + pad_val(4, humanize(up)),
-            ink.tdn, " " + E_DOWN + pad_val(4, humanize(t.out)), ink.r),
+        seg(fmt.C_TOK, [
+            E_TOK + fmt.MARK_SP,
+            Span(E_UP + pad_val(4, humanize(up)), _c(colour, "F_TUP")),
+            Span(" " + E_DOWN + pad_val(4, humanize(t.out)),
+                 _c(colour, "F_TDN"))],
             left=False),
-        seg(fmt.C_CACHE, "%s%s%s%s" % (E_CACHE + fmt.MARK_SP, _cache_ink(cpct, ink),
-                                   pad_val(3, pct(cpct)), ink.r)
+        seg(fmt.C_CACHE, [E_CACHE + fmt.MARK_SP,
+                          Span(pad_val(3, pct(cpct)),
+                               _c(colour, _cache_ink(cpct)))]
             if cpct >= 0 else "", left=False),
         # Percentage then size, matching render_ctx — and the totals row
         # below repeats the order, because these two rows stack field under
         # field and a swap in one alone would tear that apart.
-        seg(C_CTX, "%s%s%s %s%s%s" % (
-            E_CTX, ink.pnk2, signed_pct(t.dctx, win),
-            ink.pnk, signed(t.dctx), ink.r)
+        seg(C_CTX, [E_CTX,
+                    Span(signed_pct(t.dctx, win) + " ", _c(colour, "F_PNK2")),
+                    Span(signed(t.dctx), _c(colour, "F_PNK"))]
             if t.dctx is not None else "", left=False),
         # "+", not a sign: a prompt cannot cost less than nothing, so there
         # is no negative case to distinguish and the mark is free to mean
         # "added" — the same constant, in the same column, as the two limit
         # cells after it.  Every figure on this row is what ONE prompt put on
         # the reading directly beneath it.
-        seg(C_COST, "%s%s+%s%s" % (E_COST, ink.yel,
-                                   money_cell(c), ink.r),
+        seg(C_COST, [E_COST, Span("+" + money_cell(c), _c(colour, "F_YEL"))],
             left=False),
         # The second half of each cell is the fmt.C_LIM_TOT the row below spends
         # on 💳 and the window's own reading.  It was seven blanks until
@@ -1438,17 +1445,19 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
         # the column it has to stack on.  With --no-account-totals there is no
         # 💳 half below to stack ON, so the halves go together — which is why
         # share_half is reached through the same `acct` test the blank was.
-        seg(lim_w, "%s%s+%s%s%s" % (
-            E_SESS, ink.amb,
-            dec_align(plan_pct(tsh["sess"]), 2, 2, E_PCT), ink.r,
-            share_half(E_READ, rd, ink) if acct else "")
+        seg(lim_w, [
+            E_SESS,
+            Span("+" + dec_align(plan_pct(tsh["sess"]), 2, 2, E_PCT),
+                 _c(colour, "F_AMB")),
+            share_half(E_READ, rd, colour) if acct else ""]
             if tsh.get("sess") is not None else "", left=False),
         # One column wider than 🔋 for plan_pct's third decimal; the totals
         # row's 📆 reserves the same, so the two points stack.
-        seg(lim_w + 1, "%s%s+%s%s%s" % (
-            E_WEEK, ink.amb,
-            dec_align(plan_pct(tsh["week"], 3), 2, 3, E_PCT), ink.r,
-            share_half(E_WRITE, wr, ink) if acct else "")
+        seg(lim_w + 1, [
+            E_WEEK,
+            Span("+" + dec_align(plan_pct(tsh["week"], 3), 2, 3, E_PCT),
+                 _c(colour, "F_AMB")),
+            share_half(E_WRITE, wr, colour) if acct else ""]
             if tsh.get("week") is not None else "", left=False),
         # "+" as on 💰, 🔋 and 📆 beside it: every figure on this row is what
         # ONE prompt added to the reading directly beneath it, and these two
@@ -1459,11 +1468,11 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
         # the agents row; see turn_times.  A question put to the reader, or
         # the main thread sitting on an agent, is in neither, so an agent's
         # run is counted once.  The totals row prints a space in the column.
-        seg(C_ELAPSED, "%s%s+%s%s" % (S_WORK, ink.crm,
-                                      pad_val(4, dur_fmt(model_s)), ink.r),
+        seg(C_ELAPSED, [S_WORK, Span("+" + pad_val(4, dur_fmt(model_s)),
+                                     _c(colour, "F_CRM"))],
             left=False),
-        seg(C_TOOL, "%s%s+%s%s" % (E_TOOL, ink.crm,
-                                   pad_val(4, dur_fmt(tool_s)), ink.r),
+        seg(C_TOOL, [E_TOOL, Span("+" + pad_val(4, dur_fmt(tool_s)),
+                                  _c(colour, "F_CRM"))],
             left=False),
         # Blank on a compaction, and the CELL is kept so the columns to its
         # left still stack.  The stamp is `now` — when this line is being
@@ -1473,9 +1482,9 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
         # its own.  Printing the moment of the REPORT beside the cost of the
         # EVENT invites reading one as the other.  The agents row is the
         # same case, word for word.
-        seg(C_STAMP, "%s%s%s%s" % (
-            S_DATE, ink.crm,
-            pad_val(10, time.strftime("%Y-%m-%d", stamp)), ink.r)
+        seg(C_STAMP, [S_DATE,
+                      Span(pad_val(10, time.strftime("%Y-%m-%d", stamp)),
+                           _c(colour, "F_CRM"))]
             if not (t.compact or t.agent) else "", left=False),
     ]
     # Dropped, not blanked.  An empty seg() is still exactly its reservation,
@@ -1483,15 +1492,26 @@ def cost_group(t: Turn, calib: Dict[str, Optional[float]], win: int, ink: Ink,
     # and buy the narrow window none of the room the option is asked for.
     if not stamps:
         cells.pop()
-    return (" " * C_SEG_GAP).join(cells)
+    return _cost_cells(cells)
 
 
-def _cache_ink(p: int, ink: Ink) -> str:
+def _cost_cells(cells: Sequence[SpanLike]) -> List[Span]:
+    """A cost row's cells, C_SEG_GAP blanks between each two."""
+    out: List[Span] = []
+    for index, cell in enumerate(cells):
+        if index:
+            out.append(Span(" " * C_SEG_GAP))
+        out += spans(cell)
+    return out
+
+
+def _cache_ink(p: int) -> str:
+    """The colour a cache rate is drawn in: red, amber or green."""
     if p <= CACHE_CRIT:
-        return ink.red
+        return "F_RED"
     if p <= CACHE_WARN:
-        return ink.amb
-    return ink.grn
+        return "F_AMB"
+    return "F_GRN"
 
 
 def session_shares(turns: Sequence[Turn],
@@ -1545,7 +1565,8 @@ def session_shares(turns: Sequence[Turn],
 
 
 def limit_cell(emoji: str, share: Optional[float], total: Optional[float],
-               ink: Ink, acct: bool = True, places: int = 2) -> str:
+               colour: bool, acct: bool = True,
+               places: int = 2) -> SpanLike:
     """A totals-row limit cell: this session's share, then 💳, the window's.
 
     Two figures about one window — before the mark, what this session spent;
@@ -1603,7 +1624,7 @@ def limit_cell(emoji: str, share: Optional[float], total: Optional[float],
             if share is not None
             else pad_val(fmt.C_SESS - fmt.C_LIM_TOT - 5 + places, "?"))
     if not acct:
-        return "%s%s %s%s" % (emoji, ink.amb, left, ink.r)
+        return [emoji, Span(" " + left, _c(colour, "F_AMB"))]
     # The threshold is render_limit's, so the two readouts can never draw
     # different things for one window: 99.5 up is full, and 💯 says so.
     if total is None:
@@ -1612,16 +1633,19 @@ def limit_cell(emoji: str, share: Optional[float], total: Optional[float],
         right = E_HUNDRED + E_PCT
     else:
         right = pct(round(total))
-    return "%s%s %s%s %s%s%s%s%s" % (emoji, ink.amb, left, ink.r,
-                                     E_ACCT, fmt.MARK_SP,
-                                     ink.amb, pad_val(3, right), ink.r)
+    return [emoji, Span(" " + left, _c(colour, "F_AMB")),
+            " " + E_ACCT + fmt.MARK_SP,
+            Span(pad_val(3, right), _c(colour, "F_AMB"))]
 
 
 def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
-                      win: int, ink: Ink, now: Optional[float] = None,
-                      calib: Optional[Dict[str, Optional[float]]] = None,
-                      acct: bool = True, stamps: bool = True) -> str:
+                      win: int, colour: bool, now: Optional[float] = None,
+                      shares: Optional[Dict[str, Optional[float]]] = None,
+                      acct: bool = True, stamps: bool = True) -> List[Span]:
     """The session-to-date row that sits under the per-prompt one.
+
+    `shares` is the session's accounting (cost_accounting's "session"):
+    its cost and what it put into each window, worked out before drawing.
 
     Same segment order and the same widths, so each total lands directly
     beneath the figure it totals.  Two of the seven have no meaningful total:
@@ -1668,12 +1692,15 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     # printed immediately after a compaction, which is where the absolute
     # figure is most worth having.
     ctx = next((t.ctx for t in reversed(turns) if t.ctx), 0)
-    c = sum(turn_cost(t) for t in turns)
     # Source/calibration preparation belongs to orchestration.  This group is
     # also injected into the pure cost renderer, so it must never trigger a
-    # cache refresh merely because a direct caller omitted an optional value.
-    calib = calib if isinstance(calib, dict) else {"sess": None, "week": None}
-    mine = session_shares(turns, calib)
+    # cache refresh merely because a direct caller omitted an optional value:
+    # without the accounting there is no share to draw.
+    if shares is None:
+        shares = {"cost_usd": sum(turn_cost(t) for t in turns),
+                  "sess_share": None, "week_share": None}
+    c = shares["cost_usd"]
+    mine = {"sess": shares["sess_share"], "week": shares["week_share"]}
     stamp = time.localtime(now) if now is not None else time.localtime()
     # Every turn's thinking and tool time, summed — the totals of the figures
     # directly above them, which is what every other cell on this row is.
@@ -1686,59 +1713,63 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     tool_s = sum(turn_times(t)[1] for t in turns)
     lim_w = fmt.C_SESS if acct else fmt.C_SESS - fmt.C_LIM_TOT
     cells = [
-        seg(fmt.C_TOK, "%s%s%s%s%s%s" % (
-            E_TOK + fmt.MARK_SP, ink.tup, E_UP + pad_val(4, humanize(up)),
-            ink.tdn, " " + E_DOWN + pad_val(4, humanize(out_tok)), ink.r),
+        seg(fmt.C_TOK, [
+            E_TOK + fmt.MARK_SP,
+            Span(E_UP + pad_val(4, humanize(up)), _c(colour, "F_TUP")),
+            Span(" " + E_DOWN + pad_val(4, humanize(out_tok)),
+                 _c(colour, "F_TDN"))],
             left=False),
-        seg(fmt.C_CACHE, "%s%s%s%s" % (E_CACHE + fmt.MARK_SP, _cache_ink(cpct, ink),
-                                   pad_val(3, pct(cpct)), ink.r)
+        seg(fmt.C_CACHE, [E_CACHE + fmt.MARK_SP,
+                          Span(pad_val(3, pct(cpct)),
+                               _c(colour, _cache_ink(cpct)))]
             if cpct >= 0 else "", left=False),
         # A space where the per-prompt row prints its sign, then the same
         # dec_align — so the two readings stack digit under digit and the
         # column reads as one figure changing rather than two figures.  This
         # is what 💰, 🔋 and 📆 do further along the row.
-        seg(C_CTX, "%s%s %s %s %s%s" % (
-            E_CTX, ink.pnk2,
-            dec_align("%.1f" % (100.0 * ctx / win), 2, 1, E_PCT),
-            ink.pnk, pad_val(4, humanize(ctx)), ink.r)
+        seg(C_CTX, [
+            E_CTX,
+            Span(" " + dec_align("%.1f" % (100.0 * ctx / win), 2, 1, E_PCT)
+                 + " ", _c(colour, "F_PNK2")),
+            Span(" " + pad_val(4, humanize(ctx)), _c(colour, "F_PNK"))]
             if ctx else "", left=False),
-        seg(C_COST, "%s%s %s%s" % (E_COST, ink.yel,
-                                   money_cell(c), ink.r),
+        seg(C_COST, [E_COST, Span(" " + money_cell(c), _c(colour, "F_YEL"))],
             left=False),
         seg(lim_w, limit_cell(E_SESS, mine.get("sess"),
-                              totals.get("sess") if totals else None, ink,
+                              totals.get("sess") if totals else None, colour,
                               acct),
             left=False),
         # One wider than 🔋 for the week's third decimal; see plan_pct.
         seg(lim_w + 1, limit_cell(E_WEEK, mine.get("week"),
                                   totals.get("week") if totals else None,
-                                  ink, acct, 3),
+                                  colour, acct, 3),
             left=False),
         # The pair the status line's column 4 makes, split across the two
         # rows this readout already has: what the last prompt took, over how
         # long the session has been alive.  And the stamp beside it splits the
         # same way — the date on the row above the clock it belongs to, which
         # is what a line printed at 00:03 needs and a bare clock cannot give.
-        seg(C_ELAPSED, "%s%s %s%s" % (S_WORK, ink.crm,
-                                      pad_val(4, dur_fmt(work_s)), ink.r),
+        seg(C_ELAPSED, [S_WORK, Span(" " + pad_val(4, dur_fmt(work_s)),
+                                     _c(colour, "F_CRM"))],
             left=False),
-        seg(C_TOOL, "%s%s %s%s" % (E_TOOL, ink.crm,
-                                   pad_val(4, dur_fmt(tool_s)), ink.r),
+        seg(C_TOOL, [E_TOOL, Span(" " + pad_val(4, dur_fmt(tool_s)),
+                                  _c(colour, "F_CRM"))],
             left=False),
-        seg(C_STAMP, "%s%s%s%s" % (
-            S_TIME, ink.crm,
-            pad_val(10, time.strftime("%H:%M:%S", stamp)), ink.r), left=False),
+        seg(C_STAMP, [S_TIME,
+                      Span(pad_val(10, time.strftime("%H:%M:%S", stamp)),
+                           _c(colour, "F_CRM"))], left=False),
     ]
     if not stamps:            # dropped rather than blanked; see cost_group
         cells.pop()
-    return (" " * C_SEG_GAP).join(cells)
+    return _cost_cells(cells)
 
 
 def render_cost_line(turns: Sequence[Turn], opts: CostOpts,
                      now: Optional[float] = None) -> str:
     """Prepare accounting once, then delegate byte layout to the pure renderer."""
     return _pure_cost_render(turns, opts, window_for(turns, opts.session_id),
-                             calibration(), plan_totals(), now,
+                             cost_accounting(turns, calibration()),
+                             plan_totals(), now,
                              cost_group, cost_totals_group)
 
 
@@ -1794,6 +1825,18 @@ def selftest() -> int:
     print("narrow=%s  icons=%s  clusters=%s\n"
           % (sorted(WIDTHS.narrow), sorted(WIDTHS.icons), WIDTHS.clusters))
 
+    # The receipt's specimens: a turn, and a session of one turn.  Their
+    # shares are worked out here, as the first stage works them out.
+    # dctx explicitly: the specimen is built positionally, so a new field
+    # with no default silently turns this into a TypeError that only fires
+    # in a real terminal — the tty guard returns first everywhere else.  It
+    # did, for as long as dctx existed.  The four dollar sums are the same
+    # specimen priced at Opus rates, which is what read_turns would have
+    # produced from it.
+    calib = {"sess": 0.5, "week": 2.0}
+    turn = Turn("", "", 40000, 8000, 900000, 3000, 640000, 3, 142000, None,
+                *_usd(None, 40000, 8000, 900000, 3000))
+    session = (turn._replace(ts="2026-08-24T12:00:00.000Z"),)
     rows = [
         ("rate-cache", render_rate_cache(138.0, 98)),
         # Column 3, both shapes a field can take: a spelled share and the
@@ -1829,21 +1872,13 @@ def selftest() -> int:
                             render_model_cost("Opus 5", "high", "115.2"),
                             render_cache_share(S_WRITE, 7, 61),
                             render_limit(S_SESS, "38", "5", "", "0.4")))),
-        ("cost-row", cost_group(
-            # dctx explicitly: the specimen is built positionally, so a new
-            # field with no default silently turns this row into a TypeError
-            # that only fires in a real terminal — the tty guard returns
-            # first everywhere else.  It did, for as long as dctx existed.
-            # The four dollar sums are the same specimen priced at Opus
-            # rates, which is what read_turns would have produced from it.
-            Turn("", "", 40000, 8000, 900000, 3000, 640000, 3, 142000, None,
-                 *_usd(None, 40000, 8000, 900000, 3000)),
-            {"sess": 0.5, "week": 2.0}, CTX_1M, COLOUR_INK)),
+        ("cost-row", cost_group(turn, turn_accounting(turn, calib),
+                                CTX_1M, True)),
         # The receipt's turn tag: 🔺 and 🔖, two wide emoji.
         ("turn-tag", turn_tag(
             Turn("", "", 0, 0, 0, 0, 0, 1, 0.0, None, 0.0, 0.0, 0.0, 0.0,
                  prompt_id="8f37748e-47ff-492b-888b-0163beb40189",
-                 turn_index=12), COLOUR_INK)),
+                 turn_index=12), True)),
         # The TOTALS row, which the per-prompt specimen above cannot stand in
         # for.  It used to be the WIDER of the two — 🔋 and 🪫 carried a
         # second figure each where the row above them carried blanks — and
@@ -1862,17 +1897,14 @@ def selftest() -> int:
         # every value, and the "?" it falls back to is padded to the same six
         # — so the row is this width either way.
         ("cost-totals", cost_totals_group(
-            (Turn("2026-08-24T12:00:00.000Z", "", 40000, 8000, 900000, 3000,
-                  640000, 3, 142000, None, *_usd(None, 40000, 8000, 900000,
-                                                 3000)),),
-            {"sess": 26.0, "week": 80.0}, CTX_1M, COLOUR_INK,
-            calib={"sess": 0.5, "week": 2.0})),
+            session, {"sess": 26.0, "week": 80.0}, CTX_1M, True,
+            shares=cost_accounting(session, calib)["session"])),
     ]
 
     try:
         ttymod.setcbreak(fd)
         for name, row in rows:
-            # The cells are spans and the receipt's groups strings.
+            # The cells and the receipt's groups are spans.
             row = row if isinstance(row, str) else join(row)
             expect = vis_width(strip_ansi(row))
             tty.write(("\r\033[K%s\033[6n" % row).encode("utf-8"))
@@ -2648,28 +2680,16 @@ def _fig_usage(prepared) -> dict:
                              if _shows_account(prepared) else None)}
 
 
-def _fig_apply(fig: dict) -> None:
-    """Put back the two things a render still reads from outside its
-    arguments: the zone the clock is drawn in, and the plan reading that
-    window_shares and plan_totals read through limits_snapshot.  The cost
-    rows still work their shares out while drawing; once they take them
-    from the document's `accounting`, the snapshot goes from here."""
-    global _SNAPSHOT
+def _fig_zone(fig: dict) -> None:
+    """Put back the one thing a render still reads from outside its
+    arguments: the zone the clock is drawn in.  The plan reading is not
+    put back: the cost rows read their shares from the document's
+    `accounting` and its totals from its plan reading, and nothing else a
+    render draws divides by the plan."""
     tz = fig["clock"]["tz"]
     if tz and os.environ.get("TZ") != tz:
         os.environ["TZ"] = tz
         time.tzset()
-    plan = fig["usage"]["plan"]
-    if plan["session_pct"] is None and plan["weekly_pct"] is None:
-        _SNAPSHOT = {}
-        return
-    _SNAPSHOT = {"session_pct": _pct_num(plan["session_pct"]),
-                 "session_resets_at": _epoch_stamp(plan["session_resets_at"]),
-                 "weekly_pct": _pct_num(plan["weekly_pct"]),
-                 "weekly_resets_at": _epoch_stamp(plan["weekly_resets_at"]),
-                 # Live, the scope the edge seeded stays: the calibration
-                 # cache is keyed by it.
-                 "_scope": limits_snapshot().get("_scope", "")}
 
 
 def _cols(argv: Sequence[str]) -> Optional[int]:
@@ -2771,7 +2791,7 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
 def render_status_figures(fig: dict, argv: Sequence[str]) -> str:
     """Stage two of the status line: its figures drawn at --cols, under the
     flags in argv.  Reads no file and no clock."""
-    _fig_apply(fig)
+    _fig_zone(fig)
     rate = fig["rate"]
     output = render_status(decode_record(Payload, fig["payload"]),
                            decode_record(Transcript, fig["transcript"]),
@@ -2787,11 +2807,38 @@ def render_status_figures(fig: dict, argv: Sequence[str]) -> str:
     return output
 
 
-def _turn_accounting(t: Turn, calib: Dict[str, Optional[float]]) -> dict:
+def turn_accounting(t: Turn, calib: Dict[str, Optional[float]]) -> dict:
+    """What one turn comes to: its cost, its share of each live window and
+    the shares of it spent re-reading and caching.  cost_group draws these.
+    The window shares read the plan reading through limits_snapshot, so
+    this belongs to the first stage, never to a render."""
     tsh = window_shares(t, calib)
     rd, wr = turn_shares(t)
     return {"cost_usd": turn_cost(t), "sess_share": tsh["sess"],
             "week_share": tsh["week"], "read_share": rd, "write_share": wr}
+
+
+def cost_accounting(turns: Sequence[Turn],
+                    calib: Dict[str, Optional[float]]) -> dict:
+    """turn_accounting for each turn, in order, and the same for the
+    session: the figures document's `accounting`."""
+    sh = session_shares(turns, calib)
+    rd, wr = session_cache_shares(turns)
+    return {"turns": [turn_accounting(t, calib) for t in turns],
+            "session": {"cost_usd": sum(turn_cost(t) for t in turns),
+                        "sess_share": sh["sess"],
+                        "week_share": sh["week"],
+                        "read_share": rd, "write_share": wr}}
+
+
+def _read_accounting(acc: dict) -> Dict[str, Optional[float]]:
+    """One turn's or the session's accounting as it was worked out: the
+    cost and window shares floats again, which canonical JSON writes as
+    integers when they are whole."""
+    return {k: (None if v is None
+                else float(v) if k in ("cost_usd", "sess_share",
+                                       "week_share") else v)
+            for k, v in acc.items()}
 
 
 def cost_figures(turns: Sequence[Turn], session_id: str, prepared) -> dict:
@@ -2799,26 +2846,18 @@ def cost_figures(turns: Sequence[Turn], session_id: str, prepared) -> dict:
     window, the calibration and the plan reading the turns are divided by,
     and what each turn and the session come to.
 
-    `accounting` is what the cost rows draw from the turns.  The rows still
-    work it out again while drawing, so for now it is a figure the shared
-    cases check, for a port to match before its renderer reads it.
+    `accounting` is what the cost rows draw from the turns: the render
+    stage reads it and divides by nothing itself.
     """
     win = window_for(turns, session_id)
     calib = calibration()
-    sh = session_shares(turns, calib)
-    rd, wr = session_cache_shares(turns)
     return {"schema": FIGURES_SCHEMA, "mode": "cost",
             "clock": _fig_clock(),
             "turns": [encode_record(t) for t in turns],
             "context_window": win,
             "calibration": {"sess": calib.get("sess"),
                             "week": calib.get("week")},
-            "accounting": {
-                "turns": [_turn_accounting(t, calib) for t in turns],
-                "session": {"cost_usd": sum(turn_cost(t) for t in turns),
-                            "sess_share": sh["sess"],
-                            "week_share": sh["week"],
-                            "read_share": rd, "write_share": wr}},
+            "accounting": cost_accounting(turns, calib),
             "usage": _fig_usage(prepared)}
 
 
@@ -2846,14 +2885,17 @@ def _cost_opts(argv: Sequence[str], session_id: str = "") -> CostOpts:
 
 
 def render_cost_figures(fig: dict, argv: Sequence[str]) -> str:
-    """Stage two of the cost line: the systemMessage, or "" for none."""
-    _fig_apply(fig)
+    """Stage two of the cost line: the systemMessage, or "" for none.
+    Reads no file, no clock and no plan reading but the document's."""
+    _fig_zone(fig)
     turns = [decode_record(Turn, t) for t in fig["turns"]]
-    calib = {k: (None if v is None else float(v))
-             for k, v in fig["calibration"].items()}
+    acc = fig["accounting"]
+    accounting = {"turns": [_read_accounting(a) for a in acc["turns"]],
+                  "session": _read_accounting(acc["session"])}
     line = _pure_cost_render(turns, _cost_opts(argv),
-                             int(fig["context_window"]), calib,
-                             plan_totals(), fig["clock"]["now"],
+                             int(fig["context_window"]), accounting,
+                             plan_totals(fig["usage"]["plan"]),
+                             fig["clock"]["now"],
                              cost_group, cost_totals_group)
     if not line.strip():
         return ""
@@ -2936,20 +2978,22 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
         # as plain text rather than a hook response.  It is not what the hook
         # asks for and never emits JSON, so it cannot be mistaken for one.
         if "--all" in argv:
-            ink = COLOUR_INK if opts.colour else PLAIN_INK
             win = window_for(turns, opts.session_id)
-            calib = calibration()
+            acc = cost_accounting(turns, calibration())
             for i, t in enumerate(turns, 1):
                 print("--- prompt #%d  %s  “%s…”  (%d calls)"
                       % (i, t.ts, t.text[:58], t.calls))
-                print("    " + cost_group(t, calib, win, ink, None,
-                                          opts.account_totals, opts.stamps))
+                print("    " + join(cost_group(t, acc["turns"][i - 1], win,
+                                               opts.colour, None,
+                                               opts.account_totals,
+                                               opts.stamps), runs=True))
             if turns and opts.totals:
-                print("\n" + place(
-                    cost_totals_group(turns, plan_totals(), win, ink,
-                                      calib=calib, acct=opts.account_totals,
+                print("\n" + join(rstrip(place(
+                    cost_totals_group(turns, plan_totals(), win, opts.colour,
+                                      shares=acc["session"],
+                                      acct=opts.account_totals,
                                       stamps=opts.stamps),
-                    opts, opts.totals_label, C_CHROME_CONT).rstrip())
+                    opts, opts.totals_label, C_CHROME_CONT)), runs=True))
             return 0
 
         fig = cost_figures(turns, opts.session_id, prepared)
