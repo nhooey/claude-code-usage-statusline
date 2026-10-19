@@ -855,26 +855,31 @@ def run(tmp):
         "\U0001FAAB" + sl.pad_val(5, sl.limit_pct(want / 10.0, 4) + sl.E_PCT),
         unpainted(sl.render_diff("12", "4"))))
     # The spinner's first frame, for a transcript with no text or tool call
-    # in it; then 🟢 running, and the Doing field after it: 🤖, no call
-    # waiting on its result, and nothing written for 1.2h, so the quiet
-    # time rather than the rate.
-    head = "\u00B7\U0001F50D\U0001F7E2 \U0001F916 1.2h  a1         "
-    tree = sl.E_TREE_NODE + " "         # no nesting: the tree is one ◯ wide
-    check("an agent's row: the left group, the name, the panel's tree drawn "
-          "again, then the right group, filling the payload's columns exactly",
-          rows["a1"], head + sl.seg(200 - sl.vis_width(head) - 2
-                                    - sl.vis_width(tree + right), "Marigold")
-          + "  " + tree + right)
-    check("no margin: the panel's width is already net of its chrome",
-          sl.vis_width(rows["a1"]), 200)
+    # in it; then 🟢 running, and the name.  The Doing field is the grid's
+    # 🛫 column now, after the model: 🤖, no call waiting on its result, and
+    # nothing written for 1.2h, so the quiet time rather than the rate.
+    right = right.replace("\U0001F3C3  ", "\U0001F3C3  \U0001F916 1.2h   ", 1)
+    head = "·\U0001F50D\U0001F7E2 "
+    # The payload's columns are the terminal's less PANEL_COLUMNS_SHORT, and
+    # the rows are laid out for the terminal's, less the chrome Claude Code
+    # draws ("  ◯ " at the top level) and the RIGHT_EDGE every readout keeps.
+    edge = 200 + sl.PANEL_COLUMNS_SHORT - sl.RIGHT_EDGE - sl.PANEL_CHROME
+    check("an agent's row: the kind and state, the name, then the grid's "
+          "columns, ending RIGHT_EDGE short of the terminal behind the chrome",
+          rows["a1"], head + sl.seg(edge - sl.vis_width(head) - 2
+                                    - sl.vis_width(right), "Marigold")
+          + "  " + right)
+    check("the row fills the terminal's width less the chrome and RIGHT_EDGE",
+          sl.vis_width(rows["a1"]), edge)
     check("the right group ends at the same column on every row",
           len({sl.vis_width(r) for r in (rows["a1"], rows["a2"])}), 1)
     check("no sidecar: the task's kind, and the transcript's model where "
           "the payload has none",
-          # The blank spinner of a row not running, then ⚫ and its ✅ with
-          # the time since it finished, a minute after its last record.
-          (rows["a2"].startswith(" \U0001F465\u26AB \u2705"),
-           "\U0001F916O\u2075" in rows["a2"]),
+          # The blank spinner of a row not running, then ⚫, and its ✅ with
+          # the time since it finished, a minute after its last record, in
+          # the 🛫 column.
+          (rows["a2"].startswith(" \U0001F465⚫ Zephyr"),
+           "\U0001F916O⁵\U0001F3C3  ✅" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
     check("an agent that wrote nothing still states it; a task with no "
@@ -883,51 +888,63 @@ def run(tmp):
            "\U0001F4BE" in rows["bash-1"]),
           (True, False))
     check("and its clock stopped at its last record, not at now",
-          re.search(r"\u231B\s*(\S+)", rows["a2"]).group(1), "1m")
+          re.search(r"⌛\s*(\S+)", rows["a2"]).group(1), "1m")
     check("an unnamed task takes its description for a name, then its "
-          "label for what it is doing; a shell shows nothing it did not bill",
+          "label for what it is doing; a shell shows nothing it did not "
+          "bill, and its label runs on over the blank columns to its ⌛",
           re.sub(r" {2,}", "  ", rows["bash-1"]),
           # No spinner, 🟢 and no mode: a shell has no transcript to count
           # in or to say who has the floor.
-          " \U0001F41A\U0001F7E2  bash-1  npm test npm test --watch  "
-          "\u25EF  \u231B 13m")
+          " \U0001F41A\U0001F7E2 npm test  npm test --watch  ⌛ 13m")
+    label = lambda name, act, room, branch="": unpainted(sr.grid.label_text(
+        sr.grid.Row("agent", sr.agent_label(
+            task("x", name=name, label=act, status="completed"),
+            NS(branch=branch), {}), {}, 1), [], room))
     check("a name and its activity, and a label that only repeats the "
           "description is not drawn",
-          [unpainted(sr.render_who(n, a, 40)) for n, a in (
+          [label(n, a, 40) for n, a in (
               ("Marigold", "Reading the plan"), ("Marigold", ""),
-              ("", "Reading the plan"), ("", ""))],
-          ["Marigold Reading the plan", "Marigold", "Reading the plan", ""])
-    check("the activity gives way first, then the name",
-          [unpainted(sr.render_who("Marigold", "Reading the plan, slowly",
-                                      w)) for w in (30, 20, 12, 6)],
-          ["Marigold Reading the plan, sl…", "Marigold Reading th…",
-           "Marigold", "Marig…"])
-    check("the panel's tree costs two columns a level below the first, and "
-          "a task with no sidecar is a root",
-          [sr.tree_cols({}, m) for m in (
+              ("", "Reading the plan"), ("", ""),
+              ("Marigold", "Review the plan"))],
+          # The description stands in for a missing name.
+          [" \U0001F465⚫ Marigold  Reading the plan",
+           " \U0001F465⚫ Marigold",
+           " \U0001F465⚫ Review the plan  Reading the plan",
+           " \U0001F465⚫ Review the plan",
+           " \U0001F465⚫ Marigold"])
+    check("the label is cut from the end: the activity gives way first, "
+          "then the branch, then the name",
+          [label("Marigold", "Reading the plan, slowly", w, "fix-inbox")
+           for w in (50, 30, 20, 12)],
+          [" \U0001F465⚫ Marigold  \U0001F33Ffix-inbox  Reading the plan, sl…",
+           " \U0001F465⚫ Marigold  \U0001F33Ffix-inbox  …",
+           " \U0001F465⚫ Marigold  \U0001F33Ff…",
+           " \U0001F465⚫ Marig…"])
+    check("a row's depth, the chrome Claude Code indents it by, is its own "
+          "spawnDepth where the panel's tree gives none; a task with no "
+          "sidecar is a root",
+          [sr.spawn_depth({}, m) for m in (
               {"spawnDepth": 1}, {"spawnDepth": 2}, {"spawnDepth": 3}, {},
               {"spawnDepth": "two"})],
-          [0, 2, 4, 0, 0])
-    # 201 and not 200: the spinner's column took the one that left the
-    # deepest name A_TREE_ROOM beside the tree's copy.
+          [1, 2, 3, 1, 1])
     nested = dict(pay, columns=201, tasks=[task("a1"), task("a3"), task("a4")])
     rows_n = render(sl, nested)[1]
-    check("a nested row pays for the `├ ` the panel draws before it, so the "
-          "panel's own chrome plus the row is one width at every depth",
-          [sl.vis_width(rows_n[t]) + 2 * (d - 1)
+    chrome = lambda d: sl.PANEL_CHROME + 2 * (d - 1)
+    check("a nested row pays for the two columns a level Claude Code indents "
+          "its chrome by, so the chrome plus the row is one width at every "
+          "depth",
+          [sl.vis_width(rows_n[t]) + chrome(d)
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
-          [201, 201, 201])
+          [201 + sl.PANEL_COLUMNS_SHORT - sl.RIGHT_EDGE] * 3)
     check("👶🏻 counts the rows under each one, and every row keeps a cell for it "
           "once any row has one",
-          # Past each row's lead, the blank a shallower row opens with.
-          [unpainted(rows_n[t])[sr.A_TREE_W * (3 - d):unpainted(rows_n[t]).index(t) + 2]
-           for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
-          # The cells only some panels draw follow the kind and state, 👶🏻
-          # first.  E_KIDS is two codepoints, and its width the terminal's.
-          ["\u00B7\U0001F50D\U0001F7E2 \U0001F916 1.2h  " + sl.E_KIDS + "1 a1",
-           "\u00B7\U0001F50D\U0001F7E2 \U0001F916 1.2h  " + sl.E_KIDS + "1 a3",
-           "\u00B7\U0001F50D\U0001F7E2 \U0001F916 1.2h  " + " " * (sl.vis_width(sl.E_KIDS) + 1)
-           + " a4"])
+          [unpainted(rows_n[t])[:unpainted(rows_n[t]).index("Marigold")]
+           for t in ("a1", "a3", "a4")],
+          # The counts follow the kind and state, 👶🏻 first.  E_KIDS is two
+          # codepoints, and its width the terminal's.
+          ["·\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 ",
+           "·\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 ",
+           "·\U0001F50D\U0001F7E2 " + " " * (sl.vis_width(sl.E_KIDS) + 1) + " "])
     spun = os.path.join(tmp, "spin.jsonl")
     tool = agent_says(12, "")
     tool["message"]["content"] = [{"type": "thinking", "thinking": "hm"},
@@ -946,87 +963,61 @@ def run(tmp):
           (3, ["·", "✢", "✽", "✽", "·", "·"],
            "", ""))
     at_head = lambda r: sl.vis_width(r[:r.index("\U0001F50D")])   # past the spinner
-    check("and its cells start on one column at every depth: a shallower row "
-          "opens with the blank the deeper ones spend on the panel's `├ `",
-          [at_head(rows_n[t]) + 2 * (d - 1)
+    check("and its label starts right after the chrome at every depth: no "
+          "lead, the chrome is Claude Code's",
+          [at_head(rows_n[t]) for t in ("a1", "a3", "a4")], [1, 1, 1])
+    at_clock = lambda r: sl.vis_width(r[:r.index("⌛")])
+    check("and the grid's columns are what hold: the label gives",
+          [at_clock(rows_n[t]) + chrome(d)
            for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
-          [5, 5, 5])
-    at_clock = lambda r: sl.vis_width(r[:r.index("\u231B")])
-    check("and the right group is what holds its column: the name gives",
-          [at_clock(rows_n[t]) + 2 * (d - 1)
-           for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
-          [at_clock(rows_n["a1"])] * 3)
-    # The right group opens on the model, 🤖 and its family's initial.
-    before_model = lambda r: r[r.index("\U0001F916O") - 6:r.index("\U0001F916O")]
-    check("the tree is drawn again beside the figures, padded to its widest "
-          "row: ├ or └ for a child, and a blank for an ancestor with no "
-          "sibling left below it",
-          [before_model(rows_n[t]) for t in ("a1", "a3", "a4")],
-          ["\u23FA     ", "\u2514 \u23FA   ", "  \u2514 \u25EF "])
+          [at_clock(rows_n["a1"]) + chrome(1)] * 3)
+    check("the panel's tree is not drawn again: its chrome is Claude Code's",
+          [any(g in rows_n[t] for g in (sl.E_TREE_NODE, sl.E_TREE_OPEN,
+                                         sl.E_TREE_MID, sl.E_TREE_END,
+                                         sl.E_TREE_BAR))
+           for t in ("a1", "a3", "a4")],
+          [False] * 3)
     meta = lambda parent, depth: {"parentAgentId": parent, "spawnDepth": depth}
-    check("the tree as far as the sidecars say: a bar runs down an "
-          "ancestor's column while its siblings go on, a row with a child "
-          "showing is expanded and so selected, a shell is a root, and so "
-          "is a task whose parent is not in the payload, as the panel "
-          "draws it",
-          sr.tree_marks([(task(t), None, m, None) for t, m in (
-              ("p", {}), ("c1", meta("p", 2)), ("g1", meta("c1", 3)),
-              ("g2", meta("c1", 3)), ("c2", meta("p", 2)),
-              ("bash-1", {}), ("o", meta("gone", 3)))]),
-          {"p": "\u23FA", "c1": "\u251C \u23FA", "g1": "\u2502 \u251C \u25EF",
-           "g2": "\u2502 \u2514 \u25EF", "c2": "\u2514 \u25EF", "bash-1": "\u25EF",
-           "o": "\u25EF"})
+    check("the tree as far as the sidecars say: a shell is a root, and so is "
+          "a task whose parent is not in the payload",
+          {t: d for t, (_, d) in sr.tree_shape(
+              [(task(t), None, m, None) for t, m in (
+                  ("p", {}), ("c1", meta("p", 2)), ("g1", meta("c1", 3)),
+                  ("g2", meta("c1", 3)), ("c2", meta("p", 2)),
+                  ("bash-1", {}), ("o", meta("gone", 3)))]).items()},
+          {"p": 1, "c1": 2, "g1": 3, "g2": 3, "c2": 2, "bash-1": 1, "o": 1})
     ms = lambda t0: int((NOW - t0) * 1000)
-    check("siblings go in the panel's order, by startTime, not the "
-          "payload's",
-          sr.tree_marks([(task(t, startTime=ms(a)), None, m, None)
-                         for t, a, m in (("p", 90, {}),
-                                         ("late", 10, meta("p", 2)),
-                                         ("early", 60, meta("p", 2)))]),
-          {"p": "\u23FA", "early": "\u251C \u25EF", "late": "\u2514 \u25EF"})
     done_kid = lambda st: [(task(t, status=s_, startTime=ms(a)), None, m, None)
                            for t, s_, a, m in (
                                ("p", "running", 90, {}),
                                ("c", "completed", 60, meta("p", 2)),
                                ("g", st, 30, meta("c", 3)))]
     check("an ancestor that finished and waits on nothing is stepped over, "
-          "as the panel drops it: its child hangs from the next one up, and "
-          "pays for one `├ ` less",
-          (sr.tree_marks(done_kid("completed")),
-           sr.tree_shape(done_kid("completed"))["g"]),
-          ({"p": "\u23FA", "c": "\u251C \u25EF", "g": "\u2514 \u25EF"},
-           ("p", 2)))
+          "as the panel drops it: its child hangs from the next one up, a "
+          "level higher",
+          sr.tree_shape(done_kid("completed"))["g"], ("p", 2))
     check("but one parked on a child still running keeps it",
-          (sr.tree_marks(done_kid("running")),
-           sr.tree_shape(done_kid("running"))["g"]),
-          ({"p": "\u23FA", "c": "\u2514 \u23FA", "g": "  \u2514 \u25EF"},
-           ("c", 3)))
+          sr.tree_shape(done_kid("running"))["g"], ("c", 3))
     long = "Review the plan, then the code under it, then the docs beside it"
     wide = dict(pay, tasks=[task("a1", name="", description=long)])
-    check("the name takes what the metrics leave, and gives way first",
+    unknown = render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
+    check("the name takes what the columns leave, and is cut to it; at an "
+          "unknown width every column shows and the label keeps LABEL_MIN "
+          "beside them, and two more at the top level",
           (render(sl, dict(wide, columns=400))[1]["a1"].count(long),
            re.search(r"Review the plan, [^…]*…  \U0001F916",
-                     # 167 and not the 130 it was: the right group grew by the
-                     # 🔧 cell and then ⛳ and its bar, each with its gap, and
-                     # by 🧠's share; the state cell by the mode mark after its
-                     # circle and the spinner after that.  This case is about a width that
-                     # squeezes the NAME, not one that squeezes it away.
-                     render(sl, dict(wide, columns=167))[1]["a1"]) is not None,
-           render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
-           .count(long[:sr.A_NAME_MIN - 1] + "…")),
-          (1, True, 1))
-    check("a window too narrow to leave the name A_TREE_ROOM draws no copy "
-          "of the tree, and one wide enough does",
-          ["\u25EF" in render(sl, dict(wide, columns=c))[1]["a1"]
-           for c in (164, 400)],
-          [False, True])
-
-    edge = [sum("\u25EF" in r or "\u23FA" in r[40:] for r in
-                render(sl, dict(nested, columns=c))[1].values())
-            for c in range(162, 212)]
-    check("the copy of the tree is on every row or on none, at every width: "
-          "a nested row decides on its parent's room, not its own",
-          sorted(set(edge)), [0, 3])
+                     render(sl, dict(wide, columns=160))[1]["a1"]) is not None,
+           unknown.count(long[:sl.LABEL_MIN + 2 - sl.vis_width(head) - 1] + "…"),
+           all(unpainted(c) in unpainted(unknown) for c in (
+               "\U0001F916O", "\U0001F4B0", "\U0001F9E0", "\U0001F3AF",
+               "⌛", "⛳", "\U0001F50B", "\U0001FAAB", "\U0001F4BE"))),
+          (1, True, 1, True))
+    edge = [len({at_clock(r) + chrome(d) for r, d in zip(
+                (lambda rs: [rs["a1"], rs["a3"], rs["a4"]])(
+                    render(sl, dict(nested, columns=c))[1]), (1, 2, 3))})
+            for c in range(150, 212)]
+    check("the grid's ⌛ holds one screen column on every row, at every width",
+          sorted(set(edge)), [1])
     rc, rows = render(sl, dict(pay, tasks=[task("a1"), {"no": "id"}, 7]))
     check("a task without an id is skipped, not fatal", sorted(rows), ["a1"])
     for raw in ("", "not json", "[]", "null"):
@@ -1092,21 +1083,24 @@ def run(tmp):
     check("📨 and 🤏 on the row that has them, and a blank of their width on "
           "the row that does not, so the columns after them hold",
           ("\U0001F4E81 " in irows["b1"], "\U0001F90F1" in irows["b1"],
-           sl.vis_width(irows["b1"][:irows["b1"].index("b1")])
-           == sl.vis_width(irows["b2"][:irows["b2"].index("b2")]),
+           sl.vis_width(irows["b1"][:irows["b1"].index("Marigold")])
+           == sl.vis_width(irows["b2"][:irows["b2"].index("Marigold")]),
            sl.vis_width(irows["b1"][:irows["b1"].index("⌛")])
            == sl.vis_width(irows["b2"][:irows["b2"].index("⌛")])),
           (True, True, True, True))
     wide = {"inbox": 3, "compact": 3}
     plain, padded = (unpainted(sr.render_agent_row(task("x"), sl.NO_AGENT_USAGE, {}, {},
-                                                     sl.NO_LIMITS, now=NOW, kids_w=kw,
+                                                     sl.NO_LIMITS, 300, now=NOW, kids_w=kw,
                                                      widths=w))
                      for kw, w in ((0, {}), (3, wide)))
-    at = plain.index(" x ") + 1                 # where the id starts
-    check("the cells only some panels draw follow the kind and state: on a "
-          "row that draws none of them they are one blank there, and the row "
-          "either side of it is the row a panel without them draws",
-          padded, plain[:at] + " " * (3 + 1 + 3 + 1 + 3 + 1) + plain[at:])
+    at = plain.index("Marigold")                # where the name starts
+    check("the counts only some panels draw follow the kind and state: on a "
+          "row that draws none of them they are one blank there, the name "
+          "after it, and the grid's columns are where a panel without them "
+          "has them",
+          (padded[:at], padded.index("Marigold") - at,
+           padded[padded.index("\U0001F916O"):]),
+          (plain[:at], 3 + 1 + 3 + 1 + 3 + 1, plain[plain.index("\U0001F916O"):]))
     check("🧠's share is blank where the payload gives no window",
           re.search("\U0001F9E0 *\\S+ +(\\S+)", irows["b2"]).group(1)[0], "\U0001F9E9")
     nothing = sl.NO_AGENT_USAGE
@@ -1127,10 +1121,10 @@ def run(tmp):
                                ("s%d" % i, "bash") for i in range(12))), {}, None),
                            (task("z", status="killed"), bg, {}, None)], NOW),
           {"inbox": 0, "compact": 0, "shells": 4, "monitors": 3})
-    bgrow = unpainted(sr.render_agent_row(task("x"), bg, {}, {}, sl.NO_LIMITS, now=NOW,
+    bgrow = unpainted(sr.render_agent_row(task("x"), bg, {}, {}, sl.NO_LIMITS, 300, now=NOW,
                                              widths={"shells": 3, "monitors": 3}))
     check("on the row after 🤏's place and before 📨's, right of the state",
-          bgrow[:bgrow.index(" x ")].split()[-2:], ["\U0001F4BB2", "\U0001F4E11"])
+          bgrow[:bgrow.index("Marigold")].split()[-2:], ["\U0001F4BB2", "\U0001F4E11"])
     doing = lambda st, u, w=False, rate=None, t=None: unpainted(sr.render_doing(st, u, w, rate, NOW, t))
     quiet = nothing._replace(eta=(), last_seen=NOW - 90)
     check("the Doing cell says what a running agent is doing and for how "
@@ -1205,17 +1199,32 @@ def run(tmp):
           [sl.worktree_branch(c, repo) for c in (
               wt, os.path.join(repo, "src"), "", os.path.join(tmp, "detached"))],
           ["fix-inbox", "", "", "0123456"])
-    check("🌿 and the branch after the name, drawn whole or not at all, "
-          "ahead of the activity",
-          [unpainted(sr.render_who("Marigold", "Reading", w, "fix-inbox"))
-           for w in (40, 25, 12)],
-          ["Marigold \U0001F33Ffix-inbox Reading",
-           "Marigold \U0001F33Ffix-inbox", "Marigold"])
+    # The label's pieces, each under the path --hide names it by.
+    pieces = lambda br: [(p.path, unpainted(p.spans)) for p in sr.agent_label(
+        task("x", label="Reading"), NS(branch=br), {})[1:]]
+    check("🌿 and the branch after the name, ahead of the activity, a long "
+          "one cut to A_BRANCH_W",
+          (pieces("fix-inbox"), pieces("feature/a-long-branch-name")[1][1]),
+          ([("name.label", "Marigold  "),
+            ("workspace.branch", "\U0001F33Ffix-inbox  "),
+            ("chat.doing", "Reading")],
+           "\U0001F33F" + sl.fit_cols("feature/a-long-branch-name", sr.A_BRANCH_W) + "  "))
 
     rc, rows = render(sl, pay, ["--usage-source", "native"])
     check("no plan reading: the 🔋 and 🪫 cells are blank, the rest stands",
           ("\U0001F50B" in rows["a1"], "\U0001F4B0" in rows["a1"]),
           (False, True))
+    rc, hid = render(sl, pay, ["--hide", "*.work", "--hide", "agent.state.rate",
+                               "--hide", "agent.name.kind"])
+    at_cost = lambda r: sl.vis_width(r[:r.index("\U0001F4B0")])
+    check("--hide, repeatable: 💾 hidden on every row is removed and the "
+          "columns close up to the right edge; the 🛫 column, hidden on agent "
+          "rows alone, keeps its place blank, since the band's 🤖💬 row can "
+          "draw it; and the kind leaves the label",
+          ("\U0001F4BE" in hid["a1"], "1.2h   \U0001F4B0" in hid["a1"],
+           at_cost(hid["a1"]) - at_cost(rows["a1"]),
+           hid["a1"].startswith("Marigold")),
+          (False, False, sr.grid.cell_width("A_DIFF_W") + 2, True))
 
     print()
     print("pass %d   fail %d" % (pass_n, fail_n))

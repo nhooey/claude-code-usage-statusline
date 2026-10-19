@@ -28,7 +28,9 @@ THE INPUT SHAPES.  A task, meta and shares are the dicts the renderer gets.
 A usage is AgentUsage's fields by name, or null; a field missing from it
 reads as the renderer's getattr default, which the hand-made `missing` group
 pins, since the renderer is written against attributes and not the type.
-Tuples are lists.  Limits are Limits' fields by name.  Floats are written
+Tuples are lists.  Limits are Limits' fields by name.  `cols` is the
+terminal's width, and `hide`, the --hide paths, is left out where there are
+none.  Floats are written
 with repr; see records.py.  A row is {"id", "row", "spans"}: the pair
 render_task_rows returns, and the spans render_agent_row made for it, which
 it joins without `close` or `runs`; see span_json.  A case whose tasks hold
@@ -470,9 +472,11 @@ class Group:
     def __init__(self, name, sets=DEFAULT):
         self.name, self.settings, self.cases = name, sets, []
 
-    def case(self, cid, rows, cols=160, limits=LIMITS, now=NOW):
-        self.cases.append({"id": cid, "input": {
-            "tasks": rows, "limits": limits, "cols": cols, "now": now}})
+    def case(self, cid, rows, cols=160, limits=LIMITS, now=NOW, hide=()):
+        inp = {"tasks": rows, "limits": limits, "cols": cols, "now": now}
+        if hide:
+            inp["hide"] = list(hide)
+        self.cases.append({"id": cid, "input": inp})
 
 
 def g_states():
@@ -678,10 +682,10 @@ def g_tree():
         row(ptask("l1", "Loop", before=700), usage(), kid("l2", 2)),
         row(ptask("l2", "Pool", before=600), usage(), kid("l1", 2))],
            cols=200)
-    # The copy of the tree takes its room only while the name keeps
-    # A_TREE_ROOM: on at 200, off at 120.
-    for c in (220, 190, 180, 170, 150, 120, 92):
-        g.case("copy-room@%d" % c, chain[:3], cols=c)
+    # Deeper than CHROME_DEPTH: the row's label pays for its chrome, and
+    # its cells hold the columns the shallower rows' do.
+    for c in (220, 150, 120, 92):
+        g.case("deep-label@%d" % c, chain, cols=c)
     return g
 
 
@@ -772,6 +776,30 @@ def g_who():
     return g
 
 
+def g_hide():
+    """--hide: a column hidden on agent rows alone, which the band's rows
+    keep, is left blank; one hidden everywhere is removed and the rest close
+    up; label parts leave the label."""
+    g = Group("hide")
+    for name, hide in (
+            ("agent-rate", ["agent.state.rate"]),
+            ("all-rate", ["*.state.rate"]),
+            ("all-work-and-cache", ["*.work", "*.tokens.cache"]),
+            ("agent-time", ["agent.time"]),
+            ("all-eta", ["*.time.eta"]),
+            ("kind", ["agent.name.kind"]),
+            ("name-label", ["agent.name.label"]),
+            ("doing", ["agent.chat.doing"]),
+            ("branch", ["*.workspace.branch"]),
+            ("counts", ["agent.state.kids", "agent.state.inbox"]),
+            ("agent", ["agent"]),
+            ("other-scopes", ["account", "turn", "main", "session"])):
+        for c in (None, 160, 92):
+            g.case("%s@%s" % (name, "none" if c is None else c), mixed(),
+                   cols=c, hide=hide)
+    return g
+
+
 def g_widths():
     """One mixed panel across the widths, where the cells drop."""
     g = Group("widths")
@@ -850,7 +878,7 @@ def sweep(name, sets):
 
 def handmade():
     return [g_states(), g_eta(), g_counts(), g_tree(), g_gauges(),
-            g_figures(), g_who(), g_widths(), g_missing(),
+            g_figures(), g_who(), g_widths(), g_hide(), g_missing(),
             sweep("tight", settings(mark_spacing=False)),
             sweep("subdec", settings(subscript_decimals=True)),
             sweep("tmux", settings(terminal={"TMUX": "/tmp/tmux-501/default,1,0"})),
@@ -932,7 +960,8 @@ def child_render():
             prepared.append((r["task"], u, r["meta"], r["shares"]))
         del caught[:]
         rows = sr.render_task_rows(tuple(prepared), Limits(**inp["limits"]),
-                                   inp["cols"], inp["now"])
+                                   inp["cols"], inp["now"],
+                                   inp.get("hide", []))
         assert len(rows) == len(caught)
         out.append(dict(case, rows=[
             {"id": tid, "row": text, "spans": [span_json(sp) for sp in sp_]}
@@ -950,12 +979,15 @@ def child_capture():
     from coding_agent_usage_line import cli
     from coding_agent_usage_line import claude_subagent_render as sr
     caught, render = [], sr.render_task_rows
-    def catching(prepared, limits, cols=None, now=None):
-        caught.append({"tasks": [
+    def catching(prepared, limits, cols=None, now=None, hide=()):
+        inp = {"tasks": [
             {"task": t, "usage": u, "meta": m, "shares": sh}
             for t, u, m, sh in prepared],
-            "limits": limits, "cols": cols, "now": now})
-        return render(prepared, limits, cols, now)
+            "limits": limits, "cols": cols, "now": now}
+        if hide:
+            inp["hide"] = list(hide)
+        caught.append(inp)
+        return render(prepared, limits, cols, now, hide)
     sr.render_task_rows = catching
     real = sys.stdout
     sys.stdin, sys.stdout = io.StringIO(raw), io.StringIO()

@@ -2390,11 +2390,13 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
 
 
 def render_subagent(prepared_tasks, cols: Optional[int], lim: Limits,
-                    now: Optional[float] = None) -> str:
-    """Serialize pure pre-rendered task rows for Claude Code's JSONL panel."""
+                    now: Optional[float] = None,
+                    hide: Sequence[str] = ()) -> str:
+    """Serialize pure pre-rendered task rows for Claude Code's JSONL panel.
+    `cols` is the terminal's width; `hide` the --hide paths."""
     out = []
     for task_id, row in subagent_render.render_task_rows(prepared_tasks, lim,
-                                                           cols, now):
+                                                           cols, now, hide):
         out.append(json.dumps({"id": task_id, "content": row},
                               ensure_ascii=False))
     return "".join(line + "\n" for line in out)
@@ -2452,8 +2454,13 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
     if cols_s.isdigit():
         cols = int(cols_s) or None
     else:
+        # The payload's `columns` is the terminal's width less
+        # PANEL_COLUMNS_SHORT, and the rows are laid out for the terminal's,
+        # so they line up with the band's (agents/plans/redesign.md, "The
+        # whole screen").
         c = pay.get("columns")
-        cols = int(c) if isinstance(c, (int, float)) and c > 0 else term_cols()
+        cols = (int(c) + PANEL_COLUMNS_SHORT
+                if isinstance(c, (int, float)) and c > 0 else term_cols())
     source_spec = _flag(argv, "--usage-source",
                         os.environ.get("CODING_AGENT_USAGE_LINE_USAGE_SOURCE", "auto"))
     account = _flag(argv, "--account", "default")
@@ -2472,8 +2479,10 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
     # Panel stdout is JSONL task rows only; account scope is intentionally not
     # appended here because it would be mistaken for a panel task.
     now = frozen_now()
+    # --hide, repeatable: the paths the panel's rows leave out.
+    hide = [argv[i + 1] for i, a in enumerate(argv[:-1]) if a == "--hide"]
     sys.stdout.write(render_subagent(prepare_subagent_tasks(pay, now), cols,
-                                     lim, now))
+                                     lim, now, hide))
     return 0
 
 
@@ -3117,13 +3126,15 @@ modes:
   --mode cost        read the Stop-hook JSON on stdin, print a systemMessage
   --mode subagent    read the agent panel's task list on stdin, print one
                      {"id", "content"} line per task -- the subagentStatusLine
-                     setting.  Each row, flush left: type, id, run state,
-                     then the name (or the description, where the panel has
-                     no name) filling what is left; flush right at fixed
-                     widths: model, effort, elapsed and token rate, what the
-                     agent's own transcript says it billed (tokens, cache
-                     rate, context, cost), and its share of the two plan
-                     windows.  --cols and --usage-source apply.
+                     setting.  Each row is laid out on the redesigned grid
+                     (agents/plans/redesign.md) for the terminal's width, the
+                     payload's columns plus 6: the kind and its phase, the
+                     name (or the description, where the panel has no name)
+                     and what it is doing, then the grid's columns: model,
+                     what it is doing or its token rate, cost, context,
+                     tokens, cache rate, elapsed, ETA and split, its share
+                     of the two plan windows, and lines written.  --cols,
+                     --hide and --usage-source apply.
   --selftest         draw specimen rows and measure them against the terminal
 
 options (all modes):
@@ -3146,6 +3157,10 @@ options (all modes):
                      would unstack the two rows.
                      --mark-spacing is the default and is accepted so a
                      settings file can say which it wants
+  --hide PATH        leave a column or a label part out of the grid,
+                     scope[.group[.metric]] with * for any one part;
+                     repeatable.  The agent panel only, for now: the other
+                     modes accept it and ignore it.  docs/options.md, "Hiding".
   --cols N           terminal width, overriding the ancestry walk.  Chiefly
                      for the golden test, which must be deterministic.  "0"
                      means "pretend the width is unknown".

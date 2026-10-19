@@ -310,7 +310,7 @@ terminal environments, `tmux`, `iterm` and `unknown-term`, read the same one.
 |---|---|
 | `01-mixed` | the running modes (🔧 a tool, 🤖 with a 🛫 rate and quiet in amber, 🚦 a question), ✅ ❌ 🛑, 💥 an API error, 🥚 a queued task, a shell with no transcript, a workflow agent one directory down |
 | `02-parked` | completed agents only waiting: 💻 a shell, 📡 a Monitor beside one, ⛳ their own ETA, 💤 an agent under them, whose ETA the parent inherits; an ETA gone stale (amber `+`), one signed off at 0s and running over (red `+`) |
-| `03-tree` | the tree four deep with a `│` carried down, 👶🏻 🤏 📨 counts, a worktree's 🌿, a finished ancestor stepped over, a parent not on the panel |
+| `03-tree` | the tree four deep, past the two levels the grid keeps the chrome for, 👶🏻 🤏 📨 counts, a worktree's 🌿, a finished ancestor stepped over, a parent not on the panel |
 | `04-bare` | the payload alone: shells, a remote agent, a status never seen, tasks with no id or not an object, a label that repeats the description |
 | `05-empty` | no tasks: nothing printed |
 
@@ -320,15 +320,16 @@ only, and 01 and 03 again at 220 and 120 under `--no-mark-spacing`,
 
 **Render**, `fixtures/panel/<group>.json`: `render_task_rows`' inputs and the
 rows it draws, each as the joined string and as its spans. The inputs are
-the prepared `(task, usage, meta, shares)` records, the `Limits`, `cols` and
-`now`; a group is one terminal profile and one setting of the two switches,
+the prepared `(task, usage, meta, shares)` records, the `Limits`, `cols` (the
+terminal's width), `now` and, where there are any, the `--hide` paths
+`hide`; a group is one terminal profile and one setting of the two switches,
 since the program fixes those per process. The shapes are in the generator's
 docstring. `corpus*.json` are the end-to-end cases' own inputs, captured on
 their way into the renderer, so their rows are the goldens' rows and the
 generator refuses to write them otherwise. The rest are made by hand for
 what the corpus does not reach: `states`, `eta`, `counts`, `tree`,
 `gauges`, `figures`, `who` (the name, branch and activity), `widths` (one
-mixed panel from 400 columns down to 20), `missing` (no usage, a partial
+mixed panel from 400 columns down to 20), `hide` (the mixed panel under `--hide` paths), `missing` (no usage, a partial
 one, no meta or shares, tasks that are skipped), and the mixed panel again
 under each switch and terminal (`tight`, `subdec`, `tmux`, `iterm`,
 `unknown`).
