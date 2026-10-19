@@ -116,18 +116,18 @@ export function sample(st: Settings): Sample {
     "13:06:02"), cells: {} };
   const turn: Row = { scope: "turn",
     label: turnLabel("Why is the build slow?"),
-  cells: cells(st, { cost: 0.21, ctx: ["+", 34_000, 3],
-    tok: [28_000, 7_100], cache: 95, clock: TURN_START,
-    eta: [TURN_START, 120], split: [240, 150, 60], five: 0.03, week: 0.05,
-    diff: [12, 3] }) };
+  cells: cells(st, { model: ["claude-opus-5-5", "high"], cost: 0.21,
+    ctx: ["+", 34_000, 3], tok: [28_000, 7_100], cache: 95,
+    clock: TURN_START, eta: [TURN_START, 120], split: [240, 150, 60],
+    five: 0.03, week: 0.05, diff: [12, 3], rate: 220 }) };
   const main: Row = { scope: "main",
     label: mainLabel(
       "The test step takes 80٪ of the build: Jest runs serially"),
-  cells: cells(st, { model: ["claude-opus-5-5", "high"], cost: 92.0,
+  cells: cells(st, { cost: 92.0,
     ctx: [115_000, 1_000_000], tok: [2_100_000, 640_000], cache: 98,
     clock: SESSION_START, eta: [TURN_START, 120],
     split: [9 * 3600, 4 * 3600, 3 * 3600], five: 0.9, week: 2.1,
-    diff: [3100, 180], rate: 220 }) };
+    diff: [3100, 180] }) };
   const session: Row = { scope: "session", label: sessionLabel({
     project: "app", branch: "main", dirty: false, dir: "~/src/app/web",
     pr: "418", style: "Explanatory" }),
@@ -157,7 +157,8 @@ export function sample(st: Settings): Sample {
   // The receipt is the band's 🎤 and 🎮 rows as they stood when the turn
   // ended, with no 📊 of their own, the tag on 🎤.
   const receipt = [
-    { ...turn, label: [turn.label[0],
+    { ...turn, cells: { ...turn.cells, model: [], rate: [] },
+      label: [turn.label[0],
       piece("name.tag", RECEIPT_TAG + "  "), ...turn.label.slice(1)] },
     session,
   ];
@@ -194,8 +195,8 @@ export function readouts(st: Settings, cols: number,
   // nearest the receipt they become.  Once it ends the receipt carries
   // them, and the band keeps the main thread.  💳 is on the footer.
   const lead = (r: Row) => r.scope === "turn" || r.scope === "session";
-  // Once the turn ends 🤖💬 has no 🛫, as the band draws it.
-  const idle = { ...s.main, cells: { ...s.main.cells, rate: [] } };
+  // 🤖 has no model or 🛫: they are 🎤's, so they leave with it.
+  const idle = s.main;
   const band = phase === "running"
     ? [...every.filter(lead), runningMain(s.main)]
     : [idle];

@@ -12,6 +12,7 @@ import type { Env } from "../src/formatting.ts";
 import { join, width } from "../src/spans.ts";
 import { RIGHT_EDGE } from "../src/spec.ts";
 import type { Span } from "../src/spans.ts";
+import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
   accountText, bandRows, fixedKeys, footerTail, phaseRows,
@@ -137,4 +138,25 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
     .startsWith("  " + text.slice(0, 1)));
   assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 155)),
     "");
+});
+
+test("🎤 carries the model and 🛫, and a running tool's time in 🛫's column", () => {
+  const st = settings({});
+  const fig = document("status/01-baseline@196");
+  const opts = { home: HOME, rate: 1500, phase: "running" as const };
+  const text = (spans: readonly Span[] | undefined) =>
+    (spans ?? []).map((s) => s.text).join("");
+  const rows = inZone(fig, () => bandRows(st, fig, opts));
+  assert.ok(text(rows.turn.cells.model).length > 0);
+  assert.ok(text(rows.turn.cells.rate).includes("/s"));
+  assert.equal(rows.main.cells.model, undefined);
+  assert.equal(rows.main.cells.rate, undefined);
+  // A tool running for 90 seconds: 🔧 and its time where the rate was, and
+  // not on 🤖's label.
+  const now = ((fig.clock as Dict).now as number);
+  const tooled = { ...fig, transcript: { ...(fig.transcript as Dict),
+    tool_at: now - 90 } };
+  const t = inZone(tooled, () => bandRows(st, tooled, opts));
+  assert.match(text(t.turn.cells.rate), /^🔧 +1\.5m$/);
+  assert.ok(!t.main.label.some((p) => p.path === "chat.doing"));
 });

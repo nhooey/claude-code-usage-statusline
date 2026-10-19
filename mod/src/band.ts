@@ -15,9 +15,10 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S, RIGHT_EDGE,
+  CHROME_DEPTH, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
+  RIGHT_EDGE,
 } from "./spec.ts";
-import { durFmt, magDim, visWidth } from "./formatting.ts";
+import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
@@ -218,10 +219,19 @@ function accountRow(st: Settings, fig: Dict, now: number): Row {
  * ⛳ the main thread's.  With no open turn, the prompt's placeholder and
  * the ⛳ alone. */
 function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
-  sessPct: string, weekPct: string): Row {
+  sessPct: string, weekPct: string, opts: BandOpts): Row {
   const raw = fig.open_turn as Dict | null;
   const acc = (fig.accounting as Dict).open_turn as Accounting | null;
-  const cells: Cells = { eta: threadEta(st, tr, now) };
+  const pay = decodePayload(fig.payload);
+  // The model and effort, and 🛫, are the turn's (decided 2026-10-19), not
+  // the 🤖 row's: 🎤 is drawn only while the turn runs.  While a tool runs
+  // no tokens stream, so 🛫's column says how long the tool has run.
+  const cells: Cells = {
+    model: CELLS.model(st, pay.model_id || pay.model, pay.effort),
+    rate: toolCell(st, tr, now) ??
+      CELLS.rate(st, opts.phase === "running" ? opts.rate : null),
+    eta: threadEta(st, tr, now),
+  };
   if (!raw) return { scope: "turn", label: turnLabel(""), cells };
   const t = decodeTurn(raw);
   const [up, down] = turnTokens(t);
@@ -245,13 +255,24 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   return { scope: "turn", label: turnLabel(squash(t.text)), cells };
 }
 
+/** 🔧 and how long the main thread's tool has run, in 🛫's column, padded
+ * to the rate's width; null while no tool runs. */
+function toolCell(st: Settings, tr: Transcript, now: number): Span[] | null {
+  const [mark, since] = mainDoing(tr);
+  if (mark !== E_TOOL) return null;
+  const secs = Math.max(0.0, now - since);
+  return [span(E_TOOL + " "), span(padVal(st, 5, durFmt(st, secs)), "F_PRW",
+    magDim(secs, MAG_DUR_S))];
+}
+
 /** What the main thread is doing, as today's Doing cell says it: the mark
  * of its state and how long it has been in it, amber once it has worked
- * QUIET_WARN_S without a word.  Null on an offline read. */
+ * QUIET_WARN_S without a word.  Null on an offline read, and while a tool
+ * runs, which 🎤's 🛫 column says (toolCell). */
 function doingPiece(st: Settings, tr: Transcript, now: number):
   Piece | null {
   const [mark, since] = mainDoing(tr);
-  if (!mark) return null;
+  if (!mark || mark === E_TOOL) return null;
   const secs = Math.max(0.0, now - since);
   const amber = mark === E_WORK && secs >= QUIET_WARN_S;
   return { path: "chat.doing", drop: 0, spans: [
@@ -261,10 +282,8 @@ function doingPiece(st: Settings, tr: Transcript, now: number):
     span("  ")] };
 }
 
-/** 🤖💬: the main thread alone, before its agents' figures are added.
- * The model and effort off the payload; 🛫 the caller's, while the turn
- * runs only, since once it ends the sampler's window only decays from
- * the last tokens to nothing; 💰 🔋 🪫
+/** 🤖: the main thread alone, before its agents' figures are added.  The
+ * model and effort and 🛫 are on 🎤 (turnRow), not here; 💰 🔋 🪫
  * `accounting.own`, its compactions in, the 💰 marked an estimate by
  * `own_est` (decision 2); 🧠 its context, `ctx_est` marking an estimate;
  * 🧩 🎯 `own_tok_*` and `own_cache_pct`; ⌛ its age from `start_s` and the
@@ -276,11 +295,7 @@ function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   const pay = decodePayload(fig.payload);
   const own = (fig.accounting as Dict).own as Accounting | null;
   const win = Math.trunc(fig.context_window as number);
-  const cells: Cells = {
-    model: CELLS.model(st, pay.model_id || pay.model, pay.effort),
-    rate: CELLS.rate(st, opts.phase === "running" ? opts.rate : null),
-    eta: threadEta(st, tr, now),
-  };
+  const cells: Cells = { eta: threadEta(st, tr, now) };
   if (own) {
     Object.assign(cells, {
       cost: CELLS.cost(st, own.cost_usd, tr.own_est),
@@ -344,7 +359,7 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
   const [sp, wp] = [lim.session_pct, lim.weekly_pct];
   return {
     account: accountRow(st, fig, now),
-    turn: turnRow(st, fig, tr, now, sp, wp),
+    turn: turnRow(st, fig, tr, now, sp, wp, opts),
     main: mainRow(st, fig, tr, now, sp, wp, opts),
     session: sessionRow(st, fig, tr, now, sp, wp, opts.home),
   };
