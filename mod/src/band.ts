@@ -349,12 +349,13 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
 }
 
 /** The rows a phase draws, top to bottom: all four while a turn runs, and
- * 💳 and 🤖💬 once it ends.  🎤 and 🎮 lead, so they sit nearest the Stop
- * hook's receipt, the stamp they become when the turn ends. */
+ * 🤖💬 and 💳 once it ends.  🎤 and 🎮 lead, so they sit nearest the Stop
+ * hook's receipt, the stamp they become when the turn ends; 💳 comes last,
+ * under the main thread (decided 2026-10-19). */
 export function phaseRows(rows: BandRows, phase: Phase): Row[] {
   return phase === "running"
-    ? [rows.turn, rows.session, rows.account, rows.main]
-    : [rows.account, rows.main];
+    ? [rows.turn, rows.session, rows.main, rows.account]
+    : [rows.main, rows.account];
 }
 
 /** The band as drawn at `cols` under `hide`: its rows' spans, top to

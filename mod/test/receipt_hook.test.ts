@@ -224,3 +224,10 @@ test("a Stop whose last message never lands prints nothing and logs", () => {
   assert.equal(r.stdout, "");
   assert.match(logOf(d), /no receipt: the transcript lacks the turn's last/);
 });
+
+test("the wait matches the message's first line, trimmed, as JSON holds it",
+  async () => {
+    const { needleOf } = await import("../tools/receipt-hook.ts");
+    assert.equal(needleOf("\n\n  Say \"hi\"\r\nthen more"), 'Say \\"hi\\"');
+    assert.equal(needleOf("x".repeat(80)), "x".repeat(60));
+  });

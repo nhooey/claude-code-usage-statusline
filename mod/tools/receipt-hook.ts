@@ -28,7 +28,7 @@
 //          finds it, else 80.
 // --plain  the same rows with no escapes.
 // --wait   how long to wait for the transcript to hold the turn's last
-//          message, in seconds (8, inside the Stop hook's 20 s timeout).
+//          message, in seconds (3, inside the Stop hook's 20 s timeout).
 //
 // The reads are the mod's, through Node's edges (src/*_node.ts): the
 // transcript after read_turns_settled's wait, the agent files, the usage
@@ -79,8 +79,9 @@ import { LOG_NAME, logAppended, logLine } from "../src/modlog.ts";
 
 /** What the command line gives. */
 /** How long a Stop waits for the transcript to hold its turn's last
- * message, inside the hook's 20 s timeout. */
-const WRITTEN_S = 8;
+ * message, inside the hook's 20 s timeout: long enough for a write
+ * behind, short enough that a miss does not hold the prompt. */
+const WRITTEN_S = 3;
 
 export type Options = { cols: number | null; plain: boolean;
   wait: number; usageSource: string; hide: string[] };
@@ -195,10 +196,6 @@ function publishedWindow(state: string, session: string): number {
  * band names it, under CLAUDE_PROJECT_DIR when Claude Code sets it. */
 
 
-/** Whether the transcript's tail holds `message`, polled until it does or
- * `budget` seconds pass.  The message is matched by its first 200
- * characters as JSON encodes them, which is how the transcript holds a
- * text block. */
 /** A receipt row without the C_CHROME_CONT blanks `indented` put first. */
 function unindent(row: Span[]): Span[] {
   const pad = " ".repeat(C_CHROME_CONT);
@@ -207,10 +204,20 @@ function unindent(row: Span[]): Span[] {
     ? [{ ...first, text: first.text.slice(pad.length) }, ...rest] : row;
 }
 
+/** What `holds` looks for: the message's first line, trimmed, to 60
+ * characters, as JSON encodes it, which is how the transcript holds a text
+ * block.  Trimmed and one line, so a payload that trims the message or
+ * ends its lines otherwise still matches. */
+export function needleOf(message: string): string {
+  const first = message.trim().split(/\r?\n/)[0];
+  return JSON.stringify(Array.from(first).slice(0, 60).join("")).slice(1, -1);
+}
+
+/** Whether the transcript's tail holds `message`, polled until it does or
+ * `budget` seconds pass. */
 async function holds(path: string, message: string, budget: number):
   Promise<boolean> {
-  const needle = JSON.stringify(Array.from(message).slice(0, 200).join(""))
-    .slice(1, -1);
+  const needle = needleOf(message);
   const deadline = performance.now() + budget * 1000;
   for (;;) {
     let tail = "";
@@ -296,8 +303,9 @@ export async function receiptMessage(raw: string, o: Options, env: Env,
   const last = typeof pay.last_assistant_message === "string"
     ? pay.last_assistant_message : "";
   if (last && !await holds(transcript, last, o.wait)) {
+    // The text it looked for, so a miss can be told from a write behind.
     note("no receipt: the transcript lacks the turn's last message after " +
-      o.wait + "s");
+      o.wait + "s: " + JSON.stringify(needleOf(last).slice(0, 40)));
     return "";
   }
   const agents = agentRecords(transcript);

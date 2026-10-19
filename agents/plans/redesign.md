@@ -36,8 +36,9 @@ the scope's glyph: the plan columns read 🔋 and 🪫 on every row.
 
 The band draws 🎤 and 🎮 only while a turn runs, as its first two rows, so
 they sit nearest the receipt they become (decided 2026-10-19). When it
-ends, the receipt on the turn's closing line carries both, frozen, and the band drops to 💳
-and 🤖💬; the next prompt brings them back. The columns are laid out over
+ends, the Stop hook's receipt carries both, frozen, and the band drops to
+🤖💬 then 💳, the account last (decided 2026-10-19); the next prompt brings
+them back. The columns are laid out over
 every row either phase draws, so none moves when the two rows come or go.
 The band shrinks from four rows to two when the turn ends, and the prompt
 moves up with it; it grows back when the next turn starts. The band replaces
