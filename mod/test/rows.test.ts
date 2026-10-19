@@ -213,8 +213,11 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
     assert.equal(2 + visWidth(line + FOOTER_JOIN, st.widths) +
       visWidth(t, st.widths), 240 - RIGHT_EDGE, h);
   }
+  // The words are the mode turned off; the one turned on is the next.
   assert.equal(modeOfHint("-- INSERT -- accept edits on (shift+tab to cycle)"),
-    "acceptEdits");
+    "plan");
+  assert.equal(modeOfHint("-- INSERT -- auto mode on (shift+tab to cycle)"),
+    "default");
   assert.equal(modeOfHint("-- INSERT -- (shift+tab to cycle)"), undefined);
   assert.equal(tail.trimStart(), tail);
   // Too narrow a row: the gaps down to one, and the " · " alone parts the

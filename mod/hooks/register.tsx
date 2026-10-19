@@ -527,8 +527,8 @@ export const register: Register = on => {
   // the 💳 row at its right end (decided 2026-10-19): a dim tail after
   // Claude Code's own line, which keeps its pills live (footerTail).
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
-    // A change of mode draws the line first with the mode's words in it:
-    // the mode as of now, which the transcript has only at the next record.
+    // A change of mode draws the line first with the words of the mode it
+    // turned off, so the one now on is known before the transcript has it.
     hintMode = modeOfHint(e.props.hint) ?? hintMode
     const mode = hintMode ?? permissionMode
     const doc = await read($, status)

@@ -526,14 +526,24 @@ export function pillWidth(st: Settings, hint: string, pill: string): number {
   return visWidth(pill + join, st.widths);
 }
 
-/** The permission mode whose pill's words `hint` reads, as the first draw
- * after a change of mode has them; undefined where it reads none. */
+/** The permission mode a change of mode has just turned on, from the
+ * first of the two draws it makes: that `hint` reads the words of the
+ * mode turned off (seen live 2026-10-20: "accept edits on" while plan's
+ * pill was drawn), and shift+tab turns on the next in MODE_CYCLE_ORDER.
+ * undefined where `hint` reads no mode's words. */
 export function modeOfHint(hint: string): string | undefined {
   for (const [mode, pill] of Object.entries(MODE_PILLS)) {
-    if (hint.includes(pill.slice(pill.indexOf(" ") + 1))) return mode;
+    if (!hint.includes(pill.slice(pill.indexOf(" ") + 1))) continue;
+    const i = MODE_CYCLE_ORDER.indexOf(mode);
+    return i < 0 ? undefined
+      : MODE_CYCLE_ORDER[(i + 1) % MODE_CYCLE_ORDER.length];
   }
   return undefined;
 }
+
+/** The modes shift+tab steps through, in order (seen live 2026-10-20). */
+export const MODE_CYCLE_ORDER: readonly string[] =
+  ["default", "acceptEdits", "plan", "auto"];
 
 /** The help that follows the mode's pill, joined to it by a space. */
 export const MODE_CYCLE = "(shift+tab to cycle)";
