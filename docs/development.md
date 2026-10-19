@@ -191,7 +191,8 @@ Until (3) exists, the width tables, terminal profiles and glyph rules stay in
 `tools/layout-mockup.py` draws the proposed [redesign](../agents/plans/redesign.md) inside a
 mocked Claude Code screen. It uses the package's cell renderers on made-up
 figures and reads nothing. Its options, `--cols`, `--hide`,
-`--receipt`, `--phase`, `--labels`, `--grid`, `--agents` and `--plain`, are
+`--receipt`, `--phase`, `--labels`, `--grid`, `--agents`, `--part` and
+`--plain`, are
 in its `--help`.
 
 ## License

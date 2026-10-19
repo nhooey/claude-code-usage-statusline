@@ -34,7 +34,7 @@ The proposal it draws:
 Run:  python3 tools/layout-mockup.py [--cols N] [--hide PATH ...]
                                      [--receipt hook|mod] [--phase running|done]
                                      [--labels clip|spill] [--grid fixed|rows]
-                                     [--agents 0|1|2] [--plain]
+                                     [--agents 0|1|2] [--part PART] [--plain]
 """
 import argparse
 import fnmatch
@@ -261,9 +261,8 @@ def draw(row, keys, cols, patterns, spill=True):
     return head + seg(room, label_text(row, patterns, room)) + right
 
 
-def screen(cols, patterns, receipt_by="hook", phase="done", spill=True, grid="fixed",
-           depth=2):
-    rule = "─" * cols
+def readouts(cols, patterns, phase="done", spill=True, grid="fixed", depth=2):
+    """The three readouts' rows: the band's, the receipt's and the panel's."""
     every = [r for r in (ACCOUNT, TURN, MAIN, SESSION) if not hidden(patterns, r["scope"])]
     receipt = [r for r in RECEIPT if not hidden(patterns, r["scope"])]
     possible = [r for r in AGENTS if not hidden(patterns, r["scope"])]
@@ -280,6 +279,15 @@ def screen(cols, patterns, receipt_by="hook", phase="done", spill=True, grid="fi
         # Mid-turn the main row says what the thread is doing, not its reply.
         band = [dict(r, label=r["label"][:1] + [piece("chat.doing", "Reading jest.config.js", F_CHAT_B)])
                 if r is MAIN else r for r in band]
+    return dict(band=[draw(r, keys, cols, patterns, spill) for r in band],
+                receipt=[draw(r, keys, cols, patterns, spill) for r in receipt],
+                agents=[(r, draw(r, keys, cols, patterns, spill)) for r in agents])
+
+
+def screen(cols, patterns, receipt_by="hook", phase="done", spill=True, grid="fixed",
+           depth=2):
+    rule = "─" * cols
+    parts = readouts(cols, patterns, phase, spill, grid, depth)
     out = [
         DIM + "❯ " + R + "Why is the build slow?",
         DIM + "  " + START_TAG + R,
@@ -294,7 +302,7 @@ def screen(cols, patterns, receipt_by="hook", phase="done", spill=True, grid="fi
     else:
         out += ["⏺ The test step takes 80٪ of the build: Jest runs the suites serially",
                 "  because maxWorkers is 1 in jest.config.js.", ""]
-        rows = [draw(r, keys, cols, patterns, spill) for r in receipt]
+        rows = parts["receipt"]
         if receipt_by == "hook":
             # Claude Code draws a Stop hook's systemMessage behind "Stop says: ",
             # and no setting changes it, so the receipt opens on a newline.
@@ -305,15 +313,15 @@ def screen(cols, patterns, receipt_by="hook", phase="done", spill=True, grid="fi
             # head on it and its rows under it, and the Stop hook prints nothing.
             out += [DIM + "✻ Worked for 4m 2s · " + R + RECEIPT_HEAD] + rows
 
-    band_rows = [draw(r, keys, cols, patterns, spill) for r in band]
+    band_rows = list(parts["band"])
     if band_rows:
         # Claude Code's [-] button, on the band's first row.
         band_rows[0] = seg(cols - RIGHT_EDGE, band_rows[0]) + "  " + DIM + "[-]" + R
     out += band_rows
     out += [DIM + rule + R, "❯ ", DIM + rule + R]
-    if agents:
+    if parts["agents"]:
         out.append(DIM + "◯  main" + R)  # Claude Code's own row; no hook draws it
-        out += [draw(r, keys, cols, patterns, spill) for r in agents]
+        out += [row for _, row in parts["agents"]]
     out.append(DIM + "  -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)" + R)
     return "\n".join(line.rstrip() for line in out)
 
@@ -337,10 +345,28 @@ def main(argv=None):
                          "from the rows drawn")
     ap.add_argument("--agents", type=int, choices=(0, 1, 2), default=2,
                     help="the deepest agent row drawn: 0 for none")
+    ap.add_argument("--part", choices=("screen", "band", "receipt", "start", "panel"),
+                    default="screen",
+                    help="draw only one readout's rows, for a mod or a panel stub to "
+                         "show: the band's without its [-], the receipt's under its "
+                         "head, the start line, or the agent rows without the "
+                         "panel's chrome")
     ap.add_argument("--plain", action="store_true", help="no colour")
     a = ap.parse_args(argv)
-    text = screen(a.cols, a.hide, a.receipt, a.phase, a.labels == "spill", a.grid,
-                  a.agents)
+    if a.part == "screen":
+        text = screen(a.cols, a.hide, a.receipt, a.phase, a.labels == "spill", a.grid,
+                      a.agents)
+    elif a.part == "start":
+        text = START_TAG
+    else:
+        parts = readouts(a.cols, a.hide, a.phase, a.labels == "spill", a.grid, a.agents)
+        if a.part == "band":
+            rows = parts["band"]
+        elif a.part == "receipt":
+            rows = [RECEIPT_HEAD] + parts["receipt"]
+        else:
+            rows = [row[len(chrome(r)):] for r, row in parts["agents"]]
+        text = "\n".join(row.rstrip() for row in rows)
     print(strip_ansi(text) if a.plain else text)
 
 
