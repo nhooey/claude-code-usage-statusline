@@ -235,6 +235,11 @@ and pagination, and share one time budget per refresh.
 diagnose source=native reading=available stale=False as_of=1790375136.064312 retry_at=
 ```
 
+Claude's `--mode status` ends the line with this program's session cost and
+lines beside Claude Code's own totals from the payload, as a check:
+`cost_usd=… claude_cost_usd=… lines=+a/-r claude_lines=+a/-r`. A side with no
+figure is left blank.
+
 `reading=unavailable` with a `retry_at` means the source failed and is backing
 off. Codex adds `child_threads`, `child_coverage` and `ambiguous_legacy`; see
 [Codex](codex.md#diagnostics). A `cmd:` source is reported as `cmd`, without
