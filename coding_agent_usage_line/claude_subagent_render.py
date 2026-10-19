@@ -171,14 +171,16 @@ def render_background(mark, n):
 def render_agent_diff(usage):
     """The agent's own +adds/-removes, in the status line's 💾 cell.
 
-    Drawn even at "+0 -0", as the status line draws it: an agent that has
-    changed nothing is a fact about the agent, and a cell that blanks on zero
-    would make the panel's rows disagree about what an empty column means.
-    A task with no transcript to count — a shell, a remote agent — is blanked
-    by the caller, the way 💰 is.
+    Blank at "+0 -0" (decided 2026-10-19, on every row of the grid): a cell
+    that says nothing draws nothing, so a blank 💾 means no line changed or
+    none was counted.  A task with no transcript to count — a shell, a
+    remote agent — is blanked by the caller too, the way 💰 is.
     """
-    return render_diff("%d" % getattr(usage, "lines_added", 0),
-                       "%d" % getattr(usage, "lines_removed", 0))
+    added = "%d" % getattr(usage, "lines_added", 0)
+    removed = "%d" % getattr(usage, "lines_removed", 0)
+    if added == removed == "0":
+        return []
+    return render_diff(added, removed)
 def agent_elapsed(start_ms, now, end=None, first=None):
     """Seconds from the agent's first record, `first`, or its startTime, to
     now or to `end`, where a finished agent stopped; None with neither.  A
@@ -292,16 +294,15 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
     counts up late the same way while the agent keeps going, but in bright
     red: `signed_off` says the zero is the finish the figure counts to, so
     the agent said it was done and is running over.  With no live
-    estimate the cell is "?" — no report yet, or a run that completed — and
+    estimate — no report yet, or a run that completed — the cell is blank
+    (decided 2026-10-19: a dim "?" said nothing a blank does not), and
     never a manufactured "0s": an agent that has not said is not an agent
-    with nothing left.  A task with no transcript to say it in draws nothing, the
-    way every other cell on its row does.
+    with nothing left.  A task with no transcript to say it in draws
+    nothing too, the way every other cell on its row does.
     """
     got = eta_reading(eta, start_ms, now, status, end)
-    if got is None:
-        return []
     if not got:
-        return [Span(E_ETA), Span(pad_val(A_ETA_FIG_W, "?"), "F_ETA", True)]
+        return []
     left = got[1]
     if left < 0:
         return [Span(E_ETA), Span(pad_val(A_ETA_FIG_W, "+" + dur_fmt(-left)),

@@ -56,15 +56,22 @@ model  🛫  💰  🧠  🧩 ▴ ▾  🎯  ⌛ ⛳ 🤖 🔧 🚦  🔋  🪫 
 rows fill it.
 
 A row with nothing for a column leaves it blank, so the columns hold. A
+cell that says nothing is blank too (decided 2026-10-19): ⛳ where no ETA
+was reported, rather than a dim `?`, and 💾 where no line was added or
+removed, rather than `+   0 -   0`, on every row of the band, the receipt
+and the panel, each keeping its width. A blank 💾 therefore means none
+changed or none counted: a shell or a remote agent has no transcript to
+count in. A
 label runs on over its own row's leading blank columns, up to its first
 figure: the 💳 row has no figures at all, so its label has the whole row.
 Labels therefore end at different points on different
 rows; the figures never move. Which columns drop on a narrow terminal is
 worked out without this extra room, so a label's spill never changes the
-grid. Every
-row's cells end five columns short of the terminal's right edge, the columns
-Claude Code keeps for the band's `[-]` button, so all three readouts share one
-right edge.
+grid. No row runs into the five columns at the terminal's right edge that
+Claude Code keeps for the band's `[-]` button (`RIGHT_EDGE`). On a terminal
+wide enough, the grid stops short of them instead, after at most
+`LABEL_MAX` columns of label (see [Wide terminals](#wide-terminals)), so
+the rows no longer end at `[-]`; all three readouts still end together.
 
 Two rows read differently:
 
@@ -105,6 +112,23 @@ never breaks. Least important first:
 ```
 
 With the sample figures, 🛫 shows from about 185 columns.
+
+### Wide terminals
+
+Decided 2026-10-19, from a live screen at about 240 columns where short
+labels sat some 70 columns from their figures: a label keeps at most 40
+columns (`LABEL_MAX`) before the columns start. Once the terminal is wider
+than that, the kept columns and the chrome need, the grid's whole width is
+capped there, `chrome at CHROME_DEPTH + LABEL_MAX + the kept columns`, and
+the spare width stays empty at the right. The cap follows from the kept
+columns' widths, the chrome kept for `CHROME_DEPTH` levels, `LABEL_MAX` and
+`RIGHT_EDGE`, so like the drop it follows from the width and `--hide`
+alone, and the mod and each panel row's process still reach the same
+columns apart. A row two levels deep has exactly `LABEL_MAX`; a top-level
+panel row has two columns more, and a band or receipt row, with no chrome,
+six. The drop is unchanged: columns still drop while a label would keep
+fewer than `LABEL_MIN`, and a label still spills over its row's leading
+blank columns.
 
 ### Hiding
 
@@ -367,6 +391,8 @@ width is a number where it is fixed and otherwise names its rule (`A_CTX_W`,
 `COST_W`, …), since `_PAD` and the marks' spacing move it; each language
 computes the rules. The label pieces' drop ranks stay with the rows that
 carry them: a rank belongs to a row's own label, not to a column.
+Decided 2026-10-19: `LABEL_MAX` joined them, 183 constants; see
+[Wide terminals](#wide-terminals).
 
 Still to come: each glyph by code
 point; each colour as its RGB triple and the cut-offs that dim it (`mag_dim`,
@@ -621,7 +647,7 @@ figures; `--phase running` draws it mid-turn:
 ✻ Worked for 4m 2s · 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
 📊 🎤 Why is the build slow?         💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
 📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
-💳 account  🔋 🔜 6.7m  🪫 🔜 1.8d  📅 2026-10-19  🕐 13:06:02                                                    🔋 15٪  🪫87.0٪                  [-]
+📅 2026-10-19  🕐 13:06:02  💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.8d                                                                                      [-]
 🤖💬 The test step takes 8…  🤖O⁵🏃  💰  92   🧠 115k  11٪  🧩 ▴2.1M ▾640k  🎯98٪  ⌛  9h ⛳   2m 🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋.90٪  🪫2.10٪  💾 +3.1k - 180
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯
@@ -630,7 +656,7 @@ figures; `--phase running` draws it mid-turn:
 
   ⏺ main
   ◯ 🔩🟢 Port renderer  Ed…  🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋.08٪  🪫.100٪  💾 +  48 -   9
-    ◯ 🔍🟢 Find callers of…  🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋.03٪  🪫.040٪  💾 +   0 -   0
+    ◯ 🔍🟢 Find callers of…  🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋.03٪  🪫.040٪
 ```
 
 The panel's `⏺ main` row and the `  ◯ ` before each agent row are Claude

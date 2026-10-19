@@ -6,7 +6,8 @@ receipt and the agent panel draws the columns of GRID_CELLS in one order; a
 row with nothing for a column leaves it blank, so the columns hold.  On a
 narrow terminal a row's label sheds its ranked parts, then is cut, and past
 LABEL_MIN columns whole columns drop from every row at once, in DROP_ORDER.
-`--hide` paths remove columns and label parts.
+On a wide one the grid stops after LABEL_MAX columns of label, and the rest
+of the width stays empty.  `--hide` paths remove columns and label parts.
 
 The grid knows nothing about how a cell was drawn.  A row is plain data,
 its label's pieces and its cells as spans, so the panel can hand it its
@@ -22,8 +23,8 @@ from typing import Dict, List, NamedTuple, Optional, Sequence, Union
 from . import formatting as fmt
 from . import claude_subagent_render as sub
 from .spans import Span, cut, spans, width
-from .spec import (CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN,
-                   PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
+from .spec import (CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MAX,
+                   LABEL_MIN, PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
 
 
 class Piece(NamedTuple):
@@ -147,15 +148,26 @@ def layout(rows: Sequence[Row], cols: int, patterns: Sequence[str],
     return keys
 
 
+def edge(keys: Sequence[str], cols: int) -> int:
+    """Where every row on the columns `keys` ends, at `cols`: RIGHT_EDGE
+    columns short of the terminal's edge, or, where that would leave more
+    than LABEL_MAX columns of label after the chrome at CHROME_DEPTH, where
+    LABEL_MAX ends.  It follows from the columns and the width alone, as
+    layout's do, so the mod and each panel row's process reach it apart."""
+    used = sum(cell_width(c["width"]) + c["gap"] for c in GRID_CELLS
+               if c["key"] in keys)
+    return min(cols - RIGHT_EDGE,
+               width(chrome(CHROME_DEPTH)) + LABEL_MAX + used)
+
+
 def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
          spill: bool = True) -> List[Span]:
     """One row on the columns `keys`.  With `spill`, the label runs on over
     the row's own leading blank columns, up to its first figure, instead of
-    stopping where the first column starts.  Every row ends RIGHT_EDGE
-    columns short of the terminal's edge, and never runs past that: a label
-    with no room draws nothing, not even a `…`, and a row whose chrome and
-    cells are wider than the terminal leaves, at a width too narrow for the
-    drop to help, is cut there like a label."""
+    stopping where the first column starts.  Every row ends at `edge`, and
+    never runs past it: a label with no room draws nothing, not even a `…`,
+    and a row whose chrome and cells are wider than the terminal leaves, at
+    a width too narrow for the drop to help, is cut there like a label."""
     cells = []
     for c in GRID_CELLS:
         if c["key"] not in keys:
@@ -167,12 +179,12 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
                       if _shows(row, c["key"], c["hide"], patterns)
                       else None])
     head = chrome(row.depth)
-    room = cols - RIGHT_EDGE - width(head) - sum(w for w, _ in cells)
+    end = edge(keys, cols)
+    room = end - width(head) - sum(w for w, _ in cells)
     while spill and cells and cells[0][1] is None:
         room += cells.pop(0)[0]
     right = []
     for w, c in cells:
         right.extend(c if c is not None else [Span(" " * w)])
     out = head + fmt.seg(room, label_text(row, patterns, room)) + right
-    edge = cols - RIGHT_EDGE
-    return cut(out, edge) if width(out) > edge else out
+    return cut(out, end) if width(out) > end else out

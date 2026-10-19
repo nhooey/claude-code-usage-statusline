@@ -127,8 +127,8 @@ function clock(st: Settings, secs: number | null): Span[] {
 }
 
 /** eta, ⛳: the time left on `reported`, an (epoch, seconds) report or []
- * for none, at `now`; late in amber, or red when `signedOff`.  `startS` is
- * when the work began, or null. */
+ * for none, at `now`, blank for none; late in amber, or red when
+ * `signedOff`.  `startS` is when the work began, or null. */
 function eta(st: Settings, reported: readonly number[] | null,
   startS: number | null, now: number, signedOff = false): Span[] {
   return renderAgentEta(st, reported as [number, number] | [] | null,
@@ -154,7 +154,8 @@ function week(st: Settings, pctS: string, share: number | null): Span[] {
     false, 4);
 }
 
-/** diff, 💾: lines added and removed. */
+/** diff, 💾: lines added and removed, blank when neither: none changed,
+ * or none counted. */
 function diff(st: Settings, added: number, removed: number): Span[] {
   return renderAgentDiff(st, { lines_added: added, lines_removed: removed });
 }

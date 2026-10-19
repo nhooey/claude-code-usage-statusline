@@ -328,11 +328,13 @@ export function renderBackground(mark: string, n: number): Span[] {
   return !n ? [] : [span(mark), span(d(n), "F_CRM")];
 }
 
-/** The agent's own +adds/-removes, in the status line's 💾 cell, drawn
- * even at "+0 -0". */
+/** The agent's own +adds/-removes, in the status line's 💾 cell, blank
+ * at "+0 -0": a blank 💾 means none changed or none counted. */
 export function renderAgentDiff(st: Settings, usage: unknown): Span[] {
-  return renderDiff(st, d(ua(usage, "lines_added", 0)),
-    d(ua(usage, "lines_removed", 0)));
+  const added = d(ua(usage, "lines_added", 0));
+  const removed = d(ua(usage, "lines_removed", 0));
+  if (added === "0" && removed === "0") return [];
+  return renderDiff(st, added, removed);
 }
 
 /** Seconds from the earlier of `first` and startTime to now, or to `end`;
@@ -439,8 +441,8 @@ export function runningParents(prepared: readonly Prepared[]): Set<string> {
 }
 
 /** ⛳ and how long the agent says it has left; see etaReading.  Late, an
- * amber "+", or a red one when `signedOff`; "?" with no live estimate;
- * nothing with no transcript. */
+ * amber "+", or a red one when `signedOff`; blank with no live estimate,
+ * as with no transcript. */
 export function renderAgentEta(st: Settings, eta: Eta, startMs: unknown,
   now: number | null, status = "running", end: number | null = null,
   signedOff = false): Span[] {
@@ -449,10 +451,7 @@ export function renderAgentEta(st: Settings, eta: Eta, startMs: unknown,
   // here.
   const got = etaReading(eta, startMs, now === null ? Date.now() / 1000 : now,
     status, end);
-  if (got === null) return [];
-  if (!got.length) {
-    return [span(E_ETA), span(padVal(st, A_ETA_FIG_W, "?"), "F_ETA", true)];
-  }
+  if (got === null || !got.length) return [];
   const left = got[1];
   if (left < 0) {
     return [span(E_ETA), span(padVal(st, A_ETA_FIG_W,
