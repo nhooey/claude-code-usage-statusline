@@ -355,7 +355,7 @@ spans by column key, so a port lays them out without any renderer. Each
 from-the-rows grid, with the column keys `layout` keeps; each `draw` case is
 one row on those keys, with and without the label's spill, and what `draw`
 makes of it as spans and as the joined line. The matrix is 300 to 6
-columns, from wide enough for `LABEL_MAX` to cap the grid (240 and 300) down
+columns, from a wide terminal (240 and 300) down
 to where a label has no room and the chrome alone runs past the right edge, eight hide sets, both grids, agents to each depth and both phases'
 rows, deduplicated. A file is one terminal profile's, and profiles whose
 cases come out the same share one: `unknown-jediterm.json` and

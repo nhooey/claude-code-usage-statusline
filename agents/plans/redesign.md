@@ -67,11 +67,10 @@ figure: the 💳 row has no figures at all, so its label has the whole row.
 Labels therefore end at different points on different
 rows; the figures never move. Which columns drop on a narrow terminal is
 worked out without this extra room, so a label's spill never changes the
-grid. No row runs into the five columns at the terminal's right edge that
-Claude Code keeps for the band's `[-]` button (`RIGHT_EDGE`). On a terminal
-wide enough, the grid stops short of them instead, after at most
-`LABEL_MAX` columns of label (see [Wide terminals](#wide-terminals)), so
-the rows no longer end at `[-]`; all three readouts still end together.
+grid. Every row ends five columns short of the terminal's right edge, the
+columns Claude Code keeps for the band's `[-]` button (`RIGHT_EDGE`), so all
+three readouts share one right edge, and on a wide terminal the labels take
+the spare width (see [Wide terminals](#wide-terminals)).
 
 Two rows read differently:
 
@@ -115,20 +114,12 @@ With the sample figures, 🛫 shows from about 185 columns.
 
 ### Wide terminals
 
-Decided 2026-10-19, from a live screen at about 240 columns where short
-labels sat some 70 columns from their figures: a label keeps at most 40
-columns (`LABEL_MAX`) before the columns start. Once the terminal is wider
-than that, the kept columns and the chrome need, the grid's whole width is
-capped there, `chrome at CHROME_DEPTH + LABEL_MAX + the kept columns`, and
-the spare width stays empty at the right. The cap follows from the kept
-columns' widths, the chrome kept for `CHROME_DEPTH` levels, `LABEL_MAX` and
-`RIGHT_EDGE`, so like the drop it follows from the width and `--hide`
-alone, and the mod and each panel row's process still reach the same
-columns apart. A row two levels deep has exactly `LABEL_MAX`; a top-level
-panel row has two columns more, and a band or receipt row, with no chrome,
-six. The drop is unchanged: columns still drop while a label would keep
-fewer than `LABEL_MIN`, and a label still spills over its row's leading
-blank columns.
+A 40-column cap on labels (`LABEL_MAX`) was tried on 2026-10-19, after a
+live screen at about 240 columns put short labels some 70 columns from their
+figures: the grid stopped after the cap and the spare width stayed empty.
+In use it cut prompts and replies short with half the row unused, so the
+same day it was taken out (decided 2026-10-19): the labels take the spare
+width again and the figures keep to the right edge.
 
 ### Hiding
 
@@ -427,7 +418,7 @@ width is a number where it is fixed and otherwise names its rule (`A_CTX_W`,
 `COST_W`, …), since `_PAD` and the marks' spacing move it; each language
 computes the rules. The label pieces' drop ranks stay with the rows that
 carry them: a rank belongs to a row's own label, not to a column.
-Decided 2026-10-19: `LABEL_MAX` joined them, 183 constants; see
+`LABEL_MAX` joined them on 2026-10-19 and left the same day; see
 [Wide terminals](#wide-terminals).
 
 Still to come: each glyph by code

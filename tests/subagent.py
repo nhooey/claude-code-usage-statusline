@@ -864,24 +864,17 @@ def run(tmp):
     # nothing written for 1.2h, so the quiet time rather than the rate.
     right = right.replace("\U0001F3C3  ", "\U0001F3C3  \U0001F916 1.2h   ", 1)
     head = "·\U0001F50D\U0001F7E2 "
-    # The payload's columns are the terminal's less PANEL_COLUMNS_SHORT: 206
-    # here, wider than the grid needs, so LABEL_MAX caps it (decided
-    # 2026-10-19).  The label keeps LABEL_MAX columns after the chrome kept
-    # for CHROME_DEPTH levels, two more at the top level than a row two deep
-    # gets, and the spare width stays empty at the right, short of the
-    # RIGHT_EDGE every readout keeps.
-    label_w = sl.LABEL_MAX + 2 * (sl.CHROME_DEPTH - 1)
-    edge = label_w + 2 + sl.vis_width(right)
+    # The payload's columns are the terminal's less PANEL_COLUMNS_SHORT, and
+    # the rows are laid out for the terminal's, less the chrome Claude Code
+    # draws ("  ◯ " at the top level) and the RIGHT_EDGE every readout keeps.
+    edge = 200 + sl.PANEL_COLUMNS_SHORT - sl.RIGHT_EDGE - sl.PANEL_CHROME
     check("an agent's row: the kind and state, the name, then the grid's "
-          "columns, after LABEL_MAX columns of label",
-          rows["a1"], head + sl.seg(label_w - sl.vis_width(head), "Marigold")
+          "columns, ending RIGHT_EDGE short of the terminal behind the chrome",
+          rows["a1"], head + sl.seg(edge - sl.vis_width(head) - 2
+                                    - sl.vis_width(right), "Marigold")
           + "  " + right)
-    check("the row stops there, short of the terminal less the chrome and "
-          "RIGHT_EDGE",
-          (sl.vis_width(rows["a1"]),
-           edge < 200 + sl.PANEL_COLUMNS_SHORT - sl.RIGHT_EDGE
-           - sl.PANEL_CHROME),
-          (edge, True))
+    check("the row fills the terminal's width less the chrome and RIGHT_EDGE",
+          sl.vis_width(rows["a1"]), edge)
     # a2 wrote nothing, so its 💾 is blank and the panel's rstrip ends it
     # sooner; its columns are where a1's are.
     check("the columns start at the same column on every row",
@@ -947,7 +940,7 @@ def run(tmp):
     chrome = lambda d: sl.PANEL_CHROME + 2 * (d - 1)
     # a3 and a4 wrote nothing, so their 💾 is blank and the rstrip ends them
     # before it; up to 🪫 the chrome plus the row is one width, and a1, which
-    # draws 💾, ends where LABEL_MAX caps the grid.
+    # draws 💾, ends RIGHT_EDGE short of the terminal.
     at_week = lambda r: sl.vis_width(r[:r.index("\U0001FAAB")])
     check("a nested row pays for the two columns a level Claude Code indents "
           "its chrome by, so the chrome plus the row is one width at every "
@@ -955,7 +948,8 @@ def run(tmp):
           ([at_week(rows_n[t]) + chrome(d)
             for t, d in (("a1", 1), ("a3", 2), ("a4", 3))],
            sl.vis_width(rows_n["a1"]) + chrome(1)),
-          ([at_week(rows_n["a1"]) + chrome(1)] * 3, edge + chrome(1)))
+          ([at_week(rows_n["a1"]) + chrome(1)] * 3,
+           201 + sl.PANEL_COLUMNS_SHORT - sl.RIGHT_EDGE))
     check("👶🏻 counts the rows under each one, and every row keeps a cell for it "
           "once any row has one",
           [unpainted(rows_n[t])[:unpainted(rows_n[t]).index("Marigold")]
@@ -1023,12 +1017,10 @@ def run(tmp):
     unknown = render(sl, dict(wide, columns=None), ["--cols", "0"])[1]["a1"]
     # ⛳ is not among the marks the unknown width shows: a1 has reported no
     # ETA, so its ⛳ is blank.
-    check("the name takes what the columns leave, up to LABEL_MAX on a wide "
-          "terminal, and is cut to it; at an unknown width every column "
-          "shows and the label keeps LABEL_MIN beside them, and two more at "
-          "the top level",
-          (render(sl, dict(wide, columns=400))[1]["a1"].count(
-              long[:label_w - sl.vis_width(head) - 1] + "…"),
+    check("the name takes what the columns leave, and is cut to it; at an "
+          "unknown width every column shows and the label keeps LABEL_MIN "
+          "beside them, and two more at the top level",
+          (render(sl, dict(wide, columns=400))[1]["a1"].count(long),
            re.search(r"Review the plan, [^…]*…  \U0001F916",
                      render(sl, dict(wide, columns=160))[1]["a1"]) is not None,
            unknown.count(long[:sl.LABEL_MIN + 2 - sl.vis_width(head) - 1] + "…"),
@@ -1241,18 +1233,14 @@ def run(tmp):
     rc, hid = render(sl, pay, ["--hide", "*.work", "--hide", "agent.state.rate",
                                "--hide", "agent.name.kind"])
     at_cost = lambda r: sl.vis_width(r[:r.index("\U0001F4B0")])
-    # At 206 columns LABEL_MAX caps the grid, so the label keeps its width
-    # and the row ends a 💾 sooner instead of the columns moving right.
-    check("--hide, repeatable: 💾 hidden on every row is removed and, on a "
-          "terminal wide enough for LABEL_MAX to cap the grid, the row ends "
-          "that much sooner; the 🛫 column, hidden on agent rows alone, keeps "
-          "its place blank, since the band's 🤖💬 row can draw it; and the "
-          "kind leaves the label",
+    check("--hide, repeatable: 💾 hidden on every row is removed and the "
+          "columns close up to the right edge; the 🛫 column, hidden on agent "
+          "rows alone, keeps its place blank, since the band's 🤖💬 row can "
+          "draw it; and the kind leaves the label",
           ("\U0001F4BE" in hid["a1"], "1.2h   \U0001F4B0" in hid["a1"],
            at_cost(hid["a1"]) - at_cost(rows["a1"]),
-           sl.vis_width(rows["a1"]) - sl.vis_width(hid["a1"]),
            hid["a1"].startswith("Marigold")),
-          (False, False, 0, sr.grid.cell_width("A_DIFF_W") + 2, True))
+          (False, False, sr.grid.cell_width("A_DIFF_W") + 2, True))
 
     print()
     print("pass %d   fail %d" % (pass_n, fail_n))
