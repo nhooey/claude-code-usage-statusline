@@ -442,6 +442,45 @@ export function accountText(st: Settings, fig: Dict,
   return shown.flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
 }
 
+/** What the footer under the prompt gets after Claude Code's own line,
+ * `hint`, at `cols`: `accountText`, after blanks that end it where the
+ * band's rows end; "" with no account text.  Claude Code trims the tail's
+ * leading spaces and joins it to the line with FOOTER_JOIN, so the blanks
+ * are TAIL_BLANK, which it keeps (seen live 2026-10-20).  The line is two
+ * blanks in, and `hint` is read with one space between its parts, so the
+ * padding is a guess at the drawn width; a tail too wide is cut where the
+ * row ends.  `hint` leaves out the permission mode's pill, "⏵⏵ auto mode
+ * on · " (seen live 2026-10-20: "-- INSERT -- 2 shells"), so the pill of
+ * `mode`, the session's permission mode, is counted apart. */
+export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
+  hint: string, cols: number, mode?: string, home = ""): string {
+  // Claude Code draws a run of spaces in the tail as one (seen live
+  // 2026-10-20: "6.6h 📅"), so a run's spaces past its first are blanks.
+  const text = accountText(st, fig, hide, home).replace(/ {2,}/g,
+    (run) => " " + TAIL_BLANK.repeat(run.length - 1));
+  if (!text) return "";
+  const pill = MODE_PILLS[mode ?? ""] ?? "";
+  const pillW = pill && !hint.includes(pill)
+    ? visWidth(pill + FOOTER_JOIN, st.widths) : 0;
+  const pad = cols - RIGHT_EDGE - 2 - pillW - visWidth(hint, st.widths) -
+    visWidth(FOOTER_JOIN, st.widths) - visWidth(text, st.widths);
+  return TAIL_BLANK.repeat(Math.max(0, pad)) + text;
+}
+
+/** What Claude Code puts between its footer line and a hook's tail. */
+export const FOOTER_JOIN = " · ";
+
+/** The pill Claude Code draws in the footer for each permission mode, by
+ * the mode's name; none in `default`.  Only "auto" was seen live. */
+export const MODE_PILLS: Readonly<Record<string, string>> = {
+  auto: "⏵⏵ auto mode on",
+  acceptEdits: "⏵⏵ accept edits on",
+  plan: "⏸ plan mode on",
+  bypassPermissions: "⏵⏵ bypass permissions on",
+};
+/** U+2800, a blank cell that is not whitespace, so no trim takes it. */
+export const TAIL_BLANK = "⠀";
+
 /** The band as drawn at `cols` under `hide`: its rows' spans, top to
  * bottom, on the fixed grid.  A hidden scope's row is left out. */
 export function bandLines(st: Settings, fig: Dict, cols: number,

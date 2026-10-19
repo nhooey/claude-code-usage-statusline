@@ -15,7 +15,7 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  accountText, bandLines, bandRows, fixedKeys,
+  FOOTER_JOIN, MODE_PILLS, accountText, bandLines, bandRows, fixedKeys, footerTail,
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
@@ -159,9 +159,10 @@ test("the receipt bills the cost line's turn", () => {
   assert.equal(receiptTurn([]), -1);
 });
 
-test("the footer's account text: the workspace, then the 💳 account details", () => {
+test("the footer's tail ends on the 💳 account details where the band's rows end", () => {
   const st = settings({});
   const fig = document("status/01-baseline@196");
+  const hint = "-- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)";
   const text = inZone(fig, () => accountText(st, fig, []));
   assert.ok(text.includes("💳"), text);
   // The workspace first, 📦 🌿 📁, as 🎮's label draws it.
@@ -169,7 +170,27 @@ test("the footer's account text: the workspace, then the 💳 account details", 
     text);
   assert.ok(!inZone(fig, () => accountText(st, fig, ["account.workspace"]))
     .includes("📦"));
-  assert.equal(inZone(fig, () => accountText(st, fig, ["account"])), "");
+  const tail = inZone(fig, () => footerTail(st, fig, [], hint, 240));
+  // Each run of spaces is one space and blanks, since Claude Code draws a
+  // run of them as one.
+  const kept = text.replace(/ {2,}/g, (r) => " " + "\u2800".repeat(r.length - 1));
+  assert.ok(tail.endsWith(kept) && !/  /.test(tail), tail);
+  // Two blanks in, the hint, Claude Code's " · ", then the tail: to the
+  // band's right edge, padded with blanks no trim takes.
+  assert.equal(2 + visWidth(hint, st.widths) +
+    visWidth(FOOTER_JOIN, st.widths) + visWidth(tail, st.widths),
+  240 - RIGHT_EDGE);
+  // The mode's pill, left out of the hint, is drawn before it all the same.
+  const bare = "-- INSERT -- 2 shells";
+  const auto = inZone(fig, () => footerTail(st, fig, [], bare, 240, "auto"));
+  assert.equal(2 + visWidth(MODE_PILLS.auto + FOOTER_JOIN + bare, st.widths) +
+    visWidth(FOOTER_JOIN, st.widths) + visWidth(auto, st.widths),
+  240 - RIGHT_EDGE);
+  assert.equal(tail.trimStart(), tail);
+  // Too narrow a row: the " · " alone parts the two.
+  assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)), kept);
+  assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 240)),
+    "");
   // 🔋 hidden in every row takes its 🔜 with it, and leaves 🪫's.
   const no5h = inZone(fig, () => accountText(st, fig, ["*.plan.five_hour"]));
   assert.ok(!no5h.includes("🔋") && no5h.includes("🪫"), no5h);

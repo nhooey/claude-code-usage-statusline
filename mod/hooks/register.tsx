@@ -26,7 +26,7 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { accountText, bandLines, bandRows, workspaceOf } from '../src/band.ts'
+import { bandLines, bandRows, footerTail, workspaceOf } from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
   withEngineDuration,
@@ -35,7 +35,8 @@ import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import * as spec from '../src/spec.ts'
 import { CONFIG } from './config.ts'
-import { costDoc, placesOf, seen, statusDoc, steps, turnsNow } from './edges.ts'
+import { costDoc, permissionModeOf, placesOf, seen, statusDoc, steps,
+  transcriptPath, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -134,6 +135,15 @@ async function refresh($: $): Promise<void> {
       } catch (err) {
         await log($, 'refresh: no start line', err)
       }
+      // The classic hook events that carry the mode were seen not to
+      // reach the mod (2026-10-20), so it is read off the transcript.
+      try {
+        const places = await placesFor($)
+        noteMode($, 'transcript', await permissionModeOf($,
+          await transcriptPath($, places)))
+      } catch (err) {
+        await log($, 'refresh: no permission mode', err)
+      }
     } while (again)
   })()
   try {
@@ -229,6 +239,26 @@ async function remember($: $, index: string, key: string, value: unknown) {
 // The width the band last drew at, the terminal's: the receipt is laid out
 // at it, so its columns are the band's.  0 until the band has drawn.
 let bandCols = 0
+// The footer's hint and widths last logged.
+let hintSeen = ''
+// The session's permission mode, as the last classic hook event gave it:
+// the footer's `hint` leaves its pill out, so footerTail counts it apart.
+let permissionMode: string | undefined
+
+// The events seen carrying no mode, logged once each.
+const modeless = new Set<string>()
+
+/** Records the permission mode an event carries, logging each change, and
+ * each kind of event that carries none, once. */
+function noteMode($: $, from: string, mode: string | undefined): void {
+  if (mode === undefined && !modeless.has(from)) {
+    modeless.add(from)
+    void log($, 'no permission mode on ' + from)
+  }
+  if (mode === undefined || mode === permissionMode) return
+  permissionMode = mode
+  void log($, 'permission mode ' + mode + ' from ' + from)
+}
 
 /** The store's key for a stamped receipt: its session and its turn. */
 export const receiptKey = (session: string, turn: string) =>
@@ -350,10 +380,12 @@ export const register: Register = on => {
     return next(e)
   })
   on('classic.UserPromptSubmit', async ($, e, next) => {
+    noteMode($, 'UserPromptSubmit', e.permission_mode)
     await learn($, e).catch(() => {})
     return next(e)
   })
   on('classic.Stop', async ($, e, next) => {
+    noteMode($, 'Stop', e.permission_mode)
     await learn($, e).catch(() => {})
     return next(e)
   })
@@ -365,6 +397,14 @@ export const register: Register = on => {
       seen.effort = String(e.effort)
     }
     return yield* next(e)
+  })
+
+  // The permission mode, from the events that carry it: a prompt and a
+  // turn's end, above, and each tool call, so a mode cycled with shift+tab
+  // is known by the next one.
+  on('classic.PostToolUse', async ($, e, next) => {
+    noteMode($, 'PostToolUse', e.permission_mode)
+    return next(e)
   })
 
   // Each event below starts this load's tick if no event has yet (start).
@@ -480,27 +520,27 @@ export const register: Register = on => {
   })
 
   // The footer under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`, with
-  // the 💳 row at its right end (decided 2026-10-19): Claude Code's own
-  // line, drawn by the engine so its pills stay live, then the account
-  // text in the terminal's own colour, not the line's dim one (asked
-  // 2026-10-20), pushed to where the band's rows end.  The line is two
-  // columns in, as the band's rows are not.
+  // the 💳 row at its right end (decided 2026-10-19): a dim tail after
+  // Claude Code's own line, which keeps its pills live (footerTail).
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     const doc = await read($, status)
     if (doc === null) return next(e)
-    const text = accountText(await settingsOf($),
-      at(doc as Dict, await read($, clockNow)), CONFIG.hide, await home($))
-    const row = await next(e)
-    if (!text) return row
-    const { Box, Text } = $.ui.resolve(e)
-    const cols = bandCols || (e.viewport?.columns ?? 80)
-    return (
-      <Box flexDirection="row" width={Math.max(1, cols - spec.RIGHT_EDGE - 2)}>
-        {row}
-        <Box flexGrow={1} />
-        <Text wrap="truncate-end">{' ' + text}</Text>
-      </Box>
-    )
+    const tail = footerTail(await settingsOf($),
+      at(doc as Dict, await read($, clockNow)), CONFIG.hide,
+      // The band's width before the viewport's: the viewport read 10
+      // columns wider than the terminal drew, pushing the 🕐 off the row
+      // (seen live 2026-10-20), and the band's is where its rows end.
+      e.props.hint, bandCols || (e.viewport?.columns ?? 80), permissionMode,
+      await home($))
+    // What the padding was worked out from, each time it changes, so a
+    // tail drawn too wide can be checked against the line it was given.
+    const seen = JSON.stringify([e.props.hint, permissionMode ?? null, bandCols,
+      e.viewport?.columns ?? null, tail.length])
+    if (seen !== hintSeen) {
+      hintSeen = seen
+      void log($, 'footer: ' + seen)
+    }
+    return tail ? next({ ...e, props: { ...e.props, tail } }) : next(e)
   })
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
