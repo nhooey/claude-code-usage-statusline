@@ -97,6 +97,8 @@ fixtures/
                          Figures below
   panel/<group>.json     the agent panel's rows from the renderer's inputs;
                          see Agent panel cases below
+  grid/<profiles>.json   the redesigned grid's layouts and rows, written by
+                         the TypeScript; see Grid cases below
   gen/                   the generators
 ```
 
@@ -314,6 +316,33 @@ under each switch and terminal (`tight`, `subdec`, `tmux`, `iterm`,
 again in memory, under `--python`, and compared with what is committed. It
 is the panel's counterpart of the figures and render stages, which the
 subagent suite skips, having no figures document.
+
+## Grid cases
+
+`fixtures/grid/` pins the redesigned grid
+([the plan](../agents/plans/redesign.md)), `mod/src/grid.ts`. Unlike the rest
+of `fixtures/`, these are written by the TypeScript, with
+`node mod/tools/gen-grid-cases.ts`: the grid is built there first, and the
+Python cells the agent panel keeps will be checked against them when they are
+brought to it. `all.py` does not touch them.
+
+The inputs are plain data: the mockup's sample rows by id, each its scope, its
+panel depth, its label's pieces (path, spans, drop rank) and its cells as
+spans by column key, so a port lays them out without any renderer. Each
+`layout` case is a set of rows, `cols`, the `--hide` patterns and the fixed or
+from-the-rows grid, with the column keys `layout` keeps; each `draw` case is
+one row on those keys, with and without the label's spill, and what `draw`
+makes of it as spans and as the joined line. The matrix is 200 to 40
+columns, eight hide sets, both grids, agents to each depth and both phases'
+rows, deduplicated. A file is one terminal profile's, and profiles whose
+cases come out the same share one: `unknown-jediterm.json` and
+`iterm-tmux.json`, since `_PAD` widens 🧩, 🧠 and 💰 on the second pair. The
+shapes are in the generator's header.
+
+`mod/test/grid.test.ts` replays every case under each of its file's profiles
+and runs the generator again in memory, failing if what it writes differs
+from what is committed, so regenerating and reading the diff is the only way
+to change them.
 
 ## Assertion suites
 

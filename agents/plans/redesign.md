@@ -267,8 +267,14 @@ same version-1 reading as its output and shared cases pinning it.
    status goldens and 3,958 cell cases), `claude_cost_render.ts` and
    `claude_cost.ts` (the 87 cost goldens and 256 receipt cases), and
    `claude_subagent_render.ts` (the panel's 242 render cases) match the
-   Python byte for byte. Left: the redesigned grid, then the Python cells
-   brought to it.
+   Python byte for byte. The redesigned grid is built too: `grid.ts` lays
+   out rows given as plain data, a label's pieces and the cells as spans,
+   and `mod/tools/layout-mockup.ts` draws the mockup with it, the Python
+   mockup's output byte for byte before that was deleted. Its cases,
+   `tests/fixtures/grid/`, are written by the TypeScript
+   (`mod/tools/gen-grid-cases.ts`), the first fixtures that are, and
+   `grid.test.ts` fails when they are not what the generator writes. Left:
+   the Python cells brought to the grid, checked against those cases.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
 6. **The switch.** The band runs beside the status line until the two agree;
