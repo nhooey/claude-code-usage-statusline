@@ -210,8 +210,8 @@ export function untilReset(st: Settings, epoch: number | null,
   return delta <= 0 ? "now" : durFmt(st, delta);
 }
 
-/** 💳 account, then each window's 🔜 reset where it has one, then 📅 and 🕐,
- * which leave first on a narrow terminal. */
+/** 💳 account, then each window's 🔜 reset where it has one, then 📅 and 🕐
+ * at the end, which leave first on a narrow terminal. */
 export function accountLabel(st: Settings, sess: number | null,
   week: number | null, sessReset: string | null, weekReset: string | null,
   date: string, time: string): Piece[] {
@@ -244,10 +244,11 @@ export function accountLabel(st: Settings, sess: number | null,
     windows[windows.length - 1] = { ...last, spans: [...last.spans.slice(0,
       -1), { ...s, text: s.text.replace(/ +$/, "") }] };
   }
+  // 📅 and 🕐 last, at the right end of the footer (asked 2026-10-20).
   return [
-    piece("clock.date", E_DATE + " " + date + "  ", null, 2, true),
-    piece("clock.time", E_TIME + " " + time + "  ", null, 3, true),
-    piece("name.label", E_ACCT + " "), ...windows];
+    piece("name.label", E_ACCT + " "), ...windows,
+    piece("clock.date", "  " + E_DATE + " " + date, null, 2, true),
+    piece("clock.time", "  " + E_TIME + " " + time, null, 3, true)];
 }
 
 /** 🎤 and the turn's prompt, or today's placeholder, dim, for none. */
