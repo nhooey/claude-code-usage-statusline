@@ -26,6 +26,14 @@ export const CONFIG = {
   // How often the band reads its figures again with nothing else
   // happening, so the clocks and the 🔜 resets move while idle.
   tickMs: 30_000,
+  // How often it reads again while a main-thread turn runs, so 🛫 and the
+  // totals keep up with the clocks (decided 2026-10-19); never more often
+  // than readSpacing times as long as the last read took, so a long
+  // transcript's reads cannot crowd the session.
+  tickRunningMs: 5_000,
+  readSpacing: 3,
+  // A read that takes longer is logged, with how long it took.
+  slowReadMs: 2_000,
   // How often the band and the footer redraw their clocks (🔧 ⌛ ⛳ 🕐 🔜)
   // against the time now, between reads, without reading anything.
   clockMs: 1_000,

@@ -73,6 +73,11 @@ async function settingsOf($: $): Promise<Settings> {
 
 let refreshing: Promise<void> | null = null
 let again = false
+// When the last read finished and how long it took, in ms, and whether a
+// main-thread turn runs: the tick's pace.
+let readAt = 0
+let readMs = 0
+let turnRunning = false
 // The prompt a turn opened with, until the transcript holds its record:
 // its text, which the start line is filed under, and the tag that stood
 // before it, which the new one must differ from.
@@ -89,8 +94,14 @@ async function refresh($: $): Promise<void> {
     do {
       again = false
       let doc: Dict
+      const began = await $.clock.now()
       try {
         doc = await statusDoc($, await placesFor($))
+        readAt = await $.clock.now()
+        readMs = readAt - began
+        if (readMs > CONFIG.slowReadMs) {
+          await log($, `slow read: ${Math.round(readMs)}ms`)
+        }
       } catch (err) {
         // A read that failed leaves the last document up, and the next
         // event reads again.
@@ -128,12 +139,18 @@ async function fileStart($: $, doc: Dict): Promise<void> {
   if (spans.length) await remember($, 'starts', startKey(text), spans)
 }
 
-// Reads the figures again every tick, so the clocks move while idle.
+// Reads the figures again every tickMs while idle, and every
+// tickRunningMs while a turn runs, spaced by readSpacing times the last
+// read's length.  It looks each clockMs, so a turn that starts mid-wait
+// gets the faster pace at once.
 async function tick($: $, mine: number) {
   while ((await read($, generation)) === mine) {
-    await $.clock.sleep(CONFIG.tickMs)
+    await $.clock.sleep(CONFIG.clockMs)
     if ((await read($, generation)) !== mine) return
-    await refresh($)
+    const pace = turnRunning
+      ? Math.max(CONFIG.tickRunningMs, CONFIG.readSpacing * readMs)
+      : CONFIG.tickMs
+    if ((await $.clock.now()) - readAt >= pace) await refresh($)
   }
 }
 
@@ -354,6 +371,7 @@ export const register: Register = on => {
     const result = await next(e)
     await start($, 'turn.start')
     if (e.agentId) return result
+    turnRunning = true
     const tr = (await read($, status))?.transcript as Dict | undefined
     pending = { text: e.text, before: tr?.prompt_id ?? '' }
     await refresh($)
@@ -370,6 +388,7 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     await start($, 'turn.complete')
+    if (!e.agentId) turnRunning = false
     await refresh($)
     if (e.agentId) return result
     const tr = (await read($, status))?.transcript as Dict | undefined
