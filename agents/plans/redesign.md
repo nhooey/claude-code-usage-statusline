@@ -214,13 +214,24 @@ the shared cases compare spans, colours included.
 
 ### Where the columns go
 
-The columns follow from the terminal's width and the `--hide` setting alone.
+Decided 2026-10-19: the columns follow from the terminal's width and the
+`--hide` setting alone.
 The chrome is kept for two levels of nesting whether any agent runs or not,
 and a deeper agent row cuts its own label instead. The mod and each panel
 row's process then reach the same columns without talking to each other, and
 no column moves when an agent starts. `--grid rows` in the mockup draws the
 alternative, columns from the rows drawn: at 125 columns, a nested agent
 appearing there drops 🤖 🔧 🚦 from every row and moves every label.
+
+### Where the plan figures come from
+
+Decided 2026-10-19: the band's 🔋 and 🪫 read the usage source the status
+line is configured with (`--usage-source`, `claude-usage-tracker` here), not
+`$.session.usage()`, which gave a weekly share a point off (34 against 33).
+The band and the status line run side by side until they agree, and they can
+only agree reading one source. The TypeScript side gets its own reader, a
+port of the parts of `sources.py` the configured sources need, with the
+same version-1 reading as its output and shared cases pinning it.
 
 ### The build order
 
@@ -234,7 +245,7 @@ appearing there drops 🤖 🔧 🚦 from every row and moves every label.
    the Python cells returning spans, and the fixtures written from the
    current renderers. The goldens show that nothing moved.
 3. **The accounting in TypeScript,** module by module, each passing the
-   shared cases before the next.
+   shared cases before the next, and the usage-source reader with it.
 4. **The cells and the layout in TypeScript,** against the shared cases.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
@@ -461,10 +472,3 @@ Read from the 2.1.302 binary:
   `ToolResult`, `ToolGroup`, `ToolProgress`, `CommandOutput`, `Spinner`,
   `TurnDuration`, `InfoNotice`, `SessionMode`, `PromptHint`, `AbovePrompt` and
   `Pane`.
-
-## Open
-
-1. **The usage source.** `$.session.usage()` gives a weekly share a point
-   off the status line's (33 against 34). The status line here runs with
-   `--usage-source claude-usage-tracker`, and the mod reads Claude Code's
-   own figures. Which one the band reads is open.
