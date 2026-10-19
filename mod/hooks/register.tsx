@@ -240,7 +240,7 @@ async function stamp($: $, durationMs: number, prompt: string):
       CONFIG.hide, ws, true, spec.C_CHROME_CONT)
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs),
-      head.length ? [head, ...rows] : rows)
+      head.length ? [...rows, head] : rows)
   } finally {
     stamping.delete(key)
   }

@@ -532,7 +532,7 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
   const { head, rows } = receiptLines(settings({}), fig, COLS, [],
     workspaceOf(doc, HOME), true, spec.C_CHROME_CONT)
-  return [head, ...rows]
+  return [...rows, head]
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -555,11 +555,10 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // The head, its 🔺🔖 tag with the 💳 account details, then 📊 🎤 and
-    // 📊 🎮.
+    // 📊 🎤 and 📊 🎮, then the 🔺🔖 tag line under them.
     expect(want.length).toBe(3)
-    expect(text(want[0])).toContain('p-resume'.slice(0, 8))
-    expect(text(want[0])).toContain(spec.E_ACCT)
+    expect(text(want[2])).toContain('p-resume'.slice(0, 8))
+    expect(text(want[2])).not.toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))

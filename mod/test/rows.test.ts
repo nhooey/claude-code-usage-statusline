@@ -70,9 +70,9 @@ for (const f of files) {
       for (const c of data.receipt) {
         const where = JSON.stringify([c.doc, c.cols, c.hide, c.workspace]);
         const got = drawReceipt(st, document(c.doc), c);
-        same(got.head, c.head, c.lines[0], where);
         assert.equal(got.rows.length, c.rows.length, where);
-        got.rows.forEach((r, i) => same(r, c.rows[i], c.lines[i + 1], where));
+        got.rows.forEach((r, i) => same(r, c.rows[i], c.lines[i], where));
+        same(got.head, c.head, c.lines[c.rows.length], where);
       }
     });
     test(`${f} under ${profile}: start`, () => {

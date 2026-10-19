@@ -26,8 +26,8 @@ import type { Accounting } from "./claude_calib.ts";
 import { decodeTranscript } from "./figures.ts";
 import { _readAccounting, decodeTurn } from "./claude_cost.ts";
 import {
-  CELLS, accountLabel, cacheRate, hms, receiptLabel, sessionLabel,
-  turnHead, turnLabel, untilReset, ymd,
+  CELLS, cacheRate, hms, receiptLabel, sessionLabel, turnHead, turnLabel,
+  ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
@@ -183,21 +183,11 @@ export function withEngineDuration(fig: Dict, durationMs: number): Dict {
   return { ...fig, turns: t, accounting: { ...acc, turns: accTurns } };
 }
 
-/** The plan reading's figure as accountLabel takes it, null for none. */
-function planNum(plan: unknown, key: string): number | null {
-  const v = plan && typeof plan === "object" ? (plan as Dict)[key] : null;
-  return typeof v === "number" && !Number.isNaN(v) ? v : null;
-}
-
-/** The receipt's head, drawn as the start line is, so the two stack:
- * "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02  💳 🔋 15٪ 🔜 6.7m  🪫 87٪
- * 🔜 1.8d", the billed turn's tag, then the band's 💳 row as it stood at
- * `clock.now`, when it was stamped, from `usage.plan` (decided 2026-10-19:
- * the account details beside the closing tag).  It stands after `indent`
- * and the width of 📊 🎤, so its 🔺🔖 is over the 📊 🎤 row's prompt; none
- * under the hide path `name.tag`, and each piece of the 💳 part hidden by
- * its own path, and no tag where the transcript wrote neither the
- * promptId nor the turn index. */
+/** The receipt's tag line, drawn as the start line is, so the two stack:
+ * "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02", the billed turn's tag and
+ * `clock.now`, when it was stamped.  It stands after `indent` and the width
+ * of 📊 🎤, so its 🔺🔖 is in the column of the rows' labels; none under the
+ * hide path `name.tag`. */
 export function receiptHead(st: Settings, fig: Dict, hide: readonly string[],
   indent = 0): Span[] {
   if (hidden(hide, "name.tag")) return [];
@@ -206,22 +196,14 @@ export function receiptHead(st: Settings, fig: Dict, hide: readonly string[],
   const i = receiptTurn(turns);
   const t = i < 0 ? null : turns[i];
   const text = turnHead(E_TURN_PAST, t ? t.prompt_id : "",
-    t ? t.turn_index : null, null, null);
-  const plan = (fig.usage as Dict | null)?.plan;
-  const account = accountLabel(st, planNum(plan, "session_pct"),
-    planNum(plan, "weekly_pct"),
-    untilReset(st, planNum(plan, "session_resets_at"), now),
-    untilReset(st, planNum(plan, "weekly_resets_at"), now), ymd(now),
-    hms(now)).filter((p) => !hidden(hide, p.path)).flatMap((p) => p.spans);
+    t ? t.turn_index : null, ymd(now), hms(now));
   const under = indent + visWidth(E_COSTLINE + " " + E_TURN + " ", st.widths);
-  // A transcript that wrote no tag still gets the 💳 part.
-  return [span(" ".repeat(under)), ...(text ? [span(text + "  ")] : []),
-    ...account];
+  return text ? [span(" ".repeat(under)), span(text)] : [];
 }
 
-/** The receipt as drawn at `cols` under `hide`: the head, on a line of its
- * own (decided 2026-10-19, stacking with the start line), and the rows
- * under it, on the band's fixed grid.  A hidden scope's row is left out.
+/** The receipt as drawn at `cols` under `hide`: the rows, on the band's
+ * fixed grid, and the head, the turn's tag line, drawn under them (decided
+ * 2026-10-19: under 📊 🎮, without the 💳 account details).  A hidden scope's row is left out.
  * `dim` draws every span dim, as the stamped receipt is drawn, its colours
  * kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,

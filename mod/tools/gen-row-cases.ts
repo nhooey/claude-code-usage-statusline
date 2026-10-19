@@ -22,8 +22,8 @@
 //             same joined with their escape codes
 //   receipt   one case a line: a cost document drawn at `cols` under
 //             `hide`, its 📦 🌿 from the status document `workspace` (or
-//             none); `head` and `rows` as spans, and `lines`, the
-//             head's then each row's, joined
+//             none); `rows` and `head` as spans, and `lines`, each
+//             row's then the head's, joined
 //   start     one case a line: a status document's start line, as `spans`
 //             and as `line`
 //
@@ -170,7 +170,7 @@ function cases(st: Settings): string {
       const got = drawReceipt(st, fig, c);
       receipt.push(JSON.stringify({ ...c, same, head: got.head.map(spanJson),
         rows: rowsJson(got.rows),
-        lines: [got.head, ...got.rows].map((r) => join(r)) }));
+        lines: [...got.rows, got.head].map((r) => join(r)) }));
     }
   }
   const list = (name: string, lines: string[]): string =>
