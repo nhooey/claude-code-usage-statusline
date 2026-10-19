@@ -377,7 +377,13 @@ E_PCT = "٪"            # percent sign — U+066A ARABIC PERCENT SIGN, not ASCII
                        # East_Asian_Width Wide — smaller as drawings, twice the
                        # width as cells.
 
-F_BLU = "\033[38;2;100;170;255m"           # blue        — project name
+F_BLU = "\033[38;2;100;170;255m"           # blue        — 📁 the cwd
+                                           #  on the 🎮 row, an agent's
+                                           #  name
+F_PROJ = "\033[38;2;255;140;90m"           # coral       — 📦 project
+                                           #  name, apart from 📁's
+                                           #  blue beside it (decided
+                                           #  2026-10-19)
 F_BLU2 = "\033[38;2;70;115;185m"           # dark blue   — pwd
 F_GRN = "\033[38;2;120;200;80m"            # green       — healthy / clean
 F_AMB = "\033[38;2;255;200;0m"             # amber       — *_WARN thresholds

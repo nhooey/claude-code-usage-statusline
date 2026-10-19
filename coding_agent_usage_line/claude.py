@@ -181,15 +181,19 @@ def detect_git() -> Git:
     modes apply globally to every rev in the call, so mixing them clobbers one.
     Hence the separate symbolic-ref.
     """
-    out = _git("rev-parse", "--show-toplevel", "--git-common-dir", "--short",
-               "HEAD")
+    # --path-format=absolute: from a subdirectory --git-common-dir is
+    # relative to the cwd ("../.git"), which _main_root would read against
+    # the toplevel and name the project "..".
+    out = _git("rev-parse", "--show-toplevel", "--path-format=absolute",
+               "--git-common-dir", "--short", "HEAD")
     if out is None:
         # Either not a repo, or a repo with no commits yet.  Distinguish them
         # cheaply so the empty-repo case still gets a project name.
         if _git("rev-parse", "--is-inside-work-tree") is None:
             return NO_GIT
         toplevel = _git("rev-parse", "--show-toplevel") or ""
-        common = _git("rev-parse", "--git-common-dir") or ""
+        common = _git("rev-parse", "--path-format=absolute",
+                      "--git-common-dir") or ""
         root, wt = _main_root(common, toplevel) if common else ("", False)
         return Git(True, "", False, toplevel, root, wt)
 

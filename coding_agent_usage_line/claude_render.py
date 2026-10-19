@@ -976,7 +976,7 @@ def render_where_group(proj: str, path: str, branch: str, git: Git,
     column 1, whose row 3 📨 and 🤏 fill: here they cost the pwd its columns
     only while a shell or a Monitor runs, and the fixed grid none.
     """
-    out = [Span(E_PROJ), Span(proj, "F_BLU"),
+    out = [Span(E_PROJ), Span(proj, "F_PROJ"),
            Span(" " * LEFT_GAP + E_DIR), Span(path, "F_BLU2")]
     if git.branch:
         out.append(Span(" " * LEFT_GAP))

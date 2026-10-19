@@ -538,7 +538,7 @@ export function renderThreadBackground(st: Settings, shells: number,
  * returns the true chrome width. */
 export function renderWhereGroup(proj: string, path: string, branch: string,
   git: Git, background: SpanLike = []): Span[] {
-  const out = [span(E_PROJ), span(proj, "F_BLU"),
+  const out = [span(E_PROJ), span(proj, "F_PROJ"),
     span(" ".repeat(LEFT_GAP) + E_DIR), span(path, "F_BLU2")];
   if (git.branch) {
     out.push(span(" ".repeat(LEFT_GAP)));

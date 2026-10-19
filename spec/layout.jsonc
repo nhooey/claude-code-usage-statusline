@@ -388,7 +388,13 @@
                            // East_Asian_Width Wide — smaller as drawings, twice the
                            // width as cells.
 
-  "F_BLU": "rgb(100, 170, 255)",               // blue        — project name
+  "F_BLU": "rgb(100, 170, 255)",               // blue        — 📁 the cwd
+                                               //  on the 🎮 row, an agent's
+                                               //  name
+  "F_PROJ": "rgb(255, 140, 90)",               // coral       — 📦 project
+                                               //  name, apart from 📁's
+                                               //  blue beside it (decided
+                                               //  2026-10-19)
   "F_BLU2": "rgb(70, 115, 185)",               // dark blue   — pwd
   "F_GRN": "rgb(120, 200, 80)",                // green       — healthy / clean
   "F_AMB": "rgb(255, 200, 0)",                 // amber       — *_WARN thresholds

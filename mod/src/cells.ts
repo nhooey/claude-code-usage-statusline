@@ -281,7 +281,7 @@ export function sessionLabel(ws: Workspace | null): Piece[] {
   const out = [piece("name.label", E_SESSION + " ")];
   if (!ws) return out;
   if (ws.project) {
-    out.push(piece("workspace.project", E_PROJ + ws.project + " ", "F_BLU"));
+    out.push(piece("workspace.project", E_PROJ + ws.project + " ", "F_PROJ"));
   }
   if (ws.branch) {
     out.push(ws.dirty

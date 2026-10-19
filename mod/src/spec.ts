@@ -377,7 +377,13 @@ export const E_PCT = "٪";            // percent sign — U+066A ARABIC PERCENT 
                                      // East_Asian_Width Wide — smaller as drawings, twice the
                                      // width as cells.
 
-export const F_BLU = "#64aaff";                          // blue        — project name
+export const F_BLU = "#64aaff";                          // blue        — 📁 the cwd
+                                                         //  on the 🎮 row, an agent's
+                                                         //  name
+export const F_PROJ = "#ff8c5a";                         // coral       — 📦 project
+                                                         //  name, apart from 📁's
+                                                         //  blue beside it (decided
+                                                         //  2026-10-19)
 export const F_BLU2 = "#4673b9";                         // dark blue   — pwd
 export const F_GRN = "#78c850";                          // green       — healthy / clean
 export const F_AMB = "#ffc800";                          // amber       — *_WARN thresholds

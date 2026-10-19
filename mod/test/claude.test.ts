@@ -192,7 +192,7 @@ test("detectGit: git's answers read as detect_git reads them", async () => {
   const answers = (table: { [args: string]: string | null }) =>
     async (args: readonly string[]) => table[args.join(" ")] ?? null;
   assert.deepEqual(await detectGit(answers({
-    "rev-parse --show-toplevel --git-common-dir --short HEAD":
+    "rev-parse --show-toplevel --path-format=absolute --git-common-dir --short HEAD":
       "/r/wt\n/r/.git\nabc1234",
     "symbolic-ref --short HEAD": "main",
     "diff --quiet HEAD": "",
@@ -200,7 +200,7 @@ test("detectGit: git's answers read as detect_git reads them", async () => {
     main_root: "/r", is_worktree: true });
   // Detached and dirty.
   assert.deepEqual(await detectGit(answers({
-    "rev-parse --show-toplevel --git-common-dir --short HEAD":
+    "rev-parse --show-toplevel --path-format=absolute --git-common-dir --short HEAD":
       "/r\n.git\nabc1234",
   })), { in_git: true, branch: "abc1234", dirty: true, toplevel: "/r",
     main_root: "/r", is_worktree: false });
@@ -208,7 +208,7 @@ test("detectGit: git's answers read as detect_git reads them", async () => {
   assert.deepEqual(await detectGit(answers({
     "rev-parse --is-inside-work-tree": "true",
     "rev-parse --show-toplevel": "/e",
-    "rev-parse --git-common-dir": ".git",
+    "rev-parse --path-format=absolute --git-common-dir": ".git",
   })), { in_git: true, branch: "", dirty: false, toplevel: "/e",
     main_root: "/e", is_worktree: false });
   assert.deepEqual(await detectGit(answers({})), { in_git: false,

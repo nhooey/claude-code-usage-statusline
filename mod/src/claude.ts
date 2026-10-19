@@ -63,14 +63,18 @@ export function _mainRoot(common: string, toplevel: string):
  * the branch is a symbolic-ref of its own; a detached HEAD shows its short
  * sha.  An empty repo still gets its project name. */
 export async function detectGit(git: GitRun): Promise<Git> {
-  const out = await git(["rev-parse", "--show-toplevel", "--git-common-dir",
-    "--short", "HEAD"]);
+  // --path-format=absolute: from a subdirectory --git-common-dir is
+  // relative to the cwd ("../.git"), which _mainRoot would read against the
+  // toplevel and name the project "..".
+  const out = await git(["rev-parse", "--show-toplevel",
+    "--path-format=absolute", "--git-common-dir", "--short", "HEAD"]);
   if (out === null) {
     if (await git(["rev-parse", "--is-inside-work-tree"]) === null) {
       return NO_GIT;
     }
     const toplevel = (await git(["rev-parse", "--show-toplevel"])) || "";
-    const common = (await git(["rev-parse", "--git-common-dir"])) || "";
+    const common = (await git(["rev-parse", "--path-format=absolute",
+      "--git-common-dir"])) || "";
     const [root, wt] = common ? _mainRoot(common, toplevel) : ["", false];
     return { in_git: true, branch: "", dirty: false, toplevel,
       main_root: root, is_worktree: wt };
