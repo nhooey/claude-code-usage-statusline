@@ -15,6 +15,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 import calib  # noqa: E402
+import claude  # noqa: E402
 import cases  # noqa: E402
 import cost  # noqa: E402
 import formatting  # noqa: E402
@@ -41,6 +42,9 @@ render.main()
 panel.main_panel()
 # Draws the committed cost figures documents, which run-cases.py writes.
 receipt.main()
+# The glue's small parts; the figures documents that pin it whole are
+# run-cases.py's.
+claude.main()
 records.main()
 # Last, since it sets TZ for the process.  Under /usr/bin/python3: its
 # expected epochs are 3.9's fromisoformat, quirks included.

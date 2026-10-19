@@ -1,0 +1,279 @@
+{
+ "ctx_window": [
+  {
+   "expected": 1000000,
+   "name": "",
+   "size": "1000000"
+  },
+  {
+   "expected": 200000,
+   "name": "Opus 5 (1M context)",
+   "size": "200000"
+  },
+  {
+   "expected": 1000000,
+   "name": "Opus 5 (1M context)",
+   "size": ""
+  },
+  {
+   "expected": 1000000,
+   "name": "claude-opus-5[1m]",
+   "size": ""
+  },
+  {
+   "expected": 1000000,
+   "name": "claude-opus-5-1000000",
+   "size": ""
+  },
+  {
+   "expected": 200000,
+   "name": "claude-sonnet-5",
+   "size": ""
+  },
+  {
+   "expected": 200000,
+   "name": "claude-sonnet-5",
+   "size": "0"
+  },
+  {
+   "expected": 1000000,
+   "name": "claude-opus-5[1m]",
+   "size": "-5"
+  },
+  {
+   "expected": 200000,
+   "name": "",
+   "size": "12a"
+  },
+  {
+   "expected": 200000,
+   "name": "",
+   "size": ""
+  },
+  {
+   "expected": 300000,
+   "name": "",
+   "size": "٣٠٠٠٠٠"
+  },
+  {
+   "expected": 400000,
+   "name": "claude-haiku-5",
+   "size": "400000"
+  }
+ ],
+ "main_root": [
+  {
+   "common": "/r/.git",
+   "expected": [
+    "/r",
+    false
+   ],
+   "toplevel": "/r"
+  },
+  {
+   "common": "/r/.git",
+   "expected": [
+    "/r",
+    true
+   ],
+   "toplevel": "/r/.claude/worktrees/w"
+  },
+  {
+   "common": ".git",
+   "expected": [
+    "/r",
+    false
+   ],
+   "toplevel": "/r"
+  },
+  {
+   "common": "/r/bare.git",
+   "expected": [
+    "/r",
+    false
+   ],
+   "toplevel": "/r"
+  },
+  {
+   "common": "/r/.git",
+   "expected": [
+    "/r",
+    false
+   ],
+   "toplevel": ""
+  },
+  {
+   "common": "../.git",
+   "expected": [
+    "/r/sub/..",
+    true
+   ],
+   "toplevel": "/r/sub"
+  },
+  {
+   "common": "/.git",
+   "expected": [
+    "",
+    true
+   ],
+   "toplevel": "/"
+  }
+ ],
+ "pct_str": [
+  {
+   "expected": "",
+   "v": null
+  },
+  {
+   "expected": "0",
+   "v": 0.0
+  },
+  {
+   "expected": "-0",
+   "v": {
+    "$float": "-0"
+   }
+  },
+  {
+   "expected": "15",
+   "v": 15.0
+  },
+  {
+   "expected": "15",
+   "v": 15
+  },
+  {
+   "expected": "0.38",
+   "v": 0.38
+  },
+  {
+   "expected": "3.81235",
+   "v": 3.8123456
+  },
+  {
+   "expected": "100",
+   "v": 100.0
+  },
+  {
+   "expected": "1e-05",
+   "v": 1e-05
+  },
+  {
+   "expected": "0.0001",
+   "v": 0.0001
+  },
+  {
+   "expected": "0.000123457",
+   "v": 0.00012345678
+  },
+  {
+   "expected": "1.23457e+08",
+   "v": 123456789.0
+  },
+  {
+   "expected": "1e+06",
+   "v": 999999.5
+  },
+  {
+   "expected": "999999",
+   "v": 999999.4
+  },
+  {
+   "expected": "2.5e-07",
+   "v": 2.5e-07
+  },
+  {
+   "expected": "0.45",
+   "v": 0.45000000000000007
+  },
+  {
+   "expected": "1.23456",
+   "v": 1.234565
+  },
+  {
+   "expected": "12.5",
+   "v": 12.5
+  },
+  {
+   "expected": "0.125",
+   "v": 0.125
+  },
+  {
+   "expected": "1e+16",
+   "v": 1e+16
+  },
+  {
+   "expected": "inf",
+   "v": {
+    "$float": "inf"
+   }
+  },
+  {
+   "expected": "nan",
+   "v": {
+    "$float": "nan"
+   }
+  },
+  {
+   "expected": "33.3333",
+   "v": 33.333333333
+  }
+ ],
+ "window_for": [
+  {
+   "ctx": [],
+   "expected": 200000,
+   "published": 0
+  },
+  {
+   "ctx": [
+    10,
+    150000
+   ],
+   "expected": 200000,
+   "published": 0
+  },
+  {
+   "ctx": [
+    150000,
+    200000
+   ],
+   "expected": 200000,
+   "published": 0
+  },
+  {
+   "ctx": [
+    200001
+   ],
+   "expected": 1000000,
+   "published": 0
+  },
+  {
+   "ctx": [
+    250000,
+    0
+   ],
+   "expected": 1000000,
+   "published": 0
+  },
+  {
+   "ctx": [
+    10
+   ],
+   "expected": 400000,
+   "published": 400000
+  },
+  {
+   "ctx": [
+    900000
+   ],
+   "expected": 200000,
+   "published": 200000
+  },
+  {
+   "ctx": [],
+   "expected": 1000000,
+   "published": 1000000
+  }
+ ]
+}

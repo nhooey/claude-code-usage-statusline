@@ -9,7 +9,8 @@
 import * as fs from "node:fs";
 import {
   _agentDir, _agentStatePath, _agentCachePath, _readAgentBytes, _recordsOf,
-  AGENT_CACHE_SETTLE_S, agentLabelOf, agentRecordsOf, cmpStr, cmpTuple,
+  AGENT_CACHE_SETTLE_S, agentLabelOf, agentOffsetsOf, agentRecordsOf, cmpStr,
+  cmpTuple,
   INBOX_MARKS, inboxDelivery, markedRecordsOf, pyJoin, pyJsonDumps,
   queuedSend, recordEqual, SEND_QUEUED_MARK, transcriptOf, tsEpoch, turnsOf,
   _settled, SETTLE_POLL_S, SETTLE_S,
@@ -186,20 +187,12 @@ export function writeAtomic(path: string, text: string): boolean {
  * the distinction buys.  A value must be an int, and Python's bool is one. */
 export function agentOffsets(transcript: string,
   stateDir: string): Map<string, number> | null {
-  let d: unknown;
   try {
-    d = JSON.parse(fs.readFileSync(_agentStatePath(transcript, stateDir),
-      "utf-8"));
+    return agentOffsetsOf(fs.readFileSync(
+      _agentStatePath(transcript, stateDir), "utf-8"));
   } catch {
     return null;
   }
-  if (!isDict(d)) return null;
-  const out = new Map<string, number>();
-  for (const [k, v] of Object.entries(d)) {
-    if (typeof v === "boolean") out.set(k, v ? 1 : 0);
-    else if (typeof v === "number" && Number.isInteger(v)) out.set(k, v);
-  }
-  return out;
 }
 
 /** Record, after a Stop has rendered, how far into each agent file the

@@ -285,6 +285,17 @@ const TURN_FIELDS = ["ts", "text", "fresh", "cache_write", "cache_read",
   "agent_id", "agent_name", "prompt_id", "turn_index", "lines_added",
   "lines_removed", "eta"];
 
+/** claude.py's encode_record(Turn): its str fields null when "". */
+export function encodeTurn(t: Turn): { [k: string]: unknown } {
+  const r = t as unknown as { readonly [k: string]: unknown };
+  const out: { [k: string]: unknown } = {};
+  for (const field of TURN_FIELDS) {
+    const v = r[field];
+    out[field] = v === "" && TURN_STRS.includes(field) ? null : v;
+  }
+  return out;
+}
+
 /** claude.py's decode_record(Turn, d).  Every field must be present: a
  * document missing one is from another schema, not a record with a
  * default.  A number is a number whichever way the document wrote it, so

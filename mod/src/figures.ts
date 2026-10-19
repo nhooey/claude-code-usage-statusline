@@ -1,9 +1,10 @@
-// The figures boundary: a figures document back as the records the
-// renderers take, and stage two of each readout drawn from it.
+// The figures boundary: the records written as a figures document and
+// read back, and stage two of each readout drawn from it.
 //
-// A port of the render half of "The figures boundary" in
-// coding_agent_usage_line/claude.py: decode_record and its tables, and
-// render_status_figures with the argv reading it does.  tests/README.md,
+// A port of "The figures boundary" in coding_agent_usage_line/claude.py:
+// encode_record and decode_record and their tables, and
+// render_status_figures with the argv reading it does.  The documents
+// themselves are built by claude.ts.  tests/README.md,
 // "Figures", is the document's schema.  The cost line's half lives beside
 // its own renderer.
 //
@@ -21,6 +22,7 @@ import type {
   CacheShares, Git, Limits, Payload, Transcript,
 } from "./claude_records.ts";
 import { renderStatus } from "./claude_render.ts";
+import { _naiveTimestamp, _strptimeStamp } from "./claude_calib.ts";
 import { isDict, pyIsDigit, pyIntDigits } from "./py.ts";
 import type { Dict } from "./py.ts";
 
@@ -118,6 +120,52 @@ function decodeRecord<T>(fields: Fields, d: unknown,
     else out[field] = v;
   }
   return out as T;
+}
+
+/** _stamp_epoch: a STAMP_FMT local time as the epoch time.mktime gives
+ * it, whole, or null for none.  The instant is datetime.timestamp's, which
+ * agrees with mktime but in a DST gap or fold. */
+export function stampEpoch(s: string): number | null {
+  if (!s) return null;
+  const n = _strptimeStamp(s);
+  return n === null ? null : Math.trunc(_naiveTimestamp(n));
+}
+
+/** encode_record: a record as a figures object, field for field, its
+ * missing values written null and its stamps as epochs. */
+function encodeRecord(fields: Fields, rec: object, missing: Dict = {}):
+  Dict {
+  const r = rec as Dict;
+  const out: Dict = {};
+  for (const [field, kind] of Object.entries(fields)) {
+    const v = r[field];
+    if (kind === "stamp") out[field] = stampEpoch(v as string);
+    else if (Object.hasOwn(missing, field) && v === missing[field]) {
+      out[field] = null;
+    } else if (kind === "str" && v === "") out[field] = null;
+    else out[field] = v;
+  }
+  return out;
+}
+
+export function encodePayload(p: Payload): Dict {
+  return encodeRecord(PAYLOAD, p);
+}
+
+export function encodeTranscript(t: Transcript): Dict {
+  return encodeRecord(TRANSCRIPT, t, TRANSCRIPT_MISSING);
+}
+
+export function encodeGit(g: Git): Dict {
+  return encodeRecord(GIT, g);
+}
+
+export function encodeLimits(l: Limits): Dict {
+  return encodeRecord(LIMITS, l);
+}
+
+export function encodeCacheShares(c: CacheShares): Dict {
+  return encodeRecord(CACHE_SHARES, c);
 }
 
 export function decodePayload(d: unknown): Payload {

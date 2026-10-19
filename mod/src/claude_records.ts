@@ -1429,6 +1429,21 @@ export function _agentStatePath(transcript: string, stateDir: string): string {
   return pyJoin(stateDir, "claude-agent-offsets-" + digest + ".json");
 }
 
+/** agentOffsets' reading of the file's text: the byte offset the last Stop
+ * reported each agent file up to, or null for a file that is not a JSON
+ * object.  A value must be an int, and Python's bool is one.  Throws on
+ * text that will not parse, which the reader takes as no file. */
+export function agentOffsetsOf(text: string): Map<string, number> | null {
+  const d: unknown = JSON.parse(text);
+  if (!isDict(d)) return null;
+  const out = new Map<string, number>();
+  for (const [k, v] of Object.entries(d)) {
+    if (typeof v === "boolean") out.set(k, v ? 1 : 0);
+    else if (typeof v === "number" && Number.isInteger(v)) out.set(k, v);
+  }
+  return out;
+}
+
 /** The id off an agent file's `agent-<id>.jsonl`, else "". */
 export function agentLabelId(path: string): string {
   const base = pyBasename(path);
