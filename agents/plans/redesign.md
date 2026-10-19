@@ -111,7 +111,7 @@ renderer draws all three readouts, so one path means the same everywhere.
 | Part | Values |
 |---|---|
 | scope | `account`, `turn`, `main`, `session`, `agent` |
-| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫), `chat` (prompt, reply, activity), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐) |
+| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫), `chat` (`prompt`, `reply`, `doing`), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `receipt`: the row's name, an agent's kind, the receipt's 📊) |
 
 ```
 --hide account              the 💳 row
@@ -335,8 +335,9 @@ Done 2026-10-19: the grid's rules joined it, 182 constants now. The grid's
 constants (`RIGHT_EDGE`, `LABEL_MIN`, `PANEL_CHROME`,
 `PANEL_COLUMNS_SHORT`, `CHROME_DEPTH`), 🔻 as `E_TURN_AHEAD` beside 🔺, the
 scopes (`GRID_SCOPES`), the `--hide` groups and their metrics
-(`HIDE_GROUPS`), each column's key, `--hide` path, width and gap
-(`GRID_CELLS`) and the order columns drop in (`DROP_ORDER`). A column's
+(`HIDE_GROUPS`, with `name` for the label's own parts), each column's key,
+`--hide` path, width and gap (`GRID_CELLS`) and the order columns drop in
+(`DROP_ORDER`). A column's
 width is a number where it is fixed and otherwise names its rule (`A_CTX_W`,
 `COST_W`, …), since `_PAD` and the marks' spacing move it; each language
 computes the rules. The label pieces' drop ranks stay with the rows that

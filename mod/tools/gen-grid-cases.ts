@@ -48,7 +48,9 @@ export const PROFILES: { readonly [name: string]: Env } = {
   tmux: { TMUX: "/tmp/tmux-501/default,1,0" },
 };
 
-const COLS = [200, 160, 150, 125, 100, 80, 60, 40];
+// Down past the drop: at 11 columns a row nested two deep has no room for
+// its label, and at 6 its chrome alone runs past the right edge.
+const COLS = [200, 160, 150, 125, 100, 80, 60, 40, 20, 11, 6];
 // Hide sets that reach each rule: a whole scope, a group on every row, one
 // metric on one row, label pieces, a column hidden on some rows only.
 const HIDES: readonly (readonly string[])[] = [

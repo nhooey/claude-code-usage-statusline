@@ -15,11 +15,12 @@
 // Settings, as claude_subagent_render.ts computes them.  Nothing here joins
 // spans into escape codes: that is the printing's job.
 import {
-  CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN, RIGHT_EDGE, VAL_W, VAL2_W,
+  CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN, PANEL_CHROME, RIGHT_EDGE,
+  VAL_W, VAL2_W,
 } from "./spec.ts";
-import { fitCols, seg, visWidth } from "./formatting.ts";
+import { seg, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
-import { span, spans, text, width } from "./spans.ts";
+import { cut, span, spans, width } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import {
   A_CLOCK_W, A_LIMIT_W, A_LIMIT_WEEK_W, A_RATE_W, A_SPLIT_W, aCtxW, aDiffW,
@@ -105,21 +106,21 @@ export function hidden(patterns: readonly string[], path: string): boolean {
   });
 }
 
-/** What Claude Code draws before a panel row: the pointer, and two more
- * columns per level of nesting.  A row outside the panel has none. */
+/** What Claude Code draws before a panel row: PANEL_CHROME columns at
+ * depth 1, blanks then the pointer, and two more blanks per level below
+ * it.  A row outside the panel has none. */
 export function chrome(depth: number | undefined): Span[] {
   if (depth === undefined) return [];
-  return [span("  ".repeat(depth) + "◯ ", null, true)];
+  return [span(" ".repeat(PANEL_CHROME - 2 + 2 * (depth - 1)) + "◯ ", null,
+    true)];
 }
 
 /** The row's label in `room` columns: the ranked pieces leave first,
- * lowest rank first, then what is left is cut.  A cut label is drawn
- * plain, as the mockup draws it. */
+ * lowest rank first, then what is left is cut, keeping its colours. */
 export function labelText(st: Settings, row: Row,
   patterns: readonly string[], room: number): Span[] {
   let pieces = row.label.filter((p) =>
-    !hidden(patterns, row.scope + "." + p.path) &&
-    !hidden(patterns, row.scope + "." + p.path.split(".")[0]));
+    !hidden(patterns, row.scope + "." + p.path));
   const ranks = [...new Set(pieces.map((p) => p.drop).filter((d) => d))]
     .sort((a, b) => a - b);
   const all = (): Span[] => pieces.flatMap((p) => p.spans);
@@ -128,10 +129,7 @@ export function labelText(st: Settings, row: Row,
     pieces = pieces.filter((p) => p.drop !== rank);
   }
   const out = all();
-  if (width(out, st.widths) > room) {
-    return [span(fitCols(st, text(out), room))];
-  }
-  return out;
+  return width(out, st.widths) > room ? cut(out, room, st.widths) : out;
 }
 
 /** Whether the row draws column `key`: it has a figure for it, and no
@@ -170,7 +168,10 @@ export function layout(st: Settings, rows: readonly Row[], cols: number,
 /** One row on the columns `keys`.  With `spill`, the label runs on over
  * the row's own leading blank columns, up to its first figure, instead of
  * stopping where the first column starts.  Every row ends RIGHT_EDGE
- * columns short of the terminal's edge. */
+ * columns short of the terminal's edge, and never runs past that: a label
+ * with no room draws nothing, not even a `…`, and a row whose chrome and
+ * cells are wider than the terminal leaves, at a width too narrow for the
+ * drop to help, is cut there like a label. */
 export function draw(st: Settings, row: Row, keys: readonly string[],
   cols: number, patterns: readonly string[], spill = true): Span[] {
   const cells: [number, Span[] | null][] = [];
@@ -188,6 +189,8 @@ export function draw(st: Settings, row: Row, keys: readonly string[],
     room += cells.shift()![0];
   }
   const right = cells.flatMap(([w, c]) => c ?? [span(" ".repeat(w))]);
-  return [...head, ...seg(st, room, labelText(st, row, patterns, room)),
+  const out = [...head, ...seg(st, room, labelText(st, row, patterns, room)),
     ...right];
+  const edge = cols - RIGHT_EDGE;
+  return width(out, st.widths) > edge ? cut(out, edge, st.widths) : out;
 }
