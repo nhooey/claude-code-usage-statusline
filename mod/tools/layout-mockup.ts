@@ -190,10 +190,12 @@ export function readouts(st: Settings, cols: number,
   const keys = grid === "fixed"
     ? layout(st, [...every, ...receipt, ...possible], cols, patterns)
     : layout(st, [...every, ...receipt, ...agents], cols, patterns, false);
-  // The band carries the turn and the session while the turn runs.  Once
-  // it ends the receipt carries them, and the band keeps the account and
-  // the main thread.
-  let band = phase === "running" ? every
+  // The band carries the turn and the session while the turn runs, first,
+  // nearest the receipt they become.  Once it ends the receipt carries
+  // them, and the band keeps the account and the main thread.
+  const lead = (r: Row) => r.scope === "turn" || r.scope === "session";
+  let band = phase === "running"
+    ? [...every.filter(lead), ...every.filter((r) => !lead(r))]
     : every.filter((r) => r.scope === "account" || r.scope === "main");
   if (phase === "running") {
     band = band.map((r) => r !== s.main ? r : runningMain(r));
