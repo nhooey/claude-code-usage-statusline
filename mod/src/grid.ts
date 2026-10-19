@@ -159,16 +159,18 @@ function colWidth(st: Settings, c: { key: string; width: number | string },
     : cellWidth(st, c.width);
 }
 
-/** 🧠's size squeezed into `room`: a growth's "+" goes, then an
- * estimate's "~", then a figure's one decimal, rounded half up, "-1.5k" to
- * "-2k". */
+/** 🧠's size squeezed into `room`: an estimate's "~" goes, then a
+ * figure's one decimal, rounded half up, "+5.6k" to "+6k", and a growth's
+ * "+" only where it still does not fit, "+316k" to "316k" (the "+" kept
+ * where it fits, asked 2026-10-20). */
 function squeeze(st: Settings, text: string, room: number): string {
-  let t = text.replace(/^\+/, "");
+  let t = text;
   if (visWidth(t, st.widths) > room) t = t.replace(/^~/, "");
-  const m = /^(-?)(\d+\.\d)(\D*)$/.exec(t);
+  const m = /^([+-]?)(\d+\.\d)(\D*)$/.exec(t);
   if (visWidth(t, st.widths) > room && m) {
     t = m[1] + String(Math.floor(Number(m[2]) + 0.5)) + m[3];
   }
+  if (visWidth(t, st.widths) > room) t = t.replace(/^\+/, "");
   return t;
 }
 

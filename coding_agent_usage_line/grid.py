@@ -145,15 +145,18 @@ def _col_width(c: dict, patterns: Sequence[str]) -> int:
 
 
 def _squeeze(text: str, room: int) -> str:
-    """🧠's size squeezed into `room`: a growth's "+" goes, then an
-    estimate's "~", then a figure's one decimal, rounded half up, "-1.5k"
-    to "-2k"."""
-    t = text[1:] if text.startswith("+") else text
+    """🧠's size squeezed into `room`: an estimate's "~" goes, then a
+    figure's one decimal, rounded half up, "+5.6k" to "+6k", and a growth's
+    "+" only where it still does not fit, "+316k" to "316k" (the "+" kept
+    where it fits, asked 2026-10-20)."""
+    t = text
     if fmt.vis_width(t) > room and t.startswith("~"):
         t = t[1:]
-    m = re.match(r"^(-?)(\d+\.\d)(\D*)$", t)
+    m = re.match(r"^([+-]?)(\d+\.\d)(\D*)$", t)
     if fmt.vis_width(t) > room and m:
         t = m.group(1) + str(math.floor(float(m.group(2)) + 0.5)) + m.group(3)
+    if fmt.vis_width(t) > room and t.startswith("+"):
+        t = t[1:]
     return t
 
 
