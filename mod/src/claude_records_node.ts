@@ -83,7 +83,7 @@ function isDir(p: string): boolean {
  * _agentFileReadings for `cache`. */
 export function agentRecords(transcript: string,
   seen: Set<unknown> | null = null,
-  etas: (readonly [number | null, number | null])[] | null = null,
+  etas: AgentEta[] | null = null,
   cache: AgentCache | null = null): AgentRec[] {
   return agentRecordsOf(_agentFileReadings(transcript, cache), seen, etas);
 }

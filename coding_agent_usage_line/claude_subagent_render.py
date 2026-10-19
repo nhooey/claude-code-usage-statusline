@@ -30,7 +30,6 @@ A_LIMIT_WEEK_W = A_LIMIT_W + 1
 # spends one more on its "+".  The cell's whole width, ⛳ measured on this
 # terminal, is grid.cell_width("A_ETA_W").
 A_ETA_FIG_W = 5
-A_SPIN_W = 1
 # 🧠's two fields, the size and its share of the agent's window: the status
 # line's cell, "🧠 124k 12٪", with its widest share, "100٪".  The cell's
 # whole width is grid.cell_width("A_CTX_W"), and 💾's, the status line's own
@@ -571,7 +570,9 @@ def agent_label(task, usage, meta, waiting_on=False, kids=0, kids_w=0, widths=No
     """
     widths = widths or {}
     status, kind = str(task.get("status") or ""), str(task.get("type") or "")
-    head = spans([seg(A_SPIN_W, render_spin(status, usage)),
+    # The spinner keeps no column of its own: blank, it wasted one before
+    # every row that reports no ETA (dropped 2026-10-19).
+    head = spans([render_spin(status, usage),
                   render_kind(str(meta.get("agentType") or ""), kind),
                   seg(A_STATE_W, render_phase(status, usage, waiting_on)), " "])
     out = [grid.Piece("name.kind", head, 0)]

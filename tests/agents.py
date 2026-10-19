@@ -658,6 +658,19 @@ def run(tmp):
           ], agents=[("agent-q", [agent_user(21, "p2"),
                                   agent_answer(22, "q1", 1, 0, 1, 1)])]))],
           [0, 1])
+    absorbed = dict(queued(12, "sent mid-answer"), reason="absorbed_mid_turn")
+    mid = session(tmp, "absorbed", [
+        prompt(10, "typed", "p1"),
+        answer(11, "m1", 10, 0, 100, 5),
+        absorbed,
+        tool_result(13, "p1"),
+        answer(14, "m2", 10, 0, 100, 5),
+    ])
+    check("a message Claude Code absorbed mid-answer is the same turn: its "
+          "prompt, its calls, and ⌛ from the prompt that opened it",
+          ([(t.text, t.calls) for t in sl.read_turns(mid)],
+           sl.read_transcript(mid, ()).turn_s),
+          ([("typed", 2)], sl.ts_epoch(ts(10))))
 
     print("--- the late row ---")
     # One agent under the first prompt that keeps billing after that

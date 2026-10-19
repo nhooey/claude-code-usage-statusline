@@ -178,6 +178,26 @@ test("📁 draws the project's root as 📦", () => {
   "~/📦/.claude/worktrees/w/mod");
 });
 
+test("🎤's ⛳ is the turn's own report alone; 🤖's takes a live agent's", () => {
+  const st = settings({});
+  const fig = document("status/01-baseline@196");
+  const opts = { home: HOME, rate: null, phase: "running" as const };
+  const now = ((fig.clock as Dict).now as number);
+  const text = (spans: readonly Span[] | undefined) =>
+    (spans ?? []).map((s) => s.text).join("");
+  const at = (eta: number[]) => {
+    const f = { ...fig, transcript: { ...(fig.transcript as Dict), eta,
+      agent_etas: [[now + 600, now]] } };
+    return inZone(f, () => bandRows(st, f, opts));
+  };
+  const none = at([]);
+  assert.equal(text(none.turn.cells.eta), "");
+  assert.match(text(none.main.cells.eta), /^⛳ +10m$/);
+  const own = at([now - 60, 180]);
+  assert.match(text(own.turn.cells.eta), /^⛳ +2m$/);
+  assert.match(text(own.main.cells.eta), /^⛳ +10m$/);
+});
+
 test("🎤 carries the model and 🛫, and a running tool's time in 🛫's column", () => {
   const st = settings({});
   const fig = document("status/01-baseline@196");

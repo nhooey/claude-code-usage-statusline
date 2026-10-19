@@ -627,6 +627,23 @@ def run(tmp):
           sorted(sl.read_transcript(et).agent_etas),
           sorted([(sl.ts_epoch(ts(12)) + 90.0, sl.ts_epoch(ts(16))),
                   (sl.ts_epoch(ts(11)) + 5400.0, sl.ts_epoch(ts(11)))]))
+    ended = lambda n: {"type": "user", "timestamp": ts(n),
+                       "promptSource": "system", "message": {
+                           "role": "user", "content":
+                           "<task-notification>\n<task-id>e</task-id>\n"
+                           "<status>killed</status>\n</task-notification>"}}
+    with open(et, "a") as fh:
+        fh.write(json.dumps(ended(14)) + "\n")
+    check("an agent the main transcript says ended before its last record "
+          "was resumed, and keeps its ETA",
+          len(sl.read_transcript(et).agent_etas), 2)
+    with open(et, "a") as fh:
+        fh.write(json.dumps(ended(20)) + "\n")
+    check("one it says ended after it, killed mid-answer, drops its ETA: "
+          "its file reads as still answering, and its last report pushed ⛳ "
+          "past its finish for half an hour",
+          sl.read_transcript(et).agent_etas,
+          ((sl.ts_epoch(ts(11)) + 5400.0, sl.ts_epoch(ts(11))),))
     left = lambda e, st: sr.eta_reading(e, int(st * 1000), NOW)[1]
     fam = lambda own_p: [
         (task("p", startTime=int((NOW - 600) * 1000)), NS(eta=own_p), {}, {}),
@@ -882,10 +899,10 @@ def run(tmp):
                for r in (rows["a1"], rows["a2"])}), 1)
     check("no sidecar: the task's kind, and the transcript's model where "
           "the payload has none",
-          # The blank spinner of a row not running, then ⚫, and its ✅ with
-          # the time since it finished, a minute after its last record, in
-          # the 🛫 column.
-          (rows["a2"].startswith(" \U0001F465⚫ Zephyr"),
+          # No spinner on a row not running, and no blank for it, then ⚫,
+          # and its ✅ with the time since it finished, a minute after its
+          # last record, in the 🛫 column.
+          (rows["a2"].startswith("\U0001F465⚫ Zephyr"),
            "\U0001F916O⁵\U0001F3C3  ✅" in rows["a2"]),
           (True, True))
     check("a finished agent shows no rate", "\U0001F6EB" in rows["a2"], False)
@@ -903,7 +920,7 @@ def run(tmp):
           re.sub(r" {2,}", "  ", rows["bash-1"]),
           # No spinner, 🟢 and no mode: a shell has no transcript to count
           # in or to say who has the floor.
-          " \U0001F41A\U0001F7E2 npm test  npm test --watch  ⌛ 13m")
+          "\U0001F41A\U0001F7E2 npm test  npm test --watch  ⌛ 13m")
     label = lambda name, act, room, branch="": unpainted(sr.grid.label_text(
         sr.grid.Row("agent", sr.agent_label(
             task("x", name=name, label=act, status="completed"),
@@ -915,19 +932,19 @@ def run(tmp):
               ("", "Reading the plan"), ("", ""),
               ("Marigold", "Review the plan"))],
           # The description stands in for a missing name.
-          [" \U0001F465⚫ Marigold  Reading the plan",
-           " \U0001F465⚫ Marigold",
-           " \U0001F465⚫ Review the plan  Reading the plan",
-           " \U0001F465⚫ Review the plan",
-           " \U0001F465⚫ Marigold"])
+          ["\U0001F465⚫ Marigold  Reading the plan",
+           "\U0001F465⚫ Marigold",
+           "\U0001F465⚫ Review the plan  Reading the plan",
+           "\U0001F465⚫ Review the plan",
+           "\U0001F465⚫ Marigold"])
     check("the label is cut from the end: the activity gives way first, "
           "then the branch, then the name",
           [label("Marigold", "Reading the plan, slowly", w, "fix-inbox")
            for w in (50, 30, 20, 12)],
-          [" \U0001F465⚫ Marigold  \U0001F33Ffix-inbox  Reading the plan, sl…",
-           " \U0001F465⚫ Marigold  \U0001F33Ffix-inbox  …",
-           " \U0001F465⚫ Marigold  \U0001F33Ff…",
-           " \U0001F465⚫ Marig…"])
+          ["\U0001F465⚫ Marigold  \U0001F33Ffix-inbox  Reading the plan, slo…",
+           "\U0001F465⚫ Marigold  \U0001F33Ffix-inbox  R…",
+           "\U0001F465⚫ Marigold  \U0001F33Ffi…",
+           "\U0001F465⚫ Marigo…"])
     check("a row's depth, the chrome Claude Code indents it by, is its own "
           "spawnDepth where the panel's tree gives none; a task with no "
           "sidecar is a root",
@@ -1096,10 +1113,12 @@ def run(tmp):
             "tasks": [task("b1"), task("b2", contextWindowSize=None,
                                        status="completed")]}
     irows = render(sl, ipay)[1]
+    # The spinner keeps no column (2026-10-19), so past it.
+    unspun = lambda r: r.lstrip(sl.E_SPIN)
     check("📨 and 🤏 on the row that has them, and a blank of their width on "
           "the row that does not, so the columns after them hold",
           ("\U0001F4E81 " in irows["b1"], "\U0001F90F1" in irows["b1"],
-           sl.vis_width(irows["b1"][:irows["b1"].index("Marigold")])
+           sl.vis_width(unspun(irows["b1"])[:unspun(irows["b1"]).index("Marigold")])
            == sl.vis_width(irows["b2"][:irows["b2"].index("Marigold")]),
            sl.vis_width(irows["b1"][:irows["b1"].index("⌛")])
            == sl.vis_width(irows["b2"][:irows["b2"].index("⌛")])),

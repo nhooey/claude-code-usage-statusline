@@ -164,6 +164,14 @@ function threadEta(st: Settings, tr: Transcript, now: number): Span[] {
   return CELLS.eta(st, shown, tr.turn_s || null, now, signedOff);
 }
 
+/** 🎤's ⛳: the turn's own last report alone, and nothing before the turn
+ * has one; 🤖's (threadEta) is what live agents push out (asked
+ * 2026-10-19). */
+function turnEta(st: Settings, tr: Transcript, now: number): Span[] {
+  if (!tr.start_s || !tr.eta.length) return [];
+  return CELLS.eta(st, tr.eta, tr.turn_s || null, now, tr.eta[1] === 0);
+}
+
 /** The working directory under `home` as "~", as render_status shows it. */
 function homeDir(dir: string, home: string): string {
   if (dir === home) return "~";
@@ -243,7 +251,7 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
     model: CELLS.model(st, pay.model_id || pay.model, pay.effort),
     rate: toolCell(st, tr, now) ??
       CELLS.rate(st, opts.phase === "running" ? opts.rate : null),
-    eta: threadEta(st, tr, now),
+    eta: turnEta(st, tr, now),
   };
   if (!raw) return { scope: "turn", label: turnLabel(""), cells };
   const t = decodeTurn(raw);

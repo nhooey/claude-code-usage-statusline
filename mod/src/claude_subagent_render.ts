@@ -65,7 +65,6 @@ export const A_LIMIT_WEEK_W = A_LIMIT_W + 1;
 // ⛳ and five for the figure: durFmt's widest is four, and an overrun
 // spends one more on its "+".
 export const A_ETA_FIG_W = 5;
-export const A_SPIN_W = 1;
 // 🧠's share of the agent's window at its widest, "100٪".
 export const A_CTX_PCT_W = 4;
 // The 🤖 state trades its rate for how long the agent has been quiet; see
@@ -751,7 +750,8 @@ export function agentLabel(st: Settings, task: Dict, usage: unknown,
   widths0: PanelWidths | null = null): Piece[] {
   const widths: Partial<PanelWidths> = widths0 ?? {};
   const status = strOr(task.status), kind = strOr(task.type);
-  const head = spans([seg(st, A_SPIN_W, renderSpin(status, usage)),
+  // The spinner keeps no column of its own (dropped 2026-10-19).
+  const head = spans([renderSpin(status, usage),
     renderKind(strOr(pyGet(meta, "agentType")), kind),
     seg(st, A_STATE_W, renderPhase(status, usage, waitingOn)), " "]);
   const out: Piece[] = [{ path: "name.kind", spans: head, drop: 0 }];

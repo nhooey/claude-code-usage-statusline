@@ -565,8 +565,9 @@ def agent_records(transcript: str, seen: Optional[set] = None,
 
     `etas` is an out-parameter, because this walk already parses every
     line: for every agent still answering with a live ETA, (finish epoch,
-    its last record's epoch) — see live_eta — which the status line's ⛳
-    takes the latest of.
+    its last record's epoch, its id) — see live_eta — which the status
+    line's ⛳ takes the latest of, once read_transcript has dropped those
+    the main transcript says ended.
 
     Each file's own part of this is _read_agent_file's, and is kept between
     renders by _agent_file_readings; the dedup and the clock cut above are
@@ -594,7 +595,7 @@ def agent_records(transcript: str, seen: Optional[set] = None,
                                 lines_removed=removed))
             added = removed = 0
         if etas is not None and got["eta"] is not None:
-            etas.append(tuple(got["eta"]))
+            etas.append(tuple(got["eta"]) + (agent_label_id(path),))
         cuts, cut = [], float("-inf")
         for a in out[first:]:
             cut = max(cut, a.epoch) if a.epoch is not None else cut
@@ -1195,6 +1196,22 @@ def scan_agent_end(r: dict, ends: Dict[str, float]) -> None:
         ends[aid] = t
 
 
+def live_agent_etas(records: Sequence[dict], etas: Sequence[tuple]
+                    ) -> Tuple[Tuple[float, Optional[float]], ...]:
+    """The agents' ETAs, (finish, last record, id) as agent_records gives
+    them, as (finish, last record), less each agent the main transcript says
+    ended after its last record (scan_agent_end).  A killed agent's file
+    stops mid-answer, so it reads as still answering, and its last report
+    went on pushing ⛳ past its finish for half an hour (2026-10-19).  An
+    entry with no id is kept."""
+    ends: Dict[str, float] = {}
+    for r in records:
+        scan_agent_end(r, ends)
+    return tuple((e[0], e[1]) for e in etas
+                 if not (len(e) > 2 and e[2] in ends and e[1] is not None
+                         and ends[e[2]] >= e[1]))
+
+
 def net_tool_seconds(spans: Sequence[Tuple[float, float]],
                      blocked: Sequence[Tuple[float, float]]) -> float:
     """Seconds inside a tool that were not waiting on someone else.
@@ -1673,6 +1690,7 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         own_etas = []                   # and take the agents' ETAs off it too
         agents = agent_records(path, etas=own_etas)
         agent_etas = tuple(agent_etas) + tuple(own_etas)
+    agent_etas = live_agent_etas(records, agent_etas)
     for a in agents:
         fresh += a.fresh
         cwrite += a.cache_write
@@ -1956,6 +1974,12 @@ def queued_text(r: dict) -> Optional[str]:
     if r.get("type") != "queue-operation":
         return None
     if r.get("operation") not in QUEUE_DELIVERED:
+        return None
+    # A message handed over while the answer runs is the same turn: Claude
+    # Code stamps it "absorbed_mid_turn", and its tool results carry the
+    # turn's promptId.  Opening a turn there restarted ⌛ and swapped 🎤's
+    # prompt at every message the user sent mid-answer (2026-10-19).
+    if r.get("reason") == "absorbed_mid_turn":
         return None
     c = r.get("content")
     # The same shape rule as opens_turn's TYPED branch — not as opens_turn as a

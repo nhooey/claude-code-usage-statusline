@@ -1172,6 +1172,9 @@ export const QUEUE_DELIVERED: readonly unknown[] =
 export function queuedText(r: Rec): string | null {
   if (pyGet(r, "type") !== "queue-operation") return null;
   if (!QUEUE_DELIVERED.includes(pyGet(r, "operation"))) return null;
+  // A message handed over while the answer runs is the same turn; the
+  // Python's comment has why.
+  if (pyGet(r, "reason") === "absorbed_mid_turn") return null;
   const c = pyGet(r, "content");
   return typeof c === "string" && c.length > 0 && !c.startsWith("<")
     ? c : null;
@@ -1275,7 +1278,7 @@ export interface AgentReading {
 export function agentRecordsOf(
   files: readonly (readonly [string, AgentReading])[],
   seen: Set<unknown> | null = null,
-  etas: (readonly [number | null, number | null])[] | null = null,
+  etas: AgentEta[] | null = null,
 ): AgentRec[] {
   seen = seen ?? new Set();
   const out: AgentRec[] = [];
@@ -1298,7 +1301,9 @@ export function agentRecordsOf(
         lines_removed: removed });
       added = removed = 0;
     }
-    if (etas !== null && got.eta !== null) etas.push([...got.eta]);
+    if (etas !== null && got.eta !== null) {
+      etas.push([got.eta[0], got.eta[1], agentLabelId(path)]);
+    }
     const cuts: number[] = [];
     let cut = -Infinity;
     for (const a of out.slice(first)) {
@@ -1583,7 +1588,21 @@ export function markedRecordsOf(data: Uint8Array,
 // The status line's pass over the transcript.
 // ════════════════════════════════════════════════════════════════════════════
 
-export type AgentEta = readonly [number | null, number | null];
+/** An agent's (finish, last record), and as agentRecordsOf gives it, its
+ * id after them. */
+export type AgentEta = readonly [number | null, number | null, string?];
+
+/** The agents' ETAs as (finish, last record), less each agent the main
+ * transcript says ended after its last record; the Python's
+ * live_agent_etas has why. */
+export function liveAgentEtas(records: readonly Rec[],
+  etas: readonly AgentEta[]): AgentEta[] {
+  const ends = new Map<string, number>();
+  for (const r of records) scanAgentEnd(r, ends);
+  return etas.filter(([, last, aid]) => !(aid !== undefined &&
+    ends.has(aid) && last !== null && ends.get(aid)! >= last))
+    .map(([f, last]) => [f, last]);
+}
 
 /** +adds/-removes one record's tool result wrote, counted the way a diff
  * is: over the `structuredPatch` an Edit's result carries, one hunk line at
@@ -1668,6 +1687,7 @@ export function agentDiff(records: readonly Rec[]): [number, number] {
 export function transcriptOf(records: readonly Rec[],
   agents: readonly AgentRec[], agent_etas: readonly AgentEta[] = [],
   now: number | null = null): Transcript {
+  agent_etas = liveAgentEtas(records, agent_etas);
   const reqs = _dedupeUsage(records);
   let fresh = 0, cwrite = 0, cread = 0, down = 0;
   // The main thread's own parts, its requests and its compactions, in one
