@@ -38,6 +38,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.dirname(HERE)
@@ -241,16 +242,322 @@ def jsonl(records):
     return "".join(json.dumps(r) + "\n" for r in records).encode("utf-8")
 
 
-SECTIONS = (section_basics,)
+# ════════════════════════════════════════════════════════════════════════════
+# Hand-made transcripts, for what the corpus never says.
+# ════════════════════════════════════════════════════════════════════════════
+
+BASE = 1787000000           # 2026-08-17T...Z; every stamp is an offset from it
+
+
+def stamp(sec):
+    """A transcript stamp `sec` seconds after BASE, with milliseconds."""
+    whole = int(sec)
+    return "%s.%03dZ" % (time.strftime("%Y-%m-%dT%H:%M:%S",
+                                       time.gmtime(BASE + whole)),
+                         int(round((sec - whole) * 1000)))
+
+
+def prompt(sec, text, **kw):
+    """A typed prompt, the record opens_turn() takes."""
+    return dict({"type": "user", "userType": "external",
+                 "promptSource": "typed", "timestamp": stamp(sec),
+                 "message": {"content": text}}, **kw)
+
+
+def asst(sec, mid, text=None, tools=(), usage=None, stop=None,
+         model="claude-opus-5", rid=None, **kw):
+    """An assistant record: a text block, tool calls as (id, name), and
+    usage when it bills."""
+    content = []
+    if text is not None:
+        content.append({"type": "text", "text": text})
+    content += [{"type": "tool_use", "id": i, "name": n} for i, n in tools]
+    m = {"id": mid, "model": model, "content": content}
+    if usage is not None:
+        m["usage"] = dict(zip(("input_tokens", "cache_creation_input_tokens",
+                               "cache_read_input_tokens", "output_tokens"),
+                              usage))
+    if stop is not None:
+        m["stop_reason"] = stop
+    r = {"type": "assistant", "timestamp": stamp(sec), "message": m}
+    if usage is not None:
+        r["requestId"] = rid or ("req-" + str(mid))
+    return dict(r, **kw)
+
+
+def result(sec, *ids, **kw):
+    """A tool result answering the calls `ids`."""
+    return dict({"type": "user", "timestamp": stamp(sec),
+                 "message": {"content": [{"type": "tool_result",
+                                          "tool_use_id": i} for i in ids]}},
+                **kw)
+
+
+def note(sec, body, attach=False, **kw):
+    """A <task-notification>, as an agent's attachment or a woken thread's
+    user record."""
+    if attach:
+        return dict({"type": "attachment", "timestamp": stamp(sec),
+                     "attachment": {"type": "queued_command",
+                                    "prompt": body}}, **kw)
+    return dict({"type": "user", "timestamp": stamp(sec),
+                 "message": {"content": [{"type": "text", "text": body}]}},
+                **kw)
+
+
+def queue(sec, op, content=None):
+    r = {"type": "queue-operation", "operation": op, "timestamp": stamp(sec)}
+    if content is not None:
+        r["content"] = content
+    return r
+
+
+ETA = "skills/coding-agent-usage-line-report-eta: ETA "
+FLAG = "⛳ "
+
+
+def handmade():
+    """Write the hand-made transcripts; their paths, by name."""
+    files = {}
+
+    def put(name, records):
+        files[name] = write_bytes(name, jsonl(records))
+
+    put("eta.jsonl", [
+        prompt(0, "go"),
+        asst(10, "m1", "Plan.\n" + FLAG + ETA + "4m"),
+        asst(20, "m2", "`\U0001F3C1 " + ETA + "6h30m`"),
+        asst(30, "m3", "**" + ETA + "1.5 h — 3 lanes left**"),
+        asst(40, "m4", ETA + "<number><s|m|h>"),
+        asst(50, "m5", "one\r\n" + FLAG + ETA + "5m\r\nmore"),
+        asst(60, "m6", FLAG + ETA + "٤m"),
+        asst(70, "m7", FLAG + ETA + "1m\n" + FLAG + ETA + "2m\n"),
+        result(75, "x", message={"content": [
+            {"type": "tool_result", "tool_use_id": "x",
+             "content": FLAG + ETA + "9m"}]}),
+        asst(76, "m7b", "⛳" + ETA + "10 s and more"),
+        asst(77, "m7c", ETA + "2h 15m"),
+        asst(78, "m7d", ETA + "5m - x\n" + ETA + "6m —x"),
+        asst(80, "m8", "done " + FLAG + ETA + "0s", stop="end_turn"),
+        asst(81, "m8b", FLAG + ETA + "0s", stop="end_turn"),
+        prompt(100, "again"),
+        asst(110, "m9", FLAG + ETA + "3m", tools=[("t1", "Bash")]),
+        asst(111, "m9", None, stop="end_turn"),
+        prompt(200, "third"),
+        asst(210, "m10", FLAG + ETA + "2m"),
+        asst(220, "m11", "bye", stop="end_turn"),
+        prompt(300, "fourth"),
+        asst(310, "m12", FLAG + ETA + "0s"),
+        asst(320, "m13", "more work"),
+        {"type": "assistant", "message": {"id": "m14", "content": [
+            {"type": "text", "text": FLAG + ETA + "7m"}]}},
+        asst(330, "m15", 5),
+        {"type": "system", "subtype": "turn_duration",
+         "timestamp": stamp(340)},
+        queue(350, "remove", "queued prompt"),
+        asst(360, "m16", FLAG + ETA + "1m", stop="end_turn"),
+    ])
+    put("tools.jsonl", [
+        prompt(0, "tools"),
+        asst(10, "a", None, tools=[("a1", "Bash"), ("a2", "Read"),
+                                   ("a3", "AskUserQuestion"),
+                                   ("a4", "Agent"), ("", "Bash"),
+                                   (7, "Task")]),
+        {"type": "assistant", "timestamp": stamp(11), "message": {
+            "content": [{"type": "tool_use", "id": "a5"}, "junk", 3]}},
+        result(15, "a2"),
+        result(12, "a1"),
+        result(40, "a3"),
+        result(100, "a4"),
+        result(10, 7),
+        result(20, "zz"),
+        result(30, "a5"),
+        asst(120, "b", None, tools=[("b1", "Bash"), ("b2", "Task"),
+                                    ("b3", "ExitPlanMode")]),
+        {"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "id": "c1", "name": "Bash"}]}},
+        result(130, "b3"),
+        {"type": "user", "timestamp": "bad", "message": {"content": [
+            {"type": "tool_result", "tool_use_id": "b1"}]}},
+        prompt(200, "next"),
+        asst(205, "d", None, tools=[("d1", "Bash"), ("d2", "AskUserQuestion")]),
+        result(215, "d1"),
+    ])
+    put("background.jsonl", [
+        prompt(0, "bg"),
+        result(1, "x", toolUseResult={"backgroundTaskId": "b1"}),
+        result(2, "x", toolUseResult={"backgroundTaskId": 5}),
+        result(3, "x", toolUseResult={"taskId": "m1", "timeoutMs": 1000}),
+        result(4, "x", toolUseResult={"taskId": "m2"}),
+        result(5, "x", toolUseResult={"task_id": "b1", "message": "ok"}),
+        result(6, "x", toolUseResult={"task": {"task_id": "m1",
+                                               "status": "completed"}}),
+        result(7, "x", toolUseResult={"backgroundTaskId": "b2"}),
+        result(8, "x", toolUseResult={"backgroundTaskId": "b3"}),
+        result(9, "x", toolUseResult={"taskId": "m3", "timeoutMs": None}),
+        note(10, "<task-notification><task-id> b2 </task-id>"
+                 "<status>completed</status></task-notification>",
+             attach=True),
+        {"type": "user", "timestamp": stamp(11), "message": {"content": [
+            {"type": "text", "text": "<task-notification><task-id>b3"},
+            {"type": "text", "text": "</task-id><status>killed</status>"
+                                     "</task-notification>"}]}},
+        note(12, "<task-notification><task-id>m3</task-id>event"
+                 "</task-notification>"),
+        result(13, "x", toolUseResult={"agentId": "ag1",
+                                       "status": "completed"}),
+        result(14, "x", toolUseResult={"agentId": "ag2",
+                                       "status": "running"}),
+        note(15, "<task-notification><task-id>ag3</task-id>"
+                 "<status>failed</status></task-notification>"),
+        result(9, "x", toolUseResult={"agentId": "ag1", "status": "killed"}),
+        result(20, "x", toolUseResult={"agentId": "ag1",
+                                       "status": "stopped"}),
+        {"type": "user", "message": {"content":
+                                     "<task-notification><task-id>ag4"
+                                     "</task-id><status>x</status>"}},
+        prompt(30, "<task-notification><task-id>ag5</task-id><status>"
+                   "completed</status></task-notification>",
+               promptSource="system"),
+        result(31, "x", toolUseResult={"task": {"task_id": "m3",
+                                                "status": "running"}}),
+        result(32, "x", toolUseResult={"backgroundTaskId": ""}),
+    ])
+    put("queue.jsonl", [
+        queue(0, "enqueue", "typed while busy"),
+        queue(1, "remove", "typed while busy"),
+        queue(2, "enqueue", "<task-notification>x</task-notification>"),
+        queue(3, "dequeue", "<task-notification>x</task-notification>"),
+        queue(4, "enqueue"),
+        queue(5, "popAll", ""),
+        queue(6, "clear", "x"),
+        queue(7, "remove"),
+        queue(8, "popAll", "two\nlines"),
+        {"type": "user", "userType": "external", "timestamp": stamp(9),
+         "message": {"content": "no source"}},
+        prompt(10, "<task-notification>wake</task-notification>",
+               promptSource="system", isMeta=True),
+        prompt(11, "meta", isMeta=True),
+        prompt(12, "queued", promptSource="queued"),
+        prompt(13, "summary", isCompactSummary=True),
+        prompt(14, ""),
+        prompt(15, "internal", userType="internal"),
+        prompt(16, "<command-name>/x</command-name>"),
+        {"type": "user", "userType": "external", "timestamp": stamp(17),
+         "promptSource": None, "message": {"content": "null source"}},
+        {"type": "system", "subtype": "compact_boundary",
+         "timestamp": stamp(18), "compactMetadata": {"preTokens": 1000}},
+        {"type": "system", "subtype": "stop_hook_summary",
+         "timestamp": stamp(19)},
+        {"type": "progress", "timestamp": stamp(20)},
+        asst(21, "q1", "x", stop="end_turn"),
+    ])
+    return files
+
+
+def section_threads(files):
+    s = Section("threads")
+    paths = corpus() + sorted(files.values())
+
+    for p in paths:
+        recs = list(cr._records(p))
+        s.raw("classify", [p], [[
+            cr.opens_turn(r), cr.queued_text(r), cr.queue_step(r),
+            cr.is_compaction(r), cr.turn_start_text(r), cr.is_work(r),
+            cr.ends_turn(r), cr.notification_text(r)] for r in recs])
+
+        for now in (None, BASE + 1000.0):
+            pending, tools, blocked = {}, [], []
+            for r in recs:
+                cr.scan_tool_spans(r, pending, tools, blocked)
+            if now is not None:
+                cr.open_tool_spans(pending, now, tools, blocked)
+            s.raw("scan_tool_spans", [p, now], {
+                "pending": [[k, t, n] for k, (t, n) in pending.items()],
+                "tools": tools, "blocked": blocked})
+        blocked = []
+        s.raw("tool_spans", [p], [cr.tool_spans(recs, blocked), blocked])
+
+        open_ = {}
+        ends = {}
+        for r in recs:
+            cr.scan_background(r, open_)
+            cr.scan_agent_end(r, ends)
+        s.raw("scan_background", [p], list(open_.items()))
+        s.raw("scan_agent_end", [p], list(ends.items()))
+
+        state = cr.new_eta_state()
+        trace = []
+        for r in recs:
+            cr.live_eta(r, state)
+            trace.append(list(state))
+        s.raw("live_eta", [p], trace)
+        s.raw("eta_report", [p], cr.eta_report(recs))
+
+        state, spans, trace = [None, None], [], []
+        for r in recs:
+            cr.agent_span(r, state, spans)
+            trace.append([list(state), list(spans)])
+        cr.close_agent_span(state, spans)
+        trace.append([list(state), list(spans)])
+        s.raw("agent_span", [p], trace)
+
+        # The clocks over this file's own spans, cut at every billed stamp.
+        work = [w for w in trace[-1][1]]
+        tools, waiting = cr.tool_spans(recs), []
+        cr.tool_spans(recs, waiting)
+        s.case("thread_clock", work, tools, waiting)
+        cuts = sorted(t for t in (cr.ts_epoch(r.get("timestamp") or "")
+                                  for r in cr._dedupe_usage(recs))
+                      if t is not None)
+        s.case("split_clock", work, tools, waiting, cuts)
+        s.case("turn_clock", tools, waiting, BASE + 5.0, BASE + 120.0)
+
+    for e in ((), (BASE + 0.0, 0.0), (BASE + 10.0, 240.0), (1.5, 2.25)):
+        s.case("eta_finish", e)
+    texts = ["x\n" + FLAG + ETA + "3m", FLAG + ETA + "3m\n\n",
+             "  " + ETA + "45s  ", "\t*`" + FLAG + ETA + "2.5m`*",
+             ETA + "1h–2 left", ETA + "1h – 2 left",
+             ETA + "1h ", "pre " + ETA + "1m", ETA + "1m\r",
+             ETA + "1m1s1h", ETA + "3x", ETA + "３m", ETA + "1.m",
+             FLAG + FLAG + ETA + "1m", ETA + "1 m"]
+    for t in texts:
+        s.case("eta_report", [{"type": "assistant", "timestamp": stamp(1),
+                               "message": {"content": [{"type": "text",
+                                                        "text": t}]}}])
+    s.case("eta_report", [5, {"type": "user"}, {"type": "assistant",
+                                                "message": {"content": "s"}}])
+
+    spans = [[], [(0, 10)], [(5, 5), (3, 1)], [(0, 10), (5, 20), (30, 40)],
+             [(30, 40), (0, 10), (10, 15), (14, 16)],
+             [(0.1, 0.3), (0.2, 0.7), (1e9 + 0.1, 1e9 + 0.35)]]
+    for sp in spans:
+        s.case("union_seconds", sp)
+        s.case("net_tool_seconds", sp, sp[:1])
+    work = [(0, 100), (150, 200)]
+    tools = [(10, 30), (20, 50), (160, 170)]
+    waiting = [(40, 60), (165, 168)]
+    s.case("thread_clock", work, tools, waiting)
+    for cuts in ([], [0], [25, 45, 200], [float("-inf"), 30],
+                 [30, 30, 60], [500], [-5, 1000], [float("-inf")]):
+        s.case("split_clock", work, tools, waiting, cuts)
+    for t0, t1 in ((None, 10), (10, None), (50, 50), (60, 40), (0, 100),
+                   (25, 165), (-10, 1000)):
+        s.case("turn_clock", tools, waiting, t0, t1)
+    return s
+
+
+SECTIONS = (section_basics, section_threads)
 
 
 def main():
     shutil.rmtree(OUT, ignore_errors=True)
     os.makedirs(INPUTS)
     total = 0
+    files = handmade()
     try:
         for make in SECTIONS:
-            s = make()
+            s = make() if make is section_basics else make(files)
             n = s.write()
             total += n
             print("%-12s %5d cases" % (s.name, n))

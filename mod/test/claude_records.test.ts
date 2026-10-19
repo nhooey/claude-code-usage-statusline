@@ -65,6 +65,64 @@ const RUN: Record<string, (c: Case) => unknown> = {
   _price: (c) => cr._price(c.args[0]),
   _usd: (c) => cr._usd(c.args[0], c.args[1], c.args[2], c.args[3],
     c.args[4]),
+
+  classify: (c) => cr._records(c.args[0]).map((r) => [
+    cr.opensTurn(r), cr.queuedText(r), cr.queueStep(r), cr.isCompaction(r),
+    cr.turnStartText(r), cr.isWork(r), cr.endsTurn(r),
+    cr.notificationText(r)]),
+  scan_tool_spans: (c) => {
+    const pending: cr.Pending = new Map();
+    const tools: cr.Span[] = [], blocked: cr.Span[] = [];
+    for (const r of cr._records(c.args[0])) {
+      cr.scanToolSpans(r, pending, tools, blocked);
+    }
+    if (c.args[1] !== null) {
+      cr.openToolSpans(pending, c.args[1], tools, blocked);
+    }
+    return { pending: [...pending].map(([k, [t, n]]) => [k, t, n]),
+      tools, blocked };
+  },
+  tool_spans: (c) => {
+    const blocked: cr.Span[] = [];
+    return [cr.toolSpans(cr._records(c.args[0]), blocked), blocked];
+  },
+  scan_background: (c) => {
+    const open = new Map<string, string>();
+    for (const r of cr._records(c.args[0])) cr.scanBackground(r, open);
+    return [...open];
+  },
+  scan_agent_end: (c) => {
+    const ends = new Map<string, number>();
+    for (const r of cr._records(c.args[0])) cr.scanAgentEnd(r, ends);
+    return [...ends];
+  },
+  live_eta: (c) => {
+    const state = cr.newEtaState();
+    return cr._records(c.args[0]).map((r) => {
+      cr.liveEta(r, state);
+      return [...state];
+    });
+  },
+  eta_report: (c) => cr.etaReport(typeof c.args[0] === "string"
+    ? cr._records(c.args[0]) : c.args[0]),
+  agent_span: (c) => {
+    const state: cr.SpanState = [null, null];
+    const spans: cr.Span[] = [];
+    const trace = cr._records(c.args[0]).map((r) => {
+      cr.agentSpan(r, state, spans);
+      return [[...state], [...spans]];
+    });
+    cr.closeAgentSpan(state, spans);
+    return [...trace, [[...state], [...spans]]];
+  },
+  thread_clock: (c) => cr.threadClock(c.args[0], c.args[1], c.args[2]),
+  split_clock: (c) => cr.splitClock(c.args[0], c.args[1], c.args[2],
+    c.args[3]),
+  turn_clock: (c) => cr.turnClock(c.args[0], c.args[1], c.args[2],
+    c.args[3]),
+  eta_finish: (c) => cr.etaFinish(c.args[0]),
+  union_seconds: (c) => cr.unionSeconds(c.args[0]),
+  net_tool_seconds: (c) => cr.netToolSeconds(c.args[0], c.args[1]),
 };
 
 for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))

@@ -1,0 +1,22 @@
+{"type": "user", "userType": "external", "promptSource": "typed", "timestamp": "2026-08-17T20:53:20.000Z", "message": {"content": "bg"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:21.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"backgroundTaskId": "b1"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:22.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"backgroundTaskId": 5}}
+{"type": "user", "timestamp": "2026-08-17T20:53:23.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"taskId": "m1", "timeoutMs": 1000}}
+{"type": "user", "timestamp": "2026-08-17T20:53:24.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"taskId": "m2"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:25.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"task_id": "b1", "message": "ok"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:26.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"task": {"task_id": "m1", "status": "completed"}}}
+{"type": "user", "timestamp": "2026-08-17T20:53:27.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"backgroundTaskId": "b2"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:28.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"backgroundTaskId": "b3"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:29.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"taskId": "m3", "timeoutMs": null}}
+{"type": "attachment", "timestamp": "2026-08-17T20:53:30.000Z", "attachment": {"type": "queued_command", "prompt": "<task-notification><task-id> b2 </task-id><status>completed</status></task-notification>"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:31.000Z", "message": {"content": [{"type": "text", "text": "<task-notification><task-id>b3"}, {"type": "text", "text": "</task-id><status>killed</status></task-notification>"}]}}
+{"type": "user", "timestamp": "2026-08-17T20:53:32.000Z", "message": {"content": [{"type": "text", "text": "<task-notification><task-id>m3</task-id>event</task-notification>"}]}}
+{"type": "user", "timestamp": "2026-08-17T20:53:33.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"agentId": "ag1", "status": "completed"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:34.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"agentId": "ag2", "status": "running"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:35.000Z", "message": {"content": [{"type": "text", "text": "<task-notification><task-id>ag3</task-id><status>failed</status></task-notification>"}]}}
+{"type": "user", "timestamp": "2026-08-17T20:53:29.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"agentId": "ag1", "status": "killed"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:40.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"agentId": "ag1", "status": "stopped"}}
+{"type": "user", "message": {"content": "<task-notification><task-id>ag4</task-id><status>x</status>"}}
+{"type": "user", "userType": "external", "promptSource": "system", "timestamp": "2026-08-17T20:53:50.000Z", "message": {"content": "<task-notification><task-id>ag5</task-id><status>completed</status></task-notification>"}}
+{"type": "user", "timestamp": "2026-08-17T20:53:51.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"task": {"task_id": "m3", "status": "running"}}}
+{"type": "user", "timestamp": "2026-08-17T20:53:52.000Z", "message": {"content": [{"type": "tool_result", "tool_use_id": "x"}]}, "toolUseResult": {"backgroundTaskId": ""}}

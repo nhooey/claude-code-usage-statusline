@@ -793,3 +793,526 @@ export function _price(model: unknown): Prices {
   }
   return MODEL_PRICE[0][1];
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Tool spans and clocks.
+// ════════════════════════════════════════════════════════════════════════════
+
+export type Span = readonly [number, number];
+/** A tool call asked for and not yet answered: when, and the tool's name. */
+export type Pending = Map<string, readonly [number, string]>;
+
+/** The length of the UNION of `spans`, in seconds.
+ *
+ * Overlapping spans are merged rather than added, which is the whole reason
+ * this is not a sum: five agents working the same ten minutes is ten
+ * minutes of the session's clock, not fifty. */
+export function unionSeconds(spans: readonly Span[]): number {
+  let total = 0.0;
+  let cur: [number, number] | null = null;
+  const sorted = spans.filter((s) => s[1] > s[0]).sort(cmpTuple);
+  for (const [lo, hi] of sorted) {
+    if (cur === null) cur = [lo, hi];
+    else if (lo <= cur[1]) cur[1] = pyMax(cur[1], hi);
+    else {
+      total += cur[1] - cur[0];
+      cur = [lo, hi];
+    }
+  }
+  return total + (cur ? cur[1] - cur[0] : 0.0);
+}
+
+// Tools whose result IS the user's answer, so their whole span is a person
+// thinking rather than a machine working: taken out of 🔧 and given to 🚦.
+// BY NAME, and only by name, because the name is the only thing in the
+// transcript that says so; a permission prompt has the same shape and is
+// not excluded.
+export const BLOCKING_TOOLS: ReadonlySet<string> =
+  new Set(["AskUserQuestion", "ExitPlanMode"]);
+
+// Tools whose span is ANOTHER AGENT's work: the thread that called one is
+// waiting on the agent, not running a tool, and that agent's time is on its
+// own row.  Both names, because Claude Code renamed Task to Agent and older
+// transcripts still say Task.
+export const DELEGATING_TOOLS: ReadonlySet<string> =
+  new Set(["Agent", "Task"]);
+
+// What a thread's 🚦 takes out of its tool spans: a person answering, or
+// another agent working.  Neither is this thread's machine doing anything.
+export const WAITING_TOOLS: ReadonlySet<string> =
+  new Set([...BLOCKING_TOOLS, ...DELEGATING_TOOLS]);
+
+/** Fold one record into a running scan for (start, end) of every tool call.
+ *
+ * A tool's clock starts on the ASSISTANT record that asked for it and stops
+ * on the `tool_result` that answers it, matched by `tool_use_id` — never by
+ * adjacency: one assistant record can carry four `tool_use` blocks that run
+ * at once and land in any order.  A result whose id names no call it has
+ * seen is not counted, which is the right answer for a transcript that was
+ * resumed mid-call.
+ *
+ * `pending` and `out` are the caller's, so one walk of a file can feed this
+ * and the billing scan beside it.  `blocked` takes the SUBSET of `out`
+ * whose tool is in WAITING_TOOLS — a subset and not a partition, so a
+ * reader that wants the machine's tool time subtracts one union from the
+ * other; see netToolSeconds. */
+export function scanToolSpans(r: Rec, pending: Pending, out: Span[],
+  blocked: Span[] | null = null): void {
+  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  if (t === null) return;
+  const blocks = dig(r, "message", "content");
+  if (!Array.isArray(blocks)) return;
+  for (const b of blocks) {
+    if (!isDict(b)) continue;
+    const kind = get(b, "type");
+    if (kind === "tool_use") {
+      if (truthy(get(b, "id"))) {
+        pending.set(pyStr(get(b, "id")), [t, pyStr(or(get(b, "name"), ""))]);
+      }
+    } else if (kind === "tool_result") {
+      const id = pyStr(or(get(b, "tool_use_id"), ""));
+      const hit = pending.get(id);
+      pending.delete(id);
+      if (hit !== undefined && t > hit[0]) {
+        out.push([hit[0], t]);
+        if (blocked !== null && WAITING_TOOLS.has(hit[1])) {
+          blocked.push([hit[0], t]);
+        }
+      }
+    }
+  }
+}
+
+/** Every tool call in `records`, as (start, end).  See scanToolSpans. */
+export function toolSpans(records: readonly Rec[],
+  blocked: Span[] | null = null): Span[] {
+  const pending: Pending = new Map();
+  const out: Span[] = [];
+  for (const r of records) scanToolSpans(r, pending, out, blocked);
+  return out;
+}
+
+// The terminal states a TaskOutput reading can report for the task it read.
+export const TASK_ENDED: ReadonlySet<unknown> =
+  new Set(["completed", "failed", "killed", "stopped"]);
+
+/** The `<task-notification>` a record delivers, or "".
+ *
+ * An agent's file holds one as a `queued_command` attachment; a thread
+ * Claude Code woke with it holds a plain user record whose content is the
+ * notification itself. */
+export function notificationText(r: Rec): string {
+  const a = or(get(r, "attachment"), {});
+  let c: unknown = get(a, "type") === "queued_command" ? get(a, "prompt")
+    : get(r, "type") === "user" ? dig(r, "message", "content") : null;
+  if (Array.isArray(c)) {
+    c = c.filter(isDict).map((b) => pyStr(or(get(b, "text"), ""))).join("");
+  }
+  return typeof c === "string" && c.includes("<task-notification>") ? c : "";
+}
+
+const TASK_ID = /<task-id>([^<]+)<\/task-id>/;
+
+/** Fold one record into `open`, {task id: "bash" or "monitor"}, the
+ * background tasks a thread started and has not heard the end of.
+ *
+ * These are what keep an agent that ended its turn alive while it waits:
+ * Claude Code parks it on `bash:<id>` or `monitor:<id>` and marks it
+ * completed, and the payload carries neither.  A task opens on the tool
+ * result that hands back its id — `backgroundTaskId` for a Bash run in the
+ * background, `taskId` beside `timeoutMs` for a Monitor.  It closes on a
+ * `<task-notification>` for that id that carries a `<status>`, or on the
+ * thread ending it itself: TaskStop's result, or TaskOutput reading it
+ * finished. */
+export function scanBackground(r: Rec, open: Map<string, string>): void {
+  const res = get(r, "toolUseResult");
+  if (isDict(res)) {
+    if (truthy(get(res, "backgroundTaskId"))) {
+      open.set(pyStr(get(res, "backgroundTaskId")), "bash");
+    } else if (truthy(get(res, "taskId")) && has(res, "timeoutMs")) {
+      open.set(pyStr(get(res, "taskId")), "monitor");
+    } else if (truthy(get(res, "task_id")) && has(res, "message")) {
+      open.delete(pyStr(get(res, "task_id")));
+    }
+    const task = get(res, "task");
+    if (isDict(task) && TASK_ENDED.has(get(task, "status"))) {
+      open.delete(pyStr(or(get(task, "task_id"), "")));
+    }
+  }
+  const text = notificationText(r);
+  if (text && text.includes("<status>")) {
+    const m = TASK_ID.exec(text);
+    if (m) open.delete(pyStrip(m[1]));
+  }
+}
+
+/** Fold one main-transcript record into `ends`, {agent id: the epoch of the
+ * latest record saying that agent finished}.
+ *
+ * A background agent finishes on a `<task-notification>` for its id that
+ * carries a `<status>`; a foreground one on the Agent call's result, whose
+ * toolUseResult names its agentId beside a terminal status.  The LATEST end
+ * is kept, because an agent resumed by SendMessage finishes again. */
+export function scanAgentEnd(r: Rec, ends: Map<string, number>): void {
+  const res = get(r, "toolUseResult");
+  let aid: string;
+  if (isDict(res) && truthy(get(res, "agentId")) &&
+    TASK_ENDED.has(get(res, "status"))) {
+    aid = pyStr(get(res, "agentId"));
+  } else {
+    const text = notificationText(r);
+    const m = text.includes("<status>") ? TASK_ID.exec(text) : null;
+    if (!m) return;
+    aid = pyStrip(m[1]);
+  }
+  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  if (t !== null && t > (ends.get(aid) ?? -Infinity)) ends.set(aid, t);
+}
+
+/** Seconds inside a tool that were not waiting on someone else: a
+ * subtraction of two unions, exact because `blocked` is a SUBSET of
+ * `spans`. */
+export function netToolSeconds(spans: readonly Span[],
+  blocked: readonly Span[]): number {
+  return pyMax(0.0, unionSeconds(spans) - unionSeconds(blocked));
+}
+
+/** Run every tool call still waiting on its result on to `now`.
+ *
+ * Its seconds are 🔧's — or 🚦's, for a WAITING_TOOLS call — as they
+ * happen, and not only once the result lands.  The caller passes a `now`
+ * only for a thread that is live: a finished one's unanswered calls were
+ * interrupted. */
+export function openToolSpans(pending: Pending, now: number, tools: Span[],
+  waiting: Span[]): void {
+  for (const [t, name] of pending.values()) {
+    if (now > t) {
+      tools.push([t, now]);
+      if (WAITING_TOOLS.has(name)) waiting.push([t, now]);
+    }
+  }
+}
+
+/** One thread's (busy, tool, waiting) seconds, off its OWN file alone.
+ *
+ *   busy     the union of its work and its tools
+ *   tool     its tool spans, less the ones that were waiting
+ *   waiting  the waiting spans
+ *
+ * so that busy - tool - waiting is 🤖, the model thinking, and the age less
+ * busy, plus waiting, is 🚦.  Own file alone since 2026-09-27: waiting on
+ * an agent is 🚦, and the agent's work is on its row. */
+export function threadClock(work: readonly Span[], tools: readonly Span[],
+  waiting: readonly Span[]): [number, number, number] {
+  return [unionSeconds([...work, ...tools]), netToolSeconds(tools, waiting),
+    unionSeconds(waiting)];
+}
+
+/** threadClock's 🤖 and 🔧, cut into one (model, tool) pair per cut.
+ *
+ * Pair i is the time after cut i-1 and up to cut i.  Nothing after the last
+ * cut is in any pair: agentRecords cuts an agent's clock at each billed
+ * request, so its seconds can be filed under a turn the way its tokens
+ * are, and a stretch past the last request is time the NEXT one will bill.
+ * `cuts` must be in order.
+ *
+ * A sweep rather than threadClock per cut: 🤖 is the work spans less the
+ * tool spans, and 🔧 the tool spans less the waiting ones, so each stretch
+ * between two span ends is one or the other or neither by what is open
+ * across it. */
+export function splitClock(work: readonly Span[], tools: readonly Span[],
+  waiting: readonly Span[], cuts: readonly number[]): [number, number][] {
+  const out: [number, number][] = cuts.map(() => [0.0, 0.0]);
+  if (cuts.length === 0) return [];
+  const ev: [number, number, number][] = [];
+  [work, tools, waiting].forEach((spans, k) => {
+    for (const [lo, hi] of spans) {
+      if (hi > lo) ev.push([lo, k, 1], [hi, k, -1]);
+    }
+  });
+  ev.sort(cmpTuple);
+  const live = [0, 0, 0];
+  let prev: number | null = null;
+  let j = 0;
+  for (const [t, k, d] of ev) {
+    let lo = prev !== null ? prev : t;
+    while (lo < t) {
+      while (j < cuts.length - 1 && cuts[j] <= lo) j++;
+      if (cuts[j] <= lo) break;
+      const hi = pyMin(t, cuts[j]);
+      if (live[1] && !live[2]) out[j][1] += hi - lo;
+      else if (live[0] && !live[1]) out[j][0] += hi - lo;
+      lo = hi;
+    }
+    live[k] += d;
+    prev = t;
+  }
+  return out;
+}
+
+/** One turn's (tool, waiting) seconds: threadClock's two, over its span,
+ * clipped to [t0, t1] because the turn's own span is what durS measures. */
+export function turnClock(tools: readonly Span[], waiting: readonly Span[],
+  t0: number | null, t1: number | null): [number, number] {
+  if (t0 === null || t1 === null || t1 <= t0) return [0.0, 0.0];
+  const clip = (spans: readonly Span[]): Span[] =>
+    spans.map(([lo, hi]) => [pyMax(lo, t0), pyMin(hi, t1)]);
+  const tc = clip(tools), wc = clip(waiting);
+  return [netToolSeconds(tc, wc), unionSeconds(wc)];
+}
+
+/** The receipt's ⌛🤖: the turn's span less its tool and waiting seconds,
+ * clamped at zero. */
+export function turnModelS(t: Turn): number {
+  return pyMax(0.0, t.durS - t.toolS - t.blockedS);
+}
+
+/** The receipt's ⌛🤖 and 🔧 for a row: the main thread's, plus its
+ * agents', which are agent-seconds and can outrun the turn. */
+export function turnTimes(t: Turn): [number, number] {
+  return [turnModelS(t) + t.agentModelS, t.toolS + t.agentToolS];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ETA reports.
+// ════════════════════════════════════════════════════════════════════════════
+
+// The skill that has an agent report its ETA, and the line it has it write:
+//
+//     ⛳ skills/coding-agent-usage-line-report-eta: ETA 4m
+//
+// The skill's path is the part matched; the flag may be missing, and the 🏁
+// the skill had it write before ⛳ is read as well.  Backticks and bold
+// around the line are forgiven.  A run of figure-and-unit pairs (`6h30m`)
+// is one figure, and a few words after a dash are not read.
+//
+// The Python compiles this with re.MULTILINE, whose ^ and $ are at a "\n"
+// alone; JavaScript's m flag also breaks at "\r", U+2028 and U+2029, so the
+// line ends are spelt out as lookarounds instead.  \d is Unicode's, as the
+// Python's is.
+export const ETA_SKILL = "coding-agent-usage-line-report-eta";
+export const ETA_PART = String.raw`\p{Nd}+(?:\.\p{Nd}+)? ?[smh]`;
+export const ETA_LINE = new RegExp(
+  String.raw`(?<![^\n])[ \t\x60*]*(?:[${E_ETA_REPORT}${E_ETA_REPORT_OLD}]` +
+  String.raw`[ \t]*)?skills/${ETA_SKILL}: ETA (${ETA_PART}` +
+  String.raw`(?:[ \t]*${ETA_PART})*)(?:[ \t]+[—–\-][ \t]` +
+  String.raw`[^\n]*?)?[ \t\x60*]*(?![^\n])`, "gu");
+export const ETA_SPLIT = /(\p{Nd}+(?:\.\p{Nd}+)?) ?([smh])/gu;
+export const ETA_UNIT_S: Readonly<Record<string, number>> =
+  { s: 1.0, m: 60.0, h: 3600.0 };
+
+/** (epoch, seconds left) off the LAST ETA report in `records`, or [].
+ *
+ * Only what the agent itself wrote counts: the text blocks of assistant
+ * records.  A tool result that quotes the line, or the skill's text
+ * arriving as a user message, is not a report.  The epoch is the record's
+ * own stamp, which is what lets the row count the estimate down between
+ * reports. */
+export function etaReport(records: readonly unknown[]): number[] {
+  let last: number[] = [];
+  for (const r of records) {
+    if (!isDict(r) || get(r, "type") !== "assistant") continue;
+    const content = dig(r, "message", "content");
+    if (!Array.isArray(content)) continue;
+    for (const block of content) {
+      if (!isDict(block) || get(block, "type") !== "text") continue;
+      const hits = [...pyStr(or(get(block, "text"), "")).matchAll(ETA_LINE)]
+        .map((m) => m[1]);
+      const epoch = tsEpoch(or(get(r, "timestamp"), ""));
+      if (hits.length && epoch !== null) {
+        let secs = 0;
+        for (const [, n, unit] of hits[hits.length - 1].matchAll(ETA_SPLIT)) {
+          secs += parseFloat(asciiDigits(n)) * ETA_UNIT_S[unit];
+        }
+        last = [epoch, secs];
+      }
+    }
+  }
+  return last;
+}
+
+/** When an ETA says its run ends: the report's epoch plus the time it said
+ * was left.  null only for no report.  A report of zero is the skill's
+ * sign-off, and says the run ends at the report. */
+export function etaFinish(eta: readonly number[]): number | null {
+  if (eta.length === 0) return null;
+  return eta[0] + eta[1];
+}
+
+/** True for an assistant record that ends its answer. */
+export function endsTurn(r: Rec): boolean {
+  return get(r, "type") === "assistant" &&
+    dig(r, "message", "stop_reason") === "end_turn";
+}
+
+/** liveEta's state for one thread: the report, whether the answer is done,
+ * the last epoch, and the report's message id. */
+export type EtaState = [number[], boolean, number | null, unknown];
+
+/** A fresh `state` for liveEta: no report, not done, no stamp, no
+ * message. */
+export function newEtaState(): EtaState {
+  return [[], false, null, null];
+}
+
+/** Fold one record into `state`, [eta, done, last epoch, report's message
+ * id], for one thread.
+ *
+ * The ETA belongs to the answer it was written in: a new prompt clears it,
+ * and so does the answer finishing — an assistant record that ends its
+ * turn, with no work after it.
+ *
+ * Unless the message that ends the turn is the one that carries the
+ * report.  That is an agent PARKING rather than finishing: it has ended
+ * its turn to wait on a background task, and says in the same breath how
+ * long it expects the rest to take.  A 0s in the message that ends the
+ * turn is finishing, not parking; and one that ends without a line in its
+ * last message reads as finished too.  A message is split over several
+ * records, one per block, so the test is on the message id. */
+export function liveEta(r: Rec, state: EtaState): void {
+  if (turnStartText(r) !== null) {
+    state[0] = [];
+    state[1] = false;
+    state[3] = null;
+  } else if (isWork(r)) {
+    const report = etaReport([r]);
+    const mid = dig(r, "message", "id") ?? null;
+    if (report.length) {
+      state[0] = report;
+      state[3] = mid;
+    }
+    const parked = state[0].length > 0 && state[0][1] > 0 &&
+      (report.length > 0 || (mid !== null && mid === state[3]));
+    state[1] = endsTurn(r) && !parked;
+  }
+  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  if (t !== null) state[2] = t;
+}
+
+/** agentSpan's state: when the open span opened, and its last work. */
+export type SpanState = [number | null, number | null];
+
+/** Fold one record of an AGENT's file into its working spans.
+ *
+ * `state` is [opened at, last work], both null between spans; a span is
+ * appended to `spans` as it closes, and the caller closes the last one —
+ * see closeAgentSpan.  An agent's resumptions are not prompts, so an answer
+ * that ENDS its turn closes the span, and whatever comes next opens the
+ * following one; a prompt still closes and reopens it. */
+export function agentSpan(r: Rec, state: SpanState, spans: Span[]): void {
+  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  if (t === null) return;
+  if (state[0] !== null && turnStartText(r) !== null) {
+    closeAgentSpan(state, spans);
+  }
+  if (state[0] === null) {
+    const type = get(r, "type");
+    if (type !== "user" && type !== "assistant") return;
+    state[0] = state[1] = t;
+  } else if (isWork(r)) {
+    state[1] = pyMax(state[1]!, t);
+  }
+  if (endsTurn(r)) closeAgentSpan(state, spans);
+}
+
+/** Append agentSpan's open span, if it has any length, and clear it. */
+export function closeAgentSpan(state: SpanState, spans: Span[]): void {
+  if (state[0] !== null && state[1]! > state[0]) {
+    spans.push([state[0], state[1]!]);
+  }
+  state[0] = state[1] = null;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Turn boundaries.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** True for a record that OPENS a turn — the unit the cost line reports.
+ *
+ * A prompt the user typed is one.  A message DELIVERED to an idle session,
+ * which Claude Code writes as `type: user` with `promptSource: "system"`,
+ * is the other: a task notification, a message from another session, an
+ * idle notice, the usage limit resetting.  The session answers each of
+ * them as it answers a typed prompt, and bills it the same way.
+ *
+ * Excluded: isCompactSummary; strings opening with '<' on the typed
+ * branch (tool results, system reminders); isMeta on a typed record; and
+ * promptSource "queued", whose boundary is the queue's own removal record —
+ * see queuedText.  An absent promptSource counts as typed, so transcripts
+ * from before the field still segment.  The Python's docstring has the
+ * measurements. */
+export function opensTurn(r: Rec): boolean {
+  const c = dig(r, "message", "content");
+  if (get(r, "type") !== "user" || get(r, "userType") !== "external" ||
+    truthy(get(r, "isCompactSummary")) || typeof c !== "string" ||
+    c.length === 0) {
+    return false;
+  }
+  if (get(r, "promptSource") === "system") return true;
+  const source = has(r, "promptSource") ? get(r, "promptSource") : "typed";
+  return !truthy(get(r, "isMeta")) && source === "typed" &&
+    !c.startsWith("<");
+}
+
+// Every enqueue is matched by exactly one of these, so a removal is a
+// delivery, not a cancellation: the queue draining one item, draining all
+// of them, and the item being taken off the front.
+export const QUEUE_DELIVERED: readonly unknown[] =
+  ["remove", "dequeue", "popAll"];
+
+/** The prompt a `queue-operation` record delivered, or null.
+ *
+ * A message typed while the assistant is working gets no `type: user`
+ * record, only an enqueue when it was typed and a removal when it was
+ * handed to the model.  The removal is the boundary: the enqueue is stamped
+ * when the message was TYPED, which can be minutes before the assistant was
+ * free to read it.  Typed-only: machinery riding the same queue opens with
+ * '<', and is refused. */
+export function queuedText(r: Rec): string | null {
+  if (get(r, "type") !== "queue-operation") return null;
+  if (!QUEUE_DELIVERED.includes(get(r, "operation"))) return null;
+  const c = get(r, "content");
+  return typeof c === "string" && c.length > 0 && !c.startsWith("<")
+    ? c : null;
+}
+
+/** +1 for a message put on this thread's queue, -1 for one handed over.
+ * The running sum, never below zero, is how many messages are waiting for
+ * the thread's next turn. */
+export function queueStep(r: Rec): number {
+  if (get(r, "type") !== "queue-operation") return 0;
+  const op = get(r, "operation");
+  return op === "enqueue" ? 1 : QUEUE_DELIVERED.includes(op) ? -1 : 0;
+}
+
+// What postTokens leaves out of a reading, when the transcript has no
+// reading before its compaction to take it from: the median over 520 local
+// compactions on 2026-10-16.  See the 🧠 estimate in transcriptOf.
+export const COMPACT_OVERHEAD = 46000;
+
+/** True for the marker a compaction writes, /compact's or the automatic
+ * one's: `type: system`, `subtype: compact_boundary`. */
+export function isCompaction(r: Rec): boolean {
+  return get(r, "type") === "system" &&
+    get(r, "subtype") === "compact_boundary";
+}
+
+/** The text of the prompt this record opens, or null if it opens none. */
+export function turnStartText(r: Rec): string | null {
+  if (opensTurn(r)) return dig(r, "message", "content") as string;
+  return queuedText(r);
+}
+
+/** True for a record written while the assistant was answering.
+ *
+ * A turn ends at the last record the ANSWER produced, and the transcript
+ * keeps appending after that: slash-command caveats, the enqueue stamped
+ * when the user typed, the compact summary.  Tool results have to stay IN:
+ * they arrive as `type: user` with a LIST of blocks, where a person's
+ * message is always a plain string. */
+export function isWork(r: Rec): boolean {
+  const t = get(r, "type");
+  if (t === "assistant" || t === "system") return true;
+  if (t === "user") return Array.isArray(dig(r, "message", "content"));
+  return false;
+}
