@@ -21,9 +21,9 @@ from typing import Dict, List, NamedTuple, Optional, Sequence, Union
 
 from . import formatting as fmt
 from . import claude_subagent_render as sub
-from .spans import Span, spans, text, width
+from .spans import Span, cut, spans, width
 from .spec import (CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN,
-                   RIGHT_EDGE, VAL2_W, VAL_W)
+                   PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
 
 
 class Piece(NamedTuple):
@@ -90,21 +90,20 @@ def hidden(patterns: Sequence[str], path: str) -> bool:
 
 
 def chrome(depth: Optional[int]) -> List[Span]:
-    """What Claude Code draws before a panel row: the pointer, and two more
-    columns per level of nesting.  A row outside the panel has none."""
+    """What Claude Code draws before a panel row: PANEL_CHROME columns at
+    depth 1, blanks then the pointer, and two more blanks per level below
+    it.  A row outside the panel has none."""
     if depth is None:
         return []
-    return [Span("  " * depth + "◯ ", None, True)]
+    return [Span(" " * (PANEL_CHROME - 2 + 2 * (depth - 1)) + "◯ ",
+                 None, True)]
 
 
 def label_text(row: Row, patterns: Sequence[str], room: int) -> List[Span]:
     """The row's label in `room` columns: the ranked pieces leave first,
-    lowest rank first, then what is left is cut.  A cut label is drawn
-    plain, as the mockup draws it."""
+    lowest rank first, then what is left is cut, keeping its colours."""
     pieces = [p for p in row.label
-              if not hidden(patterns, row.scope + "." + p.path)
-              and not hidden(patterns,
-                             row.scope + "." + p.path.split(".")[0])]
+              if not hidden(patterns, row.scope + "." + p.path)]
     ranks = sorted({p.drop for p in pieces if p.drop})
 
     def whole() -> List[Span]:
@@ -115,9 +114,7 @@ def label_text(row: Row, patterns: Sequence[str], room: int) -> List[Span]:
             break
         pieces = [p for p in pieces if p.drop != rank]
     out = whole()
-    if width(out) > room:
-        return [Span(fmt.fit_cols(text(out), room))]
-    return out
+    return cut(out, room) if width(out) > room else out
 
 
 def _shows(row: Row, key: str, path: str, patterns: Sequence[str]) -> bool:
@@ -155,7 +152,10 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
     """One row on the columns `keys`.  With `spill`, the label runs on over
     the row's own leading blank columns, up to its first figure, instead of
     stopping where the first column starts.  Every row ends RIGHT_EDGE
-    columns short of the terminal's edge."""
+    columns short of the terminal's edge, and never runs past that: a label
+    with no room draws nothing, not even a `…`, and a row whose chrome and
+    cells are wider than the terminal leaves, at a width too narrow for the
+    drop to help, is cut there like a label."""
     cells = []
     for c in GRID_CELLS:
         if c["key"] not in keys:
@@ -173,4 +173,6 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
     right = []
     for w, c in cells:
         right.extend(c if c is not None else [Span(" " * w)])
-    return head + fmt.seg(room, label_text(row, patterns, room)) + right
+    out = head + fmt.seg(room, label_text(row, patterns, room)) + right
+    edge = cols - RIGHT_EDGE
+    return cut(out, edge) if width(out) > edge else out

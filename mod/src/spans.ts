@@ -97,6 +97,38 @@ export function width(x: SpanLike, w: Widths): number {
   return n;
 }
 
+/** The spans in `cols` columns, ellipsis included: cut where fitCols cuts
+ * their text, the longest start that leaves a column for the `…`, with
+ * each span kept as it was drawn.  The `…` takes the style of the span it
+ * cuts into.  At no room, `cols` 0 or under, nothing is left, since even
+ * the `…` would run a column past it. */
+export function cut(x: SpanLike, cols: number, w: Widths): Span[] {
+  const out = spans(x);
+  const all = text(out);
+  if (visWidth(all, w) <= cols) return out;
+  if (cols <= 0) return [];
+  const budget = cols - 1;                 // a column for the ellipsis
+  const cps = Array.from(all);
+  let lo = 0, hi = cps.length;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    if (visWidth(cps.slice(0, mid).join(""), w) <= budget) lo = mid;
+    else hi = mid - 1;
+  }
+  const kept: Span[] = [];
+  for (const s of out) {
+    const t = Array.from(s.text);
+    if (lo >= t.length) {
+      kept.push(s);
+      lo -= t.length;
+      continue;
+    }
+    kept.push({ ...s, text: t.slice(0, lo).join("") + "…" });
+    break;
+  }
+  return kept;
+}
+
 /** The spans less trailing blanks, as str.rstrip took them off a drawn
  * string: only off plain spans, since a coloured span's text ends at the
  * reset after it, which no rstrip reached. */

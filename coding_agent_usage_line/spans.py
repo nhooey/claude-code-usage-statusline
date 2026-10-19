@@ -85,6 +85,30 @@ def width(x: SpanLike) -> int:
     return sum(vis_width(s.text) for s in spans(x))
 
 
+def cut(x: SpanLike, cols: int) -> List[Span]:
+    """The spans in `cols` columns, ellipsis included: cut where fit_cols
+    cuts their text, the longest start that leaves a column for the `…`,
+    with each span kept as it was drawn.  The `…` takes the style of the
+    span it cuts into.  At no room, `cols` 0 or under, nothing is left,
+    since even the `…` would run a column past it."""
+    from .formatting import fit_cols, vis_width
+    out = spans(x)
+    if vis_width(text(out)) <= cols:
+        return out
+    if cols <= 0:
+        return []
+    n = len(fit_cols(text(out), cols)) - 1    # the characters kept
+    kept = []
+    for s in out:
+        if n >= len(s.text):
+            kept.append(s)
+            n -= len(s.text)
+            continue
+        kept.append(s._replace(text=s.text[:n] + "…"))
+        break
+    return kept
+
+
 def rstrip(x: SpanLike) -> List[Span]:
     """The spans less trailing blanks, as str.rstrip took them off a drawn
     string: only off plain spans, since a coloured span's text ends at the

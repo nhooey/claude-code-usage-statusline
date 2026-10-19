@@ -351,8 +351,9 @@ spans by column key, so a port lays them out without any renderer. Each
 `layout` case is a set of rows, `cols`, the `--hide` patterns and the fixed or
 from-the-rows grid, with the column keys `layout` keeps; each `draw` case is
 one row on those keys, with and without the label's spill, and what `draw`
-makes of it as spans and as the joined line. The matrix is 200 to 40
-columns, eight hide sets, both grids, agents to each depth and both phases'
+makes of it as spans and as the joined line. The matrix is 200 to 6
+columns, down to where a label has no room and the chrome alone runs past the
+right edge, eight hide sets, both grids, agents to each depth and both phases'
 rows, deduplicated. A file is one terminal profile's, and profiles whose
 cases come out the same share one: `unknown-jediterm.json` and
 `iterm-tmux.json`, since `_PAD` widens 🧩, 🧠 and 💰 on the second pair. The
