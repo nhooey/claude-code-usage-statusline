@@ -276,8 +276,14 @@ same version-1 reading as its output and shared cases pinning it.
    `grid.test.ts` fails when they are not what the generator writes. The
    Python grid engine, `coding_agent_usage_line/grid.py`, is a port of
    `grid.ts` function for function and passes every one of those cases under
-   each profile (`tests/grid.py`, 11,919 checks). Left: the agent panel's
-   rows moved onto it, which changes the panel's goldens.
+   each profile (`tests/grid.py`, 11,919 checks). The row builders are
+   built on it: `band.ts` draws a status document as the band's rows and
+   `receipt.ts` a cost document as the receipt and a status document as
+   the 🔻 line, through the cells the mockup now shares, `cells.ts`; their
+   cases, `tests/fixtures/rows/`, are written by `mod/tools/gen-row-cases.ts`
+   from every committed figures document, and `node
+   mod/tools/draw-figures.ts` draws one in a terminal. Left: the agent
+   panel's rows moved onto it, which changes the panel's goldens.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
 6. **The switch.** The band runs beside the status line until the two agree;

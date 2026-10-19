@@ -99,6 +99,8 @@ fixtures/
                          see Agent panel cases below
   grid/<profiles>.json   the redesigned grid's layouts and rows, written by
                          the TypeScript; see Grid cases below
+  rows/<profiles>.json   the band's and the receipt's rows from the figures,
+                         written by the TypeScript; see Row cases below
   gen/                   the generators
 ```
 
@@ -367,6 +369,42 @@ the Python port: each profile's environment is set and `formatting.py`
 reloaded, as a process with it would have it, and the kept keys, the spans
 and the joined line must match. It only reads the cases; a disagreement is
 the port's to fix.
+
+## Row cases
+
+`fixtures/rows/` pins the row builders, the step between a figures document
+and the grid: `mod/src/band.ts` draws a status document as the band above the
+prompt (💳 🎤 🤖💬 🎮 while a turn runs, 💳 🤖💬 once it ends) and
+`mod/src/receipt.ts` draws a cost document as the receipt (its 🔺🔖 head, 📊 🎤
+and 📊 🎮) and a status document as the 🔻🔖 start line, all through the cells
+in `mod/src/cells.ts`. The plan's
+[Where each row's figures come from](../agents/plans/redesign.md#where-each-rows-figures-come-from)
+says which field each cell reads. Like the grid's, these are written by the
+TypeScript, with `node mod/tools/gen-row-cases.ts`.
+
+The inputs are the committed [figures documents](#figures), by id
+(`status/01-baseline@196`); documents with the same text are one input, under
+the first id, with the rest in `same`. Each `band` case is a status document
+drawn at `cols` under the `--hide` patterns in a `phase`, with `rate`, the 🛫
+the mod works out itself and passes in; each `receipt` case is a cost document
+at `cols` under `hide`, with the 📦 🌿 of the status document named by
+`workspace`, which stands for the band's last one; each `start` case is a
+status document's start line. Out come the spans of each row and the rows
+joined into escape codes. The matrix is 200, 155, 120 and 80 columns, both
+phases, three hide sets at 155 and a 🛫 at 200; HOME is `${HOME}`, the
+placeholder the documents' paths are written under, and each clock is drawn
+in the document's own zone. A file is one terminal profile's, profiles whose
+cases come out the same sharing one, as the grid's do.
+
+`mod/test/rows.test.ts` replays every case under each of its file's profiles
+and runs the generator again in memory, failing if what it writes differs
+from what is committed. To look at the rows in a terminal:
+
+```sh
+node mod/tools/draw-figures.ts tests/fixtures/figures/status/<id>.json --cols 160
+node mod/tools/draw-figures.ts tests/fixtures/figures/cost/<id>.json \
+    --workspace tests/fixtures/figures/status/<id>.json
+```
 
 ## Assertion suites
 

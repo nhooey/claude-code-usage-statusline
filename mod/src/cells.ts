@@ -58,7 +58,11 @@ function cost(st: Settings, usd: number | null, est = false): Span[] {
   if (usd === null) return [];
   if (!est) return renderCost(st, pyFormatF(usd, 4));
   const room = visWidth(st.sCost, st.widths) + 4 - visWidth(E_COST, st.widths);
-  let fig = "~" + pyRstrip(moneyFig(st, usd));
+  // moneyFig's unit column kept where it fits, so the figure stands where
+  // an exact one would.
+  const whole = moneyFig(st, usd);
+  let fig = "~" + whole;
+  if (visWidth(fig, st.widths) > room) fig = "~" + pyRstrip(whole);
   if (visWidth(fig, st.widths) > room && usd >= K - K / 2000.0) {
     fig = "~" + pyFormatF(usd / K, 0) + "k";
   }
