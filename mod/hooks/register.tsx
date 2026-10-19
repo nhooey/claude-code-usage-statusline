@@ -367,12 +367,12 @@ export const register: Register = on => {
         rate: await read($, rate),
         phase: e.props.isWorking ? 'running' : 'done',
         indent: spec.C_CHROME_CONT })
-    // No top margin: Claude Code draws its `[-]` on the band's first row,
-    // and on a blank top row it stood alone.  A bottom margin of -1 draws
-    // into the blank row Claude Code keeps above the prompt's border, a
-    // line less on screen (decided 2026-10-19, to be seen live).
+    // No margin: Claude Code draws its `[-]` on the band's first row, and
+    // on a blank top row it stood alone.  A bottom margin of -1, into the
+    // blank row above the prompt's border, hid the band's last row under
+    // the border instead (tried live 2026-10-19).
     return (
-      <Box flexDirection="column" marginBottom={-1}>
+      <Box flexDirection="column">
         {lines.map((l, i) => line(Text, l, 'band' + i))}
       </Box>
     )

@@ -25,8 +25,7 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `hooks/register.tsx` is its hooks module, and `types/index.d.ts` its
 `$.state` contract. It draws three places, and writes one:
 
-- **The band,** above the prompt, drawn one row into the blank Claude Code
-  keeps above the prompt's border: the grid's rows
+- **The band,** above the prompt: the grid's rows
   for the session, from the last status figures document, redrawn as the
   session starts, after each tool call, as a turn starts and ends, and
   every 30 seconds. While a turn runs its 🎤 and 🎮 rows are that turn's,
