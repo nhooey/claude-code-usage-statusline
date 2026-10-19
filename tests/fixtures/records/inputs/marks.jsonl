@@ -1,0 +1,4 @@
+{"origin": {"kind": "coordinator"}, "type": "user", "timestamp": "2026-08-17T20:53:21.000Z"}
+{"type": "user", "timestamp": "2026-08-17T20:53:22.000Z", "note": "\"peer\" and \"coordinator\" in one line"}
+{"broken": "peer"
+{"type": "user", "origin": {"kind": "peer"}, "timestamp": "2026-08-17T20:53:23.000Z"}

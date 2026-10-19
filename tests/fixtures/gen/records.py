@@ -452,6 +452,184 @@ def handmade():
         {"type": "progress", "timestamp": stamp(20)},
         asst(21, "q1", "x", stop="end_turn"),
     ])
+    files.update(session())
+    return files
+
+
+def sent(sec, target, **kw):
+    """SendMessage's answer when the agent it names is busy."""
+    return result(sec, "sm", toolUseResult={
+        "success": True, "message": "Message queued for delivery to %s at "
+                                    "its next tool round." % target}, **kw)
+
+
+def session():
+    """A session with every agent shape: a background agent resumed by
+    SendMessage, a foreground one, a workflow's, one still running and one
+    that finishes after its turn was reported; with the inbox traffic
+    between them, a compaction of each kind, a queued prompt and an
+    interrupted request.  Agent requests are stamped across the main
+    thread's turns on purpose, so _fold_agents has to choose."""
+    files = {}
+    U = (10, 1000, 5000, 200)
+
+    def put(name, records, raw=b""):
+        files[name] = write_bytes(name, jsonl(records) + raw)
+
+    tid = {"turnPosition": {"turnIndex": 3}}
+    put("session.jsonl", [
+        prompt(0, "start", promptId="P1", **tid),
+        asst(5, "r1", None, tools=[("t-ag1", "Agent")], usage=U),
+        result(6, "t-ag1", toolUseResult={"agentId": "a1",
+                                          "status": "async_launched"},
+               promptId="P1"),
+        asst(8, "r2", "launched", usage=(5, 100, 6000, 50), stop="end_turn"),
+        {"type": "system", "subtype": "stop_hook_summary",
+         "timestamp": stamp(9)},
+        prompt(20, "second", promptId="P2",
+               turnPosition={"turnIndex": True}),
+        asst(25, "r3", None, tools=[("t-ag2", "Task")], usage=U),
+        result(60, "t-ag2", toolUseResult={"agentId": "a2",
+                                           "status": "completed"},
+               promptId="P2", turnPosition={"turnIndex": 4}),
+        asst(62, "r4", None, tools=[("sm", "SendMessage")],
+             usage=(1, 10, 7000, 30)),
+        sent(63, "a1", promptId="P2"),
+        asst(64, "r4", "again", usage=(1, 10, 7000, 30)),
+        sent(64.5, "a2", promptId="P2"),
+        asst(65, "r5", "sent", usage=(2, 20, 7100, 40), stop="end_turn"),
+        {"type": "system", "subtype": "stop_hook_summary",
+         "timestamp": stamp(66)},
+        queue(70, "enqueue", "third"),
+        queue(72, "remove", "third"),
+        asst(74, "r6", None, tools=[("t-b", "Bash")], usage=U),
+        result(76, "t-b", promptId="P3", turnPosition={"turnIndex": 5}),
+        {"type": "system", "subtype": "compact_boundary",
+         "timestamp": stamp(80), "compactMetadata": {
+             "trigger": "auto", "preTokens": 50000, "durationMs": 3000,
+             "postTokens": 9000}},
+        {"type": "user", "isCompactSummary": True, "timestamp": stamp(79),
+         "message": {"content": "This session is being continued. " * 7}},
+        asst(85, "r7", "after", usage=(3, 2000, 9000, 60), promptId="P3"),
+        prompt(90, "<task-notification><task-id>a1</task-id><status>"
+                   "completed</status></task-notification>",
+               promptSource="system", isMeta=True, promptId="P4"),
+        asst(95, "r8", "noted", usage=(4, 50, 11000, 70), stop="end_turn"),
+        {"type": "system", "subtype": "stop_hook_summary",
+         "timestamp": stamp(96)},
+        prompt(100, "/compact ", promptId="P5"),
+        {"type": "system", "subtype": "compact_boundary",
+         "timestamp": stamp(101), "compactMetadata": {
+             "trigger": "manual", "preTokens": 40000}},
+        {"type": "user", "isCompactSummary": True, "timestamp": stamp(102),
+         "message": {"content": "short \U0001F600 summary"}},
+        prompt(110, "last", promptId="P6", **tid),
+        asst(115, "r9", None, usage=(0, 0, 0, 0)),
+        asst(116, "r10", "answer", usage=(6, 300, 12000, 80),
+             model="claude-sonnet-5", tools=[("t-ag4", "Agent")]),
+        asst(117, "rs", "side", usage=(1, 1, 1, 1), isSidechain=True),
+        note(119, "<task-notification><task-id>a3</task-id><status>"
+                  "completed</status></task-notification>",
+             promptId="P6"),
+        {"type": "assistant", "timestamp": stamp(121), "message": {
+            "content": [], "usage": {"input_tokens": 1,
+                                     "cache_read_input_tokens": 3}}},
+        {"type": "user", "userType": "external", "timestamp": stamp(122),
+         "message": {"content": "<local-command-stdout>x"}},
+    ])
+    sub = "session/subagents/"
+    put(sub + "agent-a1.jsonl", [
+        {"type": "user", "timestamp": stamp(6), "promptId": "P1",
+         "message": {"content": "do it"}},
+        asst(10, "a1-1", None, tools=[("x1", "Bash")],
+             usage=(3, 300, 3000, 100)),
+        result(15, "x1"),
+        asst(30, "a1-2", FLAG + ETA + "2m", usage=(1, 30, 3300, 40),
+             stop="end_turn"),
+        {"type": "attachment", "timestamp": stamp(64), "attachment": {
+            "type": "queued_command", "prompt": "msg",
+            "origin": {"kind": "coordinator"}}},
+        {"type": "user", "timestamp": stamp(70), "promptId": "P2",
+         "message": {"content": "continue"}},
+        asst(75, "r1", "dup of the main thread's", usage=U),
+        asst(80, "a1-4", None, usage=(0, 0, 0, 0), model="<synthetic>"),
+        asst(85, "a1-5", "done " + FLAG + ETA + "0s",
+             usage=(2, 20, 3400, 50), stop="end_turn"),
+    ])
+    put(sub + "agent-a2.jsonl", [
+        {"type": "user", "timestamp": stamp(25), "promptId": "P2",
+         "message": {"content": "find"}},
+        asst(30, "a2-1", None, tools=[("y1", "Grep"), ("y2", "Agent")],
+             usage=(7, 700, 0, 70), model="claude-sonnet-5-1"),
+        sent(52, "a1"),
+        {"type": "user", "timestamp": stamp(55), "origin": {"kind": "peer"},
+         "message": {"content": "peer says"}},
+        {"type": "user", "timestamp": stamp(56),
+         "origin": {"kind": "peer", "handback": True},
+         "message": {"content": "report"}},
+        {"type": "user", "timestamp": stamp(57), "origin": {"kind": "human"},
+         "message": {"content": "typed"}},
+        result(45, "y1"),
+        asst(50, "a2-2", FLAG + ETA + "1m", usage=(1, 10, 800, 20),
+             tools=[("y3", "Bash")]),
+        {"type": "assistant", "requestId": "a2-3", "message": {
+            "id": "a2-3", "model": "claude-sonnet-5-1",
+            "usage": {"input_tokens": 1, "output_tokens": 2}}},
+        asst(58, "a2-1", "retried", usage=(7, 700, 0, 70)),
+    ])
+    put(sub + "agent-a3.jsonl", [
+        {"type": "user", "timestamp": stamp(91), "promptId": "P4",
+         "message": {"content": "background"}},
+        asst(112, "a3-1", None, usage=(2, 200, 2000, 20)),
+        asst(118, "a3-2", "done", usage=(1, 100, 2100, 10),
+             stop="end_turn"),
+    ])
+    put(sub + "agent-a4.jsonl", [
+        {"type": "user", "timestamp": stamp(116), "promptId": "P6",
+         "message": {"content": "still going"}},
+        asst(118, "a4-1", FLAG + ETA + "5m", usage=(1, 1, 1, 1),
+             tools=[("z1", "Bash")]),
+    ])
+    put(sub + "agent-a5.jsonl", [
+        {"type": "user", "timestamp": stamp(93), "promptId": "P4",
+         "message": {"content": "late and running"}},
+        asst(113, "a5-1", None, usage=(1, 0, 0, 0)),
+    ])
+    put(sub + "workflows/wf_1/agent-w1.jsonl", [
+        {"type": "user", "timestamp": stamp(40), "promptId": "wf-prompt",
+         "message": {"content": "step"}},
+        asst(45, "w1-1", None, usage=(5, 50, 500, 5),
+             model="claude-haiku-4-5"),
+        asst(100, "w1-2", None, usage=(5, 50, 600, 5)),
+        asst(105, "w1-3", None, usage=(5, 50, 700, 5), timestamp="nope"),
+    ], raw=b'{"type": "assistant", "bad": "\xff"}\n'
+           b'\xef\xbb\xbf{"type": "assistant", "requestId": "w1-bom", '
+           b'"timestamp": "' + stamp(106).encode() + b'", "message": '
+           b'{"usage": {"input_tokens": 9}}}\n'
+           b'{"type": "assistant", "requestId": "w1-part')
+    put(sub + "workflows/wf_1/journal.jsonl", [
+        asst(41, "j", None, usage=(1, 1, 1, 1))])
+    put(sub + ".hidden/agent-h.jsonl", [
+        asst(42, "h", None, usage=(1, 1, 1, 1))])
+    for name, body in (("agent-a1.meta.json", b'{"description": '),
+                       ("agent-a2.meta.json",
+                        b'{"description": "Find callers", '
+                        b'"agentType": "Explore"}'),
+                       ("agent-a3.meta.json", b'{"description": "", '
+                                              b'"agentType": "fork"}'),
+                       ("agent-a5.meta.json",
+                        b'\xef\xbb\xbf{"description": "bom"}'),
+                       ("workflows/wf_1/agent-w1.meta.json",
+                        b'{"agentType": 5}')):
+        write_bytes(sub + name, body)
+
+    put("marks.jsonl", [
+        {"origin": {"kind": "coordinator"}, "type": "user",
+         "timestamp": stamp(1)},
+        {"type": "user", "timestamp": stamp(2),
+         "note": "\"peer\" and \"coordinator\" in one line"},
+    ], raw=b'{"broken": "peer"\n{"type": "user", "origin": {"kind": '
+           b'"peer"}, "timestamp": "' + stamp(3).encode() + b'"}')
     return files
 
 
@@ -547,7 +725,75 @@ def section_threads(files):
     return s
 
 
-SECTIONS = (section_basics, section_threads)
+def section_agents(files):
+    s = Section("agents")
+    main = files["session.jsonl"]
+    mains = [p for p in corpus() if "/subagents/" not in p] + [main]
+    for p in mains + ["nope.jsonl", "tests/fixtures/records/inputs",
+                      "x.json"]:
+        s.case("agent_files", p)
+    agent_paths = [p for p in sorted(set(corpus()) | set(files.values()))
+                   if "/subagents/" in p] + ["missing/agent-x.jsonl"]
+    for p in agent_paths:
+        s.case("_read_agent_file", p)
+        s.case("agent_label_id", p)
+        s.case("agent_label", p)
+    for p in ("agent-.jsonl", "x/agent-y.json", "agent-a/", "agent-z.jsonl"):
+        s.case("agent_label_id", p)
+
+    for p in mains:
+        etas = []
+        s.case("agent_records", p, out=lambda got, etas=etas: [got, etas],
+               etas=etas)
+        seen = {"req-r1", None, "req-a2-1"}
+        s.raw("agent_records", [p, sorted(seen, key=str)],
+              [cr.agent_records(p, set(seen)), []])
+
+    agents = cr.agent_records(main)
+    a4 = [a for a in agents if a.request_id == "req-a4-1"][0]
+    for held in (None, {a4.path: a4.offset}, {a4.path: 0}):
+        cr.publish_agent_offsets(main, agents, held)
+        path = cr._agent_state_path(main)
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+        s.raw("publish_agent_offsets", [main, agents, held],
+              [os.path.basename(path), body, cr.agent_offsets(main)])
+    for body in ('{"a": 1, "b": true, "c": "x", "d": null, "e": [1]}',
+                 '[1, 2]', 'not json', '{}', '{"\\u00e9": 5}'):
+        with open(cr._agent_state_path(main), "w") as fh:
+            fh.write(body)
+        # A bool is an int to isinstance, and compares as one; the port's
+        # offsets are numbers, so true is written as the 1 it reads as.
+        got = cr.agent_offsets(main)
+        s.raw("agent_offsets", [main, body], got and {
+            k: int(v) for k, v in got.items()})
+    os.remove(cr._agent_state_path(main))
+    s.raw("agent_offsets", [main, None], cr.agent_offsets(main))
+
+    every = sorted(set(corpus()) | set(files.values()))
+    for p in every:
+        recs = list(cr._records(p))
+        s.raw("inbox_classify", [p], [[cr.queued_send(r),
+                                       cr.inbox_delivery(r)] for r in recs])
+        s.case("inbox_sends", p)
+        s.case("inbox_deliveries", p)
+        # Not a mark that opens with "\n": the scan never moves past one.
+        for marks in ((cr.SEND_QUEUED_MARK,), cr.INBOX_MARKS, (b"{",),
+                      (b"zzz",), (b"}\n{",)):
+            s.raw("marked_records", [p, [m.decode() for m in marks]],
+                  cr.marked_records(p, marks))
+    s.raw("marked_records", ["missing.jsonl", ["x"]],
+          cr.marked_records("missing.jsonl", (b"x",)))
+    senders = [main] + cr.agent_files(main)
+    targets = {cr.agent_label_id(p): p for p in cr.agent_files(main)}
+    for since in (None, 0.0, 4e9):
+        s.case("inbox_counts", senders, targets, since)
+    s.case("inbox_counts", senders, {"a1": targets["a1"]})
+    s.case("inbox_counts", [main], {"zz": main})
+    return s
+
+
+SECTIONS = (section_basics, section_threads, section_agents)
 
 
 def main():

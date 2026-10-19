@@ -1316,3 +1316,563 @@ export function isWork(r: Rec): boolean {
   if (t === "user") return Array.isArray(dig(r, "message", "content"));
   return false;
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Agent files.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Where Claude Code keeps this session's agent transcripts.
+ *
+ * `<project>/<sid>.jsonl` is the session; `<project>/<sid>/subagents/` is
+ * everything it spawned.  "" for a path that is not a transcript at all. */
+export function _agentDir(transcript: string): string {
+  if (!transcript.endsWith(".jsonl")) return "";
+  return pyJoin(transcript.slice(0, -".jsonl".length), "subagents");
+}
+
+const AGENT_NAME = /^agent-.*\.jsonl$/s;
+
+/** Every agent transcript of this session, sorted so the walk is stable.
+ *
+ * Two depths and no others, measured over 2,134 files on 2026-09-11:
+ * `subagents/agent-<id>.jsonl` for the Agent tool, forks, and agents that
+ * agents spawned; `subagents/workflows/wf_<id>/agent-<id>.jsonl` for a
+ * workflow's agents.  The workflow's `journal.jsonl` carries no usage and
+ * is not matched.  Walked as the Python's recursive glob walks: hidden
+ * names are skipped, and a directory is entered through a symlink. */
+export function agentFiles(transcript: string): string[] {
+  const d = _agentDir(transcript);
+  if (!d || !isDir(d)) return [];
+  const out: string[] = [];
+  const walk = (dir: string): void => {
+    let names: string[];
+    try {
+      names = fs.readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of names) {
+      if (name.startsWith(".")) continue;
+      const p = pyJoin(dir, name);
+      if (AGENT_NAME.test(name)) out.push(p);
+      if (isDir(p)) walk(p);
+    }
+  };
+  walk(d);
+  return out.sort(cmpStr);
+}
+
+function isDir(p: string): boolean {
+  try {
+    return fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/** One record of an agent file that carries usage, as _readAgentFile keeps
+ * it: (epoch, promptId, model, fresh, cache write, cache read, out,
+ * requestId, offset). */
+export type AgentRaw = readonly [number | null, unknown, unknown, number,
+  number, number, number, unknown, number];
+
+/** One agent file's part of agentRecords, read from it alone. */
+export interface AgentReading {
+  readonly recs: readonly AgentRaw[];
+  readonly work: readonly Span[];
+  readonly tools: readonly Span[];
+  readonly waiting: readonly Span[];
+  readonly eta: readonly [number | null, number | null] | null;
+}
+
+/** Every billed request an agent of this session made, in stamp order.
+ *
+ * Nothing an agent bills is in the session's own transcript; it is in the
+ * files agentFiles lists, and every reader that adds up a transcript reads
+ * these as well, or it is reading the main thread and calling it the
+ * session.
+ *
+ * WHICH TURN each record belongs to is the `promptId` of the
+ * main-transcript turn that spawned the agent, carried on the agent's USER
+ * records and carried forward record by record, because an agent a later
+ * turn resumed gets a second one.  Skipped: records whose usage is all
+ * zero, the `<synthetic>` API-error placeholders.  Deduped first-wins on
+ * requestId across every file together, and against the main transcript
+ * when the caller passes its `seen` set.
+ *
+ * `offset` is the byte position after the record's own line: what the Stop
+ * hook stores to say "I have reported everything up to here", in bytes
+ * because files that flush on their own schedules share no clock.  Each
+ * record carries the agent's 🤖 and 🔧 since the one before it, by
+ * splitClock; a record deduped away hands its time on to the next one this
+ * file keeps.  `etas` is an out-parameter: for every agent still answering
+ * with a live ETA, (finish epoch, its last record's epoch).
+ *
+ * The pure core: `files` is each agent file with its reading, as
+ * _agentFileReadings gives them. */
+export function agentRecordsOf(
+  files: readonly (readonly [string, AgentReading])[],
+  seen: Set<unknown> | null = null,
+  etas: (readonly [number | null, number | null])[] | null = null,
+): AgentRec[] {
+  seen = seen ?? new Set();
+  const out: AgentRec[] = [];
+  for (const [path, got] of files) {
+    const first = out.length;
+    for (const [epoch, pid, model, fresh, cw, cr, o, k, pos] of got.recs) {
+      if (seen.has(k)) continue;
+      seen.add(k);
+      if (!(truthy(fresh) || truthy(cw) || truthy(cr) || truthy(o))) continue;
+      out.push({ epoch, promptId: pid, model, fresh, cacheWrite: cw,
+        cacheRead: cr, out: o, requestId: k, path, offset: pos,
+        modelS: 0.0, toolS: 0.0 });
+    }
+    if (etas !== null && got.eta !== null) etas.push([...got.eta]);
+    const cuts: number[] = [];
+    let cut = -Infinity;
+    for (const a of out.slice(first)) {
+      cut = a.epoch !== null ? pyMax(cut, a.epoch) : cut;
+      cuts.push(cut);
+    }
+    splitClock(got.work, got.tools, got.waiting, cuts).forEach(([m, tl], i) => {
+      out[first + i] = { ...out[first + i], modelS: m, toolS: tl };
+    });
+  }
+  // Stamp order across files, unparseable stamps last: the fold-in walks
+  // turns forward and a record that cannot be placed in time is handed to
+  // the last turn rather than the first.
+  const key = (a: AgentRec): [number, number] =>
+    [a.epoch === null ? 1 : 0, or(a.epoch, 0.0) as number];
+  return out.sort((a, b) => cmpTuple(key(a), key(b)));
+}
+
+/** agentRecordsOf over this session's agent files, read here; see
+ * _agentFileReadings for `cache`. */
+export function agentRecords(transcript: string,
+  seen: Set<unknown> | null = null,
+  etas: (readonly [number | null, number | null])[] | null = null,
+  cache: AgentCache | null = null): AgentRec[] {
+  return agentRecordsOf(_agentFileReadings(transcript, cache), seen, etas);
+}
+
+/** Split `data` into lines as a binary file iterates: each up to and
+ * including its "\n", the last one without. */
+function* byteLines(data: Uint8Array): Generator<Uint8Array> {
+  let s = 0;
+  while (s < data.length) {
+    let e = data.indexOf(10, s);
+    e = e < 0 ? data.length : e + 1;
+    yield data.subarray(s, e);
+    s = e;
+  }
+}
+
+/** One agent file's part of agentRecords, from its bytes alone.
+ *
+ * Everything here depends on this file's bytes and nothing else, which is
+ * what lets _agentFileReadings keep it from one render to the next.  So it
+ * stops short of the two steps that look across files: `recs` holds every
+ * record that carries usage, zero bills and repeated requestIds included,
+ * and agentRecordsOf dedupes them and cuts the clock at the ones it keeps.
+ * `work`, `tools` and `waiting` are that clock's spans, and `eta` is the
+ * file's live ETA, or null.  A line that is not UTF-8 is skipped, as
+ * json.loads skips it when handed bytes. */
+export function _readAgentBytes(data: Uint8Array): AgentReading {
+  let pid: unknown = "";
+  const etaState = newEtaState();
+  const spanState: SpanState = [null, null];
+  const work: Span[] = [];
+  const pending: Pending = new Map();
+  const tools: Span[] = [], waiting: Span[] = [];
+  const recs: AgentRaw[] = [];
+  let pos = 0;
+  for (const line of byteLines(data)) {
+    pos += line.length;
+    let r: unknown;
+    try {
+      r = JSON.parse(DECODE_STRICT.decode(line));
+    } catch {
+      continue;
+    }
+    if (!isDict(r)) continue;
+    liveEta(r, etaState);
+    agentSpan(r, spanState, work);
+    scanToolSpans(r, pending, tools, waiting);
+    if (get(r, "type") === "user") {
+      pid = or(get(r, "promptId"), pid);
+      continue;
+    }
+    if (get(r, "type") !== "assistant") continue;
+    const m = or(get(r, "message"), {});
+    const u = get(m, "usage");
+    if (!truthy(u)) continue;
+    recs.push([tsEpoch(or(get(r, "timestamp"), "")), pid, get(m, "model") ??
+      null, num0(get(u, "input_tokens")),
+      num0(get(u, "cache_creation_input_tokens")),
+      num0(get(u, "cache_read_input_tokens")), num0(get(u, "output_tokens")),
+      or(or(get(r, "requestId"), get(m, "id")), "?"), pos]);
+  }
+  closeAgentSpan(spanState, work);
+  let eta: [number | null, number | null] | null = null;
+  if (etaState[0].length && !etaState[1]) {
+    eta = [etaFinish(etaState[0]), etaState[2]];
+  }
+  return { recs, work, tools, waiting, eta };
+}
+
+/** _readAgentBytes off the file, or null for a file that will not open. */
+export function _readAgentFile(path: string): AgentReading | null {
+  try {
+    return _readAgentBytes(fs.readFileSync(path));
+  } catch {
+    return null;
+  }
+}
+
+// A file last written this long ago is SETTLED, and only a settled file's
+// reading is kept.  Size and mtime are the whole test for a kept reading
+// being current, and a file rewritten within the clock's granularity can
+// come back the same size with the same stamp.  A live agent's file is
+// never settled while it runs, and is read afresh.
+export const AGENT_CACHE_SETTLE_S = 2.0;
+
+/** Where _agentFileReadings keeps its readings: a state directory, a
+ * version that a kept reading must match, and the clock that says which
+ * files have settled.  The Python keys its cache by a digest of its own
+ * source; the mod passes its version, and its file is named apart, so the
+ * two never serve each other a reading. */
+export interface AgentCache {
+  readonly stateDir: string;
+  readonly version: string;
+  readonly now: number;
+}
+
+/** Where the TypeScript keeps its readings of this session's agent files.
+ * Not .json: the usage caches are every .json in the directory. */
+export function _agentCachePath(transcript: string, stateDir: string): string {
+  let sid = pyBasename(transcript);
+  if (sid.endsWith(".jsonl")) sid = sid.slice(0, -".jsonl".length);
+  const digest = crypto.createHash("sha256")
+    .update("claude-agent-files-ts\0" + sid, "utf8").digest("hex");
+  return pyJoin(stateDir, "claude-agent-files-ts-" + digest + ".cache");
+}
+
+type Kept = AgentReading & { readonly stamp: readonly [number, string] };
+
+/** _readAgentFile for every agent file, in agentFiles' order, from the
+ * cache where a file has not changed since it was kept.
+ *
+ * Without it, every render parsed every agent file the session ever ran: a
+ * session with 611 of them, 768 MB, took six seconds a render.  A finished
+ * agent's file never changes, so a render reads only the files that grew.
+ * A reading is current while the file's size and mtime match the ones
+ * stamped when it was read.  The cache is written back only when a reading
+ * was added or a file went away.  With no `cache`, every file is read. */
+export function _agentFileReadings(transcript: string,
+  cache: AgentCache | null = null): [string, AgentReading][] {
+  const paths = agentFiles(transcript);
+  if (paths.length === 0) return [];
+  const cpath = cache ? _agentCachePath(transcript, cache.stateDir) : "";
+  let kept: Record<string, Kept> = {};
+  if (cache) {
+    try {
+      const d = JSON.parse(fs.readFileSync(cpath, "utf-8"));
+      if (isDict(d) && d.version === cache.version) {
+        kept = (or(d.files, {}) as Record<string, Kept>);
+      }
+    } catch {
+      // No cache yet, or one that will not parse: read everything.
+    }
+  }
+  const settled = cache ? cache.now - AGENT_CACHE_SETTLE_S : 0;
+  const out: [string, AgentReading][] = [];
+  const keep: Record<string, Kept> = {};
+  let dirty = false;
+  for (const path of paths) {
+    let st: fs.BigIntStats;
+    try {
+      st = fs.statSync(path, { bigint: true });
+    } catch {
+      continue;
+    }
+    const stamp: [number, string] = [Number(st.size), String(st.mtimeNs)];
+    let got: AgentReading | null = Object.hasOwn(kept, path)
+      ? kept[path] : null;
+    if (isDict(got) && recordEqual((got as Kept).stamp, stamp)) {
+      const { recs, work, tools, waiting, eta } = got;
+      got = { recs, work, tools, waiting, eta };
+      keep[path] = kept[path];
+    } else {
+      // Stamped before the read: a file that grows during it comes back
+      // with a newer stamp next time, and is read again.
+      got = _readAgentFile(path);
+      if (got === null) continue;
+      if (cache && Number(st.mtimeNs) / 1e9 < settled) {
+        keep[path] = { ...got, stamp };
+        dirty = true;
+      }
+    }
+    out.push([path, got]);
+  }
+  const same = (a: object, b: object) =>
+    recordEqual(Object.keys(a).sort(), Object.keys(b).sort());
+  if (cache && (dirty || !same(kept, keep))) {
+    writeAtomic(cpath, JSON.stringify({ version: cache.version,
+      files: keep }));
+  }
+  return out;
+}
+
+/** Write `text` to `path` through a temporary file renamed over it, private
+ * to the user, as the Python does; a failure leaves the old file. */
+function writeAtomic(path: string, text: string): void {
+  const tmp = `${path}.${process.pid}`;
+  try {
+    fs.mkdirSync(path.slice(0, path.lastIndexOf("/")) || "/",
+      { recursive: true, mode: 0o700 });
+    fs.writeFileSync(tmp, text);
+    fs.chmodSync(tmp, 0o600);
+    fs.renameSync(tmp, path);
+  } catch {
+    // Unwritable state is a slower next render, not a failure.
+  }
+}
+
+/** Where the Stop hook records how far into each agent file it reported.
+ *
+ * Per session, in private application state.  A one-way digest keeps a raw
+ * transcript/session id out of the path.  The same file the Python's Stop
+ * hook writes, so the two report each record once between them. */
+export function _agentStatePath(transcript: string, stateDir: string): string {
+  let sid = pyBasename(transcript);
+  if (sid.endsWith(".jsonl")) sid = sid.slice(0, -".jsonl".length);
+  const digest = crypto.createHash("sha256")
+    .update("claude-agent-offsets\0" + sid, "utf8").digest("hex");
+  return pyJoin(stateDir, "claude-agent-offsets-" + digest + ".json");
+}
+
+/** The byte offset the last Stop reported each agent file up to, or null
+ * when no Stop has written one for this session.  See _foldAgents for what
+ * the distinction buys.  A value must be an int, and Python's bool is one. */
+export function agentOffsets(transcript: string,
+  stateDir: string): Map<string, number> | null {
+  let d: unknown;
+  try {
+    d = JSON.parse(fs.readFileSync(_agentStatePath(transcript, stateDir),
+      "utf-8"));
+  } catch {
+    return null;
+  }
+  if (!isDict(d)) return null;
+  const out = new Map<string, number>();
+  for (const [k, v] of Object.entries(d)) {
+    if (typeof v === "boolean") out.set(k, v ? 1 : 0);
+    else if (typeof v === "number" && Number.isInteger(v)) out.set(k, v);
+  }
+  return out;
+}
+
+/** Record, after a Stop has rendered, how far into each agent file the
+ * records it folded in reached.
+ *
+ * Written from the records themselves rather than from the files' sizes,
+ * so that what is stored is exactly what was reported.  Files with no
+ * billed record yet are absent, and absent reads as 0.  `held` is what
+ * readTurns held back from a still-running agent, {path: the first such
+ * record's offset}: the extent stops short of them. */
+export function publishAgentOffsets(transcript: string,
+  agents: readonly AgentRec[], held: ReadonlyMap<string, number> | null,
+  stateDir: string): void {
+  held = held ?? new Map();
+  const ext = new Map<string, number>();
+  for (const a of agents) {
+    if (a.offset >= (held.get(a.path) ?? a.offset + 1)) continue;
+    if (a.offset > (ext.get(a.path) ?? 0)) ext.set(a.path, a.offset);
+  }
+  writeAtomic(_agentStatePath(transcript, stateDir), pyJsonDumps(ext));
+}
+
+/** The id off an agent file's `agent-<id>.jsonl`, else "". */
+export function agentLabelId(path: string): string {
+  const base = pyBasename(path);
+  return base.startsWith("agent-") && base.endsWith(".jsonl") &&
+    base.length >= "agent-".length + ".jsonl".length
+    ? base.slice("agent-".length, -".jsonl".length) : "";
+}
+
+/** An agent file's id and name: the id off `agent-<id>.jsonl`, and the
+ * description its `.meta.json` sidecar gives, else its agentType, else
+ * "". */
+export function agentLabel(path: string): [string, string] {
+  const aid = agentLabelId(path);
+  let name = "";
+  try {
+    const meta: unknown = JSON.parse(DECODE_FATAL_BOM.decode(
+      fs.readFileSync(path.slice(0, -".jsonl".length) + ".meta.json")));
+    if (isDict(meta)) {
+      name = pyStr(or(or(get(meta, "description"), get(meta, "agentType")),
+        ""));
+    }
+  } catch {
+    // No sidecar, or one that will not parse: the id alone.
+  }
+  return [aid, name];
+}
+
+// Decoding as open(encoding="utf-8") does: a bad byte raises, and a BOM is
+// kept, for json.load to refuse.
+const DECODE_FATAL_BOM = new TextDecoder("utf-8",
+  { fatal: true, ignoreBOM: true });
+
+// ════════════════════════════════════════════════════════════════════════════
+// The inbox.
+// ════════════════════════════════════════════════════════════════════════════
+
+// What SendMessage answers when the agent it names is busy: the message
+// waits in that agent's inbox until its next tool round, and Claude Code's
+// panel counts it on the agent's row as "1 queued".  The payload the panel
+// hands the subagent status line carries no such count, so inboxCounts
+// rebuilds it from the two ends.  \S is Python's, the complement of
+// PY_SPACE.
+export const SEND_QUEUED_RE = new RegExp(
+  `queued for delivery to ([^${PY_SPACE}]+) at its next tool round`, "u");
+export const SEND_QUEUED_MARK = new TextEncoder()
+  .encode("queued for delivery to");
+// The origins inboxDelivery counts: tighter than `"queued_command"`, which
+// every task notification carries too, and the value alone, so the search
+// holds whether or not the JSON is spaced.
+export const INBOX_MARKS: readonly Uint8Array[] =
+  ['"coordinator"', '"peer"'].map((m) => new TextEncoder().encode(m));
+
+/** The agent id a SendMessage result says its message is waiting for, or
+ * "". */
+export function queuedSend(r: Rec): string {
+  const res = get(r, "toolUseResult");
+  const msg = isDict(res) ? get(res, "message") : null;
+  const m = typeof msg === "string" ? SEND_QUEUED_RE.exec(msg) : null;
+  return m ? m[1] : "";
+}
+
+/** True for a SendMessage delivery taken off this agent's inbox.
+ *
+ * Written in the agent's own file as a `queued_command` attachment or a
+ * `type: user` record, whose `origin` says who sent it: `coordinator` for
+ * the main thread and `peer` for another agent.  A peer message marked
+ * `handback` is a subagent's final report, not a send. */
+export function inboxDelivery(r: Rec): boolean {
+  const a = get(r, "attachment");
+  let o: unknown;
+  if (isDict(a) && get(a, "type") === "queued_command") o = get(a, "origin");
+  else if (get(r, "type") === "user") o = get(r, "origin");
+  else return false;
+  if (!isDict(o)) return false;
+  const kind = get(o, "kind");
+  return kind === "coordinator" ||
+    (kind === "peer" && !truthy(get(o, "handback")));
+}
+
+/** Where `mark` next occurs in `data` at or after `from`, else -1. */
+function findBytes(data: Uint8Array, mark: Uint8Array, from: number): number {
+  return Buffer.from(data.buffer, data.byteOffset, data.byteLength)
+    .indexOf(mark, from);
+}
+
+/** Parse only the lines of `data` that hold one of `marks`, in file order.
+ *
+ * For a scan of the main transcript on every panel tick, where _records
+ * would parse a file that can run to 200MB to find a handful of lines: a
+ * byte search finds them in a fifth of a second.  A line that will not
+ * parse is skipped, as _records skips it. */
+export function markedRecordsOf(data: Uint8Array,
+  marks: readonly Uint8Array[]): Rec[] {
+  const starts = new Set<number>();
+  for (const mark of marks) {
+    let i = findBytes(data, mark, 0);
+    while (i >= 0) {
+      starts.add(i > 0 ? data.lastIndexOf(10, i - 1) + 1 : 0);
+      const e = data.indexOf(10, i);
+      i = e >= 0 ? findBytes(data, mark, e) : -1;
+    }
+  }
+  const out: Rec[] = [];
+  for (const s of [...starts].sort((a, b) => a - b)) {
+    const e = data.indexOf(10, s);
+    try {
+      const r: unknown = JSON.parse(DECODE_REPLACE.decode(
+        data.subarray(s, e >= 0 ? e : data.length)));
+      if (isDict(r)) out.push(r);
+    } catch {
+      continue;
+    }
+  }
+  return out;
+}
+
+/** markedRecordsOf over the file at `path`; [] if it will not open. */
+export function markedRecords(path: string,
+  marks: readonly Uint8Array[]): Rec[] {
+  try {
+    return markedRecordsOf(fs.readFileSync(path), marks);
+  } catch {
+    return [];
+  }
+}
+
+/** (epoch, target id) for each message this file queued for an agent. */
+export function inboxSends(path: string): [number, string][] {
+  const out: [number, string][] = [];
+  for (const r of markedRecords(path, [SEND_QUEUED_MARK])) {
+    const t = tsEpoch(or(get(r, "timestamp"), "")), target = queuedSend(r);
+    if (t !== null && target) out.push([t, target]);
+  }
+  return out;
+}
+
+/** The epoch of each SendMessage delivery in this agent's file. */
+export function inboxDeliveries(path: string): number[] {
+  return markedRecords(path, INBOX_MARKS).filter(inboxDelivery)
+    .map((r) => tsEpoch(or(get(r, "timestamp"), "")))
+    .filter((t): t is number => t !== null);
+}
+
+/** How many messages wait in each agent's inbox: {agent id: count}.
+ *
+ * `files` is every transcript that can send — the main thread's and each
+ * agent's — and `targets` maps each agent on the panel to its own file.
+ * The two ends are matched by time, not by text: a send raises the count,
+ * a delivery lowers it, and the count never goes below zero.  `since`, the
+ * earliest any target started, skips every file last written before it. */
+export function inboxCounts(files: readonly string[],
+  targets: ReadonlyMap<string, string>,
+  since: number | null = null): Map<string, number> {
+  const sent = new Map<string, number[]>();
+  for (const f of files) {
+    try {
+      if (since !== null &&
+        Number(fs.statSync(f, { bigint: true }).mtimeNs) / 1e9 < since) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+    for (const [t, target] of inboxSends(f)) {
+      if (targets.has(target)) {
+        if (!sent.has(target)) sent.set(target, []);
+        sent.get(target)!.push(t);
+      }
+    }
+  }
+  const out = new Map<string, number>();
+  for (const [aid, times] of sent) {
+    // A send and its delivery stamped alike: the send first.
+    const events: [number, number, number][] = [
+      ...times.map((t): [number, number, number] => [t, 0, 1]),
+      ...inboxDeliveries(targets.get(aid)!)
+        .map((t): [number, number, number] => [t, 1, -1])];
+    events.sort(cmpTuple);
+    let n = 0;
+    for (const [, , step] of events) n = Math.max(0, n + step);
+    if (n) out.set(aid, n);
+  }
+  return out;
+}

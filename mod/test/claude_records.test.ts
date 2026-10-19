@@ -8,6 +8,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cr from "../src/claude_records.ts";
@@ -123,7 +124,63 @@ const RUN: Record<string, (c: Case) => unknown> = {
   eta_finish: (c) => cr.etaFinish(c.args[0]),
   union_seconds: (c) => cr.unionSeconds(c.args[0]),
   net_tool_seconds: (c) => cr.netToolSeconds(c.args[0], c.args[1]),
+
+  agent_files: (c) => cr.agentFiles(c.args[0]),
+  _read_agent_file: (c) => cr._readAgentFile(c.args[0]),
+  agent_label_id: (c) => cr.agentLabelId(c.args[0]),
+  agent_label: (c) => cr.agentLabel(c.args[0]),
+  agent_records: (c) => {
+    const etas: (readonly [number | null, number | null])[] = [];
+    const seen = c.args.length > 1 ? new Set<unknown>(c.args[1]) : null;
+    const got = cr.agentRecords(c.args[0], seen, seen ? null : etas)
+      .map(snake);
+    // The same reading through the cache, written then served from it.
+    const cache = { stateDir: tmp(), version: "test", now: 1e12 };
+    for (let i = 0; i < 2; i++) {
+      assert.deepEqual(cr.agentRecords(c.args[0], seen && new Set(c.args[1]),
+        null, cache).map(snake), got);
+    }
+    return [got, etas];
+  },
+  publish_agent_offsets: (c) => {
+    const dir = tmp();
+    const agents = c.args[1].map(unsnake) as cr.AgentRec[];
+    const held = c.args[2] && new Map(Object.entries(c.args[2])) as
+      Map<string, number>;
+    cr.publishAgentOffsets(c.args[0], agents, held, dir);
+    const p = cr._agentStatePath(c.args[0], dir);
+    const got = cr.agentOffsets(c.args[0], dir);
+    return [path.basename(p), fs.readFileSync(p, "utf-8"),
+      got && dict(got)];
+  },
+  agent_offsets: (c) => {
+    const dir = tmp();
+    if (c.args[1] !== null) {
+      fs.writeFileSync(cr._agentStatePath(c.args[0], dir), c.args[1]);
+    }
+    const got = cr.agentOffsets(c.args[0], dir);
+    return got && dict(got);
+  },
+  inbox_classify: (c) => cr._records(c.args[0]).map((r) =>
+    [cr.queuedSend(r), cr.inboxDelivery(r)]),
+  inbox_sends: (c) => cr.inboxSends(c.args[0]),
+  inbox_deliveries: (c) => cr.inboxDeliveries(c.args[0]),
+  marked_records: (c) => cr.markedRecords(c.args[0],
+    c.args[1].map((m: string) => new TextEncoder().encode(m))),
+  inbox_counts: (c) => dict(cr.inboxCounts(c.args[0],
+    new Map(Object.entries(c.args[1])), c.args[2] ?? null)),
 };
+
+/** A fresh private directory, for state a case writes. */
+function tmp(): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), "claude-records-"));
+}
+
+/** A record the Python wrote, under the TypeScript's names. */
+function unsnake(r: any): any {
+  return Object.fromEntries(Object.entries(r).map(([k, v]) =>
+    [k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()), v]));
+}
 
 for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))
   .sort()) {
