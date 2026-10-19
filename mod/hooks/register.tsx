@@ -28,7 +28,7 @@ import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
 import { bandLines, bandRows, footerTail, workspaceOf } from '../src/band.ts'
 import {
-  newestBilled, receiptLines, receiptTurn, startLine, turnKey,
+  newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
 import { sha256Hex } from '../src/sha256.ts'
@@ -148,7 +148,7 @@ async function refresh($: $): Promise<void> {
 async function fileStart($: $, doc: Dict): Promise<void> {
   const tr = doc.transcript as Dict | undefined
   if (!pending || !tr?.prompt_id || tr.prompt_id === pending.before) return
-  const spans = startLine(doc)
+  const spans = startLine(doc, CONFIG.hide)
   const text = pending.text
   pending = null
   if (spans.length) await remember($, 'starts', startKey(text), spans)
@@ -463,9 +463,11 @@ export const register: Register = on => {
       Span[][] | undefined
     if (got) {
       // A blank row above, so the receipt stands apart from the answer,
-      // and one under its tag line (asked 2026-10-19).
+      // and one under its tag line (asked 2026-10-19), which goes with the
+      // tag line under the hide path `name.tag`.
       return (
-        <Box flexDirection="column" marginTop={1} marginBottom={1}>
+        <Box flexDirection="column" marginTop={1}
+          marginBottom={tagsHidden(CONFIG.hide) ? 0 : 1}>
           {got.map((l, i) => line(Text, l, 'receipt' + i))}
         </Box>
       )
@@ -494,7 +496,9 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const row = await next(e)
-    if (e.props.origin.kind !== 'composer') return row
+    if (e.props.origin.kind !== 'composer' || tagsHidden(CONFIG.hide)) {
+      return row
+    }
     await read($, filed)
     const tag = (await $.store.get(startKey(e.props.text))) as
       Span[] | undefined

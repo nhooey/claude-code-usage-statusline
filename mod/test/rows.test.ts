@@ -19,7 +19,7 @@ import {
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
-import { receiptLines, receiptTurn } from "../src/receipt.ts";
+import { receiptLines, receiptTurn, startLine } from "../src/receipt.ts";
 import { decodeTurn } from "../src/claude_cost.ts";
 import { spanFrom, spanJson } from "../tools/gen-grid-cases.ts";
 import {
@@ -135,6 +135,19 @@ test("--stamp-until splits 🎤, 🤖 and 🎮 between the receipt and the band"
       { ...opts, stampUntil: until }));
     assert.deepEqual(marks(band), keep, until);
   }
+});
+
+test("name.tag hides both tag lines and the receipt's blank row", () => {
+  const st = settings({});
+  const status = document("status/01-baseline@196");
+  const cost = document("cost/09-agents@196");
+  assert.ok(startLine(status).length > 0);
+  assert.deepEqual(startLine(status, ["name.tag"]), []);
+  const all = inZone(cost, () => receiptLines(st, cost, 196, [], null));
+  const less = inZone(cost, () => receiptLines(st, cost, 196, ["name.tag"],
+    null));
+  // The blank row and the 🔺🔖 line go; the rows stay.
+  assert.deepEqual(less, all.slice(0, -2));
 });
 
 test("the receipt bills the cost line's turn", () => {

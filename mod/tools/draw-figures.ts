@@ -87,7 +87,7 @@ let lines: Span[][];
 if (part === "band") {
   lines = bandLines(st, fig, cols, hide, { home, rate, phase, stampUntil });
 } else if (part === "start") {
-  lines = [startLine(fig)];
+  lines = [startLine(fig, hide)];
 } else if (part === "receipt") {
   const status = wsFile ? read(wsFile) : null;
   const ws = status ? workspaceOf(status, home) : null;

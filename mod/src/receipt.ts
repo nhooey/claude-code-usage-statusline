@@ -187,7 +187,7 @@ export function withEngineDuration(fig: Dict, durationMs: number): Dict {
  * turn's tag and `clock.now`, when it was stamped; none under the hide path
  * `name.tag`. */
 export function receiptHead(fig: Dict, hide: readonly string[]): Span[] {
-  if (hidden(hide, "name.tag")) return [];
+  if (tagsHidden(hide)) return [];
   const now = (fig.clock as Dict).now as number;
   const turns = (fig.turns as Dict[]).map(decodeTurn);
   const i = receiptTurn(turns);
@@ -234,11 +234,20 @@ export function drawRows(st: Settings, rows: readonly Row[], cols: number,
     .map((r) => draw(st, r, keys, cols, hide));
 }
 
+/** Whether `hide` hides the turn's tag lines, the start line's 🔻🔖 and
+ * the receipt's 🔺🔖, with the blank rows that set them apart: the hide
+ * path `name.tag` (asked 2026-10-20). */
+export function tagsHidden(hide: readonly string[]): boolean {
+  return hidden(hide, "name.tag");
+}
+
 /** The line under the prompt as its turn starts, dim, from a status
  * document: 🔻🔖, the tag of the turn opened last, `transcript.prompt_id`
  * and `turn_index`, and when its prompt was stamped, `transcript.turn_s`;
- * without the stamp, the tag alone, and nothing with neither. */
-export function startLine(fig: Dict): Span[] {
+ * without the stamp, the tag alone, and nothing with neither, or under the
+ * hide path `name.tag`. */
+export function startLine(fig: Dict, hide: readonly string[] = []): Span[] {
+  if (tagsHidden(hide)) return [];
   const tr = decodeTranscript(fig.transcript);
   const at = tr.turn_s || null;
   const text = turnHead(E_TURN_AHEAD, tr.prompt_id, tr.turn_index,

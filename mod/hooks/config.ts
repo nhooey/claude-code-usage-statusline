@@ -20,6 +20,8 @@ export const CONFIG = {
   // 🔋 the 5-hour limit, 🧠's ٪ of the window, and 🎯 the cache hit rate,
   // in every row (asked 2026-10-19).  Keep subagentStatusLine's --hide
   // flags in ~/.claude/settings.json the same, so the panel stacks.
+  // 'name.tag' hides the turn's tag lines, 🔻🔖 under the prompt and the
+  // receipt's 🔺🔖, with the blank rows around them.
   hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache'] as
     readonly string[],
   // --stamp-until: how far down the band's rows, 🎤 then 🤖 then 🎮, the
