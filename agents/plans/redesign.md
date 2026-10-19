@@ -326,6 +326,10 @@ Code's own; no hook reaches the main row. Measured with a throwaway mod on
   `  ◯ `, four columns, and its payload's `columns` is the terminal's width
   less 6 (154). A panel row's figures line up with the band's only when they
   are laid out for the terminal's width, not the payload's.
+- **The columns line up on screen.** With the panel laid out for the
+  terminal's width, the band's, the receipt's and the panel's 💰, 🧠, 🧩 and
+  💾 fell in the same screen columns, checked by eye in one terminal; the
+  other two of Ghostty, tmux and JediTerm are still to check.
 - **A nested row's chrome** was not seen; two more blanks per level is a
   guess.
 - **The closing line** is a full-width row: text set beside Claude Code's own
