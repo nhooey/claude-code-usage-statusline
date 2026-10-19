@@ -276,8 +276,12 @@ same version-1 reading as its output and shared cases pinning it.
    `grid.test.ts` fails when they are not what the generator writes. The
    Python grid engine, `coding_agent_usage_line/grid.py`, is a port of
    `grid.ts` function for function and passes every one of those cases under
-   each profile (`tests/grid.py`, 11,919 checks). Left: the agent panel's
-   rows moved onto it, which changes the panel's goldens.
+   each profile (`tests/grid.py`, 11,919 checks). The agent panel's rows
+   are on it too, in both languages: each is a grid row of scope `agent`,
+   laid out over templates of every scope's row for the terminal's width
+   (the payload's `columns` plus `PANEL_COLUMNS_SHORT`), with the chrome
+   counted and not printed, no copy of the panel's tree and no task id; its
+   45 goldens and 275 render cases moved with it, and `--hide` reaches it.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
 6. **The switch.** The band runs beside the status line until the two agree;

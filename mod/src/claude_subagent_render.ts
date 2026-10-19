@@ -3,9 +3,10 @@
 // A port of coding_agent_usage_line/claude_subagent_render.py, function for
 // function and under the same names in camelCase.  Preparation (sidecar
 // lookup, usage parsing, limits and source selection) stays the caller's;
-// this lays out the facts it is handed.  Its cells return spans, and
-// renderTaskRows joins each row into escape codes, where the panel prints
-// it.  The Python's docstrings carry each cell's history and argument and
+// this lays out the facts it is handed.  Its cells return spans;
+// renderTaskRows hands each row to grid.ts as its label's pieces and its
+// cells, and joins what the grid draws into escape codes, where the panel
+// prints it.  The Python's docstrings carry each cell's history and argument and
 // are not copied: the comments here say what the port has to do to match.
 //
 // THE USAGE IS READ AS THE PYTHON READS IT, BY ATTRIBUTE WITH A DEFAULT.
@@ -23,10 +24,9 @@ import {
   E_MODE_AGENTS, E_MODE_API_ERROR, E_MODE_DONE, E_MODE_ETA, E_MODE_FAILED,
   E_MODE_KILLED, E_MODE_MONITOR, E_MODE_QUEUED, E_MODE_SHELL, E_PCT,
   E_PHASE_END, E_PHASE_PAUSE, E_PHASE_RUN, E_RATE, E_ROW_AGENTS,
-  E_ROW_COMPACT, E_SESS, E_SPIN, E_TOOL, E_TREE_BAR, E_TREE_END, E_TREE_MID,
-  E_TREE_NODE, E_TREE_OPEN, E_WAIT, E_WEEK, E_WORK, GAUGE_W, LIM_FIG_W,
+  E_ROW_COMPACT, E_SESS, E_SPIN, E_TOOL, E_WAIT, E_WEEK, E_WORK, GAUGE_W, LIM_FIG_W,
   MAG_DUR_S, MAG_RATE, MAG_SHARE_AGENT, MAG_TOK, QUIET_S, QUIET_WARN_S,
-  VAL_W, VAL2_W, E_CACHE, E_DIFF,
+  E_CACHE, E_DIFF, CHROME_DEPTH, GRID_CELLS, LABEL_MIN, RIGHT_EDGE,
 } from "./spec.ts";
 import {
   cacheColor, durFmt, fitCols, humanize, limitPct, magDim, padVal, rateFig,
@@ -51,30 +51,33 @@ import {
   effortGlyph, etaReading, inheritEta, modelSpec, renderCost, renderDiff,
   renderTokens,
 } from "./claude_render.ts";
+// The redesigned grid the rows are laid out on.  It reads the panel's
+// widths from here in turn; neither module uses the other at load.
+import { cellWidth, chrome, draw, layout } from "./grid.ts";
+import type { Piece, Row } from "./grid.ts";
 
-export const A_KIND_W = 2, A_ID_W = 10, A_STATE_W = 2;
-export const A_HEAD_GAP = 1, A_NAME_MIN = 8, A_ACT_MIN = 8, A_CLOCK_W = 6,
-  A_RATE_W = 8, A_GAP = 2, A_TICK_S = 5.0;
+export const A_STATE_W = 2, A_CLOCK_W = 6, A_RATE_W = 8, A_TICK_S = 5.0;
 // 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 export const A_SPLIT_W = 3 * (2 + GAUGE_W) + 2;
-export const A_LIMIT_W = 2 + LIM_FIG_W, A_TREE_W = 2;
+export const A_LIMIT_W = 2 + LIM_FIG_W;
 // 🪫 one column wider than 🔋, for the decimal limitPct adds at digits=4.
 export const A_LIMIT_WEEK_W = A_LIMIT_W + 1;
 // ⛳ and five for the figure: durFmt's widest is four, and an overrun
 // spends one more on its "+".
 export const A_ETA_FIG_W = 5;
 export const A_SPIN_W = 1;
-// The name room a row must still have after paying for the tree beside its
-// right group; see the Python.
-export const A_TREE_ROOM = 40;
 // 🧠's share of the agent's window at its widest, "100٪".
 export const A_CTX_PCT_W = 4;
 // The 🤖 state trades its rate for how long the agent has been quiet; see
 // renderDoing.
 export const A_SILENT_S = QUIET_S, A_SILENT_WARN_S = QUIET_WARN_S;
-// The most a worktree's branch spends of the name's room, 🌿 not counted.
+// The most a worktree's branch spends of the label, 🌿 not counted.
 export const A_BRANCH_W = 16;
+// The blanks between the label's name, branch and activity.
+export const A_LABEL_GAP = 2;
 
+// aEtaW, aDiffW and aCtxW are grid.ts's width rules A_ETA_W, A_DIFF_W and
+// A_CTX_W, which it reads from here; the rows take them through cellWidth.
 /** ⛳ and its figure: E_ETA measured on this terminal. */
 export function aEtaW(st: Settings): number {
   return visWidth(E_ETA, st.widths) + A_ETA_FIG_W;
@@ -517,42 +520,9 @@ export function renderDoing(st: Settings, status: string, usage: unknown,
     paint(style, padVal(st, figW, durFmt(st, secs)) + " ")];
 }
 
-/** The name, 🌿 and a worktree's branch, then the activity, in that order
- * of claim on `room`: the name cut to fit, the branch whole or not at all,
- * the activity only with A_ACT_MIN. */
-export function renderWho(st: Settings, name: string, act: string,
-  room: number, branch = ""): Span[] {
-  const tag = branch ? E_GIT_OK + fitCols(st, branch, A_BRANCH_W) : "";
-  const out: Span[] = [];
-  let left = room;
-  const parts: [string, string, number | null][] = [
-    ["F_BLU", name, 0], ["F_GRN", tag, null], ["F_CHAT_B", act, A_ACT_MIN]];
-  for (const [col, text0, least] of parts) {
-    let text = text0;
-    if (!text) continue;
-    const have = left - (out.length ? A_HEAD_GAP : 0);
-    if (!out.length) text = fitCols(st, text, have);
-    else if (least === null) {
-      if (have < visWidth(text, st.widths)) continue;
-    } else if (have < least) continue;
-    else text = fitCols(st, text, have);
-    if (out.length) out.push(span(" ".repeat(A_HEAD_GAP)));
-    out.push(span(text, col));
-    left = have - visWidth(text, st.widths);
-  }
-  return out;
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 // The tree.
 // ════════════════════════════════════════════════════════════════════════════
-
-/** The columns the panel spends before a NESTED row, which `cols` is not
- * net of: A_TREE_W a level below the top. */
-export function treeCols(task: unknown, meta: unknown,
-  depth: number | null = null): number {
-  return A_TREE_W * ((depth === null ? spawnDepth(task, meta) : depth) - 1);
-}
 
 /** 1 for a task the session started, 2 for one an agent started, and so
  * on: max(1, int(...)), 1 where int() raises. */
@@ -612,41 +582,6 @@ export function treeShape(prepared: readonly Prepared[]):
   return out;
 }
 
-/** The panel's tree, drawn again for each task id; see the Python's
- * tree_marks for the order and the filled ⏺. */
-export function treeMarks(prepared: readonly Prepared[],
-  shape: Map<string, [string, number]> | null = null): Map<string, string> {
-  const sh = shape ?? treeShape(prepared);
-  const tasks = prepared.map((p) => p[0]).filter(hasId);
-  const started = (t: Dict): number => {
-    const v = pyOr(t.startTime, 0);
-    return pyFloat(v) ?? 0.0;
-  };
-  const order = tasks.map((t, i) => [started(t), i, pyStr(t.id)] as const)
-    .sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
-  const parent = new Map<string, string>();
-  for (const tid of order) parent.set(tid, sh.get(tid)![0]);
-  const open = new Set(parent.values());
-  const last = new Map<string, boolean>();
-  order.forEach((tid, i) => {
-    last.set(tid, !order.slice(i + 1).some((q) =>
-      parent.get(q) === parent.get(tid)));
-  });
-  const out = new Map<string, string>();
-  for (const tid of order) {
-    const [p, depth] = sh.get(tid)!;
-    const marks = depth > 1 ? [last.get(tid) ? E_TREE_END : E_TREE_MID] : [];
-    let up = p;
-    for (let k = 0; k < depth - 2; k++) {
-      marks.push(last.get(up) ?? true ? " " : E_TREE_BAR);
-      up = parent.get(up) ?? "";
-    }
-    out.set(tid, [...marks.reverse(),
-      open.has(tid) ? E_TREE_OPEN : E_TREE_NODE].join(" "));
-  }
-  return out;
-}
-
 /** Each task's ETA, pushed out to the latest finish below it on the panel;
  * see the Python's inherited_etas for which descendants count. */
 export function inheritedEtas(prepared: readonly Prepared[]):
@@ -701,27 +636,53 @@ export type PanelWidths = {
   readonly monitors: number;
 };
 
-/** Render one fully prepared task; it performs no reads or accounting.
- * The arguments after `now` are the panel's, from renderTaskRows; see the
- * Python's render_agent_row for each.  `eta` false is the row's own. */
-export function renderAgentRow(st: Settings, task0: unknown, usage: unknown,
-  meta0: unknown, shares0: unknown, limits: Limits,
-  cols0: number | null = null, now: number | null = null, tree = "",
-  treeW = 0, eta: Eta | false = false, waitingOn = false,
-  depth: number | null = null, kids = 0, kidsW = 0, lead = 0,
-  widths0: PanelWidths | null = null): Span[] {
-  const task = pyOr(task0, {}) as Dict, meta = pyOr(meta0, {});
-  const shares = pyOr(shares0, {});
-  const widths: Partial<PanelWidths> = widths0 ?? {};
-  let cols = cols0;
-  if (cols) cols = Math.max(0, cols - treeCols(task, meta, depth) - lead);
-  const tid = strOr(task.id), status = strOr(task.status);
-  const kind = strOr(task.type);
+/** The cells each scope's rows can carry: templates of the band's, the
+ * receipt's and an agent's rows, the panel's rows laid out over them so
+ * they reach the mod's columns; see the Python's SCOPE_CELLS. */
+export const SCOPE_CELLS: readonly (readonly [string, readonly string[]])[] = [
+  ["account", ["five", "week"]],
+  ["turn", ["cost", "ctx", "tok", "cache", "clock", "eta", "split", "five",
+    "week", "diff"]],
+  ["main", GRID_CELLS.map((c) => c.key)],
+  ["session", ["cost", "tok", "cache", "clock", "split", "five", "week",
+    "diff"]],
+  ["agent", GRID_CELLS.map((c) => c.key)],
+];
+
+/** The templates of SCOPE_CELLS, as grid rows. */
+export function possibleRows(): Row[] {
+  return SCOPE_CELLS.map(([scope, keys]) => ({
+    scope, label: [],
+    cells: Object.fromEntries(keys.map((k) => [k, [] as Span[]])),
+  }));
+}
+
+/** [cols, keys]: the terminal width a row is drawn for and the columns
+ * every row draws there.  With no width known, the narrowest that drops no
+ * column; see the Python's panel_layout. */
+export function panelLayout(st: Settings, cols: number | null = null,
+  hide: readonly string[] = []): [number, string[]] {
+  const rows = possibleRows();
+  let w = cols;
+  if (!w) {
+    const keys = layout(st, rows, 1 << 30, hide);
+    const room = new Map(GRID_CELLS.map((c) =>
+      [c.key, cellWidth(st, c.width) + c.gap]));
+    w = RIGHT_EDGE + width(chrome(CHROME_DEPTH), st.widths) + LABEL_MIN +
+      keys.reduce((n, k) => n + room.get(k)!, 0);
+  }
+  return [w, layout(st, rows, w, hide)];
+}
+
+/** The row's figures by GRID_CELLS key, each only where it has one. */
+export function agentCells(st: Settings, task: Dict, usage: unknown,
+  meta: unknown, shares: unknown, limits: Limits, now: number | null = null,
+  eta: Eta | false = false, waitingOn = false): { [key: string]: Span[] } {
+  const status = strOr(task.status);
   const model = pyOr(pyOr(strOr(task.model), ua(usage, "model", "")),
     strOr(pyGet(meta, "model"))) as string;
   const week = pyGet(shares, "week");
   const light = week !== null && (week as number) < MAG_SHARE_AGENT;
-  const gap = " ".repeat(A_GAP);
   const billed = pyTruthy(ua(usage, "parts", []));
   const ownEta = ua(usage, "eta") as Eta;
   const live = status === "running" ||
@@ -744,87 +705,110 @@ export function renderAgentRow(st: Settings, task0: unknown, usage: unknown,
   const signedOff = pyTruthy(ownEta) && ownEta![1] === 0 &&
     pyTruthy(shownEta) &&
     etaFinish(shownEta!)! <= etaFinish(ownEta!)! + 1e-6;
-  const lastEpoch = ua(usage, "last_epoch") as number | null;
-  const elapsed = clocked ? agentElapsed(task.startTime, now, end, first)
-    : null;
-  const cells: [number, SpanLike][] = [
+  const cells: [string, SpanLike][] = [
     // The model and effort, right before the 💰 they priced.
-    [6, renderAgentModel(st, model,
+    ["model", renderAgentModel(st, model,
       pyOr(strOr(task.effort), ua(usage, "effort", "")) as string)],
-    [visWidth(st.sCost, st.widths) + 4, billed
+    // What it is doing and for how long, or its token rate.
+    ["rate", renderDoing(st, status, usage, waitingOn,
+      tokenRate(task.tokenSamples, status), now, task)],
+    ["cost", billed
       ? renderCost(st, pyFormatF(ua(usage, "cost", 0) as number, 4)) : []],
-    [aCtxW(st), renderAgentCtx(st, ua(usage, "ctx_tokens", 0) as number,
+    ["ctx", renderAgentCtx(st, ua(usage, "ctx_tokens", 0) as number,
       ua(usage, "ctx_window", 0) as number)],
-    [visWidth(st.sTok, st.widths) + VAL_W + VAL2_W,
-      renderTokens(st, ua(usage, "tok_up"), ua(usage, "tok_down", 0))],
-    [5, renderAgentCache(st, ua(usage, "cache_pct", -1))],
-    // ⌛ ⛳ 🤖 🔧 🚦, one space apart as one segment, right before the 5h
-    // and 1w it spent.
-    [A_CLOCK_W + aEtaW(st) + A_SPLIT_W + 2, spans([
-      seg(st, A_CLOCK_W, clocked
-        ? renderAgentElapsed(st, task.startTime, now, end, first) : []), " ",
-      seg(st, aEtaW(st), renderAgentEta(st, shownEta, task.startTime, now,
-        status, lastEpoch, signedOff)), " ",
-      renderAgentSplit(elapsed, ua(usage, "model_s") as number | null,
-        ua(usage, "tool_s", 0.0) as number | null)])],
-    [A_LIMIT_W, renderAgentLimit(st, E_SESS, limits.session_pct,
+    ["tok", renderTokens(st, ua(usage, "tok_up"), ua(usage, "tok_down", 0))],
+    ["cache", renderAgentCache(st, ua(usage, "cache_pct", -1))],
+    // ⌛ ⛳ 🤖 🔧 🚦, right before the 5h and 1w it spent.
+    ["clock", clocked
+      ? renderAgentElapsed(st, task.startTime, now, end, first) : []],
+    ["eta", renderAgentEta(st, shownEta, task.startTime, now, status,
+      ua(usage, "last_epoch") as number | null, signedOff)],
+    ["split", renderAgentSplit(clocked
+      ? agentElapsed(task.startTime, now, end, first) : null,
+      ua(usage, "model_s") as number | null,
+      ua(usage, "tool_s", 0.0) as number | null)],
+    ["five", renderAgentLimit(st, E_SESS, limits.session_pct,
       pyGet(shares, "sess") as number | null, "F_LIM_SESS", billed, light)],
-    [A_LIMIT_WEEK_W, renderAgentLimit(st, E_WEEK, limits.weekly_pct,
+    ["week", renderAgentLimit(st, E_WEEK, limits.weekly_pct,
       week as number | null, "F_LIM_WEEK", billed, light, 4)],
-    [aDiffW(st), billed ? renderAgentDiff(st, usage) : []],
+    ["diff", billed ? renderAgentDiff(st, usage) : []],
   ];
-  let right = gapped(gap, cells.filter(([w]) => w)
-    .map(([w, c]) => seg(st, w, c)));
+  const out: { [key: string]: Span[] } = {};
+  for (const [k, v] of cells) {
+    const s = spans(v);
+    if (s.length) out[k] = s;
+  }
+  return out;
+}
+
+/** The row's label as grid pieces under the agent scope: the kind, the
+ * counts (ranked, so they leave whole before the name is cut), the name,
+ * the branch and the activity; see the Python's agent_label. */
+export function agentLabel(st: Settings, task: Dict, usage: unknown,
+  meta: unknown, waitingOn = false, kids = 0, kidsW = 0,
+  widths0: PanelWidths | null = null): Piece[] {
+  const widths: Partial<PanelWidths> = widths0 ?? {};
+  const status = strOr(task.status), kind = strOr(task.type);
+  const head = spans([seg(st, A_SPIN_W, renderSpin(status, usage)),
+    renderKind(strOr(pyGet(meta, "agentType")), kind),
+    seg(st, A_STATE_W, renderPhase(status, usage, waitingOn)), " "]);
+  const out: Piece[] = [{ path: "name.kind", spans: head, drop: 0 }];
+  const counts: [string, number, Span[], number][] = [
+    ["state.kids", kidsW, renderKids(kids), 5],
+    ["state.compact", widths.compact ?? 0,
+      renderCompactions(ua(usage, "compactions", 0) as number), 4],
+    ["state.shells", widths.shells ?? 0, renderBackground(E_MODE_SHELL,
+      backgroundCount(status, usage, "bash")), 3],
+    ["state.monitors", widths.monitors ?? 0, renderBackground(E_MODE_MONITOR,
+      backgroundCount(status, usage, "monitor")), 2],
+    ["state.inbox", widths.inbox ?? 0,
+      renderInbox(ua(usage, "inbox", 0) as number), 1],
+  ];
+  for (const [path, w, cell, drop] of counts) {
+    if (w) out.push({ path, spans: [...seg(st, w, cell), span(" ")], drop });
+  }
   const desc = squash(strOr(task.description));
   const name = strOr(task.name) || desc;
   let act = squash(strOr(task.label));
   if (act === desc) act = "";
-  // The cells a panel draws only while some row needs one sit together,
-  // right after the kind and state; see the Python for their order.
-  const headCells: [number, SpanLike][] = [
-    [A_SPIN_W + A_KIND_W + A_STATE_W + 1 + A_RATE_W, spans([
-      seg(st, A_SPIN_W, renderSpin(status, usage)),
-      renderKind(strOr(pyGet(meta, "agentType")), kind),
-      seg(st, A_STATE_W, renderPhase(status, usage, waitingOn)), " ",
-      seg(st, A_RATE_W, renderDoing(st, status, usage, waitingOn,
-        tokenRate(task.tokenSamples, status), now, task))])],
-    [kidsW, renderKids(kids)],
-    [widths.compact ?? 0,
-      renderCompactions(ua(usage, "compactions", 0) as number)],
-    [widths.shells ?? 0, renderBackground(E_MODE_SHELL,
-      backgroundCount(status, usage, "bash"))],
-    [widths.monitors ?? 0, renderBackground(E_MODE_MONITOR,
-      backgroundCount(status, usage, "monitor"))],
-    [widths.inbox ?? 0, renderInbox(ua(usage, "inbox", 0) as number)],
-    [A_ID_W, [span(fitCols(st, tid, A_ID_W), "F_BLU2", true)]],
-  ];
-  const head = gapped(" ".repeat(A_HEAD_GAP), headCells.filter(([w]) => w)
-    .map(([w, c]) => seg(st, w, c)));
-  let room = !cols ? A_NAME_MIN : Math.max(A_NAME_MIN,
-    cols - width(head, st.widths) - A_HEAD_GAP - width(right, st.widths) -
-    A_GAP);
   const branch = strOr(ua(usage, "branch", ""));
-  // Decided on the room a row would have with neither the panel's indent
-  // nor the lead, which add up to the same on every row.
-  if (tree && room + treeCols(task, meta, depth) + lead - treeW -
-    A_HEAD_GAP >= A_TREE_ROOM) {
-    room -= treeW + A_HEAD_GAP;
-    right = [...seg(st, treeW, [span(tree, null, true)]),
-      span(" ".repeat(A_HEAD_GAP)), ...right];
-  }
-  return rstrip([" ".repeat(lead), head, " ".repeat(A_HEAD_GAP),
-    seg(st, room, renderWho(st, name, act, room, branch)), gap, right]);
-}
-
-/** `cells`' spans in one list, `gap` between each two: str.join for
- * spans. */
-function gapped(gap: string, cells: readonly SpanLike[]): Span[] {
-  const out: Span[] = [];
-  cells.forEach((c, i) => {
-    if (i) out.push(span(gap));
-    out.push(...spans(c));
+  const words = ([
+    ["name.label", name, "F_BLU"],
+    ["workspace.branch",
+      branch ? E_GIT_OK + fitCols(st, branch, A_BRANCH_W) : "", "F_GRN"],
+    ["chat.doing", act, "F_CHAT_B"],
+  ] as const).filter(([, t]) => t);
+  words.forEach(([path, text, colour], i) => {
+    const gap = i < words.length - 1 ? [span(" ".repeat(A_LABEL_GAP))] : [];
+    out.push({ path, spans: [span(text, colour), ...gap], drop: 0 });
   });
   return out;
+}
+
+/** Render one fully prepared task on the grid, without its chrome, which
+ * Claude Code draws; see the Python's render_agent_row for each argument.
+ * `eta` false is the row's own. */
+export function renderAgentRow(st: Settings, task0: unknown, usage: unknown,
+  meta0: unknown, shares0: unknown, limits: Limits,
+  cols0: number | null = null, now: number | null = null,
+  eta: Eta | false = false, waitingOn = false, depth: number | null = null,
+  kids = 0, kidsW = 0, widths: PanelWidths | null = null,
+  hide: readonly string[] = []): Span[] {
+  const task = pyOr(task0, {}) as Dict, meta = pyOr(meta0, {});
+  const shares = pyOr(shares0, {});
+  const [cols, keys] = panelLayout(st, cols0, hide);
+  const row: Row = {
+    scope: "agent",
+    depth: depth === null ? spawnDepth(task, meta) : depth,
+    label: agentLabel(st, task, usage, meta, waitingOn, kids, kidsW, widths),
+    cells: agentCells(st, task, usage, meta, shares, limits, now, eta,
+      waitingOn),
+  };
+  const out = draw(st, row, keys, cols, hide), head = chrome(row.depth);
+  // A terminal too narrow for even the chrome leaves the row nothing.
+  const same = head.every((h, i) => i < out.length &&
+    JSON.stringify(out[i]) === JSON.stringify(h));
+  return rstrip(same ? out.slice(head.length) : []);
 }
 
 /** The widest 📨, 🤏, 💻 and 📡 cell on the panel; see PanelWidths. */
@@ -846,18 +830,18 @@ export function panelWidths(st: Settings,
   };
 }
 
-/** The (task id, joined row) pairs for prepared (task, usage, meta,
- * shares) facts, in the payload's order. */
+/** The (task id, row) pairs for prepared (task, usage, meta, shares)
+ * facts, in the payload's order.  `cols` is the terminal's width, the
+ * payload's columns plus PANEL_COLUMNS_SHORT, and `hide` the --hide
+ * paths. */
 export function renderTaskRowSpans(st: Settings,
   prepared: readonly Prepared[], limits: Limits, cols: number | null = null,
-  now: number | null = null): [string, Span[]][] {
+  now: number | null = null,
+  hide: readonly string[] = []): [string, Span[]][] {
   const rows: [string, Span[]][] = [];
   const shape = treeShape(prepared);
-  const trees = treeMarks(prepared, shape);
   const etas = inheritedEtas(prepared);
   const busy = runningParents(prepared);
-  const treeW = maxOr0([...trees.values()]
-    .map((t) => visWidth(t, st.widths)));
   // 👶🏻 counts the rows hanging directly under each one, as treeShape
   // resolves them, finished or not.
   const kids = new Map<string, number>();
@@ -866,19 +850,13 @@ export function renderTaskRowSpans(st: Settings,
   }
   const kidsW = maxOr0([...kids.values()]
     .map((n) => visWidth(E_KIDS, st.widths) + pyLen(String(n))));
-  // Each row opens with the blank the deepest row spends on its tree, less
-  // its own, so every row's cells start on one column.
-  const deep = shape.size ? pyMax([...shape.values()].map(([, dp]) => dp))
-    : 1;
   const widths = panelWidths(st, prepared);
   for (const [task, usage, meta, shares] of prepared) {
     if (hasId(task)) {
       const tid = pyStr(task.id);
-      const dp = shape.get(tid)![1];
       rows.push([tid, renderAgentRow(st, task, usage, meta, shares, limits,
-        cols, now, trees.get(tid) ?? "", treeW,
-        etas.has(tid) ? etas.get(tid)! : false, busy.has(tid), dp,
-        kids.get(tid) ?? 0, kidsW, A_TREE_W * (deep - dp), widths)]);
+        cols, now, etas.has(tid) ? etas.get(tid)! : false, busy.has(tid),
+        shape.get(tid)![1], kids.get(tid) ?? 0, kidsW, widths, hide)]);
     }
   }
   return rows;
@@ -887,8 +865,8 @@ export function renderTaskRowSpans(st: Settings,
 /** render_task_rows: `(task id, row)` pairs, each row joined into escape
  * codes where the panel prints it. */
 export function renderTaskRows(st: Settings, prepared: readonly Prepared[],
-  limits: Limits, cols: number | null = null,
-  now: number | null = null): [string, string][] {
-  return renderTaskRowSpans(st, prepared, limits, cols, now)
+  limits: Limits, cols: number | null = null, now: number | null = null,
+  hide: readonly string[] = []): [string, string][] {
+  return renderTaskRowSpans(st, prepared, limits, cols, now, hide)
     .map(([tid, row]) => [tid, join(row)]);
 }

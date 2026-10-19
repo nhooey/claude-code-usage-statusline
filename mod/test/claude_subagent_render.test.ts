@@ -3,9 +3,9 @@
 // tests/fixtures/gen/panel.py writes tests/fixtures/panel/: one file per
 // settings group (the terminal's environment, mark spacing and subscript
 // decimals), each case the prepared (task, usage, meta, shares) records,
-// the plan Limits, the width and the clock render_task_rows was handed,
-// and the rows it drew, each as the joined string and as the spans it was
-// joined from.  Both have to match: the spans are what a mod draws, and
+// the plan Limits, the terminal's width, the clock and any --hide paths
+// render_task_rows was handed, and the rows it drew, each as the joined
+// string and as the spans it was joined from.  Both have to match: the spans are what a mod draws, and
 // the string is what the goldens pin.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -42,10 +42,11 @@ for (const file of FILES) {
       const inp = revive(c.input);
       const prepared: sr.Prepared[] = inp.tasks.map(
         (r: any) => [r.task, r.usage, r.meta, r.shares] as const);
+      const hide = inp.hide ?? [];
       const got = sr.renderTaskRowSpans(st, prepared, inp.limits, inp.cols,
-        inp.now);
+        inp.now, hide);
       const joined = sr.renderTaskRows(st, prepared, inp.limits, inp.cols,
-        inp.now);
+        inp.now, hide);
       assert.deepEqual(got.map(([id, row]) => ({
         id, spans: row.map(spanJson),
       })), c.rows.map((r: any) => ({ id: r.id, spans: r.spans })),
@@ -59,5 +60,5 @@ for (const file of FILES) {
 }
 
 test("panel: every case was run", () => {
-  assert.equal(total, 242);
+  assert.equal(total, 275);
 });
