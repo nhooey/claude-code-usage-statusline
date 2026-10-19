@@ -19,6 +19,7 @@ import cases  # noqa: E402
 import cost  # noqa: E402
 import formatting  # noqa: E402
 import panel  # noqa: E402
+import receipt  # noqa: E402
 import records  # noqa: E402
 import sources  # noqa: E402
 import status  # noqa: E402
@@ -36,6 +37,8 @@ calib.main()
 formatting.main()
 # After cases.json, whose subagent cases it runs to capture the corpus.
 panel.main_panel()
+# Draws the committed cost figures documents, which run-cases.py writes.
+receipt.main()
 records.main()
 # Last, since it sets TZ for the process.  Under /usr/bin/python3: its
 # expected epochs are 3.9's fromisoformat, quirks included.
