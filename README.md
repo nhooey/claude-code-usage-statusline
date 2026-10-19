@@ -336,7 +336,6 @@ quota shares, so those fields are left blank rather than estimated. See
 | [Glyphs and terminals](docs/glyphs-and-terminals.md) | how to choose a glyph that keeps the columns aligned |
 | [Tests](docs/tests.md) | the test suites and what CI runs |
 | [Development](docs/development.md) | how the code is organized, and the style rules |
-| [Redesign](docs/redesign.md) | a proposal, not built: one grid for the band, the panel and the receipt, drawn by a mod |
 
 ## License
 

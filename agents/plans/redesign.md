@@ -1,7 +1,7 @@
 # Redesign: one grid for all three readouts
 
 A proposal, not built yet. Nothing here changes what the program draws today;
-[Layout](layout.md) is still the reference for that. This document collects
+[Layout](../../docs/layout.md) is still the reference for that. This document collects
 the design as it is decided, and `tools/layout-mockup.py` draws it.
 
 ## Why
