@@ -645,7 +645,10 @@ What schemas 2 and 3 count, and how:
    line beside ours (`cost_usd`, `lines`, `claude_cost_usd`,
    `claude_lines`), as a check; [Options](../../docs/options.md) has the
    line. Whether Claude Code's lines count its agents' is still not known,
-   and the check is where to find out.
+   and the check is where to find out. 💰 prices 1-hour cache writes at
+   the published rate, twice input, though Claude Code's own total prices
+   them as 5-minute writes, 1.25 times, and so runs lower (decided
+   2026-10-19).
 5. **🎮 ⌛ is the session's age** on the wall clock, as today's ⌛, from
    `accounting.session.start_s`, the earliest turn's stamp, to `clock.now`;
    the band and the receipt read the same start, so the two agree.
