@@ -22,8 +22,8 @@ from typing import Dict, List, NamedTuple, Optional, Sequence, Union
 from . import formatting as fmt
 from . import claude_subagent_render as sub
 from .spans import Span, cut, spans, width
-from .spec import (CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN,
-                   PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
+from .spec import (CHROME_DEPTH, DROP_ORDER, E_PCT, GRID_CELLS, GRID_SCOPES,
+                   LABEL_MIN, PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
 
 
 class Piece(NamedTuple):
@@ -123,6 +123,38 @@ def _shows(row: Row, key: str, path: str, patterns: Sequence[str]) -> bool:
     return key in row.cells and not hidden(patterns, row.scope + "." + path)
 
 
+def _share_gone(patterns: Sequence[str]) -> bool:
+    """Whether the patterns hide 🧠's ٪ share of the window on every scope,
+    so its column can give the share's room back."""
+    return all(hidden(patterns, s + ".context.share") for s in GRID_SCOPES)
+
+
+def _col_width(c: dict, patterns: Sequence[str]) -> int:
+    """A column's width under `patterns`: 🧠's without the share's room
+    where every scope hides the share."""
+    w = cell_width(c["width"])
+    return (w - sub.A_CTX_PCT_W if c["key"] == "ctx" and _share_gone(patterns)
+            else w)
+
+
+def _figure(row: Row, key: str, w: int, patterns: Sequence[str]) -> List[Span]:
+    """The row's figure for column `key`, `w` wide: 🧠's without the ٪ share
+    of the window that ends it, where a pattern hides `context.share` on the
+    row's scope, its size then set flush right, so the sizes of the rows
+    stack whatever their sign or "~"."""
+    f = spans(list(row.cells[key]))
+    if (key != "ctx" or not f
+            or not hidden(patterns, row.scope + ".context.share")):
+        return f
+    if f[-1].text.rstrip().endswith(E_PCT):
+        f = f[:-1]
+    mark, rest = f[0], f[1:]
+    text = "".join(s.text for s in rest).strip()
+    style = next((s for s in rest if s.text.strip()), mark)
+    return [mark, style._replace(
+        text=fmt.pad_val(w - fmt.vis_width(mark.text), text))]
+
+
 def layout(rows: Sequence[Row], cols: int, patterns: Sequence[str],
            fixed: bool = True) -> List[str]:
     """The columns every row draws, after --hide and the narrow-window drop,
@@ -135,7 +167,7 @@ def layout(rows: Sequence[Row], cols: int, patterns: Sequence[str],
     the rows drawn, and move when a nested agent appears."""
     keys = [c["key"] for c in GRID_CELLS
             if any(_shows(r, c["key"], c["hide"], patterns) for r in rows)]
-    room = {c["key"]: cell_width(c["width"]) + c["gap"] for c in GRID_CELLS}
+    room = {c["key"]: _col_width(c, patterns) + c["gap"] for c in GRID_CELLS}
     lead = (width(chrome(CHROME_DEPTH)) if fixed
             else max([0] + [width(chrome(r.depth)) for r in rows]))
     for k in DROP_ORDER:
@@ -160,10 +192,10 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
     for c in GRID_CELLS:
         if c["key"] not in keys:
             continue
-        w = cell_width(c["width"])
+        w = _col_width(c, patterns)
         cells.append([c["gap"] + w,
                       [Span(" " * c["gap"])]
-                      + fmt.seg(w, spans(list(row.cells[c["key"]])))
+                      + fmt.seg(w, _figure(row, c["key"], w, patterns))
                       if _shows(row, c["key"], c["hide"], patterns)
                       else None])
     head = chrome(row.depth)

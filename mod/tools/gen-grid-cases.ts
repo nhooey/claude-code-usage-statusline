@@ -58,6 +58,8 @@ const HIDES: readonly (readonly string[])[] = [
   [], ["account"], ["*.work"], ["turn.time.eta"],
   ["session.workspace", "*.clock.time"], ["*.state.rate"],
   ["*.plan", "main", "agent.chat"], ["session", "turn.chat", "agent.time"],
+  // 🧠's share on every row, which narrows its column, and on one row only.
+  ["*.context.share", "*.plan.five_hour"], ["agent.context.share"],
 ];
 
 /** A span as the cases write it; see the header. */

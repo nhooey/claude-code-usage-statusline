@@ -15,16 +15,16 @@
 // Settings, as claude_subagent_render.ts computes them.  Nothing here joins
 // spans into escape codes: that is the printing's job.
 import {
-  CHROME_DEPTH, DROP_ORDER, GRID_CELLS, LABEL_MIN, PANEL_CHROME, RIGHT_EDGE,
-  VAL_W, VAL2_W,
+  CHROME_DEPTH, DROP_ORDER, E_PCT, GRID_CELLS, GRID_SCOPES, LABEL_MIN,
+  PANEL_CHROME, RIGHT_EDGE, VAL_W, VAL2_W,
 } from "./spec.ts";
-import { seg, visWidth } from "./formatting.ts";
+import { padVal, seg, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
 import { cut, span, spans, width } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import {
-  A_CLOCK_W, A_LIMIT_W, A_LIMIT_WEEK_W, A_RATE_W, A_SPLIT_W, aCtxW, aDiffW,
-  aEtaW,
+  A_CLOCK_W, A_CTX_PCT_W, A_LIMIT_W, A_LIMIT_WEEK_W, A_RATE_W, A_SPLIT_W,
+  aCtxW, aDiffW, aEtaW,
 } from "./claude_subagent_render.ts";
 
 /** A part of a row's label, with the path --hide names it by, under the
@@ -140,6 +140,37 @@ function shows(row: Row, key: string, path: string,
     !hidden(patterns, row.scope + "." + path);
 }
 
+/** Whether the patterns hide 🧠's ٪ share of the window on every scope,
+ * so its column can give the share's room back. */
+function shareGone(patterns: readonly string[]): boolean {
+  return GRID_SCOPES.every((s) => hidden(patterns, s + ".context.share"));
+}
+
+/** A column's width under `patterns`: 🧠's without the share's room where
+ * every scope hides the share (asked 2026-10-19). */
+function colWidth(st: Settings, c: { key: string; width: number | string },
+  patterns: readonly string[]): number {
+  const w = cellWidth(st, c.width);
+  return c.key === "ctx" && shareGone(patterns) ? w - A_CTX_PCT_W : w;
+}
+
+/** The row's figure for column `key`, `w` wide: 🧠's without the ٪ share
+ * of the window that ends it, where a pattern hides `context.share` on the
+ * row's scope, its size then set flush right, so the sizes of the rows
+ * stack whatever their sign or "~". */
+function figure(st: Settings, row: Row, key: string, w: number,
+  patterns: readonly string[]): readonly Span[] {
+  const f = row.cells[key];
+  if (key !== "ctx" || !f.length ||
+    !hidden(patterns, row.scope + ".context.share")) return f;
+  const [mark, ...rest] = f[f.length - 1].text.trimEnd().endsWith(E_PCT)
+    ? f.slice(0, -1) : f;
+  const text = rest.map((s) => s.text).join("").trim();
+  const style = rest.find((s) => s.text.trim()) ?? mark;
+  return [mark, { ...style, text: padVal(st,
+    w - visWidth(mark.text, st.widths), text) }];
+}
+
 /** The columns every row draws, after --hide and the narrow-window drop,
  * as GRID_CELLS keys in order.
  *
@@ -153,7 +184,7 @@ export function layout(st: Settings, rows: readonly Row[], cols: number,
   const keys = GRID_CELLS.filter((c) =>
     rows.some((r) => shows(r, c.key, c.hide, patterns))).map((c) => c.key);
   const room = new Map(GRID_CELLS.map((c) =>
-    [c.key, cellWidth(st, c.width) + c.gap]));
+    [c.key, colWidth(st, c, patterns) + c.gap]));
   const lead = fixed ? width(chrome(CHROME_DEPTH), st.widths)
     : Math.max(0, ...rows.map((r) => width(chrome(r.depth), st.widths)));
   for (const k of DROP_ORDER) {
@@ -177,9 +208,10 @@ export function draw(st: Settings, row: Row, keys: readonly string[],
   const cells: [number, Span[] | null][] = [];
   for (const c of GRID_CELLS) {
     if (!keys.includes(c.key)) continue;
-    const w = cellWidth(st, c.width);
+    const w = colWidth(st, c, patterns);
     cells.push([c.gap + w, shows(row, c.key, c.hide, patterns)
-      ? [span(" ".repeat(c.gap)), ...seg(st, w, spans(row.cells[c.key]))]
+      ? [span(" ".repeat(c.gap)),
+        ...seg(st, w, spans(figure(st, row, c.key, w, patterns)))]
       : null]);
   }
   const head = chrome(row.depth);

@@ -95,7 +95,7 @@ function ctxGrowth(st: Settings, tokens: number,
   const room = aCtxW(st) - visWidth(st.sCtx, st.widths);
   const gap = visWidth(size + " " + pct, st.widths) > room ? "" : " ";
   // The points a span of their own, so a hidden `context.share` can drop
-  // them (shareHidden).
+  // them (grid.ts's figure).
   return [span(st.sCtx), span(size + gap, "F_PNK"),
     ...(pct ? [span(pct, "F_PNK")] : [])];
 }
