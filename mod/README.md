@@ -27,9 +27,11 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 
 - **The band,** above the prompt: the grid's rows
   for the session, from the last status figures document, redrawn as the
-  session starts, after each tool call, as a turn starts and ends, and
-  every 30 seconds. While a turn runs its 🎤 and 🎮 rows are that turn's,
-  live.
+  session starts, after each tool call, as a turn starts and ends, every
+  5 seconds while a turn runs (never more often than three times as long
+  as the last read took) and every 30 seconds otherwise. Its clocks (🔧 ⌛
+  ⛳ 🕐 🔜) move each second between reads. While a turn runs its 🎤 and
+  🎮 rows are that turn's, live.
 - **The footer** under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`: the
   💳 account details at its right end, dim, after Claude Code's own line,
   whose pills stay live.
@@ -50,7 +52,7 @@ files keep their reads in `src/*_node.ts`, which only Node imports, and
 `hooks/config.ts` holds it, in one place: the usage source
 (`claude-usage-tracker` by default, as `--usage-source` names it), the
 account and period, the `--hide` paths, `--mark-spacing` and
-`--subscript-decimals`, the tick, how many start lines are kept, how long
+`--subscript-decimals`, the ticks (idle, running, and the clocks'), how many start lines are kept, how long
 the receipt waits for its turn, and the version the mod's caches are
 keyed by. Set them to what your status line runs with, so the two read
 one reading and draw one grid. Edit it, then `/reload-plugins`.
@@ -161,7 +163,8 @@ Each load of the mod writes one line when its first event comes,
 `started by session.start in <cwd>`: a session whose turns drew nothing
 and that has no such line never loaded the mod. A status read that failed
 says why (`refresh: no status document: …`), as does a turn that got no
-receipt (`no receipt: …`).
+receipt (`no receipt: …`), and a read over two seconds says how long it
+took (`slow read: 2410ms`).
 
 In the debug log, `classic.SessionStart bypassed by cc-plugin-sec-default`
 is expected: Claude Code's security plugin passes the classic events by a
