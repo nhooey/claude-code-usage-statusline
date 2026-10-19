@@ -23,11 +23,11 @@ import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
 import type { FiguresDoc } from '../types'
 import * as spec from '../src/spec.ts'
-import { settings, visWidth } from '../src/formatting.ts'
+import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { bandLines, workspaceOf } from '../src/band.ts'
+import { bandLines, footerTail, workspaceOf } from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, turnKey,
   withEngineDuration,
@@ -404,6 +404,17 @@ export const register: Register = on => {
     )
   })
 
+  // The footer under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`, with
+  // the 💳 row at its right end (decided 2026-10-19): a dim tail after
+  // Claude Code's own line, which keeps its pills live (footerTail).
+  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
+    const doc = await read($, status)
+    if (doc === null) return next(e)
+    const tail = footerTail(await settingsOf($), doc as Dict, CONFIG.hide,
+      e.props.hint, e.viewport?.columns ?? bandCols)
+    return tail ? next({ ...e, props: { ...e.props, tail } }) : next(e)
+  })
+
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const row = await next(e)
     if (e.props.origin.kind !== 'composer') return row
@@ -412,31 +423,13 @@ export const register: Register = on => {
       Span[] | undefined
     if (!tag) return row
     const { Box, Text } = $.ui.resolve(e)
-    const st = await settingsOf($)
-    const blank = (n: number): Span => ({ text: ' '.repeat(n), colour: null,
-      dim: true, bold: false, bg: null })
-    // On the prompt's own row, after it, where a one-line prompt leaves the
-    // room: a line less a turn (decided 2026-10-19).
-    const cols = e.viewport?.columns ?? bandCols
-    const tagW = visWidth(tag.map((s) => s.text).join(''), st.widths)
-    const text = e.props.text
-    if (!text.includes('\n') && 2 + visWidth(text, st.widths) + 2 + tagW <=
-      cols - spec.RIGHT_EDGE) {
-      return (
-        <Box flexDirection="row">
-          {row}
-          <Box flexShrink={0}>{line(Text, [blank(2), ...tag], 'tag', true)}</Box>
-        </Box>
-      )
-    }
-    // Else on a line of its own, its 🔻🔖 over the receipt's 🔺🔖, which
-    // stands after the band's indent and 📊 🎤.
-    const under = spec.C_CHROME_CONT + visWidth(spec.E_COSTLINE + ' ' +
-      spec.E_TURN + ' ', st.widths)
+    // On a line of its own under the prompt, at no indent, so its 🔻🔖
+    // stacks with the receipt's 🔺🔖 line, also at none (decided
+    // 2026-10-19; beside a short prompt it could not stack).
     return (
       <Box flexDirection="column">
         {row}
-        {line(Text, [blank(under), ...tag], 'tag', true)}
+        {line(Text, tag, 'tag', true)}
       </Box>
     )
   })

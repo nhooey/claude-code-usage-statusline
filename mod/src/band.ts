@@ -15,9 +15,9 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
+  CHROME_DEPTH, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S, RIGHT_EDGE,
 } from "./spec.ts";
-import { durFmt, magDim } from "./formatting.ts";
+import { durFmt, magDim, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
@@ -350,14 +350,43 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
   };
 }
 
-/** The rows a phase draws, top to bottom: all four while a turn runs, and
- * 🤖💬 and 💳 once it ends.  🎤 and 🎮 lead, so they sit nearest the Stop
- * hook's receipt, the stamp they become when the turn ends; 💳 comes last,
- * under the main thread (decided 2026-10-19). */
+/** The rows a phase draws, top to bottom: 🎤, 🎮 and 🤖💬 while a turn
+ * runs, and 🤖💬 once it ends.  🎤 and 🎮 lead, so they sit nearest the
+ * receipt they become when the turn ends.  💳 is not among them: it is drawn
+ * on the footer under the prompt, right-aligned, as `accountText` gives it
+ * (decided 2026-10-19). */
 export function phaseRows(rows: BandRows, phase: Phase): Row[] {
   return phase === "running"
-    ? [rows.turn, rows.session, rows.main, rows.account]
-    : [rows.main, rows.account];
+    ? [rows.turn, rows.session, rows.main]
+    : [rows.main];
+}
+
+/** The 💳 row's label as one line of plain text, "📅 2026-10-19  🕐 22:12:44
+ * 💳 🔋 1٪ 🔜 4.8h  🪫 49٪ 🔜 9.8h", each piece hidden by its own path; ""
+ * under the hide path `account`.  The footer it is drawn on takes a string,
+ * so it keeps none of the row's colours. */
+export function accountText(st: Settings, fig: Dict,
+  hide: readonly string[]): string {
+  if (hidden(hide, "account")) return "";
+  const now = (fig.clock as Dict).now as number;
+  return accountRow(st, fig, now).label
+    .filter((p) => !hidden(hide, p.path))
+    .flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
+}
+
+/** What the footer under the prompt gets after Claude Code's own line,
+ * `hint`, at `cols`: `accountText`, after blanks that end it where the
+ * band's rows end, at least two; "" with no account text.  The line is two
+ * blanks in, and `hint` is read with one space between its parts, so the
+ * padding is a guess at the drawn width; a tail too wide is cut where the
+ * row ends. */
+export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
+  hint: string, cols: number): string {
+  const text = accountText(st, fig, hide);
+  if (!text) return "";
+  const pad = cols - RIGHT_EDGE - 2 - visWidth(hint, st.widths) -
+    visWidth(text, st.widths);
+  return " ".repeat(Math.max(2, pad)) + text;
 }
 
 /** The band as drawn at `cols` under `hide`: its rows' spans, top to

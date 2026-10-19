@@ -7,13 +7,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join as pathJoin } from "node:path";
-import { settings } from "../src/formatting.ts";
+import { settings, visWidth } from "../src/formatting.ts";
 import type { Env } from "../src/formatting.ts";
 import { join, width } from "../src/spans.ts";
 import { RIGHT_EDGE } from "../src/spec.ts";
 import type { Span } from "../src/spans.ts";
 import { draw } from "../src/grid.ts";
-import { bandRows, fixedKeys, phaseRows } from "../src/band.ts";
+import {
+  accountText, bandRows, fixedKeys, footerTail, phaseRows,
+} from "../src/band.ts";
 import { receiptTurn } from "../src/receipt.ts";
 import { decodeTurn } from "../src/claude_cost.ts";
 import { spanFrom, spanJson } from "../tools/gen-grid-cases.ts";
@@ -117,4 +119,22 @@ test("the receipt bills the cost line's turn", () => {
   assert.ok(turns[i].calls && !turns[i].agent && !turns[i].compact);
   assert.equal(i, turns.length - 1);
   assert.equal(receiptTurn([]), -1);
+});
+
+test("the footer's tail ends on the 💳 account details where the band's rows end", () => {
+  const st = settings({});
+  const fig = document("status/01-baseline@196");
+  const hint = "-- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)";
+  const text = inZone(fig, () => accountText(st, fig, []));
+  assert.ok(text.includes("💳"), text);
+  const tail = inZone(fig, () => footerTail(st, fig, [], hint, 155));
+  assert.ok(tail.endsWith(text), tail);
+  // Two blanks in, the hint, then the tail: to the band's right edge.
+  assert.equal(2 + visWidth(hint, st.widths) + visWidth(tail, st.widths),
+    155 - RIGHT_EDGE);
+  // Too narrow a row still parts the two by two blanks.
+  assert.ok(inZone(fig, () => footerTail(st, fig, [], hint, 40))
+    .startsWith("  " + text.slice(0, 1)));
+  assert.equal(inZone(fig, () => footerTail(st, fig, ["account"], hint, 155)),
+    "");
 });

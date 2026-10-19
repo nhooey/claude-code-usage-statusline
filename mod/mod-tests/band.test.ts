@@ -367,7 +367,7 @@ test('a turn ends on a blank closing line', async ($, on) => {
   await blankClosing($, 'Worked', 65_000)
 })
 
-test('a prompt from the composer gets its turn tag beside it, or under it',
+test('a prompt from the composer gets its turn tag under it, at no indent',
   async ($, on) => {
     const w = world(on)
     await start($, 'terminal', STATUS)
@@ -390,19 +390,10 @@ test('a prompt from the composer gets its turn tag beside it, or under it',
     const typed = await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'UserMessage',
       props: { ...props, origin: { kind: 'composer' } } })
-    // A short prompt has it on its own row, after it.
-    expect(await tagDrawn(typed)).toEqual({ beside: true,
-      text: '  ' + text(tag) })
-    // One too long for the row has it on a line of its own, its 🔻🔖 over
-    // where the receipt's 🔺🔖 stands: the band's indent, then 📊 🎤.
-    const long = 'Go on. '.repeat(40).trim()
-    w.store.set(startKey(long), w.store.get(startKey('Go on.')))
-    const wide = await $.ui.mount({ plugin: 'usage-band',
-      surface: 'terminal', component: 'UserMessage',
-      props: { text: long, isExpanded: false, origin: { kind: 'composer' } },
-      viewport: { columns: COLS, rows: 40 } })
-    expect(await tagDrawn(wide)).toEqual({ beside: false,
-      text: ' '.repeat(spec.C_CHROME_CONT + 6) + text(tag) })
+    // A short prompt has it on a line of its own too, so its 🔻🔖 stacks
+    // with the receipt's 🔺🔖, both at no indent.
+    expect(await tagDrawn(typed)).toEqual({ beside: false,
+      text: text(tag) })
     const other = await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'UserMessage',
       props: { ...props, origin: { kind: 'unclassified' } } as any })
@@ -555,9 +546,10 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 📊 🎤 and 📊 🎮, then the 🔺🔖 tag line under them.
+    // 📊 🎤 and 📊 🎮, then the 🔺🔖 tag line under them, at no indent.
     expect(want.length).toBe(3)
     expect(text(want[2])).toContain('p-resume'.slice(0, 8))
+    expect(text(want[2]).startsWith(spec.E_TURN_PAST)).toBe(true)
     expect(text(want[2])).not.toContain(spec.E_ACCT)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
@@ -618,8 +610,7 @@ async function drewAll($: any, w: World) {
   const typed = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
     component: 'UserMessage', props: { text: ASKED, isExpanded: false,
       origin: { kind: 'composer' } } })
-  expect(await tagDrawn(typed)).toEqual({ beside: true,
-    text: '  ' + text(tag) })
+  expect(await tagDrawn(typed)).toEqual({ beside: false, text: text(tag) })
 
   await blankClosing($, 'Crunched', ASKED_MS)
 }

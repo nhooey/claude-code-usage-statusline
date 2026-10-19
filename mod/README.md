@@ -23,20 +23,22 @@ the Python it ports, through JSON fixtures the Python side writes under
 
 This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `hooks/register.tsx` is its hooks module, and `types/index.d.ts` its
-`$.state` contract. It draws three places, and writes one:
+`$.state` contract. It draws four places, and writes one:
 
 - **The band,** above the prompt: the grid's rows
   for the session, from the last status figures document, redrawn as the
   session starts, after each tool call, as a turn starts and ends, and
   every 30 seconds. While a turn runs its 🎤 and 🎮 rows are that turn's,
   live.
+- **The footer** under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`: the
+  💳 account details at its right end, dim, after Claude Code's own line,
+  whose pills stay live.
 - **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
   ends, the band's 🎤 and 🎮 rows stamped there, frozen, and under them
   the turn's 🔺🔖 tag and when it was stamped, so every turn's receipt
   stays in the transcript to scroll back to.
-- **The start tag,** beside a prompt typed at the composer, or under it
-  where the prompt fills its row: 🔻🔖, the turn's tag and when it
-  started, dim.
+- **The start tag,** under a prompt typed at the composer, at no indent:
+  🔻🔖, the turn's tag and when it started, dim.
 
 The hooks import the ports from `src/`. The mod's runtime has no Node and
 loads nothing from outside the plugin's folder, so the ports that read
@@ -70,13 +72,12 @@ live, frozen and dim, in their colours:
 ```
      📊 🎤 Why is the build slow?                 💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
      📊 🎮 📦app 🌿main                  💰 115                 🧩 ▴2.7M ▾841k  …
-           🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
+🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
 ```
 
 The rows are laid out at the width the band last drew at, with the band's
 five-column indent, so each column is under the band's. The tag line
-stands where the start tag does on a line of its own, so its 🔺🔖 is under
-the 🔻🔖. Until the stamp
+is at no indent, as the start tag is, so its 🔺🔖 is under the 🔻🔖. Until the stamp
 lands the closing line is a blank row. A `$.ui.log` line was tried first:
 Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
 blank row after, in plain dim text.
