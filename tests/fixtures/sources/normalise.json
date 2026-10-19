@@ -1,0 +1,1641 @@
+[
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": 1790409600.0,
+    "buckets": [
+     {
+      "id": "general",
+      "label": "General",
+      "windows": [
+       {
+        "duration_seconds": 604800.0,
+        "id": "weekly",
+        "resets_at": 1790875020.0,
+        "used_percent": 97.0
+       }
+      ]
+     },
+     {
+      "id": "spark",
+      "label": "Spark",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "id": "five-hour",
+        "resets_at": 1790453700.0,
+        "used_percent": 100.0
+       },
+       {
+        "duration_seconds": 604800.0,
+        "id": "weekly",
+        "resets_at": 1790867700.0,
+        "used_percent": 100.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   },
+   "60": {
+    "account": {},
+    "as_of": 1790409600.0,
+    "buckets": [
+     {
+      "id": "general",
+      "label": "General",
+      "windows": [
+       {
+        "duration_seconds": 604800.0,
+        "id": "weekly",
+        "resets_at": 1790875020.0,
+        "used_percent": 97.0
+       }
+      ]
+     },
+     {
+      "id": "spark",
+      "label": "Spark",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "id": "five-hour",
+        "resets_at": 1790453700.0,
+        "used_percent": 100.0
+       },
+       {
+        "duration_seconds": 604800.0,
+        "id": "weekly",
+        "resets_at": 1790867700.0,
+        "used_percent": 100.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1790409600.0,
+   "buckets": [
+    {
+     "id": "general",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 604800.0,
+       "id": "weekly",
+       "resets_at": 1790875020.0,
+       "used_percent": 97.0
+      }
+     ]
+    },
+    {
+     "id": "spark",
+     "label": "Spark",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five-hour",
+       "resets_at": 1790453700.0,
+       "used_percent": 100.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "weekly",
+       "resets_at": 1790867700.0,
+       "used_percent": 100.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "as_of": "2026-09-26T08:00:00Z",
+   "buckets": [
+    {
+     "id": "general",
+     "label": "General",
+     "windows": [
+      {
+       "duration_seconds": 604800,
+       "id": "weekly",
+       "resets_at": "2026-10-01T17:17:00Z",
+       "used_percent": 97
+      }
+     ]
+    },
+    {
+     "id": "spark",
+     "label": "Spark",
+     "windows": [
+      {
+       "duration_seconds": 18000,
+       "id": "five-hour",
+       "resets_at": "2026-09-26T20:15:00Z",
+       "used_percent": 100
+      },
+      {
+       "duration_seconds": 604800,
+       "id": "weekly",
+       "resets_at": "2026-10-01T15:15:00Z",
+       "used_percent": 100
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "name": "docs example",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": 1786847000.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "id": "session",
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       {
+        "duration_seconds": 604800.0,
+        "id": "week",
+        "resets_at": 1787014800.0,
+        "used_percent": 63.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   },
+   "60": {
+    "account": {},
+    "as_of": 1786847000.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "id": "session",
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       {
+        "duration_seconds": 604800.0,
+        "id": "week",
+        "resets_at": 1787014800.0,
+        "used_percent": 63.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "session",
+       "resets_at": 1786852800.0,
+       "used_percent": 41.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "week",
+       "resets_at": 1787014800.0,
+       "used_percent": 63.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "as_of": 1786847000,
+   "schema_version": 1,
+   "windows": [
+    {
+     "duration_seconds": 18000,
+     "id": "session",
+     "resets_at": "2026-08-16T04:00:00Z",
+     "used_percent": 41
+    },
+    {
+     "duration_seconds": 604800,
+     "id": "week",
+     "resets_at": "2026-08-18T01:00:00Z",
+     "used_percent": 63
+    }
+   ]
+  },
+  "name": "golden env reading",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": 1786847000.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "expired": true,
+        "id": "x",
+        "resets_at": 1786846999.0,
+        "used_percent": 42.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   },
+   "60": {
+    "account": {},
+    "as_of": 1786847000.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "expired": true,
+        "id": "x",
+        "resets_at": 1786846999.0,
+        "used_percent": 42.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "x",
+       "resets_at": 1786846999.0,
+       "used_percent": 42.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "as_of": 1786847000,
+   "schema_version": 1,
+   "windows": [
+    {
+     "id": "x",
+     "resets_at": 1786846999,
+     "used_percent": "42"
+    }
+   ]
+  },
+  "name": "flat windows, strings",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "x",
+        "resets_at": null,
+        "used_percent": 1.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "x",
+        "resets_at": null,
+        "used_percent": 1.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "x",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "schema_version": 1.0,
+   "windows": [
+    {
+     "id": "x",
+     "used_percent": 1
+    }
+   ]
+  },
+  "name": "schema 1.0",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": {
+   "schema_version": true,
+   "windows": [
+    {
+     "id": "x",
+     "used_percent": 1
+    }
+   ]
+  },
+  "name": "schema true",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": {
+   "schema_version": "1",
+   "windows": []
+  },
+  "name": "schema string",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": [
+   1,
+   2
+  ],
+  "name": "not a dict",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": {},
+  "name": "empty",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": {
+   "buckets": {
+    "a": 1
+   },
+   "schema_version": 1
+  },
+  "name": "buckets not a list",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": {
+   "schema_version": 1,
+   "windows": "x"
+  },
+  "name": "windows not a list",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": {
+   "schema_version": 1,
+   "windows": null
+  },
+  "name": "windows null",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "b",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "w",
+        "resets_at": null,
+        "used_percent": 5.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "b",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "w",
+        "resets_at": null,
+        "used_percent": 5.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "b",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "w",
+       "resets_at": null,
+       "used_percent": 5.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "buckets": [
+    {
+     "id": "b",
+     "windows": [
+      {
+       "id": "w",
+       "used_percent": 5
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "windows": [
+    {
+     "id": "flat",
+     "used_percent": 6
+    }
+   ]
+  },
+  "name": "buckets beat windows",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "a",
+        "resets_at": null,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": null,
+        "id": "b",
+        "resets_at": null,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": null,
+        "id": "c",
+        "resets_at": null,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": null,
+        "expired": true,
+        "id": "d",
+        "resets_at": 1786838400.0,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": 60.0,
+        "id": "e",
+        "resets_at": null,
+        "used_percent": 10.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "a",
+        "resets_at": null,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": null,
+        "id": "b",
+        "resets_at": null,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": null,
+        "id": "c",
+        "resets_at": null,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": null,
+        "expired": true,
+        "id": "d",
+        "resets_at": 1786838400.0,
+        "used_percent": null
+       },
+       {
+        "duration_seconds": 60.0,
+        "id": "e",
+        "resets_at": null,
+        "used_percent": 10.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "a",
+       "resets_at": null,
+       "used_percent": null
+      },
+      {
+       "duration_seconds": null,
+       "id": "b",
+       "resets_at": null,
+       "used_percent": null
+      },
+      {
+       "duration_seconds": null,
+       "id": "c",
+       "resets_at": null,
+       "used_percent": null
+      },
+      {
+       "duration_seconds": null,
+       "id": "d",
+       "resets_at": 1786838400.0,
+       "used_percent": null
+      },
+      {
+       "duration_seconds": 60.0,
+       "id": "e",
+       "resets_at": null,
+       "used_percent": 10.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "as_of": "yesterday",
+   "schema_version": 1,
+   "windows": [
+    {
+     "duration_seconds": -5,
+     "id": "a",
+     "used_percent": 101
+    },
+    {
+     "duration_seconds": Infinity,
+     "id": "b",
+     "used_percent": NaN
+    },
+    {
+     "id": "c",
+     "resets_at": true,
+     "used_percent": true
+    },
+    {
+     "id": "d",
+     "resets_at": "2026-08-16",
+     "used_percent": null
+    },
+    {
+     "duration_seconds": " 60 ",
+     "id": "e",
+     "used_percent": "1_0"
+    },
+    {
+     "used_percent": 50
+    },
+    {
+     "id": "",
+     "used_percent": 50
+    },
+    {
+     "id": 5,
+     "used_percent": 50
+    },
+    "not a window"
+   ]
+  },
+  "name": "malformed numbers",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "feature": "f",
+      "id": "ok",
+      "label": "default",
+      "model": "m",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "w",
+        "resets_at": null,
+        "used_percent": 1.0
+       }
+      ]
+     },
+     {
+      "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "label": "own heading",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "z",
+        "resets_at": null,
+        "used_percent": 4.0
+       }
+      ]
+     },
+     {
+      "id": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "e",
+        "resets_at": null,
+        "used_percent": 5.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "feature": "f",
+      "id": "ok",
+      "label": "default",
+      "model": "m",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "w",
+        "resets_at": null,
+        "used_percent": 1.0
+       }
+      ]
+     },
+     {
+      "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "label": "own heading",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "z",
+        "resets_at": null,
+        "used_percent": 4.0
+       }
+      ]
+     },
+     {
+      "id": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "e",
+        "resets_at": null,
+        "used_percent": 5.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "feature": "f",
+     "id": "ok",
+     "label": "default",
+     "model": "m",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "w",
+       "resets_at": null,
+       "used_percent": 1.0
+      }
+     ]
+    },
+    {
+     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "label": "own heading",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "z",
+       "resets_at": null,
+       "used_percent": 4.0
+      }
+     ]
+    },
+    {
+     "id": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "e",
+       "resets_at": null,
+       "used_percent": 5.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "buckets": [
+    {
+     "feature": "f",
+     "id": "ok",
+     "label": "Line\nbreak",
+     "model": "m",
+     "windows": [
+      {
+       "id": "w",
+       "used_percent": 1
+      }
+     ]
+    },
+    {
+     "id": "c1",
+     "windows": [
+      {
+       "id": "w",
+       "used_percent": 2
+      }
+     ]
+    },
+    {
+     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+     "windows": [
+      {
+       "id": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+       "used_percent": 3
+      },
+      {
+       "heading": "own heading",
+       "id": "z",
+       "model": null,
+       "used_percent": 4
+      }
+     ]
+    },
+    {
+     "id": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+     "windows": [
+      {
+       "id": "e",
+       "used_percent": 5
+      }
+     ]
+    },
+    {
+     "id": "no windows"
+    },
+    {
+     "id": "bad windows",
+     "windows": "x"
+    },
+    7
+   ],
+   "schema_version": 1
+  },
+  "name": "labels and control characters",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "b",
+      "label": "default",
+      "model": "m2",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "1",
+        "resets_at": null,
+        "used_percent": 1.0
+       },
+       {
+        "duration_seconds": null,
+        "id": "4",
+        "resets_at": null,
+        "used_percent": 4.0
+       }
+      ]
+     },
+     {
+      "id": "1",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "2",
+        "resets_at": null,
+        "used_percent": 2.0
+       }
+      ]
+     },
+     {
+      "id": "a",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "3",
+        "resets_at": null,
+        "used_percent": 3.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [
+     {
+      "id": "b",
+      "label": "default",
+      "model": "m2",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "1",
+        "resets_at": null,
+        "used_percent": 1.0
+       },
+       {
+        "duration_seconds": null,
+        "id": "4",
+        "resets_at": null,
+        "used_percent": 4.0
+       }
+      ]
+     },
+     {
+      "id": "1",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "2",
+        "resets_at": null,
+        "used_percent": 2.0
+       }
+      ]
+     },
+     {
+      "id": "a",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": null,
+        "id": "3",
+        "resets_at": null,
+        "used_percent": 3.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "b",
+     "label": "default",
+     "model": "m2",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "1",
+       "resets_at": null,
+       "used_percent": 1.0
+      },
+      {
+       "duration_seconds": null,
+       "id": "4",
+       "resets_at": null,
+       "used_percent": 4.0
+      }
+     ]
+    },
+    {
+     "id": "1",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "2",
+       "resets_at": null,
+       "used_percent": 2.0
+      }
+     ]
+    },
+    {
+     "id": "a",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "3",
+       "resets_at": null,
+       "used_percent": 3.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "buckets": [
+    {
+     "id": "b",
+     "windows": [
+      {
+       "id": "1",
+       "used_percent": 1
+      }
+     ]
+    },
+    {
+     "id": "1",
+     "windows": [
+      {
+       "id": "2",
+       "used_percent": 2
+      }
+     ]
+    },
+    {
+     "id": "a",
+     "windows": [
+      {
+       "id": "3",
+       "used_percent": 3
+      }
+     ]
+    },
+    {
+     "id": "b",
+     "label": "Late",
+     "model": "m2",
+     "windows": [
+      {
+       "id": "4",
+       "used_percent": 4
+      }
+     ]
+    }
+   ],
+   "schema_version": 1
+  },
+  "name": "bucket order is first seen",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {
+     "cached_input_tokens": 40.0,
+     "cost_usd": 1.25,
+     "input_tokens": 100.0,
+     "output_tokens": 9.0,
+     "period_end": 1786847000.0,
+     "period_start": 1786838400.0,
+     "reasoning_output_tokens": 3.0,
+     "scope": "organization"
+    },
+    "as_of": null,
+    "buckets": [],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {
+     "cached_input_tokens": 40.0,
+     "cost_usd": 1.25,
+     "input_tokens": 100.0,
+     "output_tokens": 9.0,
+     "period_end": 1786847000.0,
+     "period_start": 1786838400.0,
+     "reasoning_output_tokens": 3.0,
+     "scope": "organization"
+    },
+    "as_of": null,
+    "buckets": [],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {
+    "cached_input_tokens": 40.0,
+    "cost_usd": 1.25,
+    "input_tokens": 100.0,
+    "output_tokens": 9.0,
+    "period_end": 1786847000.0,
+    "period_start": 1786838400.0,
+    "reasoning_output_tokens": 3.0,
+    "scope": "organization"
+   },
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "account": {
+    "cached_input_tokens": 40,
+    "cost_usd": 1.25,
+    "input_tokens": 100,
+    "output_tokens": "9",
+    "period_end": 1786847000,
+    "period_start": "2026-08-16T00:00:00Z",
+    "reasoning_output_tokens": 3,
+    "scope": "organization",
+    "secret": "x"
+   },
+   "schema_version": 1,
+   "windows": []
+  },
+  "name": "account totals",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {
+     "cost_usd": 2.0
+    },
+    "as_of": null,
+    "buckets": [],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {
+     "cost_usd": 2.0
+    },
+    "as_of": null,
+    "buckets": [],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {
+    "cost_usd": 2.0
+   },
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "account": {
+    "cached_input_tokens": 40,
+    "cost_usd": 2,
+    "input_tokens": 10
+   },
+   "schema_version": 1
+  },
+  "name": "account subset larger",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": false,
+  "input": {
+   "account": {
+    "output_tokens": 1,
+    "reasoning_output_tokens": 2
+   },
+   "schema_version": 1
+  },
+  "name": "account reasoning larger",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {},
+  "has_reading": false,
+  "input": {
+   "account": {
+    "period_end": 1786846999,
+    "period_start": 1786847000
+   },
+   "schema_version": 1
+  },
+  "name": "account period backwards",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": false,
+  "input": {
+   "account": {
+    "cost_usd": -1,
+    "scope": "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+   },
+   "schema_version": 1
+  },
+  "name": "account scope too long",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {
+   "account": {
+    "scope": "organization"
+   },
+   "as_of": null,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": null,
+       "id": "x",
+       "resets_at": null,
+       "used_percent": null
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": false,
+  "input": {
+   "account": {
+    "scope": "organization"
+   },
+   "schema_version": 1,
+   "windows": [
+    {
+     "id": "x"
+    }
+   ]
+  },
+  "name": "envelope only",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": 1786846970.0,
+    "attempted_at": 5.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "expired": true,
+        "id": "old",
+        "resets_at": 1786847000.0,
+        "used_percent": 10.0
+       },
+       {
+        "duration_seconds": 604800.0,
+        "id": "new",
+        "resets_at": 1786847001.0,
+        "used_percent": 20.0
+       }
+      ]
+     }
+    ],
+    "fail_count": 2.0,
+    "fetched_at": 1786846990.0,
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   },
+   "60": {
+    "account": {},
+    "as_of": 1786846970.0,
+    "attempted_at": 5.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "expired": true,
+        "id": "old",
+        "resets_at": 1786847000.0,
+        "used_percent": 10.0
+       },
+       {
+        "duration_seconds": 604800.0,
+        "id": "new",
+        "resets_at": 1786847001.0,
+        "used_percent": 20.0
+       }
+      ]
+     }
+    ],
+    "fail_count": 2.0,
+    "fetched_at": 1786846990.0,
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": false
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 1786846970.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "old",
+       "resets_at": 1786847000.0,
+       "used_percent": 10.0
+      },
+      {
+       "duration_seconds": 604800.0,
+       "id": "new",
+       "resets_at": 1786847001.0,
+       "used_percent": 20.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "as_of": 1786846970,
+   "attempted_at": "5",
+   "fail_count": 2,
+   "fetched_at": 1786846990,
+   "retry_at": null,
+   "schema_version": 1,
+   "windows": [
+    {
+     "duration_seconds": 18000,
+     "id": "old",
+     "resets_at": 1786847000,
+     "used_percent": 10
+    },
+    {
+     "duration_seconds": 604800,
+     "id": "new",
+     "resets_at": 1786847001,
+     "used_percent": 20
+    }
+   ]
+  },
+  "name": "expired and live",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": 5.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "id": "five_hour",
+        "resets_at": 1786847100.0,
+        "used_percent": 41.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": 5.0,
+    "buckets": [
+     {
+      "id": "default",
+      "label": "default",
+      "windows": [
+       {
+        "duration_seconds": 18000.0,
+        "id": "five_hour",
+        "resets_at": 1786847100.0,
+        "used_percent": 41.0
+       }
+      ]
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": 5.0,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847100.0,
+       "used_percent": 41.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "account": {},
+   "as_of": 5,
+   "buckets": [
+    {
+     "id": "default",
+     "label": "default",
+     "windows": [
+      {
+       "duration_seconds": 18000.0,
+       "id": "five_hour",
+       "resets_at": 1786847100,
+       "used_percent": 41.0
+      }
+     ]
+    }
+   ],
+   "schema_version": 1,
+   "source": "x"
+  },
+  "name": "canonical again",
+  "now": 1786847000
+ }
+]

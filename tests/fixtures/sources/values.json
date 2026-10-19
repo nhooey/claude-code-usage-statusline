@@ -1,0 +1,717 @@
+{
+ "cache_name": [
+  {
+   "expected": "daf9a7a3abf8a26dee25ad1388e7f7ac3e1de3f8f1de5e4dffdfcfc13e8f29c1.json",
+   "input": [
+    "claude",
+    "native",
+    "session:s",
+    "1786838400"
+   ]
+  },
+  {
+   "expected": "705cb8a7a90b4e126ddce058375a69e12b11490584fbb1389d24a5cb5d3269c7.json",
+   "input": [
+    "claude",
+    "claude-usage-tracker",
+    "default",
+    "1786320000"
+   ]
+  },
+  {
+   "expected": "f2820ab8e8ff6273158223eb3c620f6d5671e0a94ed9f6ca8c4ab28a73bdffe3.json",
+   "input": [
+    "claude",
+    "cmd:/x/y",
+    "accté",
+    "0"
+   ]
+  }
+ ],
+ "epoch": [
+  {
+   "expected": 1786847000.0,
+   "input": 1786847000
+  },
+  {
+   "expected": 1786847000.5,
+   "input": 1786847000.5
+  },
+  {
+   "expected": 0.0,
+   "input": 0
+  },
+  {
+   "expected": null,
+   "input": -1
+  },
+  {
+   "expected": 4102444800.0,
+   "input": 4102444800
+  },
+  {
+   "expected": null,
+   "input": 4102444801
+  },
+  {
+   "expected": null,
+   "input": true
+  },
+  {
+   "expected": null,
+   "input": null
+  },
+  {
+   "expected": null,
+   "input": NaN
+  },
+  {
+   "expected": null,
+   "input": Infinity
+  },
+  {
+   "expected": null,
+   "input": [
+    1
+   ]
+  },
+  {
+   "expected": null,
+   "input": {
+    "a": 1
+   }
+  },
+  {
+   "expected": 1786852800.0,
+   "input": "2026-08-16T04:00:00Z"
+  },
+  {
+   "expected": 1786838400.0,
+   "input": "2026-08-16"
+  },
+  {
+   "expected": 1786852800.0,
+   "input": "2026-08-16T04"
+  },
+  {
+   "expected": 1786852800.0,
+   "input": "2026-08-16T04:00"
+  },
+  {
+   "expected": 1786833000.123,
+   "input": "2026-08-16 04:00:00.123+05:30"
+  },
+  {
+   "expected": 1786878000.123456,
+   "input": "2026-08-16T04:00:00.123456-07:00"
+  },
+  {
+   "expected": 1786852800.123,
+   "input": "2026-08-16T04:00:00:123"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T04:00+24:00"
+  },
+  {
+   "expected": 1786766460.0,
+   "input": "2026-08-16T04:00+23:59"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T04:00:00.5Z"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T24:00:00"
+  },
+  {
+   "expected": null,
+   "input": "2026-02-29"
+  },
+  {
+   "expected": 1835395200.0,
+   "input": "2028-02-29T00:00:00Z"
+  },
+  {
+   "expected": null,
+   "input": "2026-13-01"
+  },
+  {
+   "expected": null,
+   "input": "0000-01-01"
+  },
+  {
+   "expected": null,
+   "input": "1969-12-31T23:59:59Z"
+  },
+  {
+   "expected": 4102444800.0,
+   "input": "2100-01-01T00:00:00Z"
+  },
+  {
+   "expected": null,
+   "input": "2100-01-01T00:00:01Z"
+  },
+  {
+   "expected": 1786832985.0,
+   "input": "2026-08-16T04:00:00+05:30:15"
+  },
+  {
+   "expected": 1786832984.999999,
+   "input": "2026-08-16T04:00:00+05:30:15.000001"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T04:00:00+0530"
+  },
+  {
+   "expected": 1786852800.0,
+   "input": "2026-08-16X04:00"
+  },
+  {
+   "expected": 1786852800.0,
+   "input": "2026-08-16é04:00"
+  },
+  {
+   "expected": 1786852800.0,
+   "input": "2026-08-16😀04:00"
+  },
+  {
+   "expected": null,
+   "input": "2026/08/16"
+  },
+  {
+   "expected": null,
+   "input": "20260816"
+  },
+  {
+   "expected": null,
+   "input": "1786847000"
+  },
+  {
+   "expected": null,
+   "input": " 2026-08-16"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T04:00:00ZZ"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T4:00"
+  },
+  {
+   "expected": null,
+   "input": ""
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T04:00:"
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T04:00:00."
+  },
+  {
+   "expected": null,
+   "input": "2026-08-16T04:00:00.1234"
+  }
+ ],
+ "number": [
+  {
+   "expected": 42.0,
+   "input": 42,
+   "upper": null
+  },
+  {
+   "expected": 42.0,
+   "input": 42,
+   "upper": 100
+  },
+  {
+   "expected": 42.5,
+   "input": 42.5,
+   "upper": null
+  },
+  {
+   "expected": 42.5,
+   "input": 42.5,
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": -1,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": -1,
+   "upper": 100
+  },
+  {
+   "expected": 0.0,
+   "input": 0,
+   "upper": null
+  },
+  {
+   "expected": 0.0,
+   "input": 0,
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": -0.5,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": -0.5,
+   "upper": 100
+  },
+  {
+   "expected": 100.0,
+   "input": 100,
+   "upper": null
+  },
+  {
+   "expected": 100.0,
+   "input": 100,
+   "upper": 100
+  },
+  {
+   "expected": 100.5,
+   "input": 100.5,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": 100.5,
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": true,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": true,
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": false,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": false,
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": null,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": null,
+   "upper": 100
+  },
+  {
+   "expected": 42.0,
+   "input": "42",
+   "upper": null
+  },
+  {
+   "expected": 42.0,
+   "input": "42",
+   "upper": 100
+  },
+  {
+   "expected": 42.0,
+   "input": " 42 ",
+   "upper": null
+  },
+  {
+   "expected": 42.0,
+   "input": " 42 ",
+   "upper": 100
+  },
+  {
+   "expected": 1000.0,
+   "input": "1_000",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "1_000",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "_1",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "_1",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "1__0",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "1__0",
+   "upper": 100
+  },
+  {
+   "expected": 100.0,
+   "input": "1e2",
+   "upper": null
+  },
+  {
+   "expected": 100.0,
+   "input": "1e2",
+   "upper": 100
+  },
+  {
+   "expected": 0.01,
+   "input": "1E-2",
+   "upper": null
+  },
+  {
+   "expected": 0.01,
+   "input": "1E-2",
+   "upper": 100
+  },
+  {
+   "expected": 0.5,
+   "input": ".5",
+   "upper": null
+  },
+  {
+   "expected": 0.5,
+   "input": ".5",
+   "upper": 100
+  },
+  {
+   "expected": 5.0,
+   "input": "5.",
+   "upper": null
+  },
+  {
+   "expected": 5.0,
+   "input": "5.",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "inf",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "inf",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "-inf",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "-inf",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "nan",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "nan",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "Infinity",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "Infinity",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "0x10",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "0x10",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": " ",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": " ",
+   "upper": 100
+  },
+  {
+   "expected": 7.0,
+   "input": "\t7\n",
+   "upper": null
+  },
+  {
+   "expected": 7.0,
+   "input": "\t7\n",
+   "upper": 100
+  },
+  {
+   "expected": 7.0,
+   "input": " 7",
+   "upper": null
+  },
+  {
+   "expected": 7.0,
+   "input": " 7",
+   "upper": 100
+  },
+  {
+   "expected": 7.0,
+   "input": " 7",
+   "upper": null
+  },
+  {
+   "expected": 7.0,
+   "input": " 7",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "1,5",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "1,5",
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": [
+    1
+   ],
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": [
+    1
+   ],
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": {
+    "a": 1
+   },
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": {
+    "a": 1
+   },
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": NaN,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": NaN,
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": Infinity,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": Infinity,
+   "upper": 100
+  },
+  {
+   "expected": 1e+308,
+   "input": 1e+308,
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": 1e+308,
+   "upper": 100
+  },
+  {
+   "expected": null,
+   "input": "1e400",
+   "upper": null
+  },
+  {
+   "expected": null,
+   "input": "1e400",
+   "upper": 100
+  }
+ ],
+ "period_bounds": [
+  {
+   "expected": [
+    1786838400.0,
+    1786847000.0
+   ],
+   "kind": "day",
+   "now": 1786847000
+  },
+  {
+   "expected": [
+    1786838400.0,
+    1786847000.25
+   ],
+   "kind": "day",
+   "now": 1786847000.25
+  },
+  {
+   "expected": [
+    1786838400.0,
+    1786848000.0
+   ],
+   "kind": "day",
+   "now": 1786847999.9999995
+  },
+  {
+   "expected": [
+    1785542400.0,
+    1785542400.0
+   ],
+   "kind": "day",
+   "now": 1785542400
+  },
+  {
+   "expected": [
+    1785456000.0,
+    1785542399.5
+   ],
+   "kind": "day",
+   "now": 1785542399.5
+  },
+  {
+   "expected": [
+    1786320000.0,
+    1786847000.0
+   ],
+   "kind": "week",
+   "now": 1786847000
+  },
+  {
+   "expected": [
+    1786320000.0,
+    1786847000.25
+   ],
+   "kind": "week",
+   "now": 1786847000.25
+  },
+  {
+   "expected": [
+    1786320000.0,
+    1786848000.0
+   ],
+   "kind": "week",
+   "now": 1786847999.9999995
+  },
+  {
+   "expected": [
+    1785110400.0,
+    1785542400.0
+   ],
+   "kind": "week",
+   "now": 1785542400
+  },
+  {
+   "expected": [
+    1785110400.0,
+    1785542399.5
+   ],
+   "kind": "week",
+   "now": 1785542399.5
+  },
+  {
+   "expected": [
+    1785542400.0,
+    1786847000.0
+   ],
+   "kind": "month",
+   "now": 1786847000
+  },
+  {
+   "expected": [
+    1785542400.0,
+    1786847000.25
+   ],
+   "kind": "month",
+   "now": 1786847000.25
+  },
+  {
+   "expected": [
+    1785542400.0,
+    1786848000.0
+   ],
+   "kind": "month",
+   "now": 1786847999.9999995
+  },
+  {
+   "expected": [
+    1785542400.0,
+    1785542400.0
+   ],
+   "kind": "month",
+   "now": 1785542400
+  },
+  {
+   "expected": [
+    1782864000.0,
+    1785542399.5
+   ],
+   "kind": "month",
+   "now": 1785542399.5
+  }
+ ]
+}
