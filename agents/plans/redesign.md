@@ -286,6 +286,38 @@ Glyphs on these rows not yet measured by `tests/probe-advance.sh`: ▴ and ▾,
 the superscript digits in the model cell (¹ ² ³ ⁴ are East Asian Ambiguous,
 so a terminal may draw them two wide), and 🔻.
 
+### The shared test cases
+
+Nothing the suites read is checked in today: `mkcorpus-status.py` and
+`mkcorpus-cost.py` write the payloads and transcripts on every run,
+`tests/pin-env.sh` plants the clock, time zone, usage reading, calibration
+cache and git repos as side effects, and `agents.py` and `subagent.py` keep
+their expected values as `check` literals. A second language cannot run any
+of that, so build step 2 turns it into committed data:
+
+```
+tests/fixtures/
+  cases.json                    each case: id, mode, inputs, env, flags, widths
+  env/<name>.json               clock, time zone, usage reading, calibration,
+                                repo as {branch, dirty, project}
+  transcripts/<name>/…          session JSONL, agent files and sidecars
+  payloads/<name>.json          with ${HOME} and ${FIXTURES} placeholders
+  figures/<case>.json           transcript and env in, figures out
+  render/<case>/figures.json    figures in
+  render/<case>/@<width>.txt    drawn rows out, escape codes included
+  gen/*.py                      the corpus generators, writing the above
+```
+
+- **Figures are canonical JSON:** sorted keys, floats to a stated precision,
+  times as epochs. That is the contract between the two languages.
+- **The drawn rows stay `.txt` with escape codes,** so the 141 status and 87
+  cost goldens move rather than being recorded again; the TypeScript runner
+  joins its spans into escape codes to compare.
+- **Only Python regenerates** at first (`--regen`, then reading the diff);
+  the TypeScript runner only compares.
+- **The existing figures-to-rows test,** `claude-subagent-render.py`, is
+  already the second stage's shape.
+
 ## The whole screen
 
 After the turn, `python3 tools/layout-mockup.py --cols 150 --plain`, made-up
