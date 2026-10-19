@@ -616,7 +616,9 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, eta
                    agent_label(task, usage, meta, waiting_on, kids, kids_w, widths),
                    agent_cells(task, usage, meta, shares, limits, now, eta, waiting_on),
                    spawn_depth(task, meta) if depth is None else depth)
-    return rstrip(grid.draw(row, keys, cols, hide)[len(grid.chrome(row.depth)):])
+    out, head = grid.draw(row, keys, cols, hide), grid.chrome(row.depth)
+    # A terminal too narrow for even the chrome leaves the row nothing.
+    return rstrip(out[len(head):] if out[:len(head)] == head else [])
 
 def panel_widths(prepared_tasks, now=None):
     """The widest 📨, 📡, 💻 and 🤏 cell on the panel, each 0 where no row

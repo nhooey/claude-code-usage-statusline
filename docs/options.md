@@ -59,6 +59,7 @@ These work for both agents.
 | `--from-figures PATH` | none | Claude: draw a saved figures document instead of reading any input. The test suite saves one per case; useful for redrawing a captured layout. See [the tests' README](../tests/README.md#figures). |
 | `--diagnose` | off | Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Claude's status line adds the session's cost and lines two ways, as a check on each other: `cost_usd` and `lines`, this program's own over the transcript and the agent files, as the cost line totals them, and `claude_cost_usd` and `claude_lines`, the totals Claude Code's payload gave; each is blank where its side has none. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses. |
 | `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
+| `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). Only the agent panel draws on the grid so far; the other modes, and Codex, accept it and ignore it. |
 
 ### Terminal width
 
@@ -70,8 +71,9 @@ cloud sessions; the readout then uses a fallback layout that doesn't depend on
 the width. `--cols` overrides the walk. The tests use it for reproducible
 output.
 
-In `subagent` mode the panel supplies `columns` in its payload and that is
-used unless `--cols` is given.
+In `subagent` mode the panel supplies `columns` in its payload, the
+terminal's width less 6, and the terminal's width worked out from it is used
+unless `--cols` is given. `--cols` is the terminal's width in every mode.
 
 ## Claude display options
 
@@ -170,16 +172,62 @@ the agent reported — comes from the agent's own transcript,
 further down. A task with no transcript (a shell, a remote agent) shows only
 what the payload gives.
 
-The payload's `columns` is already net of the panel's own chrome: the `◯ `
-pointer before the row and two columns of padding after it. An agent started
-by another agent is drawn one level deeper, with `├ ` or `└ ` before its pointer. The
-payload doesn't count those two columns, so the row makes itself two columns
-narrower for each level below the first (the depth is `spawnDepth` in the
-agent's `.meta.json` sidecar). That keeps every row's right-hand cells on the
-same columns as its parent's.
+Each row is laid out on the redesigned grid
+([the plan](../agents/plans/redesign.md)), the columns the mod's band and
+receipt draw: model, 🛫, 💰, 🧠, 🧩, 🎯, ⌛ ⛳ 🤖 🔧 🚦, 🔋, 🪫, 💾. On an agent
+row the 🛫 column says what the agent is doing and for how long, or its token
+rate. The label before them is the kind and its phase, the 👶🏻 🤏 💻 📡 📨
+counts some rows carry, the name, a worktree's 🌿 branch and the activity.
 
-`--cols`, `--usage-source`, `--account`, `--account-period`, `--diagnose` and
-`--subscript-decimals` apply in this mode.
+The rows are laid out for the terminal's width, the payload's `columns` plus
+6, so the figures fall on the same screen columns as the band's. Claude Code
+draws the panel's chrome before each row, `  ◯ ` at the top level and two
+more blanks for each level an agent started by another agent sits below it
+(the depth is `spawnDepth` in the agent's `.meta.json` sidecar, or the
+panel's own tree); the row counts it toward the width and does not print it.
+Every row ends five columns short of the terminal's edge, as the band does.
+The columns follow from the width and `--hide` alone, kept for two levels of
+nesting whether any agent runs or not, so no column moves when an agent
+starts; a deeper row cuts its own label instead. On a narrow terminal whole
+columns drop from every row at once, 🛫 first and 💰 last. At an unknown
+width (`--cols 0` and no payload width) every column is drawn and the label
+keeps 20 columns.
+
+`--cols`, `--hide`, `--usage-source`, `--account`, `--account-period`,
+`--diagnose` and `--subscript-decimals` apply in this mode.
+
+### Hiding
+
+`--hide scope[.group[.metric]]`, repeatable, with `*` for any one part,
+leaves out a column or a label part. A path names what it hides on rows of
+that scope; a column hidden on every row that could draw it is removed and
+the others close up, and one hidden on some rows only is left blank there.
+The band's and the receipt's rows count too, so `--hide agent.state.rate`
+blanks 🛫 on the agent rows and keeps its place, while `--hide '*.state.rate'`
+removes it.
+
+| Part | Values |
+|---|---|
+| scope | `account`, `turn`, `main`, `session`, `agent` |
+| group | `plan` (🔋 🪫), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫, and on agent rows the 👶🏻 🤏 💻 📡 📨 counts), `chat` (the activity), `workspace` (🌿), `name` (the name and the kind) |
+
+On an agent row:
+
+| Path | Hides |
+|---|---|
+| `agent.name.kind` | the spinner, the kind's mark and the phase circle |
+| `agent.name.label` | the agent's name |
+| `agent.workspace.branch` | 🌿 and a worktree's branch |
+| `agent.chat.doing` | what it is doing, the panel's activity text |
+| `agent.state.kids`, `.compact`, `.shells`, `.monitors`, `.inbox` | 👶🏻, 🤏, 💻, 📡, 📨 |
+| `agent.state.model`, `.rate`, `agent.cost`, `agent.context`, `agent.tokens.io`, `.cache`, `agent.time.elapsed`, `.eta`, `.split`, `agent.plan.five_hour`, `.week`, `agent.work` | the columns |
+
+```
+--hide agent                  every agent row, empty
+--hide '*.work'               💾 on every row
+--hide agent.time.eta         ⛳ on the agent rows, blank in its column
+--hide '*.state.rate'         🛫 everywhere
+```
 
 ## Environment variables
 

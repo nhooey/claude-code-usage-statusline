@@ -28,7 +28,9 @@ THE INPUT SHAPES.  A task, meta and shares are the dicts the renderer gets.
 A usage is AgentUsage's fields by name, or null; a field missing from it
 reads as the renderer's getattr default, which the hand-made `missing` group
 pins, since the renderer is written against attributes and not the type.
-Tuples are lists.  Limits are Limits' fields by name.  Floats are written
+Tuples are lists.  Limits are Limits' fields by name.  `cols` is the
+terminal's width, and `hide`, the --hide paths, is left out where there are
+none.  Floats are written
 with repr; see records.py.  A row is {"id", "row", "spans"}: the pair
 render_task_rows returns, and the spans render_agent_row made for it, which
 it joins without `close` or `runs`; see span_json.  A case whose tasks hold
