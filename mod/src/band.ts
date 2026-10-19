@@ -15,8 +15,8 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
-  RIGHT_EDGE,
+  CHROME_DEPTH, E_PCT, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S,
+  QUIET_WARN_S, RIGHT_EDGE,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -102,6 +102,16 @@ function skeleton(scope: string, depth?: number): Row {
 export function indented(row: Row, n: number): Row {
   return n ? { ...row, label: [{ path: "indent",
     spans: [span(" ".repeat(n))], drop: 0 }, ...row.label] } : row;
+}
+
+/** `row` without the ٪ share of the window that ends its 🧠 cell, where
+ * `hide` hides `<scope>.context.share`: the context's size alone (asked
+ * 2026-10-19).  The column keeps its width. */
+export function shareHidden(row: Row, hide: readonly string[]): Row {
+  const c = row.cells.ctx;
+  if (!c?.length || !hidden(hide, row.scope + ".context.share")) return row;
+  if (!c[c.length - 1].text.trimEnd().endsWith(E_PCT)) return row;
+  return { ...row, cells: { ...row.cells, ctx: c.slice(0, -1) } };
 }
 
 /** The columns at `cols` under `hide`, laid out over every row the band,
@@ -432,5 +442,6 @@ export function bandLines(st: Settings, fig: Dict, cols: number,
   const keys = fixedKeys(st, cols, hide);
   return phaseRows(bandRows(st, fig, opts), opts.phase)
     .filter((r) => !hidden(hide, r.scope))
-    .map((r) => draw(st, indented(r, opts.indent ?? 0), keys, cols, hide));
+    .map((r) => draw(st, indented(shareHidden(r, hide), opts.indent ?? 0),
+      keys, cols, hide));
 }

@@ -31,7 +31,7 @@ import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
 import type { Row } from "./grid.ts";
 import {
-  accountingSplit, fixedKeys, shareCells, turnCache, turnTokens,
+  accountingSplit, fixedKeys, shareCells, shareHidden, turnCache, turnTokens,
 } from "./band.ts";
 import type { Dict } from "./py.ts";
 
@@ -221,7 +221,7 @@ export function drawRows(st: Settings, rows: readonly Row[], cols: number,
   hide: readonly string[]): Span[][] {
   const keys = fixedKeys(st, cols, hide);
   return rows.filter((r) => !hidden(hide, r.scope))
-    .map((r) => draw(st, r, keys, cols, hide));
+    .map((r) => draw(st, shareHidden(r, hide), keys, cols, hide));
 }
 
 /** The line under the prompt as its turn starts, dim, from a status

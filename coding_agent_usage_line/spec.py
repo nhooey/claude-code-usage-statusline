@@ -1333,7 +1333,8 @@ HIDE_GROUPS = {
                                                           #  on the 💳 label
     "cost": ("cost",),                                    # 💰
     "tokens": ("io", "cache"),                            # 🧩 ▴ ▾, 🎯
-    "context": ("size",),                                 # 🧠
+    "context": ("size", "share"),                         # 🧠, and its ٪
+                                                          #  of the window
     "time": ("elapsed", "eta", "split"),                  # ⌛, ⛳, 🤖 🔧 🚦
     "work": ("diff",),                                    # 💾
     "state": (

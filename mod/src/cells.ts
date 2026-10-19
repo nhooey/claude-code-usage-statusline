@@ -94,7 +94,10 @@ function ctxGrowth(st: Settings, tokens: number,
     : padVal(st, 4, sign + pyIntStr(Math.abs(points)) + E_PCT);
   const room = aCtxW(st) - visWidth(st.sCtx, st.widths);
   const gap = visWidth(size + " " + pct, st.widths) > room ? "" : " ";
-  return [span(st.sCtx), span(size + gap + pct, "F_PNK")];
+  // The points a span of their own, so a hidden `context.share` can drop
+  // them (shareHidden).
+  return [span(st.sCtx), span(size + gap, "F_PNK"),
+    ...(pct ? [span(pct, "F_PNK")] : [])];
 }
 
 /** ctxGrowth from a turn's `dctx` over the window: nothing where the turn

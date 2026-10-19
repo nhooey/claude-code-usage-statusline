@@ -7,7 +7,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join as pathJoin } from "node:path";
-import { settings, visWidth } from "../src/formatting.ts";
+import { settings, stripAnsi, visWidth } from "../src/formatting.ts";
 import type { Env } from "../src/formatting.ts";
 import { join, width } from "../src/spans.ts";
 import { RIGHT_EDGE } from "../src/spec.ts";
@@ -15,7 +15,8 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  accountText, bandRows, fixedKeys, footerTail, phaseRows, workspaceOf,
+  accountText, bandLines, bandRows, fixedKeys, footerTail, phaseRows,
+  workspaceOf,
 } from "../src/band.ts";
 import { receiptTurn } from "../src/receipt.ts";
 import { decodeTurn } from "../src/claude_cost.ts";
@@ -140,6 +141,24 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   const no5h = inZone(fig, () => accountText(st, fig, ["*.plan.five_hour"]));
   assert.ok(!no5h.includes("🔋") && no5h.includes("🪫"), no5h);
   assert.equal(no5h.split("🔜").length, text.split("🔜").length - 1, no5h);
+});
+
+test("a hidden context.share leaves 🧠's size and drops its ٪", () => {
+  const st = settings({});
+  const fig = document("status/01-baseline@196");
+  const opts = { home: HOME, rate: null, phase: "running" as const };
+  const ctx = (hide: string[]) => inZone(fig, () =>
+    bandLines(st, fig, 196, hide, opts)).map((l) => join(l));
+  const all = ctx([]);
+  const less = ctx(["*.context.share"]);
+  // 🎤's growth and 🤖's size both lose their ٪; the columns stay put.
+  for (const i of [0, 2]) {
+    assert.match(all[i], /🧠[^🧩]*٪/);
+    assert.doesNotMatch(less[i], /🧠[^🧩]*٪/);
+    const col = (s: string) =>
+      visWidth(stripAnsi(s.slice(0, s.indexOf("🧩"))), st.widths);
+    assert.equal(col(less[i]), col(all[i]));
+  }
 });
 
 test("📁 draws the project's root as 📦", () => {

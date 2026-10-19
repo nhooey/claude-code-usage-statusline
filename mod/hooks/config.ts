@@ -16,8 +16,9 @@ export const CONFIG = {
   account: "default",
   period: "day",
   // --hide paths, `scope[.group[.metric]]` with `*` for any one part.
-  // 🔋 the 5-hour limit, in every row (asked 2026-10-19).
-  hide: ['*.plan.five_hour'] as readonly string[],
+  // 🔋 the 5-hour limit, and 🧠's ٪ of the window, in every row (asked
+  // 2026-10-19).
+  hide: ['*.plan.five_hour', '*.context.share'] as readonly string[],
   // --mark-spacing and --subscript-decimals.
   markSpacing: true,
   subscriptDecimals: false,

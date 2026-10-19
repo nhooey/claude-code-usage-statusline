@@ -55,7 +55,8 @@ files keep their reads in `src/*_node.ts`, which only Node imports, and
 `hooks/config.ts` holds it, in one place: the usage source
 (`claude-usage-tracker` by default, as `--usage-source` names it), the
 account and period, the `--hide` paths (here `*.plan.five_hour`, 🔋 in
-every row), `--mark-spacing` and
+every row, and `*.context.share`, 🧠's ٪ of the window, which only the
+mod draws apart from 🧠's size), `--mark-spacing` and
 `--subscript-decimals`, the ticks (idle, running, and the clocks'), how many start lines are kept, how long
 the receipt waits for its turn, and the version the mod's caches are
 keyed by. Set them to what your status line runs with, so the two read
