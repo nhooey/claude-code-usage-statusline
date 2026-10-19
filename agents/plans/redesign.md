@@ -386,8 +386,8 @@ Code's own; no hook reaches the main row. Measured with a throwaway mod on
   and in tmux inside JediTerm (the `tmux` profile again). In all three the
   band ended before `[-]`. Bare JediTerm (the `jediterm` profile) looked
   right too. The panel there showed only in a tall pane, so a short pane
-  can hide it. That run was in a session other than the one the probe mod
-  was filed under, so its band may not have been the mockup's. Every row
+  can hide it. The ruler, the mockup's band, the receipt and the panel were
+  all on screen together. Every row
   carries the same glyphs before each of those columns, so a width the
   profile gets wrong shifts all rows alike; only the band's right edge
   against `[-]` shows it.
