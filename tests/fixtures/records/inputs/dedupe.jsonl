@@ -1,0 +1,8 @@
+{"message": {"usage": {}}, "requestId": "a"}
+{"message": {"usage": {"x": 1}}, "requestId": ""}
+{"message": {"usage": {"x": 1}, "id": "m"}}
+{"message": {"usage": {"x": 2}, "id": "m"}, "requestId": 0}
+{"message": {"usage": {"x": 1}}}
+{"message": {"usage": {"x": 1}}}
+{"message": {"usage": {"x": 1}}, "requestId": 7}
+{"message": {"usage": {"x": 1}}, "requestId": "7"}
