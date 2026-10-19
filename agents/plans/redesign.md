@@ -24,21 +24,23 @@ nothing hides the agent panel; see [Claude Code's limits](#claude-codes-limits).
 
 | Row | Scope | Drawn by |
 |---|---|---|
-| 💳 account | the plan's two windows, and when each resets | the mod, in the band |
+| 💳 account | the plan's two windows, when each resets, 📅 🕐 | the mod, in the band |
 | 🎤 and the prompt | the turn | the mod, in the band, while the turn runs |
 | 🤖💬 and the reply, or what it is doing | the main thread alone | the mod, in the band |
-| 🎮 session, 📦 project, 🌿 branch | the main thread and every agent, summed | the mod, in the band, while the turn runs |
+| 🎮 session, 📦 project, 🌿 branch, 📁 directory, 🔀 PR, 🎨 output style | the main thread and every agent, summed | the mod, in the band, while the turn runs |
 | one per agent | that agent's life | `subagentStatusLine`, in the panel |
 | 📊 🎤 and 📊 🎮 | the turn and the session as they stood when it ended | the mod, on the turn's closing line |
 
 A row's label says which scope its figures count; the figures do not carry
-the scope's glyph.
+the scope's glyph: the plan columns read 🔋 and 🪫 on every row.
 
 The band draws 🎤 and 🎮 only while a turn runs. When it ends, the receipt
 on the turn's closing line carries both, frozen, and the band drops to 💳
 and 🤖💬; the next prompt brings them back. The columns are laid out over
-every row either phase draws, so none moves when the two rows come or go. The band replaces the status line, which is removed from
-`settings.json`.
+every row either phase draws, so none moves when the two rows come or go.
+The band shrinks from four rows to two when the turn ends, and the prompt
+moves up with it; it grows back when the next turn starts. The band replaces
+the status line, which is removed from `settings.json`.
 
 ### One column per metric
 
@@ -46,8 +48,11 @@ Every row of the band, the panel and the receipt draws the same columns in
 the same order, with the agent panel's cells and widths:
 
 ```
-model  💰  🧠  🧩 ▴ ▾  🎯  ⌛ ⛳ 🤖 🔧 🚦  🔋  🪫  💾
+model  🛫  💰  🧠  🧩 ▴ ▾  🎯  ⌛ ⛳ 🤖 🔧 🚦  🔋  🪫  💾
 ```
+
+🛫, the token rate, is a state value, so only the 🤖💬 row and the agent
+rows fill it.
 
 A row with nothing for a column leaves it blank, so the columns hold. Every
 row's cells end five columns short of the terminal's right edge, the columns
@@ -68,23 +73,28 @@ Account                 🔋 🪫 and their 🔜 resets
 └ Session               the main thread and every agent
   ├ Turn                the session cut by time
   └ Agent               the session cut by thread: the main thread, each agent
-    └ State             model, what it is doing, 🧠, ⛳, 📨 💻 📡 👶🏻
+    └ State             model, 🛫, what it is doing, 🧠, ⛳, 📨 💻 📡 👶🏻
 ```
 
 Running totals (💰, 🧩, ⌛, the splits, 🔋 🪫 shares, 💾) add up across both
 Agent and Turn. State values describe one thread now and do not add up, so
-only agent-shaped rows draw them. Workspace (📦 📁 🌿) and the clock (📅 🕐)
-are not usage.
+only agent-shaped rows draw them. Workspace (📦 📁 🌿 🔀 🎨) and the clock
+(📅 🕐) are not usage; they are parts of a label, not columns.
 
 ### Narrow terminals
 
-A row's label shrinks first, down to 20 columns. Past that, whole columns
-drop, from every row at once, so the grid never breaks. Least important
-first:
+A row's label shrinks first, down to 20 columns. It sheds its ranked parts
+whole before anything is cut, least important first: 🎨, then 🔀, then 📁
+on the 🎮 row; 📅, then 🕐 on the 💳 row. What is left is cut with `…`.
+
+Past 20 columns, whole columns drop, from every row at once, so the grid
+never breaks. Least important first:
 
 ```
-💾  🎯  🤖 🔧 🚦  model  🧩  ⛳  ⌛  🧠  🪫  🔋  💰
+🛫  💾  🎯  🤖 🔧 🚦  model  🧩  ⛳  ⌛  🧠  🪫  🔋  💰
 ```
+
+With the sample figures, 🛫 shows from about 185 columns.
 
 ### Hiding
 
@@ -94,13 +104,14 @@ renderer draws all three readouts, so one path means the same everywhere.
 | Part | Values |
 |---|---|
 | scope | `account`, `turn`, `main`, `session`, `agent` |
-| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model), `chat` (prompt, reply, activity), `workspace` (📦 🌿) |
+| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫), `chat` (prompt, reply, activity), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐) |
 
 ```
 --hide account              the 💳 row
 --hide '*.work'             💾 on every row
 --hide turn.time.eta        ⛳ on the 🎤 row only
---hide session.workspace    📦 🌿 on the 🎮 row
+--hide session.workspace    📦 🌿 📁 🔀 🎨 on the 🎮 row
+--hide '*.state.rate'       🛫 everywhere
 ```
 
 A column hidden on every row it could show on is removed, and the others
@@ -114,10 +125,10 @@ receipt's head after it and its two rows under it:
 ```
 ✻ Worked for 4m 2s · 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
 📊 🎤 Why is the build slo…          💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
-📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+📊 🎮 session  📦app 🌿mai…          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 ```
 
-The head is 🔺🔖, the head of the turn's promptId and Claude Code's turn
+The head is 🔺🔖, 🔺 pointing up at the turn that ended, the head of the turn's promptId and Claude Code's turn
 index, then 📅 and 🕐 when it ended. The Stop hook prints nothing: Claude
 Code draws a hook's `systemMessage` behind a fixed `Stop says: `, and no
 setting or mod changes that label.
@@ -131,9 +142,48 @@ How the mod would do it, from the mod API in 2.1.296:
   there when the line is drawn.
 - The line is redrawn whenever it scrolls into view, so the mod keeps every
   turn's receipt, not only the last.
-- `$.process.run` runs the Python renderer with JSON on its standard input.
 - `TurnDuration` is raised on the terminal only; the desktop app would show
   no receipt.
+
+### The start line
+
+As the turn starts, the mod redraws the prompt's row (`UserMessage`) with the
+receipt's head under it, dim, 🔻 pointing down at the turn it opens, and
+when it started:
+
+```
+❯ Why is the build slow?
+  🔻🔖 8f37748e #12  📅 2026-10-19  🕐 13:02:00
+```
+
+So every turn carries its tag at both ends, even one that is interrupted or
+still running. Tried with a throwaway mod on 2026-10-19: it draws under the
+prompt and costs no tokens. The mod's own `turnId` is not the transcript's
+`promptId`, but the transcript holds the prompt's record by the time
+`turn.start` reaches the mod, so the id is read from there.
+`$.session.turns()` counts differently from the receipt (39 against #35), so
+the number has to come from the receipt's own count. A `UserPromptSubmit`
+hook cannot do it: its payload carries no prompt id, and its message would
+sit behind `UserPromptSubmit says:`. 🔻 is not yet a glyph constant; it joins
+`formatting.py` beside 🔺 after a run of `tests/probe-advance.sh`.
+
+### The mod's renderer
+
+The mod draws every cell itself, in TypeScript: a port of the Python cells,
+written as pure functions from figures to drawn spans, with no side effects
+of their own and no workarounds. Reading figures, the clock and the
+transcript stays at the edges, in the mod's event handlers.
+
+A cell returns spans, not a string: a mod's `Text` refuses control
+characters, so the escape codes the Python renderers colour with cannot
+reach the screen. Each span is drawn as a nested `<Text>` with its own
+`color`, a theme key or a raw colour such as hex, and `dimColor`. The
+throwaway band mod draws everything in one `<Text dimColor>`, which is why
+it shows no colour.
+
+The Python renderer keeps the agent panel, which `subagentStatusLine` still
+draws, so the two copies of each cell must match. The goldens are the
+check: the TypeScript port is tested against the same figures.
 
 ## The whole screen
 
@@ -142,6 +192,7 @@ figures; `--phase running` draws it mid-turn:
 
 ```
 ❯ Why is the build slow?
+  🔻🔖 8f37748e #12  📅 2026-10-19  🕐 13:02:00
 
 ⏺ Bash(npm run build -- --profile)
   ⎿  compile 31s · bundle 18s · test 3m 12s
@@ -151,7 +202,7 @@ figures; `--phase running` draws it mid-turn:
 
 ✻ Worked for 4m 2s · 🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
 📊 🎤 Why is the build slo…          💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  🎯95٪  ⌛  4m ⛳   2m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.03٪  🪫.050٪  💾 +  12 -   3
-📊 🎮 session  📦app 🌿main          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
+📊 🎮 session  📦app 🌿mai…          💰 115                 🧩 ▴2.7M ▾841k  🎯98٪  ⌛  9h         🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋1.2٪  🪫3.80٪  💾 +3.4k - 214
 💳 account  🔋 🔜 6.7m  🪫…                                                                                       🔋 15٪  🪫87.0٪                  [-]
 🤖💬 The test step takes 8…  🤖O⁵🏃  💰  92   🧠 115k  11٪  🧩 ▴2.1M ▾640k  🎯98٪  ⌛  9h ⛳   2m 🤖⠦⠀ 🔧⠦⠀ 🚦⠆⠀  🔋.90٪  🪫2.10٪  💾 +3.1k - 180
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -186,27 +237,11 @@ Read from the 2.1.302 binary:
 
 ## Open
 
-1. **The plan columns' glyph.** Drawn as 🔋 and 🪫 on every row, the scope
-   in the label. The alternative is the scope's glyph, 💳 🎤 🎮, beside the
-   figure, as the status line has it now.
-2. **Cells left out.** 📅 🕐 on the band, 📁, 🔀, 🎨 and 🛫 are not drawn.
-   Whether any comes back as a cell to switch on is open.
-3. **Labels in blank columns.** A label stops where the first column starts,
+1. **Labels in blank columns.** A label stops where the first column starts,
    even on a row whose first columns are blank: the 💳 row cuts its reset
    times while 💰 to ⛳ are empty on it. A label could run on into its own
-   row's blank columns.
-4. **Where the band's figures come from.** The mod reads
-   `$.session.usage()`, whose weekly share can differ from the status line's
-   by a point (33 against 34): another source, not rounding. Whether the band
-   calls the Python renderer through `$.process.run` or a TypeScript port
-   draws the cells is also open.
-5. **A tag line under each prompt.** The mod could redraw the prompt's row
-   (`UserMessage`) with the receipt's head under it, as the turn starts:
-   `🔖 31fe78e5 #35  📅 2026-10-19  🕐 13:43:55`. Tried with a throwaway mod
-   on 2026-10-19, and it draws, dim, under the prompt. The mod's own
-   `turnId` is not the transcript's `promptId`, but the transcript holds the
-   prompt's record by the time `turn.start` reaches the mod, so the id is read
-   from there. `$.session.turns()` counts differently from the receipt (39
-   against #35), so the number has to come from the receipt's own count. A
-   `UserPromptSubmit` hook cannot do it: its payload carries no prompt id, and
-   its message would sit behind `UserPromptSubmit says:`.
+   row's blank columns, up to its first figure. `--labels spill` draws that;
+   `--labels clip`, the default, draws what this document shows.
+2. **The band's weekly share.** `$.session.usage()` gives a weekly share a
+   point off the status line's (33 against 34): another source, not
+   rounding.
