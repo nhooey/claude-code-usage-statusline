@@ -66,9 +66,14 @@ NOW = 1_792_000_000.0
 RIGHT_EDGE = 5
 # The fewest columns a row's label keeps before columns start to drop.
 LABEL_MIN = 20
-# The panel's chrome before a row of the session's own: its pointer and two
-# blanks, drawn by Claude Code.  A nested row adds two more per level.
-PANEL_CHROME = 3
+# The panel's chrome before a row of the session's own, drawn by Claude
+# Code: two blanks, its pointer and one blank, "  ◯ ", measured with the
+# align-probe mod on 2026-10-19.  A nested row's is a guess: two more blanks
+# per level.
+PANEL_CHROME = 4
+# What the panel's payload calls `columns`: the terminal's width less this.
+# Measured on 2026-10-19: 154 in a 160-column terminal.
+PANEL_COLUMNS_SHORT = 6
 # The deepest nesting the grid keeps room for with --grid fixed.  A deeper
 # row cuts its own label instead of moving the columns.
 CHROME_DEPTH = 2
@@ -202,7 +207,7 @@ def chrome(row):
     columns per level of nesting."""
     if "depth" not in row:
         return ""
-    return DIM + "  " * (row["depth"] - 1) + ("└ " if row["depth"] > 1 else "") + "◯  " + R
+    return DIM + "  " * row["depth"] + "◯ " + R
 
 
 def label_text(row, patterns, room):
@@ -319,10 +324,12 @@ def screen(cols, patterns, receipt_by="hook", phase="done", spill=True, grid="fi
         band_rows[0] = seg(cols - RIGHT_EDGE, band_rows[0]) + "  " + DIM + "[-]" + R
     out += band_rows
     out += [DIM + rule + R, "❯ ", DIM + rule + R]
-    if parts["agents"]:
-        out.append(DIM + "◯  main" + R)  # Claude Code's own row; no hook draws it
-        out += [row for _, row in parts["agents"]]
     out.append(DIM + "  -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)" + R)
+    if parts["agents"]:
+        # The panel sits under the mode line, after a blank one, and opens on
+        # Claude Code's own main row, which no hook draws.
+        out += ["", DIM + "  ⏺ main" + R]
+        out += [row for _, row in parts["agents"]]
     return "\n".join(line.rstrip() for line in out)
 
 
@@ -350,7 +357,8 @@ def main(argv=None):
                     help="draw only one readout's rows, for a mod or a panel stub to "
                          "show: the band's without its [-], the receipt's under its "
                          "head, the start line, or the agent rows without the "
-                         "panel's chrome")
+                         "panel's chrome; --cols is the terminal's width, not the panel "
+                         "payload's `columns`")
     ap.add_argument("--plain", action="store_true", help="no colour")
     a = ap.parse_args(argv)
     if a.part == "screen":

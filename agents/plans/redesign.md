@@ -267,6 +267,25 @@ and a shared case that pins it:
 - **Cache keys.** `sha256` digests of the package's own source key the
   caches; the TypeScript caches are keyed apart, by the mod's version.
 
+### What the layout spec holds
+
+Each cell's key, `--hide` path, width, gap and drop rank; each glyph by code
+point; each colour as its RGB triple and the cut-offs that dim it (`mag_dim`,
+`cache_color`). Three things vary at run time and go in the spec as rules,
+not numbers:
+
+- **The terminal profile.** `_PAD` widens 🧩, 🧠 and 💰 by one column on
+  iTerm and tmux, so three cells are one column wider there. The mod reads
+  the profile from the environment it runs in, as `term_profile` does.
+- **Subscript decimals.** `set_subscript_decimals` changes the digits in six
+  cells but, by design, never their widths.
+- **Colours by value.** Dim under a magnitude cut, the cache tiers, a late
+  ⛳ in amber or red.
+
+Glyphs on these rows not yet measured by `tests/probe-advance.sh`: ▴ and ▾,
+the superscript digits in the model cell (¹ ² ³ ⁴ are East Asian Ambiguous,
+so a terminal may draw them two wide), and 🔻.
+
 ## The whole screen
 
 After the turn, `python3 tools/layout-mockup.py --cols 150 --plain`, made-up
@@ -290,15 +309,28 @@ figures; `--phase running` draws it mid-turn:
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-◯  main
-◯  🔩🟢 Port renderer  Edi…  🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋.08٪  🪫.100٪  💾 +  48 -   9
-  └ ◯  🔍🟢 Find callers o…  🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋.03٪  🪫.040٪  💾 +   0 -   0
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
+
+  ⏺ main
+  ◯ 🔩🟢 Port renderer  Ed…  🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋.08٪  🪫.100٪  💾 +  48 -   9
+    ◯ 🔍🟢 Find callers of…  🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋.03٪  🪫.040٪  💾 +   0 -   0
 ```
 
-The `◯  main` row and the `└ ◯` before a nested row are the panel's own,
-drawn by Claude Code; no hook reaches the main row. Their exact look here is
-a guess.
+The panel's `⏺ main` row and the `  ◯ ` before each agent row are Claude
+Code's own; no hook reaches the main row. Measured with a throwaway mod on
+2026-10-19 in a 160-column terminal:
+
+- **The band** is given 155 columns, and `[-]` takes the other 5 on its first
+  row.
+- **The panel** sits under the mode line, after a blank line. Its chrome is
+  `  ◯ `, four columns, and its payload's `columns` is the terminal's width
+  less 6 (154). A panel row's figures line up with the band's only when they
+  are laid out for the terminal's width, not the payload's.
+- **A nested row's chrome** was not seen; two more blanks per level is a
+  guess.
+- **The closing line** is a full-width row: text set beside Claude Code's own
+  lands at the right edge, so the mod draws the whole line, `✻ Baked for 1m
+  17s · 🔺🔖 …`, and loses Claude Code's `done` time unless it keeps its own.
 
 ## Claude Code's limits
 
