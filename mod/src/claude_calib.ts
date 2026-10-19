@@ -48,6 +48,7 @@ import { STAMP_FMT } from "./spec.ts";
 import type { Dict } from "./py.ts";
 import {
   isDict, pyAsciiDigits, pyGet, pyHas, pyOr, PY_SPACE, pyTruthy,
+  utf8,
 } from "./py.ts";
 import { pyFloat, pyJsonLoads } from "./sources.ts";
 import { _price, pyStr, tsEpoch, turnTimes } from "./claude_records.ts";
@@ -503,8 +504,6 @@ export function costAccounting(turns: readonly Turn[], calib: Calib,
  * parse), its request id, and its list-price cost. */
 export type Priced = [number | null, unknown, number];
 
-// Decoding as bytes.decode("utf-8", "replace"), which keeps a BOM.
-const DECODE_REPLACE = new TextDecoder("utf-8", { ignoreBOM: true });
 
 /** One transcript line as (epoch, request id, list-price cost), or null
  * for anything the scan does not bill: a line that will not parse, a
@@ -513,7 +512,7 @@ const DECODE_REPLACE = new TextDecoder("utf-8", { ignoreBOM: true });
 export function _pricedRecord(line: Uint8Array): Priced | null {
   let r: unknown;
   try {
-    r = pyJsonLoads(DECODE_REPLACE.decode(line));
+    r = pyJsonLoads(utf8(line, false, true));
   } catch {
     return null;
   }

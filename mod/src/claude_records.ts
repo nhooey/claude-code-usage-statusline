@@ -36,6 +36,7 @@ import { E_FOLD, E_ETA_REPORT, E_ETA_REPORT_OLD } from "./spec.ts";
 import {
   isDict, PY_SPACE, pyAsciiDigits, pyDig, pyFloatRepr, pyGet, pyHas, pyOr,
   pyStrip, pyTruthy,
+  utf8,
 } from "./py.ts";
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -508,10 +509,10 @@ export function readPayload(raw: string): Payload {
 
 // Decoding as Python's text mode does with errors="replace", keeping a BOM,
 // which "utf-8" (unlike "utf-8-sig") does not strip.
-const DECODE_REPLACE = new TextDecoder("utf-8", { ignoreBOM: true });
+const DECODE_REPLACE = { decode: (b: Uint8Array) => utf8(b, false, true) };
 // Decoding as json.loads(bytes) does: invalid UTF-8 raises, and the line is
 // skipped; a leading BOM is taken as "utf-8-sig" and dropped.
-const DECODE_STRICT = new TextDecoder("utf-8", { fatal: true });
+const DECODE_STRICT = { decode: (b: Uint8Array) => utf8(b, true) };
 
 /** Every line of `data` that parses, in order, as `_records` yields them.
  *
@@ -1454,8 +1455,7 @@ export function agentLabelId(path: string): string {
 
 // Decoding as open(encoding="utf-8") does: a bad byte raises, and a BOM is
 // kept, for json.load to refuse.
-const DECODE_FATAL_BOM = new TextDecoder("utf-8",
-  { fatal: true, ignoreBOM: true });
+const DECODE_FATAL_BOM = { decode: (b: Uint8Array) => utf8(b, true, true) };
 
 /** agentLabel's reading: the id off `agent-<id>.jsonl`, and the name
  * `meta`, the bytes of its `.meta.json` sidecar or null for none, gives:

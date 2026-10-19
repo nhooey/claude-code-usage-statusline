@@ -15,7 +15,7 @@
 // `$`; the tests' is Node.  Where the Python catches everything around a
 // read so that a figure it cannot have is missing rather than a failed
 // render, the edge passes null for what it could not read.
-import { CTX_1M, CTX_DEF } from "./spec.ts";
+import { CTX_1M, CTX_DEF, RATE_SAMPLES, RATE_TICK_S } from "./spec.ts";
 import { pyFormatF, pyIntDigits, pyIsDigit } from "./py.ts";
 import type { Dict } from "./py.ts";
 import {
@@ -223,6 +223,32 @@ export function _withShares(lim: Limits, turns: readonly Turn[] | null,
   return [{ ...lim, session_share: _pctStr(sh.sess),
     weekly_share: _pctStr(sh.week), session_turn: _pctStr(tn.sess),
     weekly_turn: _pctStr(tn.week) }, cache, figures(calib)];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// The main thread's 🛫.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** One sample of a token count: [epoch, tokens]. */
+export type RateSample = readonly [number, number];
+
+/** session_rate without its file (decision 1): how fast the main thread's
+ * own tokens climb, from the samples the caller keeps in memory, one taken
+ * from each status document `RATE_TICK_S` or more after the last, the
+ * last RATE_SAMPLES kept.  The rate is the rise from the oldest to the
+ * newest over the time between them, or null with fewer than two or no
+ * count.  Returns the samples to keep and the rate. */
+export function sessionRate(samples: readonly RateSample[],
+  tokens: number | null, now: number): [RateSample[], number | null] {
+  if (tokens === null) return [[...samples], null];
+  let kept = [...samples];
+  if (!kept.length || now - kept[kept.length - 1][0] >= RATE_TICK_S) {
+    kept = [...kept, [now, tokens] as const].slice(-RATE_SAMPLES);
+  }
+  if (kept.length < 2) return [kept, null];
+  const run = kept[kept.length - 1][0] - kept[0][0];
+  if (run <= 0) return [kept, null];
+  return [kept, Math.max(0, kept[kept.length - 1][1] - kept[0][1]) / run];
 }
 
 // ════════════════════════════════════════════════════════════════════════════

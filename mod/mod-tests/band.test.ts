@@ -1,0 +1,422 @@
+// The mod in the engine's test harness: each place it draws, from fixture
+// transcripts, against the pure functions it draws with.
+//
+//   bash mod/tools/plugin-test.sh
+//
+// The harness runs the mod in its own runtime with nothing beneath it, so
+// these tests stand for the engine: they answer `$.fs` from the fixture
+// files (mod-tests/fixtures.gen.ts), `$.env`, `$.session`, `$.clock` and
+// `$.store` from memory, and `$.process.run` as a directory with no git.
+// Each test then works out what the mod should have drawn from the same
+// bytes, with the src/ functions alone and no `$`: the records parsed
+// straight off the fixture, the reading straight off the tracker store,
+// and the document, rows and spans from those.  The drawn text and each
+// span's colour must match.  That proves the edges (that `$.fs` was read
+// as the bytes are), the filing (the receipt's trip through `$.store`) and
+// the drawing (spans to Text); the documents themselves are proven against
+// the Python's by test/claude.test.ts.
+import { expect, mock, test } from 'claude-code/testing'
+import type { On, RenderElement, RenderPropsOf } from 'claude-code'
+
+import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
+import { fromBase64 } from '../hooks/edges.ts'
+import { duration, receiptKey } from '../hooks/register.tsx'
+import {
+  _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, readPayload,
+  transcriptOf, turnsOf,
+} from '../src/claude_records.ts'
+import type { AgentEta, AgentReading } from '../src/claude_records.ts'
+import { seedLimitsSnapshot } from '../src/claude_calib.ts'
+import {
+  plistLoads, prepareClaudeReading, statusSourceContext, trackerReading,
+} from '../src/claude_sources.ts'
+import { trackerV1 } from '../src/sources.ts'
+import type { Store } from '../src/sources.ts'
+import {
+  baseLimits, costFigures, statusFigures, windowFor,
+} from '../src/claude.ts'
+import { NO_GIT } from '../src/claude_records.ts'
+import { settings } from '../src/formatting.ts'
+import { bandLines, workspaceOf } from '../src/band.ts'
+import {
+  drawRows, receiptHead, receiptRows, startLine,
+} from '../src/receipt.ts'
+import type { Span } from '../src/spans.ts'
+import * as spec from '../src/spec.ts'
+import type { Dict } from '../src/py.ts'
+
+const HOME = '/home/fixture'
+const STATE = '/state'
+const CWD = '/work'
+const SESSION = 'fixture-session'
+const MODEL = 'claude-opus-5[1m]'
+const WINDOW = 1_000_000
+const COLS = 150
+const encoder = new TextEncoder()
+
+const BAND: RenderPropsOf['AbovePrompt'] = {
+  hasSurvey: false,
+  isWorking: false,
+  maxRows: 10,
+  bodyColumns: COLS - 5,
+  scroll: { offset: 0, bodyRows: 10 },
+  view: {},
+}
+
+type World = {
+  files: Map<string, Uint8Array>
+  store: Map<string, unknown>
+  // Each status document the mod filed in `$.state`, oldest first.
+  docs: Dict[]
+}
+
+type Run = { argv: readonly string[] }
+type Ran = { exitCode: number; stdout: string; stderr: string;
+  isStdoutTruncated: boolean; isStderrTruncated: boolean }
+const NO_GIT_HERE: Ran = { exitCode: 128, stdout: '',
+  stderr: 'not a git repository', isStdoutTruncated: false,
+  isStderrTruncated: false }
+
+/** The engine beneath the mod, answered from memory; `run` answers
+ * `$.process.run`, a directory with no git by default. */
+function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE): World {
+  const files = new Map<string, Uint8Array>()
+  for (const [p, b64] of Object.entries(FILES)) files.set(p, fromBase64(b64))
+  files.set('/tracker.plist', encoder.encode(TRACKER))
+  mock.clock(on, { now: NOW * 1000 })
+  const store = new Map<string, unknown>()
+  on('store.get', ($, e) => ({ value: store.get(e.key) }))
+  on('store.set', ($, e) => {
+    store.set(e.key, e.value)
+    return { value: undefined }
+  })
+  on('store.delete', ($, e) => {
+    store.delete(e.key)
+    return { value: undefined }
+  })
+  on('store.keys', () => ({ value: [...store.keys()] }))
+  // The kit keeps `$.state`; this only watches the documents go by.
+  const docs: Dict[] = []
+  on('state.set', ($, e: any, next) => {
+    if (e.plugin === 'usage-band' && e.key === 'status') docs.push(e.value)
+    return next(e)
+  })
+  mock.env(on, {
+    HOME, CODING_AGENT_USAGE_LINE_STATE_DIR: STATE,
+    CLAUDE_CONFIG_DIR: '/claude',
+    CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST: '/tracker.plist',
+  })
+  // The calibration the environment plants, under whatever name the mod's
+  // version keys it by, and fresh.
+  const planted = (p: string) => /\/claude-calibration-ts-[0-9a-f]+\.cache$/
+    .test(p) ? encoder.encode(JSON.stringify(CALIB)) : undefined
+  const fileAt = (p: string) => files.get(p) ?? planted(p)
+  const isDir = (p: string) => [...files.keys()].some((f) =>
+    f.startsWith(p.endsWith('/') ? p : p + '/'))
+  on('fs.stat', ($, e) => {
+    const f = fileAt(e.path)
+    if (f) {
+      return { value: { kind: 'file' as const, size: f.length,
+        mtimeMs: NOW * 1000, isLink: false } }
+    }
+    if (isDir(e.path)) {
+      return { value: { kind: 'dir' as const, size: 0, mtimeMs: NOW * 1000,
+        isLink: false } }
+    }
+    return { deny: 'no such file: ' + e.path }
+  })
+  on('fs.read', ($, e) => {
+    const f = fileAt(e.path)
+    if (!f) return { deny: 'no such file: ' + e.path }
+    if (e.as === 'bytes') {
+      let s = ''
+      for (const b of f) s += String.fromCharCode(b)
+      return { value: { base64: btoa(s) } }
+    }
+    return { value: new TextDecoder().decode(f) }
+  })
+  on('fs.write', ($, e) => {
+    files.set(e.path, encoder.encode(e.text))
+    return { value: undefined }
+  })
+  on('fs.list', ($, e) => {
+    const dir = e.path.endsWith('/') ? e.path : e.path + '/'
+    const names = new Map<string, 'file' | 'dir'>()
+    for (const f of files.keys()) {
+      if (!f.startsWith(dir)) continue
+      const rest = f.slice(dir.length)
+      const cut = rest.indexOf('/')
+      names.set(cut < 0 ? rest : rest.slice(0, cut), cut < 0 ? 'file' : 'dir')
+    }
+    if (!names.size) return { deny: 'no such directory: ' + e.path }
+    return { value: [...names].map(([name, kind]) => ({ name, kind,
+      size: kind === 'file' ? files.get(dir + name)!.length : 0,
+      mtimeMs: NOW * 1000, isLink: false })) }
+  })
+  on('process.run', ($, e) => ({ value: run(e) }))
+  on('session.cwd', () => ({ value: CWD }))
+  on('session.root', () => ({ value: CWD }))
+  on('session.model', () => ({ value: MODEL }))
+  on('session.id', () => ({ value: SESSION }))
+  on('session.usage', () => ({ value: { startedAt: NOW * 1000,
+    context: { tokens: 1000, window: WINDOW }, rateLimits: [] } }))
+  // The engine's own drawings, and the events beneath the mod.
+  on('ui.render', () => h('Box', null) as RenderElement)
+  on('session.start', ($, e) => ({ cwd: e.cwd }))
+  on('turn.start', ($, e) => ({ turnId: e.turnId }))
+  on('turn.complete', () => ({ text: '' }))
+  on('classic.SessionStart', () => ({}))
+  return { files, store, docs }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// What the mod should draw, worked out without it.
+// ════════════════════════════════════════════════════════════════════════════
+
+function bytesOf(w: World, p: string): Uint8Array {
+  return w.files.get(p)!
+}
+
+/** The agents beside a fixture transcript, read straight off its bytes. */
+function readingsOf(w: World, transcript: string):
+  [string, AgentReading][] {
+  const dir = transcript.slice(0, -'.jsonl'.length) + '/'
+  return [...w.files.keys()].filter((p) => p.startsWith(dir) &&
+    /\/agent-[^/]*\.jsonl$/.test(p)).sort()
+    .map((p) => [p, _readAgentBytes(bytesOf(w, p))])
+}
+
+function labelIn(w: World) {
+  return (p: string): [string, string] => agentLabelOf(p,
+    w.files.get(p.slice(0, -'.jsonl'.length) + '.meta.json') ?? null)
+}
+
+/** The tracker's reading as the mod's collector should come to it. */
+async function preparedOf(now: number) {
+  const store: Store = { load: () => ({}), save: () => {},
+    findCompatible: () => ({}) }
+  const spec = 'claude-usage-tracker'
+  return prepareClaudeReading(spec, 'default', 'day',
+    statusSourceContext(spec, SESSION, MODEL, now, {}), now, {}, store,
+    async () => trackerV1(trackerReading(plistLoads(encoder.encode(TRACKER)))))
+}
+
+/** The status document from the fixture's bytes and the world's session. */
+async function statusOf(w: World, transcript: string, rate: number | null) {
+  const records = _recordsOf(bytesOf(w, transcript))
+  const readings = readingsOf(w, transcript)
+  const etas: AgentEta[] = []
+  const tr = transcriptOf(records, agentRecordsOf(readings, null, etas), etas,
+    NOW)
+  const turns = turnsOf(records, (s) => agentRecordsOf(readings, s, null),
+    null, new Map(), labelIn(w))
+  const prepared = await preparedOf(NOW)
+  const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
+  const payload = readPayload(JSON.stringify({ session_id: SESSION,
+    transcript_path: transcript, cwd: CWD,
+    workspace: { current_dir: CWD, project_dir: CWD },
+    model: { id: MODEL, display_name: MODEL },
+    context_window: { context_window_size: WINDOW } }))
+  return statusFigures({ payload, transcript: tr, turns,
+    git: { ...NO_GIT, in_git: false }, prepared, snap, calib: CALIB, now: NOW,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone, rate })
+}
+
+async function costOf(w: World, transcript: string, published: number) {
+  const records = _recordsOf(bytesOf(w, transcript))
+  const readings = readingsOf(w, transcript)
+  const turns = turnsOf(records, (s) => agentRecordsOf(readings, s, null),
+    null, new Map(), labelIn(w))
+  const prepared = await preparedOf(NOW)
+  const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
+  return costFigures(turns, windowFor(turns, published), CALIB, snap,
+    prepared, NOW, null)
+}
+
+const text = (spans: readonly Span[]) => spans.map((s) => s.text).join('')
+
+type Drawn = { type: string; props?: Record<string, unknown>;
+  children?: (Drawn | string)[] }
+
+/** Each row the mod drew, as its text and its spans' colours: the Texts
+ * directly in the drawing's column, each of whose children is one span. */
+async function drawnRows(ui: { drawn: () => Promise<unknown> }) {
+  const tree = await ui.drawn() as Drawn
+  if (tree.type !== 'Box') return []
+  return (tree.children ?? []).filter((c): c is Drawn =>
+    typeof c !== 'string' && c.type === 'Text').map((row) => {
+    const spans = (row.children ?? []) as Drawn[]
+    return { text: spans.map((c) => (c.children ?? []).join('')).join(''),
+      colours: spans.map((c) => c.props?.color ?? null) }
+  })
+}
+
+function expected(lines: readonly (readonly Span[])[]) {
+  const named = spec as unknown as Record<string, string>
+  return lines.map((l) => ({ text: text(l),
+    colours: l.map((s) => s.colour ? named[s.colour] : null) }))
+}
+
+/** The status document the band draws: the last one filed. */
+function lastDoc(w: World): Dict {
+  expect(w.docs.length).toBeGreaterThan(0)
+  return w.docs[w.docs.length - 1]
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// The tests.
+// ════════════════════════════════════════════════════════════════════════════
+
+const STATUS = '/fixtures/transcripts/status/agents.jsonl'
+const COST = '/fixtures/transcripts/cost/09-agents.jsonl'
+const MAIN = '/fixtures/transcripts/status/main.jsonl'
+
+async function start($: any, surface: 'terminal' | 'desktop',
+  transcript: string) {
+  await $.classic.SessionStart({ source: 'startup',
+    transcript_path: transcript })
+  await $.session.start({ cwd: CWD, surface, isInteractive: true })
+}
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  test(`the band is bandLines over the status document (${surface})`,
+    async ($, on) => {
+      const w = world(on)
+      await start($, surface, STATUS)
+      const doc = lastDoc(w)
+      // The edges read the fixture as its bytes are: the document is the
+      // one made straight from them.
+      const want = await statusOf(w, STATUS, doc.rate as number | null)
+      expect(JSON.parse(JSON.stringify(doc)))
+        .toEqual(JSON.parse(JSON.stringify(want)))
+      const ui = await $.ui.mount({ plugin: 'usage-band', surface,
+        component: 'AbovePrompt', props: BAND })
+      const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
+        rate: null, phase: 'done' })
+      expect(lines.length).toBeGreaterThan(0)
+      expect(await drawnRows(ui)).toEqual(expected(lines))
+    })
+}
+
+test('a turn running draws the running phase', async ($, on) => {
+  const w = world(on)
+  await start($, 'terminal', STATUS)
+  const doc = lastDoc(w)
+  const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'AbovePrompt', props: { ...BAND, isWorking: true } })
+  const lines = bandLines(settings({}), doc, COLS, [], { home: HOME,
+    rate: null, phase: 'running' })
+  expect(await drawnRows(ui)).toEqual(expected(lines))
+})
+
+test('a survey above the prompt leaves the band to the engine',
+  async ($, on) => {
+    world(on)
+    await start($, 'terminal', STATUS)
+    const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'AbovePrompt', props: { ...BAND, hasSurvey: true } })
+    expect(await ui.find({ type: 'Text' })).toBeUndefined()
+  })
+
+test('the receipt is filed in the store and drawn on the closing line',
+  async ($, on) => {
+    const w = world(on)
+    await start($, 'terminal', COST)
+    const status = lastDoc(w)
+    await $.turn.complete({ answer: '', durationMs: 65_000,
+      isAborted: false, turnId: 't1', reason: 'answer' })
+    // The store round trip: what was filed is what a later draw reads.
+    const filed = w.store.get(receiptKey(65_000)) as Dict
+    expect(filed).toBeDefined()
+    const cost = await costOf(w, COST, status.context_window as number)
+    const st = settings({})
+    const { turn, session } = receiptRows(st, cost,
+      workspaceOf(status, HOME))
+    expect(JSON.parse(JSON.stringify(filed))).toEqual(JSON.parse(
+      JSON.stringify({ head: receiptHead(cost),
+        rows: [...(turn ? [turn] : []), session] })))
+    const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'TurnDuration', props: { word: 'Worked',
+        durationMs: 65_000 }, viewport: { columns: COLS, rows: 40 } })
+    const [head, ...rows] = await drawnRows(ui)
+    expect(head.text).toBe(`✻ Worked for ${duration(65_000)} · ` +
+      text(receiptHead(cost)))
+    expect(rows).toEqual(expected(drawRows(st,
+      [...(turn ? [turn] : []), session], COLS, [])))
+  })
+
+test("a subagent's turn files no receipt", async ($, on) => {
+  const w = world(on)
+  await start($, 'terminal', COST)
+  await $.turn.complete({ answer: '', durationMs: 7_000, isAborted: false,
+    turnId: 't2', agentId: 'agent-1', reason: 'answer' })
+  expect(w.store.get(receiptKey(7_000))).toBeUndefined()
+  const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'TurnDuration', props: { word: 'Worked', durationMs: 7_000 },
+    viewport: { columns: COLS, rows: 40 } })
+  expect(await ui.find({ type: 'Text' })).toBeUndefined()
+})
+
+test('a prompt from the composer gets its turn tag under it',
+  async ($, on) => {
+    const w = world(on)
+    await start($, 'terminal', STATUS)
+    // The prompt's record reaches the transcript as the turn opens.
+    const prompt = JSON.stringify({ message: { content: 'Go on.' },
+      promptId: 'p-next', promptSource: 'typed',
+      timestamp: '2026-08-16T08:20:00Z', type: 'user',
+      userType: 'external' }) + '\n'
+    const before = w.files.get(STATUS)!
+    const grown = new Uint8Array(before.length + prompt.length)
+    grown.set(before)
+    grown.set(encoder.encode(prompt), before.length)
+    w.files.set(STATUS, grown)
+    await $.turn.start({ text: 'Go on.', turnId: 't3' })
+    const doc = lastDoc(w)
+    expect((doc.transcript as Dict).prompt_id).toBe('p-next')
+    const tag = startLine(doc)
+    expect(tag.length).toBeGreaterThan(0)
+    const props = { text: 'Go on.', isExpanded: false }
+    const typed = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'UserMessage',
+      props: { ...props, origin: { kind: 'composer' } } })
+    const drawn = await drawnRows(typed)
+    expect(drawn[drawn.length - 1]?.text).toBe('  ' + text(tag))
+    const other = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'UserMessage',
+      props: { ...props, origin: { kind: 'unclassified' } } as any })
+    expect(await drawnRows(other)).toEqual([])
+  })
+
+
+test('a transcript over 4 MiB is read in pieces through the shell',
+  async ($, on) => {
+    // The shell's `tail -c +N | head -c L | base64`, over the world's
+    // files: what readRange asks for a file `$.fs.read` will not take.
+    const ranged: string[] = []
+    const w: World = world(on, (e) => {
+      const [cmd, , script, , from, file, want] = e.argv
+      if (cmd !== '/bin/sh' || !script.includes('base64')) return NO_GIT_HERE
+      ranged.push(from)
+      const f = w.files.get(file)!
+      const piece = f.subarray(Number(from) - 1,
+        Number(from) - 1 + Number(want))
+      let s = ''
+      for (const b of piece) s += String.fromCharCode(b)
+      return { ...NO_GIT_HERE, exitCode: 0, stdout: btoa(s) + '\n',
+        stderr: '' }
+    })
+    // main.jsonl's records again and again past the limit: the requests
+    // repeat, so the reading is the one copy's, read through every piece.
+    const one = w.files.get(MAIN)!
+    const copies = Math.ceil((4.5 * 1024 * 1024) / one.length)
+    const big = new Uint8Array(one.length * copies)
+    for (let i = 0; i < copies; i++) big.set(one, i * one.length)
+    w.files.set(MAIN, big)
+    await start($, 'terminal', MAIN)
+    expect(ranged.length).toBeGreaterThan(1)
+    const doc = lastDoc(w)
+    const want = await statusOf(w, MAIN, doc.rate as number | null)
+    expect(JSON.parse(JSON.stringify(doc)))
+      .toEqual(JSON.parse(JSON.stringify(want)))
+  })

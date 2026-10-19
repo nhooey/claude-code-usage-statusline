@@ -8,6 +8,26 @@
 // grew a copy of these before this module; they are folded in here so a
 // fix to one is a fix to both.
 
+/** UTF-8 to a string, as bytes.decode("utf-8") with `fatal` "strict" or
+ * else "replace": a leading byte-order mark kept with `keepBom`, as
+ * Python's "utf-8" keeps it, and dropped without, as "utf-8-sig" drops it.
+ *
+ * Here, and not as TextDecoder's options at each reader, because the mod's
+ * runtime takes `fatal` but not `ignoreBOM`: its decoder always drops the
+ * mark, so the mark is put back by hand, alike in both runtimes. */
+export function utf8(bytes: Uint8Array, fatal = false,
+  keepBom = false): string {
+  const text = (fatal ? STRICT : REPLACE).decode(bytes);
+  return keepBom && bytes[0] === 0xef && bytes[1] === 0xbb &&
+    bytes[2] === 0xbf ? "﻿" + text : text;
+}
+
+type DecoderWith = new (label: string,
+  options: { fatal: boolean }) => TextDecoder;
+const STRICT = new (TextDecoder as unknown as DecoderWith)("utf-8",
+  { fatal: true });
+const REPLACE = new TextDecoder("utf-8");
+
 /** A parsed JSON object, which Python reads as a dict. */
 export type Dict = { [key: string]: unknown };
 

@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "node --test 'test/*.test.ts'",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "typecheck:plugin": "tsc -p tsconfig.plugin.json",
+    "test:plugin": "bash tools/plugin-test.sh"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

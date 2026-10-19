@@ -15,7 +15,7 @@
 // mod's own handlers' in the mod.
 
 import { STAMP_FMT } from "./spec.ts";
-import { isDict, pyGet, pyStrip, pyTruthy } from "./py.ts";
+import { isDict, pyGet, pyStrip, pyTruthy, utf8 } from "./py.ts";
 import {
   collect, pyFloatText, pyJsonLoads, splitTimestamp,
 } from "./sources.ts";
@@ -227,7 +227,7 @@ export function trackerReading(store: unknown): Dict {
   let profs = pyGet(store, "profiles_v3");
   if (profs instanceof Uint8Array) {
     // Python's decode keeps a byte-order mark, and json.loads refuses one.
-    profs = new TextDecoder("utf-8", { ignoreBOM: true }).decode(profs);
+    profs = utf8(profs, false, true);
   }
   if (typeof profs === "string") {
     try {
@@ -272,14 +272,13 @@ export function trackerReading(store: unknown): Dict {
 export function plistLoads(bytes: Uint8Array): unknown {
   let start = 0;
   if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) start = 3;
-  const head = new TextDecoder("latin1").decode(bytes.subarray(start,
-                                                               start + 6));
+  // Latin-1 by hand: the mod's runtime decodes UTF-8 alone.
+  const head = String.fromCharCode(...bytes.subarray(start, start + 6));
   if (!head.startsWith("<?xml") && !head.startsWith("<plist")) {
     throw new Error("not an XML plist");
   }
   // Expat refuses malformed UTF-8 rather than replacing it.
-  const text = new TextDecoder("utf-8", { fatal: true })
-    .decode(bytes.subarray(start));
+  const text = utf8(bytes.subarray(start), true);
   return parsePlistXml(text);
 }
 

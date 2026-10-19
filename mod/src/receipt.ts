@@ -146,12 +146,19 @@ export function receiptHead(fig: Dict): Span[] {
 export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null):
   { head: Span[]; rows: Span[][] } {
-  const keys = fixedKeys(st, cols, hide);
   const { turn, session } = receiptRows(st, fig, ws);
-  const rows = [...(turn ? [turn] : []), session]
-    .filter((r) => !hidden(hide, r.scope));
   return { head: receiptHead(fig),
-    rows: rows.map((r) => draw(st, r, keys, cols, hide)) };
+    rows: drawRows(st, [...(turn ? [turn] : []), session], cols, hide) };
+}
+
+/** Rows drawn on the band's fixed grid at `cols` under `hide`, a hidden
+ * scope's left out.  The mod files a receipt's rows and draws them here
+ * when its line is drawn, at the width it is drawn at then. */
+export function drawRows(st: Settings, rows: readonly Row[], cols: number,
+  hide: readonly string[]): Span[][] {
+  const keys = fixedKeys(st, cols, hide);
+  return rows.filter((r) => !hidden(hide, r.scope))
+    .map((r) => draw(st, r, keys, cols, hide));
 }
 
 /** The line under the prompt as its turn starts, dim, from a status

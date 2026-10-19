@@ -32,6 +32,7 @@ import { sha256Hex } from "./sha256.ts";
 import type { Dict } from "./py.ts";
 import {
   isDict, pyAsciiDigits, pyFloatRepr, pyGet, pyStrip, pyTruthy,
+  utf8,
 } from "./py.ts";
 
 export type { Dict };
@@ -811,8 +812,7 @@ export function commandInput(context: unknown): string {
 export function commandOutput(output: Uint8Array): Reading {
   let value: unknown;
   try {
-    const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true })
-      .decode(output);
+    const text = utf8(output, true, true);
     value = pyJsonLoads(text);
   } catch {
     return {};

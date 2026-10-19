@@ -1,0 +1,7 @@
+{
+  "name": "usage-band",
+  "version": "0.2.0",
+  "description": "The usage line's grid in Claude Code's own screen: the band above the prompt, the receipt on each turn's closing line, and the turn's tag under its prompt",
+  "author": { "name": "Neil Hooey" },
+  "types": "./types/index.d.ts"
+}

@@ -1,5 +1,8 @@
 __pycache__/
 mod/node_modules/
+# The engine's types for the mod, which it writes on loading it; see
+# mod/README.md for laying them by hand.
+mod/.claude-plugin/types/
 *.pyc
 .DS_Store
 
