@@ -10,12 +10,12 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as cc from "../src/claude_calib.ts";
-import type { CalibEnv, Naive } from "../src/claude_calib.ts";
+import * as cc from "../src/claude_calib_node.ts";
+import type { CalibEnv, Naive } from "../src/claude_calib_node.ts";
 import type { Turn } from "../src/claude_records.ts";
 import type { Limits } from "../src/claude_sources.ts";
 import { isDict } from "../src/py.ts";
-import { pyJsonLoads } from "../src/sources.ts";
+import { pyJsonLoads } from "../src/sources_node.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
   "../..");

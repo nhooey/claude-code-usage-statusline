@@ -10,7 +10,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as cr from "../src/claude_records.ts";
+import * as cr from "../src/claude_records_node.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
   "../..");
@@ -182,7 +182,7 @@ const RUN: Record<string, (c: Case) => unknown> = {
 function turnsWith(p: string, offsets: Record<string, number> | null,
   held: Map<string, number> | null): cr.Turn[] {
   return cr.turnsOf(cr._records(p), (seen) => cr.agentRecords(p, seen),
-    offsets && new Map(Object.entries(offsets)), held);
+    offsets && new Map(Object.entries(offsets)), held, cr.agentLabel);
 }
 
 /** A fresh private directory, for state a case writes. */

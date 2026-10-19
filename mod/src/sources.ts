@@ -22,16 +22,12 @@
 // "Python's semantics"; truthiness, dict.get and strip() are in py.ts,
 // shared with the other ports.
 //
-// The I/O is at the bottom, under "The edges": the cache files, running a
-// command, reading the tracker.  collect takes them as arguments, and every
-// function above that line is pure.
+// The I/O, the cache files, running a command and reading the tracker, is
+// in sources_node.ts for Node and in the mod's handlers for the mod, which
+// runs with no Node.  collect takes them as arguments, and everything here
+// is pure.
 
-import { createHash } from "node:crypto";
-import { spawn } from "node:child_process";
-import * as fs from "node:fs";
-import * as nodeOs from "node:os";
-import * as nodePath from "node:path";
-import { readTracker } from "./claude_sources.ts";
+import { sha256Hex } from "./sha256.ts";
 
 import type { Dict } from "./py.ts";
 import {
@@ -666,7 +662,7 @@ export function cacheNamespace(spec: string, account: string, context: unknown,
   }
   if (value) {
     return "credential:" +
-      createHash("sha256").update(value, "utf8").digest("hex").slice(0, 24);
+      sha256Hex(value).slice(0, 24);
   }
   const session = safeText(pyGet(ctx, "session"), 256);
   if (session) return "session:" + session;
@@ -838,13 +834,16 @@ export function commandOutput(output: Uint8Array): Reading {
 // collect: which reading, from where.
 // ════════════════════════════════════════════════════════════════════════════
 
-// The scoped cache, as state.py keeps it.  fileStore below is the real one.
+// The scoped cache, as state.py keeps it.  sources_node.ts's fileStore is
+// the real one in Node; the mod's reads through `$`, so each method may
+// answer with a promise.
 export interface Store {
   load(agent: string, source: string, account: string,
-       periodStart: string): Dict;
+       periodStart: string): Dict | Promise<Dict>;
   save(agent: string, source: string, account: string, periodStart: string,
-       value: Dict): void;
-  findCompatible(agent: string, account: string, periodStart: string): Dict;
+       value: Dict): void | Promise<void>;
+  findCompatible(agent: string, account: string,
+                 periodStart: string): Dict | Promise<Dict>;
 }
 
 // Runs one collector.  `failure` may be given a retry_after, as the HTTP
@@ -876,7 +875,7 @@ export async function collect(agent: string, spec: string | null,
   const namespace = cacheNamespace(spec, account, ctx, env);
   const native = nativeReading(agent, ctx);
   let staleNative: Reading = {};
-  const rawNativeCache = store.load(agent, "native", namespace, periodKey);
+  const rawNativeCache = await store.load(agent, "native", namespace, periodKey);
   let cachedNative = cachedReading(rawNativeCache, "native", now, 60);
   let currentNative = pyTruthy(native)
     ? cachedReading(native, "native", now, 60) : {};
@@ -888,7 +887,7 @@ export async function collect(agent: string, spec: string | null,
     const saved = tagIdentity(currentNative, agent, "native", namespace,
                               periodKey);
     saved.fetched_at = now;
-    store.save(agent, "native", namespace, periodKey, saved);
+    await store.save(agent, "native", namespace, periodKey, saved);
     cachedNative = currentNative = saved;
   }
   // Auto starts with active native data, then only its native cache;
@@ -905,7 +904,7 @@ export async function collect(agent: string, spec: string | null,
     staleNative = currentNative;
   }
   if (spec === "none" || spec === "off") {
-    const cachedAny = store.findCompatible(agent, namespace, periodKey);
+    const cachedAny = await store.findCompatible(agent, namespace, periodKey);
     const source = pyTruthy(native) ? "native"
       : String(pyGet(cachedAny, "source", ""));
     return tagIdentity(pyTruthy(native) ? currentNative
@@ -920,7 +919,7 @@ export async function collect(agent: string, spec: string | null,
     selected = agent === "codex" ? "codex-app-server" : "claude-usage-tracker";
   }
   const ttl = HTTP_SOURCES.includes(selected) ? 300 : 60;
-  const rawCache = store.load(agent, selected, namespace, periodKey);
+  const rawCache = await store.load(agent, selected, namespace, periodKey);
   const cached = cachedReading(rawCache, selected, now, ttl);
   if (!refreshDue(rawCache, now, ttl)) return cached;
   const failure: Dict = {};
@@ -937,7 +936,7 @@ export async function collect(agent: string, spec: string | null,
     Object.assign(done, { agent, account_name: namespace,
                           period_start: periodKey, fetched_at: now,
                           attempted_at: now, fail_count: 0 });
-    store.save(agent, selected, namespace, periodKey, done);
+    await store.save(agent, selected, namespace, periodKey, done);
     return done;
   }
   const retryAfter = pyGet(failure, "retry_after");
@@ -945,167 +944,18 @@ export async function collect(agent: string, spec: string | null,
     typeof retryAfter === "number" ? retryAfter : null);
   Object.assign(failed, { agent, account_name: namespace,
                           period_start: periodKey });
-  store.save(agent, selected, namespace, periodKey, failed);
+  await store.save(agent, selected, namespace, periodKey, failed);
   return tagIdentity(pyTruthy(cached) ? cached : staleNative, agent,
                      pyTruthy(cached) ? selected : "native", namespace,
                      periodKey);
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// The edges: the cache files, the command, the tracker.
-// ════════════════════════════════════════════════════════════════════════════
-
-export function expandUser(path: string): string {
-  if (path === "~" || path.startsWith("~/")) {
-    return nodeOs.homedir() + path.slice(1);
-  }
-  return path;
-}
-
-// state.py's directory.  The same files Python writes, under the same
-// names, so the band and the status line share one cache and one cadence:
-// the tracker is read once a minute between them, not once each.
-export function stateDir(env: Env): string {
-  let path = env.CODING_AGENT_USAGE_LINE_STATE_DIR ?? "";
-  if (!path) {
-    const base = env.XDG_STATE_HOME ||
-      nodePath.join(nodeOs.homedir(), ".local", "state");
-    path = nodePath.join(base, "coding-agent-usage-line");
-  }
-  try { fs.mkdirSync(path, { recursive: true, mode: 0o700 }); } catch { /**/ }
-  try { fs.chmodSync(path, 0o700); } catch { /**/ }
-  return path;
-}
-
-function identity(values: unknown[]): string[] {
+export function identity(values: unknown[]): string[] {
   return values.map((x) => (pyTruthy(x) ? pyStr(x) : ""));
 }
 
 export function cacheName(agent: string, source: string, account: string,
                           periodStart: string): string {
   const raw = identity([agent, source, account, periodStart]).join("\0");
-  return createHash("sha256").update(raw, "utf8").digest("hex") + ".json";
-}
-
-function readJson(path: string): Dict {
-  try {
-    const value = pyJsonLoads(fs.readFileSync(path, "utf8"));
-    return isDict(value) ? value : {};
-  } catch {
-    return {};
-  }
-}
-
-export function fileStore(env: Env): Store {
-  const dir = () => stateDir(env);
-  return {
-    load(agent, source, account, periodStart) {
-      const value = readJson(nodePath.join(dir(),
-        cacheName(agent, source, account, periodStart)));
-      const expected = identity([agent, source, account, periodStart]);
-      const actual = identity([value.agent, value.source, value.account_name,
-                               value.period_start]);
-      return expected.join("\0") === actual.join("\0") ? value : {};
-    },
-    save(agent, source, account, periodStart, value) {
-      const stored: Dict = { ...value, agent: String(agent),
-                             source: String(source),
-                             account_name: String(account),
-                             period_start: String(periodStart) };
-      const target = nodePath.join(dir(),
-        cacheName(agent, source, account, periodStart));
-      const tmp = nodePath.join(nodePath.dirname(target),
-        ".tmp-" + process.pid + "-" + Math.random().toString(36).slice(2));
-      try {
-        fs.writeFileSync(tmp, pyJsonDumps(stored, true), { mode: 0o600 });
-        fs.renameSync(tmp, target);
-        fs.chmodSync(target, 0o600);
-      } catch { /* an unwritable cache is a cache miss next time */ }
-      try { fs.unlinkSync(tmp); } catch { /**/ }
-    },
-    findCompatible(agent, account, periodStart) {
-      let newest: Dict = {};
-      let names: string[];
-      try { names = fs.readdirSync(dir()); } catch { return newest; }
-      for (const name of names) {
-        if (!name.endsWith(".json") || name.startsWith("reported-")) continue;
-        const value = readJson(nodePath.join(dir(), name));
-        if (value.agent !== agent || value.account_name !== account ||
-            pyStr(pyGet(value, "period_start")) !== pyStr(periodStart)) {
-          continue;
-        }
-        const mine = pyFloat(pyGet(value, "as_of"));
-        const theirs = pyFloat(pyGet(newest, "as_of", -1));
-        const newer = mine === null || theirs === null
-          ? !pyTruthy(newest) : mine > theirs;
-        if (newer) newest = value;
-      }
-      return newest;
-    },
-  };
-}
-
-// Run exactly one path (or bash fallback), passing no secrets or text.
-export async function commandReading(path: string, context: unknown,
-                                     timeout = 5): Promise<Reading> {
-  path = nodePath.resolve(path);
-  try {
-    if (!fs.statSync(path).isFile()) return {};
-  } catch {
-    return {};
-  }
-  let executable = true;
-  try { fs.accessSync(path, fs.constants.X_OK); } catch { executable = false; }
-  const [cmd, args] = executable ? [path, []] : ["bash", [path]];
-  return new Promise((resolve) => {
-    // Its own process group, so a timeout takes its children with it.
-    const proc = spawn(cmd, args, { stdio: ["pipe", "pipe", "ignore"],
-                                    detached: true });
-    const chunks: Buffer[] = [];
-    let size = 0, settled = false;
-    const kill = () => {
-      try { process.kill(-proc.pid!, "SIGKILL"); } catch { /**/ }
-    };
-    const finish = (value: Reading) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve(value);
-    };
-    const timer = setTimeout(() => { kill(); finish({}); },
-                             Math.max(10, timeout * 1000));
-    proc.on("error", () => finish({}));
-    proc.stdin.on("error", () => { /* a command need not read its input */ });
-    proc.stdout.on("data", (chunk: Buffer) => {
-      size += chunk.length;
-      if (size > 1024 * 1024) { kill(); finish({}); return; }
-      chunks.push(chunk);
-    });
-    proc.on("close", (code: number | null) => {
-      finish(code === 0 ? commandOutput(Buffer.concat(chunks)) : {});
-    });
-    proc.stdin.end(commandInput(context));
-  });
-}
-
-// The tracker's store, through the override file or `defaults export`.
-// Malformed or missing, it is no reading.
-export async function claudeUsageTracker(env: Env): Promise<Reading> {
-  try {
-    const raw = await readTracker(env);
-    return raw === null ? {} : trackerV1(raw);
-  } catch {
-    return {};
-  }
-}
-
-// The collectors this port has.  The others are no reading.
-export function fetchSource(env: Env): Fetch {
-  return async (selected, context) => {
-    if (selected.startsWith("cmd:")) {
-      return commandReading(selected.slice(4), context);
-    }
-    if (selected === "claude-usage-tracker") return claudeUsageTracker(env);
-    return {};
-  };
+  return sha256Hex(raw) + ".json";
 }

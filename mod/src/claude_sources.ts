@@ -9,14 +9,15 @@
 // NOT PORTED: account_summary, the account line under the status line,
 // which is a renderer and goes with the cells (build step 4).  So
 // PreparedClaudeReading has no accountText yet.
+//
+// Pure, so the mod can import it: reading the tracker's store, through its
+// plist or `defaults export`, is claude_sources_node.ts's in Node and the
+// mod's own handlers' in the mod.
 
-import * as fs from "node:fs";
-import { spawn } from "node:child_process";
 import { STAMP_FMT } from "./spec.ts";
 import { isDict, pyGet, pyStrip, pyTruthy } from "./py.ts";
 import {
-  collect, expandUser, fetchSource, fileStore, pyFloatText, pyJsonLoads,
-  splitTimestamp,
+  collect, pyFloatText, pyJsonLoads, splitTimestamp,
 } from "./sources.ts";
 import type { Dict, Env, Fetch, Reading, Store } from "./sources.ts";
 
@@ -137,11 +138,12 @@ export function legacyLimits(reading: unknown): Limits {
 }
 
 // Collect once and return the canonical and legacy-safe forms.  The cache,
-// the collectors and the environment default to the real ones.
+// the collectors and the environment are the caller's: claude_sources_node
+// defaults them to Node's, and the mod passes its own.
 export async function prepareClaudeReading(
     spec: string | null, account: string, period: string, context: unknown,
-    now: number, env: Env = process.env, store: Store = fileStore(env),
-    fetch: Fetch = fetchSource(env)): Promise<PreparedClaudeReading> {
+    now: number, env: Env, store: Store,
+    fetch: Fetch): Promise<PreparedClaudeReading> {
   const safe = isDict(context) ? context : {};
   const reading = await collect("claude", spec, account, period, safe, now,
                                 store, fetch, env);
@@ -518,76 +520,3 @@ function parsePlistXml(source: string): unknown {
 // ════════════════════════════════════════════════════════════════════════════
 // The edge: the store itself.
 // ════════════════════════════════════════════════════════════════════════════
-
-// Claude Usage Tracker, the macOS menu-bar app, which polls Anthropic on
-// its own schedule and keeps the answer in its UserDefaults.  Read through
-// `defaults export` rather than by opening the .plist, because a running
-// app's preferences live in cfprefsd and reach the file when cfprefsd
-// feels like it.  CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST names an
-// exported store to read instead.
-export class ClaudeUsageTrackerSource {
-  static readonly DOMAIN = "HamedElfayome.Claude-Usage";
-  static readonly PLIST =
-    "~/Library/Preferences/HamedElfayome.Claude-Usage.plist";
-  static readonly ENV = "CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST";
-
-  env: Env;
-
-  constructor(env: Env) {
-    this.env = env;
-  }
-
-  available(): boolean {
-    if (this.env[ClaudeUsageTrackerSource.ENV]) return true;
-    // The file is the cheap test: `defaults export` on an unknown domain
-    // succeeds and prints an empty dict.
-    try {
-      return process.platform === "darwin" && fs.statSync(
-        expandUser(ClaudeUsageTrackerSource.PLIST)).isFile();
-    } catch {
-      return false;
-    }
-  }
-
-  async store(): Promise<unknown> {
-    const path = this.env[ClaudeUsageTrackerSource.ENV];
-    if (path) return plistLoads(fs.readFileSync(expandUser(path)));
-    const out = await defaultsExport(ClaudeUsageTrackerSource.DOMAIN, 15);
-    return out.length ? plistLoads(out) : {};
-  }
-
-  async read(): Promise<Dict> {
-    try {
-      return trackerReading(await this.store());
-    } catch {
-      return {};
-    }
-  }
-}
-
-function defaultsExport(domain: string, timeout: number): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn("defaults", ["export", domain, "-"],
-                       { stdio: ["ignore", "pipe", "ignore"],
-                         timeout: timeout * 1000 });
-    const chunks: Buffer[] = [];
-    proc.stdout.on("data", (c: Buffer) => chunks.push(c));
-    proc.on("error", reject);
-    proc.on("close", (_code: number | null, signal: string | null) => {
-      if (signal) reject(new Error("defaults export timed out"));
-      else resolve(Buffer.concat(chunks));
-    });
-  });
-}
-
-// The figures sources.claude_usage_tracker reads, or null when the app is
-// not there.  The override file's errors propagate, to be no reading at
-// all; a failed `defaults export` is an empty store, as read() has it.
-export async function readTracker(env: Env): Promise<Dict | null> {
-  const source = new ClaudeUsageTrackerSource(env);
-  if (env[ClaudeUsageTrackerSource.ENV]) {
-    return trackerReading(await source.store());
-  }
-  if (!source.available()) return null;
-  return source.read();
-}

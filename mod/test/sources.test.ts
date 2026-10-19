@@ -10,13 +10,13 @@ import {
   cachedReading, cacheName, claudeUsageTracker, commandReading, epoch,
   hasReading, nativeReading, normalise, number, periodBounds,
   pyJsonLoads,
-} from "../src/sources.ts";
-import type { Dict } from "../src/sources.ts";
+} from "../src/sources_node.ts";
+import type { Dict } from "../src/sources_node.ts";
 import { isDict } from "../src/py.ts";
 import {
   legacyLimits, plistLoads, prepareClaudeReading, statusSourceContext,
   trackerReading,
-} from "../src/claude_sources.ts";
+} from "../src/claude_sources_node.ts";
 
 const FIXTURES = path.join(import.meta.dirname, "..", "..", "tests",
                            "fixtures", "sources");

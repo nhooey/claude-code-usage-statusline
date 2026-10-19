@@ -31,8 +31,7 @@
 //     that is not an object, a usage count that is not a number), the port
 //     carries on with the field missing.  No shared case pins those inputs.
 
-import * as fs from "node:fs";
-import * as crypto from "node:crypto";
+import { sha256Hex } from "./sha256.ts";
 import { E_FOLD, E_ETA_REPORT, E_ETA_REPORT_OLD } from "./spec.ts";
 import {
   isDict, PY_SPACE, pyAsciiDigits, pyDig, pyFloatRepr, pyGet, pyHas, pyOr,
@@ -168,7 +167,7 @@ function pyMin(a: number, b: number): number {
 }
 
 /** Lexicographic order over number tuples, as `sorted` orders them. */
-function cmpTuple(a: readonly number[], b: readonly number[]): number {
+export function cmpTuple(a: readonly number[], b: readonly number[]): number {
   for (let i = 0; i < Math.min(a.length, b.length); i++) {
     if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
   }
@@ -531,21 +530,6 @@ export function _recordsOf(data: Uint8Array): Rec[] {
     }
   }
   return out;
-}
-
-/** Yield parsed JSONL records, skipping any line that will not parse.
- *
- * A transcript is appended to live, so the last line can be a partial
- * write.  Skipping is the only reasonable response; failing would blank the
- * row for whichever frame caught the file mid-append. */
-export function _records(path: string): Rec[] {
-  let data: Uint8Array;
-  try {
-    data = fs.readFileSync(path);
-  } catch {
-    return [];
-  }
-  return _recordsOf(data);
 }
 
 /** Assistant records carrying usage, deduped FIRST-WINS on request id.
@@ -1246,46 +1230,6 @@ export function _agentDir(transcript: string): string {
   return pyJoin(transcript.slice(0, -".jsonl".length), "subagents");
 }
 
-const AGENT_NAME = /^agent-.*\.jsonl$/s;
-
-/** Every agent transcript of this session, sorted so the walk is stable.
- *
- * Two depths and no others, measured over 2,134 files on 2026-09-11:
- * `subagents/agent-<id>.jsonl` for the Agent tool, forks, and agents that
- * agents spawned; `subagents/workflows/wf_<id>/agent-<id>.jsonl` for a
- * workflow's agents.  The workflow's `journal.jsonl` carries no usage and
- * is not matched.  Walked as the Python's recursive glob walks: hidden
- * names are skipped, and a directory is entered through a symlink. */
-export function agentFiles(transcript: string): string[] {
-  const d = _agentDir(transcript);
-  if (!d || !isDir(d)) return [];
-  const out: string[] = [];
-  const walk = (dir: string): void => {
-    let names: string[];
-    try {
-      names = fs.readdirSync(dir);
-    } catch {
-      return;
-    }
-    for (const name of names) {
-      if (name.startsWith(".")) continue;
-      const p = pyJoin(dir, name);
-      if (AGENT_NAME.test(name)) out.push(p);
-      if (isDir(p)) walk(p);
-    }
-  };
-  walk(d);
-  return out.sort(cmpStr);
-}
-
-function isDir(p: string): boolean {
-  try {
-    return fs.statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
 /** One record of an agent file that carries usage, as _readAgentFile keeps
  * it: (epoch, promptId, model, fresh, cache write, cache read, out,
  * requestId, offset, lines added, lines removed), the lines being what its
@@ -1373,15 +1317,6 @@ export function agentRecordsOf(
   return out.sort((a, b) => cmpTuple(key(a), key(b)));
 }
 
-/** agentRecordsOf over this session's agent files, read here; see
- * _agentFileReadings for `cache`. */
-export function agentRecords(transcript: string,
-  seen: Set<unknown> | null = null,
-  etas: (readonly [number | null, number | null])[] | null = null,
-  cache: AgentCache | null = null): AgentRec[] {
-  return agentRecordsOf(_agentFileReadings(transcript, cache), seen, etas);
-}
-
 /** Split `data` into lines as a binary file iterates: each up to and
  * including its "\n", the last one without. */
 function* byteLines(data: Uint8Array): Generator<Uint8Array> {
@@ -1455,15 +1390,6 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
   return { recs, work, tools, waiting, eta };
 }
 
-/** _readAgentBytes off the file, or null for a file that will not open. */
-export function _readAgentFile(path: string): AgentReading | null {
-  try {
-    return _readAgentBytes(fs.readFileSync(path));
-  } catch {
-    return null;
-  }
-}
-
 // A file last written this long ago is SETTLED, and only a settled file's
 // reading is kept.  Size and mtime are the whole test for a kept reading
 // being current, and a file rewritten within the clock's granularity can
@@ -1487,96 +1413,8 @@ export interface AgentCache {
 export function _agentCachePath(transcript: string, stateDir: string): string {
   let sid = pyBasename(transcript);
   if (sid.endsWith(".jsonl")) sid = sid.slice(0, -".jsonl".length);
-  const digest = crypto.createHash("sha256")
-    .update("claude-agent-files-ts\0" + sid, "utf8").digest("hex");
+  const digest = sha256Hex("claude-agent-files-ts\0" + sid);
   return pyJoin(stateDir, "claude-agent-files-ts-" + digest + ".cache");
-}
-
-type Kept = AgentReading & { readonly stamp: readonly [number, string] };
-
-/** _readAgentFile for every agent file, in agentFiles' order, from the
- * cache where a file has not changed since it was kept.
- *
- * Without it, every render parsed every agent file the session ever ran: a
- * session with 611 of them, 768 MB, took six seconds a render.  A finished
- * agent's file never changes, so a render reads only the files that grew.
- * A reading is current while the file's size and mtime match the ones
- * stamped when it was read.  The cache is written back only when a reading
- * was added or a file went away.  With no `cache`, every file is read. */
-export function _agentFileReadings(transcript: string,
-  cache: AgentCache | null = null): [string, AgentReading][] {
-  const paths = agentFiles(transcript);
-  if (paths.length === 0) return [];
-  const cpath = cache ? _agentCachePath(transcript, cache.stateDir) : "";
-  let kept: Record<string, Kept> = {};
-  if (cache) {
-    try {
-      const d = JSON.parse(fs.readFileSync(cpath, "utf-8"));
-      if (isDict(d) && d.version === cache.version) {
-        kept = (pyOr(d.files, {}) as Record<string, Kept>);
-      }
-    } catch {
-      // No cache yet, or one that will not parse: read everything.
-    }
-  }
-  const settled = cache ? cache.now - AGENT_CACHE_SETTLE_S : 0;
-  const out: [string, AgentReading][] = [];
-  const keep: Record<string, Kept> = {};
-  let dirty = false;
-  for (const path of paths) {
-    let st: fs.BigIntStats;
-    try {
-      st = fs.statSync(path, { bigint: true });
-    } catch {
-      continue;
-    }
-    const stamp: [number, string] = [Number(st.size), String(st.mtimeNs)];
-    let got: AgentReading | null = Object.hasOwn(kept, path)
-      ? kept[path] : null;
-    if (isDict(got) && recordEqual((got as unknown as Kept).stamp, stamp)) {
-      const { recs, work, tools, waiting, eta } = got;
-      got = { recs, work, tools, waiting, eta };
-      keep[path] = kept[path];
-    } else {
-      // Stamped before the read: a file that grows during it comes back
-      // with a newer stamp next time, and is read again.
-      got = _readAgentFile(path);
-      if (got === null) continue;
-      if (cache && Number(st.mtimeNs) / 1e9 < settled) {
-        keep[path] = { ...got, stamp };
-        dirty = true;
-      }
-    }
-    out.push([path, got]);
-  }
-  const same = (a: object, b: object) =>
-    recordEqual(Object.keys(a).sort(), Object.keys(b).sort());
-  if (cache && (dirty || !same(kept, keep))) {
-    writeAtomic(cpath, JSON.stringify({ version: cache.version,
-      files: keep }));
-  }
-  return out;
-}
-
-/** Write `text` to `path` through a temporary file renamed over it, private
- * to the user, as the Python does; a failure leaves the old file.  True
- * when it was written. */
-export function writeAtomic(path: string, text: string): boolean {
-  const tmp = `${path}.${process.pid}`;
-  const slash = path.lastIndexOf("/");
-  try {
-    if (slash >= 0) {
-      fs.mkdirSync(path.slice(0, slash) || "/",
-        { recursive: true, mode: 0o700 });
-    }
-    fs.writeFileSync(tmp, text);
-    fs.chmodSync(tmp, 0o600);
-    fs.renameSync(tmp, path);
-    return true;
-  } catch {
-    // Unwritable state is a slower next render, not a failure.
-    return false;
-  }
 }
 
 /** Where the Stop hook records how far into each agent file it reported.
@@ -1587,50 +1425,8 @@ export function writeAtomic(path: string, text: string): boolean {
 export function _agentStatePath(transcript: string, stateDir: string): string {
   let sid = pyBasename(transcript);
   if (sid.endsWith(".jsonl")) sid = sid.slice(0, -".jsonl".length);
-  const digest = crypto.createHash("sha256")
-    .update("claude-agent-offsets\0" + sid, "utf8").digest("hex");
+  const digest = sha256Hex("claude-agent-offsets\0" + sid);
   return pyJoin(stateDir, "claude-agent-offsets-" + digest + ".json");
-}
-
-/** The byte offset the last Stop reported each agent file up to, or null
- * when no Stop has written one for this session.  See _foldAgents for what
- * the distinction buys.  A value must be an int, and Python's bool is one. */
-export function agentOffsets(transcript: string,
-  stateDir: string): Map<string, number> | null {
-  let d: unknown;
-  try {
-    d = JSON.parse(fs.readFileSync(_agentStatePath(transcript, stateDir),
-      "utf-8"));
-  } catch {
-    return null;
-  }
-  if (!isDict(d)) return null;
-  const out = new Map<string, number>();
-  for (const [k, v] of Object.entries(d)) {
-    if (typeof v === "boolean") out.set(k, v ? 1 : 0);
-    else if (typeof v === "number" && Number.isInteger(v)) out.set(k, v);
-  }
-  return out;
-}
-
-/** Record, after a Stop has rendered, how far into each agent file the
- * records it folded in reached.
- *
- * Written from the records themselves rather than from the files' sizes,
- * so that what is stored is exactly what was reported.  Files with no
- * billed record yet are absent, and absent reads as 0.  `held` is what
- * readTurns held back from a still-running agent, {path: the first such
- * record's offset}: the extent stops short of them. */
-export function publishAgentOffsets(transcript: string,
-  agents: readonly AgentRec[], held: ReadonlyMap<string, number> | null,
-  stateDir: string): void {
-  held = held ?? new Map();
-  const ext = new Map<string, number>();
-  for (const a of agents) {
-    if (a.offset >= (held.get(a.path) ?? a.offset + 1)) continue;
-    if (a.offset > (ext.get(a.path) ?? 0)) ext.set(a.path, a.offset);
-  }
-  writeAtomic(_agentStatePath(transcript, stateDir), pyJsonDumps(ext));
 }
 
 /** The id off an agent file's `agent-<id>.jsonl`, else "". */
@@ -1641,29 +1437,37 @@ export function agentLabelId(path: string): string {
     ? base.slice("agent-".length, -".jsonl".length) : "";
 }
 
-/** An agent file's id and name: the id off `agent-<id>.jsonl`, and the
- * description its `.meta.json` sidecar gives, else its agentType, else
- * "". */
-export function agentLabel(path: string): [string, string] {
-  const aid = agentLabelId(path);
-  let name = "";
-  try {
-    const meta: unknown = JSON.parse(DECODE_FATAL_BOM.decode(
-      fs.readFileSync(path.slice(0, -".jsonl".length) + ".meta.json")));
-    if (isDict(meta)) {
-      name = pyStr(pyOr(pyOr(pyGet(meta, "description"),
-        pyGet(meta, "agentType")), ""));
-    }
-  } catch {
-    // No sidecar, or one that will not parse: the id alone.
-  }
-  return [aid, name];
-}
-
 // Decoding as open(encoding="utf-8") does: a bad byte raises, and a BOM is
 // kept, for json.load to refuse.
 const DECODE_FATAL_BOM = new TextDecoder("utf-8",
   { fatal: true, ignoreBOM: true });
+
+/** agentLabel's reading: the id off `agent-<id>.jsonl`, and the name
+ * `meta`, the bytes of its `.meta.json` sidecar or null for none, gives:
+ * its description, else its agentType, else "". */
+export function agentLabelOf(path: string, meta: Uint8Array | null):
+  [string, string] {
+  const aid = agentLabelId(path);
+  let name = "";
+  if (meta === null) return [aid, name];
+  try {
+    const d: unknown = JSON.parse(DECODE_FATAL_BOM.decode(meta));
+    if (isDict(d)) {
+      name = pyStr(pyOr(pyOr(pyGet(d, "description"),
+        pyGet(d, "agentType")), ""));
+    }
+  } catch {
+    // A sidecar that will not parse: the id alone.
+  }
+  return [aid, name];
+}
+
+/** A label read with no sidecar: the id alone.  turnsOf's default, since
+ * reading the sidecar is the caller's: agentLabel in Node, the mod's own
+ * read in the mod. */
+export function noSidecar(path: string): [string, string] {
+  return agentLabelOf(path, null);
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // The inbox.
@@ -1716,8 +1520,17 @@ export function inboxDelivery(r: Rec): boolean {
 
 /** Where `mark` next occurs in `data` at or after `from`, else -1. */
 function findBytes(data: Uint8Array, mark: Uint8Array, from: number): number {
-  return Buffer.from(data.buffer, data.byteOffset, data.byteLength)
-    .indexOf(mark, from);
+  // Node's Buffer#indexOf, which the mod does not have: each place the
+  // mark's first byte occurs, checked in full.
+  if (mark.length === 0) return Math.min(from, data.length);
+  const last = data.length - mark.length;
+  for (let i = data.indexOf(mark[0], from); i >= 0 && i <= last;
+    i = data.indexOf(mark[0], i + 1)) {
+    let j = 1;
+    while (j < mark.length && data[i + j] === mark[j]) j++;
+    if (j === mark.length) return i;
+  }
+  return -1;
 }
 
 /** Parse only the lines of `data` that hold one of `marks`, in file order.
@@ -1747,75 +1560,6 @@ export function markedRecordsOf(data: Uint8Array,
     } catch {
       continue;
     }
-  }
-  return out;
-}
-
-/** markedRecordsOf over the file at `path`; [] if it will not open. */
-export function markedRecords(path: string,
-  marks: readonly Uint8Array[]): Rec[] {
-  try {
-    return markedRecordsOf(fs.readFileSync(path), marks);
-  } catch {
-    return [];
-  }
-}
-
-/** (epoch, target id) for each message this file queued for an agent. */
-export function inboxSends(path: string): [number, string][] {
-  const out: [number, string][] = [];
-  for (const r of markedRecords(path, [SEND_QUEUED_MARK])) {
-    const t = tsEpoch(pyOr(pyGet(r, "timestamp"), "")), target = queuedSend(r);
-    if (t !== null && target) out.push([t, target]);
-  }
-  return out;
-}
-
-/** The epoch of each SendMessage delivery in this agent's file. */
-export function inboxDeliveries(path: string): number[] {
-  return markedRecords(path, INBOX_MARKS).filter(inboxDelivery)
-    .map((r) => tsEpoch(pyOr(pyGet(r, "timestamp"), "")))
-    .filter((t): t is number => t !== null);
-}
-
-/** How many messages wait in each agent's inbox: {agent id: count}.
- *
- * `files` is every transcript that can send — the main thread's and each
- * agent's — and `targets` maps each agent on the panel to its own file.
- * The two ends are matched by time, not by text: a send raises the count,
- * a delivery lowers it, and the count never goes below zero.  `since`, the
- * earliest any target started, skips every file last written before it. */
-export function inboxCounts(files: readonly string[],
-  targets: ReadonlyMap<string, string>,
-  since: number | null = null): Map<string, number> {
-  const sent = new Map<string, number[]>();
-  for (const f of files) {
-    try {
-      if (since !== null &&
-        Number(fs.statSync(f, { bigint: true }).mtimeNs) / 1e9 < since) {
-        continue;
-      }
-    } catch {
-      continue;
-    }
-    for (const [t, target] of inboxSends(f)) {
-      if (targets.has(target)) {
-        if (!sent.has(target)) sent.set(target, []);
-        sent.get(target)!.push(t);
-      }
-    }
-  }
-  const out = new Map<string, number>();
-  for (const [aid, times] of sent) {
-    // A send and its delivery stamped alike: the send first.
-    const events: [number, number, number][] = [
-      ...times.map((t): [number, number, number] => [t, 0, 1]),
-      ...inboxDeliveries(targets.get(aid)!)
-        .map((t): [number, number, number] => [t, 1, -1])];
-    events.sort(cmpTuple);
-    let n = 0;
-    for (const [, , step] of events) n = Math.max(0, n + step);
-    if (n) out.set(aid, n);
   }
   return out;
 }
@@ -2148,22 +1892,6 @@ export function transcriptOf(records: readonly Rec[],
   });
 }
 
-/** transcriptOf over the file at `path`.  `agents` is agentRecords'
- * reading of the files beside it, or null to read them here, taking their
- * ETAs off the same walk. */
-export function readTranscript(path: string,
-  agents: readonly AgentRec[] | null = null,
-  agent_etas: readonly AgentEta[] = [], now: number | null = null,
-  cache: AgentCache | null = null): Transcript {
-  const records = _records(path);
-  if (agents === null) {
-    const own: AgentEta[] = [];
-    agents = agentRecords(path, null, own, cache);
-    agent_etas = [...agent_etas, ...own];
-  }
-  return transcriptOf(records, agents, agent_etas, now);
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 // The cost line's turns.
 // ════════════════════════════════════════════════════════════════════════════
@@ -2334,7 +2062,7 @@ export function turnsOf(records: readonly Rec[],
   agentsOf: (seen: Set<unknown>) => readonly AgentRec[],
   offsets: ReadonlyMap<string, number> | null = null,
   held: Map<string, number> | null = null,
-  label: (path: string) => [string, string] = agentLabel): Turn[] {
+  label: (path: string) => [string, string] = noSidecar): Turn[] {
   const turns: TurnBuild[] = [];
   let settled = 0;      // turns that a Stop hook has already run past
   let cur: TurnBuild | null = null;
@@ -2495,17 +2223,6 @@ export function turnsOf(records: readonly Rec[],
   return out;
 }
 
-/** turnsOf over the file at `path`, with the agent files beside it and the
- * offsets the last Stop stored under `stateDir`. */
-export function readTurns(path: string,
-  agents: readonly AgentRec[] | null = null,
-  held: Map<string, number> | null = null, stateDir: string | null = null,
-  cache: AgentCache | null = null): Turn[] {
-  return turnsOf(_records(path),
-    (seen) => agents ?? agentRecords(path, seen, null, cache),
-    stateDir === null ? null : agentOffsets(path, stateDir), held);
-}
-
 /** Freeze the synthetic turn _foldAgents built for late agent records.
  *
  * `calls` is 0 and `agent` is set, which between them keep it out of every
@@ -2513,7 +2230,7 @@ export function readTurns(path: string,
  * so the Δctx walk steps over it; `reported` is false because the records
  * in it are, by construction, ones no Stop has seen. */
 export function lateAgentTurn(t: TurnBuild, path = "",
-  label: (path: string) => [string, string] = agentLabel): Turn {
+  label: (path: string) => [string, string] = noSidecar): Turn {
   const [agent_id, agent_name] = label(path);
   return turn({
     ts: t.ts, text: t.text, fresh: t.fresh, cache_write: t.cw,
@@ -2541,44 +2258,6 @@ export function openTurn(turns: readonly Turn[]): Turn | null {
 // nowhere near the hook's budget.
 export const SETTLE_S = 1.5;
 export const SETTLE_POLL_S = 0.025;
-
-/** readTurns, having waited for the turn being reported to be written.
- *
- * The transcript is NOT flushed in step with the Stop hook: the records the
- * turn just produced can still be missing when it reads, and a turn with no
- * usage record looks like a prompt never answered.  Waiting is the only
- * stateless fix; the file's size gates the re-read, so a wait that spans
- * the whole budget parses it once.  Asynchronous here: the mod's handlers
- * must not block its event loop. */
-export async function readTurnsSettled(path: string, budget = SETTLE_S,
-  poll = SETTLE_POLL_S, agents: readonly AgentRec[] | null = null,
-  held: Map<string, number> | null = null, stateDir: string | null = null,
-  cache: AgentCache | null = null): Promise<Turn[]> {
-  let turns = readTurns(path, agents, held, stateDir, cache);
-  if (!budget || _settled(turns)) return turns;
-  const deadline = performance.now() + budget * 1000;
-  let size: number;
-  try {
-    size = fs.statSync(path).size;
-  } catch {
-    return turns;
-  }
-  while (performance.now() < deadline) {
-    await new Promise((ok) => setTimeout(ok, poll * 1000));
-    let grown: number;
-    try {
-      grown = fs.statSync(path).size;
-    } catch {
-      break;
-    }
-    if (grown === size) continue;
-    size = grown;
-    held?.clear();
-    turns = readTurns(path, agents, held, stateDir, cache);
-    if (_settled(turns)) break;
-  }
-  return turns;
-}
 
 /** Has the turn being reported billed anything yet?  The last turn that is
  * not a synthetic agents turn, which sorts in by stamp and bills no
