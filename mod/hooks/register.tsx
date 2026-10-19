@@ -93,7 +93,7 @@ async function slow($: $, ms: number): Promise<void> {
   const text = `slow read: ${Math.round(ms)}ms (${parts.join(', ')})`
   await log($, text)
   const now = await $.clock.now()
-  if (now - toastAt >= CONFIG.slowToastMs) {
+  if (CONFIG.slowToast && now - toastAt >= CONFIG.slowToastMs) {
     toastAt = now
     $.ui.toast(text)
   }
