@@ -3,8 +3,7 @@
 // tests/fixtures/gen/records.py runs the Python's functions and writes each
 // call's arguments and result under tests/fixtures/records/; this runs the
 // same call through the TypeScript and compares the two with deepEqual.
-// Records come back with the Python's field names, so a TypeScript record
-// is compared with its keys turned back to snake_case.
+// Records keep the Python's field names, so they compare as they are.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
@@ -36,12 +35,6 @@ function revive(v: any): any {
   return v;
 }
 
-/** A record's fields under the Python's names. */
-function snake(r: any): any {
-  return Object.fromEntries(Object.entries(r).map(([k, v]) =>
-    [k.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase()), v]));
-}
-
 /** A Map as the dict the Python returns. */
 function dict(m: ReadonlyMap<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(m);
@@ -57,7 +50,7 @@ function indicesKept(p: string): number[] {
 const RUN: Record<string, (c: Case) => unknown> = {
   _num: (c) => cr._num(c.args[0]),
   _first: (c) => cr._first(c.args[0], c.args.slice(1), c.kw.default),
-  read_payload: (c) => snake(cr.readPayload(c.args[0])),
+  read_payload: (c) => cr.readPayload(c.args[0]),
   _records: (c) => cr._records(c.args[0]),
   _dedupe_usage: (c) => indicesKept(c.args[0]),
   ts_epoch: (c) => cr.tsEpoch(c.args[0]),
@@ -132,19 +125,18 @@ const RUN: Record<string, (c: Case) => unknown> = {
   agent_records: (c) => {
     const etas: (readonly [number | null, number | null])[] = [];
     const seen = c.args.length > 1 ? new Set<unknown>(c.args[1]) : null;
-    const got = cr.agentRecords(c.args[0], seen, seen ? null : etas)
-      .map(snake);
+    const got = cr.agentRecords(c.args[0], seen, seen ? null : etas);
     // The same reading through the cache, written then served from it.
     const cache = { stateDir: tmp(), version: "test", now: 1e12 };
     for (let i = 0; i < 2; i++) {
       assert.deepEqual(cr.agentRecords(c.args[0], seen && new Set(c.args[1]),
-        null, cache).map(snake), got);
+        null, cache), got);
     }
     return [got, etas];
   },
   publish_agent_offsets: (c) => {
     const dir = tmp();
-    const agents = c.args[1].map(unsnake) as cr.AgentRec[];
+    const agents = c.args[1] as cr.AgentRec[];
     const held = c.args[2] && new Map(Object.entries(c.args[2])) as
       Map<string, number>;
     cr.publishAgentOffsets(c.args[0], agents, held, dir);
@@ -170,18 +162,17 @@ const RUN: Record<string, (c: Case) => unknown> = {
   inbox_counts: (c) => dict(cr.inboxCounts(c.args[0],
     new Map(Object.entries(c.args[1])), c.args[2] ?? null)),
 
-  read_transcript: (c) => snake(cr.readTranscript(c.args[0], null, [],
-    c.kw.now ?? null)),
+  read_transcript: (c) => cr.readTranscript(c.args[0], null, [],
+    c.kw.now ?? null),
   read_turns: (c) => {
     const held = new Map<string, number>();
     const turns = turnsWith(c.args[0], c.args[1], held);
-    return [turns.map(snake), dict(held)];
+    return [turns, dict(held)];
   },
-  read_turns_settled: (c) => turnsWith(c.args[0], c.args[1], null)
-    .map(snake),
-  turn_model_s: (c) => cr.turnModelS(unsnake(c.args[0])),
-  turn_times: (c) => cr.turnTimes(unsnake(c.args[0])),
-  _settled: (c) => cr._settled(c.args[0].map(unsnake)),
+  read_turns_settled: (c) => turnsWith(c.args[0], c.args[1], null),
+  turn_model_s: (c) => cr.turnModelS(c.args[0]),
+  turn_times: (c) => cr.turnTimes(c.args[0]),
+  _settled: (c) => cr._settled(c.args[0]),
 };
 
 /** readTurns' core over the file at `p`, with the offsets the Python read
@@ -197,11 +188,6 @@ function tmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "claude-records-"));
 }
 
-/** A record the Python wrote, under the TypeScript's names. */
-function unsnake(r: any): any {
-  return Object.fromEntries(Object.entries(r).map(([k, v]) =>
-    [k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()), v]));
-}
 
 for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))
   .sort()) {

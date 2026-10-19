@@ -380,7 +380,8 @@ def handmade():
         {"type": "user", "timestamp": "bad", "message": {"content": [
             {"type": "tool_result", "tool_use_id": "b1"}]}},
         prompt(200, "next"),
-        asst(205, "d", None, tools=[("d1", "Bash"), ("d2", "AskUserQuestion")]),
+        asst(205, "d", None, tools=[("d1", "Bash"),
+                                    ("d2", "AskUserQuestion")]),
         result(215, "d1"),
     ])
     put("background.jsonl", [

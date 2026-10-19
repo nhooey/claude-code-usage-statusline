@@ -1,7 +1,9 @@
 // Claude payload records and transcript/accounting parser.
 //
 // The port of claude_records.py, function for function under the same names
-// in camelCase.  It owns Claude-specific JSONL interpretation and price
+// in camelCase; a record's fields keep the Python's snake_case names, as
+// claude_sources.ts's do, so a record reads the same in both and the shared
+// cases compare it as it is.  It owns Claude-specific JSONL interpretation and price
 // accounting, and has no terminal rendering.
 //
 // The Python reads files inside its functions; here every reader that takes
@@ -325,23 +327,23 @@ export function recordEqual(a: unknown, b: unknown): boolean {
 
 /** The status-line JSON, reduced to what is actually read. */
 export interface Payload {
-  readonly currentDir: string;
-  readonly projectDir: string;
+  readonly current_dir: string;
+  readonly project_dir: string;
   readonly model: string;
-  readonly modelId: string;
-  readonly ctxWindow: string;       // context_window.context_window_size
+  readonly model_id: string;
+  readonly ctx_window: string;      // context_window.context_window_size
   readonly transcript: string;
-  readonly costUsd: string;
-  readonly linesAdded: string;
-  readonly linesRemoved: string;
-  readonly outputStyle: string;
+  readonly cost_usd: string;
+  readonly lines_added: string;
+  readonly lines_removed: string;
+  readonly output_style: string;
   readonly effort: string;
-  readonly sessionId: string;
-  readonly rlSessionPct: string;
-  readonly rlSessionReset: string;
-  readonly rlWeeklyPct: string;
-  readonly rlWeeklyReset: string;
-  readonly prNumber: string;
+  readonly session_id: string;
+  readonly rl_session_pct: string;
+  readonly rl_session_reset: string;
+  readonly rl_weekly_pct: string;
+  readonly rl_weekly_reset: string;
+  readonly pr_number: string;
 }
 
 /** What one pass over the transcript yields for the status line.
@@ -353,102 +355,81 @@ export interface Payload {
  * grew a "▴0 ▾0" that looked like a stall.  The fields are documented on
  * the Python's Transcript, field for field. */
 export interface Transcript {
-  readonly tokUp: number | null;
-  readonly tokDown: number;
-  readonly cachePct: number;        // -1 when there is no usage data at all
-  readonly ctxTokens: number;
-  readonly userTs: string;
-  readonly userText: string;
-  readonly asstTs: string;
-  readonly asstText: string;
-  readonly busyS: number;           // this thread's answering; thread_clock
-  readonly startS: number;          // epoch of the first STAMPED record
-  readonly toolS: number;           // inside a tool, less the waiting spans
-  readonly blockedS: number;        // inside a WAITING_TOOLS call
-  readonly turnS: number;           // epoch of the current turn's prompt
+  readonly tok_up: number | null;
+  readonly tok_down: number;
+  readonly cache_pct: number;       // -1 when there is no usage data at all
+  readonly ctx_tokens: number;
+  readonly user_ts: string;
+  readonly user_text: string;
+  readonly asst_ts: string;
+  readonly asst_text: string;
+  readonly busy_s: number;          // this thread's answering; thread_clock
+  readonly start_s: number;         // epoch of the first STAMPED record
+  readonly tool_s: number;          // inside a tool, less the waiting spans
+  readonly blocked_s: number;       // inside a WAITING_TOOLS call
+  readonly turn_s: number;          // epoch of the current turn's prompt
   readonly eta: readonly number[];  // (epoch, seconds left), or ()
-  readonly agentEtas: readonly (readonly [number, number | null])[];
+  readonly agent_etas: readonly (readonly [number, number | null])[];
   readonly queued: number;          // messages waiting; see queueStep
   readonly compactions: number;     // see isCompaction
-  readonly ctxEst: boolean;         // ctxTokens is a compaction's estimate
+  readonly ctx_est: boolean;        // ctx_tokens is a compaction's estimate
   readonly shells: number;          // open background shells; scanBackground
   readonly monitors: number;        // and Monitors, likewise
-  readonly toolAt: number;          // oldest running tool call, on a live read
-  readonly waitAt: number;          // oldest WAITING_TOOLS call, likewise
-  readonly idleAt: number;          // the last answer's end, while idle
-  readonly lastSeen: number;        // its last stamped record of any kind
+  readonly tool_at: number;         // oldest running tool call, on a live read
+  readonly wait_at: number;         // oldest WAITING_TOOLS call, likewise
+  readonly idle_at: number;         // the last answer's end, while idle
+  readonly last_seen: number;       // its last stamped record of any kind
 }
 
-type TranscriptFirst = "tokUp" | "tokDown" | "cachePct" | "ctxTokens" |
-  "userTs" | "userText" | "asstTs" | "asstText" | "busyS" | "startS";
+type TranscriptFirst = "tok_up" | "tok_down" | "cache_pct" | "ctx_tokens" |
+  "user_ts" | "user_text" | "asst_ts" | "asst_text" | "busy_s" | "start_s";
 
 export function transcript(
   t: Pick<Transcript, TranscriptFirst> & Partial<Transcript>): Transcript {
   return {
-    toolS: 0.0, blockedS: 0.0, turnS: 0.0, eta: [], agentEtas: [],
-    queued: 0, compactions: 0, ctxEst: false, shells: 0, monitors: 0,
-    toolAt: 0.0, waitAt: 0.0, idleAt: 0.0, lastSeen: 0.0, ...t,
+    tool_s: 0.0, blocked_s: 0.0, turn_s: 0.0, eta: [], agent_etas: [],
+    queued: 0, compactions: 0, ctx_est: false, shells: 0, monitors: 0,
+    tool_at: 0.0, wait_at: 0.0, idle_at: 0.0, last_seen: 0.0, ...t,
   };
 }
 
 export const EMPTY_TRANSCRIPT: Transcript = transcript({
-  tokUp: null, tokDown: 0, cachePct: -1, ctxTokens: 0, userTs: "",
-  userText: "", asstTs: "", asstText: "", busyS: 0.0, startS: 0.0,
+  tok_up: null, tok_down: 0, cache_pct: -1, ctx_tokens: 0, user_ts: "",
+  user_text: "", asst_ts: "", asst_text: "", busy_s: 0.0, start_s: 0.0,
 });
 
 export interface Git {
-  readonly inGit: boolean;
+  readonly in_git: boolean;
   readonly branch: string;
   readonly dirty: boolean;
   readonly toplevel: string;
-  readonly mainRoot: string;
-  readonly isWorktree: boolean;
+  readonly main_root: string;
+  readonly is_worktree: boolean;
 }
 
 export const NO_GIT: Git = {
-  inGit: false, branch: "", dirty: false, toplevel: "", mainRoot: "",
-  isWorktree: false,
+  in_git: false, branch: "", dirty: false, toplevel: "", main_root: "",
+  is_worktree: false,
 };
 
-/** The two plan windows.  Percentages are strings because a missing figure
- * is the empty string throughout, which is what makes a blank row blank.
- * They carry whatever precision their source gave them and are not rounded
- * until limit_pct draws them. */
-export interface Limits {
-  readonly sessionPct: string;
-  readonly sessionReset: string;
-  readonly sessionShare: string;
-  readonly weeklyPct: string;
-  readonly weeklyReset: string;
-  readonly weeklyShare: string;
-  // What the ONE turn just answered put into each window; only
-  // _with_shares has a transcript to derive it from.
-  readonly sessionTurn: string;
-  readonly weeklyTurn: string;
-}
-
-export function limits(l: Omit<Limits, "sessionTurn" | "weeklyTurn"> &
-  Partial<Limits>): Limits {
-  return { sessionTurn: "", weeklyTurn: "", ...l };
-}
-
-export const NO_LIMITS: Limits = limits({
-  sessionPct: "", sessionReset: "", sessionShare: "", weeklyPct: "",
-  weeklyReset: "", weeklyShare: "",
-});
+// The two plan windows, Limits, are claude_sources.ts's: the usage-source
+// reader fills them, and one definition serves both modules.
+export { NO_LIMITS, limitsEqual } from "./claude_sources.ts";
+export type { Limits } from "./claude_sources.ts";
 
 /** Where the money went, as whole percent of a bill: 📖 cache reads and 📝
  * cache writes, for the turn just answered and for the session.  null is a
  * figure that could not be derived and draws "?". */
 export interface CacheShares {
-  readonly turnRead: number | null;
-  readonly turnWrite: number | null;
-  readonly sessRead: number | null;
-  readonly sessWrite: number | null;
+  readonly turn_read: number | null;
+  readonly turn_write: number | null;
+  readonly sess_read: number | null;
+  readonly sess_write: number | null;
 }
 
 export function cacheShares(c: Partial<CacheShares> = {}): CacheShares {
-  return { turnRead: null, turnWrite: null, sessRead: null, sessWrite: null,
+  return { turn_read: null, turn_write: null, sess_read: null,
+    sess_write: null,
     ...c };
 }
 
@@ -461,43 +442,44 @@ export interface Turn {
   readonly ts: string;
   readonly text: string;
   readonly fresh: number;
-  readonly cacheWrite: number;
-  readonly cacheRead: number;
+  readonly cache_write: number;
+  readonly cache_read: number;
   readonly out: number;
   readonly ctx: number;             // a READING, not a sum — see readTurns
   readonly calls: number;
-  readonly durS: number;
+  readonly dur_s: number;
   readonly dctx: number | null;     // growth over the previous reading
-  readonly usdIn: number;           // the bill's four parts, each priced
-  readonly usdOut: number;          // per record at its own model
-  readonly usdCr: number;
-  readonly usdCw: number;
+  readonly usd_in: number;          // the bill's four parts, each priced
+  readonly usd_out: number;         // per record at its own model
+  readonly usd_cr: number;
+  readonly usd_cw: number;
   readonly compact: boolean;
   readonly reported: boolean;
   readonly parts: readonly (readonly [number | null, number])[];
-  readonly agentCalls: number;
-  readonly agentIds: readonly unknown[];
+  readonly agent_calls: number;
+  readonly agent_ids: readonly unknown[];
   readonly agent: boolean;
-  readonly toolS: number;
-  readonly blockedS: number;
-  readonly agentModelS: number;
-  readonly agentToolS: number;
-  readonly agentId: string;
-  readonly agentName: string;
-  readonly promptId: string;
-  readonly turnIndex: number | null;
+  readonly tool_s: number;
+  readonly blocked_s: number;
+  readonly agent_model_s: number;
+  readonly agent_tool_s: number;
+  readonly agent_id: string;
+  readonly agent_name: string;
+  readonly prompt_id: string;
+  readonly turn_index: number | null;
 }
 
-type TurnFirst = "ts" | "text" | "fresh" | "cacheWrite" | "cacheRead" |
-  "out" | "ctx" | "calls" | "durS" | "dctx" | "usdIn" | "usdOut" | "usdCr" |
-  "usdCw";
+type TurnFirst = "ts" | "text" | "fresh" | "cache_write" | "cache_read" |
+  "out" | "ctx" | "calls" | "dur_s" | "dctx" | "usd_in" | "usd_out" |
+  "usd_cr" |
+  "usd_cw";
 
 export function turn(t: Pick<Turn, TurnFirst> & Partial<Turn>): Turn {
   return {
-    compact: false, reported: false, parts: [], agentCalls: 0, agentIds: [],
-    agent: false, toolS: 0.0, blockedS: 0.0, agentModelS: 0.0,
-    agentToolS: 0.0, agentId: "", agentName: "", promptId: "",
-    turnIndex: null, ...t,
+    compact: false, reported: false, parts: [], agent_calls: 0, agent_ids: [],
+    agent: false, tool_s: 0.0, blocked_s: 0.0, agent_model_s: 0.0,
+    agent_tool_s: 0.0, agent_id: "", agent_name: "", prompt_id: "",
+    turn_index: null, ...t,
   };
 }
 
@@ -505,17 +487,17 @@ export function turn(t: Pick<Turn, TurnFirst> & Partial<Turn>): Turn {
  * file it under a turn of the main transcript.  See agentRecords. */
 export interface AgentRec {
   readonly epoch: number | null;
-  readonly promptId: unknown;       // "" where the agent file never said
+  readonly prompt_id: unknown;      // "" where the agent file never said
   readonly model: unknown;
   readonly fresh: number;
-  readonly cacheWrite: number;
-  readonly cacheRead: number;
+  readonly cache_write: number;
+  readonly cache_read: number;
   readonly out: number;
-  readonly requestId: unknown;
+  readonly request_id: unknown;
   readonly path: string;            // the agent file, for the offsets the
   readonly offset: number;          // Stop hook keeps — see agentOffsets
-  readonly modelS: number;          // the agent's 🤖 and 🔧 since its
-  readonly toolS: number;           // previous billed request; splitClock
+  readonly model_s: number;         // the agent's 🤖 and 🔧 since its
+  readonly tool_s: number;          // previous billed request; splitClock
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -566,25 +548,25 @@ export function readPayload(raw: string): Payload {
   }
   if (!isDict(d)) d = {};
   return {
-    currentDir: _first(d, ["workspace.current_dir", "cwd"]),
-    projectDir: _first(d, ["workspace.project_dir", "cwd"]),
+    current_dir: _first(d, ["workspace.current_dir", "cwd"]),
+    project_dir: _first(d, ["workspace.project_dir", "cwd"]),
     model: _first(d, ["model.display_name"]),
-    modelId: _first(d, ["model.id"]),
-    ctxWindow: _first(d, ["context_window.context_window_size"]),
+    model_id: _first(d, ["model.id"]),
+    ctx_window: _first(d, ["context_window.context_window_size"]),
     transcript: _first(d, ["transcript_path"]),
-    costUsd: _first(d, ["cost.total_cost_usd"]),
-    linesAdded: _first(d, ["cost.total_lines_added"], "0"),
-    linesRemoved: _first(d, ["cost.total_lines_removed"], "0"),
-    outputStyle: _first(d, ["output_style.name"]),
+    cost_usd: _first(d, ["cost.total_cost_usd"]),
+    lines_added: _first(d, ["cost.total_lines_added"], "0"),
+    lines_removed: _first(d, ["cost.total_lines_removed"], "0"),
+    output_style: _first(d, ["output_style.name"]),
     effort: _first(d, ["effort.level"]),
-    sessionId: _first(d, ["session_id"]),
-    rlSessionPct: _first(d, ["rate_limits.five_hour.used_percentage"]),
-    rlSessionReset: _first(d, ["rate_limits.five_hour.resets_at"]),
-    rlWeeklyPct: _first(d, ["rate_limits.seven_day.used_percentage"]),
-    rlWeeklyReset: _first(d, ["rate_limits.seven_day.resets_at"]),
+    session_id: _first(d, ["session_id"]),
+    rl_session_pct: _first(d, ["rate_limits.five_hour.used_percentage"]),
+    rl_session_reset: _first(d, ["rate_limits.five_hour.resets_at"]),
+    rl_weekly_pct: _first(d, ["rate_limits.seven_day.used_percentage"]),
+    rl_weekly_reset: _first(d, ["rate_limits.seven_day.resets_at"]),
     // Five alternate locations, first non-null wins.  Claude Code has moved
     // this field before and may again.
-    prNumber: _first(d, ["pr.number", "github.pr.number",
+    pr_number: _first(d, ["pr.number", "github.pr.number",
       "github.pull_request.number", "github_pr.number",
       "pull_request.number"]),
   };
@@ -1064,13 +1046,13 @@ export function turnClock(tools: readonly Span[], waiting: readonly Span[],
 /** The receipt's ⌛🤖: the turn's span less its tool and waiting seconds,
  * clamped at zero. */
 export function turnModelS(t: Turn): number {
-  return pyMax(0.0, t.durS - t.toolS - t.blockedS);
+  return pyMax(0.0, t.dur_s - t.tool_s - t.blocked_s);
 }
 
 /** The receipt's ⌛🤖 and 🔧 for a row: the main thread's, plus its
  * agents', which are agent-seconds and can outrun the turn. */
 export function turnTimes(t: Turn): [number, number] {
-  return [turnModelS(t) + t.agentModelS, t.toolS + t.agentToolS];
+  return [turnModelS(t) + t.agent_model_s, t.tool_s + t.agent_tool_s];
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1423,9 +1405,9 @@ export function agentRecordsOf(
       if (seen.has(k)) continue;
       seen.add(k);
       if (!(truthy(fresh) || truthy(cw) || truthy(cr) || truthy(o))) continue;
-      out.push({ epoch, promptId: pid, model, fresh, cacheWrite: cw,
-        cacheRead: cr, out: o, requestId: k, path, offset: pos,
-        modelS: 0.0, toolS: 0.0 });
+      out.push({ epoch, prompt_id: pid, model, fresh, cache_write: cw,
+        cache_read: cr, out: o, request_id: k, path, offset: pos,
+        model_s: 0.0, tool_s: 0.0 });
     }
     if (etas !== null && got.eta !== null) etas.push([...got.eta]);
     const cuts: number[] = [];
@@ -1434,8 +1416,9 @@ export function agentRecordsOf(
       cut = a.epoch !== null ? pyMax(cut, a.epoch) : cut;
       cuts.push(cut);
     }
-    splitClock(got.work, got.tools, got.waiting, cuts).forEach(([m, tl], i) => {
-      out[first + i] = { ...out[first + i], modelS: m, toolS: tl };
+    const split = splitClock(got.work, got.tools, got.waiting, cuts);
+    split.forEach(([m, tl], i) => {
+      out[first + i] = { ...out[first + i], model_s: m, tool_s: tl };
     });
   }
   // Stamp order across files, unparseable stamps last: the fold-in walks
@@ -1895,7 +1878,7 @@ export type AgentEta = readonly [number | null, number | null];
  *
  * The pure core; readTranscript reads the file and the agents. */
 export function transcriptOf(records: readonly Rec[],
-  agents: readonly AgentRec[], agentEtas: readonly AgentEta[] = [],
+  agents: readonly AgentRec[], agent_etas: readonly AgentEta[] = [],
   now: number | null = null): Transcript {
   const reqs = _dedupeUsage(records);
   let fresh = 0, cwrite = 0, cread = 0, down = 0;
@@ -1908,8 +1891,8 @@ export function transcriptOf(records: readonly Rec[],
   }
   for (const a of agents) {
     fresh += a.fresh;
-    cwrite += a.cacheWrite;
-    cread += a.cacheRead;
+    cwrite += a.cache_write;
+    cread += a.cache_read;
     down += a.out;
   }
   const inAll = fresh + cwrite + cread;
@@ -1918,7 +1901,7 @@ export function transcriptOf(records: readonly Rec[],
   // in its place among the readings; `kept` is the dedupe's choice of them.
   const kept = new Set(reqs);
   let ctx = 0, firstCtx = 0;
-  let ctxEst = false;
+  let ctx_est = false;
   for (const r of records) {
     if (get(r, "isSidechain") === true) continue;
     if (isCompaction(r)) {
@@ -1931,7 +1914,7 @@ export function transcriptOf(records: readonly Rec[],
       const post = num0(dig(r, "compactMetadata", "postTokens"));
       if (post) {
         ctx = post + (firstCtx || COMPACT_OVERHEAD);
-        ctxEst = true;
+        ctx_est = true;
       }
       continue;
     }
@@ -1945,19 +1928,19 @@ export function transcriptOf(records: readonly Rec[],
       num0(get(u, "cache_read_input_tokens"));
     if (c) {
       ctx = c;
-      ctxEst = false;
+      ctx_est = false;
       firstCtx = firstCtx || c;
     }
   }
 
-  let userTs: unknown = "", userText = "", asstTs: unknown = "";
-  let asstText: unknown = "";
+  let user_ts: unknown = "", user_text = "", asst_ts: unknown = "";
+  let asst_text: unknown = "";
   for (const r of records) {
     const c = dig(r, "message", "content");
     if (get(r, "type") === "user" && get(r, "userType") === "external" &&
       typeof c === "string" && c.length > 0 && !c.startsWith("<")) {
-      userTs = or(get(r, "timestamp"), "");
-      userText = c;
+      user_ts = or(get(r, "timestamp"), "");
+      user_text = c;
     }
     if (get(r, "type") === "assistant") {
       const blocks = or(dig(r, "message", "content"), []);
@@ -1965,8 +1948,8 @@ export function transcriptOf(records: readonly Rec[],
         const texts = blocks.filter((b) => isDict(b) &&
           get(b, "type") === "text");
         if (texts.length) {
-          asstText = or(get(texts[texts.length - 1], "text"), "");
-          asstTs = or(get(r, "timestamp"), "");
+          asst_text = or(get(texts[texts.length - 1], "text"), "");
+          asst_ts = or(get(r, "timestamp"), "");
         }
       }
     }
@@ -1986,7 +1969,7 @@ export function transcriptOf(records: readonly Rec[],
   const etaState = newEtaState();
   let queued = 0, compactions = 0;
   const background = new Map<string, string>();
-  let idleAt = 0.0, lastSeen = 0.0;
+  let idle_at = 0.0, last_seen = 0.0;
   for (const r of records) {
     queued = Math.max(0, queued + queueStep(r));
     compactions += isCompaction(r) ? 1 : 0;
@@ -1999,15 +1982,15 @@ export function transcriptOf(records: readonly Rec[],
     if (t === null) continue;
     if (first === null) first = t;
     if (get(r, "isSidechain") !== true) {
-      lastSeen = t;
+      last_seen = t;
       // The answer ending opens the idle; the next request or tool
       // result, or a prompt, closes it.  Not any work record: Claude Code
       // writes system records after the end.
-      if (endsTurn(r)) idleAt = t;
+      if (endsTurn(r)) idle_at = t;
       else if (get(r, "type") === "assistant" || turnStartText(r) !== null ||
         (get(r, "type") === "user" &&
           Array.isArray(dig(r, "message", "content")))) {
-        idleAt = 0.0;
+        idle_at = 0.0;
       }
     }
     if (turnStartText(r) !== null) {
@@ -2026,38 +2009,38 @@ export function transcriptOf(records: readonly Rec[],
     (WAITING_TOOLS.has(name) ? waits : running).push(t);
   }
   if (now !== null) openToolSpans(pending, now, tools, blocked);
-  const [busy, tool, blockedS] = threadClock(spans, tools, blocked);
+  const [busy, tool, blocked_s] = threadClock(spans, tools, blocked);
   const min = (xs: number[]) => xs.reduce((a, b) => pyMin(a, b));
 
   return transcript({
-    busyS: busy,
+    busy_s: busy,
     // The first STAMPED record, not records[0]: a transcript can open with
     // an unstamped one.
-    startS: or(first, 0.0) as number,
-    tokUp: Math.trunc(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread),
-    tokDown: down,
+    start_s: or(first, 0.0) as number,
+    tok_up: Math.trunc(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread),
+    tok_down: down,
     // -1 is a sentinel meaning "no usage data at all", which renders as no
     // segment rather than as a zero.
-    cachePct: inAll > 0 ? Math.trunc(100 * cread / inAll) : -1,
-    ctxTokens: ctx,
-    ctxEst,
-    userTs: pyStr(userTs),
-    userText: squash(userText),
-    asstTs: pyStr(asstTs),
-    asstText: squash(pyStr(asstText)),
-    toolS: tool,
-    blockedS,
-    turnS: or(openAt, 0.0) as number,
+    cache_pct: inAll > 0 ? Math.trunc(100 * cread / inAll) : -1,
+    ctx_tokens: ctx,
+    ctx_est,
+    user_ts: pyStr(user_ts),
+    user_text: squash(user_text),
+    asst_ts: pyStr(asst_ts),
+    asst_text: squash(pyStr(asst_text)),
+    tool_s: tool,
+    blocked_s,
+    turn_s: or(openAt, 0.0) as number,
     eta: etaState[1] ? [] : etaState[0],
-    agentEtas: [...agentEtas],
+    agent_etas: [...agent_etas],
     queued,
     compactions,
     shells: [...background.values()].filter((k) => k === "bash").length,
     monitors: [...background.values()].filter((k) => k === "monitor").length,
-    toolAt: now !== null && running.length ? min(running) : 0.0,
-    waitAt: now !== null && waits.length ? min(waits) : 0.0,
-    idleAt: now !== null ? idleAt : 0.0,
-    lastSeen: now !== null ? lastSeen : 0.0,
+    tool_at: now !== null && running.length ? min(running) : 0.0,
+    wait_at: now !== null && waits.length ? min(waits) : 0.0,
+    idle_at: now !== null ? idle_at : 0.0,
+    last_seen: now !== null ? last_seen : 0.0,
   });
 }
 
@@ -2066,15 +2049,15 @@ export function transcriptOf(records: readonly Rec[],
  * ETAs off the same walk. */
 export function readTranscript(path: string,
   agents: readonly AgentRec[] | null = null,
-  agentEtas: readonly AgentEta[] = [], now: number | null = null,
+  agent_etas: readonly AgentEta[] = [], now: number | null = null,
   cache: AgentCache | null = null): Transcript {
   const records = _records(path);
   if (agents === null) {
     const own: AgentEta[] = [];
     agents = agentRecords(path, null, own, cache);
-    agentEtas = [...agentEtas, ...own];
+    agent_etas = [...agent_etas, ...own];
   }
-  return transcriptOf(records, agents, agentEtas, now);
+  return transcriptOf(records, agents, agent_etas, now);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -2173,7 +2156,7 @@ export function _foldAgents(turns: TurnBuild[],
   let prompt: TurnBuild | null = null;
   for (const t of turns) if (t.n && !truthy(t.compact)) prompt = t;
   for (const a of agents) {
-    let cur = truthy(a.promptId) ? byPid.get(a.promptId) ?? null : null;
+    let cur = truthy(a.prompt_id) ? byPid.get(a.prompt_id) ?? null : null;
     if (cur === null) {
       for (let i = stamped.length - 1; i >= 0; i--) {
         if (a.epoch === null || stamped[i].t0! <= a.epoch) {
@@ -2202,14 +2185,15 @@ export function _foldAgents(turns: TurnBuild[],
       }
     }
     cur.fresh += a.fresh;
-    cur.cw += a.cacheWrite;
-    cur.cr += a.cacheRead;
+    cur.cw += a.cache_write;
+    cur.cr += a.cache_read;
     cur.out += a.out;
     cur.an += 1;
-    cur.aids.push(a.requestId);
-    cur.am += a.modelS;
-    cur.at += a.toolS;
-    _addUsd(cur, a.epoch, a.model, a.fresh, a.cacheWrite, a.cacheRead, a.out);
+    cur.aids.push(a.request_id);
+    cur.am += a.model_s;
+    cur.at += a.tool_s;
+    _addUsd(cur, a.epoch, a.model, a.fresh, a.cache_write, a.cache_read,
+      a.out);
   }
   return late;
 }
@@ -2359,20 +2343,20 @@ export function turnsOf(records: readonly Rec[],
     const dctx = prev !== null && t.ctx ? t.ctx - prev.ctx : null;
     // A compaction's time is its durationMs, the summariser's, which runs
     // no tool.
-    const [toolS, blockedS] = truthy(t.compact) ? [0.0, 0.0]
+    const [tool_s, blocked_s] = truthy(t.compact) ? [0.0, 0.0]
       : turnClock(t.tools, t.waits, t.t0, t.t1);
     out.push(turn({
-      ts: t.ts, text: t.text, fresh: t.fresh, cacheWrite: t.cw,
-      cacheRead: t.cr, out: t.out, ctx: t.ctx, calls: t.n, dctx,
-      usdIn: t.usd[0], usdOut: t.usd[1], usdCr: t.usd[2], usdCw: t.usd[3],
+      ts: t.ts, text: t.text, fresh: t.fresh, cache_write: t.cw,
+      cache_read: t.cr, out: t.out, ctx: t.ctx, calls: t.n, dctx,
+      usd_in: t.usd[0], usd_out: t.usd[1], usd_cr: t.usd[2], usd_cw: t.usd[3],
       compact: truthy(t.compact), reported: out.length < settled,
-      parts: [...t.parts], agentCalls: t.an, agentIds: [...t.aids],
-      durS: truthy(t.dur) ? t.dur!
+      parts: [...t.parts], agent_calls: t.an, agent_ids: [...t.aids],
+      dur_s: truthy(t.dur) ? t.dur!
         : truthy(t.t0) && truthy(t.t1) && t.t1! > t.t0! ? t.t1! - t.t0!
         : 0.0,
-      toolS, blockedS, agentModelS: t.am, agentToolS: t.at,
-      promptId: truthy(t.compact) ? "" : t.pid,
-      turnIndex: truthy(t.compact) ? null : t.tidx,
+      tool_s, blocked_s, agent_model_s: t.am, agent_tool_s: t.at,
+      prompt_id: truthy(t.compact) ? "" : t.pid,
+      turn_index: truthy(t.compact) ? null : t.tidx,
     }));
     if (t.ctx) prev = t;
   }
@@ -2402,13 +2386,13 @@ export function readTurns(path: string,
  * in it are, by construction, ones no Stop has seen. */
 export function lateAgentTurn(t: TurnBuild, path = "",
   label: (path: string) => [string, string] = agentLabel): Turn {
-  const [agentId, agentName] = label(path);
+  const [agent_id, agent_name] = label(path);
   return turn({
-    ts: t.ts, text: t.text, fresh: t.fresh, cacheWrite: t.cw,
-    cacheRead: t.cr, out: t.out, ctx: 0, calls: 0, durS: 0.0, dctx: null,
-    usdIn: t.usd[0], usdOut: t.usd[1], usdCr: t.usd[2], usdCw: t.usd[3],
-    parts: [...t.parts], agentCalls: t.an, agentIds: [...t.aids],
-    agent: true, agentModelS: t.am, agentToolS: t.at, agentId, agentName,
+    ts: t.ts, text: t.text, fresh: t.fresh, cache_write: t.cw,
+    cache_read: t.cr, out: t.out, ctx: 0, calls: 0, dur_s: 0.0, dctx: null,
+    usd_in: t.usd[0], usd_out: t.usd[1], usd_cr: t.usd[2], usd_cw: t.usd[3],
+    parts: [...t.parts], agent_calls: t.an, agent_ids: [...t.aids],
+    agent: true, agent_model_s: t.am, agent_tool_s: t.at, agent_id, agent_name,
   });
 }
 
