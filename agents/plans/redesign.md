@@ -249,12 +249,12 @@ same version-1 reading as its output and shared cases pinning it.
    shared cases before the next, and the usage-source reader with it.
    Status 2026-10-19: `claude_records.ts` and `models.ts` (1,417 cases),
    `sources.ts` and `claude_sources.ts` (392) and `claude_calib.ts`, the
-   calibration and window shares from `claude.py` (1,179), pass; `py.ts`
-   holds the Python semantics they share. Left: the glue in `claude.py`
-   that strings them together per render (`_with_shares`, the accounting
-   in `cost_figures`, `window_for` and the published context window),
-   which the mod's handlers take on in step 5. `agent_window_shares` stays
-   Python's, with the agent panel.
+   calibration, window shares and the figures' `turn_accounting` and
+   `cost_accounting` from `claude.py` (1,179), pass; `py.ts` holds the
+   Python semantics they share. Left: the glue in `claude.py` that strings
+   them together per render (`_with_shares`, `cost_figures`, `window_for`
+   and the published context window), which the mod's handlers take on in
+   step 5. `agent_window_shares` stays Python's, with the agent panel.
 4. **The cells and the layout in TypeScript,** against the shared cases.
 5. **The mod,** from the `usage-band` scaffold: refreshes, receipts kept in
    `$.store` so a resumed transcript still shows them, and the 🔻 line.
