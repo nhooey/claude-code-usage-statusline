@@ -403,6 +403,28 @@ test('a prompt from the composer gets its turn tag under it, at no indent',
   })
 
 
+test('the footer is the engine\'s line, then the account in plain text',
+  async ($, on) => {
+    world(on)
+    await start($, 'terminal', STATUS)
+    const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'PromptHint', props: { isDraft: false, isWorking: false,
+        hint: '-- INSERT -- 2 shells' } })
+    const tree = await ui.drawn() as Drawn
+    // Drawn by the mod, not refused for the engine's own: a row whose Texts
+    // are the account, then 📅 🕐, neither dim nor coloured.
+    expect(tree.type).toBe('Box')
+    const texts = (tree.children ?? []).filter((c): c is Drawn =>
+      typeof c !== 'string' && c.type === 'Text')
+    const words = texts.map((t) => (t.children ?? []).join(''))
+    expect(words.some((w) => w.includes(spec.E_ACCT))).toBe(true)
+    expect(words.at(-1)!.startsWith(spec.E_DATE)).toBe(true)
+    for (const t of texts) {
+      expect(t.props?.dimColor ?? false).toBe(false)
+      expect(t.props?.color ?? null).toBe(null)
+    }
+  })
+
 test('a transcript over 4 MiB is read in pieces through the shell',
   async ($, on) => {
     // The shell's `tail -c +N | head -c L | base64`, over the world's

@@ -485,8 +485,7 @@ export const register: Register = on => {
   // the 💳 row at its right end (decided 2026-10-19): Claude Code's own
   // line, drawn by the engine so its pills stay live, then the account
   // text in the terminal's own colour, not the line's dim one (asked
-  // 2026-10-20), pushed to where the band's rows end.  The line is two
-  // columns in, as the band's rows are not.  📅 🕐 stand FOOTER_GAP
+  // 2026-10-20), pushed to where the band's rows end.  📅 🕐 stand FOOTER_GAP
   // columns after the account, fewer down to one where the row is short,
   // before any text is cut (asked 2026-10-20).
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
@@ -497,16 +496,20 @@ export const register: Register = on => {
     const row = await next(e)
     if (!head && !when) return row
     const { Box, Text } = $.ui.resolve(e)
-    const cols = bandCols || (e.viewport?.columns ?? 80)
+    // No size on a Box around the engine's line, which the engine refuses
+    // ("engine node under a Box with prop \"width\""): the row takes the
+    // footer's width, and a spacer as wide as the band's right margin ends
+    // the text where the band's rows end.
     return (
-      <Box flexDirection="row" width={Math.max(1, cols - spec.RIGHT_EDGE - 2)}>
-        <Box flexShrink={0}>{row}</Box>
+      <Box flexDirection="row">
+        {row}
         <Box flexGrow={1} minWidth={1} />
         {head ? <Text wrap="truncate-end">{head}</Text> : null}
         {head && when
           ? <Box width={FOOTER_GAP} minWidth={1} flexShrink={1000} />
           : null}
         {when ? <Text wrap="truncate-end">{when}</Text> : null}
+        <Box width={spec.RIGHT_EDGE} flexShrink={0} />
       </Box>
     )
   })
