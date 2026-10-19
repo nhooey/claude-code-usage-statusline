@@ -1,7 +1,7 @@
 """Pure, terminal-safe rendering for agent-neutral snapshots."""
 import math
 from datetime import datetime, timezone
-from .codex import grouped_turns, origin_turn, totals
+from .codex import grouped_turns, totals
 from . import formatting as fmt
 from .formatting import dur_fmt, humanize
 

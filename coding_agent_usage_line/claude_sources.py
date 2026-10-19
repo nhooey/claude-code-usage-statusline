@@ -3,7 +3,7 @@
 This module deliberately does not alter the historical Claude source/cache
 path.  Callers choose when to use the returned legacy projection.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import NamedTuple
 
 from . import sources

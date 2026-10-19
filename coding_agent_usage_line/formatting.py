@@ -12,7 +12,7 @@ import struct
 import subprocess
 import termios
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
 
 # The glyphs, colours, widths and cuts, and the terminal tables, with the

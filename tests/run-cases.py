@@ -36,6 +36,10 @@ rewrites those too.
 
 The program runs under the interpreter given by --python, /usr/bin/python3 by
 default, the version floor on macOS.
+
+The suites run side by side, and so do the render stages, apart from the
+full runs (Drawers).  The full runs of one suite stay one after another, in
+the order cases.json lists them, since they share their state.
 """
 import argparse
 import json
@@ -44,6 +48,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(HERE, "fixtures")
@@ -227,6 +233,147 @@ def read(path, mode="r"):
         return fh.read()
 
 
+class Drawers:
+    """Stage two's runs, off the chain of full runs.
+
+    A full run must follow the one before it, since the cases of a suite
+    share their state.  A drawing reads nothing but its document, so it need
+    wait on neither the chain nor another drawing: each goes to a pool of
+    threads, and each thread draws in a scratch directory of its own, named
+    as the suite's is, since the document's ${SCRATCH} becomes its path.
+    """
+
+    def __init__(self, python):
+        self.python = python
+        self.pool = ThreadPoolExecutor(os.cpu_count() or 4)
+        self.local = threading.local()
+        self.lock = threading.Lock()
+        self.scratches = []
+
+    def suite(self, name):
+        suites = self.local.__dict__.setdefault("suites", {})
+        if name not in suites:
+            scratch = tempfile.mkdtemp(prefix="claude-golden-%s." % name)
+            with self.lock:
+                self.scratches.append(scratch)
+            suites[name] = Suite(scratch)
+        return suites[name]
+
+    def draw(self, case, figures):
+        """A future of the drawn rows."""
+        return self.pool.submit(lambda: render_figures(
+            self.python, self.suite(case["suite"]), case, figures))
+
+    def close(self):
+        self.pool.shutdown()
+        for scratch in self.scratches:
+            shutil.rmtree(scratch, ignore_errors=True)
+
+
+def run_suite(name, cases, args, drawers):
+    """One suite's cases, in order: (printed lines, totals, stages)."""
+    regen_figures = args.regen or args.regen_figures
+    lines = []
+    totals = {"pass": 0, "fail": 0, "missing": 0, "wrote": 0}
+    stages = {s: {"pass": 0, "fail": 0} for s in ("figures", "render")}
+    gold = os.path.join(HERE, "golden", name)
+    out = os.path.join(HERE, "out" if name == "status" else "out-" + name)
+    os.makedirs(gold, exist_ok=True)
+    # By suite, as the goldens are: a status and a cost case can share
+    # an id.
+    figs = os.path.join(FIGURES, name)
+    os.makedirs(figs, exist_ok=True)
+    os.makedirs(out, exist_ok=True)
+    for f in os.listdir(out):   # else a stale failure looks like a live one
+        if f.endswith((".got", ".want")):
+            os.remove(os.path.join(out, f))
+    lines.append("=== golden: %s mode ===" % name)
+    # Each case's checks so far, and the drawing it still waits on.
+    pending = []
+    scratch = tempfile.mkdtemp(prefix="claude-golden-%s." % name)
+    try:
+        suite = Suite(scratch)
+        for case in (c for c in cases if c["suite"] == name):
+            cid = case["id"]
+            got, figures = render(args.python, suite, case)
+            want_path = os.path.join(gold, cid + ".txt")
+            fig_path = os.path.join(figs, cid + ".json")
+            if regen_figures and figures is not None:
+                with open(fig_path, "w", encoding="utf-8") as fh:
+                    fh.write(figures)
+            if args.regen:
+                with open(want_path, "wb") as fh:
+                    fh.write(got)
+                totals["wrote"] += 1
+                continue
+            want = read(want_path, "rb")
+            if want is None:
+                pending.append((cid, "  MISS  %-32s (no golden — run --regen)"
+                                % cid, None, None, None))
+                continue
+            want = want.rstrip(b"\n")
+            fails = []
+            if got != want:
+                fails.append("rows")
+                with open(os.path.join(out, cid + ".got"), "wb") as fh:
+                    fh.write(got)
+            if name == "subagent":
+                # No figures document: the panel suite checks the
+                # drawing apart.
+                pending.append((cid, None, fails, want, None))
+                continue
+            # Figures: what the run wrote against what is committed.
+            kept = read(fig_path)
+            if kept is None:
+                pending.append((cid, "  MISS  %-32s (no figures — run "
+                                "--regen-figures)" % cid, None, None, None))
+                continue
+            if figures == kept:
+                stages["figures"]["pass"] += 1
+            else:
+                stages["figures"]["fail"] += 1
+                fails.append("figures")
+                with open(os.path.join(out, cid + ".figures.got"), "w",
+                          encoding="utf-8") as fh:
+                    fh.write(figures or "")
+            # Render: the committed figures alone, drawn again.
+            pending.append((cid, None, fails, want, drawers.draw(case, kept)))
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+    for cid, miss, fails, want, drawing in pending:
+        if miss:
+            lines.append(miss)
+            totals["missing"] += 1
+            continue
+        if drawing is not None:
+            drawn = drawing.result()
+            if drawn == want:
+                stages["render"]["pass"] += 1
+            else:
+                stages["render"]["fail"] += 1
+                fails.append("render")
+                with open(os.path.join(out, cid + ".render.got"), "wb") as fh:
+                    fh.write(drawn)
+        report(cid, fails, os.path.join(gold, cid + ".txt"), out, totals,
+               lines)
+    return lines, totals, stages
+
+
+def run_panel(args):
+    """The panel suite: (printed lines, (cases, files that differ) or None)."""
+    lines = ["=== panel: the agent panel's rows from its inputs ==="]
+    sys.path.insert(0, os.path.join(FIXTURES, "gen"))
+    import panel as gen_panel
+    if args.regen:
+        # It prints as it writes, so it runs on its own, after the rest.
+        print(lines[0])
+        gen_panel.main_panel(args.python)
+        return [], None
+    n, fails = gen_panel.check(args.python)
+    lines.extend("  FAIL  " + f for f in fails)
+    return lines, (n, len(fails))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--suite", choices=("status", "cost", "subagent", "panel"))
@@ -234,99 +381,42 @@ def main():
     ap.add_argument("--regen-figures", action="store_true")
     ap.add_argument("--python", default="/usr/bin/python3")
     args = ap.parse_args()
-    regen_figures = args.regen or args.regen_figures
 
     with open(os.path.join(FIXTURES, "cases.json")) as fh:
         cases = json.load(fh)["cases"]
     totals = {"pass": 0, "fail": 0, "missing": 0, "wrote": 0}
     stages = {s: {"pass": 0, "fail": 0} for s in ("figures", "render")}
-    for name in ("status", "cost", "subagent"):
-        if args.suite and args.suite != name:
-            continue
-        gold = os.path.join(HERE, "golden", name)
-        out = os.path.join(HERE, "out" if name == "status" else "out-" + name)
-        os.makedirs(gold, exist_ok=True)
-        # By suite, as the goldens are: a status and a cost case can share
-        # an id.
-        figs = os.path.join(FIGURES, name)
-        os.makedirs(figs, exist_ok=True)
-        os.makedirs(out, exist_ok=True)
-        for f in os.listdir(out):   # else a stale failure looks like a live one
-            if f.endswith((".got", ".want")):
-                os.remove(os.path.join(out, f))
-        print("=== golden: %s mode ===" % name)
-        scratch = tempfile.mkdtemp(prefix="claude-golden-%s." % name)
-        try:
-            suite = Suite(scratch)
-            for case in (c for c in cases if c["suite"] == name):
-                cid = case["id"]
-                got, figures = render(args.python, suite, case)
-                want_path = os.path.join(gold, cid + ".txt")
-                fig_path = os.path.join(figs, cid + ".json")
-                if regen_figures and figures is not None:
-                    with open(fig_path, "w", encoding="utf-8") as fh:
-                        fh.write(figures)
-                if args.regen:
-                    with open(want_path, "wb") as fh:
-                        fh.write(got)
-                    totals["wrote"] += 1
-                    continue
-                want = read(want_path, "rb")
-                if want is None:
-                    print("  MISS  %-32s (no golden — run --regen)" % cid)
-                    totals["missing"] += 1
-                    continue
-                want = want.rstrip(b"\n")
-                fails = []
-                if got != want:
-                    fails.append("rows")
-                    with open(os.path.join(out, cid + ".got"), "wb") as fh:
-                        fh.write(got)
-                if name == "subagent":
-                    # No figures document: the panel suite checks the
-                    # drawing apart.
-                    report(cid, fails, want_path, out, totals)
-                    continue
-                # Figures: what the run wrote against what is committed.
-                kept = read(fig_path)
-                if kept is None:
-                    print("  MISS  %-32s (no figures — run --regen-figures)"
-                          % cid)
-                    totals["missing"] += 1
-                    continue
-                if figures == kept:
-                    stages["figures"]["pass"] += 1
-                else:
-                    stages["figures"]["fail"] += 1
-                    fails.append("figures")
-                    with open(os.path.join(out, cid + ".figures.got"), "w",
-                              encoding="utf-8") as fh:
-                        fh.write(figures or "")
-                # Render: the committed figures alone, drawn again.
-                drawn = render_figures(args.python, suite, case, kept)
-                if drawn == want:
-                    stages["render"]["pass"] += 1
-                else:
-                    stages["render"]["fail"] += 1
-                    fails.append("render")
-                    with open(os.path.join(out, cid + ".render.got"),
-                              "wb") as fh:
-                        fh.write(drawn)
-                report(cid, fails, want_path, out, totals)
-        finally:
-            shutil.rmtree(scratch, ignore_errors=True)
+    # The suites share no state, so they run side by side; what each prints
+    # is printed whole, in this order, once it is done.
+    names = [n for n in ("status", "cost", "subagent", "panel")
+             if not args.suite or args.suite == n]
+    regen_panel = args.regen and "panel" in names
+    if regen_panel:
+        names.remove("panel")
+    drawers = Drawers(args.python)
     panel = None
-    if not args.suite or args.suite == "panel":
-        print("=== panel: the agent panel's rows from its inputs ===")
-        sys.path.insert(0, os.path.join(FIXTURES, "gen"))
-        import panel as gen_panel
-        if args.regen:
-            gen_panel.main_panel(args.python)
-        else:
-            n, fails = gen_panel.check(args.python)
-            for f in fails:
-                print("  FAIL  " + f)
-            panel = (n, len(fails))
+    try:
+        with ThreadPoolExecutor(max(1, len(names))) as pool:
+            runs = [pool.submit(run_panel, args) if n == "panel" else
+                    pool.submit(run_suite, n, cases, args, drawers)
+                    for n in names]
+            for n, run in zip(names, runs):
+                if n == "panel":
+                    lines, panel = run.result()
+                else:
+                    lines, t, s = run.result()
+                    for k in totals:
+                        totals[k] += t[k]
+                    for st in stages:
+                        for k in stages[st]:
+                            stages[st][k] += s[st][k]
+                for line in lines:
+                    print(line)
+                sys.stdout.flush()
+    finally:
+        drawers.close()
+    if regen_panel:
+        run_panel(args)
     print()
     if args.regen:
         print("wrote %d goldens under tests/golden/, and their figures"
@@ -343,12 +433,12 @@ def main():
                  and not (panel and panel[1])) else 1
 
 
-def report(cid, fails, want_path, out, totals):
+def report(cid, fails, want_path, out, totals, lines):
     if not fails:
-        print("  ok    %s" % cid)
+        lines.append("  ok    %s" % cid)
         totals["pass"] += 1
     else:
-        print("  FAIL  %-32s (%s)" % (cid, ", ".join(fails)))
+        lines.append("  FAIL  %-32s (%s)" % (cid, ", ".join(fails)))
         shutil.copy(want_path, os.path.join(out, cid + ".want"))
         totals["fail"] += 1
 

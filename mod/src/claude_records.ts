@@ -34,8 +34,8 @@
 import { sha256Hex } from "./sha256.ts";
 import { E_FOLD, E_ETA_REPORT, E_ETA_REPORT_OLD } from "./spec.ts";
 import {
-  isDict, PY_SPACE, pyAsciiDigits, pyDig, pyFloatRepr, pyGet, pyHas, pyOr,
-  pyStrip, pyTruthy,
+  daysIn, isDict, PY_SPACE, pyAsciiDigits, pyDig, pyFloatRepr, pyGet, pyHas,
+  pyLen, pyOr, pyStrip, pyTruthy,
   utf8,
 } from "./py.ts";
 
@@ -69,13 +69,6 @@ export function cmpStr(a: string, b: string): number {
     const cx = x.value.codePointAt(0)!, cy = y.value.codePointAt(0)!;
     if (cx !== cy) return cx < cy ? -1 : 1;
   }
-}
-
-/** `len(s)`: code points, not UTF-16 units. */
-export function pyLen(s: string): number {
-  let n = 0;
-  for (const _ of s) n++;
-  return n;
 }
 
 // What isprintable() refuses, which repr() escapes: the C and Z categories
@@ -255,7 +248,7 @@ export interface Payload {
 
 /** What one pass over the transcript yields for the status line.
  *
- * `tokUp` is null only when there was no transcript to read at all, which
+ * `tok_up` is null only when there was no transcript to read at all, which
  * is a different state from a transcript that exists and is empty: the
  * first suppresses the token segment, the second renders it as zeros.  Two
  * empty states, two renderings, and conflating them was how a fresh session
@@ -639,11 +632,6 @@ const STRPTIME = new RegExp(
   "-(3[01]|[12]\\p{Nd}|0[1-9]|[1-9]| [1-9])" +
   "T(2[0-3]|[0-1]\\p{Nd}|\\p{Nd}):([0-5]\\p{Nd}|\\p{Nd})" +
   ":(6[0-1]|[0-5]\\p{Nd}|\\p{Nd})", "iu");
-
-function daysIn(y: number, m: number): number {
-  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
-  return [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
-}
 
 /** Epoch seconds of a UTC calendar time, for any year 1..9999: Date.UTC
  * reads a year under 100 as 1900 and more. */

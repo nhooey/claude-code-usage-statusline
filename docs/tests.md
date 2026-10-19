@@ -1,7 +1,19 @@
 # Tests
 
 Everything is standard-library Python and bash, so there is nothing to install.
-Run the whole deterministic set from the repository root, in bash or zsh:
+Run the whole deterministic set from the repository root, the mod's included,
+side by side, with one line per suite on how it went:
+
+```sh
+bash tests/all.sh                  # every suite, about 17 s
+bash tests/all.sh status node      # the ones named
+```
+
+It exits with the number of suites that failed and prints the end of each
+failing one's output. The mod's suites want `mod/node_modules` (`npm ci`),
+the engine's types under `mod/.claude-plugin/types/` and the `claude` CLI;
+without them those lines fail and the rest still run. Or one at a time, in
+bash or zsh:
 
 ```sh
 for s in golden golden-cost py39-floor; do
@@ -26,10 +38,10 @@ the program and is not.
 
 | Command | Checks | Result line |
 |---|---|---|
-| `python3 tests/run-cases.py` | both suites below, from the committed cases in `tests/fixtures/`, and each case's [figures](../tests/README.md#figures) and render stages apart; then the [agent panel's](../tests/README.md#agent-panel-cases) 45 `--mode subagent` goldens and its 242 render cases | `pass 273   fail 0   missing 0`, then `panel    242 cases   0 files differ` |
+| `python3 tests/run-cases.py` | both suites below, from the committed cases in `tests/fixtures/`, and each case's [figures](../tests/README.md#figures) and render stages apart; then the [agent panel's](../tests/README.md#agent-panel-cases) 45 `--mode subagent` goldens and its 275 render cases | `pass 273   fail 0   missing 0`, then `panel    275 cases   0 files differ` |
 | `bash tests/golden.sh` | `--mode status` output, byte for byte, against 141 golden files | `pass 141   fail 0   missing 0` |
 | `bash tests/golden-cost.sh` | `--mode cost` output against 87 golden files | `pass 87   fail 0   missing 0` |
-| `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 51   fail 0   missing 0` |
+| `bash tests/py39-floor.sh` | the Python 3.9 floor: compiles everything and renders each mode under 3.9 | `pass 53   fail 0   missing 0` |
 | `cd mod && node --test 'test/*.test.ts'` | the TypeScript port against the cases the Python writes under `tests/fixtures/`: the spec, the usage-source reader, the accounting, the calibration, the formatters and spans, and the status line, the receipt and the agent panel, cell by cell and against every golden | `ℹ fail 0` |
 | `cd mod && npm ci && npm run typecheck` | the TypeScript port's types, with TypeScript and Node's type definitions from the lockfile | no output |
 | `python3 tests/usage-source.py` | the Claude Usage Tracker reader, `cmd:` sources, and the scoped source cache | `pass 39   fail 0   missing 0` |
@@ -42,10 +54,10 @@ the program and is not.
 | `python3 tests/formatting.py` | shared width and formatting helpers, display switches | `ok …` |
 | `python3 tests/port-cli.py` | the public CLI end to end, including held-open stdin and concurrent Stops | unittest `OK` (15 tests) |
 | `python3 tests/agents.py` | agent spend: reading agent files, folding them into turns, the 👥 row, the tool-time partition, the receipt's per-turn share of it with its agents', the cache of each agent file's reading, and the calibration scan's cache of each file's priced requests, and the main thread's open shells and Monitors, and the receipt's turn tag, and a running agent's row waiting for its end | `pass 88   fail 0` |
-| `python3 tests/subagent.py` | the agent-panel rows: finding an agent's file, billing, window shares, nesting, the reported ETA and its inheritance, the inbox, silence, compactions, open shells and Monitors, API errors and worktree branch, a window share that never starts the calibration scan, row shape | `pass 116   fail 0` |
+| `python3 tests/subagent.py` | the agent-panel rows: finding an agent's file, billing, window shares, nesting, the reported ETA and its inheritance, the inbox, silence, compactions, open shells and Monitors, API errors and worktree branch, a window share that never starts the calibration scan, row shape | `pass 117   fail 0` |
 | `python3 tests/claude-subagent-render.py` | panel row rendering with no file or source reads | `ok …` |
 | `python3 tests/rate.py` | the 🛫 token-rate sampler, the Doing cell and the main thread's states, column 2 in the padded profile, and the brightness-as-magnitude cuts, and the 🧠 estimate after a compaction | `pass 71   fail 0` |
-| `python3 tests/grid.py` | `grid.py`, the redesigned grid, against the [cases the TypeScript writes](../tests/README.md#grid-cases), under each profile they name | `pass 11919   fail 0` |
+| `python3 tests/grid.py` | `grid.py`, the redesigned grid, against the [cases the TypeScript writes](../tests/README.md#grid-cases), under each profile they name | `pass 22159   fail 0` |
 
 The goldens pin the clock, so every render is the rate sampler's first tick
 and there is no rate to show: the Doing figure is 🤖 and how long the corpus

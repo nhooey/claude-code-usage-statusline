@@ -1062,9 +1062,12 @@ def corpus(python=PYTHON):
 
 def rendered(groups, python=PYTHON):
     """{file name: its content} for every group."""
+    from concurrent.futures import ThreadPoolExecutor
+    # Each group is a process of its own, so they render side by side.
+    with ThreadPoolExecutor(os.cpu_count() or 4) as pool:
+        gots = list(pool.map(lambda g: render_group(g, python), groups))
     files = {}
-    for g in groups:
-        got = render_group(g, python)
+    for g, got in zip(groups, gots):
         for case in got["cases"]:
             # A corpus case's rows are its golden's: the capture and the
             # render must agree before either is written.
