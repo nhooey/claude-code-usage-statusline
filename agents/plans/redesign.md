@@ -2,7 +2,7 @@
 
 A proposal, not built yet. Nothing here changes what the program draws today;
 [Layout](../../docs/layout.md) is still the reference for that. This document collects
-the design as it is decided, and `tools/layout-mockup.py` draws it.
+the design as it is decided, and `mod/tools/layout-mockup.ts` draws it.
 
 ## Why
 
@@ -445,7 +445,7 @@ the cases have to stop depending on it.
 
 ## The whole screen
 
-After the turn, `python3 tools/layout-mockup.py --cols 150 --plain`, made-up
+After the turn, `node mod/tools/layout-mockup.ts --cols 150 --plain`, made-up
 figures; `--phase running` draws it mid-turn:
 
 ```
@@ -508,7 +508,7 @@ The probe is in `tools/align-probe/`:
 - **`mod/`** is a throwaway mod. Its `AbovePrompt` hook draws a ruler and the
   mockup's band rows. Its `TurnDuration` hook draws the whole closing line
   with the receipt rows under it. Its `UserMessage` hook adds a dim 🔻 line
-  under the prompt. It runs `tools/layout-mockup.py` from the usual checkout
+  under the prompt. It runs `mod/tools/layout-mockup.ts` from the usual checkout
   path.
 - **`align-panel.py`** is a `subagentStatusLine` command. While
   `align-probe.on` (git-ignored) sits beside it, each task's row is the

@@ -202,12 +202,12 @@ never the generated files, and rerun the tool; `tests/formatting.py` fails
 while either is out of date. What is computed from the constants, the `S_*`
 forms and `RIGHT_GRID`, stays in `formatting.py`, and the mod computes its own.
 
-`tools/layout-mockup.py` draws the proposed [redesign](../agents/plans/redesign.md) inside a
-mocked Claude Code screen. It uses the package's cell renderers on made-up
-figures and reads nothing. Its options, `--cols`, `--hide`,
-`--receipt`, `--phase`, `--labels`, `--grid`, `--agents`, `--part` and
-`--plain`, are
-in its `--help`.
+`mod/tools/layout-mockup.ts` draws the proposed [redesign](../agents/plans/redesign.md) inside a
+mocked Claude Code screen: `node mod/tools/layout-mockup.ts --cols 150`. It
+uses the mod's ported cell renderers on made-up figures and lays them out
+with the grid, `mod/src/grid.ts`; it reads nothing but the terminal. Its
+options, `--cols`, `--hide`, `--receipt`, `--phase`, `--labels`, `--grid`,
+`--agents`, `--part` and `--plain`, are in its `--help`.
 
 ## License
 
