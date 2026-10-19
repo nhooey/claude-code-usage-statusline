@@ -17,9 +17,10 @@
 //
 // What Python gives for free and this file spells out, because the shared
 // cases would otherwise drift on it: float() on strings, str() on JSON
-// values, truthiness, dict.get with a default, json.loads' NaN and Infinity,
-// datetime.fromisoformat as 3.9 parses it, and "%.6f"'s half-even rounding.
-// They are at the top, under "Python's semantics".
+// values, json.loads' NaN and Infinity, datetime.fromisoformat as 3.9
+// parses it, and "%.6f"'s half-even rounding.  They are at the top, under
+// "Python's semantics"; truthiness, dict.get and strip() are in py.ts,
+// shared with the other ports.
 //
 // The I/O is at the bottom, under "The edges": the cache files, running a
 // command, reading the tracker.  collect takes them as arguments, and every
@@ -32,7 +33,10 @@ import * as nodeOs from "node:os";
 import * as nodePath from "node:path";
 import { readTracker } from "./claude_sources.ts";
 
-export type Dict = { [key: string]: unknown };
+import type { Dict } from "./py.ts";
+import { isDict, pyFloatRepr, pyGet, pyStrip, pyTruthy } from "./py.ts";
+
+export type { Dict };
 export type Reading = Dict;
 
 export const VALID_SOURCES = [
@@ -44,45 +48,6 @@ export const VALID_SOURCES = [
 // ════════════════════════════════════════════════════════════════════════════
 // Python's semantics.
 // ════════════════════════════════════════════════════════════════════════════
-
-// A JSON object, a plist dict, or one built here.  Arrays, plist data
-// (Uint8Array) and dates are objects too, and none of them is a dict.
-export function isDict(value: unknown): value is Dict {
-  if (typeof value !== "object" || value === null) return false;
-  const proto = Object.getPrototypeOf(value);
-  return proto === Object.prototype || proto === null;
-}
-
-// Python's bool(): an empty container or string is false, and so is zero,
-// but NaN is true, which is where it differs from JavaScript's.
-export function pyTruthy(value: unknown): boolean {
-  if (value === null || value === undefined || value === false) return false;
-  if (typeof value === "number") return value !== 0;
-  if (typeof value === "string") return value.length > 0;
-  if (Array.isArray(value) || value instanceof Uint8Array) {
-    return value.length > 0;
-  }
-  if (isDict(value)) return Object.keys(value).length > 0;
-  return true;
-}
-
-// dict.get(key, default): a key that is present with a null value returns
-// the null, not the default.  `a.get("x", a.get("y"))` depends on that.
-export function pyGet(obj: Dict, key: string, dflt: unknown = null): unknown {
-  return Object.hasOwn(obj, key) ? obj[key] : dflt;
-}
-
-// The characters str.strip() and float() take as whitespace.
-const PY_SPACE = "\t\n\v\f\r\x1c\x1d\x1e\x1f \x85\xa0\u1680" +
-  "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a" +
-  "\u2028\u2029\u202f\u205f\u3000";
-
-export function pyStrip(text: string): string {
-  let a = 0, b = text.length;
-  while (a < b && PY_SPACE.includes(text[a])) a++;
-  while (b > a && PY_SPACE.includes(text[b - 1])) b--;
-  return text.slice(a, b);
-}
 
 const DIGITS = "[0-9](?:_?[0-9])*";
 const PY_FLOAT = new RegExp(
@@ -113,31 +78,6 @@ export function pyFloat(value: unknown): number | null {
     return pyFloatText(String.fromCharCode(...value));
   }
   return null;
-}
-
-// repr(float): the shortest digits that round-trip, as JavaScript also
-// finds them, laid out Python's way: an exponent below 1e-4 and from 1e16
-// up, and ".0" on a whole number.
-export function pyFloatRepr(x: number): string {
-  if (Number.isNaN(x)) return "nan";
-  if (!Number.isFinite(x)) return x > 0 ? "inf" : "-inf";
-  if (x === 0) return Object.is(x, -0) ? "-0.0" : "0.0";
-  const [mant, exp] = x.toExponential().split("e");
-  const e = Number(exp);
-  const neg = mant.startsWith("-");
-  const digits = mant.replace("-", "").replace(".", "");
-  let out: string;
-  if (e < -4 || e >= 16) {
-    const m = digits.length > 1 ? digits[0] + "." + digits.slice(1) : digits;
-    out = m + "e" + (e < 0 ? "-" : "+") + String(Math.abs(e)).padStart(2, "0");
-  } else if (e >= digits.length - 1) {
-    out = digits + "0".repeat(e - digits.length + 1) + ".0";
-  } else if (e >= 0) {
-    out = digits.slice(0, e + 1) + "." + digits.slice(e + 1);
-  } else {
-    out = "0." + "0".repeat(-e - 1) + digits;
-  }
-  return (neg ? "-" : "") + out;
 }
 
 // str() of a JSON value.  JSON's 5 and 5.0 are one number here, so a whole

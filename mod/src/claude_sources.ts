@@ -13,10 +13,10 @@
 import * as fs from "node:fs";
 import { spawn } from "node:child_process";
 import { STAMP_FMT } from "./spec.ts";
+import { isDict, pyGet, pyStrip, pyTruthy } from "./py.ts";
 import {
-  collect, expandUser, fetchSource, fileStore, isDict, pyFloatText, pyGet,
-  pyJsonLoads,
-  pyStrip, pyTruthy, splitTimestamp,
+  collect, expandUser, fetchSource, fileStore, pyFloatText, pyJsonLoads,
+  splitTimestamp,
 } from "./sources.ts";
 import type { Dict, Env, Fetch, Reading, Store } from "./sources.ts";
 

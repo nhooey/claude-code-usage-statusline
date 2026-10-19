@@ -8,10 +8,11 @@ import * as os from "node:os";
 import * as path from "node:path";
 import {
   cachedReading, cacheName, claudeUsageTracker, commandReading, epoch,
-  hasReading, isDict, nativeReading, normalise, number, periodBounds,
+  hasReading, nativeReading, normalise, number, periodBounds,
   pyJsonLoads,
 } from "../src/sources.ts";
 import type { Dict } from "../src/sources.ts";
+import { isDict } from "../src/py.ts";
 import {
   legacyLimits, plistLoads, prepareClaudeReading, statusSourceContext,
   trackerReading,

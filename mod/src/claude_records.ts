@@ -15,10 +15,11 @@
 // What does not carry over from Python by itself, decided once:
 //
 //   - Truthiness.  `r.get("x") or y` treats 0, "", [], {} and None alike;
-//     JavaScript does not, so every such test goes through `truthy` and `or`.
-//   - Missing is null, never undefined and never zero.  `get` returns
-//     undefined for an absent key so that `"k" in d` and `d.get("k")` stay
-//     apart where the Python tells them apart.
+//     JavaScript does not, so every such test goes through py.ts's
+//     `pyTruthy` and `pyOr`.
+//   - Missing is null, never undefined and never zero.  `pyGet` returns
+//     null for an absent key, as `d.get("k")` does, and `pyHas` is `"k" in
+//     d` where the Python tells the two apart.
 //   - Numbers.  JSON.parse cannot tell 5 from 5.0, so the two places the
 //     Python asks `isinstance(v, int)` accept an integral float here; and an
 //     integer past 2**53 loses precision.
@@ -33,6 +34,10 @@
 import * as fs from "node:fs";
 import * as crypto from "node:crypto";
 import { E_FOLD, E_ETA_REPORT, E_ETA_REPORT_OLD } from "./spec.ts";
+import {
+  isDict, PY_SPACE, pyDig, pyFloatRepr, pyGet, pyHas, pyOr, pyStrip,
+  pyTruthy,
+} from "./py.ts";
 
 // ════════════════════════════════════════════════════════════════════════════
 // Python's semantics, where JavaScript's differ.
@@ -41,54 +46,15 @@ import { E_FOLD, E_ETA_REPORT, E_ETA_REPORT_OLD } from "./spec.ts";
 /** A parsed JSON object, the shape every record is read as. */
 export type Rec = { readonly [k: string]: unknown };
 
-/** Is `v` a JSON object, which Python reads as a dict? */
-export function isDict(v: unknown): v is Rec {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-/** `d.get(k)`: the value under an OWN key of a dict, else undefined.  Own,
- * so a record's "constructor" is not Object's. */
-export function get(d: unknown, k: string): unknown {
-  return isDict(d) && Object.hasOwn(d, k) ? d[k] : undefined;
-}
-
-/** `k in d`. */
-export function has(d: unknown, k: string): boolean {
-  return isDict(d) && Object.hasOwn(d, k);
-}
-
-/** Python's truth: None, False, 0, "", an empty list or dict are false. */
-export function truthy(v: unknown): boolean {
-  if (v === null || v === undefined || v === false || v === 0 || v === "") {
-    return false;
-  }
-  if (Array.isArray(v)) return v.length > 0;
-  if (isDict(v)) return Object.keys(v).length > 0;
-  return true;
-}
-
-/** `a or b`: `a` when it is true, else `b`. */
-export function or<A, B>(a: A, b: B): A | B {
-  return truthy(a) ? a : b;
-}
-
-/** `(d.get(k) or {})` followed by `.get(k2)`, the chain the reader is
- * built from: a missing or non-dict link reads as missing. */
-export function dig(d: unknown, ...keys: string[]): unknown {
-  let cur: unknown = d;
-  for (const k of keys) cur = get(cur, k);
-  return cur;
-}
-
 /** A number field read `u.get(k) or 0`. */
 function num0(v: unknown): number {
-  return typeof v === "number" && truthy(v) ? v : 0;
+  return typeof v === "number" && pyTruthy(v) ? v : 0;
 }
 
 /** A number field read `u.get(k, 0)`: present and null is the Python's
  * TypeError, read here as 0. */
 function numGet(d: unknown, k: string): number {
-  const v = get(d, k);
+  const v = pyGet(d, k);
   return typeof v === "number" ? v : 0;
 }
 
@@ -112,17 +78,6 @@ export function pyLen(s: string): number {
   return n;
 }
 
-// Python's str.isspace, which \s, strip() and split() use for a str: the
-// JavaScript \s has U+FEFF and lacks U+001C..U+001F and U+0085.
-const PY_SPACE = "\\t\\n\\v\\f\\r\\x1c-\\x20\\x85\\xa0\\u1680" +
-  "\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000";
-const STRIP = new RegExp(`^[${PY_SPACE}]+|[${PY_SPACE}]+$`, "gu");
-
-/** `s.strip()`. */
-export function pyStrip(s: string): string {
-  return s.replace(STRIP, "");
-}
-
 /** The value of a Unicode decimal digit, which Python's int() and float()
  * accept and \d matches: every Nd run is 0..9 in order, so a digit's value
  * is how far it sits from the start of its run, modulo ten. */
@@ -140,35 +95,6 @@ function digitValue(ch: string): number {
 /** Unicode digits as ASCII ones, for parseInt and parseFloat. */
 function asciiDigits(s: string): string {
   return s.replace(/\p{Nd}/gu, (c) => String(digitValue(c)));
-}
-
-/** repr(float): the shortest digits that round-trip, as both languages
- * find them, laid out Python's way: fixed between 1e-4 and 1e16 with a
- * ".0" when integral, else d.ddde+XX. */
-export function pyFloatRepr(x: number): string {
-  if (Number.isNaN(x)) return "nan";
-  if (!Number.isFinite(x)) return x > 0 ? "inf" : "-inf";
-  if (x === 0) return Object.is(x, -0) ? "-0.0" : "0.0";
-  const [mant, e] = x.toExponential().split("e");
-  const exp = Number(e);
-  const neg = mant.startsWith("-");
-  const digits = mant.replace(/^-/, "").replace(".", "");
-  let body: string;
-  if (exp >= -4 && exp < 16) {
-    if (exp < 0) {
-      body = "0." + "0".repeat(-exp - 1) + digits;
-    } else if (digits.length <= exp + 1) {
-      body = digits + "0".repeat(exp + 1 - digits.length) + ".0";
-    } else {
-      body = digits.slice(0, exp + 1) + "." + digits.slice(exp + 1);
-    }
-  } else {
-    const m = digits.length > 1 ? digits[0] + "." + digits.slice(1)
-      : digits;
-    const a = Math.abs(exp);
-    body = m + "e" + (exp < 0 ? "-" : "+") + (a < 10 ? "0" + a : String(a));
-  }
-  return (neg ? "-" : "") + body;
 }
 
 // What isprintable() refuses, which repr() escapes: the C and Z categories
@@ -514,7 +440,7 @@ export function _first(d: unknown, paths: readonly string[],
     let cur: unknown = d;
     let ok = true;
     for (const part of p.split(".")) {
-      if (has(cur, part)) cur = get(cur, part);
+      if (pyHas(cur, part)) cur = pyGet(cur, part);
       else {
         ok = false;
         break;
@@ -636,8 +562,8 @@ export function _dedupeUsage(records: readonly Rec[]): Rec[] {
   const seen = new Set<unknown>();
   const out: Rec[] = [];
   for (const r of records) {
-    if (!truthy(dig(r, "message", "usage"))) continue;
-    const k = or(or(get(r, "requestId"), dig(r, "message", "id")), "?");
+    if (!pyTruthy(pyDig(r, "message", "usage"))) continue;
+    const k = pyOr(pyOr(pyGet(r, "requestId"), pyDig(r, "message", "id")), "?");
     if (seen.has(k)) continue;
     seen.add(k);
     out.push(r);
@@ -744,7 +670,7 @@ function utcEpoch(y: number, mo: number, d: number, h: number, mi: number,
  * and the Z's stripped, as the Python's strptime dance does.  Not cached:
  * the Python's lru_cache is there for strptime's cost. */
 export function tsEpoch(ts: unknown): number | null {
-  if (!truthy(ts) || typeof ts !== "string") return null;
+  if (!pyTruthy(ts) || typeof ts !== "string") return null;
   const s = ts.split(".")[0].replace(/Z+$/, "");
   const m = STRPTIME.exec(s);
   if (!m || m[0].length !== s.length) return null;
@@ -769,7 +695,7 @@ export function _stampUtc(epoch: number | null): string {
 /** The four prices of a model: the first MODEL_PRICE row whose key is in
  * its lowercased name, else the "opus" ceiling. */
 export function _price(model: unknown): Prices {
-  const m = pyStr(or(model, "")).toLowerCase();
+  const m = pyStr(pyOr(model, "")).toLowerCase();
   for (const [key, prices] of MODEL_PRICE) {
     if (m.includes(key)) return prices;
   }
@@ -840,19 +766,19 @@ export const WAITING_TOOLS: ReadonlySet<string> =
  * other; see netToolSeconds. */
 export function scanToolSpans(r: Rec, pending: Pending, out: Span[],
   blocked: Span[] | null = null): void {
-  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
   if (t === null) return;
-  const blocks = dig(r, "message", "content");
+  const blocks = pyDig(r, "message", "content");
   if (!Array.isArray(blocks)) return;
   for (const b of blocks) {
     if (!isDict(b)) continue;
-    const kind = get(b, "type");
+    const kind = pyGet(b, "type");
     if (kind === "tool_use") {
-      if (truthy(get(b, "id"))) {
-        pending.set(pyStr(get(b, "id")), [t, pyStr(or(get(b, "name"), ""))]);
+      if (pyTruthy(pyGet(b, "id"))) {
+        pending.set(pyStr(pyGet(b, "id")), [t, pyStr(pyOr(pyGet(b, "name"), ""))]);
       }
     } else if (kind === "tool_result") {
-      const id = pyStr(or(get(b, "tool_use_id"), ""));
+      const id = pyStr(pyOr(pyGet(b, "tool_use_id"), ""));
       const hit = pending.get(id);
       pending.delete(id);
       if (hit !== undefined && t > hit[0]) {
@@ -884,11 +810,11 @@ export const TASK_ENDED: ReadonlySet<unknown> =
  * Claude Code woke with it holds a plain user record whose content is the
  * notification itself. */
 export function notificationText(r: Rec): string {
-  const a = or(get(r, "attachment"), {});
-  let c: unknown = get(a, "type") === "queued_command" ? get(a, "prompt")
-    : get(r, "type") === "user" ? dig(r, "message", "content") : null;
+  const a = pyOr(pyGet(r, "attachment"), {});
+  let c: unknown = pyGet(a, "type") === "queued_command" ? pyGet(a, "prompt")
+    : pyGet(r, "type") === "user" ? pyDig(r, "message", "content") : null;
   if (Array.isArray(c)) {
-    c = c.filter(isDict).map((b) => pyStr(or(get(b, "text"), ""))).join("");
+    c = c.filter(isDict).map((b) => pyStr(pyOr(pyGet(b, "text"), ""))).join("");
   }
   return typeof c === "string" && c.includes("<task-notification>") ? c : "";
 }
@@ -907,18 +833,18 @@ const TASK_ID = /<task-id>([^<]+)<\/task-id>/;
  * thread ending it itself: TaskStop's result, or TaskOutput reading it
  * finished. */
 export function scanBackground(r: Rec, open: Map<string, string>): void {
-  const res = get(r, "toolUseResult");
+  const res = pyGet(r, "toolUseResult");
   if (isDict(res)) {
-    if (truthy(get(res, "backgroundTaskId"))) {
-      open.set(pyStr(get(res, "backgroundTaskId")), "bash");
-    } else if (truthy(get(res, "taskId")) && has(res, "timeoutMs")) {
-      open.set(pyStr(get(res, "taskId")), "monitor");
-    } else if (truthy(get(res, "task_id")) && has(res, "message")) {
-      open.delete(pyStr(get(res, "task_id")));
+    if (pyTruthy(pyGet(res, "backgroundTaskId"))) {
+      open.set(pyStr(pyGet(res, "backgroundTaskId")), "bash");
+    } else if (pyTruthy(pyGet(res, "taskId")) && pyHas(res, "timeoutMs")) {
+      open.set(pyStr(pyGet(res, "taskId")), "monitor");
+    } else if (pyTruthy(pyGet(res, "task_id")) && pyHas(res, "message")) {
+      open.delete(pyStr(pyGet(res, "task_id")));
     }
-    const task = get(res, "task");
-    if (isDict(task) && TASK_ENDED.has(get(task, "status"))) {
-      open.delete(pyStr(or(get(task, "task_id"), "")));
+    const task = pyGet(res, "task");
+    if (isDict(task) && TASK_ENDED.has(pyGet(task, "status"))) {
+      open.delete(pyStr(pyOr(pyGet(task, "task_id"), "")));
     }
   }
   const text = notificationText(r);
@@ -936,18 +862,18 @@ export function scanBackground(r: Rec, open: Map<string, string>): void {
  * toolUseResult names its agentId beside a terminal status.  The LATEST end
  * is kept, because an agent resumed by SendMessage finishes again. */
 export function scanAgentEnd(r: Rec, ends: Map<string, number>): void {
-  const res = get(r, "toolUseResult");
+  const res = pyGet(r, "toolUseResult");
   let aid: string;
-  if (isDict(res) && truthy(get(res, "agentId")) &&
-    TASK_ENDED.has(get(res, "status"))) {
-    aid = pyStr(get(res, "agentId"));
+  if (isDict(res) && pyTruthy(pyGet(res, "agentId")) &&
+    TASK_ENDED.has(pyGet(res, "status"))) {
+    aid = pyStr(pyGet(res, "agentId"));
   } else {
     const text = notificationText(r);
     const m = text.includes("<status>") ? TASK_ID.exec(text) : null;
     if (!m) return;
     aid = pyStrip(m[1]);
   }
-  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
   if (t !== null && t > (ends.get(aid) ?? -Infinity)) ends.set(aid, t);
 }
 
@@ -1093,14 +1019,14 @@ export const ETA_UNIT_S: Readonly<Record<string, number>> =
 export function etaReport(records: readonly unknown[]): number[] {
   let last: number[] = [];
   for (const r of records) {
-    if (!isDict(r) || get(r, "type") !== "assistant") continue;
-    const content = dig(r, "message", "content");
+    if (!isDict(r) || pyGet(r, "type") !== "assistant") continue;
+    const content = pyDig(r, "message", "content");
     if (!Array.isArray(content)) continue;
     for (const block of content) {
-      if (!isDict(block) || get(block, "type") !== "text") continue;
-      const hits = [...pyStr(or(get(block, "text"), "")).matchAll(ETA_LINE)]
+      if (!isDict(block) || pyGet(block, "type") !== "text") continue;
+      const hits = [...pyStr(pyOr(pyGet(block, "text"), "")).matchAll(ETA_LINE)]
         .map((m) => m[1]);
-      const epoch = tsEpoch(or(get(r, "timestamp"), ""));
+      const epoch = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
       if (hits.length && epoch !== null) {
         let secs = 0;
         for (const [, n, unit] of hits[hits.length - 1].matchAll(ETA_SPLIT)) {
@@ -1123,8 +1049,8 @@ export function etaFinish(eta: readonly number[]): number | null {
 
 /** True for an assistant record that ends its answer. */
 export function endsTurn(r: Rec): boolean {
-  return get(r, "type") === "assistant" &&
-    dig(r, "message", "stop_reason") === "end_turn";
+  return pyGet(r, "type") === "assistant" &&
+    pyDig(r, "message", "stop_reason") === "end_turn";
 }
 
 /** liveEta's state for one thread: the report, whether the answer is done,
@@ -1158,7 +1084,7 @@ export function liveEta(r: Rec, state: EtaState): void {
     state[3] = null;
   } else if (isWork(r)) {
     const report = etaReport([r]);
-    const mid = dig(r, "message", "id") ?? null;
+    const mid = pyDig(r, "message", "id") ?? null;
     if (report.length) {
       state[0] = report;
       state[3] = mid;
@@ -1167,7 +1093,7 @@ export function liveEta(r: Rec, state: EtaState): void {
       (report.length > 0 || (mid !== null && mid === state[3]));
     state[1] = endsTurn(r) && !parked;
   }
-  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
   if (t !== null) state[2] = t;
 }
 
@@ -1182,13 +1108,13 @@ export type SpanState = [number | null, number | null];
  * that ENDS its turn closes the span, and whatever comes next opens the
  * following one; a prompt still closes and reopens it. */
 export function agentSpan(r: Rec, state: SpanState, spans: Span[]): void {
-  const t = tsEpoch(or(get(r, "timestamp"), ""));
+  const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
   if (t === null) return;
   if (state[0] !== null && turnStartText(r) !== null) {
     closeAgentSpan(state, spans);
   }
   if (state[0] === null) {
-    const type = get(r, "type");
+    const type = pyGet(r, "type");
     if (type !== "user" && type !== "assistant") return;
     state[0] = state[1] = t;
   } else if (isWork(r)) {
@@ -1224,15 +1150,15 @@ export function closeAgentSpan(state: SpanState, spans: Span[]): void {
  * from before the field still segment.  The Python's docstring has the
  * measurements. */
 export function opensTurn(r: Rec): boolean {
-  const c = dig(r, "message", "content");
-  if (get(r, "type") !== "user" || get(r, "userType") !== "external" ||
-    truthy(get(r, "isCompactSummary")) || typeof c !== "string" ||
+  const c = pyDig(r, "message", "content");
+  if (pyGet(r, "type") !== "user" || pyGet(r, "userType") !== "external" ||
+    pyTruthy(pyGet(r, "isCompactSummary")) || typeof c !== "string" ||
     c.length === 0) {
     return false;
   }
-  if (get(r, "promptSource") === "system") return true;
-  const source = has(r, "promptSource") ? get(r, "promptSource") : "typed";
-  return !truthy(get(r, "isMeta")) && source === "typed" &&
+  if (pyGet(r, "promptSource") === "system") return true;
+  const source = pyHas(r, "promptSource") ? pyGet(r, "promptSource") : "typed";
+  return !pyTruthy(pyGet(r, "isMeta")) && source === "typed" &&
     !c.startsWith("<");
 }
 
@@ -1251,9 +1177,9 @@ export const QUEUE_DELIVERED: readonly unknown[] =
  * free to read it.  Typed-only: machinery riding the same queue opens with
  * '<', and is refused. */
 export function queuedText(r: Rec): string | null {
-  if (get(r, "type") !== "queue-operation") return null;
-  if (!QUEUE_DELIVERED.includes(get(r, "operation"))) return null;
-  const c = get(r, "content");
+  if (pyGet(r, "type") !== "queue-operation") return null;
+  if (!QUEUE_DELIVERED.includes(pyGet(r, "operation"))) return null;
+  const c = pyGet(r, "content");
   return typeof c === "string" && c.length > 0 && !c.startsWith("<")
     ? c : null;
 }
@@ -1262,8 +1188,8 @@ export function queuedText(r: Rec): string | null {
  * The running sum, never below zero, is how many messages are waiting for
  * the thread's next turn. */
 export function queueStep(r: Rec): number {
-  if (get(r, "type") !== "queue-operation") return 0;
-  const op = get(r, "operation");
+  if (pyGet(r, "type") !== "queue-operation") return 0;
+  const op = pyGet(r, "operation");
   return op === "enqueue" ? 1 : QUEUE_DELIVERED.includes(op) ? -1 : 0;
 }
 
@@ -1275,13 +1201,13 @@ export const COMPACT_OVERHEAD = 46000;
 /** True for the marker a compaction writes, /compact's or the automatic
  * one's: `type: system`, `subtype: compact_boundary`. */
 export function isCompaction(r: Rec): boolean {
-  return get(r, "type") === "system" &&
-    get(r, "subtype") === "compact_boundary";
+  return pyGet(r, "type") === "system" &&
+    pyGet(r, "subtype") === "compact_boundary";
 }
 
 /** The text of the prompt this record opens, or null if it opens none. */
 export function turnStartText(r: Rec): string | null {
-  if (opensTurn(r)) return dig(r, "message", "content") as string;
+  if (opensTurn(r)) return pyDig(r, "message", "content") as string;
   return queuedText(r);
 }
 
@@ -1293,9 +1219,9 @@ export function turnStartText(r: Rec): string | null {
  * they arrive as `type: user` with a LIST of blocks, where a person's
  * message is always a plain string. */
 export function isWork(r: Rec): boolean {
-  const t = get(r, "type");
+  const t = pyGet(r, "type");
   if (t === "assistant" || t === "system") return true;
-  if (t === "user") return Array.isArray(dig(r, "message", "content"));
+  if (t === "user") return Array.isArray(pyDig(r, "message", "content"));
   return false;
 }
 
@@ -1404,7 +1330,7 @@ export function agentRecordsOf(
     for (const [epoch, pid, model, fresh, cw, cr, o, k, pos] of got.recs) {
       if (seen.has(k)) continue;
       seen.add(k);
-      if (!(truthy(fresh) || truthy(cw) || truthy(cr) || truthy(o))) continue;
+      if (!(pyTruthy(fresh) || pyTruthy(cw) || pyTruthy(cr) || pyTruthy(o))) continue;
       out.push({ epoch, prompt_id: pid, model, fresh, cache_write: cw,
         cache_read: cr, out: o, request_id: k, path, offset: pos,
         model_s: 0.0, tool_s: 0.0 });
@@ -1425,7 +1351,7 @@ export function agentRecordsOf(
   // turns forward and a record that cannot be placed in time is handed to
   // the last turn rather than the first.
   const key = (a: AgentRec): [number, number] =>
-    [a.epoch === null ? 1 : 0, or(a.epoch, 0.0) as number];
+    [a.epoch === null ? 1 : 0, pyOr(a.epoch, 0.0) as number];
   return out.sort((a, b) => cmpTuple(key(a), key(b)));
 }
 
@@ -1481,19 +1407,19 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
     liveEta(r, etaState);
     agentSpan(r, spanState, work);
     scanToolSpans(r, pending, tools, waiting);
-    if (get(r, "type") === "user") {
-      pid = or(get(r, "promptId"), pid);
+    if (pyGet(r, "type") === "user") {
+      pid = pyOr(pyGet(r, "promptId"), pid);
       continue;
     }
-    if (get(r, "type") !== "assistant") continue;
-    const m = or(get(r, "message"), {});
-    const u = get(m, "usage");
-    if (!truthy(u)) continue;
-    recs.push([tsEpoch(or(get(r, "timestamp"), "")), pid, get(m, "model") ??
-      null, num0(get(u, "input_tokens")),
-      num0(get(u, "cache_creation_input_tokens")),
-      num0(get(u, "cache_read_input_tokens")), num0(get(u, "output_tokens")),
-      or(or(get(r, "requestId"), get(m, "id")), "?"), pos]);
+    if (pyGet(r, "type") !== "assistant") continue;
+    const m = pyOr(pyGet(r, "message"), {});
+    const u = pyGet(m, "usage");
+    if (!pyTruthy(u)) continue;
+    recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), pid, pyGet(m, "model") ??
+      null, num0(pyGet(u, "input_tokens")),
+      num0(pyGet(u, "cache_creation_input_tokens")),
+      num0(pyGet(u, "cache_read_input_tokens")), num0(pyGet(u, "output_tokens")),
+      pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), pos]);
   }
   closeAgentSpan(spanState, work);
   let eta: [number | null, number | null] | null = null;
@@ -1561,7 +1487,7 @@ export function _agentFileReadings(transcript: string,
     try {
       const d = JSON.parse(fs.readFileSync(cpath, "utf-8"));
       if (isDict(d) && d.version === cache.version) {
-        kept = (or(d.files, {}) as Record<string, Kept>);
+        kept = (pyOr(d.files, {}) as Record<string, Kept>);
       }
     } catch {
       // No cache yet, or one that will not parse: read everything.
@@ -1693,7 +1619,7 @@ export function agentLabel(path: string): [string, string] {
     const meta: unknown = JSON.parse(DECODE_FATAL_BOM.decode(
       fs.readFileSync(path.slice(0, -".jsonl".length) + ".meta.json")));
     if (isDict(meta)) {
-      name = pyStr(or(or(get(meta, "description"), get(meta, "agentType")),
+      name = pyStr(pyOr(pyOr(pyGet(meta, "description"), pyGet(meta, "agentType")),
         ""));
     }
   } catch {
@@ -1730,8 +1656,8 @@ export const INBOX_MARKS: readonly Uint8Array[] =
 /** The agent id a SendMessage result says its message is waiting for, or
  * "". */
 export function queuedSend(r: Rec): string {
-  const res = get(r, "toolUseResult");
-  const msg = isDict(res) ? get(res, "message") : null;
+  const res = pyGet(r, "toolUseResult");
+  const msg = isDict(res) ? pyGet(res, "message") : null;
   const m = typeof msg === "string" ? SEND_QUEUED_RE.exec(msg) : null;
   return m ? m[1] : "";
 }
@@ -1743,15 +1669,15 @@ export function queuedSend(r: Rec): string {
  * the main thread and `peer` for another agent.  A peer message marked
  * `handback` is a subagent's final report, not a send. */
 export function inboxDelivery(r: Rec): boolean {
-  const a = get(r, "attachment");
+  const a = pyGet(r, "attachment");
   let o: unknown;
-  if (isDict(a) && get(a, "type") === "queued_command") o = get(a, "origin");
-  else if (get(r, "type") === "user") o = get(r, "origin");
+  if (isDict(a) && pyGet(a, "type") === "queued_command") o = pyGet(a, "origin");
+  else if (pyGet(r, "type") === "user") o = pyGet(r, "origin");
   else return false;
   if (!isDict(o)) return false;
-  const kind = get(o, "kind");
+  const kind = pyGet(o, "kind");
   return kind === "coordinator" ||
-    (kind === "peer" && !truthy(get(o, "handback")));
+    (kind === "peer" && !pyTruthy(pyGet(o, "handback")));
 }
 
 /** Where `mark` next occurs in `data` at or after `from`, else -1. */
@@ -1805,7 +1731,7 @@ export function markedRecords(path: string,
 export function inboxSends(path: string): [number, string][] {
   const out: [number, string][] = [];
   for (const r of markedRecords(path, [SEND_QUEUED_MARK])) {
-    const t = tsEpoch(or(get(r, "timestamp"), "")), target = queuedSend(r);
+    const t = tsEpoch(pyOr(pyGet(r, "timestamp"), "")), target = queuedSend(r);
     if (t !== null && target) out.push([t, target]);
   }
   return out;
@@ -1814,7 +1740,7 @@ export function inboxSends(path: string): [number, string][] {
 /** The epoch of each SendMessage delivery in this agent's file. */
 export function inboxDeliveries(path: string): number[] {
   return markedRecords(path, INBOX_MARKS).filter(inboxDelivery)
-    .map((r) => tsEpoch(or(get(r, "timestamp"), "")))
+    .map((r) => tsEpoch(pyOr(pyGet(r, "timestamp"), "")))
     .filter((t): t is number => t !== null);
 }
 
@@ -1883,11 +1809,11 @@ export function transcriptOf(records: readonly Rec[],
   const reqs = _dedupeUsage(records);
   let fresh = 0, cwrite = 0, cread = 0, down = 0;
   for (const r of reqs) {
-    const u = dig(r, "message", "usage");
-    fresh += num0(get(u, "input_tokens"));
-    cwrite += num0(get(u, "cache_creation_input_tokens"));
-    cread += num0(get(u, "cache_read_input_tokens"));
-    down += num0(get(u, "output_tokens"));
+    const u = pyDig(r, "message", "usage");
+    fresh += num0(pyGet(u, "input_tokens"));
+    cwrite += num0(pyGet(u, "cache_creation_input_tokens"));
+    cread += num0(pyGet(u, "cache_read_input_tokens"));
+    down += num0(pyGet(u, "output_tokens"));
   }
   for (const a of agents) {
     fresh += a.fresh;
@@ -1903,7 +1829,7 @@ export function transcriptOf(records: readonly Rec[],
   let ctx = 0, firstCtx = 0;
   let ctx_est = false;
   for (const r of records) {
-    if (get(r, "isSidechain") === true) continue;
+    if (pyGet(r, "isSidechain") === true) continue;
     if (isCompaction(r)) {
       // A compaction writes no usage record, so until the next request the
       // last reading is the size from BEFORE it.  postTokens is the
@@ -1911,7 +1837,7 @@ export function transcriptOf(records: readonly Rec[],
       // prompt, the tools and the files re-attached after it, which the
       // session's first reading carries too, or COMPACT_OVERHEAD without
       // one.  The Python's comment has the measurements.
-      const post = num0(dig(r, "compactMetadata", "postTokens"));
+      const post = num0(pyDig(r, "compactMetadata", "postTokens"));
       if (post) {
         ctx = post + (firstCtx || COMPACT_OVERHEAD);
         ctx_est = true;
@@ -1919,13 +1845,13 @@ export function transcriptOf(records: readonly Rec[],
       continue;
     }
     if (!kept.has(r)) continue;
-    const u = dig(r, "message", "usage");
+    const u = pyDig(r, "message", "usage");
     // Skip a request whose usage is all zero: that is how an interrupted
     // request is recorded, and letting it win the last-write would blank
     // the 🧠 cell for the rest of the session.
-    const c = num0(get(u, "input_tokens")) +
-      num0(get(u, "cache_creation_input_tokens")) +
-      num0(get(u, "cache_read_input_tokens"));
+    const c = num0(pyGet(u, "input_tokens")) +
+      num0(pyGet(u, "cache_creation_input_tokens")) +
+      num0(pyGet(u, "cache_read_input_tokens"));
     if (c) {
       ctx = c;
       ctx_est = false;
@@ -1936,20 +1862,20 @@ export function transcriptOf(records: readonly Rec[],
   let user_ts: unknown = "", user_text = "", asst_ts: unknown = "";
   let asst_text: unknown = "";
   for (const r of records) {
-    const c = dig(r, "message", "content");
-    if (get(r, "type") === "user" && get(r, "userType") === "external" &&
+    const c = pyDig(r, "message", "content");
+    if (pyGet(r, "type") === "user" && pyGet(r, "userType") === "external" &&
       typeof c === "string" && c.length > 0 && !c.startsWith("<")) {
-      user_ts = or(get(r, "timestamp"), "");
+      user_ts = pyOr(pyGet(r, "timestamp"), "");
       user_text = c;
     }
-    if (get(r, "type") === "assistant") {
-      const blocks = or(dig(r, "message", "content"), []);
+    if (pyGet(r, "type") === "assistant") {
+      const blocks = pyOr(pyDig(r, "message", "content"), []);
       if (Array.isArray(blocks)) {
         const texts = blocks.filter((b) => isDict(b) &&
-          get(b, "type") === "text");
+          pyGet(b, "type") === "text");
         if (texts.length) {
-          asst_text = or(get(texts[texts.length - 1], "text"), "");
-          asst_ts = or(get(r, "timestamp"), "");
+          asst_text = pyOr(pyGet(texts[texts.length - 1], "text"), "");
+          asst_ts = pyOr(pyGet(r, "timestamp"), "");
         }
       }
     }
@@ -1974,22 +1900,22 @@ export function transcriptOf(records: readonly Rec[],
     queued = Math.max(0, queued + queueStep(r));
     compactions += isCompaction(r) ? 1 : 0;
     scanToolSpans(r, pending, tools, blocked);
-    if (get(r, "isSidechain") !== true) {
+    if (pyGet(r, "isSidechain") !== true) {
       liveEta(r, etaState);
       scanBackground(r, background);
     }
-    const t = tsEpoch(or(get(r, "timestamp"), ""));
+    const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
     if (t === null) continue;
     if (first === null) first = t;
-    if (get(r, "isSidechain") !== true) {
+    if (pyGet(r, "isSidechain") !== true) {
       last_seen = t;
       // The answer ending opens the idle; the next request or tool
       // result, or a prompt, closes it.  Not any work record: Claude Code
       // writes system records after the end.
       if (endsTurn(r)) idle_at = t;
-      else if (get(r, "type") === "assistant" || turnStartText(r) !== null ||
-        (get(r, "type") === "user" &&
-          Array.isArray(dig(r, "message", "content")))) {
+      else if (pyGet(r, "type") === "assistant" || turnStartText(r) !== null ||
+        (pyGet(r, "type") === "user" &&
+          Array.isArray(pyDig(r, "message", "content")))) {
         idle_at = 0.0;
       }
     }
@@ -2005,7 +1931,7 @@ export function transcriptOf(records: readonly Rec[],
   // the turn still open, since an older one left unanswered was cut off.
   const running: number[] = [], waits: number[] = [];
   for (const [t, name] of pending.values()) {
-    if (!truthy(openAt) || t < openAt!) continue;
+    if (!pyTruthy(openAt) || t < openAt!) continue;
     (WAITING_TOOLS.has(name) ? waits : running).push(t);
   }
   if (now !== null) openToolSpans(pending, now, tools, blocked);
@@ -2016,7 +1942,7 @@ export function transcriptOf(records: readonly Rec[],
     busy_s: busy,
     // The first STAMPED record, not records[0]: a transcript can open with
     // an unstamped one.
-    start_s: or(first, 0.0) as number,
+    start_s: pyOr(first, 0.0) as number,
     tok_up: Math.trunc(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread),
     tok_down: down,
     // -1 is a sentinel meaning "no usage data at all", which renders as no
@@ -2030,7 +1956,7 @@ export function transcriptOf(records: readonly Rec[],
     asst_text: squash(pyStr(asst_text)),
     tool_s: tool,
     blocked_s,
-    turn_s: or(openAt, 0.0) as number,
+    turn_s: pyOr(openAt, 0.0) as number,
     eta: etaState[1] ? [] : etaState[0],
     agent_etas: [...agent_etas],
     queued,
@@ -2108,9 +2034,9 @@ export function _newTurn(ts: string, text: string): TurnBuild {
  * the first tool result instead of from its opener.  A bool is not an
  * index, though Python's int would take it. */
 export function _stampTurnId(cur: TurnBuild, r: Rec): void {
-  const pid = get(r, "promptId");
-  if (truthy(pid) && !cur.pid) cur.pid = pyStr(pid);
-  const idx = dig(r, "turnPosition", "turnIndex");
+  const pid = pyGet(r, "promptId");
+  if (pyTruthy(pid) && !cur.pid) cur.pid = pyStr(pid);
+  const idx = pyDig(r, "turnPosition", "turnIndex");
   if (cur.tidx === null && typeof idx === "number" && Number.isInteger(idx)) {
     cur.tidx = idx;
   }
@@ -2149,14 +2075,14 @@ export function _foldAgents(turns: TurnBuild[],
   held: Map<string, number> | null = null): Map<string, TurnBuild> {
   const late = new Map<string, TurnBuild>();
   if (agents.length === 0 || turns.length === 0) return late;
-  const stamped = turns.filter((t) => t.t0 !== null && !truthy(t.compact));
+  const stamped = turns.filter((t) => t.t0 !== null && !pyTruthy(t.compact));
   // The turn the 🎤 row will be about: the same selection render_cost_line
   // and _with_shares make.  `n` is main-thread calls, so folding agents in
   // cannot move it.
   let prompt: TurnBuild | null = null;
-  for (const t of turns) if (t.n && !truthy(t.compact)) prompt = t;
+  for (const t of turns) if (t.n && !pyTruthy(t.compact)) prompt = t;
   for (const a of agents) {
-    let cur = truthy(a.prompt_id) ? byPid.get(a.prompt_id) ?? null : null;
+    let cur = pyTruthy(a.prompt_id) ? byPid.get(a.prompt_id) ?? null : null;
     if (cur === null) {
       for (let i = stamped.length - 1; i >= 0; i--) {
         if (a.epoch === null || stamped[i].t0! <= a.epoch) {
@@ -2240,7 +2166,7 @@ export function turnsOf(records: readonly Rec[],
     // count the same calls by the same rule.  A record before the first
     // prompt is still scanned, and its own spans go nowhere.
     scanToolSpans(r, pending, cur ? cur.tools : [], cur ? cur.waits : []);
-    const pid = get(r, "promptId");
+    const pid = pyGet(r, "promptId");
     const text = turnStartText(r);
     if (text !== null) {
       // A queued message can be recorded BOTH ways — once typed, once
@@ -2248,61 +2174,61 @@ export function turnsOf(records: readonly Rec[],
       // replacing it in place keeps one turn, with the later timestamp.
       if (cur !== null && cur.n === 0 && cur.t1 === null &&
         cur.text === text) {
-        cur.ts = or(get(r, "timestamp"), cur.ts) as string;
-        cur.t0 = tsEpoch(or(get(r, "timestamp"), ""));
+        cur.ts = pyOr(pyGet(r, "timestamp"), cur.ts) as string;
+        cur.t0 = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
       } else {
-        cur = _newTurn(pyStr(or(get(r, "timestamp"), "")), text);
+        cur = _newTurn(pyStr(pyOr(pyGet(r, "timestamp"), "")), text);
         turns.push(cur);
       }
       _stampTurnId(cur, r);
-      if (truthy(pid)) byPid.set(pid, cur);
+      if (pyTruthy(pid)) byPid.set(pid, cur);
       continue;
     }
     // Every user record of a turn carries the turn's promptId, so the index
     // is built from all of them, not from the opener alone.
-    if (truthy(pid) && cur !== null && !truthy(cur.compact)) {
+    if (pyTruthy(pid) && cur !== null && !pyTruthy(cur.compact)) {
       if (!byPid.has(pid)) byPid.set(pid, cur);
       _stampTurnId(cur, r);
     }
-    if (get(r, "subtype") === "compact_boundary") {
+    if (pyGet(r, "subtype") === "compact_boundary") {
       // A compaction leaves NO usage record anywhere; its boundary record's
       // preTokens is what was fed to the summariser, charged at the
       // cache-read rate, and its durationMs how long it took.  An AUTO
       // compaction lands inside whatever turn was running, so it gets a
       // turn of its own unless the one open is the /compact that asked for
       // it.  The Python's comment has the measurements.
-      const md = or(get(r, "compactMetadata"), {});
+      const md = pyOr(pyGet(r, "compactMetadata"), {});
       if (cur === null || cur.n || pyStrip(cur.text) !== "/compact") {
-        cur = _newTurn(pyStr(or(get(r, "timestamp"), "")),
-          `/compact (${pyStr(or(get(md, "trigger"), "auto"))})`);
+        cur = _newTurn(pyStr(pyOr(pyGet(r, "timestamp"), "")),
+          `/compact (${pyStr(pyOr(pyGet(md, "trigger"), "auto"))})`);
         turns.push(cur);
       }
-      cur.cr = num0(get(md, "preTokens"));
+      cur.cr = num0(pyGet(md, "preTokens"));
       cur.usd[2] = cur.cr * P_CR;
       cur.n = 1;
-      cur.dur = num0(get(md, "durationMs")) / 1000.0;
+      cur.dur = num0(pyGet(md, "durationMs")) / 1000.0;
       cur.compact = true;
-    } else if (get(r, "subtype") === "stop_hook_summary" &&
-      !truthy(get(r, "isSidechain"))) {
-      lastStop = or(tsEpoch(or(get(r, "timestamp"), "")), lastStop);
+    } else if (pyGet(r, "subtype") === "stop_hook_summary" &&
+      !pyTruthy(pyGet(r, "isSidechain"))) {
+      lastStop = pyOr(tsEpoch(pyOr(pyGet(r, "timestamp"), "")), lastStop);
       // The transcript's own record that a Stop hook RAN: the only mark in
       // the file of where a previous cost line drew its window.
       settled = turns.length;
-    } else if (truthy(get(r, "isCompactSummary")) && cur !== null &&
-      truthy(cur.compact)) {
+    } else if (pyTruthy(pyGet(r, "isCompactSummary")) && cur !== null &&
+      pyTruthy(cur.compact)) {
       // What the summariser WROTE, estimated from the text: the only
       // estimate on either row.
-      const c = dig(r, "message", "content");
+      const c = pyDig(r, "message", "content");
       if (typeof c === "string") {
         cur.out = Math.trunc(pyLen(c) / SUMMARY_CPT);
         cur.usd[1] = cur.out * P_OUT;
       }
-    } else if (get(r, "type") === "assistant" &&
-      truthy(dig(r, "message", "usage"))) {
-      const k = or(get(r, "requestId"), dig(r, "message", "id")) ?? null;
+    } else if (pyGet(r, "type") === "assistant" &&
+      pyTruthy(pyDig(r, "message", "usage"))) {
+      const k = pyOr(pyGet(r, "requestId"), pyDig(r, "message", "id")) ?? null;
       if (seen.has(k) || cur === null) continue;
       seen.add(k);
-      const u = dig(r, "message", "usage");
+      const u = pyDig(r, "message", "usage");
       const f = numGet(u, "input_tokens");
       const cw = numGet(u, "cache_creation_input_tokens");
       const cr = numGet(u, "cache_read_input_tokens");
@@ -2314,9 +2240,9 @@ export function turnsOf(records: readonly Rec[],
       cur.n += 1;
       // Priced here, per record, at the record's own model: `parts` carries
       // the same figure, so the parts total the whole EXACTLY.
-      _addUsd(cur, tsEpoch(or(get(r, "timestamp"), "")),
-        dig(r, "message", "model") ?? null, f, cw, cr, o);
-      if (!truthy(get(r, "isSidechain"))) {
+      _addUsd(cur, tsEpoch(pyOr(pyGet(r, "timestamp"), "")),
+        pyDig(r, "message", "model") ?? null, f, cw, cr, o);
+      if (!pyTruthy(pyGet(r, "isSidechain"))) {
         // LAST-WRITE-WINS, but only over readings that exist: an
         // interrupted request is written with every usage field zero.
         const c = f + cw + cr;
@@ -2326,7 +2252,7 @@ export function turnsOf(records: readonly Rec[],
     // Every stamped record of the ANSWER moves the turn's end, not just the
     // billed ones; isWork keeps the user's own time out of it.
     if (cur !== null && isWork(r)) {
-      const t = tsEpoch(or(get(r, "timestamp"), ""));
+      const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
       if (t !== null) cur.t1 = t;
     }
   }
@@ -2343,20 +2269,20 @@ export function turnsOf(records: readonly Rec[],
     const dctx = prev !== null && t.ctx ? t.ctx - prev.ctx : null;
     // A compaction's time is its durationMs, the summariser's, which runs
     // no tool.
-    const [tool_s, blocked_s] = truthy(t.compact) ? [0.0, 0.0]
+    const [tool_s, blocked_s] = pyTruthy(t.compact) ? [0.0, 0.0]
       : turnClock(t.tools, t.waits, t.t0, t.t1);
     out.push(turn({
       ts: t.ts, text: t.text, fresh: t.fresh, cache_write: t.cw,
       cache_read: t.cr, out: t.out, ctx: t.ctx, calls: t.n, dctx,
       usd_in: t.usd[0], usd_out: t.usd[1], usd_cr: t.usd[2], usd_cw: t.usd[3],
-      compact: truthy(t.compact), reported: out.length < settled,
+      compact: pyTruthy(t.compact), reported: out.length < settled,
       parts: [...t.parts], agent_calls: t.an, agent_ids: [...t.aids],
-      dur_s: truthy(t.dur) ? t.dur!
-        : truthy(t.t0) && truthy(t.t1) && t.t1! > t.t0! ? t.t1! - t.t0!
+      dur_s: pyTruthy(t.dur) ? t.dur!
+        : pyTruthy(t.t0) && pyTruthy(t.t1) && t.t1! > t.t0! ? t.t1! - t.t0!
         : 0.0,
       tool_s, blocked_s, agent_model_s: t.am, agent_tool_s: t.at,
-      prompt_id: truthy(t.compact) ? "" : t.pid,
-      turn_index: truthy(t.compact) ? null : t.tidx,
+      prompt_id: pyTruthy(t.compact) ? "" : t.pid,
+      turn_index: pyTruthy(t.compact) ? null : t.tidx,
     }));
     if (t.ctx) prev = t;
   }
