@@ -496,7 +496,9 @@ COMMANDS = [
      "head -c 1100000 /dev/zero | tr '\\0' ' '\n", True, {}),
     ("ignores stdin", "#!/bin/sh\nprintf '{\"schema_version\":1,"
      "\"windows\":[{\"id\":\"x\",\"used_percent\":2}]}'\n", True, {}),
-    ("timeout", "#!/bin/sh\ncat > \"$0.stdin\"\nsleep 3\n"
+    # Records no stdin: under load the shell may not reach `cat` inside the
+    # half second, which made what it recorded depend on the machine.
+    ("timeout", "#!/bin/sh\nsleep 3\n"
      "printf '{\"schema_version\":1}'\n", True, {}),
 ]
 

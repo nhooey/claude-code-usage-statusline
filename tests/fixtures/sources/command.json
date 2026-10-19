@@ -417,8 +417,8 @@
   "executable": true,
   "expected": {},
   "name": "timeout",
-  "script": "#!/bin/sh\ncat > \"$0.stdin\"\nsleep 3\nprintf '{\"schema_version\":1}'\n",
-  "stdin": "{}",
+  "script": "#!/bin/sh\nsleep 3\nprintf '{\"schema_version\":1}'\n",
+  "stdin": null,
   "timeout": 0.5
  },
  {
