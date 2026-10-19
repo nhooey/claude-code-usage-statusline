@@ -457,8 +457,11 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   const plain = accountText(st, fig, hide, home);
   if (!plain) return "";
   const pill = MODE_PILLS[mode ?? ""] ?? "";
+  // The pill joins what follows with " · ", but its own "(shift+tab to
+  // cycle)" with one space (seen live 2026-10-20).
   const pillW = pill && !hint.includes(pill)
-    ? visWidth(pill + FOOTER_JOIN, st.widths) : 0;
+    ? visWidth(pill + (hint.includes(MODE_CYCLE) ? " " : FOOTER_JOIN),
+      st.widths) : 0;
   const room = cols - RIGHT_EDGE - 2 - pillW - visWidth(hint, st.widths) -
     visWidth(FOOTER_JOIN, st.widths);
   // The workspace, the 💳 account and 📅 🕐, FOOTER_GAP columns apart,
@@ -495,6 +498,9 @@ export function footerParts(text: string): string[] {
   out.push(text.slice(from));
   return out.map((p) => p.trim()).filter((p) => p);
 }
+
+/** The help that follows the mode's pill, joined to it by a space. */
+export const MODE_CYCLE = "(shift+tab to cycle)";
 
 /** What Claude Code puts between its footer line and a hook's tail. */
 export const FOOTER_JOIN = " · ";

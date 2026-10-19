@@ -191,6 +191,12 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   assert.equal(2 + visWidth(MODE_PILLS.auto + FOOTER_JOIN + bare, st.widths) +
     visWidth(FOOTER_JOIN, st.widths) + visWidth(auto, st.widths),
   240 - RIGHT_EDGE);
+  // Before "(shift+tab to cycle)" the pill is drawn with one space.
+  const cyc = "-- INSERT -- (shift+tab to cycle)";
+  const cycTail = inZone(fig, () => footerTail(st, fig, [], cyc, 240, "auto"));
+  assert.equal(2 + visWidth("-- INSERT -- " + MODE_PILLS.auto +
+    " (shift+tab to cycle)", st.widths) + visWidth(FOOTER_JOIN, st.widths) +
+    visWidth(cycTail, st.widths), 240 - RIGHT_EDGE);
   assert.equal(tail.trimStart(), tail);
   // Too narrow a row: the gaps down to one, and the " · " alone parts the
   // two.
