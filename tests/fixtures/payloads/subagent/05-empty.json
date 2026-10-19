@@ -1,0 +1,7 @@
+{
+  "columns": 160,
+  "cwd": "${SCRATCH}/repo",
+  "session_id": "subagent-05-empty",
+  "tasks": [],
+  "transcript_path": "${FIXTURES}/transcripts/subagent/05-empty.jsonl"
+}

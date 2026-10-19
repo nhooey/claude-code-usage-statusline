@@ -1902,6 +1902,382 @@
       "id": "subdec-tight-01@196",
       "input": "transcripts/cost/01-plain.jsonl",
       "suite": "cost"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 160,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-mixed@160",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-mixed@120",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-mixed@92",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 60,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-mixed@60",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "01-mixed@none",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-parked@220",
+      "input": "payloads/subagent/02-parked.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 160,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-parked@160",
+      "input": "payloads/subagent/02-parked.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-parked@120",
+      "input": "payloads/subagent/02-parked.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-parked@92",
+      "input": "payloads/subagent/02-parked.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 60,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-parked@60",
+      "input": "payloads/subagent/02-parked.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "02-parked@none",
+      "input": "payloads/subagent/02-parked.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-tree@220",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 160,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-tree@160",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-tree@120",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-tree@92",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 60,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-tree@60",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "03-tree@none",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-bare@220",
+      "input": "payloads/subagent/04-bare.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 160,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-bare@160",
+      "input": "payloads/subagent/04-bare.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-bare@120",
+      "input": "payloads/subagent/04-bare.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 92,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-bare@92",
+      "input": "payloads/subagent/04-bare.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 60,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-bare@60",
+      "input": "payloads/subagent/04-bare.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "04-bare@none",
+      "input": "payloads/subagent/04-bare.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 0,
+      "env": "app-41-63",
+      "flags": [],
+      "id": "05-empty@none",
+      "input": "payloads/subagent/05-empty.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "tmux",
+      "flags": [],
+      "id": "tmux-01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "iterm",
+      "flags": [],
+      "id": "iterm-01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "unknown-term",
+      "flags": [],
+      "id": "unknown-term-01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-01-mixed@120",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-01-mixed@120",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "tmux",
+      "flags": [],
+      "id": "tmux-01-mixed@120",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "iterm",
+      "flags": [],
+      "id": "iterm-01-mixed@120",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "unknown-term",
+      "flags": [],
+      "id": "unknown-term-01-mixed@120",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-03-tree@220",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "app-41-63",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-03-tree@220",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "tmux",
+      "flags": [],
+      "id": "tmux-03-tree@220",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "iterm",
+      "flags": [],
+      "id": "iterm-03-tree@220",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "unknown-term",
+      "flags": [],
+      "id": "unknown-term-03-tree@220",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [
+        "--no-mark-spacing"
+      ],
+      "id": "tight-03-tree@120",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "app-41-63",
+      "flags": [
+        "--subscript-decimals"
+      ],
+      "id": "subdec-03-tree@120",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "tmux",
+      "flags": [],
+      "id": "tmux-03-tree@120",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "iterm",
+      "flags": [],
+      "id": "iterm-03-tree@120",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 120,
+      "env": "unknown-term",
+      "flags": [],
+      "id": "unknown-term-03-tree@120",
+      "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
     }
   ]
 }

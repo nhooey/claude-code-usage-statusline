@@ -63,15 +63,17 @@ export function projectName(git: Git, projectDir: string): string {
 // ════════════════════════════════════════════════════════════════════════════
 
 /** The ▴/▾ billable-equivalent token totals, each half dimmed on its own
- * figure.  `downW` is the ▾ field's width. */
-export function renderTokens(st: Settings, up: number | null, down: number,
+ * figure.  `downW` is the ▾ field's width.  The panel hands over its
+ * usage's fields as it read them, so `up` may be missing as well as None. */
+export function renderTokens(st: Settings, up: unknown, down: unknown,
   downW: number = VAL2_W): Span[] {
-  if (up === null) return [];
+  if (up === null || up === undefined) return [];
+  const u = up as number, dn = down as number;
   return [span(st.sTok),
-    span(padVal(st, VAL_W, E_UP + padVal(st, 4, humanize(st, up)), true),
-      "F_TUP", magDim(up, MAG_TOK)),
-    span(padVal(st, downW, E_DOWN + padVal(st, 4, humanize(st, down))),
-      "F_TDN", magDim(down, MAG_TOK))];
+    span(padVal(st, VAL_W, E_UP + padVal(st, 4, humanize(st, u)), true),
+      "F_TUP", magDim(u, MAG_TOK)),
+    span(padVal(st, downW, E_DOWN + padVal(st, 4, humanize(st, dn))),
+      "F_TDN", magDim(dn, MAG_TOK))];
 }
 
 /** What the main thread is doing, as the Doing mark and the epoch it
@@ -123,15 +125,15 @@ export function renderCtx(st: Settings, ctxPct: number | null,
     paint(style, padVal(st, pctW, tilde + pyIntStr(ctxPct) + E_PCT))];
 }
 
-/** The session cost, "💰115 ".  `mark` defaults to S_COST, which is the
- * settings' and so cannot be a default here: null stands for it. */
+/** The session cost, "💰115 ", under `mark`, the settings' S_COST unless
+ * one is given. */
 export function renderCost(st: Settings, costUsd: string,
-  mark: string | null = null): Span[] {
+  mark: string = st.sCost): Span[] {
   if (!costUsd || costUsd === "null") return [];
   const c = pyFloat(costUsd);
   // json reads NaN and 1e400 as floats; the Python drops both.
   if (c === null || !Number.isFinite(c)) return [];
-  return [span(mark ?? st.sCost),
+  return [span(mark),
     span(padVal(st, 4, moneyFig(st, c)), "F_YEL", magDim(c, MAG_COST))];
 }
 
@@ -345,10 +347,10 @@ export type EtaReading = null | readonly [] | readonly [number, number];
  * `eta` is (epoch, seconds left), or null for no transcript.  `startMs`
  * is whatever the task record held, read as float() reads it: what it
  * cannot read is no start. */
-export function etaReading(eta: readonly number[] | null,
+export function etaReading(eta: readonly number[] | null | undefined,
   startMs: unknown, now: number, status = "running",
   end: number | null = null): EtaReading {
-  if (eta === null) return null;
+  if (eta === null || eta === undefined) return null;
   if (!eta.length) return [];
   let t = now;
   if (end !== null && (status === "killed" || status === "failed")) {
@@ -370,16 +372,26 @@ export function etaReading(eta: readonly number[] | null,
 // line's ⛳ open; see the Python.
 export const ETA_LIVE_S = 1800.0;
 
-/** `own` ETA, pushed out to the latest of the descendants' `finishes`. */
-export function inheritEta(own: readonly number[],
+/** max(xs) as Python's: the first of equals, and a NaN only where it
+ * comes first.  xs not empty. */
+function pyMax(xs: readonly number[]): number {
+  let m = xs[0];
+  for (const x of xs.slice(1)) if (x > m) m = x;
+  return m;
+}
+
+/** `own` ETA, pushed out to the latest of the descendants' `finishes`.
+ * The panel's `own` is null for an agent with no transcript, which comes
+ * back as it went in. */
+export function inheritEta<E extends readonly number[] | null>(own: E,
   finishes: readonly (number | null)[],
-  startS: number | null): readonly number[] {
+  startS: number | null): E | readonly number[] {
   const ends = finishes.filter((f): f is number => f !== null);
-  const mine = own.length ? etaFinish(own) : null;
+  const mine = own && own.length ? etaFinish(own) : null;
   if (mine !== null) ends.push(mine);
   if (!ends.length || (mine !== null && ends.length === 1)) return own;
-  const at = startS ? startS : (own.length ? own[0] : Math.max(...ends));
-  return [at, Math.max(...ends) - at];
+  const at = startS ? startS : (own && own.length ? own[0] : pyMax(ends));
+  return [at, pyMax(ends) - at];
 }
 
 /** ⛳ and the time left in a field of `w`: "?" with no live estimate, an

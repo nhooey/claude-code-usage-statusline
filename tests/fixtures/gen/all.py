@@ -18,6 +18,8 @@ import calib  # noqa: E402
 import cases  # noqa: E402
 import cost  # noqa: E402
 import formatting  # noqa: E402
+import panel  # noqa: E402
+import receipt  # noqa: E402
 import records  # noqa: E402
 import render  # noqa: E402
 import sources  # noqa: E402
@@ -29,11 +31,16 @@ for d in ("env", "payloads", "transcripts"):
     shutil.rmtree(os.path.join(ROOT, d), ignore_errors=True)
 status.main(ROOT)
 cost.main(ROOT)
+panel.main(ROOT)
 cases.main(ROOT)
 # Under 3.9 as well: 3.12's sum() of floats rounds differently.
 calib.main()
 formatting.main()
 render.main()
+# After cases.json, whose subagent cases it runs to capture the corpus.
+panel.main_panel()
+# Draws the committed cost figures documents, which run-cases.py writes.
+receipt.main()
 records.main()
 # Last, since it sets TZ for the process.  Under /usr/bin/python3: its
 # expected epochs are 3.9's fromisoformat, quirks included.

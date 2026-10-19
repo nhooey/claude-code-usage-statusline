@@ -1,0 +1,2 @@
+{"isSidechain": true, "message": {"content": "do a thing"}, "promptId": "p1", "timestamp": "2026-08-16T01:17:30Z", "type": "user", "userType": "external"}
+{"effort": "high", "isSidechain": true, "message": {"content": [{"text": "fin", "type": "text"}], "id": "g2a", "model": "claude-opus-5", "stop_reason": "end_turn", "usage": {"cache_creation_input_tokens": 2000, "cache_read_input_tokens": 30000, "input_tokens": 100, "output_tokens": 400}}, "requestId": "g2a", "timestamp": "2026-08-16T01:20:00Z", "type": "assistant"}

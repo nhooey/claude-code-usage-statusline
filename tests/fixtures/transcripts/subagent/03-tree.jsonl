@@ -1,0 +1,5 @@
+{"message": {"content": "go"}, "promptSource": "typed", "timestamp": "2026-08-16T00:43:20Z", "type": "user", "userType": "external"}
+{"isSidechain": true, "message": {"content": "go"}, "promptId": "p1", "timestamp": "2026-08-16T01:00:00Z", "type": "user", "userType": "external"}
+{"message": {"content": [{"tool_use_id": "sm100t2", "type": "tool_result"}]}, "timestamp": "2026-08-16T02:21:40Z", "toolUseResult": {"message": "Message queued for delivery to t2 at its next tool round.", "success": true}, "type": "user"}
+{"message": {"content": [{"tool_use_id": "sm90t3", "type": "tool_result"}]}, "timestamp": "2026-08-16T02:21:50Z", "toolUseResult": {"message": "Message queued for delivery to t3 at its next tool round.", "success": true}, "type": "user"}
+{"message": {"content": [{"tool_use_id": "sm80t3", "type": "tool_result"}]}, "timestamp": "2026-08-16T02:22:00Z", "toolUseResult": {"message": "Message queued for delivery to t3 at its next tool round.", "success": true}, "type": "user"}
