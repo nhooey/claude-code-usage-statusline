@@ -146,9 +146,11 @@ function shareGone(patterns: readonly string[]): boolean {
   return GRID_SCOPES.every((s) => hidden(patterns, s + ".context.share"));
 }
 
-/** The columns 🧠's size takes without its share: the mark, then three
- * digits and a unit, "🧠316k", with no blank between (asked 2026-10-19). */
-const CTX_SIZE_W = 4;
+/** The columns 🧠's size takes without its share: the mark, then a sign
+ * column, three for the digits and one for the unit, "🧠+316k", "🧠 1.2M",
+ * so the relative and absolute sizes stack from the band down to the
+ * subagents (asked 2026-10-20). */
+const CTX_SIZE_W = 5;
 
 /** A column's width under `patterns`: 🧠's, where every scope hides its
  * share, only its mark and CTX_SIZE_W (asked 2026-10-19). */
@@ -159,25 +161,20 @@ function colWidth(st: Settings, c: { key: string; width: number | string },
     : cellWidth(st, c.width);
 }
 
-/** 🧠's size squeezed into `room`: an estimate's "~" goes, then a
- * figure's one decimal, rounded half up, "+5.6k" to "+6k", and a growth's
- * "+" only where it still does not fit, "+316k" to "316k" (the "+" kept
- * where it fits, asked 2026-10-20). */
-function squeeze(st: Settings, text: string, room: number): string {
-  let t = text;
-  if (visWidth(t, st.widths) > room) t = t.replace(/^~/, "");
-  const m = /^([+-]?)(\d+\.\d)(\D*)$/.exec(t);
-  if (visWidth(t, st.widths) > room && m) {
-    t = m[1] + String(Math.floor(Number(m[2]) + 0.5)) + m[3];
-  }
-  if (visWidth(t, st.widths) > room) t = t.replace(/^\+/, "");
-  return t;
+/** 🧠's size in CTX_SIZE_W columns: its sign, "+", "-" or an estimate's
+ * "~", or a blank without one, then its digits flush right in three
+ * columns, then its unit, or a blank without one, " 800 ".  A figure in
+ * no such shape is set flush right as it is. */
+function stacked(st: Settings, text: string): string {
+  const m = /^([-+~]?)(\d+(?:\.\d)?)(\D?)$/.exec(text);
+  if (!m) return padVal(st, CTX_SIZE_W, text);
+  return (m[1] || " ") + m[2].padStart(3) + (m[3] || " ");
 }
 
 /** The row's figure for column `key`, `w` wide: 🧠's without the ٪ share
  * of the window that ends it, where a pattern hides `context.share` on the
- * row's scope: the mark, no blank, and the size squeezed and set flush
- * right, so the sizes of the rows stack. */
+ * row's scope: the mark, no blank, and the size stacked, so the signs,
+ * digits and units of the rows stack. */
 function figure(st: Settings, row: Row, key: string, w: number,
   patterns: readonly string[]): readonly Span[] {
   const f = row.cells[key];
@@ -187,7 +184,7 @@ function figure(st: Settings, row: Row, key: string, w: number,
     ? f.slice(0, -1) : f;
   const head = mark.text.trimEnd();
   const room = w - visWidth(head, st.widths);
-  const text = squeeze(st, rest.map((s) => s.text).join("").trim(), room);
+  const text = stacked(st, rest.map((s) => s.text).join("").trim());
   const style = rest.find((s) => s.text.trim()) ?? mark;
   return [{ ...mark, text: head }, { ...style,
     text: padVal(st, room, text) }];

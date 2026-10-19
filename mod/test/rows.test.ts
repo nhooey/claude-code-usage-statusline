@@ -15,7 +15,7 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  FOOTER_JOIN, accountText, bandLines, bandRows, fixedKeys, footerTail,
+  FOOTER_JOIN, FOOTER_SLACK, accountText, bandLines, bandRows, fixedKeys, footerTail,
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
@@ -168,10 +168,10 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   const tail = inZone(fig, () => footerTail(st, fig, [], hint, 155));
   assert.ok(tail.endsWith(text), tail);
   // Two blanks in, the hint, Claude Code's " · ", then the tail: to the
-  // band's right edge, padded with blanks no trim takes.
+  // band's right edge, less FOOTER_SLACK, padded with blanks no trim takes.
   assert.equal(2 + visWidth(hint, st.widths) +
     visWidth(FOOTER_JOIN, st.widths) + visWidth(tail, st.widths),
-  155 - RIGHT_EDGE);
+  155 - RIGHT_EDGE - FOOTER_SLACK);
   assert.equal(tail.trimStart(), tail);
   // Too narrow a row: the " · " alone parts the two.
   assert.equal(inZone(fig, () => footerTail(st, fig, [], hint, 40)), text);

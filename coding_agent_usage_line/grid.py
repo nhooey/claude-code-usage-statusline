@@ -16,7 +16,6 @@ depend on the terminal profile are read from formatting's globals when they
 are asked for, not at import, so a reloaded formatting moves them.  Nothing
 here joins spans into escape codes: that is the printing's job.
 """
-import math
 import re
 from fnmatch import fnmatchcase
 from typing import Dict, List, NamedTuple, Optional, Sequence, Union
@@ -131,9 +130,11 @@ def _share_gone(patterns: Sequence[str]) -> bool:
     return all(hidden(patterns, s + ".context.share") for s in GRID_SCOPES)
 
 
-# The columns 🧠's size takes without its share: the mark, then three digits
-# and a unit, "🧠316k", with no blank between (asked 2026-10-19).
-CTX_SIZE_W = 4
+# The columns 🧠's size takes without its share: the mark, then a sign
+# column, three for the digits and one for the unit, "🧠+316k", "🧠 1.2M",
+# so the relative and absolute sizes stack from the band down to the
+# subagents (asked 2026-10-20).
+CTX_SIZE_W = 5
 
 
 def _col_width(c: dict, patterns: Sequence[str]) -> int:
@@ -144,27 +145,22 @@ def _col_width(c: dict, patterns: Sequence[str]) -> int:
     return cell_width(c["width"])
 
 
-def _squeeze(text: str, room: int) -> str:
-    """🧠's size squeezed into `room`: an estimate's "~" goes, then a
-    figure's one decimal, rounded half up, "+5.6k" to "+6k", and a growth's
-    "+" only where it still does not fit, "+316k" to "316k" (the "+" kept
-    where it fits, asked 2026-10-20)."""
-    t = text
-    if fmt.vis_width(t) > room and t.startswith("~"):
-        t = t[1:]
-    m = re.match(r"^([+-]?)(\d+\.\d)(\D*)$", t)
-    if fmt.vis_width(t) > room and m:
-        t = m.group(1) + str(math.floor(float(m.group(2)) + 0.5)) + m.group(3)
-    if fmt.vis_width(t) > room and t.startswith("+"):
-        t = t[1:]
-    return t
+def _stacked(text: str) -> str:
+    """🧠's size in CTX_SIZE_W columns: its sign, "+", "-" or an estimate's
+    "~", or a blank without one, then its digits flush right in three
+    columns, then its unit, or a blank without one, " 800 ".  A figure in
+    no such shape is set flush right as it is."""
+    m = re.match(r"^([-+~]?)(\d+(?:\.\d)?)(\D?)$", text)
+    if not m:
+        return fmt.pad_val(CTX_SIZE_W, text)
+    return (m.group(1) or " ") + m.group(2).rjust(3) + (m.group(3) or " ")
 
 
 def _figure(row: Row, key: str, w: int, patterns: Sequence[str]) -> List[Span]:
     """The row's figure for column `key`, `w` wide: 🧠's without the ٪ share
     of the window that ends it, where a pattern hides `context.share` on the
-    row's scope: the mark, no blank, and the size squeezed and set flush
-    right, so the sizes of the rows stack."""
+    row's scope: the mark, no blank, and the size stacked, so the signs,
+    digits and units of the rows stack."""
     f = spans(list(row.cells[key]))
     if (key != "ctx" or not f
             or not hidden(patterns, row.scope + ".context.share")):
@@ -174,7 +170,7 @@ def _figure(row: Row, key: str, w: int, patterns: Sequence[str]) -> List[Span]:
     mark, rest = f[0], f[1:]
     head = mark.text.rstrip()
     room = w - fmt.vis_width(head)
-    text = _squeeze("".join(s.text for s in rest).strip(), room)
+    text = _stacked("".join(s.text for s in rest).strip())
     style = next((s for s in rest if s.text.strip()), mark)
     return [mark._replace(text=head),
             style._replace(text=fmt.pad_val(room, text))]
