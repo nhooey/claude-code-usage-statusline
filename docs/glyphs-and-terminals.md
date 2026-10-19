@@ -26,9 +26,10 @@ A new mark must be:
    font still has it.
 4. **Outside U+1F900–U+1F90B.** The program treats that band as wide; JediTerm
    agrees and Ghostty does not.
-5. **Declared as an `E_*` constant** in `coding_agent_usage_line/formatting.py`
+5. **Declared as an `E_*` constant** in `spec/layout.jsonc`
    and used by name, never as a literal in a renderer. `tests/probe-advance.sh`
-   finds the glyphs to measure by parsing those constants; a literal is a glyph
+   finds the glyphs to measure by parsing those constants out of the generated
+   `coding_agent_usage_line/spec.py`; a literal is a glyph
    nobody measures.
 
 Then measure it. Run `bash tests/probe-advance.sh` in a real terminal tab and

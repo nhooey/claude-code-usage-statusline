@@ -80,7 +80,7 @@ CHROME_DEPTH = 2
 # 🔻 before 🔖 on the line under a prompt: the turn BELOW, the one it starts,
 # as the receipt's 🔺 points up at the turn that ended.  Wide, one code
 # point, Emoji_Presentation=Yes, Unicode 6, as 🔺 is; it would join
-# formatting.py beside E_TURN_PAST, after a run of tests/probe-advance.sh.
+# spec/layout.jsonc beside E_TURN_PAST, after a run of tests/probe-advance.sh.
 E_TURN_AHEAD = "\U0001F53B"
 
 

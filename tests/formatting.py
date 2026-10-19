@@ -26,9 +26,9 @@ assert f.term_profile({"TMUX": ""}) == "unknown"
 assert f.term_profile({"TERMINAL_EMULATOR": "JetBrains-JediTerm"}) == "jediterm"
 assert f.term_profile({"TERM_PROGRAM": "iTerm.app"}) == "iterm"
 assert f.term_profile({"TERM_PROGRAM": "ghostty"}) == "unknown"
-# spec/layout.json is generated from this module; the mod reads it.
+# spec.py and the mod's spec.ts are generated from spec/layout.jsonc.
 import subprocess
 spec = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                    "tools", "layout-spec.py")
+                    "tools", "gen-spec.py")
 assert subprocess.run([sys.executable, spec, "--check"]).returncode == 0
 print("ok shared formatting")

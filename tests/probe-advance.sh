@@ -23,9 +23,10 @@ export LC_ALL=en_US.UTF-8
 # nothing draws with. Four glyphs live only in the Python — E_COSTLINE and the
 # three E_ROW_* — and this probe had never measured one of them.
 DIR="$(cd "$(dirname "$0")" && pwd)"
-# Glyph constants live in the shared formatting module.  The launcher is
-# intentionally thin and contains none for this parser to inspect.
-LIVE="${PROBE_PROG:-$DIR/../coding_agent_usage_line/formatting.py}"
+# Glyph constants are written in spec/layout.jsonc and generated into
+# spec.py, which formatting.py imports; this parses spec.py, where they are
+# Python literals.
+LIVE="${PROBE_PROG:-$DIR/../coding_agent_usage_line/spec.py}"
 PY=/usr/bin/python3
 
 exec 3<>/dev/tty || { echo "no controlling terminal"; exit 1; }
@@ -138,7 +139,7 @@ PYEOF
 }
 
 printf -- '--- glyphs this status line uses ---\n'
-printf -- '(derived from the E_* constants in coding_agent_usage_line/formatting.py,\n'
+printf -- '(derived from the E_* constants in coding_agent_usage_line/spec.py,\n'
 printf -- ' not a list kept here: a list kept here drifts the moment a glyph\n'
 printf -- ' changes)\n'
 
@@ -213,7 +214,7 @@ for m in $MEASURED; do
   [ "$got" = 2 ] && [ "$says" = 1 ] && icons="$icons $cp"
 done
 
-printf -- '\n--- paste into widths_for() in coding_agent_usage_line/formatting.py ---\n'
+printf -- '\n--- paste into WIDTH_PROFILES in spec/layout.jsonc ---\n'
 printf '# probed %s\n' "$(date '+%Y-%m-%d %H:%M')"
 printf '#   TERM_PROGRAM=%s TERM=%s TMUX=%s%s\n' \
   "${TERM_PROGRAM:-unset}" "${TERM:-unset}" \

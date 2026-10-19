@@ -271,7 +271,7 @@ bash tests/probe-advance.sh
 Prints this terminal's cursor advance for every glyph the program uses, by
 drawing each one and asking the terminal for the cursor position (DSR). The
 glyph list is parsed from the `E_*` constants and `EAW_WIDE` in
-`coding_agent_usage_line/formatting.py`. It asserts nothing. Run it after a
+`coding_agent_usage_line/spec.py`, generated from `spec/layout.jsonc`. It asserts nothing. Run it after a
 terminal update and before changing any glyph or width-table entry. See
 [glyphs and terminals](../docs/glyphs-and-terminals.md).
 

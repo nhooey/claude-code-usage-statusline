@@ -172,7 +172,7 @@ prompt and costs no tokens. The mod's own `turnId` is not the transcript's
 the number has to come from the receipt's own count. A `UserPromptSubmit`
 hook cannot do it: its payload carries no prompt id, and its message would
 sit behind `UserPromptSubmit says:`. 🔻 is not yet a glyph constant; it joins
-`formatting.py` beside 🔺 after a run of `tests/probe-advance.sh`.
+`spec/layout.jsonc` beside 🔺 after a run of `tests/probe-advance.sh`.
 
 ### The mod's code
 
@@ -192,10 +192,11 @@ is laid out so the two copies are easy to keep in step:
   `claude_records.ts`), and each function keeps its name, in the language's
   case (`render_agent_ctx` and `renderAgentCtx`). A change to one names the
   place to change in the other.
-- **One spec, written by Python, read by TypeScript.** The glyphs, the
-  palette, the widths and cuts, and the terminal-profile rules are in
-  `spec/layout.json`, which `tools/layout-spec.py` writes from
-  `formatting.py`; `tests/formatting.py` fails when it is out of date. The
+- **One spec, generated into both languages.** The glyphs, the palette,
+  the widths and cuts, and the terminal-profile rules are written once, in
+  `spec/layout.jsonc`, and `tools/gen-spec.py` writes them out as
+  `coding_agent_usage_line/spec.py` and `mod/src/spec.ts`, comments and all;
+  `tests/formatting.py` fails when either is out of date. The
   cells' keys, `--hide` paths, drop order and label ranks join it when the
   new grid is built. The TypeScript side hardcodes none of them.
 - **One set of cases, run by both.** Shared fixtures, sample transcripts
@@ -283,14 +284,16 @@ and a shared case that pins it:
 
 ### What the layout spec holds
 
-`spec/layout.json` exists now, generated: 74 glyphs, 25 colours and a
-background as RGB triples, 49 widths and cuts, the wide-character table,
-`term_profile`'s rules, the profiles `_PAD` pads, and each profile's width
-overrides. `formatting.py` keeps its literals, each beside the comment that
-explains it; reading them back from the JSON instead turned `E_TOK = "🧩"`
-into `E_TOK = _G["E_TOK"]` and pushed 139 more lines past 79 columns.
-Values computed at import (the `S_*` forms, `RIGHT_GRID`) and the defaults
-the two switches rebind are rules, and each language computes them.
+Decided 2026-10-19: `spec/layout.jsonc` holds 172 constants, each beside
+the comment that explains it: the glyphs, the colours as `rgb(…)`, the
+widths and cuts, the wide-character table, `term_profile`'s rules, the
+profiles `_PAD` pads, each profile's width overrides, and the defaults the
+two switches rebind. `tools/gen-spec.py` writes them out as Python literals
+in `spec.py`, which `formatting.py` star-imports, and as TypeScript
+constants in `mod/src/spec.ts`, colours as hex. The JSONC has comments, so
+the explanations moved with the values, and both languages still read a
+literal beside its name. Values computed at import (the `S_*` forms,
+`RIGHT_GRID`) are rules, and each language computes them.
 
 Still to come, with the new grid: each cell's key, `--hide` path, width, gap and drop rank; each glyph by code
 point; each colour as its RGB triple and the cut-offs that dim it (`mag_dim`,

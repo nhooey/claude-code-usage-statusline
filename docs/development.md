@@ -24,7 +24,8 @@ coding-agent-usage-line.py        launcher
    └─ state.py                    private on-disk cache, locks, report claims
 
 shared by all of the above:
-   formatting.py                  glyphs, widths, palette, number formats, terminal geometry
+   formatting.py                  widths, palette, number formats, terminal geometry
+   spec.py                        the layout's constants, generated from spec/layout.jsonc
    models.py                      immutable, vendor-neutral token/request records
 ```
 
@@ -43,7 +44,8 @@ Every module above lives in `coding_agent_usage_line/`.
 | `render.py` | Codex status, history and Stop reports, and account-period rows. |
 | `sources.py` | `--usage-source` selection, the version-1 custom-command contract, the HTTP and app-server collectors, refresh policy. See [Usage sources](usage-sources.md). |
 | `state.py` | The private state directory: scoped source cache, refresh locks, atomic claims so a Codex Stop reports each request once. |
-| `formatting.py` | Glyph constants (`E_*`, `S_*`), width tables and `vis_width`, the ANSI palette, `humanize` and the other fixed-width formatters, terminal-width detection, and the two display switches. |
+| `formatting.py` | The `S_*` glyph forms and the widths computed from the constants, `vis_width`, the ANSI escapes, `humanize` and the other fixed-width formatters, terminal-width detection, and the two display switches. It star-imports `spec.py`. |
+| `spec.py` | Generated from `spec/layout.jsonc`, never edited: the glyphs (`E_*`), colours, widths and cuts, the wide-character table and the terminal profiles. |
 | `models.py` | `TokenUsage` and `UsageRequest`. A missing token category is `None`, not `0`. |
 
 The comments in the code are dense on purpose. These documents cover what is
@@ -94,10 +96,10 @@ without consuming claims. See [Codex](codex.md).
 
 | change | where | then |
 |---|---|---|
-| A status-line cell | `claude_render.py`; its width in `RIGHT_GRID` / `LINE3_RESERVED` / `RULE_MIN` in `formatting.py` | Regenerate the status goldens and read the diff; update [Layout](layout.md). |
+| A status-line cell | `claude_render.py`; its width in `RIGHT_GRID` in `formatting.py`, or `LINE3_RESERVED` / `RULE_MIN` in `spec/layout.jsonc` | Regenerate the status goldens and read the diff; update [Layout](layout.md). |
 | A cost-line cell | `claude_cost_render.py`, and the group builders in `claude.py` | Regenerate the cost goldens; update [Layout](layout.md). |
 | An agent-panel cell | `claude_subagent_render.py` | Update the row shape asserted in `tests/subagent.py`. |
-| A glyph | An `E_*` constant in `formatting.py` | Follow [Glyphs and terminals](glyphs-and-terminals.md); run `tests/probe-advance.sh` in a real terminal; run `python3 tools/layout-spec.py`. |
+| A glyph, colour, width or cut | Its constant in `spec/layout.jsonc` | Run `python3 tools/gen-spec.py`. For a glyph, follow [Glyphs and terminals](glyphs-and-terminals.md) and run `tests/probe-advance.sh` in a real terminal. |
 | A flag | `_CLAUDE_FLAGS` / `_COMMON_FLAGS` and `USAGE` in `cli.py`; read it in `claude.main` or `codex_main` | Update [Options](options.md); add a case to `tests/port-cli.py`, the public-CLI suite. |
 | Claude accounting (prices, turns, agents) | `claude_records.py`; window shares and calibration in `claude.py` | `tests/agents.py`, the cost goldens; update [Accounting](accounting.md). |
 | A usage source | `sources.py`, and `validate_source` for its spec | `tests/sources-v1.py` and friends; update [Usage sources](usage-sources.md). |
@@ -127,7 +129,7 @@ them. `--selftest` and `tests/probe-advance.sh` need a real terminal tab.
 ## Style
 
 - Prefer pure functions over immutable records and prepared snapshots.
-- Name glyphs as `E_*` constants in `formatting.py` and use the constant.
+- Name glyphs as `E_*` constants in `spec/layout.jsonc` and use the constant.
   The probe finds glyphs by that prefix; a literal elsewhere is invisible to
   it.
 - A fixed-width field carries a unit (`1.2k`, `4.5M`, `1.5h`), never more
@@ -188,12 +190,15 @@ Intentions, not designs:
    carry per-terminal width knowledge itself.
 
 Until (3) exists, the width tables, terminal profiles and glyph rules stay in
-`formatting.py`. They are the first thing to move out when it does.
+`spec/layout.jsonc`. They are the first thing to move out when it does.
 
-`spec/layout.json` holds the glyphs, colours, widths and cuts of
-`formatting.py` for the TypeScript mod. `tools/layout-spec.py` writes it from
-`formatting.py`, so change a value there and rerun the tool;
-`tests/formatting.py` fails while the two disagree.
+`spec/layout.jsonc` is where the glyphs, colours, widths and cuts are written,
+each beside the comment that explains it. `tools/gen-spec.py` writes it out as
+`coding_agent_usage_line/spec.py`, which `formatting.py` star-imports, and as
+`mod/src/spec.ts` for the TypeScript mod, comments and all. Edit the JSONC,
+never the generated files, and rerun the tool; `tests/formatting.py` fails
+while either is out of date. What is computed from the constants, the `S_*`
+forms and `RIGHT_GRID`, stays in `formatting.py`, and the mod computes its own.
 
 `tools/layout-mockup.py` draws the proposed [redesign](../agents/plans/redesign.md) inside a
 mocked Claude Code screen. It uses the package's cell renderers on made-up
