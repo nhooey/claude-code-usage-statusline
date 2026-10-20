@@ -26,8 +26,8 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { bandLines, bandRows, footerRuler, footerTail, modeOfHint,
-  workspaceOf }
+import { accountLine, bandLines, bandRows, footerRuler, footerTail,
+  modeOfHint, workspaceOf }
   from '../src/band.ts'
 import {
   newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
@@ -556,8 +556,9 @@ export const register: Register = on => {
     // wider than the terminal drew, pushing the 🕐 off the row (seen live
     // 2026-10-20), and the band's is where its rows end.
     const cols = bandCols || (e.viewport?.columns ?? 80)
-    const text = footerTail(st, at(doc as Dict, await read($, clockNow)),
-      CONFIG.hide, e.props.hint, cols, mode, await home($))
+    const fig = at(doc as Dict, await read($, clockNow))
+    const text = CONFIG.accountPlace === 'tail' ? footerTail(st, fig,
+      CONFIG.hide, e.props.hint, cols, mode, await home($)) : ''
     const tail = CONFIG.footerRuler && text ? footerRuler(st, text, cols)
       : text
     // What the padding was worked out from, each time it changes, so a
@@ -570,12 +571,15 @@ export const register: Register = on => {
     }
     const row = await (tail ? next({ ...e, props: { ...e.props, tail } })
       : next(e))
-    if (CONFIG.bandPlace !== 'hint') return row
-    // The band's rows under the footer line, in their colours: Claude
-    // Code's own line first, from next(e), so its pills stay live, and a
-    // node beside it in a column goes on the row below it (seen live
-    // 2026-10-20).
-    const lines = await bandNow($, e.props.isWorking)
+    // The 💳 account and the band's rows under the footer line, in their
+    // colours: Claude Code's own line first, from next(e), so its pills
+    // stay live, and a node beside it in a column goes on the row below it
+    // (seen live 2026-10-20).
+    const account = CONFIG.accountPlace === 'row'
+      ? accountLine(st, fig, CONFIG.hide, cols, await home($)) : []
+    const lines = [...account.length ? [account] : [],
+      ...CONFIG.bandPlace === 'hint' ? await bandNow($, e.props.isWorking)
+        : []]
     if (!lines.length) return row
     const { Box, Text } = $.ui.resolve(e)
     return (

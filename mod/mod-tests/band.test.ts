@@ -62,7 +62,8 @@ const encoder = new TextEncoder()
 /** The band where CONFIG.bandPlace draws it, mounted: above the prompt,
  * or under the footer line, whose mount the band's own sets the width
  * of first, as Claude Code draws the two.  Under the footer, the drawing
- * leaves out Claude Code's own line, which comes first. */
+ * leaves out Claude Code's own line, which comes first, and the 💳
+ * account's row under it. */
 async function mountBand($: any, surface: 'terminal' | 'desktop',
   props: RenderPropsOf['AbovePrompt']) {
   const above = await $.ui.mount({ plugin: 'usage-band', surface,
@@ -73,8 +74,10 @@ async function mountBand($: any, surface: 'terminal' | 'desktop',
       isWorking: props.isWorking, hint: '-- INSERT --' } })
   return { ...hint, drawn: async () => {
     const tree = await hint.drawn() as Drawn
+    // And the 💳 account's row, under it, where it has one.
+    const skip = CONFIG.accountPlace === 'row' ? 2 : 1
     return tree.type === 'Box'
-      ? { ...tree, children: (tree.children ?? []).slice(1) } : tree
+      ? { ...tree, children: (tree.children ?? []).slice(skip) } : tree
   } }
 }
 

@@ -15,7 +15,7 @@ import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import {
-  FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, accountText, footerParts, modeOfHint, bandLines, bandRows, fixedKeys, footerTail,
+  FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, accountLine, accountText, footerParts, modeOfHint, bandLines, bandRows, fixedKeys, footerTail,
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
@@ -161,6 +161,21 @@ test("the receipt bills the cost line's turn", () => {
   assert.ok(turns[i].calls && !turns[i].agent && !turns[i].compact);
   assert.equal(i, turns.length - 1);
   assert.equal(receiptTurn([]), -1);
+});
+
+test("the 💳 account's own row ends where the band's rows end, in colour", () => {
+  const st = settings({});
+  const fig = document("status/01-baseline@196");
+  const row = inZone(fig, () => accountLine(st, fig, [], 196));
+  const text = join(row.map((s) => ({ ...s, colour: null, dim: false,
+    bold: false, bg: null })));
+  assert.equal(width(row, st.widths), 196 - RIGHT_EDGE);
+  // The same text as the footer's tail, its parts FOOTER_GAP apart.
+  const plain = inZone(fig, () => accountText(st, fig, []));
+  assert.equal(text.trim(), footerParts(plain).join(" ".repeat(FOOTER_GAP)));
+  assert.ok(row.some((s) => s.colour), "no colour kept");
+  assert.deepEqual(inZone(fig, () => accountLine(st, fig, ["account"], 196)),
+    []);
 });
 
 test("the footer's tail ends on the 💳 account details where the band's rows end", () => {

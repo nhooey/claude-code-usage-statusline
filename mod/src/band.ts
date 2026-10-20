@@ -429,7 +429,15 @@ export function phaseRows(rows: BandRows, phase: Phase,
  * so it keeps none of the row's colours. */
 export function accountText(st: Settings, fig: Dict,
   hide: readonly string[], home = ""): string {
-  if (hidden(hide, "account")) return "";
+  return accountPieces(st, fig, hide, home)
+    .flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
+}
+
+/** accountText's pieces, in their colours; none under the hide path
+ * `account`. */
+function accountPieces(st: Settings, fig: Dict, hide: readonly string[],
+  home: string): Piece[] {
+  if (hidden(hide, "account")) return [];
   const now = (fig.clock as Dict).now as number;
   // 📦 the project, 🌿 the branch and 📁 the directory first, as 🎮's
   // label draws them (asked 2026-10-20), each hidden by its own path.
@@ -444,7 +452,41 @@ export function accountText(st: Settings, fig: Dict,
     dropped = gone && p.path !== "plan.reset";
     if (!gone) shown.push(p);
   }
-  return shown.flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
+  return shown;
+}
+
+/** The 💳 account as a row of its own, in its colours, for under the
+ * footer line, in its container (asked 2026-10-20): the workspace, 💳 and
+ * 📅 🕐, FOOTER_GAP columns apart, after blanks that end it where the
+ * band's rows end at `cols`; none under the hide path `account`. */
+export function accountLine(st: Settings, fig: Dict, hide: readonly string[],
+  cols: number, home = ""): Span[] {
+  const parts: Span[][] = [];
+  for (const p of accountPieces(st, fig, hide, home)) {
+    const lead = p.spans.map((s) => s.text).join("").trimStart();
+    if (!parts.length || lead.startsWith(E_ACCT) || lead.startsWith(E_DATE)) {
+      parts.push([]);
+    }
+    parts[parts.length - 1].push(...p.spans);
+  }
+  const trimmed = parts.map(trimSpans).filter((p) => p.length);
+  if (!trimmed.length) return [];
+  const gap = span(" ".repeat(FOOTER_GAP));
+  const out = trimmed.flatMap((p, i) => i ? [gap, ...p] : p);
+  const w = visWidth(out.map((s) => s.text).join(""), st.widths);
+  return [span(" ".repeat(Math.max(0, cols - RIGHT_EDGE - w))), ...out];
+}
+
+/** `spans` without the blanks at either end. */
+function trimSpans(spans: readonly Span[]): Span[] {
+  const out = spans.filter((s) => s.text);
+  while (out.length && !out[0].text.trim()) out.shift();
+  while (out.length && !out[out.length - 1].text.trim()) out.pop();
+  if (!out.length) return out;
+  out[0] = { ...out[0], text: out[0].text.trimStart() };
+  const n = out.length - 1;
+  out[n] = { ...out[n], text: out[n].text.trimEnd() };
+  return out;
 }
 
 /** What the footer under the prompt gets after Claude Code's own line,

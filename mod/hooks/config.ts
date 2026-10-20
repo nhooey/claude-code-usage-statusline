@@ -34,6 +34,11 @@ export const CONFIG = {
   // where the band can be collapsed with its [-] and scrolled (asked
   // 2026-10-20, to try them under the footer).
   bandPlace: "hint" as BandPlace,
+  // Where the 💳 account is drawn: "row", a row of its own under Claude
+  // Code's footer line, in that line's container and in its colours, or
+  // "tail", in plain text at the right end of the footer line (asked
+  // 2026-10-20, to put it under the line).
+  accountPlace: "row" as "row" | "tail",
   // Draw the footer's tail as a ruler of column digits, each the last digit
   // of the column the mod reckons it lands in, to check the padding in each
   // footer shape: right, it ends on the band's last column (asked
