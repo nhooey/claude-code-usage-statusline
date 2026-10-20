@@ -21,6 +21,7 @@ import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import { squash } from "./claude_records.ts";
 import type { Turn } from "./claude_records.ts";
+import { turnShares } from "./claude_calib.ts";
 import type { Accounting } from "./claude_calib.ts";
 import { decodeTranscript } from "./figures.ts";
 import { _readAccounting, decodeTurn } from "./claude_cost.ts";
@@ -49,6 +50,94 @@ export function receiptTurn(turns: readonly Turn[]): number {
   return turns.length - 1;
 }
 
+/** Whether `t` is an automatic compaction, which lands inside whatever
+ * turn was running: the fold gives it a turn of its own, named as
+ * turnsOf names it, and files the running turn's records after it there,
+ * with no promptId. */
+function inTurnCompaction(t: Turn): boolean {
+  return t.compact && !t.agent && t.text === "/compact (auto)";
+}
+
+/** Sums `a` and `b` where either is a number, else null. */
+function addOrNull(a: number | null, b: number | null): number | null {
+  return a === null ? b : b === null ? a : a + b;
+}
+
+/** `t` with the compaction `c` that landed inside it, and the records
+ * after it, as one turn: its own tag and prompt, everything billed summed,
+ * the compaction's dollars and tokens with it, since the turn spent them.
+ * 🧠 adds up: each turn's growth is over the reading before it. */
+function absorb(t: Turn, c: Turn): Turn {
+  return { ...t,
+    fresh: t.fresh + c.fresh, cache_write: t.cache_write + c.cache_write,
+    cache_read: t.cache_read + c.cache_read, out: t.out + c.out,
+    ctx: c.ctx || t.ctx, calls: t.calls + c.calls, dur_s: t.dur_s + c.dur_s,
+    dctx: addOrNull(t.dctx, c.dctx), usd_in: t.usd_in + c.usd_in,
+    usd_out: t.usd_out + c.usd_out, usd_cr: t.usd_cr + c.usd_cr,
+    usd_cw: t.usd_cw + c.usd_cw, reported: c.reported,
+    parts: [...t.parts, ...c.parts], agent_calls: t.agent_calls + c.agent_calls,
+    agent_ids: [...t.agent_ids, ...c.agent_ids],
+    tool_s: t.tool_s + c.tool_s, blocked_s: t.blocked_s + c.blocked_s,
+    agent_model_s: t.agent_model_s + c.agent_model_s,
+    agent_tool_s: t.agent_tool_s + c.agent_tool_s,
+    lines_added: t.lines_added + c.lines_added,
+    lines_removed: t.lines_removed + c.lines_removed,
+    eta: c.eta.length ? c.eta : t.eta };
+}
+
+/** absorb's, for the two turns' accountings: the window shares add up, as
+ * the dollars do; the cache shares are worked out again over `merged`. */
+function absorbAccounting(a: Accounting, c: Accounting, merged: Turn):
+  Accounting {
+  const [read_share, write_share] = turnShares(merged);
+  return { ...a, cost_usd: a.cost_usd + c.cost_usd,
+    sess_share: addOrNull(a.sess_share, c.sess_share),
+    week_share: addOrNull(a.week_share, c.week_share), read_share,
+    write_share, model_s: a.model_s + c.model_s, tool_s: a.tool_s + c.tool_s,
+    blocked_s: a.blocked_s + c.blocked_s,
+    lines_added: a.lines_added + c.lines_added,
+    lines_removed: a.lines_removed + c.lines_removed };
+}
+
+/** `turns` as the receipt bills them: each automatic compaction folded
+ * into the turn it landed in, with `acc`, the turns' accountings, folded
+ * alike.  The fold splits such a turn in two at the compaction (seen live
+ * 2026-10-20): its prompt with what it billed before, and a compaction
+ * with no promptId holding the rest, which the receipt passes over, so it
+ * billed the turn before instead, or nothing. */
+export function inTurns<A extends Accounting | null>(turns: readonly Turn[],
+  acc: readonly A[]): [Turn[], A[]] {
+  const out: Turn[] = [];
+  const outAcc: A[] = [];
+  for (let i = 0; i < turns.length; i++) {
+    const head = out.length - 1;
+    const prev = head >= 0 ? out[head] : null;
+    if (prev && !prev.compact && !prev.agent &&
+      inTurnCompaction(turns[i])) {
+      out[head] = absorb(prev, turns[i]);
+      const a = outAcc[head];
+      const c = acc[i];
+      if (a && c) outAcc[head] = absorbAccounting(a, c, out[head]) as A;
+      continue;
+    }
+    out.push(turns[i]);
+    outAcc.push(acc[i]);
+  }
+  return [out, outAcc];
+}
+
+/** inTurns over a cost figures document: its turns and their accountings
+ * as the receipt bills them.  A document already folded comes back as it
+ * was. */
+export function billedFig(fig: Dict): Dict {
+  const raw = fig.turns as Dict[];
+  const acc = fig.accounting as Dict;
+  const accTurns = (acc.turns as Dict[]).map(_readAccounting);
+  const [turns, accs] = inTurns(raw.map(decodeTurn), accTurns);
+  if (turns.length === raw.length) return fig;
+  return { ...fig, turns, accounting: { ...acc, turns: accs } };
+}
+
 /** Whether the billed turn is the turn that opened with `prompt`, its
  * promptId, or with none given, the newest of the main thread's turns.
  * One before it is the turn before's, read before this turn's records were
@@ -57,8 +146,10 @@ export function receiptTurn(turns: readonly Turn[]): number {
  * the newest prompt bills nothing and receiptTurn falls back past it.
  * With `prompt`, a turn opened after it does not count: a task
  * notification delivered as the turn ends is written as a turn of its own
- * that may never run, and the turn it follows is billed all the same. */
-export function newestBilled(turns: readonly Turn[], prompt = ""): boolean {
+ * that may never run, and the turn it follows is billed all the same.  A
+ * turn an automatic compaction landed in is read as one (inTurns). */
+export function newestBilled(all: readonly Turn[], prompt = ""): boolean {
+  const [turns] = inTurns(all, []);
   const i = receiptTurn(turns);
   if (i < 0 || !turns[i].calls || turns[i].compact || turns[i].agent) {
     return false;
@@ -73,7 +164,8 @@ export function newestBilled(turns: readonly Turn[], prompt = ""): boolean {
 /** The billed turn, as one key: its tag, its first stamp and how many
  * calls it has billed, so the same turn read again is the same key and a
  * turn that went on is not; "" with none. */
-export function turnKey(turns: readonly Turn[]): string {
+export function turnKey(all: readonly Turn[]): string {
+  const [turns] = inTurns(all, []);
   const i = receiptTurn(turns);
   if (i < 0) return "";
   const t = turns[i];
@@ -148,8 +240,9 @@ function sessionRow(st: Settings, turns: readonly Turn[], acc: Accounting,
  * turn to bill, and 🎮.  They have no 📊 of their own (decided
  * 2026-10-19): the band has no 🎤 or 🎮 once a turn ends, so they read
  * apart by being dim. */
-export function receiptRows(st: Settings, fig: Dict,
+export function receiptRows(st: Settings, all: Dict,
   ws: Workspace | null): { turn: Row | null; session: Row } {
+  const fig = billedFig(all);
   const now = (fig.clock as Dict).now as number;
   const turns = (fig.turns as Dict[]).map(decodeTurn);
   const acc = fig.accounting as Dict;
@@ -171,7 +264,8 @@ export function receiptRows(st: Settings, fig: Dict,
  * turn's first record to its last, short of what Claude Code's closing
  * line prints.  The seconds added are the model's: they are the
  * answer streaming after its last record, in no tool and no wait. */
-export function withEngineDuration(fig: Dict, durationMs: number): Dict {
+export function withEngineDuration(all: Dict, durationMs: number): Dict {
+  const fig = billedFig(all);
   const turns = fig.turns as Dict[];
   const i = receiptTurn(turns.map(decodeTurn));
   if (i < 0 || !(durationMs > 0)) return fig;
@@ -191,8 +285,9 @@ export function withEngineDuration(fig: Dict, durationMs: number): Dict {
  * two stack: "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02", the billed
  * turn's tag and `clock.now`, when it was stamped; none under the hide path
  * `name.tag`. */
-export function receiptHead(fig: Dict, hide: readonly string[]): Span[] {
+export function receiptHead(all: Dict, hide: readonly string[]): Span[] {
   if (tagsHidden(hide)) return [];
+  const fig = billedFig(all);
   const now = (fig.clock as Dict).now as number;
   const turns = (fig.turns as Dict[]).map(decodeTurn);
   const i = receiptTurn(turns);
