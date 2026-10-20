@@ -1,0 +1,317 @@
+# Saved running totals: fold the transcript once
+
+A proposal, not built yet. Commit ec4dc64 saves the session's cut-down
+records, so a reload no longer runs Python over the whole transcript again.
+Each reload still folds every record, though, and so does every document
+after it. This plan turns the two folds into running totals saved on disk.
+It also gives every cache both ports keep one name and one format. The
+first step under that contract fixes the panel's `🪫 ?`.
+
+## Why
+
+- **Every document folds the whole session.** `statusDoc` (`mod/hooks/edges.ts`)
+  hands every record read so far to `transcriptOf`, then to `turnsOf`
+  through `turnsVia`. Both walk the whole list on each document, and
+  `transcriptOf` walks it four times. `turnsNow` does the same for the
+  receipt. The 205 MB transcript in `~/.claude/projects` is 75,365 records.
+  Python takes 1.0s to parse them, then 2.0s for `read_transcript` and 1.3s
+  for `read_turns` (measured 2026-10-20). The TypeScript walks the same
+  records in the hooks worker on every document.
+- **The saved cut is large and only grows.** This session's cut is 20 MB in
+  21 parts of about 1 MB each, at 160 MB of transcript. A reload reads and
+  parses all 21 parts in the worker before folding them again.
+- **What the folds keep is small.** On the four largest transcripts here, an
+  estimate of the state a fold must carry from one record to the next is
+  0.35 to 1.8 MB (below). The cut is ten to sixty times that.
+- **The panel draws `🪫 ?` on every agent row.** `agent_window_shares` asks
+  `calibration(scan=False)` for its unit. That reads
+  `claude-calibration-<sha256(scope\0windows)>.json`, which only the retired
+  Python status line wrote. The mod writes the same fields to
+  `claude-calibration-ts-<sha256(version\0scope\0windows)>.cache`, keyed by
+  `CONFIG.version`. The two never meet, so the panel has no unit.
+- **The caches have drifted apart.** Each port names its own copy of the
+  same cache, and each keys it its own way: the Python by a digest of its
+  own source (`_source_digest`), the mod by `CONFIG.version`. The window
+  costs are kept three times over: `claude-window-costs.cache`,
+  `claude-window-costs-ts.cache` and `claude-window-costs-mod.cache`. The
+  Python's calibration cache is one file per pair of window starts, and none
+  is ever removed: the state directory holds 65,075 of them. They are `.json`
+  files too, and `state.find_compatible` opens every `.json` in the
+  directory as a usage cache whenever it looks for one.
+
+## The design
+
+### Fold, then finish
+
+Each fold splits into two functions:
+
+- **The fold** takes a state and one record, and updates the state. It reads
+  nothing but the record.
+- **The finish** takes the state and what is only known at render, and
+  returns the figures. The state is left as it was, so the fold can go on.
+
+`transcriptOf(records, agents, etas, now)` becomes
+`transcriptFinish(foldAll(records), agents, etas, now)`, and `turnsOf` becomes
+`turnsFinish(foldAll(records), agentsOf, offsets, held, label)`, in both
+ports. The old names stay as wrappers, so every caller and every shared case
+reads as before.
+
+The split falls where the code already has it:
+
+| Input | Known | Goes into |
+|---|---|---|
+| the main transcript's records | as each line is written | the fold |
+| the agents' records and ETAs (`agents`, `agent_etas`) | each render, from the agent folds | the finish |
+| the Stop hook's offsets, `held`, `label` | each render | the finish |
+| `now` | each render | the finish |
+
+The fold therefore never depends on the agent files, and a saved state stays
+true however the agents change.
+
+Every pass in `transcriptOf` is already a left fold over `records`:
+
+- the dedupe, with its set of request ids;
+- the own parts, with the open compaction;
+- the context reading, with `firstCtx`;
+- the last texts;
+- the clock, with its spans, `pending`, the ETA state, the background map,
+  the idle and the open turn's id;
+- the diff lines, with their tool-use ids;
+- `liveAgentEtas`' agent ends.
+
+They become one walk with one state. The finish does the rest:
+
+- `openToolSpans` against `now`, and the running and waiting calls;
+- `threadClock`;
+- the agents' sums;
+- the `own_parts` total.
+
+`turnsOf`'s main loop is a fold too. `_foldAgents`, the Δctx walk and the
+freeze are the finish, run over a copy of the turns, so the agents added in
+one render never reach the state.
+
+**The order of additions is kept.** The finish adds the agents after every
+main record, as the whole fold does now, so the floats come out bit for bit
+the same. The equivalence tests compare exactly, with no tolerance.
+
+**The open line.** `recordsOf` also returns the records of a last line that
+has no newline yet, which can be half written. The fold takes only whole
+lines. Records past the last newline are folded into the state and undone
+after the finish: each list keeps its length, each set the keys it gained,
+and the small mutable part is copied first. A half-written last line is rare,
+so the cost is rare too.
+
+### The state
+
+What the fold carries, by port-neutral name:
+
+| Part | Grows with | Changes after it is written |
+|---|---|---|
+| request ids seen (both folds share one set) | requests | no |
+| tool-use ids `diffLines` has counted (one set) | edits and writes | no |
+| closed turns | prompts and compactions | no: only the open turn changes |
+| prompt ids, each with its turn's index (`byPid`) | prompts | no: the first one stays |
+| agent ends (`scanAgentEnd`) | agents | no: a later entry wins on load |
+| own parts | requests and compactions | no, except those since the open compaction |
+| the clock's spans, tool spans and blocked spans | turns and tool calls | no |
+| the open turn, `pending`, the ETA state, the open compaction, the background map, the queue count, the context reading, the last texts, the scalars | nothing | yes, on every record |
+
+Everything but the last row is append-only. The last row is small: `pending`
+holds only the calls still open.
+
+**How big.** The estimate (`measure.py`, a throwaway script that counts what
+each part holds; step 3 measures the real state):
+
+| Transcript | Records | Requests | Turns | Compactions | Tool results | Est. state |
+|---|---|---|---|---|---|---|
+| 221 MB | 24,962 | 4,209 | ~351 | 34 | 4,292 | 0.7 MB |
+| 206 MB | 75,365 | 12,255 | ~510 | 83 | 12,975 | 1.8 MB |
+| 160 MB (this repo) | 28,398 | 1,846 | ~264 | 13 | 2,077 | 0.3 MB |
+| 156 MB | 72,908 | 7,670 | ~1,744 | 55 | 6,390 | 1.6 MB |
+
+At 1.8 MB, the largest state is under 4 MiB but not by enough: a session
+twice that long would not fit. So the state is saved in parts, the way the
+cut is.
+
+- **A log of the append-only parts.** Each entry is one JSON line tagged with
+  its list: `["req", id]`, `["turn", {...}]`, `["part", epoch, usd]` and so
+  on. It goes into part files of at most `MAIN_CUT_PART` (1,000,000)
+  characters each, which is under 4 MiB as UTF-8. A part only grows, and every
+  part but the last is never written again. A save writes only the last part
+  and any new parts.
+- **A head, written last.** The head holds the format, the byte offset the
+  state covers, the transcript's check digests, the number of entries in
+  each part, and the mutable small state. Until the head is written, the one
+  before it is still true: its counts take a prefix of each part, as
+  `mainCutHeadOf` takes one now.
+- **A cap on the head.** If the head would be over `MAIN_CUT_PART`, the state
+  is not saved. It stays in memory, and the next reload folds from the start.
+  The log turns this into a log line; it is not expected to happen.
+
+In memory the sets stay sets and the lists stay lists. The log is only how
+they are saved.
+
+### What invalidates a saved state
+
+| Event | How it is seen | What happens |
+|---|---|---|
+| The fold's code changed in either port | the head's format differs from the spec's | fold from the start |
+| The transcript was truncated | its size is below the head's offset | fold from the start |
+| The transcript was rewritten in place | the digest of the `COST_TAIL_BYTES` (4 KiB) before the offset differs, as `_tail_digest` checks the window costs; or the digest of its first 4 KiB differs | fold from the start |
+| A compaction | nothing to see | nothing: Claude Code appends `compact_boundary` and `isCompactSummary` records to the same file, and the fold already counts them. The equivalence tests run over a transcript with 83 compactions |
+| `/resume` that forks, or `/clear` | a new transcript path | a new state, keyed by the path's digest |
+| A torn head or part | it does not parse, or holds fewer entries than the head names | fold from the start |
+
+**Keeping the format honest.** A format bumped by hand is only as good as
+the memory of whoever changed the fold. So the tests write the saved state
+of every fixture transcript to `tests/fixtures/state/`, with the format it was
+written under. The check fails when a state differs from its fixture while
+the spec's format still matches the fixture's. A change to the fold then
+cannot land without a new format, and the two ports cannot drift apart
+without failing the same check.
+
+### The shared-state contract
+
+The contract covers every file both ports keep in the state directory:
+
+- **One table in the spec.** The table lives in `spec/layout.jsonc`, generated
+  into `spec.py` and `spec.ts` by `tools/gen-spec.py`. Each cache kind has one
+  row: its file-name prefix, what its key is a digest of, its extension and
+  its format number. Neither port's version is in it: not `CONFIG.version`,
+  and not `_source_digest`.
+- **One path function per port** (`state_path(kind, *key)` and `statePath`).
+  It joins the state directory, the prefix, and a sha256 of the kind's
+  format and key parts, separated by `\0`. Shared cases pin the name it
+  gives for each kind, in both ports.
+- **One write rule.** The Python writes a temporary file and calls
+  `os.replace`. `$.fs` has `read`, `write`, `stat` and `list`, and the mod
+  calls no rename, so a mod write is treated as one that can tear. A file
+  in parts writes its head last, and the reader checks it, as the cut does.
+  A single-file cache is read with a parse check, and a torn file reads as
+  missing.
+- **No `.json`.** Every shared file ends `.cache`, so `find_compatible` never
+  opens one.
+- **Writers that agree by construction.** Both ports fold the same bytes into
+  the same state, so two writers that save the same range write the same
+  text. That holds only while the two ports match byte for byte, which the
+  shared cases check.
+
+The kinds, and where each ends up:
+
+| Kind | Python today | Mod today | After | Step |
+|---|---|---|---|---|
+| calibration | `claude-calibration-<h>.json` | `claude-calibration-ts-<h>.cache` | `claude-calibration-<sha(format\0scope)>.cache`, one per scope, with the windows inside | 1 |
+| main fold | none | none (the cut) | `claude-main-fold/<sha(path)>/head.cache`, `part-N.cache` | 4 to 6 |
+| main cut | none | `claude-main-cuts-mod/` | removed | 7 |
+| agent fold | none (`read_agent_usage` reads the whole file each tick) | `claude-agent-folds-mod/<h>/<h>.json` | `claude-agent-fold/<sha(transcript)>/<sha(path)>.cache` | 8 |
+| agent files | `claude-agent-files-<h>.cache` | `claude-agent-files-ts-<h>.cache` | replaced by the agent folds | 8 |
+| window costs | `claude-window-costs.cache` | `-ts.cache` (node), `-mod.cache` (mod) | `claude-window-costs.cache` | 9 |
+| agent offsets | `claude-agent-offsets-<h>.json` | the same file, read only | already shared; renamed `.cache` only if the Stop hook moves to the mod | none |
+
+## The build order
+
+Each step lands as its own commit, and the tests pass after each one.
+
+1. **The calibration cache, shared.** This step fixes the panel's `🪫 ?` and
+   starts the contract with its first kind.
+   - Add `STATE_CALIBRATION_FORMAT` to the spec's new state table, and
+     generate it into both ports.
+   - Both ports name the file
+     `claude-calibration-<sha256(format\0scope)>.cache`. Today's name has one
+     file per pair of window starts. With the windows inside the file
+     instead, there is one file per scope, and a reset overwrites it.
+     `_read_calib_cache` and `calibrationVia` already treat a file for other
+     windows as a miss.
+   - Both write the fields they write today: `windows`, `sess_cost`,
+     `week_cost`, `sess_pct`, `week_pct`. They use `pyJsonDumps` and its
+     Python twin with one set of separators, so the two files are
+     byte-identical. A shared case checks it: the same inputs, written by
+     each port, give the same bytes.
+   - The Python's `calibration_cache_path` and the mod's
+     `_calibrationCacheName` both call the contract's path function.
+     `CALIB_CACHE_OVERRIDE` and the planted fixtures in `tests/fixtures/env/`
+     are unchanged.
+   - The panel then reads the scan the mod wrote, with `scan=False`, at any
+     age, as it does now.
+   - Old files are removed once: `claude-calibration-<64 hex>.json` and
+     `claude-calibration-ts-<64 hex>.cache`, and nothing else. See the open
+     questions.
+2. **The folds split into fold and finish,** in both ports, with nothing
+   saved yet. `transcriptOf`, `turnsOf`, `read_transcript` and `read_turns`
+   become wrappers over them. The existing shared cases pass unchanged. New
+   cases fold every fixture transcript up to each record boundary, finish it,
+   go on to the end, and compare the result with the whole fold, field for
+   field. The open-line undo gets cases of its own: a half-written last
+   line, finished, then the line completed.
+3. **The real-transcript check.** `mod/tools/check-fold.ts` and
+   `tests/fold_real.py` walk `~/.claude/projects/**/*.jsonl` (4,484 files
+   here), not in CI, since they are private. For each file they compare the
+   whole fold with folds broken at a seeded set of points: record
+   boundaries, mid-line, and either side of every compaction. They also
+   report the saved state's size, and that size replaces the estimate above.
+   Each later step reruns them before it lands.
+4. **The state saved as text,** in both ports: the log, the head and its
+   cap. Shared cases round-trip each fixture's state at each break point
+   across the ports. The Python writes and the TypeScript reads on, then the
+   other way, and both must give the same text. `tests/fixtures/state/` and
+   the format check from "Keeping the format honest" land here.
+5. **The mod folds as it reads.** `recordsOf` becomes `foldOf`. It keeps the
+   state in memory between documents and folds only the lines after its
+   offset. `statusDoc` and `turnsNow` call the finishes. With nothing saved
+   yet, this already ends the per-document refold. The state is saved under
+   the contract at most once per `CONFIG.foldSaveMs`, and a reload reads on
+   from it once the checks in "What invalidates a saved state" pass. The
+   saved cut is still read when there is no state, so the first reload after
+   upgrading folds the cut and not the transcript.
+6. **The cold read folds in Python.** `agent_lines.py`'s `main` mode becomes
+   a `fold` mode. It loads the saved state, folds the transcript from its
+   offset to the end, writes the parts and the head itself with
+   `os.replace`, and prints the new offset. The mod then reads the head and
+   the new parts through `$.fs`. No more cut records pass through the
+   process's 4 MiB of output, and the worker parses no record it did not
+   need. Python 3.9 and the standard library are enough: `json`, `hashlib`
+   and `os`.
+7. **The cut, dropped.** Once the folds read the state, nothing reads
+   records: `recordsOf` had two callers, and both use the finishes now. Remove
+   the `MainCut` code, `MAIN_CUT_VERSION`, `savedCut` and `saveCut`, and the
+   part of `main` mode that wrote records. `claude-main-cuts-mod/` is deleted
+   on the mod's first run (20 MB for this session alone).
+8. **The panel on the agent folds.** The agent fold grows to hold what
+   `read_agent_usage` needs as well as what `foldAgentRecord` keeps now:
+   compactions, the last stamp, the API-error flag, the cwd, the block
+   count, the background map, the model and the effort. It moves under the
+   contract, and the Python panel loads it, folds the new lines and saves it
+   back. A panel tick then reads only what was written since the last tick,
+   and the mod and the panel share one file per agent. The inbox's sends and
+   deliveries join the folds, the main fold's and each agent's, so
+   `inbox_counts` stops scanning the main transcript from the start on each
+   tick. The agent-files caches of both ports are replaced and removed.
+9. **The window costs, one file.** The three copies become one under the
+   contract. It is keyed by the format, no longer by `_source_digest` or
+   `CONFIG.version`, and written by whichever port scans.
+
+Steps 1, 2 and 3 are independent of one another. Steps 4 to 7 must land in
+order. Step 8 needs the contract from step 1 and the text form from step 4.
+Step 9 needs only step 1.
+
+## Open questions
+
+1. **Delete the old calibration files?** Step 1 would remove the 65,075
+   `claude-calibration-*.json` files and the 63 `-ts-` ones on its first
+   run. Nothing would read them after it. The alternative is to leave them
+   for you to delete.
+2. **Which spec file holds the state table?** `spec/layout.jsonc` would mean
+   no new generator code, but a cache format is not layout. A sibling
+   `spec/state.jsonc`, generated by the same `tools/gen-spec.py`, keeps the
+   two apart.
+3. **One format per kind, or one for all?** Per kind, a change to the
+   calibration does not refold every session's transcript. A single format
+   is simpler, but each bump costs one cold fold per session, about 3s at
+   200 MB.
+4. **Is `$.fs.write` atomic?** If the engine writes through a temporary file,
+   the head-last rule is enough. If not, a torn single-file cache reads as
+   missing, which is safe but slow. Head slots that alternate, `head-a` and
+   `head-b` with a sequence number, would remove the risk. Nobody has
+   checked yet.
+5. **Step 8's scope.** Should the panel's inbox move to the folds in the same
+   commit as its agent rows, or in a commit of its own?
