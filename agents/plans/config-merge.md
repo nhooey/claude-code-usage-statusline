@@ -483,6 +483,27 @@ and `npm test`.
 2. **The Python parses flags from the spec.** `cli.py`'s flag sets and
    `USAGE` come from it; the positive spellings of the `--no-` flags are
    added. Behaviour is unchanged; `tests/port-cli.py` shows it.
+
+   **Status 2026-10-20: done.** As built:
+   - `cli.py` builds `_VALUE_FLAGS`, `_COMMON_FLAGS` and a set per agent
+     (`_CLAUDE_FLAGS`, `_CODEX_FLAGS`) from the records with a flag and
+     `"py"` in their ports: a flag, its `aliases`, and `--no-` for a
+     `negatable` one; `agents` limits a flag to the agents it names. The
+     sets are today's, with `--totals`, `--right-align`,
+     `--account-totals`, `--datetime`, `--usage-text` and
+     `--no-subscript-decimals` new for Claude.
+   - Each record with a flag gains `usage`, its line of `--help`: short,
+     plain ASCII, and `gen-spec.py` refuses one without the other. `USAGE`
+     keeps its hand-written head, modes and Codex note, and builds its
+     sections from the records: Shared and Claude display by `doc-table`,
+     each display flag with its modes in brackets, and `--selftest` and
+     `-h, --help` under Other. A negatable bool shows the spelling that
+     changes something first, `--no-totals, --totals`.
+   - The negative wins whichever comes first, as it did for
+     `--column-rules` and `--mark-spacing`: `cli.main` drops a positive
+     spelling from what it forwards when its negative is given, so the
+     adapter, which reads some switches by one spelling and some by the
+     other, sees one answer. Step 3's `Options` takes this rule over.
 3. **The Python reads `Options`, not `argv`.** `claude.py` and the Codex
    path take the merged value, still built from flags and defaults alone;
    `_flag` goes. The goldens show nothing moved.

@@ -2,14 +2,86 @@
 import json
 import os
 import sys
+import textwrap
 
 from .codex import native_quota, parse_jsonl, read_request_tree, root_context, rollout_identity
 from .codex import origin_turn
+from .options_spec import OPTIONS
 from .render import account_summary, clean_text, codex_report, codex_stop_report, codex_summary
 from .sources import collect, period_bounds, validate_source
 from .state import claim_reportable_requests
 
-USAGE = """usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|subagent] [options]
+# The options this command line takes, from spec/options.jsonc.
+_FLAGGED = [o for o in OPTIONS.values() if o["flag"] and "py" in o["ports"]]
+
+
+def _negative(option):
+    return "--no-" + option["flag"][2:]
+
+
+def _spellings(option):
+    """Every way the command line may write the option: its flag, the
+    flag's aliases, and the `--no-` form of a negatable one."""
+    names = [option["flag"]] + list(option.get("aliases", ()))
+    if option.get("negatable"):
+        names.append(_negative(option))
+    return names
+
+
+def _agent_flags(agent):
+    """The spellings `--agent AGENT` accepts: every agent's, and those of
+    the options whose `agents` name it."""
+    return frozenset(name for o in _FLAGGED
+                     if agent in o.get("agents", (agent,))
+                     for name in _spellings(o))
+
+
+_VALUE_FLAGS = frozenset(o["flag"] for o in _FLAGGED if o["type"] != "bool")
+# Without a known --agent, only the flags every agent takes.
+_COMMON_FLAGS = frozenset(name for o in _FLAGGED if "agents" not in o
+                          for name in _spellings(o))
+_CLAUDE_FLAGS = _agent_flags("claude")
+_CODEX_FLAGS = _agent_flags("codex")
+# The positive spelling of each negatable option, by its negative: the
+# negative wins when both are given, as it always has for --column-rules
+# and --mark-spacing, whichever comes first.
+_NEGATED = {_negative(o): o["flag"] for o in _FLAGGED if o.get("negatable")}
+
+_WIDTH = 79
+_GUTTER = 25
+
+
+def _usage_entry(option):
+    """One flag's lines of USAGE: its spellings, the default's opposite
+    first for a negatable bool, and its usage text with its modes."""
+    names = _spellings(option)
+    if option.get("negatable") and option["default"] is True:
+        names = [names[-1]] + names[:-1]
+    names = [n for n in names if n.startswith("--")]
+    names = [n for n in option.get("aliases", ()) if not n.startswith("--")] + names
+    head = ", ".join(names)
+    if option["type"] != "bool":
+        head += " " + (option.get("metavar") or "|".join(option["items"]))
+    text = option["usage"]
+    modes = option.get("modes")
+    if modes and len(modes) < 3:
+        text += " [%s]" % ", ".join(modes)
+    body = textwrap.wrap(text, _WIDTH - _GUTTER, break_on_hyphens=False)
+    head = "  " + head
+    if len(head) + 2 > _GUTTER:
+        return [head] + [" " * _GUTTER + line for line in body]
+    return ([head.ljust(_GUTTER) + body[0]]
+            + [" " * _GUTTER + line for line in body[1:]])
+
+
+def _usage_section(title, options):
+    lines = [title + ":"]
+    for option in options:
+        lines += _usage_entry(option)
+    return "\n".join(lines) + "\n"
+
+
+USAGE = ("""usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|subagent] [options]
 
 One-shot coding-agent usage status and Stop-hook reports. --agent is required
 except for --help and --selftest.
@@ -19,46 +91,18 @@ Modes:
   cost                   Print Stop-hook JSON; --all prints plain history.
   subagent               Claude panel output; Codex suggests --mode cost --all.
 
-Shared options:
-  --agent NAME           claude or codex.
-  --transcript PATH      Read one transcript; never waits for stdin.
-  --usage-source SPEC    auto, native, none/off, claude-usage-tracker,
-                         codex-app-server, anthropic-admin, openai-admin,
-                         experimental-claude-oauth, experimental-codex-api,
-                         or cmd:PATH.
-  --account NAME         Non-secret account cache namespace (default: default).
-  --account-period P     day, week, or month (default: day; UTC boundaries).
-  --cols N               Non-negative terminal width (0 means unknown width).
-  --all                  Plain cost history without consuming Stop state.
-  --diagnose             Redacted source/coverage diagnostics on stderr.
-  --from-figures PATH    Claude: draw a figures document (tests/README.md,
-                         "Figures") instead of reading any input.
-  --hide PATH            Repeatable. Leave out a column or a label part,
-                         scope[.group[.metric]] with * for any one part
-                         (docs/options.md). The agent panel only, for now;
-                         the other modes accept it and ignore it.
-  --right-edge N         Columns every agent-panel row leaves blank at the
-                         terminal's right edge (default: 5, the band's [-]
-                         room above the prompt; 0 with the band under the
-                         footer line).
-
-Claude display options:
-  --color, --column-rules, --no-totals, --no-right-align,
-  --no-account-totals, --no-datetime, --no-usage-text, --force-newline,
-  --mark-spacing/--no-mark-spacing, --subscript-decimals.
-
+""" + _usage_section("Shared options",
+                     [o for o in _FLAGGED if o["doc-table"] == "shared"])
+    + "\n" + _usage_section(
+        "Claude display options, in the modes in brackets",
+        [o for o in _FLAGGED if o["doc-table"] == "display"])
+    + "\n" + _usage_section(
+        "Other", [o for o in _FLAGGED if o["doc-table"] is None])
+    + """
 Codex uses its built-in /statusline for a live footer; this command provides
 one-shot status, Stop warnings and historical reports. Use --help with no
 vendor credentials or transcript required.
-"""
-
-_VALUE_FLAGS = set(("--agent", "--mode", "--transcript", "--usage-source", "--account",
-                    "--account-period", "--cols", "--prefix", "--label",
-                    "--from-figures", "--hide", "--right-edge"))
-_COMMON_FLAGS = _VALUE_FLAGS | set(("--all", "--diagnose", "--selftest", "-h", "--help"))
-_CLAUDE_FLAGS = _COMMON_FLAGS | set(("--subscript-decimals", "--no-mark-spacing", "--mark-spacing",
-    "--no-column-rules", "--column-rules", "--color", "--no-totals", "--no-right-align",
-    "--no-account-totals", "--no-datetime", "--no-usage-text", "--force-newline"))
+""")
 
 
 def _parse(argv, allowed):
@@ -220,7 +264,8 @@ def main(argv=None):
     # Validate before stdin so malformed hooks cannot hang waiting for input.
     rough_agent = argv[argv.index("--agent") + 1] if "--agent" in argv and argv.index("--agent") + 1 < len(argv) else ""
     try:
-        options = _parse(argv, _CLAUDE_FLAGS if rough_agent == "claude" else _COMMON_FLAGS)
+        allowed = {"claude": _CLAUDE_FLAGS, "codex": _CODEX_FLAGS}.get(rough_agent, _COMMON_FLAGS)
+        options = _parse(argv, allowed)
     except ValueError as exc:
         sys.stderr.write(str(exc) + "\n"); return 2
     agent = options.get("--agent")
@@ -254,10 +299,16 @@ def main(argv=None):
         # Account scope is part of the shared source contract for Claude too;
         # retain it for the adapter rather than silently dropping it here.
         omitted = set(("--agent",))
+        # The adapter reads some switches by their positive spelling and
+        # some by their negative; dropping the positive where the negative
+        # is given leaves it one answer for each.
+        omitted_switches = set(_NEGATED[name] for name in _NEGATED if name in options)
         while index < len(argv):
             item = argv[index]
             if item in omitted:
                 index += 2
+            elif item in omitted_switches:
+                index += 1
             else:
                 forwarded.append(item)
                 if item in _VALUE_FLAGS:

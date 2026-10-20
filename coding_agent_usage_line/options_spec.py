@@ -12,6 +12,7 @@ OPTIONS = {
         "flag": "--agent",
         "doc-table": "shared",
         "doc-default": "—",
+        "usage": "Required, except with --help and --selftest.",
         "doc": "Which transcript format and hook conventions to use. Required.",
     },
     "mode": {
@@ -23,6 +24,7 @@ OPTIONS = {
         "file": False,
         "flag": "--mode",
         "doc-table": "shared",
+        "usage": "status (the default), cost or subagent; see Modes.",
         "doc": "See [Modes](#modes).",
     },
     "transcript": {
@@ -34,6 +36,7 @@ OPTIONS = {
         "flag": "--transcript",
         "doc-table": "shared",
         "doc-default": "the payload's path",
+        "usage": "Read one transcript; never waits for stdin.",
         "doc": "Read this transcript instead of the one the payload names, and don't read stdin. For offline use: it skips the Stop hook's wait for the transcript to finish writing, and never records \"already reported\" state, so it can't change what the live hook reports next.",
     },
     "usage-source": {
@@ -44,6 +47,7 @@ OPTIONS = {
         "file": True,
         "flag": "--usage-source",
         "doc-table": "shared",
+        "usage": "auto, native, none/off, claude-usage-tracker, codex-app-server, anthropic-admin, openai-admin, experimental-claude-oauth, experimental-codex-api, or cmd:PATH (default: auto).",
         "doc": "Where plan/quota figures come from. See [Usage sources](usage-sources.md).",
     },
     "account": {
@@ -54,6 +58,7 @@ OPTIONS = {
         "file": True,
         "flag": "--account",
         "doc-table": "shared",
+        "usage": "Non-secret account cache namespace (default: default).",
         "doc": "A non-secret label that keeps cached readings for different accounts apart. Never put a token here.",
     },
     "account-period": {
@@ -64,6 +69,7 @@ OPTIONS = {
         "file": True,
         "flag": "--account-period",
         "doc-table": "shared",
+        "usage": "The organization reports' UTC period (default: day).",
         "doc": "The UTC calendar period for organization reports (`anthropic-admin`, `openai-admin`). Weeks start on Monday.",
     },
     "all": {
@@ -73,6 +79,7 @@ OPTIONS = {
         "file": False,
         "flag": "--all",
         "doc-table": "shared",
+        "usage": "Plain cost history without consuming Stop state.",
         "doc": "With `--mode cost`: list every prompt as plain text instead of emitting a hook response. Codex also lists completed child agents. Doesn't consume Stop-hook state.",
     },
     "from-figures": {
@@ -83,6 +90,7 @@ OPTIONS = {
         "file": False,
         "flag": "--from-figures",
         "doc-table": "shared",
+        "usage": "Claude: draw a figures document (tests/README.md, \"Figures\") instead of reading any input.",
         "doc": "Claude: draw a saved figures document instead of reading any input. The test suite saves one per case; useful for redrawing a captured layout. See [the tests' README](../tests/README.md#figures).",
     },
     "diagnose": {
@@ -92,6 +100,7 @@ OPTIONS = {
         "file": False,
         "flag": "--diagnose",
         "doc-table": "shared",
+        "usage": "Redacted source/coverage diagnostics on stderr.",
         "doc": "Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Claude's status line adds the session's cost and lines two ways, as a check on each other: `cost_usd` and `lines`, this program's own over the transcript and the agent files, as the cost line totals them, and `claude_cost_usd` and `claude_lines`, the totals Claude Code's payload gave; each is blank where its side has none. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses.",
     },
     # The terminal's width is never a preference, so no file sets it.
@@ -105,6 +114,7 @@ OPTIONS = {
         "flag": "--cols",
         "doc-table": "shared",
         "doc-default": "detected",
+        "usage": "Non-negative terminal width (0 means unknown width).",
         "doc": "Terminal width. `0` means \"unknown\", which forces the fallback layout. Claude only; Codex accepts and ignores it.",
     },
     # The panel's rows end where the band's do: 2 short of the edge with
@@ -120,6 +130,7 @@ OPTIONS = {
         "file": True,
         "flag": "--right-edge",
         "doc-table": "shared",
+        "usage": "Columns every agent-panel row leaves blank at the terminal's right edge (default: 5, the band's [-] room above the prompt; 2 with the mod's rows under the footer line).",
         "doc": "The columns every agent-panel row leaves blank at the terminal's right edge. `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt; `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge. Claude only.",
     },
     # One list for the band and the panel.  The rows table, not hide,
@@ -132,6 +143,7 @@ OPTIONS = {
         "file": True,
         "flag": "--hide",
         "doc-table": "shared",
+        "usage": "Repeatable. Leave out a column or a label part, scope[.group[.metric]] with * for any one part (docs/options.md). The agent panel only, for now; the other modes accept it and ignore it.",
         "doc": "Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). Only the agent panel draws on the grid so far; the other modes, and Codex, accept it and ignore it.",
     },
 
@@ -146,6 +158,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("status",),
         "doc-table": "display",
+        "usage": "Draw faint | rules between the columns.",
         "doc": "Draw faint `|` rules between the columns. Nothing moves.",
     },
     "mark-spacing": {
@@ -158,6 +171,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("status", "cost", "subagent"),
         "doc-table": "display",
+        "usage": "Close the blank between a mark and its value.",
         "doc": "Close the blank between a mark and its value.",
     },
     "subscript-decimals": {
@@ -170,6 +184,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("status", "cost", "subagent"),
         "doc-table": "display",
+        "usage": "Write the digits after a decimal point as subscripts.",
         "doc": "Write fractions as subscript digits: `1.2٪` becomes `1₂٪`.",
     },
     "color": {
@@ -181,6 +196,7 @@ OPTIONS = {
         "flag": "--color",
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "Colour the rows.",
         "doc": "Colour the rows. Off by default because the Stop hook's message is shown as plain text.",
     },
     "totals": {
@@ -193,6 +209,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "Drop the session-totals row.",
         "doc": "Drop the 🎮 session-totals row.",
     },
     "right-align": {
@@ -205,6 +222,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "Print the rows flush left.",
         "doc": "Print the rows flush left.",
     },
     "account-totals": {
@@ -217,6 +235,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "Drop the account half of each battery cell.",
         "doc": "Drop the second half of each 🔋 and 🪫 cell: `💳 41٪` on the totals row, `📖`/`📝` on the prompt row.",
     },
     "datetime": {
@@ -229,6 +248,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "Drop the date and time cells.",
         "doc": "Drop the 📅 date and 🕐 time cells.",
     },
     "usage-text": {
@@ -241,6 +261,7 @@ OPTIONS = {
         "negatable": True,
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "Drop the \"Usage: ...\" words from the row labels.",
         "doc": "Drop the `Usage: …` words from the row labels, keeping each row's glyph.",
     },
     "force-newline": {
@@ -252,6 +273,7 @@ OPTIONS = {
         "flag": "--force-newline",
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "Always start the message with a blank line.",
         "doc": "Always start the message with a blank line.",
     },
     "prefix": {
@@ -263,6 +285,7 @@ OPTIONS = {
         "flag": "--prefix",
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "The mark at the start of each row.",
         "doc": "The mark at the start of each row. Default `📊`.",
     },
     "label": {
@@ -278,6 +301,7 @@ OPTIONS = {
         "flag": "--label",
         "modes": ("cost",),
         "doc-table": "display",
+        "usage": "The label of the prompt row.",
         "doc": "The label of the prompt row. Default `🎤 Usage: Prompt (last)`, or `🎤` with `--no-usage-text`.",
     },
 
@@ -289,6 +313,7 @@ OPTIONS = {
         "file": False,
         "flag": "--selftest",
         "doc-table": None,
+        "usage": "Draw specimen rows and report where the cursor landed.",
         "doc": "Draw specimen rows on the terminal and report where the cursor landed.",
     },
     "help": {
@@ -299,6 +324,7 @@ OPTIONS = {
         "flag": "--help",
         "aliases": ("-h",),
         "doc-table": None,
+        "usage": "Print this usage and exit.",
         "doc": "Print the usage and exit.",
     },
 

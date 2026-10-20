@@ -279,7 +279,7 @@ class PublicPortTests(unittest.TestCase):
                                "--cols", "196", payload=payload)
         self.assertNotRegex(strip_ansi(offline), r"98\s*[%٪]")
 
-    def test_claude_cost_uses_selected_account_source(self):
+    def claude_transcript(self):
         transcript = self.home / "claude.jsonl"
         self.write(transcript, [
             {"type": "user", "userType": "external", "promptSource": "typed",
@@ -289,6 +289,10 @@ class PublicPortTests(unittest.TestCase):
                 "content": [{"type": "text", "text": "Fixture answer"}],
                 "usage": {"input_tokens": 20, "output_tokens": 5,
                           "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}}}])
+        return transcript
+
+    def test_claude_cost_uses_selected_account_source(self):
+        transcript = self.claude_transcript()
         command = self.home / "cost-source.sh"
         reading = {"schema_version": 1, "as_of": time.time(),
                    "account": {"scope": "organization", "cost_usd": 7.25}}
@@ -346,6 +350,73 @@ class PublicPortTests(unittest.TestCase):
                     "used_percentage": 11, "resets_at": time.time() + 18000}}})
         self.assertEqual(attempts.read_text().splitlines(), ["attempt"],
                          "A failed explicit source must not re-enter legacy collection")
+
+    # ── The flags, from spec/options.jsonc ───────────────────────────────
+
+    def run_status(self, *args):
+        return subprocess.run(COMMAND + list(args), input="{}", text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=self.env,
+            cwd=str(self.home), timeout=8)
+
+    def test_flag_sets_are_the_hand_listed_ones_and_the_positive_spellings(self):
+        sys.path.insert(0, str(ROOT))
+        try:
+            from coding_agent_usage_line import cli
+        finally:
+            sys.path.remove(str(ROOT))
+        value = {"--agent", "--mode", "--transcript", "--usage-source", "--account",
+                 "--account-period", "--cols", "--prefix", "--label",
+                 "--from-figures", "--hide", "--right-edge"}
+        common = value | {"--all", "--diagnose", "--selftest", "-h", "--help"}
+        claude = common | {"--subscript-decimals", "--no-mark-spacing", "--mark-spacing",
+            "--no-column-rules", "--column-rules", "--color", "--no-totals",
+            "--no-right-align", "--no-account-totals", "--no-datetime",
+            "--no-usage-text", "--force-newline"}
+        positive = {"--totals", "--right-align", "--account-totals", "--datetime",
+                    "--usage-text", "--no-subscript-decimals"}
+        self.assertEqual(cli._VALUE_FLAGS, value)
+        self.assertEqual(cli._COMMON_FLAGS, common)
+        self.assertEqual(cli._CODEX_FLAGS, common)
+        self.assertEqual(cli._CLAUDE_FLAGS, claude | positive)
+
+    def test_usage_names_every_spelling(self):
+        result = self.run_status("--help")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for flag in ("--agent claude|codex", "--account-period day|week|month",
+                     "--no-totals, --totals", "--no-datetime, --datetime",
+                     "--no-usage-text, --usage-text", "--no-right-align, --right-align",
+                     "--no-account-totals, --account-totals",
+                     "--no-mark-spacing, --mark-spacing",
+                     "--column-rules, --no-column-rules",
+                     "--subscript-decimals, --no-subscript-decimals",
+                     "--hide PATH", "--right-edge N", "--prefix TEXT", "--label TEXT",
+                     "--selftest", "-h, --help"):
+            self.assertIn("  " + flag, result.stdout)
+        self.assertFalse([line for line in result.stdout.splitlines()[1:] if len(line) > 79])
+
+    def test_codex_refuses_the_claude_display_flags(self):
+        for flag in ("--totals", "--no-totals", "--no-subscript-decimals", "--color"):
+            result = self.run_status("--agent", "codex", flag)
+            self.assertEqual(result.returncode, 2, flag)
+            self.assertIn("unknown option " + flag, result.stderr)
+
+    def test_positive_spellings_change_nothing_and_the_negative_wins(self):
+        self.env["CODING_AGENT_USAGE_LINE_NOW"] = "1789380000"
+        transcript = str(self.claude_transcript())
+        def cost(*flags):
+            return self.run_cli("--agent", "claude", "--mode", "cost", "--usage-source",
+                                "none", "--transcript", transcript, "--cols", "160", *flags)
+        plain = cost()
+        self.assertEqual(cost("--totals", "--right-align", "--account-totals",
+                              "--datetime", "--usage-text", "--mark-spacing"), plain)
+        for name in ("totals", "right-align", "datetime", "usage-text", "mark-spacing"):
+            negative = cost("--no-" + name)
+            self.assertNotEqual(negative, plain, name)
+            self.assertEqual(cost("--" + name, "--no-" + name), negative, name)
+            self.assertEqual(cost("--no-" + name, "--" + name), negative, name)
+        self.assertNotEqual(cost("--subscript-decimals"), plain)
+        self.assertEqual(cost("--no-subscript-decimals"), plain)
+        self.assertEqual(cost("--subscript-decimals", "--no-subscript-decimals"), plain)
 
 
 if __name__ == "__main__":

@@ -80,6 +80,11 @@ unless `--cols` is given. `--cols` is the terminal's width in every mode.
 
 ## Claude display options
 
+Each switch below that the table writes with `--no-` also takes its
+positive spelling (`--totals`), and `--column-rules`,
+`--mark-spacing` and `--subscript-decimals` take both too. Where a command
+gives both spellings, the `--no-` one wins.
+
 <!-- options:begin display -->
 | Option | Modes | Effect |
 |---|---|---|

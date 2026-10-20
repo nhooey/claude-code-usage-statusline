@@ -394,7 +394,7 @@ AS_CONST = {"OPTIONS"}
 TYPES = ("bool", "int", "string", "enum", "list", "table")
 FIELDS = ("type", "items", "fields", "metavar", "default", "derived",
           "minimum", "ports", "agents", "file", "flag", "aliases",
-          "negatable", "modes", "doc-table", "doc-default", "doc")
+          "negatable", "modes", "doc-table", "doc-default", "usage", "doc")
 REQUIRED = ("type", "default", "ports", "file", "flag", "doc-table", "doc")
 MODES = ["status", "cost", "subagent"]
 DOC = os.path.join("docs", "options.md")
@@ -417,10 +417,11 @@ def plain(node):
 
 
 def join_docs(root):
-    """Each option's doc, written as lines, made the one string it is."""
+    """Each option's doc and usage, written as lines, made the one string
+    each is."""
     for opt in root.value[0].value:
         for f in opt.value:
-            if f.key == "doc" and f.kind == "arr":
+            if f.key in ("doc", "usage") and f.kind == "arr":
                 f.kind, f.value = "str", " ".join(c.value for c in f.value)
 
 
@@ -484,6 +485,10 @@ def check_options(opts):
             bad(name, "its flag is --%s" % name)
         if flag is None and "py" in o["ports"] and o["file"] is False:
             bad(name, "the Python could not be given it")
+        if (flag is not None) != ("usage" in o):
+            bad(name, "a usage line goes with a flag, and only with one")
+        if "usage" in o and not o["usage"].isascii():
+            bad(name, "the usage text is plain ASCII, for any terminal")
         if o.get("negatable") and t != "bool":
             bad(name, "only a bool is negatable")
         if "minimum" in o and t != "int":
