@@ -1412,6 +1412,79 @@ export function foldAgentRecord(fold: AgentFold, length: number,
 
 /** What a saved fold is saved as, so a change to the fold's shape or to
  * what it folds reads no fold saved before it. */
+/** The version of the saved shape mainCutText writes: a change to it, or
+ * to what scripts/agent_lines.py's main mode keeps, is a new one. */
+export const MAIN_CUT_VERSION = "main-cut 1";
+
+/** A session's transcript as read so far, saved in parts, each a file
+ * $.fs will write and read whole (under 4 MiB): a head naming the version,
+ * `tag`, `stable`, the byte after the last whole line read, and how many
+ * records each part holds; and the parts, a record's JSON a line.  A part
+ * only grows, as the transcript does, so a head saved before its part was
+ * rewritten longer still reads true: its count takes the part's first
+ * records. */
+export type MainCut = { stable: number; records: Rec[] };
+
+/** At most this many characters a part, which UTF-8 keeps under 4 MiB:
+ * JSON.stringify writes no character as more than 3 bytes. */
+export const MAIN_CUT_PART = 1_000_000;
+
+/** `records` from the `from`th on as parts' text, each MAIN_CUT_PART
+ * characters at most, except a single record longer than that, with how
+ * many records each holds. */
+export function mainCutParts(records: readonly Rec[], from = 0):
+  { text: string; count: number }[] {
+  const out: { text: string; count: number }[] = [];
+  let lines: string[] = [], size = 0;
+  for (const r of records.slice(from)) {
+    const l = JSON.stringify(r) + "\n";
+    if (lines.length && size + l.length > MAIN_CUT_PART) {
+      out.push({ text: lines.join(""), count: lines.length });
+      lines = [];
+      size = 0;
+    }
+    lines.push(l);
+    size += l.length;
+  }
+  out.push({ text: lines.join(""), count: lines.length });
+  return out;
+}
+
+/** The head of a saved cut, as text. */
+export function mainCutHead(stable: number, counts: readonly number[],
+  tag = ""): string {
+  return JSON.stringify({ version: MAIN_CUT_VERSION + "\0" + tag, stable,
+    counts });
+}
+
+/** The counts a head saved under `tag` names, with its `stable`, or null
+ * for another version or tag. */
+export function mainCutHeadOf(text: string, tag = ""):
+  { stable: number; counts: number[] } | null {
+  try {
+    const o = JSON.parse(text) as any;
+    if (o === null || typeof o !== "object" ||
+      o.version !== MAIN_CUT_VERSION + "\0" + tag ||
+      typeof o.stable !== "number" || !Array.isArray(o.counts)) {
+      return null;
+    }
+    return { stable: o.stable, counts: o.counts };
+  } catch {
+    return null;
+  }
+}
+
+/** A part's first `count` records, or null where it holds fewer. */
+export function mainCutPartOf(text: string, count: number): Rec[] | null {
+  const lines = text.split("\n");
+  if (lines.length - 1 < count) return null;
+  try {
+    return lines.slice(0, count).map((l) => JSON.parse(l) as Rec);
+  } catch {
+    return null;
+  }
+}
+
 export const AGENT_FOLD_VERSION = "agent-fold 1";
 
 /** `fold` as text to save: its Map and Set as lists.  `tag` names what

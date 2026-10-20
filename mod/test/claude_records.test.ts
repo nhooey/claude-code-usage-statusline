@@ -309,6 +309,34 @@ test("a transcript's records cut down by agent_lines.py main read as whole",
     }
   });
 
+// A transcript's records saved in parts and read back are the same
+// records; a head under another tag, or a part short of its count, is
+// not read back.
+test("a transcript's saved records read back as they were", () => {
+  const files = execFileSync("git", ["ls-files", "tests/fixtures"])
+    .toString().split("\n").filter((x) => x.endsWith(".jsonl") &&
+      !path.basename(x).startsWith("agent-"));
+  // Enough records to need more than one part.
+  const many = files.flatMap((x) => cr._recordsOf(fs.readFileSync(x)));
+  const records = Array.from({ length: 40 }, () => many).flat();
+  const parts = cr.mainCutParts(records);
+  assert.ok(parts.length > 1, String(parts.length));
+  assert.ok(parts.every((p) => p.text.length <= cr.MAIN_CUT_PART));
+  const head = cr.mainCutHeadOf(cr.mainCutHead(7, parts.map((p) => p.count),
+    "t"), "t");
+  assert.deepEqual(head?.stable, 7);
+  const back = parts.flatMap((p, i) =>
+    cr.mainCutPartOf(p.text, head!.counts[i]) ?? []);
+  assert.deepEqual(back, JSON.parse(JSON.stringify(records)));
+  assert.equal(cr.mainCutHeadOf(cr.mainCutHead(7, [1], "t"), "u"), null);
+  assert.equal(cr.mainCutPartOf(parts[0].text, parts[0].count + 1), null);
+  // From a later record, as a save after the first writes its last part
+  // again: the parts after the full ones.
+  const from = parts[0].count;
+  assert.deepEqual(cr.mainCutParts(records, from).map((p) => p.text),
+    parts.slice(1).map((p) => p.text));
+});
+
 // A fold saved halfway and read back goes on to the same reading, and one
 // saved under another tag is not read back.
 test("an agent fold saved and read back reads on as before", () => {

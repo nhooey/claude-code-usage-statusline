@@ -19,8 +19,9 @@ import type { EngineInterface } from 'claude-code'
 import {
   _agentDir, _agentStatePath, _recordsOf, agentFoldOf, agentFoldText,
   agentLabelOf, agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr,
-  EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, newAgentFold, pyJoin,
-  readPayload, transcriptOf, turnsOf,
+  EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, mainCutHead, mainCutHeadOf, mainCutPartOf,
+  mainCutParts,
+  newAgentFold, pyJoin, readPayload, transcriptOf, turnsOf,
 } from '../src/claude_records.ts'
 import type {
   AgentEta, AgentFold, AgentReading, AgentRec, Payload, Rec, Transcript,
@@ -213,11 +214,11 @@ export async function recordsOf($: $, path: string): Promise<Rec[]> {
     parsed.delete(path)
     return []
   }
-  let got = parsed.get(path)
+  const { stateDir } = await placesOf($)
+  let got = parsed.get(path) ?? await savedCut($, stateDir, path)
   if (!got || size < got.stable) got = { stable: 0, records: [] }
   if (size - got.stable >= AGENT_LINES_MIN) {
     got = await mainLines($, path, got, size)
-    parsed.set(path, got)
   }
   let data: Uint8Array
   try {
@@ -232,6 +233,7 @@ export async function recordsOf($: $, path: string): Promise<Rec[]> {
     got = { stable: got.stable + nl + 1, records: [...got.records, ...fresh] }
   }
   parsed.set(path, got)
+  await saveCut($, stateDir, path, got)
   const rest = data.subarray(nl + 1)
   return rest.length ? [...got.records, ..._recordsOf(rest)] : got.records
 }
@@ -440,6 +442,64 @@ async function saveFold($: $, stateDir: string, transcript: string,
       agentFoldText(fold, CONFIG.version))
   } catch (err) {
     void log($, 'agent fold not saved', err)
+  }
+}
+
+/** Where a session's transcript, as read so far, is saved (MainCut), so
+ * a reload reads on from there: 157 MB of transcript took 3.2s of Python
+ * to cut down again on each (seen live 2026-10-20).  `part` names a part,
+ * and none the head. */
+function cutPath(stateDir: string, transcript: string, part?: number) {
+  return pyJoin(stateDir, 'claude-main-cuts-mod/' +
+    sha256Hex(transcript).slice(0, 32) + '/' +
+    (part === undefined ? 'head.json' : 'part-' + part + '.jsonl'))
+}
+
+// What each transcript's saved cut holds, and when it was saved: at most
+// once per CONFIG.foldSaveMs, and only once it reaches further.  Every
+// part but the last is full, and never written again.
+type CutSaved = { at: number; stable: number; counts: number[] }
+const cutSaved = new Map<string, CutSaved>()
+
+async function savedCut($: $, stateDir: string, transcript: string):
+  Promise<Parsed | null> {
+  const text = await readText($, cutPath(stateDir, transcript))
+  const head = text === null ? null : mainCutHeadOf(text, CONFIG.version)
+  if (!head) return null
+  const records: Rec[] = []
+  for (const [i, n] of head.counts.entries()) {
+    const part = await readText($, cutPath(stateDir, transcript, i))
+    const got = part === null ? null : mainCutPartOf(part, n)
+    if (!got) return null
+    records.push(...got)
+  }
+  cutSaved.set(transcript, { at: await $.clock.now(), stable: head.stable,
+    counts: head.counts })
+  return { stable: head.stable, records }
+}
+
+async function saveCut($: $, stateDir: string, transcript: string,
+  got: Parsed): Promise<void> {
+  const last = cutSaved.get(transcript) ??
+    { at: -Infinity, stable: 0, counts: [] }
+  const now = await $.clock.now()
+  if (got.stable <= last.stable || now - last.at < CONFIG.foldSaveMs) return
+  // The last part saved is written again, with what follows it.
+  const full = last.counts.slice(0, -1)
+  const from = full.reduce((a, b) => a + b, 0)
+  const parts = mainCutParts(got.records, from)
+  const counts = [...full, ...parts.map((p) => p.count)]
+  cutSaved.set(transcript, { at: now, stable: got.stable, counts })
+  try {
+    for (const [i, p] of parts.entries()) {
+      await $.fs.write(cutPath(stateDir, transcript, full.length + i), p.text)
+    }
+    // The head last: until it is written, the one before reads true.
+    await $.fs.write(cutPath(stateDir, transcript),
+      mainCutHead(got.stable, counts, CONFIG.version))
+  } catch (err) {
+    cutSaved.set(transcript, last)
+    void log($, 'transcript cut not saved', err)
   }
 }
 
