@@ -110,6 +110,11 @@ async function slow($: $, ms: number): Promise<void> {
 // its text, which the start line is filed under, and the tag that stood
 // before it, which the new one must differ from.
 let pending: { text: string; before: unknown } | null = null
+// The promptId the running turn opened with, once a document showed its
+// record (fileStart); "" until then.  The receipt bills this turn: read
+// after turn.complete instead, the newest prompt can be one written as the
+// turn ended, a task notification's (seen live 2026-10-20).
+let opened = ''
 
 /** Reads the status document afresh; the write redraws the band.  One at
  * a time: a call while one runs asks for one more after it. */
@@ -168,6 +173,7 @@ async function refresh($: $): Promise<void> {
 async function fileStart($: $, doc: Dict): Promise<void> {
   const tr = doc.transcript as Dict | undefined
   if (!pending || !tr?.prompt_id || tr.prompt_id === pending.before) return
+  if (typeof tr.prompt_id === 'string') opened = tr.prompt_id
   const spans = startLine(doc, CONFIG.hide)
   const text = pending.text
   pending = null
@@ -557,6 +563,7 @@ export const register: Register = on => {
     await update($, held, () => false)
     const tr = (await read($, status))?.transcript as Dict | undefined
     pending = { text: e.text, before: tr?.prompt_id ?? '' }
+    opened = ''
     void refresh($).catch((err) => log($, 'refresh', err))
     return result
   })
@@ -566,8 +573,9 @@ export const register: Register = on => {
   // read nor the stamp is awaited: the stamp waits on Claude Code's own write, which comes after
   // this event, for longer than a handler's budget, whose clock runs on
   // through a sleep; it goes on after the handler returns, as the tick
-  // does.  The refresh reads the prompt the turn opened with, which the
-  // stamp bills and no later one.
+  // does.  The stamp bills the prompt the turn opened with and no later
+  // one: as a document showed it while the turn ran, else as the refresh
+  // reads it, for a turn too short for any read to have seen it.
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     await start($, 'turn.complete')
@@ -583,10 +591,13 @@ export const register: Register = on => {
       void refresh($).catch((err) => log($, 'refresh', err))
       return result
     }
+    const seen = opened
+    opened = ''
     void (async () => {
       await refresh($)
       const tr = (await read($, status))?.transcript as Dict | undefined
-      const prompt = typeof tr?.prompt_id === 'string' ? tr.prompt_id : ''
+      const prompt = seen ||
+        (typeof tr?.prompt_id === 'string' ? tr.prompt_id : '')
       await stamp($, e.durationMs, prompt)
     })()
       .catch((err) => log($, 'no receipt', err))

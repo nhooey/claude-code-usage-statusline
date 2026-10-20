@@ -890,6 +890,40 @@ test('a turn a task notification follows still gets its receipt and tag',
     expect(logOf(w)).not.toContain('no receipt')
   })
 
+test('a task notification written before turn.complete does not take the receipt',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'AbovePrompt', props: BAND })
+    grow(w, { message: { content: ASKED }, promptId: 'p-resume',
+      promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z', type: 'user',
+      userType: 'external' })
+    await $.turn.start({ text: ASKED, turnId: 't-resume' })
+    await settle()
+    // The answer, and the notification 17 ms after the turn's end, both
+    // in the transcript by the time the refresh after turn.complete reads
+    // it (seen live 2026-10-20), so the newest prompt is the
+    // notification's, a turn that never runs.
+    grow(w, ANSWER, { message: { content: '<task-notification>\n' +
+      '<task-id>a1</task-id>\n<status>completed</status>\n' +
+      '</task-notification>' }, origin: { kind: 'task-notification' },
+    promptId: 'p-notice', promptSource: 'system',
+    timestamp: '2026-08-16T02:20:06Z', type: 'user', userType: 'external' })
+    await $.turn.complete(COMPLETE)
+    await settle()
+    await until(w, 5_000)
+    expect(stamped(w)).toBe(true)
+    const want = await receiptOf(w, w.clock.now() / 1000)
+    expect(text(want.at(-1)!)).toContain('p-resume'.slice(0, 8))
+    expect(await closing($, ASKED_MS)).toEqual(expected(want))
+    await w.clock.advance(5_000)
+    expect(logOf(w)).not.toContain('no receipt')
+  })
+
 test('a turn whose records never land logs why and stamps nothing',
   async ($, on) => {
     const w = world(on)
