@@ -3163,6 +3163,12 @@ options (all modes):
                      scope[.group[.metric]] with * for any one part;
                      repeatable.  The agent panel only, for now: the other
                      modes accept it and ignore it.  docs/options.md, "Hiding".
+  --right-edge N     the columns every agent-panel row leaves blank at the
+                     terminal's right edge.  Default 5, the room Claude
+                     Code keeps for the band's [-] when the mod draws it
+                     above the prompt; 0 when the mod draws the band under
+                     the footer line, where there is no [-], so the panel
+                     ends where the band's rows do.
   --cols N           terminal width, overriding the ancestry walk.  Chiefly
                      for the golden test, which must be deterministic.  "0"
                      means "pretend the width is unknown".
@@ -3225,6 +3231,10 @@ def main(argv: Sequence[str]) -> int:
     # Same reason, one layer in: it changes what the five numeric formatters
     # emit, and every field on both readouts is measured from that.
     set_subscript_decimals("--subscript-decimals" in argv)
+    # Before anything renders, as both above: where every grid row ends.
+    edge = _flag(argv, "--right-edge")
+    if edge.isdigit():
+        set_right_edge(int(edge))
     mode = _flag(argv, "--mode", "status")
     # Stage two alone, from a figures document: no stdin, no transcript, no
     # source and no clock.  See "The figures boundary".

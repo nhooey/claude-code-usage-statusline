@@ -16,7 +16,7 @@
 // spans into escape codes: that is the printing's job.
 import {
   CHROME_DEPTH, DROP_ORDER, E_PCT, GRID_CELLS, GRID_SCOPES, LABEL_MIN,
-  PANEL_CHROME, RIGHT_EDGE, VAL_W, VAL2_W,
+  PANEL_CHROME, VAL_W, VAL2_W,
 } from "./spec.ts";
 import { padVal, seg, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -208,7 +208,7 @@ export function layout(st: Settings, rows: readonly Row[], cols: number,
     : Math.max(0, ...rows.map((r) => width(chrome(r.depth), st.widths)));
   for (const k of DROP_ORDER) {
     const used = keys.reduce((n, c) => n + room.get(c)!, 0);
-    if (cols - RIGHT_EDGE - lead - used >= LABEL_MIN) break;
+    if (cols - st.rightEdge - lead - used >= LABEL_MIN) break;
     const i = keys.indexOf(k);
     if (i >= 0) keys.splice(i, 1);
   }
@@ -217,11 +217,12 @@ export function layout(st: Settings, rows: readonly Row[], cols: number,
 
 /** One row on the columns `keys`.  With `spill`, the label runs on over
  * the row's own leading blank columns, up to its first figure, instead of
- * stopping where the first column starts.  Every row ends RIGHT_EDGE
- * columns short of the terminal's edge, and never runs past that: a label
- * with no room draws nothing, not even a `…`, and a row whose chrome and
- * cells are wider than the terminal leaves, at a width too narrow for the
- * drop to help, is cut there like a label. */
+ * stopping where the first column starts.  Every row ends st.rightEdge
+ * columns short of the terminal's edge (RIGHT_EDGE unless --right-edge
+ * says), and never runs past that: a label with no room draws nothing, not
+ * even a `…`, and a row whose chrome and cells are wider than the terminal
+ * leaves, at a width too narrow for the drop to help, is cut there like a
+ * label. */
 export function draw(st: Settings, row: Row, keys: readonly string[],
   cols: number, patterns: readonly string[], spill = true): Span[] {
   const cells: [number, Span[] | null][] = [];
@@ -234,7 +235,7 @@ export function draw(st: Settings, row: Row, keys: readonly string[],
       : null]);
   }
   const head = chrome(row.depth);
-  const end = cols - RIGHT_EDGE;
+  const end = cols - st.rightEdge;
   let room = end - width(head, st.widths) -
     cells.reduce((n, [w]) => n + w, 0);
   while (spill && cells.length && cells[0][1] === null) {

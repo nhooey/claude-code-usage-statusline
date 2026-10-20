@@ -16,7 +16,6 @@
 // as for claude_cost.ts.
 import {
   CHROME_DEPTH, E_ACCT, E_DATE, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
-  RIGHT_EDGE,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -480,7 +479,7 @@ export function accountLine(st: Settings, fig: Dict, hide: readonly string[],
   const gap = span(" ".repeat(FOOTER_GAP));
   const out = trimmed.flatMap((p, i) => i ? [gap, ...p] : p);
   const w = visWidth(out.map((s) => s.text).join(""), st.widths);
-  return [span(" ".repeat(Math.max(0, cols - RIGHT_EDGE - w))), ...out];
+  return [span(" ".repeat(Math.max(0, cols - st.rightEdge - w))), ...out];
 }
 
 /** `spans` without the blanks at either end. */
@@ -510,7 +509,7 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   const plain = accountText(st, fig, hide, home);
   if (!plain) return "";
   const pillW = pillWidth(st, hint, MODE_PILLS[mode ?? ""] ?? "");
-  const room = cols - RIGHT_EDGE - 2 - pillW - visWidth(hint, st.widths) -
+  const room = cols - st.rightEdge - 2 - pillW - visWidth(hint, st.widths) -
     visWidth(FOOTER_JOIN, st.widths);
   // The workspace, the 💳 account and 📅 🕐, FOOTER_GAP columns apart,
   // both gaps fewer, down to one, where the row is short (asked
@@ -532,7 +531,7 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
  * the last digit of its number, counting the terminal's first as 1. */
 export function footerRuler(st: Settings, tail: string, cols: number): string {
   const n = visWidth(tail, st.widths);
-  const end = cols - RIGHT_EDGE;
+  const end = cols - st.rightEdge;
   let out = "";
   for (let c = end - n + 1; c <= end; c++) out += String(c % 10);
   return out;

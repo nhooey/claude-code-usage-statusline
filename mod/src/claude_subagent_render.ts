@@ -26,7 +26,7 @@ import {
   E_PHASE_END, E_PHASE_PAUSE, E_PHASE_RUN, E_RATE, E_ROW_AGENTS,
   E_ROW_COMPACT, E_SESS, E_SPIN, E_TOOL, E_WAIT, E_WEEK, E_WORK, GAUGE_W, LIM_FIG_W,
   MAG_DUR_S, MAG_RATE, MAG_SHARE_AGENT, MAG_TOK, QUIET_S, QUIET_WARN_S,
-  E_CACHE, E_DIFF, CHROME_DEPTH, GRID_CELLS, LABEL_MIN, RIGHT_EDGE,
+  E_CACHE, E_DIFF, CHROME_DEPTH, GRID_CELLS, LABEL_MIN,
 } from "./spec.ts";
 import {
   cacheColor, durFmt, fitCols, humanize, limitPct, magDim, padVal,
@@ -669,7 +669,7 @@ export function panelLayout(st: Settings, cols: number | null = null,
     const keys = layout(st, rows, 1 << 30, hide);
     const room = new Map(GRID_CELLS.map((c) =>
       [c.key, cellWidth(st, c.width) + c.gap]));
-    w = RIGHT_EDGE + width(chrome(CHROME_DEPTH), st.widths) + LABEL_MIN +
+    w = st.rightEdge + width(chrome(CHROME_DEPTH), st.widths) + LABEL_MIN +
       keys.reduce((n, k) => n + room.get(k)!, 0);
   }
   return [w, layout(st, rows, w, hide)];

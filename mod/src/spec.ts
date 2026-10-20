@@ -1303,6 +1303,9 @@ export const MODEL_FAMILIES = ["Opus", "Sonnet", "Haiku", "Fable", "Mythos"];
 
 // The five columns Claude Code keeps for the band's [-] button.  The panel's
 // rows and the receipt end there too, so all three readouts share one edge.
+// The default only: under Claude Code's footer line there is no [-], and the
+// mod's rows there end at the terminal's edge, the panel's too under
+// --right-edge 0 (Settings.rightEdge, formatting.RIGHT_EDGE_COLS).
 export const RIGHT_EDGE = 5;
 // The fewest columns a row's label keeps before columns start to drop.
 export const LABEL_MIN = 20;

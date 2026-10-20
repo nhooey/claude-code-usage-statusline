@@ -37,6 +37,10 @@ Shared options:
                          scope[.group[.metric]] with * for any one part
                          (docs/options.md). The agent panel only, for now;
                          the other modes accept it and ignore it.
+  --right-edge N         Columns every agent-panel row leaves blank at the
+                         terminal's right edge (default: 5, the band's [-]
+                         room above the prompt; 0 with the band under the
+                         footer line).
 
 Claude display options:
   --color, --column-rules, --no-totals, --no-right-align,
@@ -50,7 +54,7 @@ vendor credentials or transcript required.
 
 _VALUE_FLAGS = set(("--agent", "--mode", "--transcript", "--usage-source", "--account",
                     "--account-period", "--cols", "--prefix", "--label",
-                    "--from-figures", "--hide"))
+                    "--from-figures", "--hide", "--right-edge"))
 _COMMON_FLAGS = _VALUE_FLAGS | set(("--all", "--diagnose", "--selftest", "-h", "--help"))
 _CLAUDE_FLAGS = _COMMON_FLAGS | set(("--subscript-decimals", "--no-mark-spacing", "--mark-spacing",
     "--no-column-rules", "--column-rules", "--color", "--no-totals", "--no-right-align",
@@ -229,6 +233,9 @@ def main(argv=None):
         if "--cols" in options:
             cols = int(options["--cols"])
             if cols < 0: raise ValueError("--cols must be a non-negative integer")
+        if "--right-edge" in options:
+            edge = int(options["--right-edge"])
+            if edge < 0: raise ValueError("--right-edge must be a non-negative integer")
         validate_source(agent, options.get("--usage-source", os.environ.get("CODING_AGENT_USAGE_LINE_USAGE_SOURCE", "auto")))
         period_bounds(options.get("--account-period", "day"))
     except ValueError as exc:

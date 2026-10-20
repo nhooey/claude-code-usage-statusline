@@ -36,7 +36,7 @@ import {
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import * as spec from '../src/spec.ts'
-import { CONFIG } from './config.ts'
+import { BAND_EDGE, CONFIG } from './config.ts'
 import { costDoc, permissionModeOf, placesOf, seen, statusDoc, steps,
   transcriptPath, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
@@ -71,7 +71,9 @@ async function settingsOf($: $): Promise<Settings> {
   env.TMUX = await $.env.get('TMUX')
   env.TERMINAL_EMULATOR = await $.env.get('TERMINAL_EMULATOR')
   env.TERM_PROGRAM = await $.env.get('TERM_PROGRAM')
-  st = settings(env as Env, CONFIG.markSpacing, CONFIG.subscriptDecimals)
+  // BAND_EDGE: no [-] under the footer line, so no room kept for one.
+  st = settings(env as Env, CONFIG.markSpacing, CONFIG.subscriptDecimals,
+    BAND_EDGE)
   return st
 }
 
@@ -325,9 +327,12 @@ async function stamp($: $, durationMs: number, prompt: string):
     const st = await settingsOf($)
     const main = doc ? bandRows(st, doc as Dict,
       { home: where.home, rate: null, phase: 'done' }).main : null
-    // Laid out as the band is, so the rows' columns are the band's.
-    const lines = receiptLines(st, fig, bandCols || 80, CONFIG.hide, ws, true,
-      main, CONFIG.sticky)
+    // Laid out as the band is, so the rows' columns are the band's, but
+    // ending RIGHT_EDGE short of the edge wherever the band is: the edge
+    // was taken back for the rows under the footer line only (asked
+    // 2026-10-20), and the receipt is drawn in the transcript.
+    const lines = receiptLines({ ...st, rightEdge: spec.RIGHT_EDGE }, fig,
+      bandCols || 80, CONFIG.hide, ws, true, main, CONFIG.sticky)
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs), lines)
   } finally {

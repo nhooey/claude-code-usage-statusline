@@ -13,6 +13,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -258,6 +259,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -503,6 +505,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -748,6 +751,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -993,6 +997,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -1242,6 +1247,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -1491,6 +1497,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -1740,6 +1747,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -1989,6 +1997,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -2239,6 +2248,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -2489,6 +2499,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -2739,6 +2750,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -2989,6 +3001,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -3239,6 +3252,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -3489,6 +3503,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -3739,6 +3754,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -3989,6 +4005,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -4239,6 +4256,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -4489,6 +4507,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -4739,6 +4758,7 @@
    "pad": " ",
    "profile": "tmux",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -4989,6 +5009,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -5238,6 +5259,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -5487,6 +5509,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -5736,6 +5759,7 @@
    "pad": "",
    "profile": "jediterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -5985,6 +6009,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -6235,6 +6260,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -6485,6 +6511,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -6735,6 +6762,7 @@
    "pad": " ",
    "profile": "iterm",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     15,
@@ -6985,6 +7013,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -7230,6 +7259,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -7475,6 +7505,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -7720,6 +7751,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -7965,6 +7997,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -8210,6 +8243,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 45,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -8455,6 +8489,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,
@@ -8700,6 +8735,7 @@
    "pad": "",
    "profile": "unknown",
    "pwdMaxFallback": 51,
+   "rightEdge": 5,
    "rightGrid": [
     11,
     13,

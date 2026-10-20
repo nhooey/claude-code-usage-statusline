@@ -104,6 +104,35 @@ finally:
             os.environ[var] = val
     importlib.reload(fm)
 
+# At a right edge of 0, as --right-edge 0 sets it for the band under the
+# footer line (asked 2026-10-20), a row ends at `cols` itself, and the
+# layout keeps a column the default edge drops, as grid.test.ts has it.
+any_case = sorted(f for f in os.listdir(CASES) if f.endswith(".json"))[0]
+with open(os.path.join(CASES, any_case), encoding="utf-8") as fh:
+    data = json.load(fh)
+rows = {k: row_from(r) for k, r in data["rows"].items()}
+c = data["draw"][0]
+row = rows[c["row"]]
+keys = [g["key"] for g in grid.GRID_CELLS]
+fm.set_right_edge(0)
+try:
+    for cols in (120, 160, 196):
+        got = fm.vis_width(join(grid.draw(row, keys, cols, [])))
+        check(got == cols, "right edge 0: draw at %d" % cols, got, cols)
+    wide = [rows[k] for k in rows]
+    at = {e: None for e in (0, fm.RIGHT_EDGE)}
+    for e in at:
+        fm.set_right_edge(e)
+        # The narrowest width that keeps every column.
+        at[e] = next(n for n in range(1, 1000)
+                     if len(grid.layout(wide, n, [])) == len(
+                         grid.layout(wide, 1 << 30, [])))
+    check(at[fm.RIGHT_EDGE] - at[0] == fm.RIGHT_EDGE,
+          "right edge 0: every column kept RIGHT_EDGE columns sooner",
+          at, fm.RIGHT_EDGE)
+finally:
+    fm.set_right_edge(fm.RIGHT_EDGE)
+
 # A hide path names itself and every path under it, as grid.test.ts has it.
 for pats, path, want in (
         (["turn.time"], "turn.time.eta", True),

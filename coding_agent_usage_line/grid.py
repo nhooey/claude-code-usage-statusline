@@ -24,7 +24,7 @@ from . import formatting as fmt
 from . import claude_subagent_render as sub
 from .spans import Span, cut, spans, width
 from .spec import (CHROME_DEPTH, DROP_ORDER, E_PCT, GRID_CELLS, GRID_SCOPES,
-                   LABEL_MIN, PANEL_CHROME, RIGHT_EDGE, VAL2_W, VAL_W)
+                   LABEL_MIN, PANEL_CHROME, VAL2_W, VAL_W)
 
 
 class Piece(NamedTuple):
@@ -193,7 +193,7 @@ def layout(rows: Sequence[Row], cols: int, patterns: Sequence[str],
             else max([0] + [width(chrome(r.depth)) for r in rows]))
     for k in DROP_ORDER:
         used = sum(room[c] for c in keys)
-        if cols - RIGHT_EDGE - lead - used >= LABEL_MIN:
+        if cols - fmt.RIGHT_EDGE_COLS - lead - used >= LABEL_MIN:
             break
         if k in keys:
             keys.remove(k)
@@ -204,11 +204,12 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
          spill: bool = True) -> List[Span]:
     """One row on the columns `keys`.  With `spill`, the label runs on over
     the row's own leading blank columns, up to its first figure, instead of
-    stopping where the first column starts.  Every row ends RIGHT_EDGE
-    columns short of the terminal's edge, and never runs past that: a label
-    with no room draws nothing, not even a `…`, and a row whose chrome and
-    cells are wider than the terminal leaves, at a width too narrow for the
-    drop to help, is cut there like a label."""
+    stopping where the first column starts.  Every row ends
+    fmt.RIGHT_EDGE_COLS columns short of the terminal's edge (RIGHT_EDGE
+    unless --right-edge says), and never runs past that: a label with no
+    room draws nothing, not even a `…`, and a row whose chrome and cells are
+    wider than the terminal leaves, at a width too narrow for the drop to
+    help, is cut there like a label."""
     cells = []
     for c in GRID_CELLS:
         if c["key"] not in keys:
@@ -220,7 +221,7 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
                       if _shows(row, c["key"], c["hide"], patterns)
                       else None])
     head = chrome(row.depth)
-    end = cols - RIGHT_EDGE
+    end = cols - fmt.RIGHT_EDGE_COLS
     room = end - width(head) - sum(w for w, _ in cells)
     while spill and cells and cells[0][1] is None:
         room += cells.pop(0)[0]

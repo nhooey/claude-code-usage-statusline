@@ -7,6 +7,7 @@
 // plan figures come from").  A change here is a change to the mod: edit,
 // then /reload-plugins.
 import type { BandPlace, RowName } from '../src/band.ts'
+import { RIGHT_EDGE } from '../src/spec.ts'
 
 export const CONFIG = {
   // The usage source, as --usage-source names it: "claude-usage-tracker"
@@ -35,7 +36,11 @@ export const CONFIG = {
   // Where the band's rows are drawn: "hint", under Claude Code's footer
   // line (`-- INSERT -- ⏵⏵ auto mode on …`), or "above", over the prompt,
   // where the band can be collapsed with its [-] and scrolled (asked
-  // 2026-10-20, to try them under the footer).
+  // 2026-10-20, to try them under the footer).  Under the footer there is
+  // no [-], and the band's rows and the 💳 row end at the terminal's edge
+  // instead of RIGHT_EDGE short of it: keep subagentStatusLine's
+  // `--right-edge` the same, 0 for "hint" and 5 for "above", so the panel
+  // stacks.
   bandPlace: "hint" as BandPlace,
   // Where the 💳 account is drawn: "row", a row of its own under Claude
   // Code's footer line, in that line's container and in its colours, or
@@ -103,3 +108,10 @@ export const CONFIG = {
   // is stamped, so the receipt is there before they go.
   receiptHoldMs: 1_000,
 } as const;
+
+// The columns the band's rows and the 💳 row end short of the terminal's
+// edge, from CONFIG.bandPlace: RIGHT_EDGE above the prompt, where Claude
+// Code draws the band's [-], and 0 under the footer line, where it draws
+// none (asked 2026-10-20).  subagentStatusLine's `--right-edge` must say
+// the same, so the agent panel's rows stack on the band's.
+export const BAND_EDGE = CONFIG.bandPlace === 'hint' ? 0 : RIGHT_EDGE;

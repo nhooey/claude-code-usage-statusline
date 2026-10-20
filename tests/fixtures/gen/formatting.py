@@ -179,6 +179,7 @@ def settings():
                     "sRate": fm.S_RATE, "sCache": fm.S_CACHE,
                     "sCost": fm.S_COST, "doingPad": fm.DOING_PAD,
                     "col2Val2W": fm.COL2_VAL2_W,
+                    "rightEdge": fm.RIGHT_EDGE_COLS,
                 })
     constants = {k: enc(getattr(fm, k)) for k in (
         "LINE_CLEAR", "EOL_CLEAR", "SI_UNITS", "C_LABEL", "C_TOTALS_LABEL",

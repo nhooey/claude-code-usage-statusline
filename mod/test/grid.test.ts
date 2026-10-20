@@ -7,10 +7,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join as pathJoin } from "node:path";
-import { settings } from "../src/formatting.ts";
+import { settings, visWidth } from "../src/formatting.ts";
 import type { Env } from "../src/formatting.ts";
 import { join } from "../src/spans.ts";
 import { draw, hidden, layout } from "../src/grid.ts";
+import { GRID_CELLS, RIGHT_EDGE } from "../src/spec.ts";
 import {
   OUT, generate, rowFrom, spanFrom, spanJson,
 } from "../tools/gen-grid-cases.ts";
@@ -66,4 +67,29 @@ test("a hide path names itself and every path under it", () => {
   assert.ok(!hidden(["*.work"], "session"));
   assert.ok(hidden(["t?rn.[a-c]*"], "turn.chat.prompt"));
   assert.ok(!hidden(["t?rn.[!a-c]*"], "turn.chat.prompt"));
+});
+
+test("at a right edge of 0 a row ends at the terminal's edge", () => {
+  // As the mod draws the band under the footer line, where there is no
+  // [-] (asked 2026-10-20), and as tests/grid.py has it.
+  const st0 = settings({}, true, false, 0);
+  const st5 = settings({});
+  assert.equal(st5.rightEdge, RIGHT_EDGE);
+  const data = JSON.parse(readFileSync(pathJoin(OUT, files[0]), "utf8")) as
+    File;
+  const rows = [...Object.values(data.rows)].map(rowFrom);
+  const row = rowFrom(data.rows[data.draw[0].row]);
+  const keys = GRID_CELLS.map((g) => g.key);
+  for (const cols of [120, 160, 196]) {
+    assert.equal(visWidth(join(draw(st0, row, keys, cols, [])), st0.widths),
+      cols, String(cols));
+  }
+  // The narrowest width that keeps every column, RIGHT_EDGE sooner.
+  const all = (st: typeof st0): number => {
+    const n = layout(st, rows, 1 << 30, []).length;
+    let w = 1;
+    while (layout(st, rows, w, []).length < n) w++;
+    return w;
+  };
+  assert.equal(all(st5) - all(st0), RIGHT_EDGE);
 });

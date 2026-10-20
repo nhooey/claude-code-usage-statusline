@@ -25,7 +25,7 @@ import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
 import { fromBase64 } from '../hooks/edges.ts'
 import { startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
-import { CONFIG } from '../hooks/config.ts'
+import { BAND_EDGE, CONFIG } from '../hooks/config.ts'
 import {
   _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, readPayload,
   transcriptOf, turnsOf,
@@ -60,6 +60,9 @@ const COLS = 150
 // How far in the band's rows' container stands, where CONFIG.bandPlace
 // draws them: under the footer line, CONFIG.hintInset columns.
 const INSET = CONFIG.bandPlace === 'hint' ? CONFIG.hintInset : 0
+// The settings the band is drawn under: its right edge, BAND_EDGE, is
+// CONFIG.bandPlace's too.  The receipt keeps RIGHT_EDGE, as settings({}).
+const BAND_ST = settings({}, true, false, BAND_EDGE)
 const encoder = new TextEncoder()
 
 /** The band where CONFIG.bandPlace draws it, mounted: above the prompt,
@@ -351,7 +354,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
         .toEqual(JSON.parse(JSON.stringify(want)))
       const ui = await mountBand($, surface, BAND)
       // Between turns the band draws nothing: the receipt has the rows.
-      const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
+      const lines = bandLines(BAND_ST, doc, COLS, CONFIG.hide, { home: HOME,
         rate: null, phase: 'done', inset: INSET })
       expect(lines).toEqual([])
       expect(await drawnRows(ui)).toEqual([])
@@ -363,7 +366,7 @@ test('a turn running draws the running phase', async ($, on) => {
   await start($, 'terminal', STATUS)
   const doc = lastDoc(w)
   const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
-  const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
+  const lines = bandLines(BAND_ST, doc, COLS, CONFIG.hide, { home: HOME,
     rate: null, phase: 'running', inset: INSET })
   expect(await drawnRows(ui)).toEqual(expected(lines))
   // No blank top row, where Claude Code's `[-]` would stand alone.
@@ -654,7 +657,7 @@ async function drewAll($: any, w: World) {
   const want = await statusOf(w, RESUMED, doc.rate as number | null)
   expect(JSON.parse(JSON.stringify(doc.transcript)))
     .toEqual(JSON.parse(JSON.stringify(want.transcript)))
-  const st = settings({})
+  const st = BAND_ST
 
   const mount = () => mountBand($, 'terminal', BAND)
   // The band drawn as of now, its clocks moved on as the mod moves them.

@@ -18,7 +18,7 @@ from .claude_render import (render_cost, render_diff, render_tokens, model_spec,
                             inherit_eta)
 from .claude_records import Limits, squash, eta_finish, WAITING_TOOLS
 from .spans import Span, ink, join, paint, rstrip, spans, width
-from .spec import CHROME_DEPTH, GRID_CELLS, LABEL_MIN, RIGHT_EDGE
+from .spec import CHROME_DEPTH, GRID_CELLS, LABEL_MIN
 
 A_STATE_W, A_CLOCK_W, A_RATE_W, A_TICK_S = 2, 6, 7, 5.0
 # 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
@@ -495,7 +495,7 @@ def panel_layout(cols=None, hide=()):
     if not cols:
         keys = grid.layout(rows, 1 << 30, hide)
         room = {c["key"]: grid.cell_width(c["width"]) + c["gap"] for c in GRID_CELLS}
-        cols = (RIGHT_EDGE + width(grid.chrome(CHROME_DEPTH)) + LABEL_MIN
+        cols = (fmt.RIGHT_EDGE_COLS + width(grid.chrome(CHROME_DEPTH)) + LABEL_MIN
                 + sum(room[k] for k in keys))
     return cols, grid.layout(rows, cols, hide)
 

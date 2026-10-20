@@ -917,6 +917,19 @@ def run(tmp):
            sl.vis_width(rows_n["a1"]) + chrome(1)),
           ([at_week(rows_n["a1"]) + chrome(1)] * 3,
            201 + sl.PANEL_COLUMNS_SHORT - sl.RIGHT_EDGE))
+    # --right-edge 0, for the mod's band under the footer line, where there
+    # is no [-] (asked 2026-10-20): the same rows end at the terminal's edge,
+    # and the columns stay where they were relative to it.
+    sl.set_right_edge(0)
+    try:
+        rows_0 = render(sl, nested)[1]
+    finally:
+        sl.set_right_edge(sl.RIGHT_EDGE)
+    check("under --right-edge 0 a row ends at the terminal's edge, and every "
+          "column moves right by RIGHT_EDGE",
+          (sl.vis_width(rows_0["a1"]) + chrome(1),
+           at_week(rows_0["a1"]) - at_week(rows_n["a1"])),
+          (201 + sl.PANEL_COLUMNS_SHORT, sl.RIGHT_EDGE))
     check("👶🏻 counts the rows under each one, and every row keeps a cell for it "
           "once any row has one",
           [unpainted(rows_n[t])[:unpainted(rows_n[t]).index("Marigold")]

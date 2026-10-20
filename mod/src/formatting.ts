@@ -10,11 +10,12 @@
 // the terminal profile from the environment at import, fixes the S_* forms
 // and the width table from it, and lets set_mark_spacing and
 // set_subscript_decimals rebind MARK_SP, RIGHT_GRID, LINE3_RESERVED, the C_*
-// widths and SUB_DEC afterwards.  Here all of that is one immutable
-// `Settings`, built once at the edge by `settings(env, markSpacing,
-// subscriptDecimals)` and passed first to every function that reads any of
-// it.  Every function that reads the clock takes `now`, and term_cols takes
-// its process walk and its ioctl as arguments.
+// widths and SUB_DEC afterwards, and set_right_edge RIGHT_EDGE_COLS.  Here
+// all of that is one immutable `Settings`, built once at the edge by
+// `settings(env, markSpacing, subscriptDecimals, rightEdge)` and passed
+// first to every function that reads any of it.  Every function that reads
+// the clock takes `now`, and term_cols takes its process walk and its ioctl
+// as arguments.
 import {
   C_CACHE_TIGHT, C_LIM_TOT_TIGHT, C_TOK_TIGHT, CACHE_CRIT, CACHE_WARN,
   COL3_TIGHT_W, COL4_TIGHT_W, E_BOT, E_CACHE, E_COST, E_CTX, E_DATE, E_DIFF,
@@ -23,7 +24,7 @@ import {
   E_SUB_DIGITS, E_SUM, E_TIME, E_TOK, E_WEEK, E_WORK, E_WRITE, EAW_WIDE, G,
   K, LINE3_TIGHT, M, MAG_SHARE_READ, MAG_SHARE_SESS, MAG_SHARE_TURN,
   MAX_LINE, MODEL_FAMILIES, MONTH_S, PAD_PROFILES, PAIR_GAP, PROFILE_RULES,
-  RULE_MIN, SEG_GAP, SEG_RULE, VAL_W, VAL2_W, WIDTH_PROFILES,
+  RIGHT_EDGE, RULE_MIN, SEG_GAP, SEG_RULE, VAL_W, VAL2_W, WIDTH_PROFILES,
 } from "./spec.ts";
 import {
   pyAsciiDigits, pyFormatF, pyFloatRepr, pyIntDigits, pyIntStr, pyIntText,
@@ -150,17 +151,22 @@ export type Settings = {
   readonly sCost: string;            // S_COST
   readonly doingPad: string;         // DOING_PAD
   readonly col2Val2W: number;        // COL2_VAL2_W
+  readonly rightEdge: number;        // RIGHT_EDGE_COLS: the columns every
+                                     // grid row ends short of the
+                                     // terminal's edge
 };
 
 /** The settings for a terminal described by `env` (TMUX,
  * TERMINAL_EMULATOR and TERM_PROGRAM are what is read), with the blank
- * between a column-4 mark and its value on or off (--no-mark-spacing) and
- * the subscript fraction form on or off (--subscript-decimals).
+ * between a column-4 mark and its value on or off (--no-mark-spacing), the
+ * subscript fraction form on or off (--subscript-decimals), and the
+ * columns every grid row ends short of the terminal's edge (--right-edge,
+ * RIGHT_EDGE by default).
  *
  * The Python's set_mark_spacing says which constants move together; they
  * are all computed here, so none can be left behind. */
 export function settings(env: Env, markSpacing = true,
-  subscriptDecimals = false): Settings {
+  subscriptDecimals = false, rightEdge: number = RIGHT_EDGE): Settings {
   const profile = termProfile(env);
   const pad = (PAD_PROFILES as readonly string[]).includes(profile)
     ? " " : "";
@@ -190,6 +196,7 @@ export function settings(env: Env, markSpacing = true,
     sCost: E_COST + pad,
     doingPad: pad,
     col2Val2W: VAL2_W + pad.length,
+    rightEdge,
   });
 }
 

@@ -815,6 +815,25 @@ def set_subscript_decimals(on: bool) -> None:
     SUB_DEC = on
 
 
+# The columns every grid row leaves blank at the terminal's right edge:
+# RIGHT_EDGE, the room for the band's [-] above the prompt, unless
+# --right-edge says otherwise.  Under Claude Code's footer line there is no
+# [-], and the band, the 💳 row and the agent panel take the columns back
+# (asked 2026-10-20), the panel through `--right-edge 0`.
+RIGHT_EDGE_COLS = RIGHT_EDGE
+
+
+def set_right_edge(n: int) -> None:
+    """Set the columns every grid row ends short of the terminal's edge.
+
+    A global, set once in main() before anything renders, for the reason
+    set_mark_spacing is one: the grid's layout and draw read it, and the
+    panel's width with none known, and nothing between them needs to know.
+    """
+    global RIGHT_EDGE_COLS
+    RIGHT_EDGE_COLS = n
+
+
 def sub_dec(v: str) -> str:
     """A formatted number with its fraction in subscript digits, or unchanged.
 
