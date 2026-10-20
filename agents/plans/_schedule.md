@@ -7,6 +7,10 @@ files they both change. Written 2026-10-20 from:
 - [Configuration](config-merge.md), steps 1–8: `CM1` … `CM8`.
 - [Saved running totals](saved-running-totals.md), steps 6–9 and its
   Decided 5: `RT6` … `RT9`, `RT8i`. Steps 1–5 are done.
+- [Clickable rows](clickable-rows.md), steps 1–3: `CK1` … `CK3` (added
+  2026-10-20).
+- [Colours on the 256-colour palette](palette-256.md), steps 1–2: `PL1`,
+  `PL2` (added 2026-10-20).
 - Work in flight outside the plans: `CA`, the calibration cache keyed by
   account id (asked 2026-10-20, Blocked.1.A).
 
@@ -45,6 +49,11 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `RT8i` | The inbox moves to the folds | `RT8` | none | `claude_records.{py,ts}` (`inbox_counts`), `claude.py` (the panel's inbox) |
 | `RT9` | The window costs, one file | none | `CA` | `claude.py` (`_window_costs`), `mod/src/claude_calib_node.ts`, `spec/state.jsonc` |
 | `OPS` | **Done 2026-10-20.** Sweep the old `-ts-` calibration files | `CA` | none | `~/.local/state/coding-agent-usage-line/` (by hand) |
+| `CK1` | The clickable-rows trial: 🎤 and the agent message row as Buttons, tried live | none | none | `mod/hooks/register.tsx` (row drawing, `UserMessage` hooks), `mod/mod-tests/` |
+| `CK2` | The targets: `requestId`s recorded, 🎤 and 🤖 pressable in the band and the receipt | `CK1` (and the user's live report) | none | `mod/hooks/register.tsx`, `mod/src/agent_message.ts` |
+| `CK3` | Docs for the pressable rows | `CK2` | none | `docs/layout.md` |
+| `PL1` | Every default colour snapped to a 256-palette entry, reviewed by eye; gen-spec's check | none | `RT9` | `spec/layout.jsonc`, `tools/gen-spec.py`, `spec.{py,ts}`, every colour fixture and golden |
+| `PL2` | The doc note on themes and `CLAUDE_CODE_TMUX_TRUECOLOR` | `PL1` | none | `docs/` |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
@@ -68,6 +77,14 @@ flowchart LR
   RT8 -.-> CM6
   RT8i -.-> CM6
   CA --> OPS
+  subgraph clickable-rows
+    CK1 --> CK2 --> CK3
+  end
+  subgraph palette-256
+    PL1 --> PL2
+  end
+  CK2 -.-> CM6
+  RT9 -.-> PL1
 ```
 
 Solid arrows are logical edges, dotted ones file edges.
@@ -79,14 +96,19 @@ Solid arrows are logical edges, dotted ones file edges.
 | 0 | `CA` | running now |
 | 1 | `CM1`, `RT6` | now: neither touches `CA`'s files |
 | 2 | `CM2`, `RT7`, `RT9`, `OPS` | `CM1` and `RT6` land, and `CA` for `RT9` and `OPS` |
-| 3 | `CM3` | `CM2` and `RT9` land |
-| 4 | `CM4`, `RT8` | `CM3` and `RT7` land |
-| 5 | `CM5`, `RT8i` | `CM4` and `RT8` land |
-| 6 | `CM6` | `CM5` and `RT8i` land |
+| 3 | `CM3`, `CK1`, `PL1` | `CM2` and `RT9` land; `CK1` and `PL1` touch none of `CM3`'s files |
+| 4 | `CM4`, `RT8`, `CK2`, `PL2` | `CM3` and `RT7` land, and the user's live report on `CK1` |
+| 5 | `CM5`, `RT8i`, `CK3` | `CM4` and `RT8` land |
+| 6 | `CM6` | `CM5`, `RT8i` and `CK2` land |
 | 7 | `CM7`, then `CM8` | `CM6` lands; both by hand with the user |
 
-At most three agents run at once (wave 2), and no two of a wave change the
+At most four agents run at once (wave 4), and no two of a wave change the
 same part of a file.
+
+- **`CK2 ⇢ CM6`:** both change how `register.tsx` draws rows; the
+  clickable rows go first, so `CM6` rewrites `CONFIG.x` over them.
+- **`RT9 ⇢ PL1`:** `PL1` regenerates every colour fixture and golden, so
+  it waits for `RT9`, the last running node that regenerates fixtures.
 
 ## The critical path
 
