@@ -291,8 +291,10 @@ type Drawn = { type: string; props?: Record<string, unknown>;
 async function drawnRows(ui: { drawn: () => Promise<unknown> }) {
   const tree = await ui.drawn() as Drawn
   if (tree.type !== 'Box') return []
-  return (tree.children ?? []).filter((c): c is Drawn =>
-    typeof c !== 'string' && c.type === 'Text').map((row) => {
+  // A pressable row (🎤) is a Button around its Text.
+  return (tree.children ?? []).map((c) => typeof c !== 'string' &&
+    c.type === 'Button' ? (c.children ?? [])[0] : c).filter((c): c is Drawn =>
+    typeof c !== 'string' && c?.type === 'Text').map((row) => {
     const spans = (row.children ?? []) as Drawn[]
     return { text: spans.map((c) => (c.children ?? []).join('')).join(''),
       colours: spans.map((c) => c.props?.color ?? null) }
@@ -414,6 +416,56 @@ test('a turn ends on a blank closing line', async ($, on) => {
   await settle()
   await blankClosing($, 'Worked', 65_000)
 })
+
+test('pressing 🎤 under the footer scrolls to the prompt the turn opened ' +
+  'with, and logs the call and its answer', async ($, on) => {
+    const w = world(on)
+    await start($, 'terminal', STATUS)
+    // Two prompts drawn; the turn opened with the second.
+    for (const [text, requestId] of [['Earlier.', 'prompt-0'],
+      ['Go on.', 'prompt-1']]) {
+      await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+        component: 'UserMessage', requestId, props: { text,
+          isExpanded: false, origin: { kind: 'composer' } } })
+    }
+    await $.turn.start({ text: 'Go on.', turnId: 't3' })
+    await settle()
+    const hint = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'PromptHint', props: { isDraft: false,
+        isWorking: true, hint: '-- INSERT --' } })
+    const buttons = await hint.findAll({ type: 'Button' })
+    // 🎤 alone presses: not 🤖, 🎮 or 💳.
+    expect(buttons.length).toBe(1)
+    const tree = await hint.drawn() as Drawn
+    const pressed = (tree.children ?? []).find((c) =>
+      typeof c !== 'string' && c.type === 'Button') as Drawn
+    // Plain: no `[ ]` chrome, no hotkey; the row's own Text inside.
+    expect(pressed.props?.plain).toBe(true)
+    expect(pressed.props?.hotkey).toBeUndefined()
+    const row = (pressed.children ?? [])[0] as Drawn
+    expect(((row.children ?? [])[0] as Drawn).children?.join(''))
+      .toMatch(/^🎤/)
+    await hint.press({ key: String(pressed.props?.key ?? buttons[0].key) })
+    // The kit resolves `$.ui.scroll` itself, to a site, and has none for
+    // a transcript row: no hook of the test's can answer it (an
+    // `on('ui.scroll')` is never reached), so the call it was handed is
+    // read off the log, its answer the kit's refusal.
+    expect(logOf(w)).toContain('press 🎤: $.ui.scroll({"to":{"requestId":' +
+      '"prompt-1"},"block":"start"}) threw: no implementation for ui.scroll')
+  })
+
+test('pressing 🎤 with no prompt drawn says so and scrolls nowhere',
+  async ($, on) => {
+    const w = world(on)
+    await start($, 'terminal', STATUS)
+    const hint = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'PromptHint', props: { isDraft: false,
+        isWorking: true, hint: '-- INSERT --' } })
+    const [button] = await hint.findAll({ type: 'Button' })
+    await hint.press({ key: String(button.key) })
+    expect(logOf(w)).toContain('press 🎤: no prompt drawn to scroll to')
+    expect(logOf(w)).not.toContain('$.ui.scroll')
+  })
 
 test('a prompt from the composer gets its turn tag under it, at no indent',
   async ($, on) => {

@@ -630,9 +630,18 @@ export const TAIL_BLANK = "⠀";
  * scope's row is left out. */
 export function bandLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], opts: BandOpts): Span[][] {
+  return bandScoped(st, fig, cols, hide, opts).map((r) => r.spans);
+}
+
+/** bandLines, each row with its scope (`turn` for 🎤, `main` for 🤖,
+ * `session` for 🎮), so a caller can tell the rows apart. */
+export function bandScoped(st: Settings, fig: Dict, cols: number,
+  hide: readonly string[], opts: BandOpts):
+  { scope: string; spans: Span[] }[] {
   const keys = fixedKeys(st, cols, hide);
   const drawn = cols - (opts.inset ?? 0);
   return phaseRows(bandRows(st, fig, opts), opts.phase, opts.sticky)
     .filter((r) => !hidden(hide, r.scope))
-    .map((r) => draw(st, indented(r, opts.indent ?? 0), keys, drawn, hide));
+    .map((r) => ({ scope: r.scope,
+      spans: draw(st, indented(r, opts.indent ?? 0), keys, drawn, hide) }));
 }

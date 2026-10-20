@@ -49,7 +49,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `RT8i` | The inbox moves to the folds | `RT8` | none | `claude_records.{py,ts}` (`inbox_counts`), `claude.py` (the panel's inbox) |
 | `RT9` | **Done 2026-10-20.** The window costs, one file | none | `CA` | `claude.py` (`_window_costs`), `mod/src/claude_calib_node.ts`, `spec/state.jsonc` |
 | `OPS` | **Done 2026-10-20.** Sweep the old `-ts-` calibration files | `CA` | none | `~/.local/state/coding-agent-usage-line/` (by hand) |
-| `CK1` | The clickable-rows trial: 🎤 and the agent message row as Buttons, tried live | none | none | `mod/hooks/register.tsx` (row drawing, `UserMessage` hooks), `mod/mod-tests/` |
+| `CK1` | **Built 2026-10-20, pending the user's live trial.** The clickable-rows trial: 🎤 and the agent message row as Buttons, tried live | none | none | `mod/hooks/register.tsx` (row drawing, `UserMessage` hooks), `mod/mod-tests/` |
 | `CK2` | The targets: `requestId`s recorded, 🎤 and 🤖 pressable in the band and the receipt | `CK1` (and the user's live report) | none | `mod/hooks/register.tsx`, `mod/src/agent_message.ts` |
 | `CK3` | Docs for the pressable rows | `CK2` | none | `docs/layout.md` |
 | `PL1` | Every default colour snapped to a 256-palette entry, reviewed by eye; gen-spec's check | none | `RT9` | `spec/layout.jsonc`, `tools/gen-spec.py`, `spec.{py,ts}`, every colour fixture and golden |

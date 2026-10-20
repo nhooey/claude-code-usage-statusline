@@ -29,7 +29,7 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { accountLine, bandLines, bandRows, footerRuler, footerTail,
+import { accountLine, bandRows, bandScoped, footerRuler, footerTail,
   modeOfHint, workspaceOf }
   from '../src/band.ts'
 import {
@@ -378,16 +378,82 @@ function line(Text: any, spans: readonly Span[], key: string,
   )
 }
 
-/** The band's rows as they stand, at bandCols: 🎤, 🤖 and 🎮 while a turn
- * runs, the sticky ones once it ends; none without a status document.
- * `inset` is how far in from the terminal's left edge the container they
- * are drawn in starts. */
+/** A row drawn as a Button around its Text, pressable by a click or Enter
+ * under the focus, and looking as the row did: `plain`, so no `[ ]`
+ * chrome, and no hotkey (clickable-rows.md, step 1). */
+function pressable(Button: any, Text: any, spans: readonly Span[],
+  key: string, onPress: () => Promise<void>): RenderElement {
+  return (
+    <Button key={key} plain onPress={() => onPress()}>
+      {line(Text, spans, key + '.text')}
+    </Button>
+  )
+}
+
+// The composer prompts' render instances, by startKey of the prompt's
+// text: the `requestId` each UserMessage draw saw, so a press on 🎤 can
+// scroll to it.  The oldest dropped past CONFIG.startsKept, as the start
+// lines are.  A module variable: a render hook may not write state.
+const promptIds = new Map<string, string>()
+// startKey of the prompt the last main-thread turn opened with: whose
+// row 🎤 stands for.
+let turnPrompt = ''
+
+function notePrompt(text: string, requestId: string): void {
+  const key = startKey(text)
+  if (promptIds.get(key) === requestId) return
+  promptIds.delete(key)
+  promptIds.set(key, requestId)
+  while (promptIds.size > CONFIG.startsKept) {
+    promptIds.delete(promptIds.keys().next().value!)
+  }
+}
+
+/** A press on 🎤: the prompt the turn opened with scrolled to the top of
+ * the transcript's window, or where no turn has opened since the module
+ * loaded, the prompt drawn last.  What it did and what came back goes to
+ * the log, so a live click can be read back. */
+async function pressTurn($: $): Promise<void> {
+  const requestId = promptIds.get(turnPrompt) ??
+    [...promptIds.values()].pop()
+  if (!requestId) {
+    await log($, 'press 🎤: no prompt drawn to scroll to')
+    return
+  }
+  const args = { to: { requestId }, block: 'start' } as const
+  const call = '$.ui.scroll(' + JSON.stringify(args) + ')'
+  try {
+    await log($, `press 🎤: ${call} -> ` +
+      JSON.stringify(await $.ui.scroll(args)))
+  } catch (err) {
+    await log($, `press 🎤: ${call} threw`, err)
+  }
+}
+
+/** A press on an agent's message row: that agent's transcript in the main
+ * view, logged as pressTurn's is. */
+async function pressMessage($: $, agent: AgentLike & { id: string }):
+  Promise<void> {
+  const call = '$.ui.view(' + JSON.stringify({ agentId: agent.id }) + ')'
+  const what = `press 🤖📨 ${JSON.stringify(taskOf(agent, agent.type))}: `
+  try {
+    await log($, what + call + ' -> ' +
+      JSON.stringify(await $.ui.view({ agentId: agent.id })))
+  } catch (err) {
+    await log($, what + call + ' threw', err)
+  }
+}
+
+/** The band's rows as they stand, at bandCols, each with its scope: 🎤,
+ * 🤖 and 🎮 while a turn runs, the sticky ones once it ends; none without
+ * a status document.  `inset` is how far in from the terminal's left edge
+ * the container they are drawn in starts. */
 async function bandNow($: $, isWorking: boolean, inset = 0):
-  Promise<Span[][]> {
+  Promise<{ scope: string; spans: Span[] }[]> {
   const doc = await read($, status)
   if (doc === null) return []
   // At no indent, as the receipt's rows are (asked 2026-10-19).
-  return bandLines(await settingsOf($),
+  return bandScoped(await settingsOf($),
     at(doc as Dict, await read($, clockNow)), bandCols || 80, CONFIG.hide,
     { home: await home($), rate: await read($, rate),
       phase: isWorking || await read($, held) ? 'running' : 'done',
@@ -564,6 +630,7 @@ export const register: Register = on => {
     const tr = (await read($, status))?.transcript as Dict | undefined
     pending = { text: e.text, before: tr?.prompt_id ?? '' }
     opened = ''
+    turnPrompt = startKey(e.text)
     void refresh($).catch((err) => log($, 'refresh', err))
     return result
   })
@@ -624,7 +691,7 @@ export const register: Register = on => {
     // the border instead (tried live 2026-10-19).
     return (
       <Box flexDirection="column">
-        {lines.map((l, i) => line(Text, l, 'band' + i))}
+        {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
       </Box>
     )
   })
@@ -699,24 +766,29 @@ export const register: Register = on => {
     const inset = CONFIG.hintInset
     const account = CONFIG.accountPlace === 'row'
       ? accountLine(st, fig, CONFIG.hide, cols - inset, await home($)) : []
-    const lines = [...account.length ? [account] : [],
-      ...CONFIG.bandPlace === 'hint'
-        ? await bandNow($, e.props.isWorking, inset) : []]
+    const lines = [...account.length ? [{ scope: 'account', spans: account }]
+      : [], ...CONFIG.bandPlace === 'hint'
+      ? await bandNow($, e.props.isWorking, inset) : []]
     if (!lines.length) return row
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    // 🎤 is pressable: it scrolls to the prompt that opened the turn
+    // (pressTurn; clickable-rows.md, a trial).
     return (
       <Box flexDirection="column" marginBottom={CONFIG.hintTuck ? -1 : 0}>
         {row}
-        {lines.map((l, i) => line(Text, l, 'band' + i))}
+        {lines.map((l, i) => l.scope === 'turn'
+          ? pressable(Button, Text, l.spans, 'band' + i, () => pressTurn($))
+          : line(Text, l.spans, 'band' + i))}
       </Box>
     )
   })
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const row = await next(e)
-    if (e.props.origin.kind !== 'composer' || tagsHidden(CONFIG.hide)) {
-      return row
-    }
+    if (e.props.origin.kind !== 'composer') return row
+    // Its instance, for a press on 🎤 to scroll to (pressTurn).
+    notePrompt(e.props.text, e.requestId)
+    if (tagsHidden(CONFIG.hide)) return row
     await read($, filed)
     const tag = (await $.store.get(startKey(e.props.text))) as
       Span[] | undefined
@@ -748,8 +820,13 @@ export const register: Register = on => {
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const from = e.props.from
     if (!CONFIG.agentMessageRow || !from) return next(e)
-    const label = taskOf(await senderOf($, from.name, e.props.text,
-      await agentsNow($)), from.name)
+    const sender = await senderOf($, from.name, e.props.text,
+      await agentsNow($))
+    const label = taskOf(sender, from.name)
+    // Pressed, the sender's transcript in the main view (pressMessage;
+    // clickable-rows.md, a trial); with the sender unknown, not pressable.
+    const id = sender?.id
+    const press = id ? () => pressMessage($, { ...sender!, id }) : null
     // The band's width before the viewport's, as the footer takes it: the
     // viewport has read wider than the terminal drew (seen live
     // 2026-10-20).  Ending where the band's rows and the receipt's end,
@@ -758,17 +835,18 @@ export const register: Register = on => {
     // what the ellipsis did not.
     const cols = (bandCols || (e.viewport?.columns ?? 80)) - BAND_EDGE
     const st = await settingsOf($)
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const row = (spans: Span[], key: string) => press
+      ? pressable(Button, Text, spans, key, press) : line(Text, spans, key)
     if (e.props.isExpanded) {
       return (
         <Box flexDirection="column">
           {messageBlock(st, label, e.props.text, cols).map((l, i) =>
-            line(Text, l, 'agentMessage' + i))}
+            row(l, 'agentMessage' + i))}
         </Box>
       )
     }
-    return line(Text, messageSpans(st, label, e.props.text, cols),
-      'agentMessage')
+    return row(messageSpans(st, label, e.props.text, cols), 'agentMessage')
   })
 }
 

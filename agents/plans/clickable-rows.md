@@ -1,6 +1,6 @@
 # Clickable rows: from a figure to its place in the transcript
 
-A proposal, not built yet (asked 2026-10-20: "Can we make the Turn/Agent
+A proposal; step 1 built, its live trial pending (asked 2026-10-20: "Can we make the Turn/Agent
 messages clickable so they go to that part in the transcript?").
 
 ## Why
@@ -50,6 +50,29 @@ its 🔻🔖 tag; it records the instance's `requestId` beside it, and an
    press logs what it would do and does it (`$.ui.scroll` to the prompt,
    `$.ui.view` for the agent); a mod test presses each. The user clicks
    them live and reports what moves. Nothing else changes.
+
+   **Status 2026-10-20: built; the live trial is the user's.** As built:
+   - The band's 🎤 row under the footer line (`PromptHint`) is a `plain`
+     Button with no hotkey around the row's Text, so it looks as before.
+     A press calls `$.ui.scroll({ to: { requestId }, block: 'start' })`
+     for the composer prompt the last main-thread turn opened with (the
+     prompt drawn last where no turn has opened since the load). Each
+     composer `UserMessage` draw records its `requestId` under
+     `startKey(text)` in a module map, bounded by `startsKept`; with
+     none recorded the press logs `press 🎤: no prompt drawn to scroll to`.
+   - The agent message row, folded and every row unfolded, is the same
+     plain Button where senderOf found the agent; a press calls
+     `$.ui.view({ agentId })`. With the sender unknown the row is a plain
+     Text, as before, and does not press.
+   - Each press logs the call and its answer to `usage-band.log`:
+     `press 🎤: $.ui.scroll({...}) -> {}` or `-> {"deny":"…"}`, `threw`
+     with the error; `press 🤖📨 "<task>": $.ui.view({"agentId":"…"})
+     -> …`.
+   - The test kit has no `$.ui.scroll` for a transcript row (it resolves
+     the call to a site itself and answers `no implementation`), so the
+     mod test checks the call the press made from the log line;
+     `$.ui.view` is answered by a test hook and checked directly.
+   - The band above the prompt (`bandPlace: 'above'`) is not pressable.
 2. **The targets.** The `requestId`s recorded as above; 🎤 and 🤖 in the
    band and in the receipt pressable; a press on a target no longer
    drawn says so once in the log and does nothing.
