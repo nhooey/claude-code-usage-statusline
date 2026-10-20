@@ -25,7 +25,7 @@
 // Pure: the caller lists the agents, reads their replies and measures the
 // row.
 import { E_BOT, E_INBOX } from "./spec.ts";
-import { cut, span } from "./spans.ts";
+import { cut, span, width } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import type { Settings } from "./formatting.ts";
 
@@ -140,12 +140,17 @@ export function saidBy(head: string,
 /** The row as spans: `› 🤖📨 ` dim, the sender's label bold at full
  * strength, and after a dim colon the message's first line, dim; cut to
  * `cols` columns with an ellipsis, counted as the terminal counts them
- * (formatting.visWidth), the `…` in the style of the piece it cuts. */
+ * (formatting.visWidth), the `…` in the style of the piece it cuts.  All
+ * of it on B_MSG, padded with blanks to `cols`, so the row is a faint bar
+ * out to the right margin (asked 2026-10-20). */
 export function messageSpans(st: Settings, label: string, text: string,
   cols: number): Span[] {
   const head = firstLine(text);
-  const row = [span("› " + E_BOT + E_INBOX + " ", null, true),
-    span(label, null, false, true)];
-  if (head) row.push(span(": " + head, null, true));
-  return cut(row, Math.max(1, cols), st.widths);
+  const row = [span("› " + E_BOT + E_INBOX + " ", null, true, false, "B_MSG"),
+    span(label, null, false, true, "B_MSG")];
+  if (head) row.push(span(": " + head, null, true, false, "B_MSG"));
+  const out = cut(row, Math.max(1, cols), st.widths);
+  const pad = Math.max(1, cols) - width(out, st.widths);
+  if (pad > 0) out.push(span(" ".repeat(pad), null, false, false, "B_MSG"));
+  return out;
 }

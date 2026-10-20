@@ -65,11 +65,12 @@ type Drawn = { type: string; props?: Record<string, unknown>;
   children?: (Drawn | string)[] }
 
 /** The row's pieces as drawn: each nested Text's text, and whether it is
- * dim and bold. */
+ * dim and bold, less the blanks that pad it to the width. */
 const pieces = (tree: Drawn) => (tree.children ?? []).map((c) =>
   typeof c === 'string' ? [c, false, false]
     : [(c.children ?? []).join(''), c.props?.dimColor === true,
         c.props?.bold === true])
+  .filter((p) => String(p[0]).trim())
 
 /** The row's text as drawn. */
 const textOf = (tree: Drawn) => pieces(tree).map((p) => p[0]).join('')

@@ -464,6 +464,10 @@
   "F_CHAT_U": "rgb(166, 170, 158)",            // warm grey   — user chat row
   "F_CHAT_B": "rgb(112, 126, 140)",            // cool slate  — assistant chat row
   "B_DRK": "rgb(12, 14, 18)",                  // near-black background, chat rows
+  "B_MSG": "rgb(26, 30, 38)",                  // faint slate background, the
+                                               //  row of a message another
+                                               //  agent sent, so it reads as
+                                               //  a bar against black
 
   // The two limit rows, one colour each.  ROW IDENTITY, not a reading: 🔋 is
   // green because it is the battery, 🪫 red because it is the low one, and

@@ -128,8 +128,19 @@ test("the match folds whitespace on both sides alike", () => {
   assert.equal(saidBy(head, [[one, reply], [two, ""]]), one);
 });
 
+// The row's pieces less the blanks that pad it to the width.
 const styles = (spans: ReturnType<typeof messageSpans>) =>
-  spans.map((s) => [s.text, s.dim, s.bold]);
+  spans.filter((s) => s.text.trim()).map((s) => [s.text, s.dim, s.bold]);
+
+test("the row is a faint bar out to the width, on B_MSG", () => {
+  for (const [label, text, cols] of [["Reclaim", "The edge.", 80],
+    ["Reclaim the right-edge columns", "The right edge is now", 20],
+    ["Label", "Text", 5]] as const) {
+    const row = messageSpans(st, label, text, cols);
+    for (const s of row) assert.equal(s.bg, "B_MSG");
+    assert.equal(visWidth(spansText(row), st.widths), cols, `${cols}`);
+  }
+});
 
 test("the row: `› 🤖📨 ` dim, the label bold, the first line dim", () => {
   const row = messageSpans(st, "Reclaim the right-edge columns",
