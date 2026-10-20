@@ -80,6 +80,7 @@ from .claude_cost_render import (CostOpts, ink_colour as _c, place,
                                  render_cost_line as _pure_cost_render,
                                  turn_tag)
 from .claude_sources import prepare_claude_reading
+from .options import Options, from_argv
 from . import claude_subagent_render as subagent_render
 
 CALIB_TTL = 300        # the scan walks transcripts; five minutes is plenty
@@ -2210,28 +2211,6 @@ def selftest() -> int:
 #           "{}" — a valid no-op hook response — and exits 0.
 # ════════════════════════════════════════════════════════════════════════════
 
-def _flag(argv: Sequence[str], name: str, default: str = "") -> str:
-    """Value of a `--name value` argument.
-
-    Matched by MEMBERSHIP, not position: reading argv positionally once meant
-    `--last` alone silently turned colour on.
-    """
-    try:
-        return argv[argv.index(name) + 1]
-    except (ValueError, IndexError):
-        return default
-
-
-def column_rules(argv: Sequence[str]) -> bool:
-    """Whether `--mode status` was asked to rule its columns.
-
-    Off unless `--column-rules` is given, and `--no-column-rules` wins over
-    it, as `--no-mark-spacing` wins over `--mark-spacing`.  This is the ASK
-    only; rules_on still decides whether the width has room for them.
-    """
-    return "--column-rules" in argv and "--no-column-rules" not in argv
-
-
 # ════════════════════════════════════════════════════════════════════════════
 # The subagent rows — `--mode subagent`.
 #
@@ -2668,16 +2647,15 @@ def _cost_check(pay: Payload, session: Optional[dict]) -> str:
                 num(pay.lines_added, "%d"), num(pay.lines_removed, "%d")))
 
 
-def main_subagent(argv: Sequence[str], raw: str) -> int:
+def main_subagent(options: Options, raw: str) -> int:
     try:
         pay = json.loads(raw)
     except Exception:
         return 0                            # nothing printed: panel's rows stand
     if not isinstance(pay, dict):
         return 0
-    cols_s = _flag(argv, "--cols")
-    if cols_s.isdigit():
-        cols = int(cols_s) or None
+    if options["cols"] is not None:
+        cols = options["cols"] or None
     else:
         # The payload's `columns` is the terminal's width less
         # PANEL_COLUMNS_SHORT, and the rows are laid out for the terminal's,
@@ -2686,10 +2664,9 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
         c = pay.get("columns")
         cols = (int(c) + PANEL_COLUMNS_SHORT
                 if isinstance(c, (int, float)) and c > 0 else term_cols())
-    source_spec = _flag(argv, "--usage-source",
-                        os.environ.get("CODING_AGENT_USAGE_LINE_USAGE_SOURCE", "auto"))
-    account = _flag(argv, "--account", "default")
-    period = _flag(argv, "--account-period", "day")
+    source_spec = options["usage-source"]
+    account = options["account"]
+    period = options["account-period"]
     prepared = prepare_claude_reading(
         source_spec, account, period,
         {"session": str(pay.get("session_id") or ""),
@@ -2699,15 +2676,14 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
     # the shared collector above.
     lim = prepared.limits if prepared.reading else NO_LIMITS
     seed_limits_snapshot(lim, prepared.reading)
-    if "--diagnose" in argv:
+    if options["diagnose"]:
         emit_source_diagnose(source_spec, prepared)
     # Panel stdout is JSONL task rows only; account scope is intentionally not
     # appended here because it would be mistaken for a panel task.
     now = frozen_now()
     # --hide, repeatable: the paths the panel's rows leave out.
-    hide = [argv[i + 1] for i, a in enumerate(argv[:-1]) if a == "--hide"]
     sys.stdout.write(render_subagent(prepare_subagent_tasks(pay, now), cols,
-                                     lim, now, hide))
+                                     lim, now, list(options["hide"])))
     return 0
 
 
@@ -2943,14 +2919,14 @@ def _fig_zone(fig: dict) -> None:
         time.tzset()
 
 
-def _cols(argv: Sequence[str]) -> Optional[int]:
-    cols_s = _flag(argv, "--cols")
+def _cols(options: Options) -> Optional[int]:
+    cols = options["cols"]
     # "--cols 0" means "pretend the width is unknown", which is the only way to
     # exercise the fallback layout deterministically from a test.
-    return (int(cols_s) or None) if cols_s.isdigit() else term_cols()
+    return (cols or None) if cols is not None else term_cols()
 
 
-def status_figures(argv: Sequence[str], raw: str) -> dict:
+def status_figures(options: Options, raw: str) -> dict:
     """Stage one of the status line: its inputs read, its figures out.
 
     Everything that reads a file, a cache, a command or the clock, or writes
@@ -2961,7 +2937,7 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
     # An explicit transcript is an offline invocation.  It deliberately does
     # not require a hook payload (and therefore must not make the launcher
     # wait for stdin); its path also wins over a stale path in that payload.
-    transcript = _flag(argv, "--transcript")
+    transcript = options["transcript"] or ""
     if transcript:
         pay = pay._replace(transcript=transcript)
 
@@ -2990,10 +2966,9 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
     # payload quotas never reach an external command.  Legacy cache projection
     # is retained solely as the compatibility fallback when auto has no shared
     # reading available.
-    source_spec = _flag(argv, "--usage-source",
-                        os.environ.get("CODING_AGENT_USAGE_LINE_USAGE_SOURCE", "auto"))
-    account = _flag(argv, "--account", "default")
-    period = _flag(argv, "--account-period", "day")
+    source_spec = options["usage-source"]
+    account = options["account"]
+    period = options["account-period"]
     source_context = {"session": pay.session_id,
                       "model": pay.model_id or pay.model,
                       # A payload is observed at render intake; retain that
@@ -3021,7 +2996,7 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
     # Session/turn shares still require the one transcript scan performed
     # above; rendering itself receives only the prepared snapshot.
     lim, cache, extra = _with_shares(base_limits, pay.transcript, agents, tr)
-    if "--diagnose" in argv:
+    if options["diagnose"]:
         emit_source_diagnose(source_spec, prepared,
                              _cost_check(pay, extra["accounting"]["session"]))
     ctx_window = ctx_window_for(pay.ctx_window, pay.model + pay.model_id)
@@ -3043,17 +3018,19 @@ def status_figures(argv: Sequence[str], raw: str) -> dict:
             "usage": _fig_usage(prepared)}
 
 
-def render_status_figures(fig: dict, argv: Sequence[str]) -> str:
+def render_status_figures(fig: dict, options: Options) -> str:
     """Stage two of the status line: its figures drawn at --cols, under the
-    flags in argv.  Reads no file and no clock."""
+    options.  Reads no file and no clock."""
     _fig_zone(fig)
     rate = fig["rate"]
     output = render_status(decode_record(Payload, fig["payload"]),
                            decode_record(Transcript, fig["transcript"]),
                            decode_record(Git, fig["git"]),
                            decode_record(Limits, fig["limits"]),
-                           _cols(argv), fig["clock"]["now"],
-                           column_rules(argv), int(fig["context_window"]),
+                           _cols(options), fig["clock"]["now"],
+                           # The ask only: rules_on still decides whether
+                           # the width has room for them.
+                           options["column-rules"], int(fig["context_window"]),
                            None if rate is None else float(rate),
                            decode_record(CacheShares, fig["cache_shares"]))
     text = fig["usage"]["account_text"]
@@ -3180,30 +3157,31 @@ def cost_figures(turns: Sequence[Turn], session_id: str, prepared) -> dict:
             "usage": _fig_usage(prepared)}
 
 
-def _cost_opts(argv: Sequence[str], session_id: str = "") -> CostOpts:
+def _cost_opts(options: Options, session_id: str = "") -> CostOpts:
     # --no-usage-text keeps each row's marker glyph and drops the words.
     # The glyph is what tells the three rows apart at a glance; the words
     # are the part that reads identically every turn, which is what makes
     # them the half worth being able to switch off.
-    words = "--no-usage-text" not in argv
+    words = options["usage-text"]
+    label = options["label"]
     return CostOpts(
-        prefix=_flag(argv, "--prefix", E_COSTLINE),
-        label=_flag(argv, "--label", C_LABEL if words else E_ROW_PROMPT),
+        prefix=options["prefix"],
+        label=label if label is not None else (C_LABEL if words else E_ROW_PROMPT),
         totals_label=C_TOTALS_LABEL if words else E_ROW_TOTAL,
         compact_label=C_COMPACT_LABEL if words else E_ROW_COMPACT,
         agents_label=C_AGENTS_LABEL if words else E_ROW_AGENTS,
-        account_totals="--no-account-totals" not in argv,
-        stamps="--no-datetime" not in argv,
-        force_newline="--force-newline" in argv,
-        cols=_cols(argv),
-        colour="--color" in argv,
-        totals="--no-totals" not in argv,
-        right_align="--no-right-align" not in argv,
+        account_totals=options["account-totals"],
+        stamps=options["datetime"],
+        force_newline=options["force-newline"],
+        cols=_cols(options),
+        colour=options["color"],
+        totals=options["totals"],
+        right_align=options["right-align"],
         session_id=session_id,
     )
 
 
-def render_cost_figures(fig: dict, argv: Sequence[str]) -> str:
+def render_cost_figures(fig: dict, options: Options) -> str:
     """Stage two of the cost line: the systemMessage, or "" for none.
     Reads no file, no clock and no plan reading but the document's."""
     _fig_zone(fig)
@@ -3211,7 +3189,7 @@ def render_cost_figures(fig: dict, argv: Sequence[str]) -> str:
     acc = fig["accounting"]
     accounting = {"turns": [_read_accounting(a) for a in acc["turns"]],
                   "session": _read_accounting(acc["session"])}
-    line = _pure_cost_render(turns, _cost_opts(argv),
+    line = _pure_cost_render(turns, _cost_opts(options),
                              int(fig["context_window"]), accounting,
                              plan_totals(fig["usage"]["plan"]),
                              fig["clock"]["now"],
@@ -3224,30 +3202,30 @@ def render_cost_figures(fig: dict, argv: Sequence[str]) -> str:
     return line
 
 
-def main_figures(argv: Sequence[str]) -> int:
+def main_figures(options: Options) -> int:
     """--from-figures PATH: stage two alone, from a figures document."""
-    with open(_flag(argv, "--from-figures"), encoding="utf-8") as fh:
+    with open(options["from-figures"], encoding="utf-8") as fh:
         fig = json.load(fh)
     if fig.get("schema") != FIGURES_SCHEMA:
         sys.stderr.write("figures schema %r, not %d\n"
                          % (fig.get("schema"), FIGURES_SCHEMA))
         return 2
     if fig["mode"] == "cost":
-        line = render_cost_figures(fig, argv)
+        line = render_cost_figures(fig, options)
         print(json.dumps({"systemMessage": line}) if line else "{}")
     else:
-        sys.stdout.write(render_status_figures(fig, argv))
+        sys.stdout.write(render_status_figures(fig, options))
     return 0
 
 
-def main_status(argv: Sequence[str], raw: str) -> int:
-    fig = status_figures(argv, raw)
+def main_status(options: Options, raw: str) -> int:
+    fig = status_figures(options, raw)
     _write_figures(fig)
-    sys.stdout.write(render_status_figures(fig, argv))
+    sys.stdout.write(render_status_figures(fig, options))
     return 0
 
 
-def main_cost(argv: Sequence[str], raw: str) -> int:
+def main_cost(options: Options, raw: str) -> int:
     """The Stop hook.  Everything here is inside one catch-all.
 
     It replaces both cost-line.py and hooks/cost-line.sh: the hook used to
@@ -3255,28 +3233,28 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
     second Python to do the work.  One process now does all three.
     """
     try:
-        transcript = _flag(argv, "--transcript")
+        explicit = bool(options["transcript"])
+        transcript = options["transcript"]
         if not transcript:
             transcript = (json.loads(raw) or {}).get("transcript_path", "")
         if not transcript or not os.path.isfile(transcript):
             print("{}")
             return 0
         opts = _cost_opts(
-            argv,
+            options,
             # The transcript's BASENAME, not the payload's session_id, so the
             # live hook and --transcript take the same path — they are the
             # same string, and a lookup that only runs in production is a
             # lookup no harness can check.
             os.path.basename(transcript)[:-len(".jsonl")]
             if transcript.endswith(".jsonl") else "")
-        source_spec = _flag(argv, "--usage-source",
-                            os.environ.get("CODING_AGENT_USAGE_LINE_USAGE_SOURCE", "auto"))
-        account = _flag(argv, "--account", "default")
-        period = _flag(argv, "--account-period", "day")
+        source_spec = options["usage-source"]
+        account = options["account"]
+        period = options["account-period"]
         prepared = prepare_claude_reading(
             source_spec, account, period,
             {"session": opts.session_id}, frozen_now())
-        if "--diagnose" in argv:
+        if options["diagnose"]:
             emit_source_diagnose(source_spec, prepared)
         seed_limits_snapshot(prepared.limits if prepared.reading else NO_LIMITS,
                              prepared.reading)
@@ -3290,13 +3268,13 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
         # after the render as "reported up to here".
         agents = agent_records(transcript)
         held: Dict[str, int] = {}
-        turns = (read_turns(transcript, agents, held) if _flag(argv, "--transcript")
+        turns = (read_turns(transcript, agents, held) if explicit
                  else read_turns_settled(transcript, agents=agents, held=held))
 
         # --all is the by-hand mode: every prompt in the transcript, listed,
         # as plain text rather than a hook response.  It is not what the hook
         # asks for and never emits JSON, so it cannot be mistaken for one.
-        if "--all" in argv:
+        if options["all"]:
             win = window_for(turns, opts.session_id)
             acc = cost_accounting(turns, calibration())
             for i, t in enumerate(turns, 1):
@@ -3317,7 +3295,7 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
 
         fig = cost_figures(turns, opts.session_id, prepared)
         _write_figures(fig)
-        line = render_cost_figures(fig, argv)
+        line = render_cost_figures(fig, options)
         if not line:
             print("{}")
             return 0
@@ -3327,7 +3305,7 @@ def main_cost(argv: Sequence[str], raw: str) -> int:
         # written by the first would change what the second reports.  The
         # goldens therefore exercise the stamp fallback; tests/agents.py
         # exercises this.
-        if not _flag(argv, "--transcript"):
+        if not explicit:
             publish_agent_offsets(transcript, agents, held)
         return 0
     except Exception:
@@ -3441,45 +3419,45 @@ options (--mode cost):
 """
 
 
-def main(argv: Sequence[str]) -> int:
+def main(options: Options) -> int:
+    """The Claude adapter, under the merged options cli.main built."""
     # --selftest must be checked BEFORE reading stdin: a live invocation
     # supplies a payload and a self-test does not, so reading first would block
     # forever.
-    if "--selftest" in argv:
+    if options["selftest"]:
         return selftest()
-    if "-h" in argv or "--help" in argv:
+    if options["help"]:
         sys.stdout.write(USAGE)
         return 0
     # Before anything renders: it moves the grid every renderer lays onto.
-    set_mark_spacing("--no-mark-spacing" not in argv)
+    set_mark_spacing(options["mark-spacing"])
     # Same reason, one layer in: it changes what the five numeric formatters
     # emit, and every field on both readouts is measured from that.
-    set_subscript_decimals("--subscript-decimals" in argv)
+    set_subscript_decimals(options["subscript-decimals"])
     # Before anything renders, as both above: where every grid row ends.
-    edge = _flag(argv, "--right-edge")
-    if edge.isdigit():
-        set_right_edge(int(edge))
-    mode = _flag(argv, "--mode", "status")
+    if options.given("right-edge"):
+        set_right_edge(options["right-edge"])
+    mode = options["mode"]
     # Stage two alone, from a figures document: no stdin, no transcript, no
     # source and no clock.  See "The figures boundary".
-    if _flag(argv, "--from-figures"):
-        return main_figures(argv)
+    if options["from-figures"]:
+        return main_figures(options)
     # A named transcript is a complete offline input.  In particular, do not
     # wait for the still-open stdin pipe used by command-line callers.
-    explicit_transcript = bool(_flag(argv, "--transcript"))
+    explicit_transcript = bool(options["transcript"])
     if mode == "cost":
         try:
             raw = "" if explicit_transcript else sys.stdin.read()
         except Exception:
             print("{}")
             return 0
-        return main_cost(argv, raw)
+        return main_cost(options, raw)
     if mode == "subagent":
         try:
             raw = sys.stdin.read()
         except Exception:
             return 0
-        return main_subagent(argv, raw)
+        return main_subagent(options, raw)
     if mode != "status":
         sys.stderr.write("unknown --mode %r\n" % mode)
         sys.stdout.write(USAGE)
@@ -3488,8 +3466,8 @@ def main(argv: Sequence[str]) -> int:
         raw = "" if explicit_transcript else sys.stdin.read()
     except Exception:
         raw = ""
-    return main_status(argv, raw)
+    return main_status(options, raw)
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main(from_argv(sys.argv[1:])))

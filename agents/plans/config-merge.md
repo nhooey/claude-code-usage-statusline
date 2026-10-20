@@ -507,6 +507,37 @@ and `npm test`.
 3. **The Python reads `Options`, not `argv`.** `claude.py` and the Codex
    path take the merged value, still built from flags and defaults alone;
    `_flag` goes. The goldens show nothing moved.
+
+   **Status 2026-10-20: done.** As built:
+   - `coding_agent_usage_line/options.py` holds `Options`, a frozen
+     `Mapping` of every option with `"py"` in its ports, by its spec name,
+     to its value; `options.layer(name)` gives the layer (`flag`, `env`
+     or `default`) and `options.given(name)` whether one above the
+     defaults gave it. Values are typed: an int for `cols` and
+     `right-edge`, a tuple for `hide`, a bool for a switch.
+   - `parse(argv, allowed)` turns the command line into (spelling, value)
+     pairs, with `cli.py`'s old errors; `flag_values` folds them by the
+     rules `cli.main` and `_flag` applied between them: a repeated `--hide`
+     makes one list, a repeated value flag takes the last (`_flag` took
+     the first, `cli._parse` the last; nothing passed one twice), and a
+     `--no-` spelling wins whichever comes first. `merge` lays the flags
+     over the defaults; CM4 adds the files' layers there.
+   - `CODING_AGENT_USAGE_LINE_USAGE_SOURCE` is the `env` layer of
+     `usage-source`, between the flags and the defaults, so its six call
+     sites read `options["usage-source"]` and nothing moved; retiring it
+     (Decided 2) is left to CM4, with the docs and the three tests that
+     set it.
+   - `cli.main` checks, builds `Options` once, and hands it to
+     `claude.main` or `codex_main`; the forwarding loop and `_NEGATED` are
+     gone. `--selftest` calls `claude.selftest()` directly.
+   - In `claude.py`, `_flag` and `column_rules` are gone: 22 `_flag`
+     calls and 19 `in argv` tests read `options[...]`. `label` keeps its
+     default worked out in `_cost_opts` and `right-edge` is set only when
+     given, so the derived values stay CM4's and CM6's (Decided 13).
+   - `_flag` and `_costOpts(argv)` in `mod/src/claude_cost.ts`, the
+     TypeScript mirror of the cost line that the shared cases drive with
+     each case's flags, still read an argv; CM6 decides whether they take
+     `options()` or stay a test's reading of a case's flags.
 4. **The Python reads the files.** `config.py`: the walk, JSONC, the merge,
    the warnings, `--show-config`, `CODING_AGENT_USAGE_LINE_CONFIG_DIR`;
    `tests/config.py` and the shared cases.

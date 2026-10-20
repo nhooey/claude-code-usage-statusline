@@ -167,7 +167,7 @@ def render(sl, payload, argv=()):
     old = sys.stdout
     sys.stdout = buf
     try:
-        rc = sl.main_subagent(list(argv), json.dumps(payload))
+        rc = sl.main_subagent(sl.from_argv(argv), json.dumps(payload))
     finally:
         sys.stdout = old
     rows = {}
@@ -1021,7 +1021,7 @@ def run(tmp):
         old = sys.stdout
         sys.stdout = buf
         try:
-            rc = sl.main_subagent([], raw)
+            rc = sl.main_subagent(sl.from_argv([]), raw)
         finally:
             sys.stdout = old
         check("bad input %r: exit 0 and nothing printed, so the panel's "

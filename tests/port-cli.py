@@ -418,6 +418,32 @@ class PublicPortTests(unittest.TestCase):
         self.assertEqual(cost("--no-subscript-decimals"), plain)
         self.assertEqual(cost("--subscript-decimals", "--no-subscript-decimals"), plain)
 
+    def test_options_merge_the_flags_over_the_defaults(self):
+        sys.path.insert(0, str(ROOT))
+        try:
+            from coding_agent_usage_line.options import from_argv
+        finally:
+            sys.path.remove(str(ROOT))
+        plain = from_argv([], environ={})
+        self.assertEqual((plain["totals"], plain.layer("totals")), (True, "default"))
+        self.assertEqual((plain["cols"], plain["hide"], plain["usage-source"]),
+                         (None, (), "auto"))
+        self.assertNotIn("rows", plain)
+        given = from_argv(["--hide", "a", "--cols", "80", "--totals", "--no-totals",
+                           "--no-column-rules", "--column-rules", "--hide", "b",
+                           "--account", "x", "--account", "y", "-h"],
+                          environ={"CODING_AGENT_USAGE_LINE_USAGE_SOURCE": "none"})
+        self.assertEqual(given["hide"], ("a", "b"))
+        self.assertEqual((given["cols"], given.layer("cols")), (80, "flag"))
+        self.assertEqual((given["totals"], given["column-rules"]), (False, False))
+        self.assertEqual((given["account"], given["help"]), ("y", True))
+        self.assertEqual((given["usage-source"], given.layer("usage-source")), ("none", "env"))
+        self.assertTrue(given.given("totals"))
+        with self.assertRaises(TypeError):
+            given["totals"] = True
+        with self.assertRaises(AttributeError):
+            given.extra = 1
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

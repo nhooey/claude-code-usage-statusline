@@ -37,7 +37,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CA` | **Done 2026-10-20 (defde44).** Calibration keyed by source, account id and window; old files swept | none (in flight) | none | `sources.py`, `claude.py` (calibration, tracker reading), `mod/src/sources.ts`, `mod/src/claude_calib.ts` |
 | `CM1` | **Done 2026-10-20.** The options spec, generated | none | none | `spec/options.jsonc`, `tools/gen-spec.py`, `options_spec.{py,ts}`, `docs/options.md` |
 | `CM2` | **Done 2026-10-20.** The Python parses flags from the spec | `CM1` | none | `cli.py`, `tests/port-cli.py` |
-| `CM3` | The Python reads `Options`, not `argv` | `CM2` | `CA`, `RT9` | `claude.py` (every `_flag`), the Codex path |
+| `CM3` | **Done 2026-10-20.** The Python reads `Options`, not `argv` | `CM2` | `CA`, `RT9` | `claude.py` (every `_flag`), the Codex path |
 | `CM4` | The Python reads the files | `CM3` | none | `config.py` (new), `tests/config.py`, shared config cases |
 | `CM5` | The mod reads the files | `CM1`, `CM4` (its shared cases) | none | `mod/src/config.ts` (new), `mod/hooks/edges.ts` (the read), `config.test.ts` |
 | `CM6` | The mod draws from `options()`; the rows table | `CM5` | `RT8`, `RT8i` | `mod/hooks/register.tsx`, `mod/hooks/edges.ts` (every `CONFIG.x`), `mod/hooks/config.ts` |
