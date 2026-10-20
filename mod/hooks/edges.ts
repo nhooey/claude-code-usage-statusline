@@ -30,7 +30,7 @@ import type {
 } from '../src/claude_records.ts'
 import {
   FOLD_CHECK_BYTES, FOLD_PART_BYTES, foldHeadOf, foldMain, foldOfSaved,
-  foldSave, HEAD_SLOTS, newMainFold, newSaveMark, partName,
+  foldWrites, HEAD_SLOTS, newMainFold, partName,
 } from '../src/main_fold.ts'
 import type { FoldMeta, MainFold, SaveMark } from '../src/main_fold.ts'
 import { statePath } from '../src/state.ts'
@@ -220,7 +220,9 @@ async function timed<T>($: $, name: string, f: () => Promise<T>): Promise<T> {
  * transcript's last line can be half written, folded on a copy each time.
  * A reload reads on from the state saved under the contract
  * (src/main_fold.ts), else from the saved cut, else from the start; and the
- * state is saved again at most once per CONFIG.foldSaveMs.  A file that
+ * state is saved again at most once per CONFIG.foldSaveMs.  A stretch of
+ * AGENT_LINES_MIN or more past what is folded is folded by the worker
+ * (foldWorker) into the saved state, which is then read back.  A file that
  * shrank is folded again from the start.  null where there is no file. */
 export async function foldOf($: $, path: string): Promise<MainFold | null> {
   const size = await fileSize($, path)
@@ -229,11 +231,33 @@ export async function foldOf($: $, path: string): Promise<MainFold | null> {
     return null
   }
   const { stateDir } = await placesOf($)
+  const dir = mainFoldDir(stateDir, path)
   let got = folded.get(path)
   if (got && size < got.offset) got = undefined
+  let ran = false
   if (!got) {
+    // A reload: where the saved state is far behind, or there is none,
+    // the worker brings it up first, so it is read once.
+    if (size - await savedOffset($, dir, size) >= AGENT_LINES_MIN) {
+      ran = await foldWorker($, path, dir, size)
+    }
     got = await timed($, 'load', () => loadFold($, stateDir, path, size))
     folded.set(path, got)
+  }
+  if (!ran && size - got.offset >= AGENT_LINES_MIN && !foldWorkerFailed) {
+    // Saved as it stands, for the worker to read on from, and read back.
+    await saveMainFold($, stateDir, path, got, size, true)
+    if (got.savedTo === got.offset && await foldWorker($, path, dir, size)) {
+      const back = await timed($, 'load', () =>
+        loadFold($, stateDir, path, size))
+      if (back.offset >= got.offset) {
+        got = back
+        folded.set(path, got)
+      } else {
+        // What is saved is no longer what the mark says: started over.
+        got.mark = null
+      }
+    }
   }
   if (size - got.offset >= AGENT_LINES_MIN) {
     await mainLines($, path, got, size)
@@ -287,6 +311,43 @@ async function metaOf($: $, path: string, offset: number, size: number):
   return { offset, first: sha256Hex(first), tail: sha256Hex(tail) }
 }
 
+/** The offset of the newest saved head within a file `size` long, 0 for
+ * none: as far as a reload could read on from, unchecked. */
+async function savedOffset($: $, dir: string, size: number):
+  Promise<number> {
+  let best = 0
+  for (const slot of HEAD_SLOTS) {
+    const h = foldHeadOf(await readText($, pyJoin(dir, slot)))
+    if (h && h.meta.offset <= size) best = Math.max(best, h.meta.offset)
+  }
+  return best
+}
+
+let foldWorkerFailed = false
+
+/** Bring the fold saved in `dir` up to `path`'s last whole line before
+ * `end`, through scripts/agent_lines.py's fold mode: it loads the state,
+ * folds the lines past it and saves it back as saveMainFold would, so
+ * neither the transcript nor its records pass through the hooks worker or
+ * the 4 MiB the engine keeps of a process's output.  False where Python
+ * fails, logged once, and from then on, for the main mode or the bytes to
+ * be read instead. */
+async function foldWorker($: $, path: string, dir: string, end: number):
+  Promise<boolean> {
+  if (foldWorkerFailed) return false
+  const r = await timed($, 'worker', () => $.process.run(['/usr/bin/env',
+    'python3', $.plugin.root + '/scripts/agent_lines.py', 'fold', path,
+    String(end), dir], { timeoutMs: CONFIG.agentLinesTimeoutMs }))
+  if (r.exitCode !== 0) {
+    foldWorkerFailed = true
+    void log($, 'fold worker: python3 exited ' + r.exitCode + ', reading ' +
+      'the records instead: ' + r.stderr.slice(-300))
+    return false
+  }
+  steps.workerTo = Number(r.stdout.trim())
+  return true
+}
+
 /** The folds a reload starts from: the newest saved head whose transcript
  * still holds what it was folded from and whose parts read whole; else
  * the saved cut folded; else nothing folded. */
@@ -333,22 +394,24 @@ async function loadFold($: $, stateDir: string, path: string, size: number):
   return { fold, offset: 0, mark: null, savedAt: -Infinity, savedTo: 0 }
 }
 
-/** Save `got` under the contract, at most once per CONFIG.foldSaveMs and
- * only once it reaches further: the parts first, then the head, in the
- * slot the one before it is not in.  $.fs.write truncates and then
- * writes, so a save started over first empties both heads: neither could
- * then read a part it was not written beside. */
+/** Save `got` under the contract, at most once per CONFIG.foldSaveMs (or
+ * `now`) and only once it reaches further, in foldWrites' order: the
+ * parts first, then the head, in the slot the one before it is not in.
+ * $.fs.write truncates and then writes, so a save started over first
+ * empties both heads: neither could then read a part it was not written
+ * beside. */
 async function saveMainFold($: $, stateDir: string, path: string,
-  got: Folded, size: number): Promise<void> {
-  const now = await $.clock.now()
-  if (got.offset <= got.savedTo || now - got.savedAt < CONFIG.foldSaveMs) {
+  got: Folded, size: number, now?: boolean): Promise<void> {
+  const at = await $.clock.now()
+  if (got.offset <= got.savedTo ||
+    (!now && at - got.savedAt < CONFIG.foldSaveMs)) {
     return
   }
-  got.savedAt = now
+  got.savedAt = at
   const dir = mainFoldDir(stateDir, path)
   try {
     const meta = await metaOf($, path, got.offset, size)
-    const save = foldSave(got.fold, meta, got.mark ?? newSaveMark())
+    const save = foldWrites(got.fold, meta, got.mark)
     if (!save) {
       if (!headTooBig) {
         headTooBig = true
@@ -357,13 +420,9 @@ async function saveMainFold($: $, stateDir: string, path: string,
       }
       return
     }
-    if (!got.mark) {
-      for (const slot of HEAD_SLOTS) await $.fs.write(pyJoin(dir, slot), '')
+    for (const [name, text] of save.writes) {
+      await $.fs.write(pyJoin(dir, name), text)
     }
-    for (const [i, text] of save.parts) {
-      await $.fs.write(pyJoin(dir, partName(i)), text)
-    }
-    await $.fs.write(pyJoin(dir, save.slot), save.head)
     got.mark = save.mark
     got.savedTo = got.offset
   } catch (err) {

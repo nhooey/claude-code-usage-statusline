@@ -13,6 +13,7 @@ Run:  python3 tests/fold.py
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -167,6 +168,63 @@ def check_saves(path):
                 broke.append(("torn, read on", ends[-2]))
     check("%s: saved as it grows, in parts, past a torn head" % name,
           broke, [])
+    check_worker(path, data, want)
+
+
+# The mod's cold read, mod/scripts/agent_lines.py's fold mode, under the
+# 3.9 the mod may find as python3: macOS's own, where there is one.
+PY39 = "/usr/bin/python3"
+WORKER = os.path.join(ROOT, "mod", "scripts", "agent_lines.py")
+# The worker's directories, removed at the end.
+WORK = tempfile.mkdtemp()
+
+
+def dir_texts(d):
+    out = {}
+    for n in sorted(os.listdir(d)):
+        with open(os.path.join(d, n), encoding="utf-8", newline="") as fh:
+            out[n] = fh.read()
+    return out
+
+
+def check_worker(path, data, want):
+    """fold_on, the worker, from nothing: the fixture's text, both heads
+    emptied first; read on from a state halfway, the same text read back;
+    and again with nothing new, nothing written.
+    mod/test/main_fold.test.ts checks the worker against the mod's own
+    saves byte for byte."""
+    name = os.path.relpath(path, ROOT)
+    end = data.rfind(b"\n") + 1
+    ends = mf.line_ends(data)
+    d = tempfile.mkdtemp(dir=WORK)
+    to = mf.fold_on(path, d)
+    texts = {mf.part_name(i): t for i, t in enumerate(want["parts"])}
+    texts.update({mf.HEAD_SLOTS[0]: "", mf.HEAD_SLOTS[1]: want["head"]})
+    check("%s: the worker saves from nothing as the fixture" % name,
+          (to, dir_texts(d)), (end, texts) if end else (0, {}))
+    if len(ends) < 2:
+        return
+    half = ends[len(ends) // 2 - 1]
+    d = tempfile.mkdtemp(dir=WORK)
+    f = mf.MainFold()
+    for r in mf.records_of(data[:half]):
+        mf.fold_main(f, r)
+    mf.save_dir(d, f, mf.fold_meta(data, half))
+    to = mf.fold_on(path, d)
+    got = mf.load_dir(d)
+    check("%s: the worker reads on from halfway to the fixture" % name,
+          (to, got[1]["offset"], saved(got[0], data, end)),
+          (end, end, want))
+    was = dir_texts(d)
+    check("%s: the worker with nothing new writes nothing" % name,
+          (mf.fold_on(path, d), dir_texts(d)), (end, was))
+    if os.path.exists(PY39):
+        d = tempfile.mkdtemp(dir=WORK)
+        out = subprocess.run([PY39, WORKER, "fold", path, str(len(data)), d],
+                             capture_output=True, text=True)
+        check("%s: the worker under %s" % (name, PY39),
+              (out.returncode, out.stderr, out.stdout, dir_texts(d)),
+              (0, "", "%d\n" % end, texts if end else {}))
 
 
 def main():
@@ -230,6 +288,7 @@ def main():
         check_saves(path)
 
     print()
+    shutil.rmtree(WORK)
     line, status = tally()
     print(line)
     return status

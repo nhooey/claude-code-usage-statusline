@@ -24,12 +24,23 @@ short fields and the queued prompt's text and origin, an assistant's
 thinking block its short fields, and a file-history snapshot its short
 fields; wireToolInputs goes: no reader asks for any of the rest.
 
+    python3 agent_lines.py fold PATH END DIR
+
+The session's own transcript, for foldOf (hooks/edges.ts), with nothing
+printed but an offset: the fold saved in DIR, the main-fold state
+directory, read on over PATH's whole lines up to END and saved back into
+DIR, as coding_agent_usage_line/main_fold.py's fold_on does it.  The
+offset is the one saved to, from which the mod reads the head and the
+parts itself.  No record passes through the 4 MiB of output the engine
+keeps of a process.  The package is the repository's, beside mod/.
+
 Run as a process so the parsing is the process's time, not the hooks
 worker's: 99% of a big agent file is tool results' text and request
 blobs, which the fold never reads (measured 2026-10-20).
 """
 
 import json
+import os
 import re
 import sys
 
@@ -181,7 +192,18 @@ def line_of(raw):
     return json.dumps(project(r), separators=(",", ":"))
 
 
+def fold(path, end, d):
+    # The repository holds mod/scripts/ and the package side by side.
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))))
+    from coding_agent_usage_line.main_fold import fold_on
+    sys.stdout.write("%d\n" % fold_on(path, d, end))
+
+
 def main():
+    if sys.argv[1:2] == ["fold"]:
+        fold(sys.argv[2], int(sys.argv[3]), sys.argv[4])
+        return
     path, pos, end = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
     whole = sys.argv[4:] == ["main"]
     out, size = [], 0

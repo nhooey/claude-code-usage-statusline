@@ -413,6 +413,55 @@ Each step lands as its own commit, and the tests pass after each one.
    process's 4 MiB of output, and the worker parses no record it did not
    need. Python 3.9 and the standard library are enough: `json`, `hashlib`
    and `os`.
+
+   **Status 2026-10-20: done.** As built:
+   - The mode is `agent_lines.py fold PATH END DIR`. It imports the
+     repository's package from beside `mod/` and calls
+     `main_fold.fold_on`, which does the work and prints the offset it
+     saved to. The `main` mode stays, as the fallback, until step 7.
+   - `fold_on` reads a head only where the transcript still holds the bytes
+     it was folded from (`load` takes a `fits` check). It folds a line at a
+     time, so it holds only the fold. It saves in `fold_writes` order:
+     both heads emptied on a start-over, then the parts, then the head,
+     each through `os.replace`. The mod's `saveMainFold` writes
+     `foldWrites`, the same list. With nothing new, or a head over its cap,
+     it writes nothing.
+   - `foldOf` runs the worker on a reload where the newest head is a
+     megabyte or more behind, or there is none, and then reads the state
+     once. A megabyte or more appended to a fold already in memory is saved
+     at once, folded on by the worker, and read back whole. Where Python
+     fails, the failure is logged once and the main mode reads the records,
+     as before. A copy of `mod/` on its own (a GitHub install, a dev mod)
+     has no package, so it always takes that path. The slow-read log line
+     names the step `worker`.
+   - Cases: `mod/test/main_fold.test.ts` runs the worker on every fixture,
+     from nothing, from a state the mod saved at the first line, halfway
+     and at the end, and from a state of other bytes. In each case the
+     directory must equal, file for file and byte for byte, what `foldOf`
+     writes. `tests/fold.py` also runs the worker under `/usr/bin/python3`
+     (3.9.6). `band.test.ts` checks that a reload reads on from the state
+     the worker saved, with no main mode run. `tests/fold_real.py` checks
+     the worker on real transcripts and prints its time. On the 40 largest
+     here, nothing broke.
+   - `fold_save` joins each part's lines once, where it had added them one
+     at a time (0.85 s of the worker's 4.3 s on the 206 MB transcript). A
+     line with no `\r` skips the newline split (1.0 s). The bytes written
+     are unchanged.
+   - Measured under `/usr/bin/python3` 3.9.6, the worker from nothing, and
+     Node's `foldLoad` of what it wrote:
+
+     | Transcript | Worker | Peak RSS | Load in Node |
+     |---|---|---|---|
+     | 221 MB | 1.2 s | 74 MB | 11 ms |
+     | 206 MB | 2.5 s | 88 MB | 39 ms |
+     | 166 MB (this repo) | 1.5 s | 47 MB | 7 ms |
+     | 156 MB | 2.3 s | 105 MB | 36 ms |
+
+     Reading on 3 MB from a saved state took 0.12 s, and a run with
+     nothing new took 0.17 s. Before this, the first read after a reload
+     with no state took 2,548 ms in the mod's runtime (`fold 1298, load
+     1821, records 1964`), all of it in the hooks worker. Its own time
+     after a live reload is still to be read from `usage-band.log`.
 7. **The cut, dropped.** Once the folds read the state, nothing reads
    records: `recordsOf` had two callers, and both use the finishes now. Remove
    the `MainCut` code, `MAIN_CUT_VERSION`, `savedCut` and `saveCut`, and the

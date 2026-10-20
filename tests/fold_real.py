@@ -13,7 +13,10 @@ points: three record boundaries, either side of every compaction, and one
 cut inside a line.  At each break the fold is finished, and the fold read
 on from there must finish as the whole fold does.  At the cut inside a
 line, the line's records are folded on a copy, which must read as the file
-cut there does, and the fold completed must read as the whole.
+cut there does, and the fold completed must read as the whole.  The mod's
+cold read, the worker (main_fold.fold_on), must save from nothing and
+from a state halfway the files a save of the whole fold writes; its time
+from nothing is on the line.
 
 One line a file, then a total; the exit status is the number of files that
 broke.  mod/tools/check-fold.ts is the TypeScript's side; `check-folds` in
@@ -27,6 +30,7 @@ import json
 import os
 import random
 import sys
+import tempfile
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -93,7 +97,7 @@ def check(path, rng):
         f = round_trip(f)
         if f is None:
             broke.append("not read back at record %d" % k)
-            return broke, len(records), 0, len(at), None
+            return broke, len(records), 0, len(at), None, 0.0
         if finish(f, path) != here:
             broke.append("read back otherwise at record %d" % k)
     fold_all(records[done:], f)
@@ -114,8 +118,56 @@ def check(path, rng):
         fold_all(records_of(data[start:]), f)
         if finish(f, path) != whole:
             broke.append("completed after byte %d" % cut)
+    took = worker(path, data, broke)
     return (broke, len(records), sum(map(cr.is_compaction, records)),
-            len(at), size)
+            len(at), size, took)
+
+
+def dir_texts(d):
+    out = {}
+    for n in os.listdir(d):
+        with open(os.path.join(d, n), encoding="utf-8", newline="") as fh:
+            out[n] = fh.read()
+    return out
+
+
+def worker(path, data, broke):
+    """The mod's cold read, main_fold.fold_on, as mod/scripts/agent_lines.py
+    runs it: from nothing, and from a state saved at the line end halfway,
+    each must leave the files a save of the whole fold writes.  Appends
+    what broke to `broke`; the worker's seconds from nothing."""
+    end = data.rfind(b"\n") + 1
+    if not end:
+        return 0.0
+    whole = mf.MainFold()
+    for r in records_of(data[:end]):
+        mf.fold_main(whole, r)
+    meta = mf.fold_meta(data, end)
+    with tempfile.TemporaryDirectory() as d:
+        t = time.time()
+        to = mf.fold_on(path, d, len(data))
+        took = time.time() - t
+        if (to, dir_texts(d)) != (end, dict(mf.fold_writes(whole, meta)[0])):
+            broke.append("the worker from nothing")
+    half = data.rfind(b"\n", 0, end // 2) + 1
+    if half:
+        f = mf.MainFold()
+        for r in records_of(data[:half]):
+            mf.fold_main(f, r)
+        with tempfile.TemporaryDirectory() as d:
+            want = dict(mf.fold_writes(f, mf.fold_meta(data, half))[0])
+            for n, t in want.items():
+                with open(os.path.join(d, n), "w", encoding="utf-8",
+                          newline="") as fh:
+                    fh.write(t)
+            back = mf.load_dir(d)
+            for r in records_of(data[half:end]):
+                mf.fold_main(back[0], r)
+            want.update(mf.fold_writes(back[0], meta, back[2])[0])
+            to = mf.fold_on(path, d, len(data))
+            if (to, dir_texts(d)) != (end, want):
+                broke.append("the worker from byte %d" % half)
+    return took
 
 
 def _main_fold(f):
@@ -165,15 +217,15 @@ def main(argv=None):
         t = time.time()
         size = os.path.getsize(path)
         total += size
-        broke, n, comp, nb, saved = check(path, rng)
+        broke, n, comp, nb, saved, took = check(path, rng)
         bad += bool(broke)
         state = ("%2d parts %6.2f MB + head %6.1f KB" % (
             saved[0], saved[1] / 1e6, saved[2] / 1e3) if saved else "")
         biggest = max(biggest, saved[1] + saved[2] if saved else 0)
         print("%-4s %7.1f MB %7d records %3d compactions %3d breaks  %s"
-              "  %6.1fs  %s%s"
+              "  worker %5.2fs  %6.1fs  %s%s"
               % ("ok" if not broke else "FAIL", size / 1e6, n, comp, nb,
-                 state, time.time() - t,
+                 state, took, time.time() - t,
                  os.path.relpath(path, os.path.expanduser(
                      "~/.claude/projects")),
                  "" if not broke else "  (" + "; ".join(broke) + ")"),

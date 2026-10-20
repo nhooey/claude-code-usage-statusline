@@ -32,7 +32,7 @@ import {
 } from '../src/claude_records.ts'
 import type { AgentEta, AgentReading } from '../src/claude_records.ts'
 import {
-  foldLoad, foldMain, foldMeta, foldSave, newMainFold, partName,
+  foldLoad, foldMain, foldMeta, foldSave, foldWrites, newMainFold, partName,
 } from '../src/main_fold.ts'
 import type { FoldMeta, MainFold } from '../src/main_fold.ts'
 import { statePath } from '../src/state.ts'
@@ -551,6 +551,46 @@ test('a saved fold of other bytes is not read, and is saved over',
     expect(JSON.stringify(foldSave(back!.fold, back!.meta)))
       .toBe(JSON.stringify(foldSave(whole, back!.meta)))
   })
+
+// The worker, scripts/agent_lines.py's fold mode, runs where the saved fold
+// is a megabyte or more behind.  Here it saves the fold of the whole
+// transcript, though half was planted, so the document says whose fold the
+// mod read on from: the worker's, read back through `$.fs`, with no records
+// passed and no main mode run.  test/main_fold.test.ts checks that the
+// worker writes what the mod writes.
+test('a reload reads on from the state the worker saved', async ($, on) => {
+  const path = '/claude/projects/-work/worker-fold.jsonl'
+  const ran: string[] = []
+  const w: World = world(on, (e) => {
+    const [, , script, mode, file, end, dir] = e.argv
+    if (!script?.endsWith('/scripts/agent_lines.py')) return NO_GIT_HERE
+    ran.push(mode)
+    if (mode !== 'fold') return { ...NO_GIT_HERE, exitCode: 1 }
+    const bytes = w.files.get(file)!.subarray(0, Number(end))
+    const to = bytes.lastIndexOf(10) + 1
+    const f = newMainFold()
+    for (const r of _recordsOf(bytes.subarray(0, to))) foldMain(f, r)
+    for (const [n, t] of foldWrites(f, foldMeta(bytes, to), null)!.writes) {
+      w.files.set(dir + '/' + n, encoder.encode(t))
+    }
+    return { ...NO_GIT_HERE, exitCode: 0, stdout: to + '\n', stderr: '' }
+  })
+  const one = w.files.get(MAIN)!
+  // Blank lines past the records, which no fold reads, to pass the megabyte.
+  const bytes = new Uint8Array(one.length + 1.2 * 1024 * 1024).fill(10)
+  bytes.set(one)
+  w.files.set(path, bytes)
+  const half = one.indexOf(10, one.length >> 1) + 1
+  const dir = statePath(STATE, 'main-fold', path)
+  plant(w, dir, newMainFold(), foldMeta(bytes, half))
+  await start($, 'terminal', path)
+  expect(ran).toEqual(['fold'])
+  const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+  const rate = doc.rate as number | null
+  expect(doc).toEqual(await statusOver(w, path, bytes, rate))
+  expect(doc).not.toEqual(await statusOver(w, path, bytes.subarray(half),
+    rate))
+})
 
 // ════════════════════════════════════════════════════════════════════════════
 // A resumed session, and the events a live one sends in another order.
