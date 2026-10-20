@@ -211,6 +211,7 @@ def read(path):
     if r.peek()[0] != "eof":
         raise SystemExit(NAME + ": text after the closing brace")
     names = set()
+    colours = {}
     for m in root.value:
         if not re.fullmatch(r"[A-Z][A-Z0-9_]*", m.key):
             raise SystemExit("%s: %r is not a constant's name"
@@ -219,9 +220,14 @@ def read(path):
         if alias is not None and alias not in names:
             raise SystemExit("%s: %s is the same as %s, which is not "
                              "written above it" % (NAME, m.key, alias))
-        if m.key[:2] in ("F_", "B_") and alias is None:
-            check_colour(m)
+        if m.key[:2] in ("F_", "B_"):
+            if alias is None:
+                colours[m.key] = check_colour(m)
+            else:
+                colours[m.key] = colours.get(alias)
         names.add(m.key)
+    for key in sorted(DIMMED & colours.keys()):
+        check_faint(key, colours[key])
     return root
 
 
@@ -304,6 +310,54 @@ def check_colour(m):
             "as rgb%s under tmux; the nearest entry is %d, "
             '"rgb(%d, %d, %d)"' % (NAME, m.key, rgb,
                                    xterm(ansi256(rgb)), i, *xterm(i)))
+    return rgb
+
+
+# ── Faint on black ──────────────────────────────────────────────────────────
+#
+# A figure under its magnitude cut is drawn faint (SGR 2, mag_dim), and a
+# terminal draws faint as about half the colour's intensity: xterm and tmux
+# halve it, iTerm2 and Ghostty blend it half-way to the background.  On a
+# black background that is each channel halved.  The colours a dim figure
+# can take must stay readable there.  The floor is the dimmest the user's
+# own true colours reached and read (F_RED 255,90,90: 2.32:1 faint), over
+# the three reported too dark under tmux (F_ETA 255,0,255: 2.21; F_PNK
+# 255,0,175: 2.04; F_RED 215,0,0: 1.63).
+
+# Every name a figure under a magnitude cut is drawn in, aliases included:
+# the mag_dim and reset_dim callers, cache_color's green tier, and the
+# share columns.  The chat rows' greys are dim by design, not by magnitude.
+DIMMED = {"F_GRN", "F_AMB", "F_RED", "F_TUP", "F_RATE", "F_TDN", "F_YEL",
+          "F_PNK", "F_CRM", "F_PRW", "F_ETA", "F_LIM_SESS", "F_LIM_WEEK",
+          "F_SHARE"}
+FAINT_FLOOR = 2.3
+
+
+def contrast(a, b):
+    """WCAG contrast ratio of two sRGB colours."""
+    def luminance(rgb):
+        def linear(v):
+            v /= 255
+            return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+        r, g, b = map(linear, rgb)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    hi, lo = sorted((luminance(a), luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def faint(rgb):
+    """rgb as a terminal draws it faint on black."""
+    return tuple(v // 2 for v in rgb)
+
+
+def check_faint(key, rgb):
+    """Refuse a dimmed colour that drawn faint is under the floor."""
+    c = contrast(faint(rgb), (0, 0, 0))
+    if c < FAINT_FLOOR:
+        raise SystemExit(
+            "%s: %s rgb%s is drawn faint under its magnitude cut, and faint "
+            "on black it is %.2f:1, under the %.1f:1 floor; pick a lighter "
+            "entry of its hue" % (NAME, key, rgb, c, FAINT_FLOOR))
 
 
 def same_as(node):

@@ -387,7 +387,15 @@ export const F_PROJ = "#ffafaf";                         // coral       — 📦
 export const F_BLU2 = "#00afd7";                         // dark blue   — pwd
 export const F_GRN = "#00af00";                          // green       — healthy / clean
 export const F_AMB = "#ffaf00";                          // amber       — *_WARN thresholds
-export const F_RED = "#d70000";                          // red         — *_CRIT thresholds
+export const F_RED = "#ffafaf";                          // red         — *_CRIT thresholds.
+                                                         //  The 🪫 row's figures are dim
+                                                         //  under their cut, and no red
+                                                         //  of the palette's survives
+                                                         //  faint: rgb(255, 0, 0) is
+                                                         //  1.90:1 on black, under the
+                                                         //  floor in tools/gen-spec.py.
+                                                         //  This is the reddest entry
+                                                         //  over it, F_PROJ's own.
 export const F_CYN = "#00d7ff";                          // cyan        — PR, output style
 export const F_PUR = "#d7afff";                          // purple      — model
 export const F_TUP = "#afd7d7";                          // teal        — ▴ input tokens
@@ -408,7 +416,10 @@ export const F_RATE = "#00d7af";                         // mint        — 🛫
                                                          // field, went with 📏 the same day.
 export const F_TDN = "#ffafd7";                          // pink        — ▾ output tokens
 export const F_YEL = "#ffd700";                          // yellow      — cost (never tiered)
-export const F_PNK = "#ff00af";                          // hot pink    — context %
+export const F_PNK = "#ffafff";                          // pink        — context %, and
+                                                         //  🧠's size, dim under its cut:
+                                                         //  the hot pinks of the palette
+                                                         //  are all under the faint floor
 export const F_PNK2 = "#af00af";                         // dark pink   — context size
 export const F_CRM = "#d7d7af";                          // cream       — default text
 export const F_PRW = "#afafff";                          // periwinkle  — the ⌛ row.  It was
@@ -432,17 +443,17 @@ export const F_PRW = "#afafff";                          // periwinkle  — the 
                                                          //  the row keeps the weight it read
                                                          //  at.  13 ΔE from F_PUR, the
                                                          //  nearest the palette allows.
-export const F_ETA = "#ff00ff";                          // magenta     — ⛳ time left.  It was
-                                                         //  F_PRW, the ⌛ beside it, and the
-                                                         //  two figures read as one.  Picked
-                                                         //  as the cool hue furthest from
-                                                         //  every other F_ colour here: 34 ΔE
-                                                         //  from the nearest, F_PNK2, and 84
-                                                         //  from F_PRW.  Not warm, for the
+export const F_ETA = "#ffd7ff";                          // light magenta — ⛳ time left.  It
+                                                         //  was F_PRW, the ⌛ beside it, and
+                                                         //  the two figures read as one.  A
+                                                         //  cool hue apart from the others:
+                                                         //  30 ΔE from F_PRW, 25 from F_PUR,
+                                                         //  27 from F_PNK.  Not warm, for the
                                                          //  reason F_PRW gives; the late "+"
-                                                         //  stays F_AMB.  L* 60, near
-                                                         //  F_PRW's, so the ⌛ row keeps its
-                                                         //  weight.
+                                                         //  stays F_AMB.  The full magenta
+                                                         //  was too dark to read faint, as ⛳
+                                                         //  is under its cut (seen live under
+                                                         //  tmux 2026-10-21).
 export const F_OVER = "#ff0000";                         // bright red  — an agent row's ⛳
                                                          //  past a report of ZERO.  An
                                                          //  estimate that ran out is amber:

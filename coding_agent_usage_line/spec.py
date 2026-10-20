@@ -387,7 +387,15 @@ F_PROJ = "\033[38;2;255;175;175m"          # coral       — 📦 project
 F_BLU2 = "\033[38;2;0;175;215m"            # dark blue   — pwd
 F_GRN = "\033[38;2;0;175;0m"               # green       — healthy / clean
 F_AMB = "\033[38;2;255;175;0m"             # amber       — *_WARN thresholds
-F_RED = "\033[38;2;215;0;0m"               # red         — *_CRIT thresholds
+F_RED = "\033[38;2;255;175;175m"           # red         — *_CRIT thresholds.
+                                           #  The 🪫 row's figures are dim
+                                           #  under their cut, and no red
+                                           #  of the palette's survives
+                                           #  faint: rgb(255, 0, 0) is
+                                           #  1.90:1 on black, under the
+                                           #  floor in tools/gen-spec.py.
+                                           #  This is the reddest entry
+                                           #  over it, F_PROJ's own.
 F_CYN = "\033[38;2;0;215;255m"             # cyan        — PR, output style
 F_PUR = "\033[38;2;215;175;255m"           # purple      — model
 F_TUP = "\033[38;2;175;215;215m"           # teal        — ▴ input tokens
@@ -408,7 +416,10 @@ F_RATE = "\033[38;2;0;215;175m"            # mint        — 🛫 tokens per sec
                                            # field, went with 📏 the same day.
 F_TDN = "\033[38;2;255;175;215m"           # pink        — ▾ output tokens
 F_YEL = "\033[38;2;255;215;0m"             # yellow      — cost (never tiered)
-F_PNK = "\033[38;2;255;0;175m"             # hot pink    — context %
+F_PNK = "\033[38;2;255;175;255m"           # pink        — context %, and
+                                           #  🧠's size, dim under its cut:
+                                           #  the hot pinks of the palette
+                                           #  are all under the faint floor
 F_PNK2 = "\033[38;2;175;0;175m"            # dark pink   — context size
 F_CRM = "\033[38;2;215;215;175m"           # cream       — default text
 F_PRW = "\033[38;2;175;175;255m"           # periwinkle  — the ⌛ row.  It was
@@ -432,17 +443,17 @@ F_PRW = "\033[38;2;175;175;255m"           # periwinkle  — the ⌛ row.  It wa
                                            #  the row keeps the weight it read
                                            #  at.  13 ΔE from F_PUR, the
                                            #  nearest the palette allows.
-F_ETA = "\033[38;2;255;0;255m"             # magenta     — ⛳ time left.  It was
-                                           #  F_PRW, the ⌛ beside it, and the
-                                           #  two figures read as one.  Picked
-                                           #  as the cool hue furthest from
-                                           #  every other F_ colour here: 34 ΔE
-                                           #  from the nearest, F_PNK2, and 84
-                                           #  from F_PRW.  Not warm, for the
+F_ETA = "\033[38;2;255;215;255m"           # light magenta — ⛳ time left.  It
+                                           #  was F_PRW, the ⌛ beside it, and
+                                           #  the two figures read as one.  A
+                                           #  cool hue apart from the others:
+                                           #  30 ΔE from F_PRW, 25 from F_PUR,
+                                           #  27 from F_PNK.  Not warm, for the
                                            #  reason F_PRW gives; the late "+"
-                                           #  stays F_AMB.  L* 60, near
-                                           #  F_PRW's, so the ⌛ row keeps its
-                                           #  weight.
+                                           #  stays F_AMB.  The full magenta
+                                           #  was too dark to read faint, as ⛳
+                                           #  is under its cut (seen live under
+                                           #  tmux 2026-10-21).
 F_OVER = "\033[38;2;255;0;0m"              # bright red  — an agent row's ⛳
                                            #  past a report of ZERO.  An
                                            #  estimate that ran out is amber:
