@@ -277,10 +277,9 @@ the files' modification times, and read again:
 
 An option that drawing reads (`hide`, `rows`, `live-place`,
 `account-place`, `mark-spacing`) applies on the next draw: a changed config
-writes `$.state`, as a new status document does, so the band redraws. An
-option a timer was started with (`tick-ms`, `clock-ms`, `fold-save-ms`)
-applies when its timer is next set, and its record says
-`"reload": "timer"`; the generated docs say so beside it.
+writes `$.state`, as a new status document does, so the band redraws. The
+timers' periods are constants (Decided 5 and 15), so no option restarts
+one.
 
 ### What moves where
 
@@ -302,24 +301,22 @@ applies when its timer is next set, and its record says
 | `markSpacing` | `mark-spacing` | both | `--mark-spacing`, `--no-mark-spacing` | |
 | `subscriptDecimals` | `subscript-decimals` | both | `--subscript-decimals` | gains `--no-subscript-decimals` |
 | `version` | none | | | stays a constant in `config.ts`: it keys the caches, and a file must not change it |
-| `agentLinesTimeoutMs` | `agent-lines-timeout-ms` | mod | none | timing |
-| `foldSaveMs` | `fold-save-ms` | mod | none | timing; `reload: timer` |
-| `tickMs` | `tick-ms` | mod | none | timing; `reload: timer` |
-| `tickRunningMs` | `tick-running-ms` | mod | none | timing |
-| `readSpacing` | `read-spacing` | mod | none | timing |
-| `slowReadMs` | `slow-read-ms` | mod | none | timing |
+| `agentLinesTimeoutMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `foldSaveMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `tickMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `tickRunningMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `readSpacing` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `slowReadMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
 | `slowToast` | `slow-toast` | mod | none | |
-| `slowToastMs` | `slow-toast-ms` | mod | none | timing |
-| `clockMs` | `clock-ms` | mod | none | timing; `reload: timer` |
+| `slowToastMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `clockMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
 | `startsKept` | `starts-kept` | mod | none | store size; minimum 1 |
-| `receiptWaitMs` | `receipt-wait-ms` | mod | none | timing |
-| `receiptPollMs` | `receipt-poll-ms` | mod | none | timing |
-| `receiptHoldMs` | `receipt-hold-ms` | mod | none | timing |
+| `receiptWaitMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `receiptPollMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
+| `receiptHoldMs` | none | | | a constant in `config.ts`, Decided 5 and 15 |
 
-The timings are documented in a section of their own, "Mod tuning", below
-the options a person is expected to set, so the doc's first table stays
-short. Each `-ms` option has a minimum in the spec (`receipt-poll-ms` at
-least 100, `clock-ms` at least 250), so a file cannot set the mod spinning.
+The timings stay constants beside `version` (Decided 5 and 15): tuning
+values, not settings, so no file can set the mod spinning.
 
 #### Every flag of `cli.py`
 
@@ -415,7 +412,7 @@ result. Together they cover:
 - the walk: a file two directories up, a `.git` between that stops it, a
   worktree's `.git` file, no file at all, `$HOME` reached;
 - JSONC: `//` in a string kept, `//` after a value stripped, a trailing comma
-  refused;
+  before `}` or `]` stripped, and one inside a string kept (Decided 14);
 - every row of the bad-value table, and the nearest-key hint;
 - the derived values: `right-edge` from `live-place`, `label` from
   `usage-text`.
@@ -499,8 +496,8 @@ and `npm test`.
 6. **The mod draws from `options()`.** Every `CONFIG.x` in `register.tsx`
    and `edges.ts` becomes `options().x`; the re-reads on `session.start`, the
    tick and a moved root; the redraw on change; the log and the notice.
-   `config.ts` keeps only `version`. `BAND_EDGE` becomes the derived
-   `right-edge`.
+   `config.ts` keeps only `version` and the timings (Decided 15).
+   `BAND_EDGE` becomes the derived `right-edge`, 2 by default (Decided 13).
 7. **Move today's settings into files.** The user's `hide` list and
    `--usage-source`, `--mark-spacing` leave the `subagentStatusLine` command
    in `~/.claude/settings.json` and `CONFIG` for the user-global file, so the
@@ -587,3 +584,19 @@ The rows table set in this project only:
 12. **🎤 `turn` defaults to live `"running"`:** shown while a turn runs,
     then left to the transcript's stamped copy; the other rows stay
     `"always"`.
+13. **`right-edge` is derived from `live-place` when unset,** in the panel
+    too: 2 under the default `"footer"`, 5 under `"above"`. The panel run
+    without the mod sets `live-place` or `right-edge` to keep 5.
+14. **Trailing commas are accepted:** the comment stripper drops a comma
+    before `}` or `]`, and keeps one inside a string, as Decided 11 says;
+    the shared cases change to match.
+15. **The timings stay constants** in `config.ts` (Decided 5): every `-ms`
+    field, `readSpacing`, `agentListMs` and `agentSenderMemo`. "What moves
+    where" and step 6 say so.
+16. **The 💳 `account` row refuses `"transcript": true`:** a warning, a
+    notice and its default kept, as for any bad value; the spec carries
+    the rule on the row.
+17. **The spec's defaults are the program's own** (`usage-source` `auto`,
+    an empty `hide`); the user's `claude-usage-tracker` and hide list move
+    to their files in step 7. `--show-config` joins the spec in step 4,
+    where it starts working.
