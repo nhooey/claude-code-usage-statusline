@@ -491,8 +491,6 @@ and `npm test`.
    files' step: `/.config/**/*.local.*`, any tool's local file under the
    root `.config/` (mise's `.config/mise.local.toml` included), and no
    `.config/` deeper in the tree.
-
-## Open questions
-
-1. **Committed or private for `sticky` here.** It is the user's own
-   repository; committed shares the preference with anyone who clones it.
+8. **`sticky` here** goes in this repository's
+   `.config/coding-agent-usage-line/config.local.jsonc`: the user's own
+   preference, not one for everyone who clones it.
