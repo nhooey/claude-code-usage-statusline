@@ -327,7 +327,7 @@ async function stamp($: $, durationMs: number, prompt: string):
       { home: where.home, rate: null, phase: 'done' }).main : null
     // Laid out as the band is, so the rows' columns are the band's.
     const lines = receiptLines(st, fig, bandCols || 80, CONFIG.hide, ws, true,
-      main, CONFIG.stampUntil)
+      main, CONFIG.sticky)
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs), lines)
   } finally {
@@ -359,6 +359,19 @@ function line(Text: any, spans: readonly Span[], key: string,
       ))}
     </Text>
   )
+}
+
+/** The band's rows as they stand, at bandCols: 🎤, 🤖 and 🎮 while a turn
+ * runs, the sticky ones once it ends; none without a status document. */
+async function bandNow($: $, isWorking: boolean): Promise<Span[][]> {
+  const doc = await read($, status)
+  if (doc === null) return []
+  // At no indent, as the receipt's rows are (asked 2026-10-19).
+  return bandLines(await settingsOf($),
+    at(doc as Dict, await read($, clockNow)), bandCols || 80, CONFIG.hide,
+    { home: await home($), rate: await read($, rate),
+      phase: isWorking || await read($, held) ? 'running' : 'done',
+      sticky: CONFIG.sticky })
 }
 
 /** The transcript's path, from a classic event's envelope, and the session
@@ -478,19 +491,16 @@ export const register: Register = on => {
     return result
   })
 
+  // The band above the prompt, where CONFIG.bandPlace puts it there.  Its
+  // width is taken either way: the footer and the receipt are laid out at
+  // it.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const doc = await read($, status)
-    if (e.props.hasSurvey || doc === null) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
     bandCols = e.props.bodyColumns + 5
-    // At no indent, as the receipt's rows are (asked 2026-10-19).
-    const lines = bandLines(await settingsOf($),
-      at(doc as Dict, await read($, clockNow)), bandCols, CONFIG.hide,
-      { home: await home($), rate: await read($, rate),
-        phase: e.props.isWorking || await read($, held) ? 'running' : 'done',
-        stampUntil: CONFIG.stampUntil })
+    if (CONFIG.bandPlace !== 'above' || e.props.hasSurvey) return next(e)
+    const lines = await bandNow($, e.props.isWorking)
     // Between turns the receipt carries the rows, and the band has none.
     if (!lines.length) return next(e)
+    const { Box, Text } = $.ui.resolve(e)
     // No margin: Claude Code draws its `[-]` on the band's first row, and
     // on a blank top row it stood alone.  A bottom margin of -1, into the
     // blank row above the prompt's border, hid the band's last row under
@@ -558,7 +568,22 @@ export const register: Register = on => {
       hintSeen = seen
       void log($, 'footer: ' + seen)
     }
-    return tail ? next({ ...e, props: { ...e.props, tail } }) : next(e)
+    const row = await (tail ? next({ ...e, props: { ...e.props, tail } })
+      : next(e))
+    if (CONFIG.bandPlace !== 'hint') return row
+    // The band's rows under the footer line, in their colours: Claude
+    // Code's own line first, from next(e), so its pills stay live, and a
+    // node beside it in a column goes on the row below it (seen live
+    // 2026-10-20).
+    const lines = await bandNow($, e.props.isWorking)
+    if (!lines.length) return row
+    const { Box, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        {row}
+        {lines.map((l, i) => line(Text, l, 'band' + i))}
+      </Box>
+    )
   })
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {

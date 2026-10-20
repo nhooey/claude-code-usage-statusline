@@ -6,7 +6,7 @@
 // grid while they run side by side (agents/plans/redesign.md, "Where the
 // plan figures come from").  A change here is a change to the mod: edit,
 // then /reload-plugins.
-import type { StampUntil } from '../src/band.ts'
+import type { BandPlace, RowName } from '../src/band.ts'
 
 export const CONFIG = {
   // The usage source, as --usage-source names it: "claude-usage-tracker"
@@ -24,10 +24,16 @@ export const CONFIG = {
   // receipt's 🔺🔖, with the blank rows around them.
   hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache'] as
     readonly string[],
-  // --stamp-until: how far down the band's rows, 🎤 then 🤖 then 🎮, the
-  // receipt stamps a turn — "turn", "agent" or "session" — the rows under
-  // it staying on the band between turns (asked 2026-10-20).
-  stampUntil: "session" as StampUntil,
+  // Which of the band's rows, 🎤 "turn", 🤖 "agent" and 🎮 "session", stay
+  // where the band draws them once a turn ends; the receipt stamps the
+  // others into the transcript (asked 2026-10-20).  None: the receipt has
+  // all three, and the band is empty between turns.
+  sticky: [] as readonly RowName[],
+  // Where the band's rows are drawn: "hint", under Claude Code's footer
+  // line (`-- INSERT -- ⏵⏵ auto mode on …`), or "above", over the prompt,
+  // where the band can be collapsed with its [-] and scrolled (asked
+  // 2026-10-20, to try them under the footer).
+  bandPlace: "hint" as BandPlace,
   // Draw the footer's tail as a ruler of column digits, each the last digit
   // of the column the mod reckons it lands in, to check the padding in each
   // footer shape: right, it ends on the band's last column (asked

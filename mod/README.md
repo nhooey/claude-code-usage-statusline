@@ -91,10 +91,12 @@ then the turn's tag line, drawn as the start tag is, so its 🔺🔖 is under
 the 🔻🔖; then a blank row. Until the stamp lands the closing line is a
 blank row, and the band keeps the turn's rows until a second after it
 lands (`receiptHoldMs`), so neither place is ever without them; then the
-band draws none. `stampUntil` in `hooks/config.ts` (`--stamp-until` to
-`tools/draw-figures.ts`) stamps fewer: `turn` stamps 🎤 alone, `agent` 🎤
-and 🤖, and `session`, the default, all three; the rows it leaves stay on
-the band between turns. A
+band draws none. `sticky` in `hooks/config.ts` (`--sticky` to
+`tools/draw-figures.ts`) names the rows, any of `turn`, `agent` and
+`session`, that stay on the band once the turn ends; the receipt stamps
+the rest. None are sticky by default, so the receipt has all three.
+`bandPlace` draws the band under the footer line (`hint`, the default)
+or above the prompt (`above`). A
 `$.ui.log` line was tried first:
 Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
 blank row after, in plain dim text.

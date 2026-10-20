@@ -57,20 +57,25 @@ export type BandOpts = {
   readonly phase: Phase;
   /** Blank columns before each row's label (`indented`). */
   readonly indent?: number;
-  /** The last row the receipt stamps; see StampUntil.  "session" where
-   * absent. */
-  readonly stampUntil?: StampUntil;
+  /** The rows that stay where they are drawn once a turn ends; see
+   * RowName.  None where absent. */
+  readonly sticky?: readonly RowName[];
 };
 
-/** How far down the band's rows, 🎤 then 🤖 then 🎮, the receipt stamps a
- * turn: "turn" stamps 🎤 alone, "agent" 🎤 and 🤖, "session" all three.
- * The rows under it stay on the band between turns (asked 2026-10-20). */
-export type StampUntil = "turn" | "agent" | "session";
-export const STAMP_UNTIL: readonly StampUntil[] = ["turn", "agent", "session"];
+/** A row of the band as the configuration names it: 🎤 "turn", 🤖
+ * "agent", 🎮 "session".  A sticky row stays where the band draws it once
+ * a turn ends, and the receipt stamps the others, any of the three either
+ * way (asked 2026-10-20). */
+export type RowName = "turn" | "agent" | "session";
 
-/** The scopes the receipt stamps under `until`, top to bottom. */
-export function stamped(until: StampUntil = "session"): string[] {
-  return ["turn", "main", "session"].slice(0, STAMP_UNTIL.indexOf(until) + 1);
+/** Where the band's rows are drawn: "above" the prompt, or under its
+ * "hint", the footer line. */
+export type BandPlace = "above" | "hint";
+export const ROW_NAMES: readonly RowName[] = ["turn", "agent", "session"];
+
+/** The scopes of the rows `sticky` names. */
+export function stickyScopes(sticky: readonly RowName[] = []): string[] {
+  return sticky.map((n) => n === "agent" ? "main" : n);
 }
 
 /** The band's four rows, whichever the phase draws. */
@@ -403,16 +408,16 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
 
 /** The rows a phase draws, top to bottom: 🎤, 🤖💬 and 🎮 while a turn
  * runs, the order the receipt stamps them in (asked 2026-10-20), and once
- * it ends those the receipt did not stamp under `until`: none by default
- * (asked 2026-10-20).  💳 is not among them: it is drawn
+ * it ends the `sticky` ones, which the receipt does not stamp: none by
+ * default (asked 2026-10-20).  💳 is not among them: it is drawn
  * on the footer under the prompt, right-aligned, as `accountText` gives it
  * (decided 2026-10-19). */
 export function phaseRows(rows: BandRows, phase: Phase,
-  until: StampUntil = "session"): Row[] {
+  sticky: readonly RowName[] = []): Row[] {
   const all = [rows.turn, rows.main, rows.session];
   if (phase === "running") return all;
-  const gone = stamped(until);
-  return all.filter((r) => !gone.includes(r.scope));
+  const kept = stickyScopes(sticky);
+  return all.filter((r) => kept.includes(r.scope));
 }
 
 /** The 💳 row's label as one line of plain text after the workspace,
@@ -568,7 +573,7 @@ export const TAIL_BLANK = "⠀";
 export function bandLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], opts: BandOpts): Span[][] {
   const keys = fixedKeys(st, cols, hide);
-  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.stampUntil)
+  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.sticky)
     .filter((r) => !hidden(hide, r.scope))
     .map((r) => draw(st, indented(r, opts.indent ?? 0), keys, cols, hide));
 }

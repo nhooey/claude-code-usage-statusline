@@ -113,7 +113,7 @@ test("the band's columns do not move with the phase or the figures", () => {
   }
 });
 
-test("--stamp-until splits 🎤, 🤖 and 🎮 between the receipt and the band", () => {
+test("sticky rows stay on the band, and the receipt stamps the others", () => {
   const st = settings({});
   const status = document("status/01-baseline@196");
   const cost = document("cost/09-agents@196");
@@ -121,19 +121,23 @@ test("--stamp-until splits 🎤, 🤖 and 🎮 between the receipt and the band"
   const main = inZone(status, () => bandRows(st, status, opts).main);
   const marks = (lines: Span[][]) => lines.map((l) =>
     Array.from(stripAnsi(join(l)))[0]);
-  for (const [until, stamp, keep] of [
-    ["turn", ["🎤"], ["🤖", "🎮"]],
-    ["agent", ["🎤", "🤖"], ["🎮"]],
-    ["session", ["🎤", "🤖", "🎮"], []],
+  for (const [sticky, stamp, keep] of [
+    [[], ["🎤", "🤖", "🎮"], []],
+    [["agent", "session"], ["🎤"], ["🤖", "🎮"]],
+    [["session"], ["🎤", "🤖"], ["🎮"]],
+    // Any of the three, not only the rows under a cut.
+    [["turn", "session"], ["🤖"], ["🎤", "🎮"]],
+    [["agent"], ["🎤", "🎮"], ["🤖"]],
   ] as const) {
+    const name = sticky.join(",") || "none";
     const receipt = inZone(cost, () => receiptLines(st, cost, 196, [], null,
-      false, main, until));
+      false, main, sticky));
     // The rows, then a blank row and the 🔺🔖 tag line.
-    assert.deepEqual(marks(receipt).slice(0, -2), stamp, until);
-    assert.equal(marks(receipt).at(-2), " ", until);
+    assert.deepEqual(marks(receipt).slice(0, -2), stamp, name);
+    assert.equal(marks(receipt).at(-2), " ", name);
     const band = inZone(status, () => bandLines(st, status, 196, [],
-      { ...opts, stampUntil: until }));
-    assert.deepEqual(marks(band), keep, until);
+      { ...opts, sticky }));
+    assert.deepEqual(marks(band), keep, name);
   }
 });
 

@@ -59,6 +59,25 @@ const WINDOW = 1_000_000
 const COLS = 150
 const encoder = new TextEncoder()
 
+/** The band where CONFIG.bandPlace draws it, mounted: above the prompt,
+ * or under the footer line, whose mount the band's own sets the width
+ * of first, as Claude Code draws the two.  Under the footer, the drawing
+ * leaves out Claude Code's own line, which comes first. */
+async function mountBand($: any, surface: 'terminal' | 'desktop',
+  props: RenderPropsOf['AbovePrompt']) {
+  const above = await $.ui.mount({ plugin: 'usage-band', surface,
+    component: 'AbovePrompt', props })
+  if (CONFIG.bandPlace === 'above') return above
+  const hint = await $.ui.mount({ plugin: 'usage-band', surface,
+    component: 'PromptHint', props: { isDraft: false,
+      isWorking: props.isWorking, hint: '-- INSERT --' } })
+  return { ...hint, drawn: async () => {
+    const tree = await hint.drawn() as Drawn
+    return tree.type === 'Box'
+      ? { ...tree, children: (tree.children ?? []).slice(1) } : tree
+  } }
+}
+
 const BAND: RenderPropsOf['AbovePrompt'] = {
   hasSurvey: false,
   isWorking: false,
@@ -324,8 +343,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
       const want = await statusOf(w, STATUS, doc.rate as number | null)
       expect(JSON.parse(JSON.stringify(doc)))
         .toEqual(JSON.parse(JSON.stringify(want)))
-      const ui = await $.ui.mount({ plugin: 'usage-band', surface,
-        component: 'AbovePrompt', props: BAND })
+      const ui = await mountBand($, surface, BAND)
       // Between turns the band draws nothing: the receipt has the rows.
       const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
         rate: null, phase: 'done' })
@@ -338,8 +356,7 @@ test('a turn running draws the running phase', async ($, on) => {
   const w = world(on)
   await start($, 'terminal', STATUS)
   const doc = lastDoc(w)
-  const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
-    component: 'AbovePrompt', props: { ...BAND, isWorking: true } })
+  const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
   const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
     rate: null, phase: 'running' })
   expect(await drawnRows(ui)).toEqual(expected(lines))
@@ -633,8 +650,7 @@ async function drewAll($: any, w: World) {
     .toEqual(JSON.parse(JSON.stringify(want.transcript)))
   const st = settings({})
 
-  const mount = () => $.ui.mount({ plugin: 'usage-band',
-    surface: 'terminal', component: 'AbovePrompt', props: BAND })
+  const mount = () => mountBand($, 'terminal', BAND)
   // The band drawn as of now, its clocks moved on as the mod moves them.
   const shown = (phase: 'running' | 'done') => {
     const now = Math.max(Number((doc.clock as Dict).now),
