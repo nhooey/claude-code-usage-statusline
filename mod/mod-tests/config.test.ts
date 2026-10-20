@@ -9,7 +9,8 @@
 // configuration's and the figures' alike, must lie under the world's own
 // directories, so no developer's config file, state directory or
 // ~/.claude.json can reach a result.
-import { expect, mock, test } from 'claude-code/testing'
+import { expect, mock } from 'claude-code/testing'
+import { test } from './budget.ts'
 import type { On } from 'claude-code'
 
 import { LOG_NAME } from '../hooks/log.ts'

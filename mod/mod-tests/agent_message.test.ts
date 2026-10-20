@@ -11,7 +11,8 @@
 // mod's own tells apart from one it left to the engine.  What the mod
 // should draw is worked out with agent_message.ts alone, from the same
 // agents and text.
-import { expect, mock, test } from 'claude-code/testing'
+import { expect, mock } from 'claude-code/testing'
+import { test } from './budget.ts'
 import type { AgentInfo, On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { settings } from '../src/formatting.ts'

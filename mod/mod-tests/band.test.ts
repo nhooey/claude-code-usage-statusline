@@ -17,8 +17,9 @@
 // against the Python's by test/claude.test.ts.  The receipt, which the mod
 // writes rather than draws, is checked as the `$.ui.log` lines it sends,
 // against receiptLines over the same bytes.
-import { expect, mock, test } from 'claude-code/testing'
+import { expect, mock } from 'claude-code/testing'
 import type { MockClock } from 'claude-code/testing'
+import { BUDGET_MS, test } from './budget.ts'
 import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
@@ -713,8 +714,9 @@ test('a reload reads on from the state the worker saved', async ($, on) => {
 // itself, a piece at a time, so no more than a piece of it is held at
 // once, and saves the fold, as the worker would have.  The copies of
 // main.jsonl's records past two pieces' length put piece ends mid-record.
+// It folds 17 MiB twice, some 11 s on an idle machine: three budgets.
 test('with no package for the worker, the mod folds the bytes in pieces',
-  { timeoutMs: 60_000 }, async ($, on) => {
+  { timeoutMs: 3 * BUDGET_MS }, async ($, on) => {
     const path = '/claude/projects/-work/no-worker.jsonl'
     const ran: string[] = []
     let widest = 0
