@@ -1,8 +1,8 @@
 // The receipt a turn ends with, and the start line under its prompt, from
 // the figures documents.
 //
-// agents/plans/redesign.md has the design ("The receipt"): live, then
-// stamped.  While a turn runs the band draws its 🎤 and 🎮 rows; once the
+// agents/plans/_implemented/redesign.md has the design ("The receipt"):
+// live, then stamped.  While a turn runs the band draws its 🎤 and 🎮 rows; once the
 // turn's records are in the transcript, the mod stamps them there frozen, a
 // `$.ui.log` line each: a head, 🔺🔖 the turn's tag and when it was
 // stamped, and over it the same two rows, from the cost document

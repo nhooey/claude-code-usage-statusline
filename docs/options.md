@@ -59,7 +59,7 @@ These work for both agents.
 | `--from-figures PATH` | none | Claude: draw a saved figures document instead of reading any input. The test suite saves one per case; useful for redrawing a captured layout. See [the tests' README](../tests/README.md#figures). |
 | `--diagnose` | off | Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Claude's status line adds the session's cost and lines two ways, as a check on each other: `cost_usd` and `lines`, this program's own over the transcript and the agent files, as the cost line totals them, and `claude_cost_usd` and `claude_lines`, the totals Claude Code's payload gave; each is blank where its side has none. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses. |
 | `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
-| `--right-edge N` | `5` | The columns every agent-panel row leaves blank at the terminal's right edge. `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt; `0` matches the mod with its band under the footer line, where there is no `[-]`. Claude only. |
+| `--right-edge N` | `5` | The columns every agent-panel row leaves blank at the terminal's right edge. `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt; `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge. Claude only. |
 | `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). Only the agent panel draws on the grid so far; the other modes, and Codex, accept it and ignore it. |
 
 ### Terminal width
@@ -126,7 +126,7 @@ stacked digit under digit, so it stays. The agent panel's rows have no mark
 spacing to close and don't change.
 
 It also keeps the column rules off, even under `--column-rules`. See
-[Column rules](layout.md#column-rules).
+[below](#--column-rules).
 
 ### `--column-rules`
 
@@ -174,7 +174,7 @@ further down. A task with no transcript (a shell, a remote agent) shows only
 what the payload gives.
 
 Each row is laid out on the redesigned grid
-([the plan](../agents/plans/redesign.md)), the columns the mod's band and
+([the plan](../agents/plans/_implemented/redesign.md)), the columns the mod's band and
 receipt draw: model, 🛫, 💰, 🧠, 🧩, 🎯, ⌛ ⛳ 🤖 🔧 🚦, 🔋, 🪫, 💾. On an agent
 row the 🛫 column says what the agent is doing and for how long, or its token
 rate. The label before them is the kind and its phase, the 👶🏻 🤏 💻 📡 📨
@@ -187,8 +187,9 @@ more blanks for each level an agent started by another agent sits below it
 (the depth is `spawnDepth` in the agent's `.meta.json` sidecar, or the
 panel's own tree); the row counts it toward the width and does not print it.
 Every row ends five columns short of the terminal's edge, as the band does
-above the prompt; `--right-edge 0` takes them back, for the band under the
-footer line.
+above the prompt; `--right-edge 2` ends it where the mod's rows under the
+footer line end, two columns short, where Claude Code's footer container
+stops.
 The columns follow from the width and `--hide` alone, kept for two levels of
 nesting whether any agent runs or not, so no column moves when an agent
 starts; a deeper row cuts its own label instead. On a narrow terminal whole

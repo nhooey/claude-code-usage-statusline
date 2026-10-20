@@ -4,8 +4,8 @@
 While align-probe.on sits beside this file, every task's row is the
 redesign mockup's first agent row, drawn for the terminal's width.  Without
 it, the real status line's subagent mode runs, so leaving this in
-settings.json changes nothing.  See agents/plans/redesign.md, "Rerunning
-the alignment test".
+settings.json changes nothing.  See agents/plans/_implemented/redesign.md,
+"Rerunning the alignment test".
 """
 import json, os, subprocess, sys
 

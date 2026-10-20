@@ -1,6 +1,6 @@
 # mod
 
-The TypeScript side of the [redesign](../agents/plans/redesign.md): the
+The TypeScript side of the [redesign](../agents/plans/_implemented/redesign.md): the
 Claude accounting, the usage-source reader and the cells, ported from
 `coding_agent_usage_line/` module by module, each under the same name, and
 the Claude Code mod, `usage-band`, that draws them.

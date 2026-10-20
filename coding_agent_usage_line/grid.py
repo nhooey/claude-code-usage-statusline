@@ -1,7 +1,7 @@
 """The redesigned grid: one scope per row, one column per metric.
 
-agents/plans/redesign.md has the design, and mod/src/grid.ts is the
-reference this ports, function for function.  Every row of the band, the
+agents/plans/_implemented/redesign.md has the design, and mod/src/grid.ts
+is the reference this ports, function for function.  Every row of the band, the
 receipt and the agent panel draws the columns of GRID_CELLS in one order; a
 row with nothing for a column leaves it blank, so the columns hold.  On a
 narrow terminal a row's label sheds its ranked parts, then is cut, and past

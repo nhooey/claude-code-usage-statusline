@@ -3,9 +3,9 @@
 Preparation (sidecar lookup, usage parsing, limits/source selection and JSON
 serialization) belongs to orchestration.  This module only lays out supplied
 task facts.  Its cells return spans (see spans.py); render_task_rows hands
-each row to the redesigned grid (grid.py, agents/plans/redesign.md) as its
-label's pieces and its cells, and joins what the grid draws into escape
-codes, where the panel prints it.
+each row to the redesigned grid (grid.py,
+agents/plans/_implemented/redesign.md) as its label's pieces and its cells,
+and joins what the grid draws into escape codes, where the panel prints it.
 """
 import time
 from typing import Optional, Sequence
@@ -454,8 +454,9 @@ def inherited_etas(prepared_tasks):
                                [finish(k) for k in kids.get(tid, ())], start)
     return out
 
-# The cells each scope's rows can carry, as agents/plans/redesign.md's
-# "Where each row's figures come from" has them: the band's 💳, 🎤, 🤖💬 and
+# The cells each scope's rows can carry, as
+# agents/plans/_implemented/redesign.md's "Where each row's figures come
+# from" has them: the band's 💳, 🎤, 🤖💬 and
 # 🎮 rows, the receipt's 📊 🎤 and 📊 🎮 (scopes turn and session again), and
 # an agent's.  The panel lays its rows out over a template of each, a row
 # with no label and every cell it can carry, empty, so that it reaches the

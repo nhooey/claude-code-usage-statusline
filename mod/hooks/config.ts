@@ -1,11 +1,11 @@
 // The mod's configuration, in one place.
 //
-// What the status line takes as flags (`--usage-source`, `--hide`,
-// `--mark-spacing`) the mod takes here, set to what the user's status line
-// runs with, so the band and the status line read one source and draw one
-// grid while they run side by side (agents/plans/redesign.md, "Where the
-// plan figures come from").  A change here is a change to the mod: edit,
-// then /reload-plugins.
+// What the Python program takes as flags (`--usage-source`, `--hide`,
+// `--mark-spacing`) the mod takes here, set to what the agent panel's
+// subagentStatusLine runs with, so the mod and the panel read one source
+// and draw one grid (agents/plans/_implemented/redesign.md, "Where the plan
+// figures come from").  A change here is a change to the mod: edit, then
+// /reload-plugins.
 import type { BandPlace, RowName } from '../src/band.ts'
 import { RIGHT_EDGE } from '../src/spec.ts'
 
@@ -37,9 +37,9 @@ export const CONFIG = {
   // line (`-- INSERT -- ⏵⏵ auto mode on …`), or "above", over the prompt,
   // where the band can be collapsed with its [-] and scrolled (asked
   // 2026-10-20, to try them under the footer).  Under the footer there is
-  // no [-], and the band's rows and the 💳 row end at the terminal's edge
-  // instead of RIGHT_EDGE short of it: keep subagentStatusLine's
-  // `--right-edge` the same, 0 for "hint" and 5 for "above", so the panel
+  // no [-], and the band's rows and the 💳 row end BAND_EDGE (below) short
+  // of the terminal's edge instead of RIGHT_EDGE: keep subagentStatusLine's
+  // `--right-edge` the same, 2 for "hint" and 5 for "above", so the panel
   // stacks.
   bandPlace: "hint" as BandPlace,
   // Where the 💳 account is drawn: "row", a row of its own under Claude

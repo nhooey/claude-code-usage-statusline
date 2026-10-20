@@ -169,7 +169,7 @@ the figures the redesigned grid draws and today's rows do not: the status
 document's `turn` and `accounting`, the accounting's time and 💾 figures, the
 `Turn`'s lines and the `Transcript`'s main-thread figures. Schema 3, the same
 day, added what the decisions in the plan's
-[Where each row's figures come from](../agents/plans/redesign.md#where-each-rows-figures-come-from)
+[Where each row's figures come from](../agents/plans/_implemented/redesign.md#where-each-rows-figures-come-from)
 need: the status document's `open_turn` and `accounting.open_turn`,
 `accounting.own`, the session's `start_s`, the `Transcript`'s `own_parts` and
 `own_est` with the compactions in its own cost, and the `Turn`'s `eta`. No row
@@ -342,7 +342,7 @@ subagent suite skips, having no figures document.
 ## Grid cases
 
 `fixtures/grid/` pins the redesigned grid
-([the plan](../agents/plans/redesign.md)), `mod/src/grid.ts`. Unlike the rest
+([the plan](../agents/plans/_implemented/redesign.md)), `mod/src/grid.ts`. Unlike the rest
 of `fixtures/`, these are written by the TypeScript, with
 `node mod/tools/gen-grid-cases.ts`: the grid is built there first, and the
 Python cells the agent panel keeps will be checked against them when they are
@@ -380,7 +380,7 @@ prompt (💳 🎤 🤖💬 🎮 while a turn runs, 💳 🤖💬 once it ends) a
 `mod/src/receipt.ts` draws a cost document as the receipt (its 🔺🔖 head, 📊 🎤
 and 📊 🎮) and a status document as the 🔻🔖 start line, all through the cells
 in `mod/src/cells.ts`. The plan's
-[Where each row's figures come from](../agents/plans/redesign.md#where-each-rows-figures-come-from)
+[Where each row's figures come from](../agents/plans/_implemented/redesign.md#where-each-rows-figures-come-from)
 says which field each cell reads. Like the grid's, these are written by the
 TypeScript, with `node mod/tools/gen-row-cases.ts`.
 

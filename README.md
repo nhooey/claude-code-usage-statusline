@@ -4,63 +4,76 @@
 
 Three readouts for [Claude Code](https://claude.com/claude-code) that show what
 your session is costing, how much of your plan it has used, where the time went,
-and what every subagent is doing. Every figure stays on the same screen column,
-so you can switch tabs and compare sessions at a glance.
+and what every subagent is doing. They share one grid, so every figure stays on
+the same screen column on every row, and you can switch tabs and compare
+sessions at a glance.
 
-## Session status line
+## Under the footer line
 
-Redrawn under the prompt as the session changes. Installed as `statusLine`.
+Drawn under Claude Code's own footer line while a turn runs, by the
+`usage-band` mod in [`mod/`](mod/README.md): the 💳 account, then the turn, the
+main thread and the session, one scope a row.
 
 ```
-👤💬 Why is the build slow?         🤖O⁵🏃 💰115     🧠   115k    11٪    ⌛ ⛳   4m 🤖 2.8h 🔧  58m 🚦 5.5h    📅  2026-08-16
-🤖💬 The test step takes 80٪ of…    🧩▴2.7M ▾841k    📖 🎤 34٪ 🎮 32٪    🔋 🎤 1.2٪ 🎮 3.8٪ 💳  15٪ 🔜 6.7m    🕐    02:23:20
-📦app  📁~/src/app  🌿main          🤖200/s 🎯98٪    📝 🎤  7٪ 🎮  7٪    🪫 🎤 1.6٪ 🎮 8.4٪ 💳  87٪ 🔜 1.9d    💾 +3.4k - 214
+  -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
+                                📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  🎤 Why does the elapsed row rep…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋1.2٪  🪫1.56٪
+  🤖 Two figures, because one of …          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋3.8٪  🪫8.45٪
+  🎮 📦repo 🌿golden-clean                           💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋3.8٪  🪫8.45٪
 ```
 
 Read these three first:
 
-* **💰 115**: the session has cost $115 at API prices.
-* **🔋 💳 15٪ 🔜 6.7m**: the account has used 15٪ of its 5-hour window, which
+* **🎮 💰 35**: the session has cost $35 at API prices.
+* **💳 🔋 15٪ 🔜 6.7m**: the account has used 15٪ of its 5-hour window, which
   resets in 6.7 minutes. 🪫 is the same for the weekly window.
-* **🧠 115k 11٪**: the context holds 115k tokens, 11٪ of the window.
+* **🤖 🧠115k 11٪**: the main thread's context holds 115k tokens, 11٪ of the
+  window.
 
-| | Chat and project | Session | Context | Time and plan | Clock |
-|---|---|---|---|---|---|
-| **Row 1** | 👤💬 Prompt · 🎨 Style | 🤖 Model · 💰 Cost | 🧠 Context | ⌛ Elapsed | 📅 Date |
-| **Row 2** | 🤖💬 Reply · 🔀 PR | 🧩 Tokens | 📖 Rereads | 🔋 5-hour | 🕐 Clock |
-| **Row 3** | 📦 Project · 📁 Directory · 🌿 Branch · 💻 Shells · 📡 Monitors · 📨 Queue · 🤏 Compactions | Doing · 🎯 Hits | 📝 Caching | 🪫 Weekly | 💾 Diff |
+| Row | Label | Scope |
+|---|---|---|
+| 💳 | 📦 Project · 🌿 Branch · 📁 Directory · 💳 Account · 🔋 🪫 Windows · 🔜 Resets · 📅 Date · 🕐 Clock | the account |
+| 🎤 | the prompt | the turn |
+| 🤖 | the reply | the main thread alone |
+| 🎮 | 📦 Project · 🌿 Branch · 📁 Directory · 🔀 PR · 🎨 Style | the main thread and every agent |
 
-## Agent tree
+Every row's figures, left to right: 🤖 Model · 🛫 Rate or Doing · 💰 Cost ·
+🧠 Context · 🧩 Tokens · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools ·
+🚦 Waiting · 🔋 5-hour · 🪫 Weekly · 💾 Diff.
 
-One row per subagent or shell in Claude Code's agent panel, indented under the
-agent that started it. Installed as `subagentStatusLine`.
+## Agent panel
+
+One row per subagent or shell in Claude Code's agent panel, on the same
+columns. Installed as `subagentStatusLine`.
 
 ```
-⏺  🔩🟢 🤖 266/s 👶🏻1 a1b2c3d4e… Port renderer Editing…   ⏺   🤖O⁵🏃  💰 0.4   🧠 124k  12٪  🧩 ▴ 66k ▾3.6k  🎯93٪  ⌛ 14m ⛳   3m 🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋.08٪  🪫.10٪  💾 +  48 -   9
-└ ◯  🔍🟢 🔧  42s      c7d8e9f0a… Find callers of seg()  └ ◯ 🤖S⁵🚶  💰 0.1   🧠  48k  24٪  🧩 ▴ 24k ▾  1k  🎯90٪  ⌛8.3m ⛳ 2.5m 🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.03٪  🪫.04٪  💾 +   0 -   0
-◯  📐⚫ ✅   4m      f3e4d5c6b… Plan docs rewrite        ◯   🤖O⁵🏃  💰 0.2   🧠  42k   4٪  🧩 ▴ 26k ▾2.9k   🎯85٪  ⌛  5m ⛳    ? 🤖⠶⠆ 🔧⠀⠀ 🚦⠆⠀  🔋.04٪  🪫.05٪  💾 + 120 -  30
-◯  🐚🟢              b1         npm test --watch         ◯                                                                  ⌛ 13m
+✳🔍🟢 Marigold  Running the s…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋.02٪  🪫.022٪  💾 +  9  -  4
+✳🔩🟢 Bluebell                  🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.01٪  🪫.016٪
+🔍⚫ Daisy                      🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋.02٪  🪫.022٪
+🐚🟢 sleep 300 && make test                                                                 ⌛  2m
 ```
 
-| Side | Cells, left to right |
-|---|---|
-| **Left** | Kind · State · Doing · 👶🏻 Children · 🤏 Compactions · 💻 Shells · 📡 Monitors · 📨 Queue · ID · Name, 🌿 worktree branch and activity |
-| **Right** | Tree · 🤖 Model · 💰 Cost · 🧠 Context · 🧩 Tokens · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools · 🚦 Waiting · 🔋 5-hour · 🪫 Weekly · 💾 Diff |
-
-The right side uses the session status line's cells, for that one agent. A
-shell has no transcript, so its row shows only how long it has run.
+The label, left to right: Spinner · Kind · State · 👶🏻 Children ·
+🤏 Compactions · 💻 Shells · 📡 Monitors · 📨 Queue · Name, 🌿 worktree branch
+and activity. The figures are the rows' above, for that one agent, with what
+it is doing in 🛫's column. A shell has no transcript, so its row shows only
+how long it has run.
 
 ## Prompt receipt
 
-Printed once each prompt finishes, what the prompt cost over the session's
-running total. Installed as the `Stop` hook.
+Stamped by the mod as each turn ends, in place of Claude Code's `✻ Worked for
+…` line, and kept in the transcript: the 🎤, 🤖 and 🎮 rows as they stood when
+the turn ended, dim, then the turn's tag.
 
 ```
-📊 🎤    🧩 ▴ 28k ▾7.1k  🎯 95٪  🧠+ 3.4٪ +6.8k  💰+  0.2   🔋+ 0.03٪ 📖 32٪  🪫+ 0.05٪ 📝 18٪  ⌛🤖+  4m  🔧+  3m  📅 2026-08-16
-📊 🎮    🧩 ▴ 68k ▾ 14k  🎯 97٪  🧠 27.1٪   54k  💰   0.6   🔋  0.1٪  💳 41٪  🪫  0.14٪ 💳 63٪  ⌛🤖  13m  🔧   3m  🕐   02:23:20
+  🎤 And this one?                                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋.03٪  🪫.043٪
+  🤖 Done.                                           💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋.01٪  🪫.012٪
+  🎮 📦repo 🌿golden-clean                           💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋.04٪  🪫.059٪
+
+🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
 ```
 
-A `+` marks what the prompt added to the total below it.
+The prompt that opened the turn carries the same tag under it, 🔻🔖.
 
 ## Install
 
@@ -71,17 +84,24 @@ there is nothing to install beyond a clone:
 git clone https://github.com/nhooey/claude-code-usage-statusline.git ~/src/claude-code-usage-statusline
 ```
 
-Then merge [`examples/claude/settings.json`](examples/claude/settings.json)
-into `~/.claude/settings.json`. It has one entry per readout:
+The rows under the footer line and the receipt are the mod's. Install it from
+the clone, which Claude Code then reads in place:
 
-| Entry | Readout |
-|---|---|
-| `statusLine` | session status line |
-| `subagentStatusLine` | agent tree |
-| `hooks.Stop` | prompt receipt |
+```sh
+cd ~/src/claude-code-usage-statusline
+claude plugin marketplace add "$PWD"
+claude plugin install usage-band@claude-code-usage-statusline
+```
 
-Each is independent, so you can install only the ones you want. The paths
-assume the clone above. Keep
+Its settings, such as the usage source and what it hides, are in
+`mod/hooks/config.ts`; [`mod/README.md`](mod/README.md) has the rest.
+
+The agent panel is the Python program's. Merge
+[`examples/claude/settings.json`](examples/claude/settings.json) into
+`~/.claude/settings.json`: its `subagentStatusLine` runs with `--right-edge 2`,
+so the panel's rows end where the mod's do, and the `--hide` paths the mod
+ships with, so the columns stack; change the two together. The path assumes
+the clone above. Keep
 `coding-agent-usage-line.py` and the `coding_agent_usage_line/` directory
 beside it together.
 
@@ -96,32 +116,39 @@ echo 'For any task you expect to take more than about a minute, as the main agen
 ## Legend
 
 The legend has one table per topic. Each glyph has a name, and a ✓ marks each
-readout that draws it. Where a glyph means something different on one
-readout, the table says so.
+readout that draws it: the rows under the footer line, the agent panel and
+the receipt. Where a glyph means something different on one readout, the
+table says so.
+
+### Rows
+
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
+|---|---|---|:-:|:-:|:-:|
+| 💳 | Account | the plan's own figures for the whole account, on every device | ✓ | | |
+| 🎤 | Turn | the turn, labelled with the prompt that opened it | ✓ | | ✓ |
+| 🤖 | Main thread | the main thread alone, labelled with its last reply | ✓ | | ✓ |
+| 🎮 | Session | the main thread and every agent, labelled with where it works | ✓ | | ✓ |
 
 ### Chat and project
 
-| Glyph | Name | Meaning | Status | Tree | Receipt |
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| 👤💬 | Prompt | your last prompt | ✓ | | |
-| 🤖💬 | Reply | the model's last reply | ✓ | | |
-| ¶ | Newline | a newline inside a chat row | ✓ | | |
-| 🎨 | Style | output style, when not the default | ✓ | | |
-| 🔀 | PR | pull request number | ✓ | | |
-| 📨 | Queue | messages waiting: on the status line, for the main thread's next turn; on the tree, sent to the agent and not yet delivered, Claude Code's "N queued" | ✓ | ✓ | |
-| 📦 | Project | the project; in a worktree, the main repository | ✓ | | |
-| 📁 | Directory | current directory | ✓ | | |
-| 🌿 | Branch | branch, clean tree; on the tree, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | |
-| 🍂 ✱ | Dirty | branch, uncommitted changes | ✓ | | |
-| 💾 | Diff | lines added and removed | ✓ | ✓ | |
-| 📅 | Date | today's date; on the receipt, when it printed | ✓ | | ✓ |
-| 🕐 | Clock | the time; on the receipt, when it printed | ✓ | | ✓ |
+| 🎨 | Style | output style, when not the default | ✓ | | ✓ |
+| 🔀 | PR | pull request number | ✓ | | ✓ |
+| 📨 | Queue | messages sent to the agent and not yet delivered, Claude Code's "N queued" | | ✓ | |
+| 📦 | Project | the project; in a worktree, the main repository | ✓ | | ✓ |
+| 📁 | Directory | current directory, the project's root drawn as 📦 | ✓ | | ✓ |
+| 🌿 | Branch | branch, clean tree; on the panel, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | ✓ |
+| 🍂 ✱ | Dirty | branch, uncommitted changes | ✓ | | ✓ |
+| 💾 | Diff | lines added and removed; blank where none were | ✓ | ✓ | ✓ |
+| 📅 | Date | today's date; on the receipt, when it was stamped | ✓ | | ✓ |
+| 🕐 | Clock | the time; on the receipt, when it was stamped | ✓ | | ✓ |
 
 ### Model
 
-| Glyph | Name | Meaning | Status | Tree | Receipt |
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| 🤖 `O⁵` | Model | family initial and major version, such as `O⁵` Opus 5, `S⁵` Sonnet 5 or `H⁴` Haiku 4.5 | ✓ | ✓ | |
+| 🤖 `O⁵` | Model | family initial and major version, such as `O⁵` Opus 5, `S⁵` Sonnet 5 or `H⁴` Haiku 4.5; on the rows, the turn's | ✓ | ✓ | |
 | 🐢 | Low | reasoning effort `low` | ✓ | ✓ | |
 | 🚶 | Medium | reasoning effort `medium` | ✓ | ✓ | |
 | 🏃 | High | reasoning effort `high` | ✓ | ✓ | |
@@ -130,95 +157,80 @@ readout, the table says so.
 
 ### Cost and tokens
 
-| Glyph | Name | Meaning | Status | Tree | Receipt |
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 💰 | Cost | cost in dollars, at API prices | ✓ | ✓ | ✓ |
+| `~` | Estimate | a figure partly estimated: 💰 with a compaction in it, 🧠 read from one | ✓ | | ✓ |
 | 🧩 | Tokens | tokens in and out | ✓ | ✓ | ✓ |
 | ▴ | Input | billable-equivalent input tokens | ✓ | ✓ | ✓ |
 | ▾ | Output | output tokens | ✓ | ✓ | ✓ |
-| 🛫 | Rate | tokens per second, where no state applies: an offline read, a shell | ✓ | ✓ | |
-| 🔧 🚦 🤖 … | Doing | what the thread is doing and for how long: 🔧 a tool, 🚦 waiting on you or an agent (or between turns), 🤖 the model, which shows the token rate until it has written nothing for a minute (amber from ten). On the tree, the cell after the state circle, with the paused and ended marks too | ✓ | ✓ | |
+| 🛫 | Rate | the main thread's tokens per second, on the 🎤 row; on the panel, a shell's | ✓ | ✓ | |
+| 🔧 🚦 🤖 … | Doing | in 🛫's column, what the thread is doing and for how long: 🔧 a tool, 🚦 waiting on you or an agent, 🤖 the model, which shows the token rate until it has written nothing for a minute (amber from ten). On the panel, with the paused and ended marks too | ✓ | ✓ | |
 | 🎯 | Hits | prompt-cache hit rate | ✓ | ✓ | ✓ |
 
 ### Context
 
-| Glyph | Name | Meaning | Status | Tree | Receipt |
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| 🧠 | Context | context size and share of the window; on the receipt, its change | ✓ | ✓ | ✓ |
-| 📖 | Rereads | share of the bill spent re-reading the conversation | ✓ | | ✓ |
-| 📝 | Caching | share of the bill spent caching new material | ✓ | | ✓ |
-| 🤏 | Compactions | how often the window has been compacted; on the receipt, a compaction's own row | ✓ | ✓ | ✓ |
-
-* 📖 is the part of the bill that `/compact` or `/clear` can reduce. A bright
-  📖 🎤 means at least two thirds of the last prompt's cost went on
-  re-reading, so compacting would pay off.
-* Compacting does not reduce 📝. It covers tool results and files that were
-  read.
+| 🧠 | Context | context size and share of the window; on the 🎤 row, how much the turn grew it | ✓ | ✓ | ✓ |
+| 🤏 | Compactions | how often the agent's window has been compacted | | ✓ | |
 
 ### Time
 
-| Glyph | Name | Meaning | Status | Tree | Receipt |
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| ⌛ | Elapsed | the time row; on the tree, the agent's age | ✓ | ✓ | |
-| ⛳ | ETA | time the answer or agent says it has left | ✓ | ✓ | |
-| 🤖 | Thinking | time with the model | ✓ | ✓ | |
+| ⌛ | Elapsed | how long the row's scope has run; on the panel, the agent's age | ✓ | ✓ | ✓ |
+| ⛳ | ETA | time the answer or agent says it has left; on the receipt, the turn's last report | ✓ | ✓ | ✓ |
+| 🤖 | Thinking | time with the model | ✓ | ✓ | ✓ |
 | 🔧 | Tools | time inside tools | ✓ | ✓ | ✓ |
-| 🚦 | Waiting | time waiting on you, or on agents it started | ✓ | ✓ | |
-| ⠄ ⠆ ⠦ ⠶ | Gauge | that figure's share of ⌛ | | ✓ | |
-| ⌛🤖 | Answering | time with the model, per prompt and its agents | | | ✓ |
+| 🚦 | Waiting | time waiting on you, or on agents it started | ✓ | ✓ | ✓ |
+| ⠄ ⠆ ⠦ ⠶ | Gauge | that figure's share of the three | ✓ | ✓ | ✓ |
 
-* **🤖 🔧 🚦 add up to ⌛.** The status line prints them as durations. The tree
-  prints them as gauges with eight dots between the three, so
+* **🤖 🔧 🚦 are gauges** with eight dots between the three, so
   `🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀` means five eighths thinking, two in tools and one waiting.
+  On the main thread's row and the panel's they share out ⌛. The 🎤 and 🎮
+  rows sum agent-seconds, which can outrun the wall clock, so there they are
+  proportions of themselves.
 * **Each row counts its own thread.** A parent waiting on the agents it
   started reads that time as 🚦. So do `AskUserQuestion`, `ExitPlanMode` and
   `Agent` calls.
-* **The receipt counts agents where its tokens do.** Each row's ⌛🤖 and 🔧
-  add the agents it bills, off each agent's own clock, so the 🎮 row is the
-  status line's 🤖 and 🔧 plus every agent's, and can pass the session's age.
-* **The receipt splits each prompt the same way.** Its ⌛🤖 and 🔧 are the
-  status line's 🤖 and 🔧 over that one prompt, and the 🎮 row sums them. It
-  prints no 🚦: what a prompt waited on is in neither figure.
 * **⛳ comes from a skill.** Agents report their time left through the
   [`coding-agent-usage-line-report-eta`](skills/coding-agent-usage-line-report-eta/SKILL.md)
-  skill (see [ETA](docs/layout.md#eta)). ⛳ reads `?` until a report
+  skill (see [ETA](docs/layout.md#eta)). ⛳ is blank until a report
   arrives and after the answer finishes. A parent's ETA is never earlier
   than that of any agent it still has running.
 
 ### Plan windows
 
-| Glyph | Name | Meaning | Status | Tree | Receipt |
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 🔋 | 5-hour | share of the 5-hour window | ✓ | ✓ | ✓ |
 | 🪫 | Weekly | share of the weekly window | ✓ | ✓ | ✓ |
-| 🎤 | Prompt | the last prompt's share | ✓ | | ✓ |
-| 🎮 | Session | this session's share | ✓ | | ✓ |
-| 💳 | Account | the whole account's share, on every device | ✓ | | ✓ |
-| 🔜 | Reset | time until the window resets | ✓ | | |
+| 🔜 | Reset | time until the window resets, on the 💳 row | ✓ | | |
 | 💯 | Full | a full 100٪ | ✓ | ✓ | ✓ |
-| `?` | Unknown | a share that cannot be derived yet | ✓ | ✓ | |
+| `?` | Unknown | a share that cannot be derived yet | ✓ | ✓ | ✓ |
 
-* **🎤 and 🎮 are estimates.** The program prices the session's requests and
-  divides by a dollars-per-percent rate calibrated from this machine's
+* **The 💳 row's shares are the plan's own figure.** They come from Claude
+  Code or another [usage source](docs/usage-sources.md).
+* **Every other row's are estimates.** The program prices the row's requests
+  and divides by a dollars-per-percent rate calibrated from this machine's
   history. See [Accounting](docs/accounting.md).
-* **💳 is the plan's own figure.** It comes from Claude Code or another
-  [usage source](docs/usage-sources.md).
-* **On the tree**, 🔋 and 🪫 are the agent's own share of each window.
 
 ### Background tasks
 
-| Glyph | Name | Meaning | Status | Tree | Receipt |
+| Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| 💻 | Shells | background shells it started and has not heard the end of; on the status line, the main thread's | ✓ | ✓ | |
-| 📡 | Monitors | Monitors it started and has not heard the end of; on the status line, the main thread's | ✓ | ✓ | |
+| 💻 | Shells | background shells it started and has not heard the end of | | ✓ | |
+| 📡 | Monitors | Monitors it started and has not heard the end of | | ✓ | |
 
-On the tree, both are drawn while the agent runs and while it is paused, and
-not once it has failed or been killed. Paused, the state mark after 🟡 still
-says which one it waits on; the count says how many.
+Both are drawn while the agent runs and while it is paused, and not once it
+has failed or been killed. Paused, the state mark after 🟡 still says which
+one it waits on; the count says how many.
 
 ### Agent kind
 
-These glyphs fill the tree's first cell. Each is named for the agent type it
+These glyphs open a panel row, after a running agent's spinner. Each is named
+for the agent type it
 stands for; `other` covers every other type, custom agents included.
 
 | Glyph | Name | Glyph | Name |
@@ -232,7 +244,8 @@ stands for; `other` covers every other type, custom agents included.
 
 ### Agent state
 
-These glyphs fill the tree's second cell: a phase, then an activity within it.
+A panel row's phase follows its kind; what the agent is doing within it fills
+the 🛫 column, with how long it has been doing it.
 
 | Glyph | Name | Meaning |
 |---|---|---|
@@ -259,24 +272,20 @@ Claude Code calls an agent completed both when it has finished and when it has
 ended its turn to wait. The row reads the agent's transcript and its children
 to tell the two apart.
 
-### Agent tree shape
+### Agent panel
 
 | Glyph | Name | Meaning |
 |---|---|---|
+| `· ✢ ✳ ✶ ✻ ✽` | Spinner | a running agent's activity: one frame on for each block it writes, so it stands still when the agent stalls |
 | 👶🏻 | Children | how many agents hang directly under it |
-| ◯ ├ └ │ | Tree | the panel's tree, drawn again where the figures start in a wide window, so parents and leaves are visible beside their figures |
-| ⏺ | Expanded | the selected parent, whose children are showing |
 
-### Receipt rows
+### Turn tags
 
 | Glyph | Name | Meaning |
 |---|---|---|
-| 📊 | Receipt | marks every receipt row |
-| 🎤 | Prompt | the prompt just answered |
-| 🎮 | Session | the session so far |
-| 🤏 | Compaction | a compaction, which fires no `Stop` hook of its own |
-| 👥 | Late | one row per agent that finished since the last `Stop`, after its prompt's row had printed, led by its name and id |
-| 🔺🔖 | Turn | the turn the 🎤 row bills, already answered: the first 8 characters of its `promptId`, then Claude Code's turn index |
+| 🔻🔖 | Start | under a prompt, the turn it opens: the first 8 characters of its `promptId`, then Claude Code's turn index, and when it started |
+| 🔺🔖 | End | under the receipt, the turn it bills, already answered, and when it was stamped |
+| `› 🤖` | Message | a message from another agent, folded: the sender's task, then the message's first line |
 
 ## Three rules the display follows
 
@@ -286,29 +295,31 @@ to tell the two apart.
 * **Brightness shows magnitude.** A figure with no natural ceiling stays dim
   until it matters: 100k tokens, 1k tokens/s, $1, ten minutes or 100 lines.
   Percentages already have a ceiling, so they follow separate rules.
-* **Agents are counted.** On the status line and the receipt, the tokens,
-  costs, plan shares and times include every subagent, fork and workflow
-  agent, each priced at its own model's rates. 🧠 is the exception: it shows
-  only the main thread, because it tells you when *this* context window
-  needs compacting. Each row of the agent tree counts its own agent alone.
+* **Agents are counted.** On the 🎤 and 🎮 rows, the tokens, costs, plan
+  shares and times include every subagent, fork and workflow agent, each
+  priced at its own model's rates. The 🤖 row is the main thread alone,
+  and its 🧠 tells you when *this* context window needs compacting. Each
+  row of the agent panel counts its own agent alone.
 
-The session status line is designed for terminals 170 columns or wider. On a
-narrower terminal the chat text is shortened first, and below about 135
-columns the project, path and branch move to a fourth line of their own.
-[Layout](docs/layout.md) covers every cell in detail.
+On a narrow terminal each row's label is shortened first, down to 20
+columns; then whole columns drop from every row at once, least important
+first, so the grid never breaks. [Layout](docs/layout.md) covers every cell
+in detail.
 
 ## Customizing
 
-Two flags cover most adjustments:
-
-* `--column-rules` draws faint `|` dividers between the status line's columns,
-  at 170 columns or wider.
-* `--no-mark-spacing` removes the space after each mark, for tighter terminals.
+`--hide scope[.group[.metric]]` hides a row, a group of cells or one cell,
+the same path on every readout: in `mod/hooks/config.ts` for the mod, and as
+flags to `subagentStatusLine` for the panel. The mod ships hiding 🔋, 🧠's
+share of the window and 🎯; the renders above hide nothing. See
+[Hiding](docs/layout.md#hiding).
 
 [Options](docs/options.md) lists every flag.
 
-By default, 💳 and 🔜 come from the rate limits that Claude Code includes in
-the status line's input. `--usage-source` can take them from elsewhere:
+The 💳 row's figures come from the usage source the mod is configured with
+(`usageSource` in `mod/hooks/config.ts`, `claude-usage-tracker` as shipped),
+and the panel's from `--usage-source`. Besides the rate limits Claude Code
+reports, either can take them from:
 
 * the Claude Usage Tracker app
 * an organization API

@@ -1,8 +1,8 @@
 // The band above the prompt: a status figures document drawn as the grid's
 // rows.
 //
-// agents/plans/redesign.md has the design, and its "Where each row's
-// figures come from" says which field each cell reads; the comments over
+// agents/plans/_implemented/redesign.md has the design, and its "Where
+// each row's figures come from" says which field each cell reads; the comments over
 // each row's builder here say the same, field by field.  The band draws
 // four rows while a turn runs, 💳 the account, 🎤 the turn, 🤖💬 the main
 // thread and 🎮 the session, and drops to 💳 and 🤖💬 when it ends, since

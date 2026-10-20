@@ -1,8 +1,11 @@
 # Redesign: one grid for all three readouts
 
-A proposal, not built yet. Nothing here changes what the program draws today;
-[Layout](../../docs/layout.md) is still the reference for that. This document collects
-the design as it is decided, and `mod/tools/layout-mockup.ts` draws it.
+Built: every step of [the build order](#the-build-order) is done (2026-10-20),
+and [Layout](../../../docs/layout.md) is the reference for what is drawn now.
+This document keeps the design as it was decided, and
+`mod/tools/layout-mockup.ts` draws the proposal from made-up figures. Where
+the two differ, as in where the band's rows are placed, Layout and the mod
+are right.
 
 ## Why
 
@@ -274,7 +277,7 @@ is laid out so the two copies are easy to keep in step:
   written by the Python side with `--regen`. Both test suites run every case,
   so CI fails when either copy drifts.
 - **The same boundaries.** Pure renderers, one snapshot per render, missing
-  is not zero, estimates labelled ([Development](../../docs/development.md#boundaries)) hold in both.
+  is not zero, estimates labelled ([Development](../../../docs/development.md#boundaries)) hold in both.
 
 A cell returns spans, not a string: a mod's `Text` refuses control
 characters, so the escape codes the Python renderers colour with cannot
@@ -381,7 +384,19 @@ same version-1 reading as its output and shared cases pinning it.
    CI has no `claude` to run it).
 6. **The switch.** The band runs beside the status line until the two agree;
    then the status line leaves `settings.json` and
-   [Layout](../../docs/layout.md) is rewritten.
+   [Layout](../../../docs/layout.md) is rewritten.
+   Status 2026-10-20: done. The status line has left `settings.json`;
+   `subagentStatusLine` stays, with `--right-edge 2`. The band's rows are
+   drawn under Claude Code's footer line (`CONFIG.bandPlace` `"hint"`), two
+   columns in and two short of the edge, with the 💳 account on a row of
+   its own above them, and the receipt is stamped at the same inset, so its
+   rows stack on theirs and the panel's. Layout is rewritten around them:
+   each section opens with a render from the fixtures, drawn by
+   `mod/tools/draw-figures.ts` (now with `--part footer`, `--part tail`,
+   `--inset` and `--right-edge`) and `tools/draw-panel.py`. The status line
+   and the Stop hook's receipt are described there only as commands that
+   still exist, `--mode status` and `--mode cost`; their goldens still pin
+   them.
 
 ### What the accounting port has to mirror
 
@@ -510,7 +525,7 @@ read nothing else; the live path goes through the document too.
 `run-cases.py` checks every case three ways: the whole run against the
 golden, the document it wrote against `figures/<suite>/<id>.json`, and that
 committed document alone, drawn with `--from-figures`, against the golden
-again. The schema is in [tests/README.md](../../tests/README.md#figures).
+again. The schema is in [tests/README.md](../../../tests/README.md#figures).
 
 ```
 tests/fixtures/
@@ -651,7 +666,7 @@ What schemas 2 and 3 count, and how:
    🎮 is the column's sum and the two readouts agree. Claude Code's
    `payload.cost_usd` and lines are shown by `--diagnose` on the status
    line beside ours (`cost_usd`, `lines`, `claude_cost_usd`,
-   `claude_lines`), as a check; [Options](../../docs/options.md) has the
+   `claude_lines`), as a check; [Options](../../../docs/options.md) has the
    line. Whether Claude Code's lines count its agents' is still not known,
    and the check is where to find out. 💰 prices 1-hour cache writes at
    the published rate, twice input, though Claude Code's own total prices

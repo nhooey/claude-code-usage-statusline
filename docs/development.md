@@ -99,8 +99,9 @@ without consuming claims. See [Codex](codex.md).
 
 | change | where | then |
 |---|---|---|
-| A status-line cell | `claude_render.py`; its width in `RIGHT_GRID` in `formatting.py`, or `LINE3_RESERVED` / `RULE_MIN` in `spec/layout.jsonc` | Regenerate the status goldens and read the diff; update [Layout](layout.md). |
-| A cost-line cell | `claude_cost_render.py`, and the group builders in `claude.py` | Regenerate the cost goldens; update [Layout](layout.md). |
+| A cell on the mod's rows or its receipt | `mod/src/cells.ts`, and the row builders in `mod/src/band.ts` and `mod/src/receipt.ts` | Regenerate the row cases (`node mod/tools/gen-row-cases.ts`) and read the diff; `node mod/tools/draw-figures.ts` draws a figures document to look at; update [Layout](layout.md). |
+| A status-line cell (the retired `--mode status`) | `claude_render.py`; its width in `RIGHT_GRID` in `formatting.py`, or `LINE3_RESERVED` / `RULE_MIN` in `spec/layout.jsonc` | Regenerate the status goldens and read the diff. |
+| A cost-line cell (the retired `--mode cost`) | `claude_cost_render.py`, and the group builders in `claude.py` | Regenerate the cost goldens. |
 | An agent-panel cell | `claude_subagent_render.py` | Update the row shape asserted in `tests/subagent.py`. `python3 tools/draw-panel.py 01-mixed.json 120` draws the panel at any width to look at. |
 | A glyph, colour, width or cut | Its constant in `spec/layout.jsonc` | Run `python3 tools/gen-spec.py`. For a glyph, follow [Glyphs and terminals](glyphs-and-terminals.md) and run `tests/probe-advance.sh` in a real terminal. |
 | A flag | `_CLAUDE_FLAGS` / `_COMMON_FLAGS` and `USAGE` in `cli.py`; read it in `claude.main` or `codex_main` | Update [Options](options.md); add a case to `tests/port-cli.py`, the public-CLI suite. |
@@ -211,7 +212,7 @@ directory, with the format number its name is keyed by: `state.state_path` and
 the mod's `statePath` (`mod/src/state.ts`) give the same name. Bump a kind's
 format when what is written in it changes.
 
-`mod/tools/layout-mockup.ts` draws the proposed [redesign](../agents/plans/redesign.md) inside a
+`mod/tools/layout-mockup.ts` draws the [redesign](../agents/plans/_implemented/redesign.md)'s proposal inside a
 mocked Claude Code screen: `node mod/tools/layout-mockup.ts --cols 150`. It
 uses the mod's ported cell renderers on made-up figures and lays them out
 with the grid, `mod/src/grid.ts`; it reads nothing but the terminal. Its
