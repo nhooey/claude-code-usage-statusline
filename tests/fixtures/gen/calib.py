@@ -12,7 +12,8 @@ What the files under tests/fixtures/calib/ hold:
   values.json  the pure parts over awkward inputs, each case one call:
                _local_naive and _window_starts across time zones (DST gaps
                and folds included), _pct_num, seed_limits_snapshot,
-               plan_totals and _priced_record.
+               plan_totals and _priced_record, and the shared cache's
+               name (state_name) and text (calib_cache_text).
   shares.json  the committed transcripts' turns, and hand-made ones, with
                turn_cost, turn_shares and session_cache_shares, then each
                turn's turn_cost_since and window_shares, and the session's
@@ -23,7 +24,9 @@ What the files under tests/fixtures/calib/ hold:
                corpus and hand-made files, with mtimes, then steps sharing
                one state directory — calibration, _window_costs, appends,
                rewrites, planted caches — each with its result and the
-               caches it left.
+               caches it left.  The calibration cache is one file both ports
+               share, so it is kept as its text, which the TypeScript must
+               write byte for byte.
 
 A naive datetime is written as str() writes it, "2026-08-16 01:31:00".
 FLOATS as gen/records.py writes them: repr, and {"$float": ...} for what
@@ -249,6 +252,25 @@ def values():
         claude._SNAPSHOT = snap
         cases.append({"fn": "plan_totals", "args": [enc(snap)],
                       "out": enc(claude.plan_totals())})
+
+    # The shared cache's name and text: the TypeScript must give the same
+    # name, and write the same bytes for the same inputs.
+    for key in ([""], ["cmd\0me\x001786800000"], ["\0\0"],
+                ["caf\u00e9 \u2603 \U0001f600"], [], ["a", "b"]):
+        cases.append({"fn": "state_name", "args": ["calibration"] + key,
+                      "out": out(run(claude.state.state_name,
+                                     "calibration", *key))})
+    w = "2026-08-16 01:31:00|2026-08-11 01:00:00"
+    for costs in ((8.0, 60.0, 4.0, 30.0), (8, 60, 4, 30),
+                  (0.1 + 0.2, 1e308, 41.0, None), (-0.0, 1e-300, "1.5", "30"),
+                  (True, False, None, None),
+                  (float("nan"), float("inf"), float("-inf"), 2.5)):
+        cases.append({"fn": "calib_cache_text", "args": enc([w] + list(costs)),
+                      "out": out(run(claude.calib_cache_text, w, *costs))})
+    cases.append({"fn": "calib_cache_text", "args": ["None|None", 0.0, 0.0,
+                                                      0.0, 0.0],
+                  "out": claude.calib_cache_text("None|None", 0.0, 0.0, 0.0,
+                                                 0.0)})
 
     for line in priced_lines():
         cases.append({"fn": "_priced_record", "args": [bytes_arg(line)],
@@ -552,10 +574,12 @@ class Scenario:
         self.last = got
         return got
 
-    def calib_cache(self, windows):
+    def calib_cache(self):
+        """The calibration cache's text, which the TypeScript must have
+        written byte for byte, or None."""
         try:
-            with open(claude.calibration_cache_path(windows)) as fh:
-                return enc(json.load(fh))
+            with open(claude.calibration_cache_path(), "rb") as fh:
+                return fh.read().decode("utf-8")
         except (OSError, ValueError):
             return None
 
@@ -570,7 +594,7 @@ class Scenario:
             claude.CALIB_CACHE_OVERRIDE = (
                 os.path.join(self.dir, kw["path"]) if kw["path"] else "")
         elif op == "plant":
-            path = claude.calibration_cache_path(kw["windows"])
+            path = claude.calibration_cache_path()
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w") as fh:
                 fh.write(kw["content"])
@@ -578,15 +602,14 @@ class Scenario:
                 at = CLOCK.now - kw["age"]
                 os.utime(path, (at, at))
         elif op == "age":
-            path = claude.calibration_cache_path(kw["windows"])
+            path = claude.calibration_cache_path()
             at = CLOCK.now - kw["age"]
             os.utime(path, (at, at))
         elif op == "calibration":
             s["glob"] = self.glob()
             got = run(claude.calibration, kw.get("scan", True))
             s["out"] = out(got)
-            starts = claude._window_starts()
-            s["calib_cache"] = self.calib_cache("%s|%s" % starts)
+            s["calib_cache"] = self.calib_cache()
             s["costs_cache"] = self.costs_cache()
         elif op == "window_costs":
             s["glob"] = self.glob()
@@ -726,6 +749,12 @@ def scan():
         {"windows": key, "sess_cost": 8.0, "week_cost": 60.0,
          "sess_pct": 4.0, "week_pct": 30.0}))
     sc.step("calibration", snap=app)
+    sc.step("plant", snap=app, windows=key, age=4000,
+            content=claude.calib_cache_text(key, 9.0, 61.0, 3.0, 31.0))
+    sc.step("calibration", snap=app, scan=False)
+    sc.step("plant", snap=app, windows=key, content=json.dumps(
+        {"windows": key, "sess_cost": 8.0, "week_cost": 60.0,
+         "sess_pct": 4.0, "week_pct": 30.0}))
     sc.step("age", snap=app, windows=key, age=400)
     sc.step("calibration", snap=app, scan=False)
     sc.step("calibration", snap=app)

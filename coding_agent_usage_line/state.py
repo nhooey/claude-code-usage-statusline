@@ -8,8 +8,11 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import tempfile
 from contextlib import contextmanager
+
+from .state_spec import STATE_KINDS
 
 
 def state_dir():
@@ -26,6 +29,25 @@ def state_dir():
     except OSError:
         pass
     return path
+
+
+def state_name(kind, *key):
+    """The file name of a cache both ports keep, under spec/state.jsonc.
+
+    The kind's prefix, the sha256 of its format and the key's parts joined
+    by NULs, and its suffix.  The mod's statePath gives the same name.
+    """
+    row = STATE_KINDS[kind]
+    if len(key) != len(row["key"]):
+        raise TypeError("%s takes %d key parts" % (kind, len(row["key"])))
+    raw = "\0".join([str(row["format"])] + [str(k) for k in key])
+    return (row["prefix"] + hashlib.sha256(raw.encode("utf-8")).hexdigest()
+            + row["suffix"])
+
+
+def state_path(kind, *key):
+    """state_name's file in the state directory."""
+    return os.path.join(state_dir(), state_name(kind, *key))
 
 
 def _identity(agent, source, account, period_start):
@@ -65,6 +87,12 @@ def load(agent, source, account, period_start):
     return value if actual == expected else {}
 
 
+# A usage cache's name, as cache_name makes it.  find_compatible opens only
+# these: the state directory holds other .json files, the agent offsets and
+# the reports among them.
+_CACHE_NAME = re.compile(r"[0-9a-f]{64}\.json\Z")
+
+
 def find_compatible(agent, account, period_start, sources=None):
     """Return a compatible cache, never one from another source/account."""
     newest = {}
@@ -74,7 +102,7 @@ def find_compatible(agent, account, period_start, sources=None):
         return newest
     allowed = set(sources) if sources else None
     for name in names:
-        if not name.endswith(".json") or name.startswith("reported-"):
+        if not _CACHE_NAME.match(name):
             continue
         value = _read(os.path.join(state_dir(), name))
         if (value.get("agent") != agent or value.get("account_name") != account

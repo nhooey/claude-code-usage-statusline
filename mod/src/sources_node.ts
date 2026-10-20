@@ -12,8 +12,8 @@ import * as nodePath from "node:path";
 import { readTracker } from "./claude_sources_node.ts";
 import { isDict, pyGet, pyTruthy } from "./py.ts";
 import {
-  cacheName, commandInput, commandOutput, identity, pyFloat, pyJsonDumps,
-  pyJsonLoads, pyStr, trackerV1,
+  cacheName, commandInput, commandOutput, identity, isCacheName, pyFloat,
+  pyJsonDumps, pyJsonLoads, pyStr, trackerV1,
 } from "./sources.ts";
 import type { Dict, Env, Fetch, Reading, Store } from "./sources.ts";
 
@@ -85,7 +85,7 @@ export function fileStore(env: Env): Store {
       let names: string[];
       try { names = fs.readdirSync(dir()); } catch { return newest; }
       for (const name of names) {
-        if (!name.endsWith(".json") || name.startsWith("reported-")) continue;
+        if (!isCacheName(name)) continue;
         const value = readJson(nodePath.join(dir(), name));
         if (value.agent !== agent || value.account_name !== account ||
             pyStr(pyGet(value, "period_start")) !== pyStr(periodStart)) {

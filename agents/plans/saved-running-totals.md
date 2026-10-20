@@ -236,6 +236,23 @@ Each step lands as its own commit, and the tests pass after each one.
    - Old files are removed once: `claude-calibration-<64 hex>.json` and
      `claude-calibration-ts-<64 hex>.cache`, and nothing else. See the open
      questions.
+
+   **Status 2026-10-20: done.** As built:
+   - The table is `STATE_KINDS` in `spec/state.jsonc`, one row per kind
+     (prefix, key parts, suffix, format), generated to `state_spec.py` and
+     `mod/src/state_spec.ts`. The calibration row's `format` is what was
+     planned as `STATE_CALIBRATION_FORMAT`.
+   - The path functions are `state.state_name` / `state_path` and the mod's
+     `stateName` / `statePath` (`mod/src/state.ts`). The text is
+     `calib_cache_text` and `_calibCacheText`.
+   - `find_compatible`, and the mod's two ports of it, open only a usage
+     cache's name, 64 hex digits and `.json`.
+   - The Python removes the old files, since `$.fs` cannot remove one: one
+     listing at most a second long per run, then the marker
+     `claude-calibration-old-removed`. Its first live run removed 65,075
+     `.json` files and the `-ts-` ones. A mod still running the old code
+     writes `-ts-` files after the marker; removing the marker once every
+     session's mod is refreshed sweeps them on the next run.
 2. **The folds split into fold and finish,** in both ports, with nothing
    saved yet. `transcriptOf`, `turnsOf`, `read_transcript` and `read_turns`
    become wrappers over them. The existing shared cases pass unchanged. New

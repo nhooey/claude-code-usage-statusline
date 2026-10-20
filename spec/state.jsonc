@@ -1,0 +1,32 @@
+// The files both ports keep in the state directory: one row per kind of
+// cache, naming its file and the format it is written in.
+//
+// tools/gen-spec.py writes this out as coding_agent_usage_line/state_spec.py
+// and as mod/src/state_spec.ts, as it writes spec/layout.jsonc.  Edit here,
+// never there, and run `python3 tools/gen-spec.py`; tests/formatting.py
+// fails while either is out of date.
+//
+// A kind's file is <prefix><sha256(format\0key...)><suffix> in the state
+// directory, named by state.state_path in the Python and statePath in the
+// mod.  "key" names the parts the digest takes after the format.  Neither
+// port's version is in it, so the two ports name one file and read each
+// other's.  Bump a kind's format whenever what is written in it changes, in
+// either port: the files written before then go by names nobody asks for.
+//
+// Every suffix is .cache, never .json: state.find_compatible reads .json
+// files as usage caches.  The kinds still to come under this table are in
+// agents/plans/saved-running-totals.md: the main fold, the agent fold and
+// the window costs.
+{
+  "STATE_KINDS": {
+    // The calibration scan: the costs in each plan window, the plan reading
+    // taken with them and the windows they were measured over.  One file
+    // per scope (source, account and period), which a reset overwrites.
+    "calibration": {
+      "prefix": "claude-calibration-",
+      "key": ["scope"],
+      "suffix": ".cache",
+      "format": 1
+    }
+  }
+}

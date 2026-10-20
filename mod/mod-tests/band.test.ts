@@ -146,9 +146,9 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     CLAUDE_CONFIG_DIR: '/claude',
     CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST: '/tracker.plist',
   })
-  // The calibration the environment plants, under whatever name the mod's
-  // version keys it by, and fresh.
-  const planted = (p: string) => /\/claude-calibration-ts-[0-9a-f]+\.cache$/
+  // The calibration the environment plants, under whatever name the
+  // snapshot's scope gives it, and fresh.
+  const planted = (p: string) => /\/claude-calibration-[0-9a-f]{64}\.cache$/
     .test(p) ? encoder.encode(JSON.stringify(CALIB)) : undefined
   const fileAt = (p: string) => files.get(p) ?? planted(p)
   const isDir = (p: string) => [...files.keys()].some((f) =>

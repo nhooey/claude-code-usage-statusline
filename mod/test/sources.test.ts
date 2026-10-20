@@ -8,7 +8,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import {
   cachedReading, cacheName, claudeUsageTracker, commandReading, epoch,
-  hasReading, nativeReading, normalise, number, periodBounds,
+  hasReading, isCacheName, nativeReading, normalise, number, periodBounds,
   pyJsonLoads,
 } from "../src/sources_node.ts";
 import type { Dict } from "../src/sources_node.ts";
@@ -82,7 +82,20 @@ test("values: epoch, _number, period_bounds, cache_name", () => {
   for (const c of v.cache_name) {
     assert.equal(cacheName(c.input[0], c.input[1], c.input[2], c.input[3]),
                  c.expected);
+    assert.ok(isCacheName(c.expected), c.expected);
     count("values");
+  }
+});
+
+// findCompatible opens a usage cache's name and nothing else in the state
+// directory, as state.find_compatible does.
+test("isCacheName", () => {
+  const h = "0123456789abcdef".repeat(4);
+  assert.ok(isCacheName(h + ".json"));
+  for (const n of [`claude-calibration-${h}.json`, `reported-${h}.json`,
+    `claude-agent-offsets-${h}.json`, `${h}.cache`, `${h}.json.1`,
+    h.slice(1) + ".json", h.toUpperCase() + ".json"]) {
+    assert.ok(!isCacheName(n), n);
   }
 });
 

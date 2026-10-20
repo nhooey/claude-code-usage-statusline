@@ -28,14 +28,14 @@ import type {
   Turn,
 } from '../src/claude_records.ts'
 import {
-  _calibrationCacheName, _calibrationOf, _idKey, _pricedRecord,
-  _windowCostsOf, _windowsKey, _windowStarts, CALIB_TTL, COST_TAIL_BYTES,
-  seedLimitsSnapshot,
+  _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
+  _pricedRecord, _windowCostsOf, _windowsKey, _windowStarts, CALIB_TTL,
+  COST_TAIL_BYTES, seedLimitsSnapshot,
 } from '../src/claude_calib.ts'
 import type { Calib, Priced, Snapshot } from '../src/claude_calib.ts'
 import {
-  cacheName, commandInput, commandOutput, identity, pyFloat, pyJsonDumps,
-  pyJsonLoads, pyStr, trackerV1,
+  cacheName, commandInput, commandOutput, identity, isCacheName, pyFloat,
+  pyJsonDumps, pyJsonLoads, pyStr, trackerV1,
 } from '../src/sources.ts'
 import type { Env, Fetch, Store } from '../src/sources.ts'
 import {
@@ -624,7 +624,7 @@ async function storeFind($: $, dir: string, agent: string, account: string,
   periodStart: string): Promise<Dict> {
   let newest: Dict = {}
   for (const e of await listDir($, dir)) {
-    if (!e.name.endsWith('.json') || e.name.startsWith('reported-')) continue
+    if (!isCacheName(e.name)) continue
     const value = await readJson($, pyJoin(dir, e.name))
     if (value.agent !== agent || value.account_name !== account ||
         pyStr(pyGet(value, 'period_start')) !== pyStr(periodStart)) {
@@ -672,8 +672,7 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
   now: number): Promise<Calib> {
   const [ss, ws] = _windowStarts(snap)
   const windows = _windowsKey(ss, ws)
-  const path = pyJoin(places.stateDir,
-    _calibrationCacheName(windows, snap, CONFIG.version))
+  const path = pyJoin(places.stateDir, _calibrationCacheName(snap))
   let cached: Dict | null = null
   let fresh = false
   try {
@@ -717,10 +716,8 @@ async function scanWindows($: $, places: Places, snap: Snapshot,
   const [sc, wc] = _windowCostsOf(ss, ws, paths,
     (p) => mtime.get(p) ?? null, (p) => recs.get(p) ?? [])
   await saveCosts($, places, new Set(wanted))
-  await writeText($, path, pyJsonDumps({ windows, sess_cost: sc,
-    week_cost: wc, sess_pct: pyGet(snap, 'session_pct'),
-    week_pct: pyGet(snap, 'weekly_pct') }, false,
-  ['sess_cost', 'week_cost', 'sess_pct', 'week_pct']))
+  await writeText($, path, _calibCacheText(windows, sc, wc,
+    pyGet(snap, 'session_pct'), pyGet(snap, 'weekly_pct')))
 }
 
 function costsPath(places: Places): string {

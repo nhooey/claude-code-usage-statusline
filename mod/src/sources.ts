@@ -943,3 +943,9 @@ export function cacheName(agent: string, source: string, account: string,
   const raw = identity([agent, source, account, periodStart]).join("\0");
   return sha256Hex(raw) + ".json";
 }
+
+/** A name cacheName could have given: the only files findCompatible opens,
+ * as state.find_compatible's _CACHE_NAME. */
+export function isCacheName(name: string): boolean {
+  return /^[0-9a-f]{64}\.json$/.test(name);
+}

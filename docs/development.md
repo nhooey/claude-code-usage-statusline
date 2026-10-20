@@ -27,6 +27,7 @@ shared by all of the above:
    formatting.py                  widths, palette, number formats, terminal geometry
    spans.py                       the spans cells return, joined into escape codes
    spec.py                        the layout's constants, generated from spec/layout.jsonc
+   state_spec.py                  the shared state files' table, generated from spec/state.jsonc
    models.py                      immutable, vendor-neutral token/request records
 ```
 
@@ -44,7 +45,7 @@ Every module above lives in `coding_agent_usage_line/`.
 | `codex.py` | Codex rollout records: thread identity, child discovery, request deduplication, turn attribution. Read-only. |
 | `render.py` | Codex status, history and Stop reports, and account-period rows. |
 | `sources.py` | `--usage-source` selection, the version-1 custom-command contract, the HTTP and app-server collectors, refresh policy. See [Usage sources](usage-sources.md). |
-| `state.py` | The private state directory: scoped source cache, refresh locks, atomic claims so a Codex Stop reports each request once. |
+| `state.py` | The private state directory: scoped source cache, refresh locks, atomic claims so a Codex Stop reports each request once, and `state_path`, the name of each file the mod shares from `spec/state.jsonc`. |
 | `formatting.py` | The `S_*` glyph forms and the widths computed from the constants, `vis_width`, `humanize` and the other fixed-width formatters, the grid helpers (`pad_val`, `seg`, `pair`, `grid_row`, which take spans or strings), the dim and tier rules (`mag_dim`, `reset_dim`, `cache_color`), terminal-width detection, and the two display switches. It star-imports `spec.py`. |
 | `spans.py` | `Span`: a run of text with a colour named by its `F_*` constant (`"F_PNK"`, not the escape), dim, bold and a `B_*` background. `width` measures spans, and `join` writes their escape codes, once, where a line is printed. The mod's cells return the same spans. |
 | `spec.py` | Generated from `spec/layout.jsonc`, never edited: the glyphs (`E_*`), colours, widths and cuts, the wide-character table and the terminal profiles. |
@@ -203,6 +204,12 @@ each beside the comment that explains it. `tools/gen-spec.py` writes it out as
 never the generated files, and rerun the tool; `tests/formatting.py` fails
 while either is out of date. What is computed from the constants, the `S_*`
 forms and `RIGHT_GRID`, stays in `formatting.py`, and the mod computes its own.
+
+`spec/state.jsonc` goes the same way, to `state_spec.py` and
+`mod/src/state_spec.ts`. It names each cache the two ports share in the state
+directory, with the format number its name is keyed by: `state.state_path` and
+the mod's `statePath` (`mod/src/state.ts`) give the same name. Bump a kind's
+format when what is written in it changes.
 
 `mod/tools/layout-mockup.ts` draws the proposed [redesign](../agents/plans/redesign.md) inside a
 mocked Claude Code screen: `node mod/tools/layout-mockup.ts --cols 150`. It

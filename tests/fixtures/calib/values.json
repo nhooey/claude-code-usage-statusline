@@ -7532,6 +7532,143 @@
   },
   {
    "args": [
+    "calibration",
+    ""
+   ],
+   "fn": "state_name",
+   "out": "claude-calibration-e79e418e48623569d75e2a7b09ae88ed9b77b126a445b9ff9dc6989a08efa079.cache"
+  },
+  {
+   "args": [
+    "calibration",
+    "cmd\u0000me\u00001786800000"
+   ],
+   "fn": "state_name",
+   "out": "claude-calibration-e90020e7eab6bc83aa4d23e479557f2678c934acddf563f95d93e9637d3ceec7.cache"
+  },
+  {
+   "args": [
+    "calibration",
+    "\u0000\u0000"
+   ],
+   "fn": "state_name",
+   "out": "claude-calibration-60864aae264519399c7a7379382e411d40a3bd0f1641e669fb73183d223f6bd0.cache"
+  },
+  {
+   "args": [
+    "calibration",
+    "café ☃ 😀"
+   ],
+   "fn": "state_name",
+   "out": "claude-calibration-557664b165ed1e1e48fa484de943b987b5c0b2c746b142c75a938ea2a27a3bd4.cache"
+  },
+  {
+   "args": [
+    "calibration"
+   ],
+   "fn": "state_name",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    "calibration",
+    "a",
+    "b"
+   ],
+   "fn": "state_name",
+   "out": {
+    "raises": true
+   }
+  },
+  {
+   "args": [
+    "2026-08-16 01:31:00|2026-08-11 01:00:00",
+    8.0,
+    60.0,
+    4.0,
+    30.0
+   ],
+   "fn": "calib_cache_text",
+   "out": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":8.0,\"week_cost\":60.0,\"sess_pct\":4.0,\"week_pct\":30.0}"
+  },
+  {
+   "args": [
+    "2026-08-16 01:31:00|2026-08-11 01:00:00",
+    8,
+    60,
+    4,
+    30
+   ],
+   "fn": "calib_cache_text",
+   "out": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":8.0,\"week_cost\":60.0,\"sess_pct\":4.0,\"week_pct\":30.0}"
+  },
+  {
+   "args": [
+    "2026-08-16 01:31:00|2026-08-11 01:00:00",
+    0.30000000000000004,
+    1e+308,
+    41.0,
+    null
+   ],
+   "fn": "calib_cache_text",
+   "out": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":0.30000000000000004,\"week_cost\":1e+308,\"sess_pct\":41.0,\"week_pct\":null}"
+  },
+  {
+   "args": [
+    "2026-08-16 01:31:00|2026-08-11 01:00:00",
+    {
+     "$float": "-0"
+    },
+    1e-300,
+    "1.5",
+    "30"
+   ],
+   "fn": "calib_cache_text",
+   "out": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":-0.0,\"week_cost\":1e-300,\"sess_pct\":\"1.5\",\"week_pct\":\"30\"}"
+  },
+  {
+   "args": [
+    "2026-08-16 01:31:00|2026-08-11 01:00:00",
+    true,
+    false,
+    null,
+    null
+   ],
+   "fn": "calib_cache_text",
+   "out": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":true,\"week_cost\":false,\"sess_pct\":null,\"week_pct\":null}"
+  },
+  {
+   "args": [
+    "2026-08-16 01:31:00|2026-08-11 01:00:00",
+    {
+     "$float": "nan"
+    },
+    {
+     "$float": "inf"
+    },
+    {
+     "$float": "-inf"
+    },
+    2.5
+   ],
+   "fn": "calib_cache_text",
+   "out": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":NaN,\"week_cost\":Infinity,\"sess_pct\":-Infinity,\"week_pct\":2.5}"
+  },
+  {
+   "args": [
+    "None|None",
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "fn": "calib_cache_text",
+   "out": "{\"windows\":\"None|None\",\"sess_cost\":0.0,\"week_cost\":0.0,\"sess_pct\":0.0,\"week_pct\":0.0}"
+  },
+  {
+   "args": [
     {
      "text": "{\"message\": {\"content\": \"Explain the width table.\"}, \"promptSource\": \"typed\", \"timestamp\": \"2026-08-16T01:10:00Z\", \"type\": \"user\", \"userType\": \"external\"}\n"
     }

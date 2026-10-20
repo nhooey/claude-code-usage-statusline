@@ -488,13 +488,62 @@ def seed_limits_snapshot(lim: Limits, reading: Optional[dict] = None) -> dict:
     return _SNAPSHOT
 
 
-def calibration_cache_path(windows: str) -> str:
-    """A private calibration cache keyed by source/account/period/windows."""
+def calibration_cache_path() -> str:
+    """The calibration cache for the snapshot's scope (source, account and
+    period), which the mod reads and writes too: spec/state.jsonc's
+    calibration kind.  The windows are inside it, not in its name, so a
+    reset overwrites the one file."""
     if CALIB_CACHE_OVERRIDE:
         return os.path.expanduser(CALIB_CACHE_OVERRIDE)
-    scope = limits_snapshot().get("_scope", "")
-    key = hashlib.sha256((scope + "\0" + windows).encode("utf-8")).hexdigest()
-    return os.path.join(state.state_dir(), "claude-calibration-" + key + ".json")
+    return state.state_path("calibration",
+                            limits_snapshot().get("_scope", ""))
+
+
+# The calibration caches as they were named before spec/state.jsonc: the
+# Python's, one per pair of window starts, and the mod's, one per version.
+_OLD_CALIB = re.compile(
+    r"claude-calibration-(?:[0-9a-f]{64}\.json|ts-[0-9a-f]{64}\.cache)\Z")
+# Written once none is left, so the directory is listed only until then.
+OLD_CALIB_DONE = "claude-calibration-old-removed"
+# How long one run spends removing them.  There were 65,000, and the panel's
+# command is killed at five seconds, so a run stops here and the next goes
+# on.
+OLD_CALIB_BUDGET_S = 1.0
+_old_calib_checked = False
+
+
+def _remove_old_calibrations() -> int:
+    """Remove the old calibration caches, once; how many this run removed.
+
+    Names only: one listing, nothing opened.  The mod cannot remove a file,
+    so the Python does it for both.
+    """
+    global _old_calib_checked
+    if _old_calib_checked:
+        return 0
+    _old_calib_checked = True
+    d = state.state_dir()
+    marker = os.path.join(d, OLD_CALIB_DONE)
+    if os.path.exists(marker):
+        return 0
+    deadline = time.monotonic() + OLD_CALIB_BUDGET_S
+    removed = 0
+    try:
+        for name in os.listdir(d):
+            if not _OLD_CALIB.match(name):
+                continue
+            if time.monotonic() > deadline:
+                return removed
+            try:
+                os.remove(os.path.join(d, name))
+                removed += 1
+            except FileNotFoundError:
+                pass
+        with open(marker, "w"):
+            pass
+    except OSError:
+        pass
+    return removed
 
 
 def _session_state_path(kind: str, session_id: str) -> str:
@@ -1266,6 +1315,7 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     that, and a killed scan never reaches the cache, so the next tick paid
     for it again.  The status line and the Stop hook keep the cache filled.
     """
+    _remove_old_calibrations()
     snap = limits_snapshot()
     ss, ws = _window_starts()
     out = {"sess": None, "week": None}
@@ -1332,7 +1382,7 @@ def _read_calib_cache(windows: str, ttl: Optional[float] = CALIB_TTL
     for the caller to read as units; anything else has to match, because a
     scan bounded by yesterday's boundary is not an answer about today's.
     """
-    path = calibration_cache_path(windows)
+    path = calibration_cache_path()
     try:
         if ttl is not None and os.path.getmtime(path) <= time.time() - ttl:
             return None
@@ -1353,6 +1403,22 @@ def _read_calib_cache(windows: str, ttl: Optional[float] = CALIB_TTL
     return d if "sess_pct" in d else None
 
 
+def calib_cache_text(windows: str, sc, wc, sp, wp) -> str:
+    """The calibration cache's text, byte for byte as the mod writes it.
+
+    Compact separators, the keys in this order, and every number a float, as
+    pyJsonDumps writes the four it is told are floats: an int would come out
+    without its ".0" here and with it there.
+    """
+    def num(v):
+        if isinstance(v, int) and not isinstance(v, bool):
+            return float(v)
+        return v
+    return json.dumps({"windows": windows, "sess_cost": num(sc),
+                       "week_cost": num(wc), "sess_pct": num(sp),
+                       "week_pct": num(wp)}, separators=(",", ":"))
+
+
 def _write_calib_cache(windows: str, sc: float, wc: float,
                        sp: Optional[float], wp: Optional[float]) -> None:
     """The scan, and the two readings it was SIMULTANEOUS with.
@@ -1361,15 +1427,15 @@ def _write_calib_cache(windows: str, sc: float, wc: float,
     another process, up to CALIB_TTL after this — and a rate is only estimable
     from a cost and a percentage measured at one moment.  See calibration.
     """
-    path = calibration_cache_path(windows)
+    path = calibration_cache_path()
     try:
+        text = calib_cache_text(windows, sc, wc, sp, wp)
         directory = os.path.dirname(path)
         if directory:
             os.makedirs(directory, mode=0o700, exist_ok=True)
         tmp = "%s.%d" % (path, os.getpid())
         with open(tmp, "w") as fh:
-            json.dump({"windows": windows, "sess_cost": sc, "week_cost": wc,
-                       "sess_pct": sp, "week_pct": wp}, fh)
+            fh.write(text)
         os.chmod(tmp, 0o600)
         os.replace(tmp, path)
     except Exception:

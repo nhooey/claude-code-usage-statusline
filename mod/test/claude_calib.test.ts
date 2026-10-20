@@ -16,6 +16,7 @@ import type { Turn } from "../src/claude_records.ts";
 import type { Limits } from "../src/claude_sources.ts";
 import { isDict } from "../src/py.ts";
 import { pyJsonLoads } from "../src/sources_node.ts";
+import { stateName } from "../src/state.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
   "../..");
@@ -118,6 +119,9 @@ suite("values", {
     cc.seedLimitsSnapshot(c.args[0] as Limits, c.args[1]),
   plan_totals: (c) => cc.planTotals(c.args[0]),
   _priced_record: (c) => attempt(() => cc._pricedRecord(bytesOf(c.args[0]))),
+  state_name: (c) => attempt(() => stateName(c.args[0], ...c.args.slice(1))),
+  calib_cache_text: (c) => cc._calibCacheText(c.args[0], c.args[1],
+    c.args[2], c.args[3], c.args[4]),
 }, load("values"));
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -244,7 +248,7 @@ function scenario(c: Case): void {
       } else if (s.op === "override") {
         override = s.path ? path.join(dir, s.path) : "";
       } else if (s.op === "plant" || s.op === "age") {
-        const p = cc.calibrationCachePath(s.windows, snap, env);
+        const p = cc.calibrationCachePath(snap, env);
         if (s.op === "plant") {
           fs.mkdirSync(path.dirname(p), { recursive: true });
           fs.writeFileSync(p, s.content);
@@ -255,10 +259,14 @@ function scenario(c: Case): void {
       } else if (s.op === "calibration") {
         const got = attempt(() => cc.calibration(snap, env, s.scan ?? true));
         assert.deepEqual(plain(got), s.out, `${where}: the units`);
-        const [ss, ws] = cc._windowStarts(snap);
-        const p = cc.calibrationCachePath(cc._windowsKey(ss, ws), snap, env);
-        assert.deepEqual(readJson(p), s.calib_cache,
-          `${where}: the calibration cache`);
+        // The one file both ports share, so byte for byte.
+        let text: string | null = null;
+        try {
+          text = fs.readFileSync(cc.calibrationCachePath(snap, env), "utf-8");
+        } catch {
+          // None written.
+        }
+        assert.equal(text, s.calib_cache, `${where}: the calibration cache`);
         costsCache(s, where);
       } else if (s.op === "window_costs") {
         const got = attempt(() => cc._windowCosts(parseNaive(s.ss),

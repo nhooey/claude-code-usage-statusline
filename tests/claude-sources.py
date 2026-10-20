@@ -54,4 +54,107 @@ with tempfile.TemporaryDirectory() as tmp:
         assert claude.calibration() == {"sess": 0.5, "week": 0.5}, claude.calibration()
     finally:
         claude.CALIB_CACHE_OVERRIDE = saved
+
+# The calibration cache both ports share: its name and its text as the
+# shared cases pin them, which mod/test/claude_calib.test.ts checks the
+# TypeScript against.
+from coding_agent_usage_line import state
+HERE = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(HERE, "fixtures", "calib", "values.json")) as fh:
+    shared = [c for c in json.load(fh)["cases"]
+              if c["fn"] in ("state_name", "calib_cache_text")]
+FLOATS = {"nan": float("nan"), "inf": float("inf"), "-inf": float("-inf"),
+          "-0": -0.0}
+def revive(v):
+    return FLOATS[v["$float"]] if isinstance(v, dict) and "$float" in v else v
+for c in shared:
+    args = [revive(a) for a in c["args"]]
+    try:
+        got = (state.state_name(*args) if c["fn"] == "state_name"
+               else claude.calib_cache_text(*args))
+    except TypeError:
+        got = {"raises": True}
+    assert got == c["out"], (c, got)
+assert len(shared) == 13, len(shared)
+
+# ... and each port reads the other's: the text the mod writes, under the
+# name it gives, read by the panel's scan=False at any age.
+with tempfile.TemporaryDirectory() as tmp:
+    saved = (os.environ.get("CODING_AGENT_USAGE_LINE_STATE_DIR"),
+             claude.CALIB_CACHE_OVERRIDE, claude._SNAPSHOT)
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = tmp
+    claude.CALIB_CACHE_OVERRIDE = ""
+    try:
+        claude._SNAPSHOT = dict(snap, _scope="cmd\0me\0" + "1786800000")
+        ss, ws = claude._window_starts()
+        windows = "%s|%s" % (ss, ws)
+        name = state.state_name("calibration", "cmd\0me\0" + "1786800000")
+        assert name == [c["out"] for c in shared
+                        if c["args"] == ["calibration",
+                                         "cmd\0me\x001786800000"]][0]
+        path = os.path.join(tmp, name)
+        assert claude.calibration_cache_path() == path
+        with open(path, "w") as fh:
+            fh.write(claude.calib_cache_text(windows, 6.0, 17.0, 12.0, 34.0))
+        os.utime(path, (1, 1))
+        assert claude.calibration(scan=False) == {"sess": 0.5, "week": 0.5}
+        # The Python writes the same bytes the mod's pyJsonDumps does.
+        claude._write_calib_cache(windows, 6, 17.0, 12.0, 34)
+        with open(path) as fh:
+            assert fh.read() == ('{"windows":"%s","sess_cost":6.0,'
+                                 '"week_cost":17.0,"sess_pct":12.0,'
+                                 '"week_pct":34.0}' % windows)
+    finally:
+        if saved[0] is None:
+            os.environ.pop("CODING_AGENT_USAGE_LINE_STATE_DIR", None)
+        else:
+            os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = saved[0]
+        claude.CALIB_CACHE_OVERRIDE, claude._SNAPSHOT = saved[1:]
+
+# The old calibration caches go once, by name alone, and nothing else does;
+# find_compatible opens only a usage cache's name.
+with tempfile.TemporaryDirectory() as tmp:
+    saved = os.environ.get("CODING_AGENT_USAGE_LINE_STATE_DIR")
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = tmp
+    h = "0123456789abcdef" * 4
+    usage = {"agent": "claude", "account_name": "a", "period_start": "0",
+             "as_of": 5, "source": "cmd"}
+    c = "claude-calibration-"
+    old = [c + h + ".json", c + "ts-" + h + ".cache",
+           c + h.replace("0", "f") + ".json"]
+    kept = [c + h + ".json.123", c + h + ".cache", c + h[:-1] + ".json",
+            c + "ts-x.cache", "claude-agent-offsets-%s.json" % h, h + ".json"]
+    try:
+        for n in old + kept:
+            with open(os.path.join(tmp, n), "w") as fh:
+                json.dump(usage if n == h + ".json" else dict(usage, as_of=9),
+                          fh)
+        assert state.find_compatible("claude", "a", "0")["as_of"] == 5
+        claude._old_calib_checked = False
+        assert claude._remove_old_calibrations() == 3
+        assert (sorted(os.listdir(tmp))
+                == sorted(kept + [claude.OLD_CALIB_DONE]))
+        # Once: the marker stops the listing, in this process and the next.
+        with open(os.path.join(tmp, old[0]), "w"):
+            pass
+        assert claude._remove_old_calibrations() == 0
+        claude._old_calib_checked = False
+        assert claude._remove_old_calibrations() == 0
+        assert os.path.exists(os.path.join(tmp, old[0]))
+        # A run out of time leaves the rest, and no marker, for the next.
+        os.remove(os.path.join(tmp, claude.OLD_CALIB_DONE))
+        budget, claude.OLD_CALIB_BUDGET_S = claude.OLD_CALIB_BUDGET_S, -1
+        claude._old_calib_checked = False
+        try:
+            assert claude._remove_old_calibrations() == 0
+        finally:
+            claude.OLD_CALIB_BUDGET_S = budget
+        assert not os.path.exists(os.path.join(tmp, claude.OLD_CALIB_DONE))
+        claude._old_calib_checked = False
+        assert claude._remove_old_calibrations() == 1
+    finally:
+        if saved is None:
+            os.environ.pop("CODING_AGENT_USAGE_LINE_STATE_DIR", None)
+        else:
+            os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = saved
 print("ok Claude source bridge")

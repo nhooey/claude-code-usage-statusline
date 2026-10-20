@@ -111,13 +111,7 @@
    "name": "corpus-UTC",
    "steps": [
     {
-     "calib_cache": {
-      "sess_cost": 36.13919150000004,
-      "sess_pct": 41.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":36.13919150000004,\"week_cost\":50.87009149999989,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": {
       "${DIR}/projects/cost/01-plain.jsonl": {
        "off": 1729,
@@ -1896,13 +1890,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 36.13919150000004,
-      "sess_pct": 41.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":36.13919150000004,\"week_cost\":50.87009149999989,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -1942,13 +1930,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 02:18:00|2026-08-11 01:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -1987,13 +1969,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 02:18:00|2026-08-11 01:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -2033,13 +2009,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 20.23603000000001,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 01:31:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":20.23603000000001,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -2078,13 +2048,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 20.23603000000001,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 01:31:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 01:31:00|2026-08-11 01:00:00\",\"sess_cost\":20.23603000000001,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -2124,13 +2088,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 02:18:00|2026-08-11 01:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":1.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -2157,7 +2115,7 @@
      ],
      "op": "calibration",
      "out": {
-      "sess": 0.23084733333333332,
+      "sess": null,
       "week": 0.5847136954022976
      },
      "snap": {
@@ -2169,13 +2127,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 02:18:00|2026-08-11 01:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":1.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -2202,7 +2154,7 @@
      ],
      "op": "calibration",
      "out": {
-      "sess": 0.23084733333333332,
+      "sess": null,
       "week": 0.5847136954022976
      },
      "scan": false,
@@ -2526,13 +2478,7 @@
    "name": "corpus-America/New_York",
    "steps": [
     {
-     "calib_cache": {
-      "sess_cost": 36.13919150000004,
-      "sess_pct": 41.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 19:00:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 19:00:00|2026-08-10 21:00:00\",\"sess_cost\":36.13919150000004,\"week_cost\":50.87009149999989,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": {
       "${DIR}/projects/cost/01-plain.jsonl": {
        "off": 1729,
@@ -4311,13 +4257,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 36.13919150000004,
-      "sess_pct": 41.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 19:00:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 19:00:00|2026-08-10 21:00:00\",\"sess_cost\":36.13919150000004,\"week_cost\":50.87009149999989,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -4357,13 +4297,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-15 22:18:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 22:18:00|2026-08-10 21:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -4402,13 +4336,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-15 22:18:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 22:18:00|2026-08-10 21:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -4448,13 +4376,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 20.23603000000001,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-15 21:31:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 21:31:00|2026-08-10 21:00:00\",\"sess_cost\":20.23603000000001,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -4493,13 +4415,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 20.23603000000001,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-15 21:31:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 21:31:00|2026-08-10 21:00:00\",\"sess_cost\":20.23603000000001,\"week_cost\":50.87009149999989,\"sess_pct\":15.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -4539,13 +4455,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-15 22:18:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 22:18:00|2026-08-10 21:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":1.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -4572,7 +4482,7 @@
      ],
      "op": "calibration",
      "out": {
-      "sess": 0.23084733333333332,
+      "sess": null,
       "week": 0.5847136954022976
      },
      "snap": {
@@ -4584,13 +4494,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 3.46271,
-      "sess_pct": 15.0,
-      "week_cost": 50.87009149999989,
-      "week_pct": 87.0,
-      "windows": "2026-08-15 22:18:00|2026-08-10 21:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 22:18:00|2026-08-10 21:00:00\",\"sess_cost\":3.46271,\"week_cost\":50.87009149999989,\"sess_pct\":1.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -4617,7 +4521,7 @@
      ],
      "op": "calibration",
      "out": {
-      "sess": 0.23084733333333332,
+      "sess": null,
       "week": 0.5847136954022976
      },
      "scan": false,
@@ -5208,13 +5112,7 @@
      "ws": null
     },
     {
-     "calib_cache": {
-      "sess_cost": 0.005,
-      "sess_pct": 41.0,
-      "week_cost": 0.005,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":0.005,\"week_cost\":0.005,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": {
       "${DIR}/projects/p/s1.jsonl": {
        "off": 170,
@@ -5596,13 +5494,7 @@
      "text": "{\"type\": \"assistant\", \"timestamp\": \"2026-08-16T01:11:00Z\", \"requestId\": \"ok2\", \"message\": {\"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 1000, \"output_tokens\": 0}}}\n"
     },
     {
-     "calib_cache": {
-      "sess_cost": 0.01,
-      "sess_pct": 41.0,
-      "week_cost": 0.01,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":0.01,\"week_cost\":0.01,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": {
       "${DIR}/projects/p/a.jsonl": {
        "off": 170,
@@ -5813,13 +5705,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_cost": 8.0,
-      "sess_pct": 4.0,
-      "week_cost": 60.0,
-      "week_pct": 30.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\": \"2026-08-15 23:00:00|2026-08-11 01:00:00\", \"sess_cost\": 8.0, \"week_cost\": 60.0, \"sess_pct\": 4.0, \"week_pct\": 30.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -5850,6 +5736,63 @@
      }
     },
     {
+     "age": 4000,
+     "content": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":9.0,\"week_cost\":61.0,\"sess_pct\":3.0,\"week_pct\":31.0}",
+     "op": "plant",
+     "snap": {
+      "_scope": "cmd\u0000\u0000",
+      "session_pct": 41.0,
+      "session_resets_at": "2026-08-16 04:00",
+      "weekly_pct": 63.0,
+      "weekly_resets_at": "2026-08-18 01:00"
+     },
+     "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
+    },
+    {
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":9.0,\"week_cost\":61.0,\"sess_pct\":3.0,\"week_pct\":31.0}",
+     "costs_cache": "same",
+     "glob": [
+      "cost/01-plain.jsonl",
+      "cost/11-turn-id-late.jsonl",
+      "cost/09-agents.jsonl",
+      "cost/06-interrupted.jsonl",
+      "cost/08-woken.jsonl",
+      "cost/07-empty.jsonl",
+      "cost/02-compaction.jsonl",
+      "cost/04-tool-result.jsonl",
+      "cost/03-single-turn.jsonl",
+      "cost/10-turn-id.jsonl",
+      "cost/05-sidechain.jsonl",
+      "cost/09-agents/subagents/agent-fork1.jsonl",
+      "cost/09-agents/subagents/workflows/wf_9/agent-sub1.jsonl"
+     ],
+     "op": "calibration",
+     "out": {
+      "sess": 3.0,
+      "week": 1.967741935483871
+     },
+     "scan": false,
+     "snap": {
+      "_scope": "cmd\u0000\u0000",
+      "session_pct": 41.0,
+      "session_resets_at": "2026-08-16 04:00",
+      "weekly_pct": 63.0,
+      "weekly_resets_at": "2026-08-18 01:00"
+     }
+    },
+    {
+     "content": "{\"windows\": \"2026-08-15 23:00:00|2026-08-11 01:00:00\", \"sess_cost\": 8.0, \"week_cost\": 60.0, \"sess_pct\": 4.0, \"week_pct\": 30.0}",
+     "op": "plant",
+     "snap": {
+      "_scope": "cmd\u0000\u0000",
+      "session_pct": 41.0,
+      "session_resets_at": "2026-08-16 04:00",
+      "weekly_pct": 63.0,
+      "weekly_resets_at": "2026-08-18 01:00"
+     },
+     "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
+    },
+    {
      "age": 400,
      "op": "age",
      "snap": {
@@ -5862,13 +5805,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_cost": 8.0,
-      "sess_pct": 4.0,
-      "week_cost": 60.0,
-      "week_pct": 30.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\": \"2026-08-15 23:00:00|2026-08-11 01:00:00\", \"sess_cost\": 8.0, \"week_cost\": 60.0, \"sess_pct\": 4.0, \"week_pct\": 30.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -5900,13 +5837,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 2.6001665000000007,
-      "sess_pct": 41.0,
-      "week_cost": 2.6001665000000007,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":2.6001665000000007,\"week_cost\":2.6001665000000007,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": {
       "${DIR}/projects/cost/01-plain.jsonl": {
        "off": 1729,
@@ -6177,13 +6108,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_cost": 2.6001665000000007,
-      "sess_pct": 41.0,
-      "week_cost": 2.6001665000000007,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":2.6001665000000007,\"week_cost\":2.6001665000000007,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6226,13 +6151,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_cost": 8.0,
-      "sess_pct": "1.5",
-      "week_cost": null,
-      "week_pct": "30",
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\": \"2026-08-15 23:00:00|2026-08-11 01:00:00\", \"sess_cost\": 8.0, \"week_cost\": null, \"sess_pct\": \"1.5\", \"week_pct\": \"30\"}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6275,13 +6194,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_cost": true,
-      "sess_pct": 2,
-      "week_cost": "60",
-      "week_pct": 30,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\": \"2026-08-15 23:00:00|2026-08-11 01:00:00\", \"sess_cost\": true, \"week_cost\": \"60\", \"sess_pct\": 2, \"week_pct\": 30}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6323,17 +6236,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_cost": {
-       "$float": "nan"
-      },
-      "sess_pct": {
-       "$float": "nan"
-      },
-      "week_cost": 1e+308,
-      "week_pct": 1e-300,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\": \"2026-08-15 23:00:00|2026-08-11 01:00:00\", \"sess_cost\": NaN, \"week_cost\": 1e+308, \"sess_pct\": NaN, \"week_pct\": 1e-300}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6376,10 +6279,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": [
-      1,
-      2
-     ],
+     "calib_cache": "[1, 2]",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6423,7 +6323,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": null,
+     "calib_cache": "not json",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6467,7 +6367,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": "text",
+     "calib_cache": "\"text\"",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6511,7 +6411,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": null,
+     "calib_cache": "﻿{}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6555,10 +6455,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_pct": 1,
-      "windows": "other"
-     },
+     "calib_cache": "{\"windows\": \"other\", \"sess_pct\": 1}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6606,10 +6503,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess": 5.5,
-      "week": 4.1
-     },
+     "calib_cache": "{\"sess\": 5.5, \"week\": 4.1}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6640,10 +6534,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess": 5.5,
-      "week": 4.1
-     },
+     "calib_cache": "{\"sess\": 5.5, \"week\": 4.1}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6680,10 +6571,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "other": 1,
-      "sess": "x"
-     },
+     "calib_cache": "{\"sess\": \"x\", \"other\": 1}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6726,13 +6614,7 @@
      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
     },
     {
-     "calib_cache": {
-      "sess_cost": 5.5,
-      "sess_pct": 1.0,
-      "week_cost": 356.7,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\": \"2026-08-16 02:18:00|2026-08-11 01:00:00\", \"sess_cost\": 5.5, \"sess_pct\": 1.0, \"week_cost\": 356.7, \"week_pct\": 87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6763,13 +6645,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 2.6001665000000007,
-      "sess_pct": 41.0,
-      "week_cost": 2.6001665000000007,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":2.6001665000000007,\"week_cost\":2.6001665000000007,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6800,13 +6676,7 @@
      }
     },
     {
-     "calib_cache": {
-      "sess_cost": 2.6001665000000007,
-      "sess_pct": 41.0,
-      "week_cost": 2.6001665000000007,
-      "week_pct": 63.0,
-      "windows": "2026-08-15 23:00:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-15 23:00:00|2026-08-11 01:00:00\",\"sess_cost\":2.6001665000000007,\"week_cost\":2.6001665000000007,\"sess_pct\":41.0,\"week_pct\":63.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6842,13 +6712,7 @@
      "path": ""
     },
     {
-     "calib_cache": {
-      "sess_cost": 0.0,
-      "sess_pct": 1.0,
-      "week_cost": 2.6001665000000007,
-      "week_pct": 87.0,
-      "windows": "2026-08-16 02:18:00|2026-08-11 01:00:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 02:18:00|2026-08-11 01:00:00\",\"sess_cost\":0.0,\"week_cost\":2.6001665000000007,\"sess_pct\":1.0,\"week_pct\":87.0}",
      "costs_cache": "same",
      "glob": [
       "cost/01-plain.jsonl",
@@ -6892,13 +6756,7 @@
    "name": "bounds-UTC-2026-08-16",
    "steps": [
     {
-     "calib_cache": {
-      "sess_cost": 0.030210000000000004,
-      "sess_pct": 20.0,
-      "week_cost": 0.020115,
-      "week_pct": 10.0,
-      "windows": "2026-08-16 00:20:00|2026-08-16 01:20:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-08-16 00:20:00|2026-08-16 01:20:00\",\"sess_cost\":0.030210000000000004,\"week_cost\":0.020115,\"sess_pct\":20.0,\"week_pct\":10.0}",
      "costs_cache": {
       "${DIR}/projects/p/s.jsonl": {
        "off": 2042,
@@ -6997,13 +6855,7 @@
    "name": "bounds-America/New_York-2026-03-08",
    "steps": [
     {
-     "calib_cache": {
-      "sess_cost": 0.05032500000000001,
-      "sess_pct": 20.0,
-      "week_cost": 0.06033000000000001,
-      "week_pct": 10.0,
-      "windows": "2026-03-08 02:30:00|2026-03-07 02:30:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-03-08 02:30:00|2026-03-07 02:30:00\",\"sess_cost\":0.05032500000000001,\"week_cost\":0.06033000000000001,\"sess_pct\":20.0,\"week_pct\":10.0}",
      "costs_cache": {
       "${DIR}/projects/p/s.jsonl": {
        "off": 2042,
@@ -7102,13 +6954,7 @@
    "name": "bounds-America/New_York-2026-11-01",
    "steps": [
     {
-     "calib_cache": {
-      "sess_cost": 0.010045000000000002,
-      "sess_pct": 20.0,
-      "week_cost": 0.01506,
-      "week_pct": 10.0,
-      "windows": "2026-11-01 01:30:00|2026-10-31 01:30:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-11-01 01:30:00|2026-10-31 01:30:00\",\"sess_cost\":0.010045000000000002,\"week_cost\":0.01506,\"sess_pct\":20.0,\"week_pct\":10.0}",
      "costs_cache": {
       "${DIR}/projects/p/s.jsonl": {
        "off": 2042,
@@ -7207,13 +7053,7 @@
    "name": "bounds-Australia/Lord_Howe-2026-04-05",
    "steps": [
     {
-     "calib_cache": {
-      "sess_cost": 0.040285,
-      "sess_pct": 20.0,
-      "week_cost": 0.045314999999999994,
-      "week_pct": 10.0,
-      "windows": "2026-04-05 01:45:00|2026-04-04 01:45:00"
-     },
+     "calib_cache": "{\"windows\":\"2026-04-05 01:45:00|2026-04-04 01:45:00\",\"sess_cost\":0.040285,\"week_cost\":0.045314999999999994,\"sess_pct\":20.0,\"week_pct\":10.0}",
      "costs_cache": {
       "${DIR}/projects/p/s.jsonl": {
        "off": 2042,

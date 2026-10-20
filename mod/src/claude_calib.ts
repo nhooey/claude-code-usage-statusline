@@ -36,9 +36,10 @@
 //     OverflowError in Python, is Infinity here.
 //   - Rounding.  `round` rounds half to even; see `_pyRound`.
 //   - Sums.  Left to right, as 3.9's sum() adds; 3.12's compensates.
-//   - Caches.  The Python keys its caches by a digest of its own source;
-//     these are keyed by the mod's version and named apart, so the two never
-//     serve each other a scan.
+//   - Caches.  The calibration cache is one file both write and read, named
+//     by spec/state.jsonc (state.ts).  The scan's cost cache is still each
+//     port's own: the Python keys it by a digest of its own source, this by
+//     the mod's version.
 //   - File order.  The scan visits files in the order the directory lists
 //     them, which is the filesystem's, as glob.glob does.  A request id in
 //     two files is billed at the first, so the order can matter; the shared
@@ -50,9 +51,9 @@ import {
   daysFromCivil, daysIn, isDict, pyAsciiDigits, pyGet, pyHas, pyOr, PY_SPACE,
   pyTruthy, utf8,
 } from "./py.ts";
-import { pyFloat, pyJsonLoads } from "./sources.ts";
+import { pyFloat, pyJsonDumps, pyJsonLoads } from "./sources.ts";
+import { stateName } from "./state.ts";
 import { _price, pyStr, tsEpoch, turnTimes } from "./claude_records.ts";
-import { sha256Hex } from "./sha256.ts";
 import type { Transcript, Turn } from "./claude_records.ts";
 import { limitsEqual, NO_LIMITS } from "./claude_sources.ts";
 import type { Limits } from "./claude_sources.ts";
@@ -602,12 +603,18 @@ export function _calibrationOf(snap: Snapshot, cached: Dict | null,
   return out;
 }
 
-/** The calibration cache's file name for these windows: keyed by the
- * mod's version, the snapshot's scope and the windows, and named apart
- * from the Python's, so the two never serve each other a scan. */
-export function _calibrationCacheName(windows: string, snap: Snapshot,
-  version: string): string {
-  const scope = pyStr(pyGet(snap, "_scope", ""));
-  return "claude-calibration-ts-" +
-    sha256Hex(version + "\0" + scope + "\0" + windows) + ".cache";
+/** The calibration cache's file name: spec/state.jsonc's calibration
+ * kind, keyed by the snapshot's scope, the name the Python's
+ * calibration_cache_path gives.  The windows are inside the file. */
+export function _calibrationCacheName(snap: Snapshot): string {
+  return stateName("calibration", pyStr(pyGet(snap, "_scope", "")));
+}
+
+/** The calibration cache's text, byte for byte as calib_cache_text writes
+ * it: compact, in this key order, every number a float. */
+export function _calibCacheText(windows: string, sc: unknown, wc: unknown,
+  sp: unknown, wp: unknown): string {
+  return pyJsonDumps({ windows, sess_cost: sc, week_cost: wc,
+    sess_pct: sp, week_pct: wp }, false,
+  ["sess_cost", "week_cost", "sess_pct", "week_pct"]);
 }

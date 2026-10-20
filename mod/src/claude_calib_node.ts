@@ -13,9 +13,9 @@ import { expandUser, pyJsonDumps, pyJsonLoads } from "./sources_node.ts";
 import { cmpStr, pyJoin } from "./claude_records.ts";
 import { writeAtomic } from "./claude_records_node.ts";
 import {
-  _calibrationCacheName, _calibrationOf, _idKey, _pricedRecord,
-  _windowCostsOf, _windowsKey, _windowStarts, CALIB_TTL, COST_SAVE_EVERY_S,
-  COST_TAIL_BYTES,
+  _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
+  _pricedRecord, _windowCostsOf, _windowsKey, _windowStarts, CALIB_TTL,
+  COST_SAVE_EVERY_S, COST_TAIL_BYTES,
 } from "./claude_calib.ts";
 import type { Calib, Naive, Priced, Snapshot } from "./claude_calib.ts";
 import type { Dict } from "./py.ts";
@@ -316,14 +316,11 @@ export function _windowCosts(sessStart: Naive | null,
   return out;
 }
 
-/** The calibration cache for these windows: the override when one is
- * set, else a private file keyed by the snapshot's scope, the windows and
- * the mod's version, named apart from the Python's. */
-export function calibrationCachePath(windows: string, snap: Snapshot,
-  env: CalibEnv): string {
+/** The calibration cache: the override when one is set, else the file
+ * for the snapshot's scope that the Python and the mod share. */
+export function calibrationCachePath(snap: Snapshot, env: CalibEnv): string {
   if (env.calibCacheOverride) return expandUser(env.calibCacheOverride);
-  return pyJoin(env.stateDir,
-    _calibrationCacheName(windows, snap, env.version));
+  return pyJoin(env.stateDir, _calibrationCacheName(snap));
 }
 
 /** The cached scan, if it is younger than `ttl` seconds (any age for a
@@ -332,7 +329,7 @@ export function calibrationCachePath(windows: string, snap: Snapshot,
  * it is. */
 export function _readCalibCache(windows: string, snap: Snapshot,
   env: CalibEnv, ttl: number | null = CALIB_TTL): Dict | null {
-  const path = calibrationCachePath(windows, snap, env);
+  const path = calibrationCachePath(snap, env);
   let d: unknown;
   try {
     if (ttl !== null) {
@@ -356,13 +353,11 @@ export function _writeCalibCache(windows: string, snap: Snapshot,
   env: CalibEnv, sc: number, wc: number, sp: unknown, wp: unknown): void {
   let text: string;
   try {
-    text = pyJsonDumps({ windows, sess_cost: sc, week_cost: wc,
-      sess_pct: sp, week_pct: wp }, false,
-    ["sess_cost", "week_cost", "sess_pct", "week_pct"]);
+    text = _calibCacheText(windows, sc, wc, sp, wp);
   } catch {
     return;
   }
-  writeAtomic(calibrationCachePath(windows, snap, env), text);
+  writeAtomic(calibrationCachePath(snap, env), text);
 }
 
 /** Dollars per one percent of each plan window.
