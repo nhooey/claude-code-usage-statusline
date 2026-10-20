@@ -26,7 +26,8 @@ assert f.term_profile({"TMUX": ""}) == "unknown"
 assert f.term_profile({"TERMINAL_EMULATOR": "JetBrains-JediTerm"}) == "jediterm"
 assert f.term_profile({"TERM_PROGRAM": "iTerm.app"}) == "iterm"
 assert f.term_profile({"TERM_PROGRAM": "ghostty"}) == "unknown"
-# spec.py and the mod's spec.ts are generated from spec/layout.jsonc.
+# spec.py, state_spec.py, options_spec.py, their .ts and the option tables
+# of docs/options.md are generated from spec/*.jsonc.
 import subprocess
 spec = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                     "tools", "gen-spec.py")

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate both languages' constants from the JSONC files under spec/.
 
-    python3 tools/gen-spec.py           # rewrite both
-    python3 tools/gen-spec.py --check   # exit 1 if either is out of date
+    python3 tools/gen-spec.py           # rewrite them all
+    python3 tools/gen-spec.py --check   # exit 1 if any is out of date
 
 spec/layout.jsonc is the one place the glyphs, the colours, the widths and
 cuts, the wide-character table and the terminal-profile rules are written,
@@ -10,8 +10,11 @@ each beside the comment that explains it.  This writes them out as
 coding_agent_usage_line/spec.py, which formatting.py star-imports, and as
 mod/src/spec.ts for the mod, comments and all, so either language's copy can
 be read on its own.  spec/state.jsonc, the files both ports keep in the state
-directory, goes the same way, to state_spec.py and state_spec.ts.
-tests/formatting.py runs --check.
+directory, goes the same way, to state_spec.py and state_spec.ts, and so
+does spec/options.jsonc, every option either port takes, to options_spec.py
+and options_spec.ts, with an Options type for the mod's and the option
+tables of docs/options.md, between their markers.  tests/formatting.py
+runs --check.
 
 Each JSONC is one object of NAME: value, in the order the values are written
 out.  Three forms are read specially:
@@ -39,7 +42,8 @@ SPECS = [(os.path.join("spec", src),
           os.path.join("coding_agent_usage_line", out + ".py"),
           os.path.join("mod", "src", out + ".ts"))
          for src, out in (("layout.jsonc", "spec"),
-                          ("state.jsonc", "state_spec"))]
+                          ("state.jsonc", "state_spec"),
+                          ("options.jsonc", "options_spec"))]
 WIDTH = 79
 RGB = re.compile(r"rgb\((\d+), (\d+), (\d+)\)$")
 
@@ -324,7 +328,10 @@ class Lang:
         """prefix + value + suffix, over as many lines as it needs."""
         pad = " " * (self.indent * depth)
         one = self.flat(node, prefix and node.key)
-        if one is not None and len(pad + prefix + one + suffix) <= WIDTH:
+        # A string too long for the width has nothing to break at, so it
+        # runs past it.
+        if one is not None and (len(pad + prefix + one + suffix) <= WIDTH
+                                or node.kind not in ("obj", "arr")):
             return self.with_tail(pad + prefix + one + suffix, node, col)
         kids = node.value
         opener = "{" if node.kind == "obj" else self.open
@@ -371,10 +378,216 @@ def render(lang, root, source):
         if lang.name == "py":
             prefix, suffix, col = m.key + " = ", "", m.col - 2
         else:
-            prefix, suffix, col = "export const " + m.key + " = ", ";", \
-                m.col + 12
+            prefix, col = "export const " + m.key + " = ", m.col + 12
+            suffix = " as const;" if m.key in AS_CONST else ";"
         lines += lang.block(prefix, m, suffix, 0, col)
+    if lang.name == "ts" and root.value and root.value[0].key == "OPTIONS":
+        lines += [""] + options_type(plain(root.value[0]))
     return "\n".join(l.rstrip() for l in lines) + "\n"
+
+
+# ── The options ─────────────────────────────────────────────────────────────
+
+# Constants written `as const` in TypeScript, so their records keep their
+# literal types.
+AS_CONST = {"OPTIONS"}
+TYPES = ("bool", "int", "string", "enum", "list", "table")
+FIELDS = ("type", "items", "fields", "metavar", "default", "derived",
+          "minimum", "ports", "agents", "file", "flag", "aliases",
+          "negatable", "modes", "doc-table", "doc-default", "doc")
+REQUIRED = ("type", "default", "ports", "file", "flag", "doc-table", "doc")
+MODES = ["status", "cost", "subagent"]
+DOC = os.path.join("docs", "options.md")
+# The tables of docs/options.md, by the name their markers give, and the
+# column between the option and its effect.
+DOC_TABLES = {"shared": "Default", "display": "Modes"}
+
+
+def plain(node):
+    """The value a node holds, as json.loads would give it."""
+    if node.kind == "obj":
+        return {c.key: plain(c) for c in node.value}
+    if node.kind == "arr":
+        return [plain(c) for c in node.value]
+    if node.kind == "num":
+        return json.loads(node.raw)
+    if node.kind == "word":
+        return json.loads(node.value)
+    return node.value
+
+
+def join_docs(root):
+    """Each option's doc, written as lines, made the one string it is."""
+    for opt in root.value[0].value:
+        for f in opt.value:
+            if f.key == "doc" and f.kind == "arr":
+                f.kind, f.value = "str", " ".join(c.value for c in f.value)
+
+
+def fits(t, value, items):
+    if value is None:
+        return True
+    if t == "bool":
+        return isinstance(value, bool)
+    if t == "int":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if t == "string":
+        return isinstance(value, str)
+    if t == "enum":
+        return value in items
+    if t == "list":
+        return (isinstance(value, list)
+                and all(isinstance(v, str) for v in value))
+    return isinstance(value, dict)
+
+
+def check_options(opts):
+    """Refuse a record the ports could not read the same way."""
+    def bad(name, why):
+        raise SystemExit("options.jsonc: %s: %s" % (name, why))
+    for name, o in opts.items():
+        if not re.fullmatch(r"[a-z][a-z0-9]*(-[a-z0-9]+)*", name):
+            bad(name, "not a flag's name")
+        for k in o:
+            if k not in FIELDS:
+                bad(name, "unknown field %r" % k)
+        for k in REQUIRED:
+            if k not in o:
+                bad(name, "no %r" % k)
+        keys = [k for k in FIELDS if k in o]
+        if list(o) != keys:
+            bad(name, "fields out of order, want %s" % ", ".join(keys))
+        t = o["type"]
+        if t not in TYPES:
+            bad(name, "unknown type %r" % t)
+        if (t == "enum") != ("items" in o):
+            bad(name, "items go with an enum, and only with one")
+        if (t == "table") != ("fields" in o):
+            bad(name, "fields go with a table, and only with one")
+        if t == "table":
+            if not isinstance(o["default"], dict) or not o["default"]:
+                bad(name, "a table's default names its rows")
+            for row, rec in o["default"].items():
+                if set(rec) != set(o["fields"]):
+                    bad(name, "row %r has other fields than the table's"
+                        % row)
+                for k, v in rec.items():
+                    ft = o["fields"][k]
+                    if not fits(ft["type"], v, ft.get("items")):
+                        bad(name, "%s.%s is not a %s" % (row, k, ft["type"]))
+        elif not fits(t, o["default"], o.get("items")):
+            bad(name, "default %r is not a %s" % (o["default"], t))
+        if not o["ports"] or set(o["ports"]) - {"py", "mod"}:
+            bad(name, "ports are \"py\", \"mod\" or both")
+        flag = o["flag"]
+        if flag is not None and flag != "--" + name:
+            bad(name, "its flag is --%s" % name)
+        if flag is None and "py" in o["ports"] and o["file"] is False:
+            bad(name, "the Python could not be given it")
+        if o.get("negatable") and t != "bool":
+            bad(name, "only a bool is negatable")
+        if "minimum" in o and t != "int":
+            bad(name, "only an int has a minimum")
+        if "derived" in o:
+            src = o["derived"]["from"]
+            if src not in opts:
+                bad(name, "derived from %r, which is no option" % src)
+            for v in o["derived"]["map"].values():
+                if not fits(t, v, o.get("items")):
+                    bad(name, "derives %r, not a %s" % (v, t))
+        if o["doc-table"] is not None:
+            if o["doc-table"] not in DOC_TABLES:
+                bad(name, "no doc table %r" % o["doc-table"])
+            if flag is None:
+                bad(name, "the doc tables are of flags")
+        if o["doc-table"] == "display" and "modes" not in o:
+            bad(name, "a display option says its modes")
+        if set(o.get("modes", [])) - set(MODES):
+            bad(name, "modes are %s" % ", ".join(MODES))
+
+
+def camel(name):
+    head, *rest = name.split("-")
+    return head + "".join(w.capitalize() for w in rest)
+
+
+def ts_type(t, items):
+    if t in ("enum",):
+        return " | ".join(json.dumps(i, ensure_ascii=False) for i in items)
+    return {"bool": "boolean", "int": "number", "string": "string",
+            "list": "readonly string[]"}[t]
+
+
+def options_type(opts):
+    """Options: the mod's merged value of each option it reads."""
+    lines = ["// The merged value of each option the mod reads, by the camel",
+             "// case of its name.",
+             "export type Options = {"]
+    for name, o in opts.items():
+        if "mod" not in o["ports"]:
+            continue
+        if o["type"] == "table":
+            lines.append("  readonly %s: {" % camel(name))
+            for row in o["default"]:
+                lines.append("    readonly %s: {" % camel(row))
+                lines += ["      readonly %s: %s;"
+                          % (camel(k), ts_type(f["type"], f.get("items")))
+                          for k, f in o["fields"].items()]
+                lines.append("    };")
+            lines.append("  };")
+            continue
+        t = ts_type(o["type"], o.get("items"))
+        if o["default"] is None and "derived" not in o:
+            t += " | null"
+        lines.append("  readonly %s: %s;" % (camel(name), t))
+    lines.append("};")
+    return lines
+
+
+def cell(text):
+    return text.replace("|", "\\|")
+
+
+def doc_table(opts, which):
+    """One table of docs/options.md, a row per option it lists."""
+    second = DOC_TABLES[which]
+    rows = ["| Option | %s | Effect |" % second, "|---|---|---|"]
+    for name, o in opts.items():
+        if o["doc-table"] != which:
+            continue
+        flag = o["flag"]
+        if o.get("negatable") and o["default"] is True:
+            flag = "--no-" + flag[2:]
+        if o["type"] != "bool":
+            flag += " " + (o.get("metavar") or "|".join(o["items"]))
+        if second == "Modes":
+            modes = o["modes"]
+            mid = "all" if sorted(modes) == sorted(MODES) else ", ".join(modes)
+        elif "doc-default" in o:
+            mid = o["doc-default"]
+        elif o["default"] in (None, []):
+            mid = "none"
+        elif o["default"] is False:
+            mid = "off"
+        else:
+            mid = "`%s`" % o["default"]
+        rows.append("| %s | %s | %s |" % (cell("`%s`" % flag), cell(mid),
+                                          cell(o["doc"])))
+    return rows
+
+
+def with_doc_tables(text, opts):
+    """docs/options.md with each table between its markers written anew."""
+    for which in DOC_TABLES:
+        begin = "<!-- options:begin %s -->" % which
+        end = "<!-- options:end %s -->" % which
+        m = re.search(r"^%s\n.*?^%s$" % (re.escape(begin), re.escape(end)),
+                      text, re.M | re.S)
+        if not m:
+            raise SystemExit("%s: no %s ... %s" % (DOC, begin, end))
+        body = "\n".join([begin] + doc_table(opts, which) + [end])
+        text = text[:m.start()] + body + text[m.end():]
+    return text
 
 
 def main():
@@ -382,6 +595,13 @@ def main():
     for source, py_out, ts_out in SPECS:
         root = read(os.path.join(REPO, source))
         src = source.replace(os.sep, "/")
+        if source.endswith("options.jsonc"):
+            join_docs(root)
+            opts = plain(root.value[0])
+            check_options(opts)
+            doc = os.path.join(REPO, DOC)
+            with open(doc, encoding="utf-8") as fh:
+                outs[doc] = with_doc_tables(fh.read(), opts)
         outs[os.path.join(REPO, py_out)] = render(PY, root, src)
         outs[os.path.join(REPO, ts_out)] = render(TS, root, src)
     if sys.argv[1:] == ["--check"]:

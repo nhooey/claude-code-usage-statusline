@@ -47,6 +47,7 @@ the terminal where the cursor ended up. See
 
 These work for both agents.
 
+<!-- options:begin shared -->
 | Option | Default | Effect |
 |---|---|---|
 | `--agent claude\|codex` | — | Which transcript format and hook conventions to use. Required. |
@@ -61,6 +62,7 @@ These work for both agents.
 | `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
 | `--right-edge N` | `5` | The columns every agent-panel row leaves blank at the terminal's right edge. `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt; `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge. Claude only. |
 | `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). Only the agent panel draws on the grid so far; the other modes, and Codex, accept it and ignore it. |
+<!-- options:end shared -->
 
 ### Terminal width
 
@@ -78,6 +80,7 @@ unless `--cols` is given. `--cols` is the terminal's width in every mode.
 
 ## Claude display options
 
+<!-- options:begin display -->
 | Option | Modes | Effect |
 |---|---|---|
 | `--column-rules` | status | Draw faint `\|` rules between the columns. Nothing moves. |
@@ -92,6 +95,7 @@ unless `--cols` is given. `--cols` is the terminal's width in every mode.
 | `--force-newline` | cost | Always start the message with a blank line. |
 | `--prefix TEXT` | cost | The mark at the start of each row. Default `📊`. |
 | `--label TEXT` | cost | The label of the prompt row. Default `🎤 Usage: Prompt (last)`, or `🎤` with `--no-usage-text`. |
+<!-- options:end display -->
 
 `--no-column-rules` and `--mark-spacing` are the defaults and are accepted so a
 settings file can say explicitly what it wants. A flag given for a mode it

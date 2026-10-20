@@ -103,7 +103,7 @@ jobs:
         run: cd mod && node --test 'test/*.test.ts'
       - name: typecheck
         run: cd mod && npm ci && npm run typecheck
-      - name: spec.py and spec.ts are generated from spec/layout.jsonc
+      - name: the spec/*.jsonc outputs are up to date
         run: python3 tools/gen-spec.py --check
 
   shellcheck:

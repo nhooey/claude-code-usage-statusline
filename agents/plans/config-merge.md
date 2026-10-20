@@ -454,6 +454,35 @@ and `npm test`.
    `options_spec.ts` and the doc tables, with `--check`. Nothing reads them
    yet; `docs/options.md` gains its markers and the same tables it has now,
    generated.
+
+   **Status 2026-10-20: done.** As built:
+   - `spec/options.jsonc` is one `OPTIONS` object of 35 records, as
+     `spec/state.jsonc` is one `STATE_KINDS`: 26 flags of `cli.py` (with
+     `--selftest` and `--help`, `-h` as an alias) and 9 the mod alone reads,
+     by the tables above, less the timings (Decided 5). `agentMessageRow`,
+     newer than this plan, is `agent-message-row`; `agentListMs` and
+     `agentSenderMemo` stay constants with the timings.
+   - Every record has `type`, `default`, `ports`, `file`, `flag`,
+     `doc-table` and `doc`, in that order, and as needed `items`, `fields`
+     (a table's), `metavar`, `derived` (`{from, map}`), `minimum`,
+     `agents`, `aliases`, `negatable`, `modes` and `doc-default`.
+     `gen-spec.py` refuses a record out of that order or whose default
+     does not fit its type. `doc` is written as lines and generated as one
+     string; it is the doc table's Effect cell as it reads today, so the
+     bools that default true describe their `--no-` flag.
+   - The Python's is a dict by name, not a tuple, so a lookup is by name.
+     The TypeScript is `as const`, with `Options` over the mod's options
+     by camel-case name; `mod/test/options_spec.test.ts` fills it from the
+     defaults, so the typecheck holds the two together.
+   - The doc tables sit between `<!-- options:begin shared -->` and
+     `<!-- options:end shared -->`, and the same for `display`; the
+     options with no doc table, the mod's, wait for a section of their own.
+   - The defaults are the built-in ones, not `CONFIG`'s: `usage-source`
+     `auto` and `hide` empty, as the Python has them; the mod's
+     `claude-usage-tracker` and hide list are the user's, for step 7.
+     `right-edge` keeps the Python's `5` beside its derived map, which
+     gives `2` under `live-place`'s default `footer`, so the panel's
+     default moves when step 6 derives it.
 2. **The Python parses flags from the spec.** `cli.py`'s flag sets and
    `USAGE` come from it; the positive spellings of the `--no-` flags are
    added. Behaviour is unchanged; `tests/port-cli.py` shows it.
