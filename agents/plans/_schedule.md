@@ -9,7 +9,7 @@ files they both change. Written 2026-10-20 from:
   Decided 5: `RT6` … `RT9`, `RT8i`. Steps 1–5 are done.
 - [Clickable rows](clickable-rows.md), steps 1–3: `CK1` … `CK3` (added
   2026-10-20).
-- [Colours on the 256-colour palette](palette-256.md), steps 1–2: `PL1`,
+- [Colours on the 256-colour palette](_implemented/palette-256.md), steps 1–2: `PL1`,
   `PL2` (added 2026-10-20).
 - Work in flight outside the plans: `CA`, the calibration cache keyed by
   account id (asked 2026-10-20, Blocked.1.A).
@@ -53,7 +53,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CK2` | The targets: `requestId`s recorded, 🎤 and 🤖 pressable in the band and the receipt | `CK1` (and the user's live report) | none | `mod/hooks/register.tsx`, `mod/src/agent_message.ts` |
 | `CK3` | Docs for the pressable rows | `CK2` | none | `docs/layout.md` |
 | `PL1` | **Done 2026-10-20.** Every default colour snapped to a 256-palette entry, reviewed by eye; gen-spec's check | none | `RT9` | `spec/layout.jsonc`, `tools/gen-spec.py`, `spec.{py,ts}`, every colour fixture and golden |
-| `PL2` | The doc note on themes and `CLAUDE_CODE_TMUX_TRUECOLOR` | `PL1` | none | `docs/` |
+| `PL2` | **Done 2026-10-20.** The doc note on themes and `CLAUDE_CODE_TMUX_TRUECOLOR` | `PL1` | none | `docs/` |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).

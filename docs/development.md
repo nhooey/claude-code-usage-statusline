@@ -103,7 +103,7 @@ without consuming claims. See [Codex](codex.md).
 | A status-line cell (the retired `--mode status`) | `claude_render.py`; its width in `RIGHT_GRID` in `formatting.py`, or `LINE3_RESERVED` / `RULE_MIN` in `spec/layout.jsonc` | Regenerate the status goldens and read the diff. |
 | A cost-line cell (the retired `--mode cost`) | `claude_cost_render.py`, and the group builders in `claude.py` | Regenerate the cost goldens. |
 | An agent-panel cell | `claude_subagent_render.py` | Update the row shape asserted in `tests/subagent.py`. `python3 tools/draw-panel.py 01-mixed.json 120` draws the panel at any width to look at. |
-| A glyph, colour, width or cut | Its constant in `spec/layout.jsonc` | Run `python3 tools/gen-spec.py`. For a glyph, follow [Glyphs and terminals](glyphs-and-terminals.md) and run `tests/probe-advance.sh` in a real terminal. |
+| A glyph, colour, width or cut | Its constant in `spec/layout.jsonc` | Run `python3 tools/gen-spec.py`. For a glyph, follow [Glyphs and terminals](glyphs-and-terminals.md) and run `tests/probe-advance.sh` in a real terminal. For a colour, pick a palette entry; see [Under tmux](layout.md#under-tmux). |
 | A flag | `_CLAUDE_FLAGS` / `_COMMON_FLAGS` and `USAGE` in `cli.py`; read it in `claude.main` or `codex_main` | Update [Options](options.md); add a case to `tests/port-cli.py`, the public-CLI suite. |
 | Claude accounting (prices, turns, agents) | `claude_records.py`; window shares and calibration in `claude.py` | `tests/agents.py`, the cost goldens; update [Accounting](accounting.md). |
 | A usage source | `sources.py`, and `validate_source` for its spec | `tests/sources-v1.py` and friends; update [Usage sources](usage-sources.md). |

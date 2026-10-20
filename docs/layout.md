@@ -42,6 +42,7 @@ Colour and brightness carry meaning of their own — see
   - [Blank cells](#blank-cells)
 - [Messages from agents](#messages-from-agents)
 - [Colour and brightness](#colour-and-brightness)
+  - [Under tmux](#under-tmux)
 - [Other placements](#other-placements)
   - [Above the prompt](#above-the-prompt)
   - [The footer's tail](#the-footers-tail)
@@ -695,6 +696,46 @@ prefix was invalidated and the same work now bills at full price.
 
 **The receipt is dim**, its colours kept, so it reads as a record beside the
 live rows; so are the 🔻🔖 line and a message's folded row.
+
+### Under tmux
+
+Claude Code draws in 256 colours whenever `TMUX` is set, even in a terminal
+that does true colour, unless `CLAUDE_CODE_TMUX_TRUECOLOR` is set too. It
+turns each colour into a palette index by rounding, and the terminal draws
+that index from the xterm palette, whose steps are not the ones the rounding
+assumes. So most colours come back a little off under tmux, and two near
+colours can come back as one.
+
+Every default colour is one of the 80 palette entries that come back as
+themselves: a cube colour whose channels are all 0, 175, 215 or 255, black,
+white, or a grey from 8 to 178 in steps of 10. The defaults draw the same in
+true colour and in 256, in the mod's rows, which go through Claude Code's
+renderer, and in the agent panel, which writes its own escapes.
+`tools/gen-spec.py` refuses an `F_*` or `B_*` colour in `spec/layout.jsonc`
+that is not one of them and names the nearest, and `tools/palette-review.py`
+draws a colour change side by side, as it was, as tmux draws it, and as it
+is now, for a review by eye.
+
+To have Claude Code draw true colour under tmux, set
+`CLAUDE_CODE_TMUX_TRUECOLOR=1`, and make sure tmux passes RGB colour through
+to the terminal. tmux does when the outer terminal has the `RGB` feature
+(`set -as terminal-features ',xterm-256color:RGB'`, or the older
+`set -as terminal-overrides ',xterm-256color:Tc'`, with your terminal's
+`TERM` in place of `xterm-256color`). To check, run
+
+```sh
+tmux info | grep -E 'Tc|RGB'
+```
+
+and look for `true` beside `Tc` or `RGB`. Without it, tmux rounds RGB
+colour to 256 itself, and setting the variable gains nothing.
+
+A custom Claude Code theme's `userMessageBackground` should be a palette
+entry too, for the same reason: the purple row of a message from another
+agent (`B_MSG`) is told apart from your own prompts by that background, and
+off the palette a dark blue and a dark green have drawn as one teal under
+tmux. A dark blue `#00005f` draws as `#000087` under tmux; `#0000af` is the
+nearest dark blue that draws the same either way.
 
 ## Other placements
 

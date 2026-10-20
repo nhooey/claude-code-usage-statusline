@@ -1,8 +1,8 @@
 # Colours: every default on the 256-colour palette
 
 Asked 2026-10-20: "ensure that the default colours snap to the 256-colour
-Tmux palette, since other users will likely default to this". Step 1 is
-built (2026-10-20); step 2 is open.
+Tmux palette, since other users will likely default to this". Both steps
+are built (2026-10-20).
 
 ## Why
 
@@ -56,11 +56,13 @@ set looks the same in both.
    entry and reviewed in the side-by-side drawing
    (`tools/palette-review.py`); the gen-spec check; the fixtures and
    goldens regenerated (colour bytes only).
-2. **The doc note** on themes and `CLAUDE_CODE_TMUX_TRUECOLOR`.
+2. **The doc note** on themes and `CLAUDE_CODE_TMUX_TRUECOLOR`. Status
+   2026-10-20: done. [Under tmux](../../../docs/layout.md#under-tmux), in
+   `docs/layout.md`, with a pointer from `docs/development.md`.
 
 ## Files
 
 `spec/layout.jsonc`, `tools/gen-spec.py`, the generated `spec.py` and
 `spec.ts`, every fixture and golden carrying colour escapes, `docs/`.
 Step 1 regenerates fixtures broadly, so it runs when no other node is
-regenerating them; see [the schedule](_schedule.md).
+regenerating them; see [the schedule](../_schedule.md).
