@@ -453,10 +453,13 @@ export const F_SPIN = F_RED;                             // the agent row's E_SP
 export const F_CHAT_U = "#a6aa9e";                       // warm grey   — user chat row
 export const F_CHAT_B = "#707e8c";                       // cool slate  — assistant chat row
 export const B_DRK = "#0c0e12";                          // near-black background, chat rows
-export const B_MSG = "#1a1e26";                          // faint slate background, the
+export const B_MSG = "#0e301a";                          // dark green background, the
                                                          //  row of a message another
-                                                         //  agent sent, so it reads as
-                                                         //  a bar against black
+                                                         //  agent sent: a bar against
+                                                         //  black, apart from the
+                                                         //  user's own dark blue
+                                                         //  prompts, light text legible
+                                                         //  on it
 
 // The two limit rows, one colour each.  ROW IDENTITY, not a reading: 🔋 is
 // green because it is the battery, 🪫 red because it is the low one, and
