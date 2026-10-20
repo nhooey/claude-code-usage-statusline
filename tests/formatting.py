@@ -42,6 +42,54 @@ assert colour_level({"COLORTERM": "truecolor", "NO_COLOR": "1"}) == 0
 assert colour_level({"TERM_PROGRAM": "iTerm.app"}) == 2
 assert colour_level({"TERM_PROGRAM": "iTerm.app",
                      "TERM_PROGRAM_VERSION": "3.5.10"}) == 3
+# Under tmux's limited mode, and wherever the level is in doubt, every colour
+# drawn is the 256 set's, one of the palette entries that come back from
+# tmux's 256-colour rounding as they went in: never a true value.
+import importlib.util  # noqa: E402
+import re  # noqa: E402
+from coding_agent_usage_line import spans as sp, spec as spec_py  # noqa: E402
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_g = importlib.util.spec_from_file_location(
+    "gen_spec", os.path.join(REPO, "tools", "gen-spec.py"))
+G = importlib.util.module_from_spec(_g)
+_g.loader.exec_module(G)
+ROUND_TRIP = {G.xterm(i) for i in G.PALETTE}
+NAMES = sorted(spec_py.TRUE_COLOURS)
+ALL = [sp.Span(n, colour=n) for n in NAMES if n.startswith("F_")] + [
+    sp.Span(n, bg=n) for n in NAMES if n.startswith("B_")]
+CODE = re.compile(r"\x1b\[(?:[0-9;]*;)?([34]8);2;(\d+);(\d+);(\d+)m")
+LIMITED = [
+    {"TMUX": "/tmp/tmux-501/default,1,0", "TERM": "screen-256color"},
+    {"TMUX": "/tmp/tmux-501/default,1,0", "TERM": "tmux-256color",
+     "COLORTERM": "truecolor"},
+    {"TMUX": "/tmp/tmux-501/default,1,0", "TERM": "xterm-kitty"},
+    # Doubt: nothing known, an unknown terminal, a FORCE_COLOR not a level.
+    {}, {"TERM": "weird"}, {"TERM": "xterm-256color", "FORCE_COLOR": "x"},
+]
+saved = dict(os.environ)
+try:
+    for env in LIMITED:
+        for k in sp.COLOUR_VARS:
+            os.environ.pop(k, None)
+        os.environ.update(env)
+        assert sp.colour_level() < 3, env
+        drawn = sp.join(ALL)
+        codes = CODE.findall(drawn)
+        assert len(codes) == len(ALL), (env, len(codes))
+        for s, (_, r, g, b) in zip(ALL, codes):
+            rgb = (int(r), int(g), int(b))
+            assert rgb in ROUND_TRIP, (env, s.text, rgb)
+        assert drawn == sp.join(ALL) and all(
+            getattr(spec_py, n) in drawn for n in NAMES), env
+    # And lifted, the true set: the test above can tell them apart.
+    for k in sp.COLOUR_VARS:
+        os.environ.pop(k, None)
+    os.environ.update({"TMUX": "/tmp/t,1,0", "COLORTERM": "truecolor",
+                       "CLAUDE_CODE_TMUX_TRUECOLOR": "1"})
+    assert spec_py.TRUE_COLOURS["F_RED"] in sp.join(ALL)
+finally:
+    os.environ.clear()
+    os.environ.update(saved)
 # spec.py, state_spec.py, options_spec.py, their .ts and the option tables
 # of docs/options.md are generated from spec/*.jsonc.
 import subprocess

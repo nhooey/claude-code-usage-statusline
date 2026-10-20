@@ -4,6 +4,15 @@ Asked 2026-10-20: "ensure that the default colours snap to the 256-colour
 Tmux palette, since other users will likely default to this". Both steps
 are built (2026-10-20).
 
+Status 2026-10-21: two sets. The palette below is now the 256 set,
+brightened where a dim figure fell under the faint floor, and is drawn
+under tmux's limited mode and wherever the colour level is in doubt. The
+softer colours from before it came back as a true set, drawn only where
+Claude Code draws true colour; see
+[Under tmux](../../../docs/layout.md#under-tmux). The 256 set stays on the
+80 entries that round-trip, written as RGB as before: exact `38;5;N` codes
+were weighed and left out, since these entries already come back exactly.
+
 ## Why
 
 Claude Code draws in 256 colours whenever `TMUX` is set, unless

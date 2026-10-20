@@ -713,15 +713,30 @@ that index from the xterm palette, whose steps are not the ones the rounding
 assumes. So most colours come back a little off under tmux, and two near
 colours can come back as one.
 
-Every default colour is one of the 80 palette entries that come back as
-themselves: a cube colour whose channels are all 0, 175, 215 or 255, black,
-white, or a grey from 8 to 178 in steps of 10. The defaults draw the same in
-true colour and in 256, in the mod's rows, which go through Claude Code's
-renderer, and in the agent panel, which writes its own escapes.
-`tools/gen-spec.py` refuses an `F_*` or `B_*` colour in `spec/layout.jsonc`
-that is not one of them and names the nearest, and `tools/palette-review.py`
-draws a colour change side by side, as it was, as tmux draws it, and as it
-is now, for a review by eye.
+So each default colour has two values in `spec/layout.jsonc`, a 256 value
+and a true value:
+
+- **The 256 set** is drawn whenever Claude Code draws 256 colours or fewer,
+  and wherever that is in doubt: tmux without `CLAUDE_CODE_TMUX_TRUECOLOR`,
+  a terminal it does not know, no `TERM` at all. Every 256 value is one of
+  the 80 palette entries that come back as themselves: a cube colour whose
+  channels are all 0, 175, 215 or 255, black, white, or a grey from 8 to
+  178 in steps of 10. So the 256 set draws in tmux's limited mode exactly
+  as chosen, in the mod's rows, which go through Claude Code's renderer,
+  and in the agent panel, which writes its own escapes.
+- **The true set** is the softer colours from before the 256 set, drawn
+  only where Claude Code itself draws true colour. Both ports work its level
+  out with its own rules, from the variables it reads (`COLORTERM`, `TERM`,
+  `TERM_PROGRAM`, `FORCE_COLOR`, `NO_COLOR`, `TMUX`,
+  `CLAUDE_CODE_TMUX_TRUECOLOR`); a wrong guess errs to the 256 set, which
+  draws right in true colour too.
+
+`tools/gen-spec.py` refuses a 256 value that is not one of the 80 entries
+and names the nearest, and holds a figure that is drawn dim, in either set,
+to a floor of faint contrast. `tools/palette-review.py` draws both sets side
+by side, with the rows at each level, for a review by eye. A test in each
+port checks that under tmux's limited mode, and with the level in doubt,
+every colour drawn is one of the 80 entries.
 
 To have Claude Code draw true colour under tmux, set
 `CLAUDE_CODE_TMUX_TRUECOLOR=1`, and make sure tmux passes RGB colour through

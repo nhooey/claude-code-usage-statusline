@@ -13,6 +13,7 @@ import * as path from "node:path";
 import * as fm from "../src/formatting.ts";
 import type { Env, Settings } from "../src/formatting.ts";
 import * as sp from "../src/spans.ts";
+import { TRUE_COLOURS } from "../src/spec.ts";
 import { enc, revive } from "./formatting_codec.ts";
 
 const DIR = path.join(import.meta.dirname, "..", "..", "tests", "fixtures",
@@ -152,4 +153,54 @@ test("term_cols: the walk over scripted process tables", () => {
     assert.equal(fm.termCols(s.ppid, ps, winsize), s.out,
       JSON.stringify(s));
   }
+});
+
+// Under tmux's limited mode, and wherever the level is in doubt, every
+// colour drawn is the 256 set's: an xterm entry that Claude Code's
+// rounding to 256 colours gives back as it was (tools/gen-spec.py's
+// palette), in the panel's escapes and in the mod's Text colours alike.
+const CUBE = [0, 95, 135, 175, 215, 255];
+const xterm = (i: number): number[] => i >= 232
+  ? [8 + 10 * (i - 232), 8 + 10 * (i - 232), 8 + 10 * (i - 232)]
+  : [CUBE[Math.floor((i - 16) / 36)], CUBE[Math.floor((i - 16) / 6) % 6],
+    CUBE[(i - 16) % 6]];
+const ansi256 = ([r, g, b]: number[]): number => r === g && g === b
+  ? (r < 8 ? 16 : r > 248 ? 231 : Math.round((r - 8) / 247 * 24) + 232)
+  : 16 + 36 * Math.round(r / 255 * 5) + 6 * Math.round(g / 255 * 5) +
+    Math.round(b / 255 * 5);
+const ROUND_TRIP = new Set(Array.from({ length: 240 }, (_, k) => k + 16)
+  .filter((i) => ansi256(xterm(i)) === i).map((i) => xterm(i).join(",")));
+const NAMES = Object.keys(TRUE_COLOURS).sort();
+const ALL = NAMES.map((n) => n.startsWith("B_")
+  ? sp.span(n, null, false, false, n) : sp.span(n, n));
+const LIMITED: Env[] = [
+  { TMUX: "/tmp/tmux-501/default,1,0", TERM: "screen-256color" },
+  { TMUX: "/tmp/tmux-501/default,1,0", TERM: "tmux-256color",
+    COLORTERM: "truecolor" },
+  { TMUX: "/tmp/tmux-501/default,1,0", TERM: "xterm-kitty" },
+  {}, { TERM: "weird" }, { TERM: "xterm-256color", FORCE_COLOR: "x" },
+];
+
+test("tmux's limited mode and any doubt draw the 256 set", () => {
+  assert.equal(ROUND_TRIP.size, 80);
+  for (const env of LIMITED) {
+    const st = fm.settings(env);
+    assert.equal(st.truecolor, false, JSON.stringify(env));
+    const codes = [...sp.join(ALL, false, false, st.truecolor)
+      .matchAll(/\x1b\[(?:[0-9;]*;)?[34]8;2;(\d+);(\d+);(\d+)m/g)];
+    assert.equal(codes.length, ALL.length);
+    for (const m of codes) {
+      assert.ok(ROUND_TRIP.has([m[1], m[2], m[3]].join(",")),
+        JSON.stringify(env) + " " + m[0].slice(1));
+    }
+    for (const n of NAMES) {
+      const hex = sp.hexOf(n, st.truecolor);
+      const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      assert.ok(ROUND_TRIP.has(rgb.join(",")), JSON.stringify(env) + n + hex);
+    }
+  }
+  const lifted = fm.settings({ TMUX: "/tmp/t,1,0", COLORTERM: "truecolor",
+    CLAUDE_CODE_TMUX_TRUECOLOR: "1" });
+  assert.equal(lifted.truecolor, true);
+  assert.equal(sp.hexOf("F_RED", true), "#ff5a5a");
 });

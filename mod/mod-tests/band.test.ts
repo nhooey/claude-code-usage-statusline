@@ -436,10 +436,11 @@ test('where Claude Code draws true colour the band draws the true set',
     expect(rows).not.toEqual(expected(lines))
   })
 
-test('under tmux the band draws the 256 set, true colour or not',
+for (const tmux of [
+  { TMUX: '/tmp/t,1,0', TERM: 'screen-256color' } as Record<string, string>,
+  { TMUX: '/tmp/t,1,0', TERM: 'tmux-256color', COLORTERM: 'truecolor' },
+]) test('under tmux the band draws the 256 set: ' + tmux.TERM,
   async ($, on) => {
-    const tmux = { TMUX: '/tmp/t,1,0', TERM: 'tmux-256color',
-      COLORTERM: 'truecolor' }
     const w = world(on, undefined, false, true, tmux)
     await start($, 'terminal', STATUS)
     const doc = lastDoc(w)
