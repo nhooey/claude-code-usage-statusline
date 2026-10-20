@@ -27,6 +27,25 @@
       "key": ["scope"],
       "suffix": ".cache",
       "format": 1
+    },
+    // The main transcript's two folds, the status line's and the turns',
+    // saved as running totals so a reload reads on from where they stopped
+    // (main_fold.py and main_fold.ts).  One directory per transcript path:
+    // a log of what never changes once written, in part-N.cache files of
+    // at most part_bytes of UTF-8 each, and the rest in a head, written
+    // last, to head-a.cache and head-b.cache in turn, since $.fs.write
+    // truncates and then writes and a reader can see the file torn.  A head
+    // names the byte offset folded to, and the sha256 of the transcript's
+    // first check_bytes and of the check_bytes before that offset.  Bump
+    // the format whenever either fold, or what is saved of it, changes:
+    // tests/fixtures/state/ fails until then.
+    "main-fold": {
+      "prefix": "claude-main-fold-",
+      "key": ["transcript"],
+      "suffix": "",
+      "format": 1,
+      "part_bytes": 1000000,
+      "check_bytes": 4096
     }
   }
 }

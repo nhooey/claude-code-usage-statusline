@@ -1,0 +1,8 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/transcripts/cost/06-interrupted.jsonl",
+ "parts": [
+  "[\"r\",\"req-i1\"]\n[\"r\",\"req-i2\"]\n[\"p\",1786842660,0.075045]\n[\"p\",1786842720,0]\n[\"S\",\"req-i1\"]\n[\"S\",\"req-i2\"]\n"
+ ],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":673,\"first\":\"e413a3d5f8fb93eddb32bc619916a3e6f9f7edcb6fdae7bb537681d8c14f9be9\",\"tail\":\"e413a3d5f8fb93eddb32bc619916a3e6f9f7edcb6fdae7bb537681d8c14f9be9\",\"counts\":[6],\"tr\":{\"fresh\":9,\"cwrite\":2200,\"cread\":51000,\"down\":1100,\"parts\":[],\"compacting\":null,\"opener\":[\"2026-08-16T01:10:00Z\",\"Start something and then type over it.\",2],\"own_est\":false,\"ctx\":53209,\"first_ctx\":53209,\"ctx_est\":false,\"user_ts\":\"2026-08-16T01:10:00Z\",\"user_text\":\"Start something and then type over it.\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1786842600,\"open_at\":1786842600,\"prev\":1786842720,\"eta\":[[],false,1786842720,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1786842720,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":{\"ts\":\"2026-08-16T01:10:00Z\",\"text\":\"Start something and then type over it.\",\"fresh\":9,\"cw\":2200,\"cr\":51000,\"out\":1100,\"ctx\":53209,\"n\":2,\"usd\":[0.000045,0.0275,0.0255,0.022000000000000002],\"an\":0,\"aids\":[],\"t0\":1786842600,\"t1\":1786842720,\"parts\":[[1786842660,0.075045],[1786842720,0]],\"tools\":[],\"waits\":[],\"am\":0,\"at\":0,\"pid\":\"\",\"tidx\":null,\"la\":0,\"lr\":0,\"eta\":[],\"dur\":null,\"compact\":null}}}"
+}

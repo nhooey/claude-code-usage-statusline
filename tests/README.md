@@ -422,8 +422,13 @@ These pin values rather than rows, so they assert instead of comparing files.
 - **`fold.py`** — `read_transcript` and `read_turns` as a fold and a
   finish: each fixture transcript folded to every record boundary, finished,
   and folded on to the end reads as its whole fold, and so does one with a
-  half-written last line folded on a copy and then completed.
-  `mod/test/main_fold.test.ts` runs the same cases through the TypeScript.
+  half-written last line folded on a copy and then completed. Then the
+  folds saved as text by `main_fold.py`: each fixture's save is the one in
+  `tests/fixtures/state/` (`gen/state.py` writes them; a change to the fold
+  needs a new format in `spec/state.jsonc`), read back at every line end
+  and read on, saved a part at a time, and read past a torn head.
+  `mod/test/main_fold.test.ts` runs the same cases through the TypeScript,
+  and hands state between the ports both ways.
 - **`subagent.py`** — `--mode subagent`: finding an agent's file (directly
   under `subagents/`, or under `subagents/workflows/*/`), deduplicating
   requests, lines written, the agent's own ⌛ 🤖 🔧 🚦 split (a coordinator
@@ -498,8 +503,9 @@ node mod/tools/check-fold.ts [...]               # the TypeScript alone
 `fold.py` breaks the main transcript's folds over the fixtures; these break
 them over every `*.jsonl` under `~/.claude/projects/`, the agents' files
 too, at three seeded record boundaries, either side of every compaction and
-once inside a line, and check each reads on as the whole fold. One line a
-file and a total. Over 4,495 files and 10.1 GB on 2026-10-20 the Python
+once inside a line, and check each reads on as the whole fold; at each
+break the fold is also saved as text, read back and read on. One line a
+file, with its saved state's size, and a total. Over 4,495 files and 10.1 GB on 2026-10-20 the Python
 took 173s and the TypeScript 109s; `--largest 3` takes seconds.
 
 ### `--selftest`

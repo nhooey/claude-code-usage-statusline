@@ -2202,7 +2202,7 @@ export function transcriptFinish(f: TranscriptFold,
 export const SUMMARY_CPT = 4.0;
 
 /** The mutable turn readTurns builds up, before it is frozen. */
-interface TurnBuild {
+export interface TurnBuild {
   ts: string;
   text: string;
   fresh: number;

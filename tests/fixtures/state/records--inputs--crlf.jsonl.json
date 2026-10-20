@@ -1,0 +1,6 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/records/inputs/crlf.jsonl",
+ "parts": [],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":28,\"first\":\"2f337de834952c9c455d67cda269d163e43b466bc5f7287e2a8f125281be9735\",\"tail\":\"2f337de834952c9c455d67cda269d163e43b466bc5f7287e2a8f125281be9735\",\"counts\":[],\"tr\":{\"fresh\":0,\"cwrite\":0,\"cread\":0,\"down\":0,\"parts\":[],\"compacting\":null,\"opener\":null,\"own_est\":false,\"ctx\":0,\"first_ctx\":0,\"ctx_est\":false,\"user_ts\":\"\",\"user_text\":\"\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":null,\"open_at\":null,\"prev\":null,\"eta\":[[],false,null,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":0,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":null}}"
+}

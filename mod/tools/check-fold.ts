@@ -15,6 +15,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import * as cr from "../src/claude_records.ts";
+import * as mf from "../src/main_fold.ts";
 
 type Folds = { tr: cr.TranscriptFold; tu: cr.TurnsFold };
 
@@ -70,17 +71,29 @@ function check(file: string, rand: () => number) {
   const whole = finish(foldAll(records));
   const at = breaks(records, rand);
   const broke: string[] = [];
-  const f = foldAll([]);
+  let f = foldAll([]);
   let done = 0;
   for (const k of at) {
     foldAll(records.slice(done, k), f);
     done = k;
-    finish(f);
+    const here = finish(f);
+    // Saved as text and read back, as a reload reads it.
+    const back = roundTrip(f);
+    if (!back) {
+      broke.push(`not read back at record ${k}`);
+      return { broke, records: records.length, compactions: 0,
+        breaks: at.length, state: null };
+    }
+    f = back;
+    if (!isDeepStrictEqual(finish(f), here)) {
+      broke.push(`read back otherwise at record ${k}`);
+    }
   }
   foldAll(records.slice(done), f);
   if (!isDeepStrictEqual(finish(f), whole)) {
     broke.push(`read on from ${at.length} breaks`);
   }
+  const state = stateSize(f);
   const nl = data.lastIndexOf(10,
     Math.max(0, Math.floor(rand() * data.length) - 1));
   if (nl > 0) {
@@ -100,7 +113,33 @@ function check(file: string, rand: () => number) {
     }
   }
   return { broke, records: records.length,
-    compactions: records.filter(cr.isCompaction).length, breaks: at.length };
+    compactions: records.filter(cr.isCompaction).length, breaks: at.length,
+    state };
+}
+
+// What a round trip's head says of the transcript, which no check reads.
+const META: mf.FoldMeta = { offset: 0, first: "", tail: "" };
+
+/** `f` saved as a first save writes it, with no cap on the head. */
+function saveAll(f: Folds) {
+  return mf.foldSave(f, META, mf.newSaveMark(), mf.FOLD_PART_BYTES,
+    Infinity)!;
+}
+
+/** `f` saved and read back, or null. */
+function roundTrip(f: Folds): Folds | null {
+  const got = saveAll(f);
+  const files = new Map(got.parts.map(([i, t]) => [mf.partName(i), t]));
+  files.set(got.slot, got.head);
+  return mf.foldLoad((n) => files.get(n) ?? null)?.fold ?? null;
+}
+
+/** The parts, their bytes and the head's bytes of `f` saved. */
+function stateSize(f: Folds) {
+  const got = saveAll(f);
+  return { parts: got.parts.length,
+    bytes: got.parts.reduce((n, [, t]) => n + mf.utf8Bytes(t), 0),
+    head: mf.utf8Bytes(got.head) };
 }
 
 function main(argv: string[]): number {
@@ -117,24 +156,30 @@ function main(argv: string[]): number {
     .sort((a, b) => b.size - a.size || (a.p < b.p ? -1 : 1));
   if (largest) files = files.slice(0, largest);
   const rand = seeded(seed);
-  let bad = 0, total = 0;
+  let bad = 0, total = 0, biggest = 0;
   const t0 = performance.now();
   for (const { p, size } of files) {
     const t = performance.now();
     total += size;
     const got = check(p, rand);
     if (got.broke.length) bad++;
+    const s = got.state;
+    if (s) biggest = Math.max(biggest, s.bytes + s.head);
     console.log(`${got.broke.length ? "FAIL" : "ok  "} ` +
       `${(size / 1e6).toFixed(1).padStart(7)} MB ` +
       `${String(got.records).padStart(7)} records ` +
       `${String(got.compactions).padStart(3)} compactions ` +
-      `${String(got.breaks).padStart(3)} breaks ` +
-      `${((performance.now() - t) / 1000).toFixed(1).padStart(6)}s  ` +
+      `${String(got.breaks).padStart(3)} breaks  ` +
+      (s ? `${String(s.parts).padStart(2)} parts ` +
+        `${(s.bytes / 1e6).toFixed(2).padStart(6)} MB + head ` +
+        `${(s.head / 1e3).toFixed(1).padStart(6)} KB` : "") +
+      `  ${((performance.now() - t) / 1000).toFixed(1).padStart(6)}s  ` +
       path.relative(home, p) +
       (got.broke.length ? `  (${got.broke.join("; ")})` : ""));
   }
   console.log(`${files.length} files, ${(total / 1e9).toFixed(1)} GB, ` +
-    `${bad} broke, ${((performance.now() - t0) / 1000).toFixed(0)}s`);
+    `${bad} broke, largest state ${(biggest / 1e6).toFixed(2)} MB, ` +
+    `${((performance.now() - t0) / 1000).toFixed(0)}s`);
   return Math.min(bad, 255);
 }
 

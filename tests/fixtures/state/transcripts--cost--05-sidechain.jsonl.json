@@ -1,0 +1,8 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/transcripts/cost/05-sidechain.jsonl",
+ "parts": [
+  "[\"r\",\"req-h1\"]\n[\"r\",\"req-h2\"]\n[\"p\",1786842660,0.047560000000000005]\n[\"p\",1786842720,0.55702]\n[\"S\",\"req-h1\"]\n[\"S\",\"req-h2\"]\n"
+ ],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":664,\"first\":\"722b64377a50e4160b4865c9835225359b6e7bb6cfec6e378b480e5396e6023f\",\"tail\":\"722b64377a50e4160b4865c9835225359b6e7bb6cfec6e378b480e5396e6023f\",\"counts\":[6],\"tr\":{\"fresh\":16,\"cwrite\":7000,\"cread\":934000,\"down\":2700,\"parts\":[],\"compacting\":null,\"opener\":[\"2026-08-16T01:10:00Z\",\"Delegate something.\",2],\"own_est\":false,\"ctx\":41012,\"first_ctx\":41012,\"ctx_est\":false,\"user_ts\":\"2026-08-16T01:10:00Z\",\"user_text\":\"Delegate something.\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1786842600,\"open_at\":1786842600,\"prev\":1786842720,\"eta\":[[],false,1786842660,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1786842660,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":{\"ts\":\"2026-08-16T01:10:00Z\",\"text\":\"Delegate something.\",\"fresh\":16,\"cw\":7000,\"cr\":934000,\"out\":2700,\"ctx\":41012,\"n\":2,\"usd\":[0.00008,0.0675,0.46699999999999997,0.07],\"an\":0,\"aids\":[],\"t0\":1786842600,\"t1\":1786842720,\"parts\":[[1786842660,0.047560000000000005],[1786842720,0.55702]],\"tools\":[],\"waits\":[],\"am\":0,\"at\":0,\"pid\":\"\",\"tidx\":null,\"la\":0,\"lr\":0,\"eta\":[],\"dur\":null,\"compact\":null}}}"
+}

@@ -1,0 +1,8 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/transcripts/status/agents.jsonl",
+ "parts": [
+  "[\"r\",\"req-m1\"]\n[\"t\",1786844000,1786844600]\n[\"p\",1786844000,0.047560000000000005]\n[\"S\",\"req-m1\"]\n[\"P\",\"p-fork\",0]\n"
+ ],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":907,\"first\":\"959d6c36985d2fb04ae6134c12c59c53bf42a6bcd611c141ff0f0a08c280039e\",\"tail\":\"959d6c36985d2fb04ae6134c12c59c53bf42a6bcd611c141ff0f0a08c280039e\",\"counts\":[5],\"tr\":{\"fresh\":12,\"cwrite\":1000,\"cread\":40000,\"down\":700,\"parts\":[],\"compacting\":null,\"opener\":[\"2026-08-16T01:23:20Z\",\"Fork off and read the two exhibits.\",1],\"own_est\":false,\"ctx\":41012,\"first_ctx\":41012,\"ctx_est\":false,\"user_ts\":\"2026-08-16T01:23:20Z\",\"user_text\":\"Fork off and read the two exhibits.\",\"asst_ts\":\"2026-08-16T01:33:20Z\",\"asst_text\":\"Done.\",\"pending\":[],\"first\":1786843400,\"open_at\":1786843400,\"prev\":1786844600,\"eta\":[[],false,1786844600,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1786844600,\"opened\":[\"p-fork\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":{\"ts\":\"2026-08-16T01:23:20Z\",\"text\":\"Fork off and read the two exhibits.\",\"fresh\":12,\"cw\":1000,\"cr\":40000,\"out\":700,\"ctx\":41012,\"n\":1,\"usd\":[0.00006000000000000001,0.0175,0.02,0.01],\"an\":0,\"aids\":[],\"t0\":1786843400,\"t1\":1786844600,\"parts\":[[1786844000,0.047560000000000005]],\"tools\":[[1786844000,1786844600]],\"waits\":[],\"am\":0,\"at\":0,\"pid\":\"p-fork\",\"tidx\":null,\"la\":0,\"lr\":0,\"eta\":[],\"dur\":null,\"compact\":null}}}"
+}

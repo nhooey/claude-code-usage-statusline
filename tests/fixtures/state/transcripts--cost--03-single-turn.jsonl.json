@@ -1,0 +1,8 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/transcripts/cost/03-single-turn.jsonl",
+ "parts": [
+  "[\"r\",\"req-f1\"]\n[\"p\",1786842660,0.0721]\n[\"S\",\"req-f1\"]\n"
+ ],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":415,\"first\":\"4dc6c974f17c9f82a6cd79ec264152f4820a8d0c045d55e233bacd8e546f6b50\",\"tail\":\"4dc6c974f17c9f82a6cd79ec264152f4820a8d0c045d55e233bacd8e546f6b50\",\"counts\":[3],\"tr\":{\"fresh\":20,\"cwrite\":5000,\"cread\":12000,\"down\":640,\"parts\":[],\"compacting\":null,\"opener\":[\"2026-08-16T01:10:00Z\",\"The only thing anyone said.\",1],\"own_est\":false,\"ctx\":17020,\"first_ctx\":17020,\"ctx_est\":false,\"user_ts\":\"2026-08-16T01:10:00Z\",\"user_text\":\"The only thing anyone said.\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1786842600,\"open_at\":1786842600,\"prev\":1786842660,\"eta\":[[],false,1786842660,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1786842660,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":{\"ts\":\"2026-08-16T01:10:00Z\",\"text\":\"The only thing anyone said.\",\"fresh\":20,\"cw\":5000,\"cr\":12000,\"out\":640,\"ctx\":17020,\"n\":1,\"usd\":[0.0001,0.016,0.006,0.05],\"an\":0,\"aids\":[],\"t0\":1786842600,\"t1\":1786842660,\"parts\":[[1786842660,0.0721]],\"tools\":[],\"waits\":[],\"am\":0,\"at\":0,\"pid\":\"\",\"tidx\":null,\"la\":0,\"lr\":0,\"eta\":[],\"dur\":null,\"compact\":null}}}"
+}

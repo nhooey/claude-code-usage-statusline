@@ -33,6 +33,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 from coding_agent_usage_line import claude_records as cr  # noqa: E402
+from coding_agent_usage_line import main_fold as mf  # noqa: E402
 
 
 def records_of(data: bytes):
@@ -87,11 +88,19 @@ def check(path, rng):
     for k in at:
         fold_all(records[done:k], f)
         done = k
-        finish(f, path)
+        here = finish(f, path)
+        # Saved as text and read back, as a reload reads it.
+        f = round_trip(f)
+        if f is None:
+            broke.append("not read back at record %d" % k)
+            return broke, len(records), 0, len(at), None
+        if finish(f, path) != here:
+            broke.append("read back otherwise at record %d" % k)
     fold_all(records[done:], f)
     if finish(f, path) != whole:
         broke.append("read on from %d breaks" % len(at))
-    nl =data.rfind(b"\n", 0, rng.randint(1, max(1, len(data))))
+    size = state_size(f)
+    nl = data.rfind(b"\n", 0, rng.randint(1, max(1, len(data))))
     if nl > 0:
         start = data.rfind(b"\n", 0, nl) + 1
         cut = start + (nl - start) // 2
@@ -105,7 +114,36 @@ def check(path, rng):
         fold_all(records_of(data[start:]), f)
         if finish(f, path) != whole:
             broke.append("completed after byte %d" % cut)
-    return broke, len(records), sum(map(cr.is_compaction, records)), len(at)
+    return (broke, len(records), sum(map(cr.is_compaction, records)),
+            len(at), size)
+
+
+def _main_fold(f):
+    m = mf.MainFold()
+    m.tr, m.tu = f
+    return m
+
+
+# What a round trip's head says of the transcript, which no check reads.
+_META = {"offset": 0, "first": "", "tail": ""}
+
+
+def round_trip(f):
+    """`f` saved as a first save writes it and read back, or None."""
+    parts, head, slot, _mark = mf.fold_save(_main_fold(f), _META,
+                                            head_bytes=1 << 62)
+    files = {mf.part_name(i): t for i, t in parts}
+    files[slot] = head
+    got = mf.load(files.get)
+    return None if got is None else (got[0].tr, got[0].tu)
+
+
+def state_size(f):
+    """(parts, bytes of the parts, bytes of the head) of `f` saved."""
+    parts, head, _slot, _mark = mf.fold_save(_main_fold(f), _META,
+                                             head_bytes=1 << 62)
+    return (len(parts), sum(len(t.encode("utf-8")) for _, t in parts),
+            len(head.encode("utf-8")))
 
 
 def main(argv=None):
@@ -122,21 +160,26 @@ def main(argv=None):
     rng = random.Random(a.seed)
     bad = 0
     t0 = time.time()
-    total = 0
+    total = biggest = 0
     for path in files:
         t = time.time()
         size = os.path.getsize(path)
         total += size
-        broke, n, comp, nb = check(path, rng)
+        broke, n, comp, nb, saved = check(path, rng)
         bad += bool(broke)
-        print("%-4s %7.1f MB %7d records %3d compactions %3d breaks %6.1fs  %s%s"
+        state = ("%2d parts %6.2f MB + head %6.1f KB" % (
+            saved[0], saved[1] / 1e6, saved[2] / 1e3) if saved else "")
+        biggest = max(biggest, saved[1] + saved[2] if saved else 0)
+        print("%-4s %7.1f MB %7d records %3d compactions %3d breaks  %s"
+              "  %6.1fs  %s%s"
               % ("ok" if not broke else "FAIL", size / 1e6, n, comp, nb,
-                 time.time() - t, os.path.relpath(path, os.path.expanduser(
+                 state, time.time() - t,
+                 os.path.relpath(path, os.path.expanduser(
                      "~/.claude/projects")),
                  "" if not broke else "  (" + "; ".join(broke) + ")"),
               flush=True)
-    print("%d files, %.1f GB, %d broke, %.0fs"
-          % (len(files), total / 1e9, bad, time.time() - t0))
+    print("%d files, %.1f GB, %d broke, largest state %.2f MB, %.0fs"
+          % (len(files), total / 1e9, bad, biggest / 1e6, time.time() - t0))
     return min(bad, 255)
 
 

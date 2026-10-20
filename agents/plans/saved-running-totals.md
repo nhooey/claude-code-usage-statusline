@@ -313,6 +313,53 @@ Each step lands as its own commit, and the tests pass after each one.
    across the ports. The Python writes and the TypeScript reads on, then the
    other way, and both must give the same text. `tests/fixtures/state/` and
    the format check from "Keeping the format honest" land here.
+
+   **Status 2026-10-20: done.** As built:
+   - **`$.fs.write` can tear.** Claude Code 2.1.304's `write` makes the
+     directory, then calls `fs/promises.writeFile(path, text, "utf8")`,
+     which truncates and then writes. A Node loop rewriting a 3 MB file
+     while another read it saw 1,820 torn reads out of 2,500 (0, 8,192,
+     65,536, 524,288 bytes...). So the head alternates between two slots,
+     `head-a.cache` and `head-b.cache`, each with a `seq`. A reader tries
+     the higher `seq` first and falls back to the other slot. A part
+     rewritten mid-read leaves a head whose counts it cannot meet, which
+     also falls back to the other slot, and then to a fold from the start.
+   - `mod/src/main_fold.ts` and `coding_agent_usage_line/main_fold.py`
+     write the same bytes. The Python writes numbers as `JSON.stringify`
+     does (`js_num`), and escapes lone surrogates as it does; reading back,
+     it makes float fields floats and tuples tuples again. Entries are
+     arrays tagged by one letter: `r w e s t b p` for the status line's
+     fold and `S W E P T` for the turns'. Parts are counted in UTF-8 bytes,
+     at most `part_bytes` (1,000,000) each, so both ports split them alike.
+   - `spec/state.jsonc`'s `main-fold` row has format 1, `part_bytes` and
+     `check_bytes` (4,096). The files go in one directory,
+     `claude-main-fold-<sha(format\0path)>/`, which holds `head-a.cache`,
+     `head-b.cache` and `part-N.cache`: the contract's `statePath`, not the
+     `claude-main-fold/<sha(path)>/` the table above sketched.
+   - `tests/fixtures/state/` holds each of 40 fixture transcripts' saves,
+     written by `tests/fixtures/gen/state.py`. `tests/fold.py` and
+     `mod/test/main_fold.test.ts` check:
+     - each fixture saves as its text there, unless the format moved;
+     - the text read back at every line end reads on to that text, in
+       parts of 300 bytes too;
+     - the Python's state at every line end is the TypeScript's byte for
+       byte, and reads on in the TypeScript; the TypeScript's reads on in
+       the Python (`python3 -m coding_agent_usage_line.main_fold every` and
+       `readon`);
+     - saves as the fold grows, as the mod makes them, and the slot before
+       a torn head.
+   - `check-folds` now also saves the fold as text at each break, reads it
+     back and reads on. Measured, both ports alike:
+
+     | Transcript | Records | Parts | Parts' bytes | Head |
+     |---|---|---|---|---|
+     | 221 MB | 24,962 | 2 | 1.21 MB | 3.2 KB |
+     | 206 MB | 75,365 | 4 | 3.78 MB | 6.1 KB |
+     | 165 MB (this repo) | 30,953 | 1 | 0.99 MB | 21.5 KB |
+     | 156 MB | 72,908 | 7 | 6.78 MB | 8.6 KB |
+
+     The estimate was low: the closed turns are 5.1 MB of the 156 MB
+     transcript's 6.8, since each keeps its parts, tools and waits.
 5. **The mod folds as it reads.** `recordsOf` becomes `foldOf`. It keeps the
    state in memory between documents and folds only the lines after its
    offset. `statusDoc` and `turnsNow` call the finishes. With nothing saved

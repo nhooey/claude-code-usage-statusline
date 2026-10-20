@@ -24,6 +24,7 @@ import receipt  # noqa: E402
 import records  # noqa: E402
 import render  # noqa: E402
 import sources  # noqa: E402
+import state  # noqa: E402
 import status  # noqa: E402
 
 # Written whole each time, so a fixture whose generator entry is gone does
@@ -46,6 +47,8 @@ receipt.main()
 # run-cases.py's.
 claude.main()
 records.main()
+# After records.main(), which writes the hand-made transcripts it saves.
+state.main()
 # Last, since it sets TZ for the process.  Under /usr/bin/python3: its
 # expected epochs are 3.9's fromisoformat, quirks included.
 sources.main()

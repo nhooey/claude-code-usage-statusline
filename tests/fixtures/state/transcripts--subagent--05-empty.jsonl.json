@@ -1,0 +1,6 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/transcripts/subagent/05-empty.jsonl",
+ "parts": [],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":133,\"first\":\"a25aa761829bc36b175c7ff6ef91935bb58bda3b01d6f80b24136c9ca7cd12ec\",\"tail\":\"a25aa761829bc36b175c7ff6ef91935bb58bda3b01d6f80b24136c9ca7cd12ec\",\"counts\":[],\"tr\":{\"fresh\":0,\"cwrite\":0,\"cread\":0,\"down\":0,\"parts\":[],\"compacting\":null,\"opener\":[\"2026-08-16T00:43:20Z\",\"go\",0],\"own_est\":false,\"ctx\":0,\"first_ctx\":0,\"ctx_est\":false,\"user_ts\":\"2026-08-16T00:43:20Z\",\"user_text\":\"go\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1786841000,\"open_at\":1786841000,\"prev\":1786841000,\"eta\":[[],false,1786841000,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1786841000,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":{\"ts\":\"2026-08-16T00:43:20Z\",\"text\":\"go\",\"fresh\":0,\"cw\":0,\"cr\":0,\"out\":0,\"ctx\":0,\"n\":0,\"usd\":[0,0,0,0],\"an\":0,\"aids\":[],\"t0\":1786841000,\"t1\":null,\"parts\":[],\"tools\":[],\"waits\":[],\"am\":0,\"at\":0,\"pid\":\"\",\"tidx\":null,\"la\":0,\"lr\":0,\"eta\":[],\"dur\":null,\"compact\":null}}}"
+}

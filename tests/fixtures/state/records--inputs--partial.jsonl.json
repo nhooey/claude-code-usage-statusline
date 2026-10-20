@@ -1,0 +1,6 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/records/inputs/partial.jsonl",
+ "parts": [],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":18,\"first\":\"b77a0d61ef969126f11d9dcd1a4f5def1ba74186d63b06a0eff5d5167d5f56a9\",\"tail\":\"b77a0d61ef969126f11d9dcd1a4f5def1ba74186d63b06a0eff5d5167d5f56a9\",\"counts\":[],\"tr\":{\"fresh\":0,\"cwrite\":0,\"cread\":0,\"down\":0,\"parts\":[],\"compacting\":null,\"opener\":null,\"own_est\":false,\"ctx\":0,\"first_ctx\":0,\"ctx_est\":false,\"user_ts\":\"\",\"user_text\":\"\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":null,\"open_at\":null,\"prev\":null,\"eta\":[[],false,null,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":0,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":null}}"
+}

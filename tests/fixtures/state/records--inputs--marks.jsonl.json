@@ -1,0 +1,6 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/records/inputs/marks.jsonl",
+ "parts": [],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":221,\"first\":\"2ea96f421237568539cf2c6f71e3cc739f540a330e3f4a7bf6c5911f23d23447\",\"tail\":\"2ea96f421237568539cf2c6f71e3cc739f540a330e3f4a7bf6c5911f23d23447\",\"counts\":[],\"tr\":{\"fresh\":0,\"cwrite\":0,\"cread\":0,\"down\":0,\"parts\":[],\"compacting\":null,\"opener\":null,\"own_est\":false,\"ctx\":0,\"first_ctx\":0,\"ctx_est\":false,\"user_ts\":\"\",\"user_text\":\"\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1787000001,\"open_at\":null,\"prev\":null,\"eta\":[[],false,1787000002,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1787000002,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":null}}"
+}

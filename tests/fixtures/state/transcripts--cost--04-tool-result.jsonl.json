@@ -1,0 +1,8 @@
+{
+ "format": 1,
+ "transcript": "tests/fixtures/transcripts/cost/04-tool-result.jsonl",
+ "parts": [
+  "[\"r\",\"req-g1\"]\n[\"t\",1786842660,1786842840]\n[\"p\",1786842660,0.042785000000000004]\n[\"S\",\"req-g1\"]\n"
+ ],
+ "head": "{\"format\":1,\"seq\":1,\"offset\":662,\"first\":\"a1a5b8f18c80caddd6f7a12afed234f414986296044d23304a942a55d569f1e1\",\"tail\":\"a1a5b8f18c80caddd6f7a12afed234f414986296044d23304a942a55d569f1e1\",\"counts\":[4],\"tr\":{\"fresh\":7,\"cwrite\":1500,\"cread\":33000,\"down\":450,\"parts\":[],\"compacting\":null,\"opener\":[\"2026-08-16T01:10:00Z\",\"Run the probe and tell me what it said.\",1],\"own_est\":false,\"ctx\":34507,\"first_ctx\":34507,\"ctx_est\":false,\"user_ts\":\"2026-08-16T01:10:00Z\",\"user_text\":\"Run the probe and tell me what it said.\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1786842600,\"open_at\":1786842600,\"prev\":1786842840,\"eta\":[[],false,1786842840,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1786842840,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":{\"ts\":\"2026-08-16T01:10:00Z\",\"text\":\"Run the probe and tell me what it said.\",\"fresh\":7,\"cw\":1500,\"cr\":33000,\"out\":450,\"ctx\":34507,\"n\":1,\"usd\":[0.000035000000000000004,0.011250000000000001,0.0165,0.015000000000000001],\"an\":0,\"aids\":[],\"t0\":1786842600,\"t1\":1786842840,\"parts\":[[1786842660,0.042785000000000004]],\"tools\":[[1786842660,1786842840]],\"waits\":[],\"am\":0,\"at\":0,\"pid\":\"\",\"tidx\":null,\"la\":0,\"lr\":0,\"eta\":[],\"dur\":null,\"compact\":null}}}"
+}
