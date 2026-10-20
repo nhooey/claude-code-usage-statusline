@@ -2606,10 +2606,11 @@ def render_subagent(prepared_tasks, cols: Optional[int], lim: Limits,
     return "".join(line + "\n" for line in out)
 
 
-def emit_source_diagnose(spec: str, prepared, check: str = "") -> None:
+def emit_source_diagnose(spec: str, prepared, check: str = "",
+                         warnings: int = 0) -> None:
     """Emit redacted collector state without contaminating hook stdout.
     `check` is _cost_check's figures, appended where a status render has
-    them."""
+    them; `warnings` the config files' count, said when there are any."""
     reading = prepared.reading if prepared is not None else {}
     source = str((reading.get("source") if isinstance(reading, dict) else "")
                  or spec or "auto")
@@ -2621,7 +2622,7 @@ def emit_source_diagnose(spec: str, prepared, check: str = "") -> None:
                       bool(reading.get("stale")) if isinstance(reading, dict) else False,
                       reading.get("as_of", "") if isinstance(reading, dict) else "",
                       reading.get("retry_at", "") if isinstance(reading, dict) else "",
-                      check))
+                      check + (" config_warnings=%d" % warnings if warnings else "")))
 
 
 def _cost_check(pay: Payload, session: Optional[dict]) -> str:
@@ -2677,7 +2678,8 @@ def main_subagent(options: Options, raw: str) -> int:
     lim = prepared.limits if prepared.reading else NO_LIMITS
     seed_limits_snapshot(lim, prepared.reading)
     if options["diagnose"]:
-        emit_source_diagnose(source_spec, prepared)
+        emit_source_diagnose(source_spec, prepared,
+                             warnings=len(options.warnings))
     # Panel stdout is JSONL task rows only; account scope is intentionally not
     # appended here because it would be mistaken for a panel task.
     now = frozen_now()
@@ -2998,7 +3000,8 @@ def status_figures(options: Options, raw: str) -> dict:
     lim, cache, extra = _with_shares(base_limits, pay.transcript, agents, tr)
     if options["diagnose"]:
         emit_source_diagnose(source_spec, prepared,
-                             _cost_check(pay, extra["accounting"]["session"]))
+                             _cost_check(pay, extra["accounting"]["session"]),
+                             len(options.warnings))
     ctx_window = ctx_window_for(pay.ctx_window, pay.model + pay.model_id)
     publish_ctx_window(pay.session_id, ctx_window)
     tokens = None if tr.tok_up is None else tr.tok_up + tr.tok_down
@@ -3163,10 +3166,11 @@ def _cost_opts(options: Options, session_id: str = "") -> CostOpts:
     # are the part that reads identically every turn, which is what makes
     # them the half worth being able to switch off.
     words = options["usage-text"]
-    label = options["label"]
     return CostOpts(
         prefix=options["prefix"],
-        label=label if label is not None else (C_LABEL if words else E_ROW_PROMPT),
+        # Derived from usage-text when no layer sets it: C_LABEL or the bare
+        # E_ROW_PROMPT.
+        label=options["label"],
         totals_label=C_TOTALS_LABEL if words else E_ROW_TOTAL,
         compact_label=C_COMPACT_LABEL if words else E_ROW_COMPACT,
         agents_label=C_AGENTS_LABEL if words else E_ROW_AGENTS,
@@ -3255,7 +3259,8 @@ def main_cost(options: Options, raw: str) -> int:
             source_spec, account, period,
             {"session": opts.session_id}, frozen_now())
         if options["diagnose"]:
-            emit_source_diagnose(source_spec, prepared)
+            emit_source_diagnose(source_spec, prepared,
+                                 warnings=len(options.warnings))
         seed_limits_snapshot(prepared.limits if prepared.reading else NO_LIMITS,
                              prepared.reading)
         # The wait belongs to the LIVE hook alone.  `--transcript` names a
@@ -3379,7 +3384,7 @@ options (all modes):
                      payload carries none.  Claude Code's figures are always
                      preferred and this is never consulted while they are
                      there.  Default "auto"; also settable as
-                     CODING_AGENT_USAGE_LINE_USAGE_SOURCE.
+                     "usage-source" in a config file (docs/options.md).
                        auto      native payload, then the managed tracker
                        none      do not refresh an external provider
                        claude-usage-tracker
@@ -3419,8 +3424,9 @@ options (--mode cost):
 """
 
 
-def main(options: Options) -> int:
-    """The Claude adapter, under the merged options cli.main built."""
+def main(options: Options, raw: Optional[str] = None) -> int:
+    """The Claude adapter, under the merged options cli.main built, and the
+    stdin it read for them; None to read it here."""
     # --selftest must be checked BEFORE reading stdin: a live invocation
     # supplies a payload and a self-test does not, so reading first would block
     # forever.
@@ -3447,14 +3453,16 @@ def main(options: Options) -> int:
     explicit_transcript = bool(options["transcript"])
     if mode == "cost":
         try:
-            raw = "" if explicit_transcript else sys.stdin.read()
+            if raw is None:
+                raw = "" if explicit_transcript else sys.stdin.read()
         except Exception:
             print("{}")
             return 0
         return main_cost(options, raw)
     if mode == "subagent":
         try:
-            raw = sys.stdin.read()
+            if raw is None:
+                raw = sys.stdin.read()
         except Exception:
             return 0
         return main_subagent(options, raw)
@@ -3463,7 +3471,8 @@ def main(options: Options) -> int:
         sys.stdout.write(USAGE)
         return 2
     try:
-        raw = "" if explicit_transcript else sys.stdin.read()
+        if raw is None:
+            raw = "" if explicit_transcript else sys.stdin.read()
     except Exception:
         raw = ""
     return main_status(options, raw)

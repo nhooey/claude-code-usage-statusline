@@ -4,9 +4,10 @@ import os
 import sys
 import textwrap
 
+from . import config
 from .codex import native_quota, parse_jsonl, read_request_tree, root_context, rollout_identity
-from .codex import origin_turn
-from .options import from_flags, parse
+from .codex import origin_turn, rollout_cwd
+from .options import LAYERS, flag_values, from_flags, merge, parse
 from .options_spec import OPTIONS
 from .render import account_summary, clean_text, codex_report, codex_stop_report, codex_summary
 from .sources import collect, period_bounds, validate_source
@@ -129,6 +130,7 @@ def _emit_codex_diagnose(options, reading, coverage, reason=""):
                coverage.get("child_threads", 0), coverage.get("child_coverage", "unknown"),
                coverage.get("ambiguous_legacy_records", 0)))
     if reason: fields += " reason=" + clean_text(reason, 48)
+    if options.warnings: fields += " config_warnings=%d" % len(options.warnings)
     sys.stderr.write(fields + "\n")
 
 
@@ -233,6 +235,88 @@ def codex_main(options, raw):
         return 0
 
 
+def _payload_start(agent, mode, raw, transcript):
+    """Where this run's project walk starts: the payload's directory, a
+    Codex rollout's, else the process's (config-merge.md, "Finding the
+    root")."""
+    payload = _safe_payload(raw)
+    rollout = None
+    if agent == "codex" and not payload.get("cwd"):
+        path = transcript or payload.get("transcript_path") or payload.get("rollout_path")
+        rollout = rollout_cwd(path) if isinstance(path, str) and path else None
+    return config.start_dir(agent, mode, payload, rollout)
+
+
+def _merged(flags, found, agent=None, ports=("py",)):
+    """The flags over the files `found`, with the files' warnings and the
+    merge's own: a usage-source a file gives that this agent (any agent,
+    for None) cannot read is skipped, as any bad value is, and a flag that overrides a file's value
+    for an option the mod reads too is said (Decided 1), since the band
+    then draws the file's."""
+    files, warnings = list(found.layers), list(found.warnings)
+    while True:
+        options = merge(flags, files, ports, warnings)
+        layer = options.layer("usage-source")
+        if layer not in config.FILE_LAYERS:
+            break
+        try:
+            validate_source(agent, options["usage-source"])
+            break
+        except ValueError:
+            bad = next(f for f in files if f.name == layer)
+            warnings.append("%s: \"usage-source\" %s is no source %s reads; "
+                            "skipped" % (bad.path, json.dumps(
+                                options["usage-source"], ensure_ascii=False),
+                                agent or "any agent"))
+            files = [f if f is not bad else f._replace(values={
+                k: v for k, v in f.values.items() if k != "usage-source"})
+                for f in files]
+    for name in flags:
+        option = OPTIONS[name]
+        if "mod" not in option["ports"]:
+            continue
+        setter = next((f for f in files if name in f.values), None)
+        if setter is not None:
+            warnings.append("%s: %s on the command line overrides its %s here, "
+                            "which the mod reads" % (setter.path, option["flag"],
+                                                     json.dumps(name)))
+    return merge(flags, files, ports, warnings)
+
+
+def _show_config(found, options):
+    """--show-config's text: where each layer is, every option a file may
+    set with its value and layer, and the files' warnings."""
+    out = ["Configuration, read from %s:" % found.start]
+    where = {"flag": "the command line", "default": "spec/options.jsonc"}
+    for layer in LAYERS:
+        path = where.get(layer) or found.paths.get(layer)
+        if path is None:
+            path = "none: no project file between here and the walk's end"
+        elif layer in config.FILE_LAYERS and not os.path.isfile(path):
+            path += " (none)"
+        out.append("  %-14s %s" % (layer, path))
+    out += ["", "%-30s %-14s %s" % ("option", "layer", "value")]
+    for name, option in OPTIONS.items():
+        if not option["file"]:
+            continue
+        if option["type"] == "table":
+            for row, rec in options[name].items():
+                for field, value in rec.items():
+                    out.append("%-30s %-14s %s" % (
+                        "%s.%s.%s" % (name, row, field),
+                        options.field_layer(name, row, field),
+                        json.dumps(value, ensure_ascii=False)))
+            continue
+        value = options[name]
+        out.append("%-30s %-14s %s" % (
+            name, options.layer(name),
+            json.dumps(list(value) if isinstance(value, tuple) else value,
+                       ensure_ascii=False)))
+    if options.warnings:
+        out += ["", "Warnings:"] + ["  " + w for w in options.warnings]
+    return "\n".join(out) + "\n"
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if "-h" in argv or "--help" in argv:
@@ -250,6 +334,11 @@ def main(argv=None):
     # The last of each value flag, as written, for the checks below.
     written = dict(parsed)
     agent = written.get("--agent")
+    if "--show-config" in written:
+        # No payload: the walk starts where the command runs.
+        found = config.load(os.getcwd())
+        options = _merged(flag_values(parsed), found, agent, ("py", "mod"))
+        sys.stdout.write(_show_config(found, options)); return 0
     if agent not in ("claude", "codex"):
         sys.stderr.write("--agent claude|codex is required\n"); return 2
     mode = written.get("--mode", "status")
@@ -262,21 +351,33 @@ def main(argv=None):
         if "--right-edge" in written:
             edge = int(written["--right-edge"])
             if edge < 0: raise ValueError("--right-edge must be a non-negative integer")
-        options = from_flags(parsed)
-        validate_source(agent, options["usage-source"])
-        period_bounds(options["account-period"])
+        flagged = from_flags(parsed)
+        validate_source(agent, flagged["usage-source"])
+        period_bounds(flagged["account-period"])
     except ValueError as exc:
         sys.stderr.write(str(exc) + "\n"); return 2
     if agent == "codex" and mode == "subagent":
         sys.stderr.write("Codex has no subagent-panel hook; use --mode cost --all for child reports.\n")
         return 2
+    # Stdin before the files: the payload says where the project is.  A
+    # named transcript or figures document is a complete offline input, so
+    # it never waits on a still-open pipe; the panel always has a payload.
+    transcript = written.get("--transcript")
+    if agent == "claude" and "--from-figures" in written:
+        offline = True
+    else:
+        offline = mode != "subagent" and bool(transcript)
+    raw = ""
+    if not offline:
+        try: raw = sys.stdin.read()
+        except Exception: raw = ""
+    found = config.load(_payload_start(agent, mode, raw, transcript))
+    options = _merged(flag_values(parsed), found, agent)
+    for warning in options.warnings:
+        sys.stderr.write(warning + "\n")
     if agent == "claude":
         # Do not initialize Claude-specific cache/display state in a Codex
         # invocation; selection was validated above.
         from . import claude
-        return claude.main(options)
-    raw = ""
-    if not options.given("transcript"):
-        try: raw = sys.stdin.read()
-        except Exception: raw = ""
+        return claude.main(options, raw)
     return codex_main(options, raw)

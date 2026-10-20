@@ -159,6 +159,9 @@ def task(tid, **kw):
     return t
 
 
+SOURCE = "auto"      # main sets the fixture source
+
+
 def render(sl, payload, argv=()):
     """Run main_subagent the way the panel does, and hand back the rows as
     {id: stripped content}."""
@@ -167,7 +170,8 @@ def render(sl, payload, argv=()):
     old = sys.stdout
     sys.stdout = buf
     try:
-        rc = sl.main_subagent(sl.from_argv(argv), json.dumps(payload))
+        rc = sl.main_subagent(sl.from_argv(("--usage-source", SOURCE) + tuple(argv)),
+                              json.dumps(payload))
     finally:
         sys.stdout = old
     rows = {}
@@ -210,7 +214,10 @@ def run(tmp):
         fh.write("#!/bin/sh\nprintf '%%s\\n' '%s'\n" %
                  (json.dumps(fixture, separators=(",", ":"))))
     os.chmod(fixture_source, 0o700)
-    os.environ["CODING_AGENT_USAGE_LINE_USAGE_SOURCE"] = "cmd:" + fixture_source
+    # Every render reads it, as the panel's --usage-source; render's own
+    # argv comes after, so a case may name another.
+    global SOURCE
+    SOURCE = "cmd:" + fixture_source
     os.environ.pop("CLAUDE_USAGE_SOURCE", None)
     os.environ["TMPDIR"] = tmp          # isolate subprocess scratch files too
     os.environ.pop("TMUX", None)

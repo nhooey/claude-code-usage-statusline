@@ -58,6 +58,7 @@ that is not the payload; a golden is only as reproducible as this list.
 | `TMPDIR` and `CODING_AGENT_USAGE_LINE_STATE_DIR` in a fresh scratch directory | context, rate samples and source caches written by one case leak into the next, or into your real state |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE`, planted as `{"sess": 5.50, "week": 4.10}` | the window shares depend on your own history |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST`, a fixture Claude Usage Tracker store | `auto` could read the tracker app installed on this machine |
+| `CODING_AGENT_USAGE_LINE_CONFIG_DIR`, a scratch directory whose `config.jsonc` gives the environment's usage source, and `CODING_AGENT_USAGE_LINE_PROJECT_DIR`, the case's repository | your own config files, user-global or above a payload's directory, would change what every case draws |
 | an environment's `source`, served as a `cmd:` usage source with a fixed `as_of`, one command per environment | the plan percentages come from whatever source the host has |
 | `TERMINAL_EMULATOR=JetBrains-JediTerm`, `TMUX` and `TERM_PROGRAM` unset | the width profile depends on the terminal that ran the suite |
 | a clean fixture repo (branch `golden-clean`) and a dirty one (`golden-dirty`) as the working directory | 🌿, 💾 and the project name record your checkout |
@@ -459,6 +460,10 @@ These pin values rather than rows, so they assert instead of comparing files.
   fake transports.
 - **`codex.py`, `port-cli.py`** — Codex rollout accounting, and the public CLI
   run as a subprocess against temporary homes.
+- **`config.py`** — the configuration files: the shared cases in
+  `fixtures/config/cases.json`, which `fixtures/gen/config.py` writes and the
+  mod's port runs too, `--show-config`, and a check that files planted
+  wherever a developer's own could be change no golden.
 - **`formatting.py`, `claude-subagent-render.py`** — pure helpers, no I/O.
 - **`py39-floor.sh`** — `py_compile` over every file under 3.9 (catches
   syntax), then one render per mode under 3.9 (catches a name 3.9 lacks). It

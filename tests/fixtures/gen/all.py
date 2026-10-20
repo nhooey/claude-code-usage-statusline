@@ -15,6 +15,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 import calib  # noqa: E402
+import config  # noqa: E402
 import claude  # noqa: E402
 import cases  # noqa: E402
 import cost  # noqa: E402
@@ -37,6 +38,7 @@ panel.main(ROOT)
 cases.main(ROOT)
 # Under 3.9 as well: 3.12's sum() of floats rounds differently.
 calib.main()
+config.main()
 formatting.main()
 render.main()
 # After cases.json, whose subagent cases it runs to capture the corpus.

@@ -292,9 +292,12 @@ export const OPTIONS = {
     "type": "string",
     "metavar": "TEXT",
     "default": null,
+    // The words padded to the widest row label's ("Usage: Session
+    // (total)"), as formatting.C_LABEL is, so the rows' labels end in one
+    // column.
     "derived": {
       "from": "usage-text",
-      "map": {"true": "🎤 Usage: Prompt (last)", "false": "🎤"},
+      "map": {"true": "🎤 Usage: Prompt (last)  ", "false": "🎤"},
     },
     "ports": ["py"],
     "file": true,
@@ -327,6 +330,16 @@ export const OPTIONS = {
     "usage": "Print this usage and exit.",
     "doc": "Print the usage and exit.",
   },
+  "show-config": {
+    "type": "bool",
+    "default": false,
+    "ports": ["py"],
+    "file": false,
+    "flag": "--show-config",
+    "doc-table": null,
+    "usage": "Print the merged options, each with the layer and file it came from, and exit.",
+    "doc": "Print the merged options, each with the layer it came from and that layer's file, and any warning the files gave, and exit. See [Configuration files](#configuration-files).",
+  },
 
   // ── The mod's, set in files only ─────────────────────────────────────
   // Where the mod draws its live rows: under Claude Code's footer line
@@ -355,7 +368,9 @@ export const OPTIONS = {
       //   "always"  — drawn while a turn runs, and kept after
       "live": {"type": "enum", "items": ["never", "running", "always"]},
       // Stamped into the transcript when the turn ends.
-      "transcript": {"type": "bool"},
+      // `fixed`: the rows whose value is the default's, whatever a
+      // file says; a file that sets another is warned about (Decided 16).
+      "transcript": {"type": "bool", "fixed": ["account"]},
     },
     "default": {
       // 🎤 shown while a turn runs, then left to the transcript's

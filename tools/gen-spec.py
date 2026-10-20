@@ -551,6 +551,12 @@ def check_options(opts):
         if t == "table":
             if not isinstance(o["default"], dict) or not o["default"]:
                 bad(name, "a table's default names its rows")
+            for k, ft in o["fields"].items():
+                if set(ft) - {"type", "items", "fixed"}:
+                    bad(name, "field %r has more than type, items, fixed"
+                        % k)
+                if set(ft.get("fixed", ())) - set(o["default"]):
+                    bad(name, "field %r fixes a row the table has not" % k)
             for row, rec in o["default"].items():
                 if set(rec) != set(o["fields"]):
                     bad(name, "row %r has other fields than the table's"

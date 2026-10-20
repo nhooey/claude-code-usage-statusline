@@ -13,8 +13,10 @@ the status-line payload, and Codex records them in its rollout. The default,
 ```sh
 --usage-source auto                         # the default
 --usage-source cmd:/path/to/your-reader     # your own program
-CODING_AGENT_USAGE_LINE_USAGE_SOURCE=native # as an environment default; the flag wins
 ```
+
+or `"usage-source": "native"` in a [configuration file](options.md#configuration-files),
+which the flag overrides.
 
 ## Sources
 

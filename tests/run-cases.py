@@ -123,7 +123,6 @@ class Suite:
                 os.path.join(self.tmp, "calib.json"),
             "CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST":
                 os.path.join(self.tmp, "tracker.plist"),
-            "CODING_AGENT_USAGE_LINE_USAGE_SOURCE": "auto",
             # Never this machine's config: the native reading would carry
             # its signed-in account.
             "CLAUDE_CONFIG_DIR": os.path.join(self.tmp, "claude-config"),
@@ -146,7 +145,18 @@ class Suite:
                     fh.write("#!/bin/sh\nprintf '%%s\\n' '%s'\n"
                              % json.dumps(e["source"], separators=(",", ":")))
                 os.chmod(cmd, 0o700)
-            env["CODING_AGENT_USAGE_LINE_USAGE_SOURCE"] = "cmd:" + cmd
+        # The usage source goes in the case's user-global config file, and
+        # the project walk starts in the case's repository, whose .git
+        # stops it: no golden reads this machine's own config files,
+        # whatever the payload's directory or the developer's environment.
+        source = "auto" if e["source"] is None else "cmd:" + cmd
+        config = os.path.join(self.tmp, "config-" + name)
+        if not os.path.exists(config):
+            os.makedirs(config)
+            with open(os.path.join(config, "config.jsonc"), "w") as fh:
+                json.dump({"usage-source": source}, fh)
+        env["CODING_AGENT_USAGE_LINE_CONFIG_DIR"] = config
+        env["CODING_AGENT_USAGE_LINE_PROJECT_DIR"] = self.repos[e["repo"]]
         return env, self.repos[e["repo"]]
 
 

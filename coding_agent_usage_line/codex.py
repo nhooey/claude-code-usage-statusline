@@ -127,6 +127,25 @@ def _metadata(records, fallback_session=""):
     return threads, contexts, parents
 
 
+def rollout_cwd(path, lines=64):
+    """The working directory a rollout's session_meta records, or "": read
+    from the head of the file alone, since the record opens it."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as stream:
+            for _ in range(lines):
+                line = stream.readline()
+                if not line: break
+                try: record = json.loads(line)
+                except ValueError: continue
+                if not isinstance(record, dict): continue
+                if _text(_get(record, "type", "record_type", "kind")) == "session_meta":
+                    cwd = _payload(record).get("cwd")
+                    return cwd if isinstance(cwd, str) else ""
+    except OSError:
+        pass
+    return ""
+
+
 def rollout_identity(records, turn_id=""):
     """Read only stable identity/configuration metadata from one rollout."""
     threads, contexts, _ = _metadata(records)

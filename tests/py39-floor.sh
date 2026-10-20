@@ -58,8 +58,13 @@ trap 'rm -rf "$tmp"' EXIT
 : > "$tmp/t.jsonl"
 export CODING_AGENT_USAGE_LINE_STATE_DIR="$tmp/state"
 export CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR="$tmp/projects"
-export CODING_AGENT_USAGE_LINE_USAGE_SOURCE=native
 export CODEX_HOME="$tmp/codex"
+# The usage source from a config file, so its reading runs under 3.9 too;
+# the .git ends the project walk in $tmp, where the payloads' cwd is.
+export CODING_AGENT_USAGE_LINE_CONFIG_DIR="$tmp/config"
+mkdir -p "$tmp/config" "$tmp/.git"
+printf '{\n  // native: the payload'"'"'s figures alone\n  "usage-source": "native",\n}\n' \
+    > "$tmp/config/config.jsonc"
 
 status_payload() {
     printf '{"session_id":"py39","transcript_path":"%s","cwd":"%s",' \
@@ -91,6 +96,13 @@ if out=$("$PY" "$PROG" --agent codex --mode cost --transcript "$tmp/t.jsonl" \
     ok "render Codex cost"
 else
     bad "render Codex cost" "$out"
+fi
+
+if out=$(cd "$tmp" && "$PY" "$PROG" --show-config 2>&1) && \
+   printf '%s\n' "$out" | grep -q '^usage-source  *user  *"native"$'; then
+    ok "show-config"
+else
+    bad "show-config" "$out"
 fi
 
 if out=$("$PY" "$PROG" --agent codex --mode subagent --usage-source native 2>&1); then

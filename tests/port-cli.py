@@ -42,7 +42,13 @@ class PublicPortTests(unittest.TestCase):
         self.env.update({"CODEX_HOME": str(self.home),
                          "CODING_AGENT_USAGE_LINE_STATE_DIR": str(self.home / "state"),
                          "CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR": str(self.home / "projects"),
-                         "CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE": str(self.home / "calibration.json")})
+                         "CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE": str(self.home / "calibration.json"),
+                         # Never this machine's config files: an empty
+                         # user directory, and a .git that ends the project
+                         # walk where every run here starts.
+                         "CODING_AGENT_USAGE_LINE_CONFIG_DIR": str(self.home / "config"),
+                         "CODING_AGENT_USAGE_LINE_PROJECT_DIR": str(self.home)})
+        (self.home / ".git").mkdir()
         self.path = self.home / "root.jsonl"
         self.root_request = request("root", "turn-one", "root-one", 100, 20)
         self.write(self.path, [
@@ -367,7 +373,8 @@ class PublicPortTests(unittest.TestCase):
         value = {"--agent", "--mode", "--transcript", "--usage-source", "--account",
                  "--account-period", "--cols", "--prefix", "--label",
                  "--from-figures", "--hide", "--right-edge"}
-        common = value | {"--all", "--diagnose", "--selftest", "-h", "--help"}
+        common = value | {"--all", "--diagnose", "--selftest", "-h", "--help",
+                          "--show-config"}
         claude = common | {"--subscript-decimals", "--no-mark-spacing", "--mark-spacing",
             "--no-column-rules", "--column-rules", "--color", "--no-totals",
             "--no-right-align", "--no-account-totals", "--no-datetime",
@@ -424,20 +431,23 @@ class PublicPortTests(unittest.TestCase):
             from coding_agent_usage_line.options import from_argv
         finally:
             sys.path.remove(str(ROOT))
-        plain = from_argv([], environ={})
+        plain = from_argv([])
         self.assertEqual((plain["totals"], plain.layer("totals")), (True, "default"))
         self.assertEqual((plain["cols"], plain["hide"], plain["usage-source"]),
                          (None, (), "auto"))
         self.assertNotIn("rows", plain)
         given = from_argv(["--hide", "a", "--cols", "80", "--totals", "--no-totals",
                            "--no-column-rules", "--column-rules", "--hide", "b",
-                           "--account", "x", "--account", "y", "-h"],
-                          environ={"CODING_AGENT_USAGE_LINE_USAGE_SOURCE": "none"})
+                           "--account", "x", "--account", "y", "-h",
+                           "--usage-source", "none"])
         self.assertEqual(given["hide"], ("a", "b"))
         self.assertEqual((given["cols"], given.layer("cols")), (80, "flag"))
         self.assertEqual((given["totals"], given["column-rules"]), (False, False))
         self.assertEqual((given["account"], given["help"]), ("y", True))
-        self.assertEqual((given["usage-source"], given.layer("usage-source")), ("none", "env"))
+        self.assertEqual((given["usage-source"], given.layer("usage-source")), ("none", "flag"))
+        self.assertEqual((plain["label"], plain.layer("label")),
+                         ("🎤 Usage: Prompt (last)  ", "derived"))
+        self.assertFalse(plain.given("label"))
         self.assertTrue(given.given("totals"))
         with self.assertRaises(TypeError):
             given["totals"] = True

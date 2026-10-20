@@ -22,7 +22,7 @@ for s in golden golden-cost py39-floor; do
   bash "tests/$s.sh" || { echo "FAIL: $s"; break; }
 done
 for t in usage-source sources-v1 source-cache http-sources app-server \
-         claude-sources codex formatting port-cli agents subagent \
+         claude-sources codex formatting port-cli config agents subagent \
          claude-subagent-render rate grid; do
   python3 "tests/$t.py" || { echo "FAIL: $t"; break; }
 done
@@ -55,6 +55,7 @@ the program and is not.
 | `python3 tests/codex.py` | Codex rollout accounting, child threads, Stop report state | `ok …` |
 | `python3 tests/formatting.py` | shared width and formatting helpers, display switches | `ok …` |
 | `python3 tests/port-cli.py` | the public CLI end to end, including held-open stdin and concurrent Stops | unittest `OK` (15 tests) |
+| `python3 tests/config.py` | the configuration files: the shared cases of `tests/fixtures/config/`, `--show-config`, a file and a flag agreeing, a bad file still drawing, and the goldens kept off this machine's own files | unittest `OK` (10 tests) |
 | `python3 tests/agents.py` | agent spend: reading agent files, folding them into turns, the 👥 row, the tool-time partition, the receipt's per-turn share of it with its agents', the cache of each agent file's reading, and the calibration scan's cache of each file's priced requests, and the main thread's open shells and Monitors, and the receipt's turn tag, and a running agent's row waiting for its end | `pass 88   fail 0` |
 | `python3 tests/fold.py` | the main transcript's folds broken anywhere: finished at every record, or with a half-written last line, each reads on as the whole fold; and saved as text, as `tests/fixtures/state/` holds it, read back at every line end and past a torn head | `pass 199   fail 0` |
 | `python3 tests/subagent.py` | the agent-panel rows: finding an agent's file, billing, window shares, nesting, the reported ETA and its inheritance, the inbox, silence, compactions, open shells and Monitors, API errors and worktree branch, a window share that never starts the calibration scan, row shape | `pass 117   fail 0` |

@@ -3,10 +3,11 @@
 ```
 coding-agent-usage-line.py --agent claude|codex [--mode status|cost|subagent] [options]
 coding-agent-usage-line.py --selftest
+coding-agent-usage-line.py --show-config
 ```
 
-`--agent` is required for every mode. Only `--help` and `--selftest` run
-without it. Flags are validated before stdin is read, so a malformed hook
+`--agent` is required for every mode. Only `--help`, `--selftest` and
+`--show-config` run without it. Flags are validated before stdin is read, so a malformed hook
 command fails at once (exit 2) instead of waiting for input.
 
 A bare invocation draws everything but the column rules. Every other Claude
@@ -21,6 +22,8 @@ display switch either removes something or changes spacing, so apart from
 | shorter cost-line labels | `--no-usage-text` |
 | see why a plan figure is blank | `--diagnose` |
 | change where plan figures come from | `--usage-source SPEC` — see [Usage sources](usage-sources.md) |
+| set an option for every hook, or for one project | a [configuration file](#configuration-files) |
+| see which file set what | `--show-config` |
 
 ## Modes
 
@@ -245,20 +248,91 @@ On an agent row:
 --hide '*.context.share'      🧠's ٪ everywhere, its column narrower
 ```
 
+## Configuration files
+
+Every option a file may set is in the tables above or in
+`spec/options.jsonc`, by its long flag's name without the `--`:
+`usage-source`, `hide`, `mark-spacing`, and `totals` for `--no-totals`. The
+mod reads the same files, so one `hide` list serves the band and the panel.
+
+A file is JSON with `//` comments and trailing commas allowed, an object of
+`name: value`:
+
+```jsonc
+{
+  "usage-source": "claude-usage-tracker",
+  "hide": ["*.work"],   // a list replaces the lower layers' whole
+  "mark-spacing": false,
+}
+```
+
+A setting comes from the first of these that has it:
+
+| Layer | Where |
+|---|---|
+| `flag` | the hook's command line |
+| `project-local` | `<root>/.config/coding-agent-usage-line/config.local.jsonc`: one person's, not committed |
+| `project` | `<root>/.config/coding-agent-usage-line/config.jsonc`: committed, for everyone |
+| `user` | `$CODING_AGENT_USAGE_LINE_CONFIG_DIR/config.jsonc`, else `$XDG_CONFIG_HOME/coding-agent-usage-line/config.jsonc`, else `~/.config/coding-agent-usage-line/config.jsonc` |
+| `default` | the program's own |
+
+The project `<root>` is found by walking up from the session's directory
+(the payload's `cwd`; the status line's `workspace.project_dir`; a Codex
+rollout's own when the payload has none; the working directory for
+`--transcript` by hand) to the first directory holding either project file.
+The walk stops at a `.git`, at `$HOME` and at `/`. A git worktree with no
+local file of its own reads its main checkout's.
+
+Lists replace and tables merge per field: a project that sets
+`rows.agent.transcript` keeps every other row from the layers under it.
+`label` follows `usage-text` when no layer sets it.
+
+Nothing in a file stops a run. A file that is not valid JSONC or not an
+object is skipped whole; an unknown key, a key that describes one run
+(`mode`, `cols`, …) and a value of the wrong type or out of range are
+skipped alone, the layer under them supplying the value. Each is one line
+on stderr naming the file, and an unknown key's names the nearest known one.
+`--diagnose` counts them on its line. A flag that overrides a file's value
+for an option the mod reads too (`hide`, `right-edge`, `usage-source`, …) is
+said as well, since the band then draws the file's.
+
+`--show-config` prints the merged options, each with the layer it came from
+and the layers' files, and the warnings, and exits. It reads no stdin, so
+its walk starts in the directory it runs in:
+
+```
+$ coding-agent-usage-line.py --show-config
+Configuration, read from /Users/me/src/project:
+  flag           the command line
+  project-local  /Users/me/src/project/.config/coding-agent-usage-line/config.local.jsonc
+  project        /Users/me/src/project/.config/coding-agent-usage-line/config.jsonc (none)
+  user           /Users/me/.config/coding-agent-usage-line/config.jsonc
+  default        spec/options.jsonc
+
+option                         layer          value
+usage-source                   user           "claude-usage-tracker"
+hide                           project-local  []
+...
+```
+
 ## Environment variables
 
 | Variable | Effect |
 |---|---|
-| `CODING_AGENT_USAGE_LINE_USAGE_SOURCE` | Default for `--usage-source`. The flag wins. |
+| `CODING_AGENT_USAGE_LINE_CONFIG_DIR` | The user-global [configuration](#configuration-files) directory. Default `$XDG_CONFIG_HOME/coding-agent-usage-line`, or `~/.config/coding-agent-usage-line`. |
 | `CODING_AGENT_USAGE_LINE_STATE_DIR` | Where caches and per-session state live. Default `$XDG_STATE_HOME/coding-agent-usage-line`, or `~/.local/state/coding-agent-usage-line`. |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR` | Where Claude transcripts live, for calibration. Default `~/.claude/projects`. |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST` | Read an exported Claude Usage Tracker store from this path instead of the running app's preferences. |
 | `CODEX_HOME` | Codex's data directory, used to find child-agent rollouts. Default `~/.codex`. |
 | `ANTHROPIC_ADMIN_KEY`, `OPENAI_ADMIN_KEY`, `CLAUDE_OAUTH_ACCESS_TOKEN`, `CODEX_USAGE_ACCESS_TOKEN`, `CODEX_USAGE_ACCOUNT_ID` | Credentials for the sources that need them. See [Usage sources](usage-sources.md#sources). |
 
-Two more exist for the test suites: `CODING_AGENT_USAGE_LINE_NOW` freezes the
-clock and `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE` supplies a prepared
-calibration. Neither is for everyday use.
+Three more exist for the test suites: `CODING_AGENT_USAGE_LINE_NOW` freezes
+the clock, `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE` supplies a prepared
+calibration, and `CODING_AGENT_USAGE_LINE_PROJECT_DIR` starts the project
+walk in a given directory instead of the payload's. None is for everyday use.
+
+No environment variable is a setting: an option is a flag or a key of a
+configuration file.
 
 ## Migrating from `claude-code-usage-statusline.py`
 
@@ -273,7 +347,7 @@ compatibility shim under the old name.
 
    | Old | New |
    |---|---|
-   | `CLAUDE_USAGE_SOURCE` | `CODING_AGENT_USAGE_LINE_USAGE_SOURCE` |
+   | `CLAUDE_USAGE_SOURCE` | `"usage-source"` in a [configuration file](#configuration-files) |
    | `CLAUDE_PROJECTS_DIR` | `CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR` |
    | `CLAUDE_USAGE_TRACKER_PLIST` | `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST` |
    | `CLAUDE_CALIB_CACHE` | `CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE` |

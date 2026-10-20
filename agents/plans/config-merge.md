@@ -1,9 +1,9 @@
 # Configuration: one set of options, merged from files and flags
 
-A proposal, not built yet. Nothing here changes what the program does today:
-[Options](../../docs/options.md) is still the reference for the flags, and
-`mod/hooks/config.ts` for the mod. This document collects the design as it is
-decided.
+Being built: steps 1 to 4 are done (each has its Status), so the Python
+reads the files, and the mod does not yet. [Options](../../docs/options.md)
+is the reference for the flags and the files, and `mod/hooks/config.ts` for
+the mod. This document collects the design as it is decided.
 
 ## Why
 
@@ -541,6 +541,60 @@ and `npm test`.
 4. **The Python reads the files.** `config.py`: the walk, JSONC, the merge,
    the warnings, `--show-config`, `CODING_AGENT_USAGE_LINE_CONFIG_DIR`;
    `tests/config.py` and the shared cases.
+
+   **Status 2026-10-20: done.** As built:
+   - `config.py` finds the three files (`find`, the walk as above, with
+     `$HOME` and `/` never looked in, so `$HOME/.config` is only ever the
+     user file), reads each (`read`: JSONC, 64 KiB, `"version": 1`) and
+     checks each key against the spec, keeping what passes; `load` gives
+     the layers, highest first, and the warnings. `options.merge` lays
+     them between the flags and the defaults, tables per field;
+     `Options.field_layer` gives a field's layer and `Options.warnings`
+     the files' warnings. The `env` layer is gone.
+   - Decided 6's worktree: with no local file of its own, the main
+     checkout's (from `.git`'s `gitdir:` and its `commondir`) at the
+     same place under it; with no project file at all, the main
+     checkout's local file is looked for from the start's mirror up.
+     A submodule's `.git` has no `commondir`, so it has no main checkout.
+   - `cli.main` now reads stdin itself (the payload names the project)
+     and hands it to `claude.main(options, raw)`. The walk starts per the
+     table above; Codex's rollout `cwd` comes from its `session_meta`
+     (`codex.rollout_cwd`).
+   - A file's `usage-source` this agent cannot read is skipped with a
+     warning (`--show-config` checks it for any agent). A flag overriding
+     a file for an option with `"mod"` in its ports is a warning, by the
+     spec rather than a list (Decided 1). Warnings go to stderr;
+     `--diagnose` appends ` config_warnings=N` on both agents' lines;
+     `--show-config` (a new spec record, `"file": false`, no `--agent`
+     needed, no stdin, walking from the working directory) lists them
+     under its table instead. The nearest-key hint is the optimal string
+     alignment distance, within `max(1, len // 3)`, ties to spec order,
+     so the mod can match it exactly; warning texts carry no parser's
+     message, so both ports can write them.
+   - Derived values: `label` from `usage-text`; the spec's map now holds
+     `C_LABEL` exactly, padded to the widest label, so the goldens hold.
+     `right-edge` stays underived (`_NOT_DERIVED_YET`) for step 6.
+   - Decided 16: a table field's spec may say `"fixed": [rows]`;
+     `rows.transcript` fixes `account`, and gen-spec checks the rows.
+   - Decided 2: `CODING_AGENT_USAGE_LINE_USAGE_SOURCE` is retired. The
+     goldens' harness writes each environment's source into a scratch
+     user config file; `tests/subagent.py` passes `--usage-source`;
+     `py39-floor.sh` writes a config file (with a comment and a trailing
+     comma) and checks `--show-config` under 3.9.
+   - The tests never read this machine's files: a new test override,
+     `CODING_AGENT_USAGE_LINE_PROJECT_DIR`, starts the walk in a given
+     directory, and run-cases.py sets it to the case's repository and
+     `CODING_AGENT_USAGE_LINE_CONFIG_DIR` to scratch. `tests/config.py`
+     plants files at every place a developer's own could be (the three
+     user-file names and a project file above the status payloads'
+     directory), checks a case of each suite still matches its golden,
+     and that the same run without the guard does not.
+   - The shared cases are `tests/fixtures/config/cases.json`, 37 of
+     them, written by `tests/fixtures/gen/config.py` (in `gen/all.py`):
+     a file tree, the environment, the start and the flags, and the
+     merged options that are not default, each table field a file set,
+     and the warnings. The mod runs the cases with no flags; its port of
+     `usage-source`'s check needs the sources' names.
 5. **The mod reads the files.** `mod/src/config.ts`, the pure merge, and the
    reading through `$.fs` in `mod/hooks/edges.ts`; `config.test.ts` against
    the shared cases. `CONFIG` is still the defaults' source and nothing

@@ -62,7 +62,7 @@ jobs:
       - name: Codex rollout accounting
         run: python3 tests/codex.py
       - name: shared formatting and public port CLI
-        run: python3 tests/formatting.py && python3 tests/port-cli.py
+        run: python3 tests/formatting.py && python3 tests/port-cli.py && python3 tests/config.py
       - name: agent spend
         run: python3 tests/agents.py
       - name: subagent rows

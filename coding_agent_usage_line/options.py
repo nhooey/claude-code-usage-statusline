@@ -3,18 +3,21 @@ its value, and the layer it came from.
 
 The adapters read options from here, never from argv: a flag, a config file
 and a default then reach them as one answer per option, whichever spelling
-or layer gave it.  Imports nothing of the package but the spec.
+or layer gave it.  Imports nothing of the package but the spec; config.py
+reads the files whose layers `merge` takes.
 """
-import os
 from collections.abc import Mapping
+from types import MappingProxyType
 
 from .options_spec import OPTIONS
 
-# The layers, highest first.  `env` is CODING_AGENT_USAGE_LINE_USAGE_SOURCE,
-# the one setting still read from the environment.
-LAYERS = ("flag", "env", "default")
+# The layers, highest first (config-merge.md, "Precedence"), and "derived"
+# for a value worked out from another option's when no layer set it.
+LAYERS = ("flag", "project-local", "project", "user", "default")
 
-_USAGE_SOURCE_ENV = "CODING_AGENT_USAGE_LINE_USAGE_SOURCE"
+# Derived values the merge leaves alone for now: right-edge follows
+# live-place once the mod draws from the merged options too (Decided 13).
+_NOT_DERIVED_YET = {"right-edge"}
 
 # This port's options, by every spelling of their flags.
 _PY = {name: o for name, o in OPTIONS.items() if "py" in o["ports"]}
@@ -34,13 +37,18 @@ class Options(Mapping):
 
     `options["totals"]` is the value; `options.layer("totals")` says which
     layer gave it, and `options.given("transcript")` whether any layer
-    above the defaults did.
+    above the defaults did.  A table's layer is the highest that set any
+    of its fields, and `options.field_layer("rows", "turn", "live")` the
+    one that set that field.  `options.warnings` are what the files'
+    reading skipped, each "PATH: what", for --diagnose to count.
     """
-    __slots__ = ("_values", "_layers")
+    __slots__ = ("_values", "_layers", "_fields", "warnings")
 
-    def __init__(self, values, layers):
+    def __init__(self, values, layers, fields=None, warnings=()):
         object.__setattr__(self, "_values", dict(values))
         object.__setattr__(self, "_layers", dict(layers))
+        object.__setattr__(self, "_fields", dict(fields or {}))
+        object.__setattr__(self, "warnings", tuple(warnings))
 
     def __setattr__(self, name, value):
         raise AttributeError("Options is frozen")
@@ -58,7 +66,10 @@ class Options(Mapping):
         return self._layers[name]
 
     def given(self, name):
-        return self._layers[name] != "default"
+        return self._layers[name] not in ("default", "derived")
+
+    def field_layer(self, name, row, field):
+        return self._fields.get((name, row, field), "default")
 
     def __repr__(self):
         return "Options(%r)" % self._values
@@ -92,24 +103,69 @@ def flag_values(parsed):
     return values
 
 
-def merge(flags, environ=None):
-    """Options from the flags' layer over the environment's and the
-    defaults: every option this port reads, with its layer."""
-    environ = os.environ if environ is None else environ
-    values, layers = {}, {}
-    for name, option in _PY.items():
+def _derive_key(value):
+    """An option's value as a `derived` map's key: JSON's spelling."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def _table(name, default, files):
+    """A table's value, merged field by field from the lowest layer up,
+    with the layer of each field a file set."""
+    rows = {row: dict(rec) for row, rec in default.items()}
+    fields, layer = {}, "default"
+    for f in reversed(files):
+        if name not in f.values:
+            continue
+        layer = f.name
+        for row, rec in f.values[name].items():
+            for field, value in rec.items():
+                rows[row][field] = value
+                fields[(name, row, field)] = f.name
+    value = MappingProxyType({row: MappingProxyType(rec)
+                              for row, rec in rows.items()})
+    return value, layer, fields
+
+
+def merge(flags, files=(), ports=("py",), warnings=()):
+    """Options from the flags' layer over the files' (config.Layer, highest
+    first) and the defaults: every option the `ports` read, with its layer.
+    Lists replace and tables merge per field (Decided 3 and 10); a derived
+    value is worked out after, from the merged one it follows."""
+    values, layers, fields = {}, {}, {}
+    for name, option in OPTIONS.items():
+        if not set(ports) & set(option["ports"]):
+            continue
+        if option["type"] == "table":
+            values[name], layers[name], got = _table(name, option["default"],
+                                                     files)
+            fields.update(got)
+            continue
         if name in flags:
             values[name], layers[name] = flags[name], "flag"
-        elif name == "usage-source" and environ.get(_USAGE_SOURCE_ENV):
-            values[name], layers[name] = environ[_USAGE_SOURCE_ENV], "env"
+            continue
+        for f in files:
+            if name in f.values:
+                values[name], layers[name] = f.values[name], f.name
+                break
         else:
             values[name], layers[name] = option["default"], "default"
-    return Options(values, layers)
+    for name, option in OPTIONS.items():
+        derived = option.get("derived")
+        if (derived and layers.get(name) == "default"
+                and name not in _NOT_DERIVED_YET
+                and derived["from"] in values):
+            key = _derive_key(values[derived["from"]])
+            if key in derived["map"]:
+                values[name], layers[name] = derived["map"][key], "derived"
+    return Options(values, layers, fields, warnings)
 
 
-def from_flags(parsed, environ=None):
-    """Options from (spelling, value) pairs and the defaults alone."""
-    return merge(flag_values(parsed), environ)
+def from_flags(parsed, files=()):
+    """Options from (spelling, value) pairs, the files' layers and the
+    defaults."""
+    return merge(flag_values(parsed), files)
 
 
 def parse(argv, allowed=None):
@@ -135,7 +191,7 @@ def parse(argv, allowed=None):
     return parsed
 
 
-def from_argv(argv, environ=None):
-    """Options from a command line and the defaults: for callers that hold
-    an argv, such as the tests."""
-    return from_flags(parse(argv), environ)
+def from_argv(argv, files=()):
+    """Options from a command line and the defaults, and any files' layers
+    given: for callers that hold an argv, such as the tests."""
+    return from_flags(parse(argv), files)
