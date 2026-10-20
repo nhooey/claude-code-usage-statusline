@@ -453,21 +453,21 @@ F_SPIN = F_RED                             # the agent row's E_SPIN spinner
 F_CHAT_U = "\033[38;2;166;170;158m"        # warm grey   — user chat row
 F_CHAT_B = "\033[38;2;112;126;140m"        # cool slate  — assistant chat row
 B_DRK = "\033[48;2;12;14;18m"              # near-black background, chat rows
-B_MSG = "\033[48;2;0;70;0m"                # dark green background, the
+B_MSG = "\033[48;2;95;0;95m"               # dark purple background, the
                                            #  row of a message another
-                                           #  agent sent: a bar against
-                                           #  black, apart from the
-                                           #  user's own dark blue
-                                           #  prompts, light text legible
-                                           #  on it.  Claude Code draws
+                                           #  agent sent, apart from the
+                                           #  user's dark blue prompts
+                                           #  (asked 2026-10-20).  A
+                                           #  256-palette entry, 53,
+                                           #  #5f005f: Claude Code draws
                                            #  in 256 colours under tmux,
-                                           #  each channel rounded to the
-                                           #  cube's 0, 95, 135…: this
-                                           #  lands on 22, #005f00.  A
-                                           #  dark blue or slate rounds to
-                                           #  23, #005f5f teal, the same
-                                           #  as the prompt's did (seen
-                                           #  live 2026-10-20)
+                                           #  rounding each channel to
+                                           #  0, 95, 135…, and off the
+                                           #  palette two dark colours
+                                           #  drew as one teal (seen live
+                                           #  2026-10-20)
+F_MSG = "\033[38;2;255;255;255m"           # white, that row's text on
+                                           #  B_MSG (asked 2026-10-20)
 
 # The two limit rows, one colour each.  ROW IDENTITY, not a reading: 🔋 is
 # green because it is the battery, 🪫 red because it is the low one, and

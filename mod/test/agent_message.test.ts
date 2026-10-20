@@ -151,7 +151,7 @@ test("the row: `› 🤖📨 `, the label bold, the first line, none dim", () =>
     ["Reclaim the right-edge columns", false, true],
     [": The right edge is now a setting.", false, false],
   ]);
-  for (const s of row) assert.equal(s.colour, null);
+  for (const s of row) assert.equal(s.colour, "F_MSG");
   assert.deepEqual(styles(messageSpans(st, "Explore", "", 80)),
     [["› 🤖📨 ", false, false], ["Explore", false, true]]);
 });

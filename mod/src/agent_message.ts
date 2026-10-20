@@ -150,13 +150,13 @@ export function messageBlock(st: Settings, label: string, text: string,
   const bar = (s: Span[]): Span[] => {
     const out = cut(s, w, st.widths);
     const pad = w - width(out, st.widths);
-    if (pad > 0) out.push(span(" ".repeat(pad), null, false, false, "B_MSG"));
+    if (pad > 0) out.push(span(" ".repeat(pad), "F_MSG", false, false, "B_MSG"));
     return out;
   };
-  const rows = [bar([span("› " + E_BOT + E_INBOX + " ", null, false, false,
-    "B_MSG"), span(label, null, false, true, "B_MSG")])];
+  const rows = [bar([span("› " + E_BOT + E_INBOX + " ", "F_MSG", false, false,
+    "B_MSG"), span(label, "F_MSG", false, true, "B_MSG")])];
   for (const line of wrapCols(st, text.replace(/\t/g, "  "), w - 2)) {
-    rows.push(bar([span("  " + line, null, false, false, "B_MSG")]));
+    rows.push(bar([span("  " + line, "F_MSG", false, false, "B_MSG")]));
   }
   return rows;
 }
@@ -201,11 +201,11 @@ export function wrapCols(st: Settings, text: string, cols: number): string[] {
 export function messageSpans(st: Settings, label: string, text: string,
   cols: number): Span[] {
   const head = firstLine(text);
-  const row = [span("› " + E_BOT + E_INBOX + " ", null, false, false, "B_MSG"),
-    span(label, null, false, true, "B_MSG")];
-  if (head) row.push(span(": " + head, null, false, false, "B_MSG"));
+  const row = [span("› " + E_BOT + E_INBOX + " ", "F_MSG", false, false, "B_MSG"),
+    span(label, "F_MSG", false, true, "B_MSG")];
+  if (head) row.push(span(": " + head, "F_MSG", false, false, "B_MSG"));
   const out = cut(row, Math.max(1, cols), st.widths);
   const pad = Math.max(1, cols) - width(out, st.widths);
-  if (pad > 0) out.push(span(" ".repeat(pad), null, false, false, "B_MSG"));
+  if (pad > 0) out.push(span(" ".repeat(pad), "F_MSG", false, false, "B_MSG"));
   return out;
 }
