@@ -480,13 +480,19 @@ and `npm test`.
 3. **Lists replace** across layers.
 4. **The notice:** one `$.ui.notice` per file change, and the log.
 5. **The mod's timings** stay constants in `config.ts`, out of the spec.
+6. **The project files,** XDG style inside the project (pi0's `config-dir`
+   proposal, which cosmiconfig also searches):
+   `.config/coding-agent-usage-line/config.jsonc`, committed, and
+   `config.local.jsonc` beside it, one person's own. This supersedes the
+   root dotfiles in "Files" above. A worktree that has no local file
+   reads the main checkout's, found through the git common dir, so
+   settings made once follow every worktree.
+7. **The ignore line** in the repository's `.gitignore`, added with the
+   files' step: `/.config/**/*.local.*`, any tool's local file under the
+   root `.config/` (mise's `.config/mise.local.toml` included), and no
+   `.config/` deeper in the tree.
 
 ## Open questions
 
 1. **Committed or private for `sticky` here.** It is the user's own
    repository; committed shares the preference with anyone who clones it.
-2. **Where a project's private settings live,** so every worktree sees
-   them: an untracked file in the checkout is not in a worktree. Proposed:
-   in the user's config directory, one file per project keyed by its
-   `origin` remote, found from a worktree through the git common dir.
-3. **File names and format** of the committed project file.
