@@ -1,0 +1,115 @@
+# Integrated schedule: every open plan as one task graph
+
+The open plans' remaining steps as nodes of one graph, so agents can build
+them in parallel without waiting on work they do not need or colliding in
+files they both change. Written 2026-10-20 from:
+
+- [Configuration](config-merge.md), steps 1–8: `CM1` … `CM8`.
+- [Saved running totals](saved-running-totals.md), steps 6–9 and its
+  Decided 5: `RT6` … `RT9`, `RT8i`. Steps 1–5 are done.
+- Work in flight outside the plans: `CA`, the calibration cache keyed by
+  account id (asked 2026-10-20, Blocked.1.A).
+
+A plan's own build order stays the reference for what each step does; this
+file says only when it can start. Update it as nodes land: mark the node
+done, and move a plan to [_implemented](_implemented/) when its last node is.
+
+## How to read it
+
+- **A node** is one step of one plan, one commit, built by one agent in its
+  own worktree, rebased onto `master` before it is pushed.
+- **A logical edge**, `A → B`: B needs what A builds.
+- **A file edge**, `A ⇢ B`: no logical need, but both change the same part
+  of one file, so B starts after A lands rather than rebasing across it.
+  Two nodes that touch different functions of one file (`claude.py` is
+  4,000 lines) are not linked; a rebase takes them.
+- **A wave** is a set of nodes with no edge between them, started together.
+  A node starts in the first wave after all its edges are done.
+
+## The nodes
+
+| Node | What | Logical edges in | File edges in | Main files |
+|---|---|---|---|---|
+| `CA` | Calibration keyed by source, account id and window; old files swept | none (in flight) | none | `sources.py`, `claude.py` (calibration, tracker reading), `mod/src/sources.ts`, `mod/src/claude_calib.ts` |
+| `CM1` | The options spec, generated | none | none | `spec/options.jsonc`, `tools/gen-spec.py`, `options_spec.{py,ts}`, `docs/options.md` |
+| `CM2` | The Python parses flags from the spec | `CM1` | none | `cli.py`, `tests/port-cli.py` |
+| `CM3` | The Python reads `Options`, not `argv` | `CM2` | `CA`, `RT9` | `claude.py` (every `_flag`), the Codex path |
+| `CM4` | The Python reads the files | `CM3` | none | `config.py` (new), `tests/config.py`, shared config cases |
+| `CM5` | The mod reads the files | `CM1`, `CM4` (its shared cases) | none | `mod/src/config.ts` (new), `mod/hooks/edges.ts` (the read), `config.test.ts` |
+| `CM6` | The mod draws from `options()`; the rows table | `CM5` | `RT8`, `RT8i` | `mod/hooks/register.tsx`, `mod/hooks/edges.ts` (every `CONFIG.x`), `mod/hooks/config.ts` |
+| `CM7` | Today's settings move into files | `CM6` | none | `~/.claude/settings.json` (by hand), `.config/coding-agent-usage-line/`, `.gitignore` |
+| `CM8` | The acceptance check, live | `CM7` | none | none |
+| `RT6` | The cold read folds in Python | none | none | `mod/scripts/agent_lines.py`, `mod/hooks/edges.ts` (`foldOf`), `main_fold.{py,ts}` |
+| `RT7` | The cut, dropped | `RT6` | none | `mod/hooks/edges.ts`, `mod/src/claude_records.ts`, `mod/scripts/agent_lines.py` |
+| `RT8` | The panel on the agent folds | `RT7` | `CM3` | `claude.py` (`read_agent_usage`), `claude_records.{py,ts}` (agent fold), `spec/state.jsonc`, `mod/hooks/edges.ts` |
+| `RT8i` | The inbox moves to the folds | `RT8` | none | `claude_records.{py,ts}` (`inbox_counts`), `claude.py` (the panel's inbox) |
+| `RT9` | The window costs, one file | none | `CA` | `claude.py` (`_window_costs`), `mod/src/claude_calib_node.ts`, `spec/state.jsonc` |
+| `OPS` | Sweep the old `-ts-` calibration files | `CA` | none | `~/.local/state/coding-agent-usage-line/` (by hand) |
+
+`RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
+step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
+
+## The graph
+
+```mermaid
+flowchart LR
+  subgraph config-merge
+    CM1 --> CM2 --> CM3 --> CM4 --> CM5 --> CM6 --> CM7 --> CM8
+    CM1 --> CM5
+  end
+  subgraph saved-running-totals
+    RT6 --> RT7 --> RT8 --> RT8i
+    RT9
+  end
+  CA -.-> CM3
+  CA -.-> RT9
+  RT9 -.-> CM3
+  CM3 -.-> RT8
+  RT8 -.-> CM6
+  RT8i -.-> CM6
+  CA --> OPS
+```
+
+Solid arrows are logical edges, dotted ones file edges.
+
+## The waves
+
+| Wave | Nodes, in parallel | Starts when |
+|---|---|---|
+| 0 | `CA` | running now |
+| 1 | `CM1`, `RT6` | now: neither touches `CA`'s files |
+| 2 | `CM2`, `RT7`, `RT9`, `OPS` | `CM1` and `RT6` land, and `CA` for `RT9` and `OPS` |
+| 3 | `CM3` | `CM2` and `RT9` land |
+| 4 | `CM4`, `RT8` | `CM3` and `RT7` land |
+| 5 | `CM5`, `RT8i` | `CM4` and `RT8` land |
+| 6 | `CM6` | `CM5` and `RT8i` land |
+| 7 | `CM7`, then `CM8` | `CM6` lands; both by hand with the user |
+
+At most three agents run at once (wave 2), and no two of a wave change the
+same part of a file.
+
+## The critical path
+
+`CM1 → CM2 → CM3 → CM4 → CM5 → CM6 → CM7 → CM8`: the configuration plan is
+the longest chain, and every saved-running-totals node fits beside it. Two
+file edges can lengthen it:
+
+- **`RT9 ⇢ CM3`:** `CM3` rewrites how `claude.py` reads every flag, which
+  `RT9`'s `_window_costs` change sits among. If `RT9` runs late, build `CM3`
+  first and rebase `RT9` across it instead.
+- **`RT8`, `RT8i` ⇢ `CM6`:** `CM6` rewrites every `CONFIG.x` in
+  `edges.ts`, where `RT8` moves the agent folds. If the saved-running-totals
+  side runs late, `CM6` goes first and they rebase across it.
+
+The configuration side has the right of way at each, since it is the path
+that sets when everything is done.
+
+## Live checks between waves
+
+- After `RT6` and `RT7`: a `/reload-plugins` logs no slow read with large
+  `sum`, `turns` or `records`, and `claude-main-cuts-mod/` is gone.
+- After `RT8`: the panel's tick reads only new lines; its `📨` counts and
+  🪫 shares match the band's.
+- After `CA`: a new session's agent rows show 🪫 shares within one tick, and
+  one `claude-calibration-*.cache` serves every session of the account.
+- `CM8` is the configuration plan's own acceptance list.
