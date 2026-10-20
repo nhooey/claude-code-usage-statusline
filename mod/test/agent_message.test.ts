@@ -142,17 +142,17 @@ test("the row is a faint bar out to the width, on B_MSG", () => {
   }
 });
 
-test("the row: `› 🤖📨 ` dim, the label bold, the first line dim", () => {
+test("the row: `› 🤖📨 `, the label bold, the first line, none dim", () => {
   const row = messageSpans(st, "Reclaim the right-edge columns",
     "The right edge is now a setting.\nDetails.", 200);
   assert.deepEqual(styles(row), [
-    ["› 🤖📨 ", true, false],
+    ["› 🤖📨 ", false, false],
     ["Reclaim the right-edge columns", false, true],
-    [": The right edge is now a setting.", true, false],
+    [": The right edge is now a setting.", false, false],
   ]);
   for (const s of row) assert.equal(s.colour, null);
   assert.deepEqual(styles(messageSpans(st, "Explore", "", 80)),
-    [["› 🤖📨 ", true, false], ["Explore", false, true]]);
+    [["› 🤖📨 ", false, false], ["Explore", false, true]]);
 });
 
 test("📨 is two columns in every profile, as 🤖 is", () => {
@@ -182,11 +182,11 @@ test("a long row is cut to the width, by columns, with an ellipsis", () => {
   const inLabel = messageSpans(st, "Reclaim the right-edge columns", text,
     20);
   assert.deepEqual(styles(inLabel),
-    [["› 🤖📨 ", true, false], ["Reclaim the …", false, true]]);
-  // Cut in the message, the `…` is dim with it.
+    [["› 🤖📨 ", false, false], ["Reclaim the …", false, true]]);
+  // Cut in the message, the `…` is plain with it.
   const inText = messageSpans(st, "Task", text, 24);
-  assert.deepEqual(styles(inText), [["› 🤖📨 ", true, false],
-    ["Task", false, true], [": The right …", true, false]]);
+  assert.deepEqual(styles(inText), [["› 🤖📨 ", false, false],
+    ["Task", false, true], [": The right …", false, false]]);
   // 🤖 and 📨 take two columns each: a cut at five leaves `› 🤖` and the
   // `…`, and no half glyph.
   const five = spansText(messageSpans(st, "Label", text, 5));

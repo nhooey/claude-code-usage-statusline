@@ -1,6 +1,6 @@
 // The mod in the engine's test harness: the folded row of a message
 // another agent sent, drawn as that agent's task, bold, and the message's
-// first line, dim; the agent found by its name, else by its last reply.
+// first line, at normal strength; the agent found by its name, else by its last reply.
 //
 //   bash mod/tools/plugin-test.sh
 //
@@ -92,7 +92,7 @@ const expected = (w: World, props: RenderPropsOf['UserMessage'],
 
 for (const surface of ['terminal', 'desktop'] as const) {
   test(`one agent of the sender's type: its task bold, the first line ` +
-    `dim, cut to the width (${surface})`, async ($, on) => {
+    `plain, cut to the width (${surface})`, async ($, on) => {
     const w = world(on)
     w.agents = [agent('a1', 'general-purpose',
       'Reclaim the right-edge columns'), agent('a2', 'Explore', 'Look')]
@@ -105,10 +105,10 @@ for (const surface of ['terminal', 'desktop'] as const) {
     // Not dim as a whole: a dim around the row would dim the task too.
     expect(tree.props?.dimColor).toBe(undefined)
     expect(pieces(tree)).toEqual(expected(w, FROM))
-    expect(pieces(tree).slice(0, 2)).toEqual([['› 🤖📨 ', true, false],
+    expect(pieces(tree).slice(0, 2)).toEqual([['› 🤖📨 ', false, false],
       ['Reclaim the right-edge columns', false, true]])
     const rest = pieces(tree)[2]
-    expect(rest[1]).toBe(true)
+    expect(rest[1]).toBe(false)
     expect(rest[2]).toBe(false)
     expect(String(rest[0]).startsWith(': The right edge')).toBe(true)
     expect(String(rest[0]).endsWith('…')).toBe(true)
@@ -173,8 +173,8 @@ test('a named agent: its own task', async ($, on) => {
     agent('a2', 'general-purpose', 'Review the diff', 'running', 'reviewer')]
   const props = { ...FROM, text: 'Looks fine.', from: { name: 'reviewer' } }
   const tree = await drawn($, props)
-  expect(pieces(tree)).toEqual([['› 🤖📨 ', true, false],
-    ['Review the diff', false, true], [': Looks fine.', true, false]])
+  expect(pieces(tree)).toEqual([['› 🤖📨 ', false, false],
+    ['Review the diff', false, true], [': Looks fine.', false, false]])
   expect(w.read).toEqual([])
 })
 

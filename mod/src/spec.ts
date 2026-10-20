@@ -453,13 +453,21 @@ export const F_SPIN = F_RED;                             // the agent row's E_SP
 export const F_CHAT_U = "#a6aa9e";                       // warm grey   — user chat row
 export const F_CHAT_B = "#707e8c";                       // cool slate  — assistant chat row
 export const B_DRK = "#0c0e12";                          // near-black background, chat rows
-export const B_MSG = "#0e301a";                          // dark green background, the
+export const B_MSG = "#004600";                          // dark green background, the
                                                          //  row of a message another
                                                          //  agent sent: a bar against
                                                          //  black, apart from the
                                                          //  user's own dark blue
                                                          //  prompts, light text legible
-                                                         //  on it
+                                                         //  on it.  Claude Code draws
+                                                         //  in 256 colours under tmux,
+                                                         //  each channel rounded to the
+                                                         //  cube's 0, 95, 135…: this
+                                                         //  lands on 22, #005f00.  A
+                                                         //  dark blue or slate rounds to
+                                                         //  23, #005f5f teal, the same
+                                                         //  as the prompt's did (seen
+                                                         //  live 2026-10-20)
 
 // The two limit rows, one colour each.  ROW IDENTITY, not a reading: 🔋 is
 // green because it is the battery, 🪫 red because it is the low one, and
