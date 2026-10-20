@@ -215,6 +215,10 @@ export async function recordsOf($: $, path: string): Promise<Rec[]> {
   }
   let got = parsed.get(path)
   if (!got || size < got.stable) got = { stable: 0, records: [] }
+  if (size - got.stable >= AGENT_LINES_MIN) {
+    got = await mainLines($, path, got, size)
+    parsed.set(path, got)
+  }
   let data: Uint8Array
   try {
     data = await readRange($, path, got.stable, size)
@@ -334,6 +338,40 @@ async function atOnce<T>(items: readonly T[], n: number,
 }
 
 let agentLinesFailed = false
+let mainLinesFailed = false
+
+/** `got` with `path`'s whole lines from `got.stable` to `end` read
+ * through scripts/agent_lines.py's main mode, cut down to what
+ * claude_records.ts reads: a session's own transcript, read whole into
+ * the hooks worker, crashed it at 157 MB (seen live 2026-10-20).  Where
+ * Python fails, logged once, `got` as it was, for the bytes to be read. */
+async function mainLines($: $, path: string, got: Parsed, end: number):
+  Promise<Parsed> {
+  if (mainLinesFailed) return got
+  let stable = got.stable
+  const records = [...got.records]
+  while (stable < end) {
+    const r = await timed($, 'lines', () => $.process.run(['/usr/bin/env',
+      'python3', $.plugin.root + '/scripts/agent_lines.py', path,
+      String(stable), String(end), 'main'],
+      { timeoutMs: CONFIG.agentLinesTimeoutMs }))
+    if (r.exitCode !== 0 || r.isStdoutTruncated) {
+      mainLinesFailed = true
+      void log($, 'main lines: python3 exited ' + r.exitCode + ', reading ' +
+        'the bytes instead: ' + r.stderr.slice(-300))
+      return got
+    }
+    const lines = r.stdout.split('\n')
+    const stop = Number(lines[0])
+    await timed($, 'parse', async () => {
+      for (const l of lines.slice(1)) if (l) records.push(JSON.parse(l))
+    })
+    steps.linePieces = ((steps.linePieces as number) || 0) + 1
+    if (stop <= stable) break
+    stable = stop
+  }
+  return { stable, records }
+}
 
 /** Fold `path`'s whole lines from `fold.pos` to `end` into `fold`, through
  * scripts/agent_lines.py: its parsing is the process's time, which no
