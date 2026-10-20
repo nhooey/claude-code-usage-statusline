@@ -67,4 +67,25 @@ STATE_KINDS = {
         "format": 1,
         "check_bytes": 4096,
     },
+    # The agent panel's inbox: for each file of a session that can send
+    # (the main transcript and each agent's), the SendMessage sends it
+    # queued for an agent and the deliveries taken off its own inbox, each
+    # as an epoch, folded to a byte offset so a panel tick reads only what
+    # was appended since (inbox_fold.py and inbox_fold.ts).  One directory
+    # per session's transcript path, holding the whole session's fold,
+    # written to inbox-a.cache and inbox-b.cache in turn, each with a seq.
+    # Each file's entry names the offset folded to, the file's mtime in
+    # nanoseconds when it was (an entry at the file's size with that mtime
+    # is taken as it stands, with nothing read), and the sha256 of the
+    # check_bytes before the offset, which must still match for the entry
+    # to be read on from.  Swept with the other folds.  Bump the format
+    # whenever the fold, or what is saved of it, changes:
+    # tests/fixtures/inbox-state/ fails until then.
+    "inbox-fold": {
+        "prefix": "claude-inbox-fold-",
+        "key": ("transcript",),
+        "suffix": "",
+        "format": 1,
+        "check_bytes": 4096,
+    },
 }

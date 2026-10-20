@@ -5,8 +5,9 @@ them in parallel without waiting on work they do not need or colliding in
 files they both change. Written 2026-10-20 from:
 
 - [Configuration](config-merge.md), steps 1–8: `CM1` … `CM8`.
-- [Saved running totals](saved-running-totals.md), steps 6–9 and its
-  Decided 5: `RT6` … `RT9`, `RT8i`. Steps 1–5 are done.
+- [Saved running totals](_implemented/saved-running-totals.md), steps 6–9
+  and its Decided 5: `RT6` … `RT9`, `RT8i`. Steps 1–5 were done; every
+  node is now done (2026-10-21).
 - [Clickable rows](clickable-rows.md), steps 1–3: `CK1` … `CK3` (added
   2026-10-20).
 - [Colours on the 256-colour palette](_implemented/palette-256.md), steps 1–2: `PL1`,
@@ -46,7 +47,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `RT6` | **Done 2026-10-20.** The cold read folds in Python | none | none | `mod/scripts/agent_lines.py`, `mod/hooks/edges.ts` (`foldOf`), `main_fold.{py,ts}` |
 | `RT7` | **Done 2026-10-20.** The cut, dropped | `RT6` | none | `mod/hooks/edges.ts`, `mod/src/claude_records.ts`, `mod/scripts/agent_lines.py` |
 | `RT8` | **Done 2026-10-20.** The panel on the agent folds | `RT7` | `CM3` | `claude.py` (`read_agent_usage`), `claude_records.{py,ts}` (agent fold), `spec/state.jsonc`, `mod/hooks/edges.ts` |
-| `RT8i` | The inbox moves to the folds | `RT8` | none | `claude_records.{py,ts}` (`inbox_counts`), `claude.py` (the panel's inbox) |
+| `RT8i` | **Done 2026-10-21.** The inbox moves to the folds (a fold of its own, `inbox-fold`) | `RT8` | none | `claude_records.{py,ts}` (`inbox_counts`), `claude.py` (the panel's inbox) |
 | `RT9` | **Done 2026-10-20.** The window costs, one file | none | `CA` | `claude.py` (`_window_costs`), `mod/src/claude_calib_node.ts`, `spec/state.jsonc` |
 | `OPS` | **Done 2026-10-20.** Sweep the old `-ts-` calibration files | `CA` | none | `~/.local/state/coding-agent-usage-line/` (by hand) |
 | `CK1` | **Built 2026-10-20, pending the user's live trial.** The clickable-rows trial: 🎤 and the agent message row as Buttons, tried live | none | none | `mod/hooks/register.tsx` (row drawing, `UserMessage` hooks), `mod/mod-tests/` |
@@ -130,8 +131,12 @@ that sets when everything is done.
 
 - After `RT6` and `RT7`: a `/reload-plugins` logs no slow read with large
   `sum`, `turns` or `records`, and `claude-main-cuts-mod/` is gone.
-- After `RT8`: the panel's tick reads only new lines; its `📨` counts and
-  🪫 shares match the band's.
+- After `RT8`: the panel's tick reads only new lines; its 🪫 shares match
+  the band's.
+- After `RT8i`: an agent's `📨` on the panel still comes and goes as
+  messages queue and are delivered, and the state directory holds a
+  `claude-inbox-fold-*/` for the session. The band's `📨` is the main
+  thread's own queue, another count.
 - After `CA`: a new session's agent rows show 🪫 shares within one tick, and
   one `claude-calibration-*.cache` serves every session of the account.
 - `CM8` is the configuration plan's own acceptance list.

@@ -1,7 +1,8 @@
 // Each agent transcript's fold saved as text, so a read goes on from where
 // the last one stopped: agent_fold.py's port, written byte for byte as it
 // writes them.  spec/state.jsonc's "agent-fold" row names the files and the
-// format; agents/plans/saved-running-totals.md has the design.
+// format; agents/plans/_implemented/saved-running-totals.md has the
+// design.
 //
 // A fold is claude_records.ts's AgentFold, saved whole as one JSON object
 // to one of two slots in turn, each with a sequence number, since

@@ -20,7 +20,8 @@ from nothing is on the line.
 
 One line a file, then a total; the exit status is the number of files that
 broke.  mod/tools/check-fold.ts is the TypeScript's side; `check-folds` in
-the dev shell runs both.  See agents/plans/saved-running-totals.md.
+the dev shell runs both.  See
+agents/plans/_implemented/saved-running-totals.md.
 """
 
 import argparse

@@ -1,0 +1,15 @@
+{
+ "format": 1,
+ "file": "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+ "main": false,
+ "texts": [
+  [
+   87,
+   "[\"tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl\",87,\"\",\"8dc709a91aad03cd26a91b961fd5d71d4dbc6c75eb8365152abccc4787f0dffa\",[],[]]"
+  ],
+  [
+   303,
+   "[\"tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl\",303,\"\",\"a8bde5f726863f94478ae4f6c5b764bd629fac210c8d54f07056abb021ebddca\",[],[1787000014]]"
+  ]
+ ]
+}

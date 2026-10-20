@@ -3,7 +3,7 @@ the last one stopped.
 
 mod/src/agent_fold.ts is the port, and the two write the same bytes for the
 same fold.  spec/state.jsonc's "agent-fold" row names the files and the
-format; agents/plans/saved-running-totals.md has the design.
+format; agents/plans/_implemented/saved-running-totals.md has the design.
 
 A fold is claude_records.AgentFold, saved whole as one JSON object to one
 of two slots in turn, each with a sequence number, since the mod's

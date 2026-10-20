@@ -1,0 +1,47 @@
+{
+ "format": 1,
+ "file": "tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl",
+ "main": false,
+ "texts": [
+  [
+   108,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",108,\"\",\"4a035c59b617ab4f61d35a4cd112eda06b72f1ef78d0e1091caafe1fed0c003c\",[],[]]"
+  ],
+  [
+   484,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",484,\"\",\"8ffd8ee367e5bb5f1d2a7c4ac91d15ce8a37c145309210b2e2a0766729f16865\",[],[]]"
+  ],
+  [
+   722,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",722,\"\",\"2f3578e2d2f8a7367fa7c4b392126478511cc226d5f60736bf92c9921234b982\",[[1787000052,\"a1\"]],[]]"
+  ],
+  [
+   845,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",845,\"\",\"be77167fe838a4676aa86463aed05469dc2d19f3acaeed899542d69828552f5c\",[[1787000052,\"a1\"]],[1787000055]]"
+  ],
+  [
+   983,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",983,\"\",\"125d5e60d030ee9086615965e8dbc4e29761c102e17009e6da36e022a7fe5a05\",[[1787000052,\"a1\"]],[1787000055]]"
+  ],
+  [
+   1103,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",1103,\"\",\"2fc33fdeda4917c598ad391870afb5236c7e6ad6534c13c09f624f32bc309684\",[[1787000052,\"a1\"]],[1787000055]]"
+  ],
+  [
+   1304,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",1304,\"\",\"258478d3dbf348ce3b5fbcd9539200756c0c29adf37b7bcebf64c69e3bd95828\",[[1787000052,\"a1\"]],[1787000055]]"
+  ],
+  [
+   1712,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",1712,\"\",\"4929c6e38e179cd01d1256de16f57327f9d45b70b0b417e478e08f9b7f427a19\",[[1787000052,\"a1\"]],[1787000055]]"
+  ],
+  [
+   1862,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",1862,\"\",\"659088ebccbae981092eac373a7ce087fe396c20aa05d5748e9256fde12509b3\",[[1787000052,\"a1\"]],[1787000055]]"
+  ],
+  [
+   2170,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a2.jsonl\",2170,\"\",\"ba6182ea7331ac7ea4c5ae598335840008dac2312fc365c7a607956f46d15df2\",[[1787000052,\"a1\"]],[1787000055]]"
+  ]
+ ]
+}

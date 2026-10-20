@@ -1,0 +1,47 @@
+{
+ "format": 1,
+ "file": "tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl",
+ "main": false,
+ "texts": [
+  [
+   109,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",109,\"\",\"9cca3d3167807d0d27b0b36adac8ce0a3dd55bfe66e0208964d21565bf8bb7eb\",[],[]]"
+  ],
+  [
+   434,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",434,\"\",\"77a6cc355060431ab8c4220919965d3dac7049e7028ddb07f1c3c8638073adf9\",[],[]]"
+  ],
+  [
+   622,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",622,\"\",\"399c6c83c79b42f14258b1d4c7406d67a6c86bea6c30278a2142b0b2a455e15b\",[],[]]"
+  ],
+  [
+   1008,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",1008,\"\",\"926329151ba52a42385afe9df87d90cd04c6e606eb99e8208d4df5438fcac722\",[],[]]"
+  ],
+  [
+   1166,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",1166,\"\",\"13de01a1557f10ededdad1bfb0651df5cfb0d2ee682e58341fde18b668dffc03\",[],[1787000064]]"
+  ],
+  [
+   1278,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",1278,\"\",\"5ebf73564afde27b36f548b1e965dbc555a7b57801052e89596e8d9753e52486\",[],[1787000064]]"
+  ],
+  [
+   1467,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",1467,\"\",\"f5b91af70c657fc83ae52486236551d619a3189e4149dace9de1eca0a67a8f94\",[],[1787000064]]"
+  ],
+  [
+   1794,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",1794,\"\",\"37d7085775b3068b4c0b3eccccc24eeae44b237597d49d407ba482a9d50f63cc\",[],[1787000064]]"
+  ],
+  [
+   2062,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",2062,\"\",\"7d8e1a21a83ea578609bb869968116c56f36f717ca6cc6df56c7ca40ad447a52\",[],[1787000064]]"
+  ],
+  [
+   2453,
+   "[\"tests/fixtures/records/inputs/session/subagents/agent-a1.jsonl\",2453,\"\",\"f835015ed83411fb5f9fc308c79bb2a0c5dbd873413fde49a3ad33f296be2ebc\",[],[1787000064]]"
+  ]
+ ]
+}

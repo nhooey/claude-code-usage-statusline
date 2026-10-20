@@ -14,7 +14,8 @@ import os
 import re
 import time
 from datetime import datetime
-from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
+from typing import (Callable, Dict, List, NamedTuple, Optional, Sequence,
+                    Tuple)
 
 from . import formatting as fmt
 from . import state
@@ -2189,6 +2190,11 @@ def marked_records(path: str, marks: Sequence[bytes]):
             data = fh.read()
     except OSError:
         return []
+    return marked_records_of(data, marks)
+
+
+def marked_records_of(data: bytes, marks: Sequence[bytes]):
+    """marked_records over `data`, a file's bytes from a line's start."""
     starts = set()
     for mark in marks:
         i = data.find(mark)
@@ -2208,21 +2214,44 @@ def marked_records(path: str, marks: Sequence[bytes]):
     return out
 
 
-def inbox_sends(path: str) -> List[Tuple[float, str]]:
-    """(epoch, target id) for each message this file queued for an agent."""
+def _file_bytes(path: str) -> bytes:
+    try:
+        with open(path, "rb") as fh:
+            return fh.read()
+    except OSError:
+        return b""
+
+
+def inbox_sends_of(data: bytes) -> List[Tuple[float, str]]:
+    """(epoch, target id) for each message `data`, whole lines of a file,
+    queued for an agent."""
     out = []
-    for r in marked_records(path, (SEND_QUEUED_MARK,)):
+    for r in marked_records_of(data, (SEND_QUEUED_MARK,)):
+        if not isinstance(r, dict):
+            continue
         t, target = ts_epoch(r.get("timestamp") or ""), queued_send(r)
         if t is not None and target:
             out.append((t, target))
     return out
 
 
+def inbox_deliveries_of(data: bytes) -> List[float]:
+    """The epoch of each SendMessage delivery in `data`, whole lines of an
+    agent's file."""
+    return [t for t in (ts_epoch(r.get("timestamp") or "")
+                        for r in marked_records_of(data, INBOX_MARKS)
+                        if isinstance(r, dict) and inbox_delivery(r))
+            if t is not None]
+
+
+def inbox_sends(path: str) -> List[Tuple[float, str]]:
+    """(epoch, target id) for each message this file queued for an agent."""
+    return inbox_sends_of(_file_bytes(path))
+
+
 def inbox_deliveries(path: str) -> List[float]:
     """The epoch of each SendMessage delivery in this agent's file."""
-    return [t for t in (ts_epoch(r.get("timestamp") or "")
-                        for r in marked_records(path, INBOX_MARKS)
-                        if inbox_delivery(r)) if t is not None]
+    return inbox_deliveries_of(_file_bytes(path))
 
 
 def inbox_counts(files: Sequence[str], targets: Dict[str, str],
@@ -2231,15 +2260,13 @@ def inbox_counts(files: Sequence[str], targets: Dict[str, str],
 
     `files` is every transcript that can send — the main thread's and each
     agent's — and `targets` maps each agent on the panel to its own file.
-    The two ends are matched by time, not by text: a send raises the count,
-    a delivery lowers it, and the count never goes below zero, so a delivery
-    with no queued send behind it — a message that woke a stopped agent and
-    was never queued — takes nothing from a later one.
-
     `since`, the earliest any target started, skips every file last written
     before it, which cannot hold a send to an agent that did not exist yet.
     A long session's agent files run to hundreds of megabytes, nearly all of
     them finished long before anything now on the panel started.
+
+    Every file is read whole; the panel reads on from a saved fold instead
+    (inbox_fold.counts), which must count the same.
     """
     sent: Dict[str, List[float]] = {}
     for f in files:
@@ -2251,11 +2278,25 @@ def inbox_counts(files: Sequence[str], targets: Dict[str, str],
         for t, target in inbox_sends(f):
             if target in targets:
                 sent.setdefault(target, []).append(t)
+    return inbox_tally(sent, lambda aid: inbox_deliveries(targets[aid]))
+
+
+def inbox_tally(sent: Dict[str, List[float]],
+                delivered: Callable[[str], List[float]]) -> Dict[str, int]:
+    """The waiting count of each agent `sent` names, from the epochs of its
+    sends and of the deliveries in its file, `delivered(agent id)`.
+
+    The two ends are matched by time, not by text: a send raises the count,
+    a delivery lowers it, and the count never goes below zero, so a delivery
+    with no queued send behind it — a message that woke a stopped agent and
+    was never queued — takes nothing from a later one.  Agents with none
+    waiting are left out.
+    """
     out = {}
     for aid, times in sent.items():
         # A send and its delivery stamped alike: the send first.
         events = sorted([(t, 0, 1) for t in times]
-                        + [(t, 1, -1) for t in inbox_deliveries(targets[aid])])
+                        + [(t, 1, -1) for t in delivered(aid)])
         n = 0
         for _, _, step in events:
             n = max(0, n + step)

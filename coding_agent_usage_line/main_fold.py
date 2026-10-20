@@ -3,7 +3,7 @@ where the last one stopped.
 
 mod/src/main_fold.ts is the port, and the two write the same bytes for the
 same fold.  spec/state.jsonc's "main-fold" row names the files and the
-format; agents/plans/saved-running-totals.md has the design.
+format; agents/plans/_implemented/saved-running-totals.md has the design.
 
 What never changes once folded is a log, one JSON array a line, tagged with
 what it adds to, in parts of at most part_bytes of UTF-8: a part only grows,

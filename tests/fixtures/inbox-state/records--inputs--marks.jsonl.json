@@ -1,0 +1,19 @@
+{
+ "format": 1,
+ "file": "tests/fixtures/records/inputs/marks.jsonl",
+ "main": true,
+ "texts": [
+  [
+   93,
+   "[\"tests/fixtures/records/inputs/marks.jsonl\",93,\"\",\"868fae397658cd94c6db9cdb248616b521b1230f62b5d63263014443ea8e8fa7\",[],[]]"
+  ],
+  [
+   203,
+   "[\"tests/fixtures/records/inputs/marks.jsonl\",203,\"\",\"6ce6e7d5d039aa3e318ac78402d121d5fdaa63add4091929e08528a2fca576f9\",[],[]]"
+  ],
+  [
+   221,
+   "[\"tests/fixtures/records/inputs/marks.jsonl\",221,\"\",\"2ea96f421237568539cf2c6f71e3cc739f540a330e3f4a7bf6c5911f23d23447\",[],[]]"
+  ]
+ ]
+}

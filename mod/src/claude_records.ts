@@ -1640,6 +1640,45 @@ export function markedRecordsOf(data: Uint8Array,
   return out;
 }
 
+/** [epoch, target id] for each message `data`, whole lines of a file,
+ * queued for an agent. */
+export function inboxSendsOf(data: Uint8Array): [number, string][] {
+  const out: [number, string][] = [];
+  for (const r of markedRecordsOf(data, [SEND_QUEUED_MARK])) {
+    const t = tsEpoch(pyOr(pyGet(r, "timestamp"), "")), target = queuedSend(r);
+    if (t !== null && target) out.push([t, target]);
+  }
+  return out;
+}
+
+/** The epoch of each SendMessage delivery in `data`, whole lines of an
+ * agent's file. */
+export function inboxDeliveriesOf(data: Uint8Array): number[] {
+  return markedRecordsOf(data, INBOX_MARKS).filter(inboxDelivery)
+    .map((r) => tsEpoch(pyOr(pyGet(r, "timestamp"), "")))
+    .filter((t): t is number => t !== null);
+}
+
+/** The waiting count of each agent `sent` names, from the epochs of its
+ * sends and of the deliveries in its file, `delivered(agent id)`.  A send
+ * raises the count, a delivery lowers it, and the count never goes below
+ * zero; agents with none waiting are left out. */
+export function inboxTally(sent: ReadonlyMap<string, number[]>,
+  delivered: (aid: string) => number[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const [aid, times] of sent) {
+    // A send and its delivery stamped alike: the send first.
+    const events: [number, number, number][] = [
+      ...times.map((t): [number, number, number] => [t, 0, 1]),
+      ...delivered(aid).map((t): [number, number, number] => [t, 1, -1])];
+    events.sort(cmpTuple);
+    let n = 0;
+    for (const [, , step] of events) n = Math.max(0, n + step);
+    if (n) out.set(aid, n);
+  }
+  return out;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // The status line's pass over the transcript.
 // ════════════════════════════════════════════════════════════════════════════

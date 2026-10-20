@@ -27,10 +27,12 @@ from _checks import check, tally  # noqa: E402
 from coding_agent_usage_line import agent_fold as af  # noqa: E402
 from coding_agent_usage_line import claude  # noqa: E402
 from coding_agent_usage_line import claude_records as cr  # noqa: E402
+from coding_agent_usage_line import inbox_fold as ib  # noqa: E402
 from coding_agent_usage_line import main_fold as mf  # noqa: E402
 
 STATE = os.path.join(ROOT, "tests", "fixtures", "state")
 AGENT_STATE = os.path.join(ROOT, "tests", "fixtures", "agent-state")
+INBOX_STATE = os.path.join(ROOT, "tests", "fixtures", "inbox-state")
 
 
 def fixtures():
@@ -90,6 +92,133 @@ def check_agent_fold(path):
 
 def _tail_of(data, k):
     return af.tail_digest(data[max(0, k - af.FOLD_CHECK_BYTES):k])
+
+
+def check_inbox_entry(fixture):
+    """A file's inbox entry: folded at each line end as tests/fixtures/
+    inbox-state/ holds it, which mod/test/inbox_fold.test.ts holds the
+    TypeScript to as well; and each text, read back and read on, the
+    last."""
+    with open(fixture, encoding="utf-8") as fh:
+        want = json.load(fh)
+    name = want["file"]
+    if want["format"] != ib.INBOX_FOLD_FORMAT:
+        check("%s: tests/fixtures/inbox-state/ is at the spec's format; run "
+              "tests/fixtures/gen/state.py" % name, want["format"],
+              ib.INBOX_FOLD_FORMAT)
+        return
+    with open(os.path.join(ROOT, name), "rb") as fh:
+        data = fh.read()
+    texts, main = want["texts"], want["main"]
+    e, at, got = ib.Entry(), 0, []
+    for k, _ in texts:
+        ib.fold_entry(e, data[at:k], main)
+        at = k
+        e.tail = ib.tail_digest(data[max(0, k - ib.FOLD_CHECK_BYTES):k])
+        got.append([k, ib.entry_text(name, e)])
+    check("%s: each line end's inbox entry as tests/fixtures/inbox-state/ "
+          "holds it; a change to the fold needs a new format in "
+          "spec/state.jsonc" % name, got, texts)
+    end, last = texts[-1]
+    broke = []
+    for k, text in texts:
+        fold = '{"format":%d,"seq":3,"files":[%s]}' % (ib.INBOX_FOLD_FORMAT,
+                                                       text)
+        seq, entries = ib.fold_of_text(fold)
+        if ib.fold_text(entries, seq) != fold:
+            broke.append(("read back otherwise", k))
+        g = entries[name]
+        ib.fold_entry(g, data[k:end], main)
+        g.tail = ib.tail_digest(data[max(0, end - ib.FOLD_CHECK_BYTES):end])
+        if ib.entry_text(name, g) != last:
+            broke.append(("read on otherwise", k))
+    check("%s: read back at any line end, read on to the whole" % name,
+          broke, [])
+
+
+def check_inbox_counts():
+    """inbox_fold.counts against inbox_counts, which reads every file
+    whole: a session copied in a line, and half a line, at a time; the
+    slots it saves to; and a fold of other bytes passed over."""
+    src = os.path.join(ROOT, "tests", "fixtures", "records", "inputs")
+    for session in ("inbox-now", "session"):
+        tmp = tempfile.mkdtemp(dir=WORK)
+        tr = os.path.join(tmp, session + ".jsonl")
+        agents = sorted(os.listdir(os.path.join(src, session, "subagents")))
+        agents = [a for a in agents if a.endswith(".jsonl")]
+        os.makedirs(os.path.join(tmp, session, "subagents"))
+        paths = [tr] + [os.path.join(tmp, session, "subagents", a)
+                        for a in agents]
+        datas = []
+        for p in [os.path.join(src, session + ".jsonl")] + [
+                os.path.join(src, session, "subagents", a) for a in agents]:
+            with open(p, "rb") as fh:
+                datas.append(fh.read())
+        targets = {cr.agent_label_id(p): p for p in paths[1:]}
+        d = os.path.join(tmp, "state")
+        # Every file grown together, a step at a time: each line end, and
+        # the middle of each line, of the longest.
+        steps = sorted({k for data in datas for e in mf.line_ends(data)
+                        for k in (e, e - 7)} | {0})
+        broke, saves = [], set()
+        for k in steps:
+            for p, data in zip(paths, datas):
+                with open(p, "wb") as fh:
+                    fh.write(data[:k])
+            for since in (None, 0.0, 4e9):
+                want = cr.inbox_counts(paths, targets, since)
+                got = ib.counts(tr, paths, targets, since, d)
+                if got != want:
+                    broke.append((k, since, got, want))
+            saves.update(n for n in os.listdir(d) if n in ib.SLOTS)
+        check("%s: the inbox read on from its fold, grown a line and half "
+              "a line at a time, counts as the whole files" % session,
+              broke, [])
+        check("%s: saved to both slots in turn" % session,
+              sorted(saves), sorted(ib.SLOTS))
+    # The last session's fold: both slots, the newer one torn.
+    texts = {n: open(os.path.join(d, n), encoding="utf-8").read()
+             for n in ib.SLOTS}
+    newer = max(ib.SLOTS, key=lambda n: ib._seq_of(texts[n]))
+    older = min(ib.SLOTS, key=lambda n: ib._seq_of(texts[n]))
+    check("the newer slot read first",
+          ib.load([texts[older], texts[newer]])[1], ib._seq_of(texts[newer]))
+    check("a torn newer slot passed over for the older",
+          ib.load([texts[newer][:30], texts[older]])[1],
+          ib._seq_of(texts[older]))
+    check("with neither, no entries and the highest seq either starts with",
+          ib.load([texts[newer][:30], None]),
+          ({}, ib._seq_of(texts[newer])))
+    with open(os.path.join(d, newer), "w") as fh:
+        fh.write(texts[newer][:len(texts[newer]) // 2])
+    want = cr.inbox_counts(paths, targets)
+    check("a torn newer slot: read on from the older, counted the same",
+          ib.counts(tr, paths, targets, None, d), want)
+    check("and saved over the torn one, after the older's seq",
+          ib.fold_of_text(open(os.path.join(d, newer)).read())[0],
+          ib._seq_of(texts[older]) + 1)
+    # An entry at the file's size and mtime is taken as it stands; a
+    # rewrite to the same size, at another mtime, is read afresh.
+    a1 = targets["a1"]
+    with open(a1, "rb") as fh:
+        data = fh.read()
+    st = os.stat(a1)
+    swapped = data.replace(b"20:", b"21:")
+    with open(a1, "wb") as fh:
+        fh.write(swapped)
+    os.utime(a1, ns=(st.st_atime_ns, st.st_mtime_ns))
+    entries, _ = ib.load([open(os.path.join(d, n)).read() for n in ib.SLOTS])
+    check("an entry at the file's size and mtime is not read",
+          ib.read_on(entries, a1)[1], False)
+    os.utime(a1, ns=(st.st_atime_ns, st.st_mtime_ns + 10 ** 9))
+    want = cr.inbox_counts(paths, targets)
+    check("a rewrite to the same size, at another mtime, read afresh",
+          (ib.counts(tr, paths, targets, None, d), len(data) == len(swapped)),
+          (want, True))
+    with open(a1, "wb") as fh:
+        fh.write(data)
+    check("a file gone has its entry dropped",
+          ib.read_on(entries, os.path.join(tmp, "gone.jsonl")), (None, False))
 
 
 def agent_fixtures():
@@ -351,6 +480,13 @@ def main():
     print("--- the agents' folds ---")
     for path in agent_fixtures():
         check_agent_fold(path)
+
+    print("--- the inbox's fold ---")
+    inbox = sorted(os.listdir(INBOX_STATE))
+    check("there are fixture inbox entries", len(inbox) > 3, True)
+    for name in inbox:
+        check_inbox_entry(os.path.join(INBOX_STATE, name))
+    check_inbox_counts()
 
     print()
     shutil.rmtree(WORK)

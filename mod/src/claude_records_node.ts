@@ -13,12 +13,16 @@ import {
 } from "./agent_fold.ts";
 import {
   _agentDir, _agentStatePath, _readAgentBytes, _recordsOf, agentLabelOf,
-  agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr, cmpTuple,
-  copyAgentFold, foldAgentBytes, INBOX_MARKS, inboxDelivery,
-  markedRecordsOf, newAgentFold, pyJoin, pyJsonDumps, queuedSend,
-  SEND_QUEUED_MARK, transcriptOf, tsEpoch, turnsOf, _settled,
-  SETTLE_POLL_S, SETTLE_S,
+  agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr,
+  copyAgentFold, foldAgentBytes, inboxDeliveriesOf, inboxSendsOf,
+  inboxTally, markedRecordsOf, newAgentFold, pyJoin, pyJsonDumps,
+  transcriptOf, turnsOf, _settled, SETTLE_POLL_S, SETTLE_S,
 } from "./claude_records.ts";
+import {
+  foldInboxEntry, INBOX_CHECK_BYTES, INBOX_SLOTS, inboxFoldDir,
+  inboxFoldLoad, inboxFoldText, inboxTailDigest, newInboxEntry,
+} from "./inbox_fold.ts";
+import type { InboxEntry } from "./inbox_fold.ts";
 import type {
   AgentEta, AgentFold, AgentReading, AgentRec, Rec, Transcript, Turn,
 } from "./claude_records.ts";
@@ -249,40 +253,45 @@ export function markedRecords(path: string,
   }
 }
 
+/** The bytes of the file at `path`, or none where it will not open. */
+function fileBytes(path: string): Uint8Array {
+  try {
+    return fs.readFileSync(path);
+  } catch {
+    return new Uint8Array(0);
+  }
+}
+
 /** (epoch, target id) for each message this file queued for an agent. */
 export function inboxSends(path: string): [number, string][] {
-  const out: [number, string][] = [];
-  for (const r of markedRecords(path, [SEND_QUEUED_MARK])) {
-    const t = tsEpoch(pyOr(pyGet(r, "timestamp"), "")), target = queuedSend(r);
-    if (t !== null && target) out.push([t, target]);
-  }
-  return out;
+  return inboxSendsOf(fileBytes(path));
 }
 
 /** The epoch of each SendMessage delivery in this agent's file. */
 export function inboxDeliveries(path: string): number[] {
-  return markedRecords(path, INBOX_MARKS).filter(inboxDelivery)
-    .map((r) => tsEpoch(pyOr(pyGet(r, "timestamp"), "")))
-    .filter((t): t is number => t !== null);
+  return inboxDeliveriesOf(fileBytes(path));
+}
+
+/** A file's mtime in seconds, as the Python's os.path.getmtime gives it. */
+function mtimeS(path: string): number {
+  return Number(fs.statSync(path, { bigint: true }).mtimeNs) / 1e9;
 }
 
 /** How many messages wait in each agent's inbox: {agent id: count}.
  *
  * `files` is every transcript that can send — the main thread's and each
  * agent's — and `targets` maps each agent on the panel to its own file.
- * The two ends are matched by time, not by text: a send raises the count,
- * a delivery lowers it, and the count never goes below zero.  `since`, the
- * earliest any target started, skips every file last written before it. */
+ * The two ends are matched by time, not by text (inboxTally).  `since`,
+ * the earliest any target started, skips every file last written before
+ * it.  Every file is read whole; inboxFoldCounts reads on from a saved
+ * fold instead, and must count the same. */
 export function inboxCounts(files: readonly string[],
   targets: ReadonlyMap<string, string>,
   since: number | null = null): Map<string, number> {
   const sent = new Map<string, number[]>();
   for (const f of files) {
     try {
-      if (since !== null &&
-        Number(fs.statSync(f, { bigint: true }).mtimeNs) / 1e9 < since) {
-        continue;
-      }
+      if (since !== null && mtimeS(f) < since) continue;
     } catch {
       continue;
     }
@@ -293,17 +302,103 @@ export function inboxCounts(files: readonly string[],
       }
     }
   }
-  const out = new Map<string, number>();
-  for (const [aid, times] of sent) {
-    // A send and its delivery stamped alike: the send first.
-    const events: [number, number, number][] = [
-      ...times.map((t): [number, number, number] => [t, 0, 1]),
-      ...inboxDeliveries(targets.get(aid)!)
-        .map((t): [number, number, number] => [t, 1, -1])];
-    events.sort(cmpTuple);
-    let n = 0;
-    for (const [, , step] of events) n = Math.max(0, n + step);
-    if (n) out.set(aid, n);
+  return inboxTally(sent, (aid) => inboxDeliveries(targets.get(aid)!));
+}
+
+/** File `path`'s entry in `entries`, read on to the file's end, and what
+ * its last line, with no newline yet, holds: inbox_fold.read_on's port,
+ * as [[entry, sends, deliveries] or null, whether `entries` changed]. */
+function inboxReadOn(entries: Map<string, InboxEntry>, path: string,
+  main: boolean): [[InboxEntry, [number, string][], number[]] | null,
+    boolean] {
+  let fd: number;
+  try {
+    fd = fs.openSync(path, "r");
+  } catch {
+    return [null, entries.delete(path)];
+  }
+  let e: InboxEntry, data: Uint8Array, whole: number;
+  try {
+    const st = fs.fstatSync(fd, { bigint: true });
+    const size = Number(st.size), mtime = String(st.mtimeNs);
+    const tailAt = (pos: number): string => {
+      const lo = Math.max(0, pos - INBOX_CHECK_BYTES);
+      const buf = new Uint8Array(pos - lo);
+      fs.readSync(fd, buf, 0, buf.length, lo);
+      return inboxTailDigest(buf);
+    };
+    const was = entries.get(path);
+    if (was && was.pos === size && was.mtime === mtime) {
+      return [[was, [], []], false];
+    }
+    e = was && was.pos <= size && tailAt(was.pos) === was.tail ? was
+      : newInboxEntry();
+    data = new Uint8Array(size - e.pos);
+    fs.readSync(fd, data, 0, data.length, e.pos);
+    whole = data.lastIndexOf(10) + 1;
+    foldInboxEntry(e, data.subarray(0, whole), main);
+    e.tail = tailAt(e.pos);
+    e.mtime = mtime;
+  } finally {
+    fs.closeSync(fd);
+  }
+  entries.set(path, e);
+  const rest = data.subarray(whole);
+  if (!rest.length) return [[e, [], []], true];
+  return [[e, inboxSendsOf(rest), main ? [] : inboxDeliveriesOf(rest)], true];
+}
+
+/** inboxCounts, read on from the fold saved for `transcript`'s session
+ * under the state directory `stateDir`, and saved back where anything
+ * moved: inbox_fold.counts' port, writing the same bytes. */
+export function inboxFoldCounts(stateDir: string, transcript: string,
+  files: readonly string[], targets: ReadonlyMap<string, string>,
+  since: number | null = null): Map<string, number> {
+  const dir = inboxFoldDir(stateDir, transcript);
+  const [entries, seq] = inboxFoldLoad(INBOX_SLOTS.map((n) => {
+    try {
+      return fs.readFileSync(pyJoin(dir, n), "utf-8");
+    } catch {
+      return null;
+    }
+  }));
+  let changed = false;
+  const seen = new Map<string,
+    [InboxEntry, [number, string][], number[]] | null>();
+  const at = (path: string) => {
+    if (!seen.has(path)) {
+      const [got, moved] = inboxReadOn(entries, path, path === transcript);
+      seen.set(path, got);
+      changed = changed || moved;
+    }
+    return seen.get(path)!;
+  };
+  const sent = new Map<string, number[]>();
+  for (const f of files) {
+    try {
+      if (since !== null && mtimeS(f) < since) continue;
+    } catch {
+      continue;
+    }
+    const got = at(f);
+    if (got === null) continue;
+    for (const [t, target] of [...got[0].sends, ...got[1]]) {
+      if (targets.has(target)) {
+        if (!sent.has(target)) sent.set(target, []);
+        sent.get(target)!.push(t);
+      }
+    }
+  }
+  const out = inboxTally(sent, (aid) => {
+    const p = targets.get(aid)!;
+    // Its deliveries are not folded (foldInboxEntry): read whole.
+    if (p === transcript) return inboxDeliveries(p);
+    const got = at(p);
+    return got === null ? [] : [...got[0].got, ...got[2]];
+  });
+  if (changed) {
+    writeAtomic(pyJoin(dir, INBOX_SLOTS[(seq + 1) % 2]),
+      inboxFoldText(entries, seq + 1));
   }
   return out;
 }

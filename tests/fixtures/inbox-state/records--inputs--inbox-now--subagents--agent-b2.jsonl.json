@@ -1,0 +1,23 @@
+{
+ "format": 1,
+ "file": "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+ "main": false,
+ "texts": [
+  [
+   87,
+   "[\"tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl\",87,\"\",\"4a1698c27fa04d15a11c8500a6cff7962db3c0171cbcdb71310db977c74a02cf\",[],[]]"
+  ],
+  [
+   417,
+   "[\"tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl\",417,\"\",\"bf2f5cab66488ae4420000d74c4e2707e6e83329363e95417b4bb58bba93cb34\",[],[]]"
+  ],
+  [
+   651,
+   "[\"tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl\",651,\"\",\"c578a15f4caa7a46715443babd7c4bdd18391f4c5cf010627e059f53fc2c081a\",[],[]]"
+  ],
+  [
+   867,
+   "[\"tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl\",867,\"\",\"fb3dd40b59115d4d63b3c89ef7d1f2b2fb5d5bc282b24770cbaf5682a6db0f96\",[],[1787000020]]"
+  ]
+ ]
+}

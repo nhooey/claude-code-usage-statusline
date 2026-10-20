@@ -511,7 +511,10 @@ delivery takes one away, and the count never drops below zero. A peer
 into the agent's pane, which leaves nothing on the sending side, so 📨 can
 read lower than Claude Code's count. A killed or failed agent's inbox is
 dropped. Files last written before the earliest agent on the panel started
-are not read.
+are not read. Each file's sends and deliveries are saved per session in
+`claude-inbox-fold-<digest>/` in private state, as `spec/state.jsonc`'s
+`inbox-fold` row names it, so a tick reads only what each file had
+appended since the last; a file rewritten in place is read afresh.
 
 ### Nesting
 

@@ -1,0 +1,27 @@
+{
+ "format": 1,
+ "file": "tests/fixtures/transcripts/subagent/03-tree.jsonl",
+ "main": true,
+ "texts": [
+  [
+   133,
+   "[\"tests/fixtures/transcripts/subagent/03-tree.jsonl\",133,\"\",\"a25aa761829bc36b175c7ff6ef91935bb58bda3b01d6f80b24136c9ca7cd12ec\",[],[]]"
+  ],
+  [
+   280,
+   "[\"tests/fixtures/transcripts/subagent/03-tree.jsonl\",280,\"\",\"e762e62698988d6cbddd88c311e1edd945d9591eef871fb34f3ef3f44c82f7df\",[],[]]"
+  ],
+  [
+   519,
+   "[\"tests/fixtures/transcripts/subagent/03-tree.jsonl\",519,\"\",\"99a2c98dc330bf3820b23ce1919a6dea5964b90872f8f542cd4ade9aab2480f2\",[[1786846900,\"t2\"]],[]]"
+  ],
+  [
+   757,
+   "[\"tests/fixtures/transcripts/subagent/03-tree.jsonl\",757,\"\",\"3ec719ab68bc20a333d3a60183a8dbff45d94268f7e0b082c8fc4fbd77482929\",[[1786846900,\"t2\"],[1786846910,\"t3\"]],[]]"
+  ],
+  [
+   995,
+   "[\"tests/fixtures/transcripts/subagent/03-tree.jsonl\",995,\"\",\"539b36cb89d650f52d70b49ca4243b9cb5bd1f8d7081f0e938dd0124b93464d7\",[[1786846900,\"t2\"],[1786846910,\"t3\"],[1786846920,\"t3\"]],[]]"
+  ]
+ ]
+}

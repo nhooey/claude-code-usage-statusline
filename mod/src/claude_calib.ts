@@ -640,12 +640,13 @@ export function staleCalibrations(
     now - e.mtimeMs / 1000 > CALIB_MAX_AGE_S).map((e) => e.name);
 }
 
-/** The folds' directories, one per transcript, the agents' and the main
- * transcript's, swept with the calibrations once none of their files has
- * been written for CALIB_MAX_AGE_S: _FOLD_DIR and _FOLD_FILE. */
-export const FOLD_DIR = /^claude-(agent|main)-fold-[0-9a-f]{64}$/;
+/** The folds' directories, one per transcript, the agents', the main
+ * transcript's and the inbox's, swept with the calibrations once none of
+ * their files has been written for CALIB_MAX_AGE_S: _FOLD_DIR and
+ * _FOLD_FILE. */
+export const FOLD_DIR = /^claude-(agent|main|inbox)-fold-[0-9a-f]{64}$/;
 const FOLD_FILE =
-  /^([0-9a-f]{64}-[ab]|head-[ab]|part-\d+)\.cache(\.\d+\.tmp)?$/;
+  /^([0-9a-f]{64}-[ab]|head-[ab]|inbox-[ab]|part-\d+)\.cache(\.\d+\.tmp)?$/;
 
 /** _sweep_fold_dir's choice: in a listing of a fold directory, the names
  * a fold writes, where none of its entries was written for

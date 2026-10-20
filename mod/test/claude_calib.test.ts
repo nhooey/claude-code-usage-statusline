@@ -331,15 +331,17 @@ test("staleFoldFiles: a fold directory nobody has written to", () => {
   const old = (now - cc.CALIB_MAX_AGE_S - 60) * 1000;
   const h = "0123456789abcdef".repeat(4);
   const files = [h + "-a.cache", h + "-b.cache", h + "-a.cache.77.tmp",
-    "head-a.cache", "part-12.cache", "notes", h + "-c.cache"];
+    "head-a.cache", "part-12.cache", "inbox-b.cache",
+    "inbox-a.cache.81.tmp", "notes", h + "-c.cache", "inbox-c.cache"];
   assert.deepEqual(cc.staleFoldFiles(files.map((name) => ({ name,
-    kind: "file", mtimeMs: old })), now), files.slice(0, 5));
+    kind: "file", mtimeMs: old })), now), files.slice(0, 7));
   assert.equal(cc.staleFoldFiles([
     { name: h + "-a.cache", kind: "file", mtimeMs: old },
     { name: h + "-b.cache", kind: "file", mtimeMs: (now - 3600) * 1000 },
   ], now), null);
   assert.ok(cc.FOLD_DIR.test("claude-agent-fold-" + h));
   assert.ok(cc.FOLD_DIR.test("claude-main-fold-" + h));
+  assert.ok(cc.FOLD_DIR.test("claude-inbox-fold-" + h));
   assert.ok(!cc.FOLD_DIR.test("claude-agent-folds-mod"));
 });
 

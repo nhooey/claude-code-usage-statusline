@@ -308,12 +308,14 @@ with tempfile.TemporaryDirectory() as tmp:
                            h + "-a.cache.77.tmp"], old_t)
         plant_dir(mf + h, ["head-a.cache", "head-b.cache", "part-0.cache",
                            "part-11.cache"], old_t)
+        plant_dir("claude-inbox-fold-" + h,
+                  ["inbox-a.cache", "inbox-b.cache.12.tmp"], old_t)
         plant_dir(af + h.replace("0", "a"), [h + "-a.cache"], old_t)
         plant(os.path.join(af + h.replace("0", "a"), h + "-b.cache"),
               now - 3600)
         plant_dir(mf + h.replace("0", "a"), ["head-a.cache", "notes"], old_t)
         claude._calib_swept = False
-        assert claude._sweep_calibrations(now) == 3 + 3 + 4 + 1
+        assert claude._sweep_calibrations(now) == 3 + 3 + 4 + 2 + 1
         left = sorted(os.listdir(tmp))
         assert left == sorted([c + h.replace("0", "a") + ".cache",
                                c + h + ".cache.tmp", h + ".json",

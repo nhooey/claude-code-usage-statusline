@@ -82,6 +82,7 @@ from .claude_cost_render import (CostOpts, ink_colour as _c, place,
 from .claude_sources import prepare_claude_reading
 from .options import Options, from_argv
 from . import agent_fold
+from . import inbox_fold
 from . import claude_subagent_render as subagent_render
 
 CALIB_TTL = 300        # the scan walks transcripts; five minutes is plenty
@@ -661,14 +662,15 @@ _CALIB_NAME = re.compile(r"claude-calibration-[0-9a-f]{64}\.cache\Z")
 # on leaves the old one behind, and a save killed mid-write its temporary
 # file (the Python's ends in its pid, the mod's in its shell's).
 _COSTS_NAME = re.compile(r"claude-window-costs-[0-9a-f]{64}\.cache(?:\.\d+)?\Z")
-# The folds' directories, one per transcript, the agents' and the main
-# transcript's, swept with them once none of their files has been written
-# for as long: a session nobody has read since.  Only the names a fold
-# writes, and the temporary files of the Python's saves, are removed, and
-# the directory only once that leaves it empty.
-_FOLD_DIR = re.compile(r"claude-(?:agent|main)-fold-[0-9a-f]{64}\Z")
+# The folds' directories, one per transcript, the agents', the main
+# transcript's and the inbox's, swept with them once none of their files
+# has been written for as long: a session nobody has read since.  Only the
+# names a fold writes, and the temporary files of the Python's saves, are
+# removed, and the directory only once that leaves it empty.
+_FOLD_DIR = re.compile(r"claude-(?:agent|main|inbox)-fold-[0-9a-f]{64}\Z")
 _FOLD_FILE = re.compile(
-    r"(?:[0-9a-f]{64}-[ab]|head-[ab]|part-\d+)\.cache(?:\.\d+\.tmp)?\Z")
+    r"(?:[0-9a-f]{64}-[ab]|head-[ab]|inbox-[ab]|part-\d+)\.cache"
+    r"(?:\.\d+\.tmp)?\Z")
 # A scope's file is rewritten at least every CALIB_TTL while it is in use;
 # one untouched this long is a past period's, the weekly window's included.
 # The window costs' is rewritten whenever a scan finds anything new, and
@@ -2361,7 +2363,7 @@ class AgentUsage(NamedTuple):
                             # Claude Code; what steps the row's spinner
     # Filled by prepare_subagent_tasks, off the other files and the payload.
     inbox: int = 0          # messages waiting for its next tool round; see
-                            # inbox_counts
+                            # inbox_counts and inbox_fold.counts
     ctx_window: int = 0     # its model's window, the payload's
                             # contextWindowSize; 0 where it gives none
     branch: str = ""        # the branch of a worktree it works in apart
@@ -2625,7 +2627,8 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
             # panel's own task row intact rather than break every task.
             continue
     # A killed or failed agent's inbox is dropped with it, and a shell has
-    # none.  The rest are counted in one pass over every file that can send.
+    # none.  The rest are counted in one pass over every file that can send,
+    # each read on from the inbox fold saved for this session.
     targets = {str(t["id"]): paths[str(t["id"])]
                for t, _, _, _ in prepared
                if str(t.get("status") or "") not in ("killed", "failed")}
@@ -2635,8 +2638,9 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
               for t, u, _, _ in prepared if str(t["id"]) in targets
               and (u.work or u.open_at is not None or u.last_seen is not None)]
     try:
-        inbox = inbox_counts([transcript] + agent_files(transcript), targets,
-                             min(firsts) if firsts else None) if targets else {}
+        inbox = inbox_fold.counts(
+            transcript, [transcript] + agent_files(transcript), targets,
+            min(firsts) if firsts else None) if targets else {}
     except Exception:
         inbox = {}
     return tuple((t, u._replace(inbox=inbox.get(str(t["id"]), 0)), m, sh)

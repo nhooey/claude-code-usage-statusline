@@ -1,6 +1,8 @@
 # Saved running totals: fold the transcript once
 
-A proposal, not built yet. Commit ec4dc64 saves the session's cut-down
+Built: every step, and the inbox (Decided 5), landed by 2026-10-21. Each
+step's status note says how it was built where that differs from the design
+below. Commit ec4dc64 saves the session's cut-down
 records, so a reload no longer runs Python over the whole transcript again.
 Each reload still folds every record, though, and so does every document
 after it. This plan turns the two folds into running totals saved on disk.
@@ -512,8 +514,8 @@ Each step lands as its own commit, and the tests pass after each one.
    `inbox_counts` stops scanning the main transcript from the start on each
    tick. The agent-files caches of both ports are replaced and removed.
 
-   **Status 2026-10-20: done,** but for the inbox, which is `RT8i`. As
-   built:
+   **Status 2026-10-20: done,** but for the inbox, which is `RT8i` and
+   has its own status below. As built:
    - `spec/state.jsonc`'s `agent-fold` row, format 1, `check_bytes` 4,096:
      one directory per session,
      `claude-agent-fold-<sha(format\0transcript)>/`, and in it one fold per
@@ -578,6 +580,81 @@ Each step lands as its own commit, and the tests pass after each one.
      read once, and saves 1.3 to 1.7 MB of folds. What is left of a warm
      tick with 1,662 agents is opening two slots and 4 KiB of each file,
      the sidecars and the git checks: about 0.25 ms an agent.
+
+   **`RT8i`, the inbox. Status 2026-10-21: done.** As built:
+   - **Where the counts come from.** `inbox_counts` (`claude.py`'s
+     `prepare_subagent_tasks`) byte-searched the main transcript and every
+     agent file written since the earliest agent on the panel started,
+     each whole, on every tick: the sends (`queued for delivery to`) in
+     any file, and the deliveries (`"coordinator"`, `"peer"`) in each
+     agent's own. Only the Python panel draws an agent's `📨`. The band's
+     `📨` is another count, the main thread's own queue, which the main
+     fold already keeps (`queued`, from `queue-operation` records), so
+     there was nothing of the band's to match.
+   - **Not in the main fold or the agent folds, as sketched above.** The
+     main fold is the mod's, saved at most once per `CONFIG.foldSaveMs`,
+     and its log holds what never changes in parts of up to 6.8 MB: a tick
+     would have read every part to find a handful of sends, then folded the
+     rest of the transcript itself. And the sends come from every agent
+     file, not only those on the panel. So the inbox has a fold of its own,
+     small and the whole session's in one text.
+   - `spec/state.jsonc`'s `inbox-fold` row, format 1, `check_bytes` 4,096:
+     `claude-inbox-fold-<sha(format\0transcript)>/inbox-a.cache` and
+     `-b.cache`, written whole to the two slots in turn with a `seq`, as
+     the agent folds are. The text is
+     `{"format":1,"seq":N,"files":[[path,pos,mtime,tail,sends,got],…]}`,
+     sorted by path: per file the offset its whole lines are folded to,
+     its `st_mtime_ns` as a string, the sha256 of the 4 KiB before the
+     offset, its sends as `[epoch, agent id]` and its deliveries' epochs.
+     The main transcript's deliveries are not folded: no agent's inbox is
+     the transcript, and searching 165 MB for `"peer"` and `"coordinator"`
+     was 0.5 s of a cold read.
+   - **Read on, as the agent folds are.** An entry at the file's size with
+     the file's mtime is taken as it stands, with nothing read; any other
+     is read on from only while its offset is within the file and its tail
+     digest still matches, else the file is folded afresh. A last line with
+     no newline yet is counted and not saved. A file that will not open
+     has its entry dropped. The fold is saved whenever an entry moved,
+     through `os.replace`; the `since` filter is unchanged, so the counts
+     are `inbox_counts`' exactly.
+   - The ports: `inbox_fold.counts` (`coding_agent_usage_line/inbox_fold.py`,
+     new), which the panel calls, and the Node port's `inboxFoldCounts`
+     (`claude_records_node.ts`, over `mod/src/inbox_fold.ts`, new).
+     `inbox_counts` and `inboxCounts` stay, reading the files whole, as
+     what the folds are checked against; their matching is now
+     `inbox_tally` / `inboxTally`, and their scans `inbox_sends_of` /
+     `inboxSendsOf` and `inbox_deliveries_of` / `inboxDeliveriesOf` over
+     bytes. The mod does not read or write the inbox fold.
+   - Swept with the other folds: `_FOLD_DIR` / `FOLD_DIR` take
+     `claude-inbox-fold-`, `_FOLD_FILE` / `FOLD_FILE` `inbox-[ab].cache`.
+   - Cases: `tests/fixtures/inbox-state/` holds each of the 8 fixture
+     files with an inbox mark, its entry's text at every line end, written
+     by `tests/fixtures/gen/state.py`. `tests/fold.py` and
+     `mod/test/inbox_fold.test.ts` hold both ports to it byte for byte and
+     read each text on to the last. Both grow the `inbox-now` session (and
+     the Python the `session` one too) a line and half a line at a time,
+     under three `since` values, and check the counts read on from the fold
+     against `inbox_counts` over the whole files. `inbox_fold.test.ts` has
+     each port save the same session from nothing to the same bytes, then
+     read on from the other's to the same bytes again. `tests/fold.py` also
+     checks a torn newer slot, a rewrite to the same size at another mtime,
+     and an entry at the file's size and mtime taken unread.
+   - Measured by `time-panel` (its inbox column now times
+     `inbox_fold.counts`), every agent as a task, against a scratch state
+     directory:
+
+     | Session | Agents | Main transcript | Inbox before, warm | after | Tick before, warm | after | Cold inbox before | after |
+     |---|---|---|---|---|---|---|---|---|
+     | this repo's | 85 | 169 MB | 348–380 ms | 1–2 ms | 381–417 ms | 38–43 ms | 418 ms | 582 ms |
+     | most agents here | 1,662 | 13 MB | 79–83 ms | 29–34 ms | 455–484 ms | 433–488 ms | 86 ms | 240 ms |
+
+     A warm tick that folds nothing new saves nothing. What is left of the
+     1,662-agent session's inbox is loading its fold (0.52 MB, 2.4 ms) and
+     a stat of each file; a tick where any file grew also writes the fold
+     again, 12 ms of text for that session. The cold read is slower, since
+     it searches every agent file for deliveries as well as sends, where
+     the whole-file count searched only the agents with a send for
+     deliveries; it is paid once a session.
 9. **The window costs, one file.** The three copies become one under the
    contract. It is keyed by the format, no longer by `_source_digest` or
    `CONFIG.version`, and written by whichever port scans.
@@ -650,4 +727,4 @@ Step 9 needs only step 1.
 4. **`$.fs.write`'s atomicity is tested first;** alternating `head-a` and
    `head-b` slots go in only if a write can tear.
 5. **The panel's inbox moves to the folds in a commit of its own,** after
-   step 8.
+   step 8. Built as `RT8i` (step 8's status), in a fold of its own.

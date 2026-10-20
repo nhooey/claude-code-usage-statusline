@@ -529,8 +529,8 @@ Builds the payload the agent panel would get for TRANSCRIPT, by default the
 session under `~/.claude/projects/` with the most agent files, one task per
 agent, and times `prepare_subagent_tasks`: once against an empty scratch
 state directory, then N times off the folds the first saved there. Each line
-gives the part `inbox_counts` took. The real state directory is never read
-or written.
+gives the part the inbox counts took (`inbox_fold.counts`). The real state
+directory is never read or written.
 
 ### `--selftest`
 

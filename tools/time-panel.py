@@ -8,9 +8,9 @@ payload the panel would get for TRANSCRIPT (by default, the transcript
 under ~/.claude/projects with the most agent files), one task per agent
 file, and times claude.prepare_subagent_tasks, the panel's read: first
 against an empty scratch state directory, then N times more off what the
-first left there.  Each line also gives the part of the tick inbox_counts
-took, which reads every file whole and is not the agents' folds.  The real
-state directory is never read or written.
+first left there.  Each line also gives the part of the tick the inbox
+counts took (inbox_fold.counts, read on from the session's inbox fold).
+The real state directory is never read or written.
 """
 
 import argparse
@@ -58,7 +58,7 @@ def main():
     pay = {"transcript_path": tr, "cwd": REPO, "tasks": tasks}
     size = sum(os.path.getsize(p) for p in files)
     inbox_s = [0.0]
-    counts = claude.inbox_counts
+    counts = claude.inbox_fold.counts
 
     def timed_inbox(*a, **k):
         t = time.perf_counter()
@@ -67,7 +67,7 @@ def main():
         finally:
             inbox_s[0] += time.perf_counter() - t
 
-    claude.inbox_counts = timed_inbox
+    claude.inbox_fold.counts = timed_inbox
     try:
         print("%s: %d agents, %.1f MB" % (os.path.basename(tr), len(files),
                                           size / 1e6))
@@ -84,7 +84,7 @@ def main():
                    for dp, _, ns in os.walk(scratch) for n in ns)
         print("state written: %.2f MB" % (kept / 1e6))
     finally:
-        claude.inbox_counts = counts
+        claude.inbox_fold.counts = counts
         shutil.rmtree(scratch, ignore_errors=True)
 
 
