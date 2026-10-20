@@ -55,22 +55,33 @@ with tempfile.TemporaryDirectory() as tmp:
     invalid=os.path.join(tmp, "invalid.py")
     with open(invalid, "w") as fh: fh.write("#!/usr/bin/env python3\nprint('not-json')\n")
     os.chmod(invalid, 0o700)
-    assert command_reading(invalid, {"agent":"codex"}, timeout=1) == {}
+    # The commands that end on their own get a deadline they cannot meet
+    # only on a stalled machine: what is tested is their output, and a
+    # Python start alone has taken over a second under load.
+    assert command_reading(invalid, {"agent":"codex"}, timeout=30) == {}
     close_soon=os.path.join(tmp, "close-soon.py")
     with open(close_soon, "w") as fh: fh.write("#!/usr/bin/env python3\nimport sys,time\nprint('{\\\"schema_version\\\":1,\\\"windows\\\":[{\\\"id\\\":\\\"x\\\",\\\"used_percent\\\":1}]}'); sys.stdout.flush(); sys.stdout.close(); time.sleep(.03)\n")
     os.chmod(close_soon, 0o700)
-    assert command_reading(close_soon, {"agent":"codex"}, timeout=1)["buckets"][0]["windows"][0]["used_percent"] == 1
+    assert command_reading(close_soon, {"agent":"codex"}, timeout=30)["buckets"][0]["windows"][0]["used_percent"] == 1
+    # A command timed out has its own children killed with it.  There is
+    # one to kill only once the command has started it, before the
+    # deadline: under load it may not have, so the deadline doubles until
+    # it has.  The pid is renamed into place, so it is whole once seen.
     child=os.path.join(tmp, "child.py"); pidfile=os.path.join(tmp, "child.pid")
-    with open(child, "w") as fh: fh.write("#!/usr/bin/env python3\nimport subprocess,time\np=subprocess.Popen(['sleep','10']); open(%r,'w').write(str(p.pid)); time.sleep(10)\n" % pidfile)
+    with open(child, "w") as fh: fh.write("#!/usr/bin/env python3\nimport os,subprocess,time\np=subprocess.Popen(['sleep','30']); open(%r,'w').write(str(p.pid)); os.rename(%r, %r); time.sleep(30)\n" % (pidfile + ".new", pidfile + ".new", pidfile))
     os.chmod(child, 0o700)
-    assert command_reading(child, {"agent":"codex"}, timeout=1) == {}
+    for limit in (1, 2, 4, 8, 16):
+        assert command_reading(child, {"agent":"codex"}, timeout=limit) == {}
+        if os.path.exists(pidfile): break
     pid=int(open(pidfile).read())
-    time.sleep(.1)  # allow init to reap the killed process-group child
-    try:
-        os.kill(pid, 0)
-        raise AssertionError("command child survived cleanup")
-    except ProcessLookupError:
-        pass
+    # Killed, it is gone once its new parent has reaped it, which a loaded
+    # machine may take a while to do.
+    gone=time.monotonic() + 10
+    while True:
+        try: os.kill(pid, 0)
+        except ProcessLookupError: break
+        if time.monotonic() > gone: raise AssertionError("command child survived cleanup")
+        time.sleep(.05)
 # An unhashable reset stamp reads as unknown instead of raising.
 odd=native_reading("claude", {"rate_limits": {"five_hour": {"used_percentage": 10, "resets_at": [1]}}, "as_of": 1.9e9})
 assert [(w["used_percent"], w["resets_at"]) for w in odd["buckets"][0]["windows"]] == [(10.0, None)], odd
