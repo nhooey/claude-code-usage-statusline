@@ -178,11 +178,31 @@ test('a named agent: its own task', async ($, on) => {
   expect(w.read).toEqual([])
 })
 
-test('unfolded, and on rows no agent sent, Claude Code draws its own',
+test('unfolded, the task over the whole message, wrapped, on the bar',
   async ($, on) => {
     const w = world(on)
     w.agents = [agent('a1', 'general-purpose', 'Task')]
-    expect((await drawn($, { ...FROM, isExpanded: true })).type).toBe('Box')
+    const tree = await drawn($, { ...FROM, isExpanded: true,
+      text: 'First line.\n\n' + 'word '.repeat(80) })
+    expect(tree.type).toBe('Box')
+    const rows = (tree.children ?? []) as Drawn[]
+    expect(textOf(rows[0]).startsWith('› 🤖📨 Task')).toBe(true)
+    expect(pieces(rows[0])[1]).toEqual(['Task', false, true])
+    expect(textOf(rows[1])).toBe('  First line.')
+    expect(textOf(rows[2])).toBe('')
+    // 400 columns of words wrap onto several rows, none past the width.
+    expect(rows.length).toBeGreaterThan(4)
+    for (const r of rows) {
+      for (const c of (r.children ?? []) as Drawn[]) {
+        expect(c.props?.backgroundColor).toBeTruthy()
+      }
+    }
+  })
+
+test('on rows no agent sent, Claude Code draws its own',
+  async ($, on) => {
+    const w = world(on)
+    w.agents = [agent('a1', 'general-purpose', 'Task')]
     const { from: _, ...prompt } = FROM
     expect((await drawn($, prompt)).type).toBe('Box')
     expect((await drawn($, { ...prompt, origin: { kind: 'composer' } }))

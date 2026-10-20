@@ -36,7 +36,7 @@ import {
   newestBilled, receiptLines, startLine, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
-import { candidates, firstLine, lastReply, messageSpans, saidBy, soleSender,
+import { candidates, firstLine, lastReply, messageBlock, messageSpans, saidBy, soleSender,
   taskOf } from '../src/agent_message.ts'
 import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
@@ -729,14 +729,14 @@ export const register: Register = on => {
   // senderOf what that reads).  A tree, not a rewritten `text`: folded,
   // Claude Code draws the sender's name and not the text, so a new text
   // would change nothing there.  The tree is the row's own look as far as
-  // a tree can give it, one line led by a dim `›`.  Unfolded (ctrl+o, or a
-  // surface that draws every row in full) and on every other row, Claude
-  // Code's own, `onScreen` and all, so the whole message is still there.
+  // a tree can give it, one line led by `›`.  Unfolded (ctrl+o, or a
+  // surface that draws every row in full), the same row over the whole
+  // message, wrapped, on the same green (asked 2026-10-20: Claude Code's
+  // own named the agent's type, in its own colour).  On every other row,
+  // Claude Code's own.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const from = e.props.from
-    if (!CONFIG.agentMessageRow || !from || e.props.isExpanded) {
-      return next(e)
-    }
+    if (!CONFIG.agentMessageRow || !from) return next(e)
     const label = taskOf(await senderOf($, from.name, e.props.text,
       await agentsNow($)), from.name)
     // The band's width before the viewport's, as the footer takes it: the
@@ -746,9 +746,18 @@ export const register: Register = on => {
     // Should the row stand in from the edge, the Text's truncate-end cuts
     // what the ellipsis did not.
     const cols = (bandCols || (e.viewport?.columns ?? 80)) - BAND_EDGE
-    const row = messageSpans(await settingsOf($), label, e.props.text, cols)
-    const { Text } = $.ui.resolve(e)
-    return line(Text, row, 'agentMessage')
+    const st = await settingsOf($)
+    const { Box, Text } = $.ui.resolve(e)
+    if (e.props.isExpanded) {
+      return (
+        <Box flexDirection="column">
+          {messageBlock(st, label, e.props.text, cols).map((l, i) =>
+            line(Text, l, 'agentMessage' + i))}
+        </Box>
+      )
+    }
+    return line(Text, messageSpans(st, label, e.props.text, cols),
+      'agentMessage')
   })
 }
 

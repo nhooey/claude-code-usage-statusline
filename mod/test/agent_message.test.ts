@@ -5,7 +5,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { settings, visWidth } from "../src/formatting.ts";
 import {
-  candidates, firstLine, lastReply, messageSpans, saidBy, senderLabel,
+  candidates, firstLine, lastReply, messageBlock, messageSpans, saidBy,
+  senderLabel, wrapCols,
 } from "../src/agent_message.ts";
 import type { AgentLike, MessageLike } from "../src/agent_message.ts";
 import { text as spansText } from "../src/spans.ts";
@@ -191,4 +192,19 @@ test("a long row is cut to the width, by columns, with an ellipsis", () => {
   // `…`, and no half glyph.
   const five = spansText(messageSpans(st, "Label", text, 5));
   assert.equal(five, "› 🤖…");
+});
+
+test("wrapCols breaks at spaces, cuts long words by columns, keeps blanks", () => {
+  assert.deepEqual(wrapCols(st, "one two three", 7), ["one two", "three"]);
+  assert.deepEqual(wrapCols(st, "abcdefghij", 4), ["abcd", "efgh", "ij"]);
+  assert.deepEqual(wrapCols(st, "a\n\nb  \n", 10), ["a", "", "b"]);
+  // 🤖 is two columns: three of them need six.
+  assert.deepEqual(wrapCols(st, "🤖🤖🤖", 4), ["🤖🤖", "🤖"]);
+});
+
+test("messageBlock: the label row, then the message two in, all to the width", () => {
+  const rows = messageBlock(st, "Task", "First.\nSecond line here.", 12);
+  assert.deepEqual(rows.map((r) => spansText(r)),
+    ["› 🤖📨 Task ", "  First.    ", "  Second    ", "  line here."]);
+  for (const r of rows) for (const s of r) assert.equal(s.bg, "B_MSG");
 });

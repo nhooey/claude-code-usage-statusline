@@ -27,6 +27,7 @@
 import { E_BOT, E_INBOX } from "./spec.ts";
 import { cut, span, width } from "./spans.ts";
 import type { Span } from "./spans.ts";
+import { visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
 
 /** What the row reads of an agent: `$.agent.list()`'s AgentInfo, in part. */
@@ -135,6 +136,59 @@ export function saidBy(head: string,
   if (!head) return null;
   const hits = replies.filter(([, reply]) => reply.includes(head));
   return hits.length === 1 ? hits[0][0] : null;
+}
+
+/** The message unfolded (ctrl+o), as rows of spans: the folded row's
+ * `› 🤖📨 ` and the sender's label, bold, then every line of the message
+ * two columns in, wrapped at word breaks to `cols` (a word wider than the
+ * room is cut by columns), all on B_MSG and padded to `cols`, so it reads
+ * as the folded row does, named by its task, not Claude Code's
+ * `@general-purpose` on its own colour (asked 2026-10-20). */
+export function messageBlock(st: Settings, label: string, text: string,
+  cols: number): Span[][] {
+  const w = Math.max(4, cols);
+  const bar = (s: Span[]): Span[] => {
+    const out = cut(s, w, st.widths);
+    const pad = w - width(out, st.widths);
+    if (pad > 0) out.push(span(" ".repeat(pad), null, false, false, "B_MSG"));
+    return out;
+  };
+  const rows = [bar([span("› " + E_BOT + E_INBOX + " ", null, false, false,
+    "B_MSG"), span(label, null, false, true, "B_MSG")])];
+  for (const line of wrapCols(st, text.replace(/\t/g, "  "), w - 2)) {
+    rows.push(bar([span("  " + line, null, false, false, "B_MSG")]));
+  }
+  return rows;
+}
+
+/** `text`'s lines wrapped to `cols` columns as the terminal counts them:
+ * at the last space that fits, else by columns inside a long word; blank
+ * lines kept, trailing blanks dropped. */
+export function wrapCols(st: Settings, text: string, cols: number): string[] {
+  const out: string[] = [];
+  const room = Math.max(1, cols);
+  for (const raw of text.replace(/\s+$/, "").split(/\r?\n/)) {
+    let rest = raw.replace(/\s+$/, "");
+    if (!rest) { out.push(""); continue; }
+    while (visWidth(rest, st.widths) > room) {
+      const cps = Array.from(rest);
+      let n = 0, used = 0;
+      while (n < cps.length && used + visWidth(cps[n], st.widths) <= room) {
+        used += visWidth(cps[n], st.widths);
+        n++;
+      }
+      const head = cps.slice(0, n).join("");
+      // Whole when a space follows it; else up to its last space.
+      const space = cps[n] === " " ? head.length : head.lastIndexOf(" ");
+      const take = space > 0 ? head.slice(0, space) : head;
+      out.push(take);
+      rest = Array.from(rest).slice(Array.from(take).length).join("")
+        .replace(/^ +/, "");
+      if (!take) break;
+    }
+    out.push(rest);
+  }
+  return out;
 }
 
 /** The row as spans: `› 🤖📨 `, the sender's label bold, and after a
