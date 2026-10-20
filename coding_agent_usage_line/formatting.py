@@ -1510,8 +1510,10 @@ def _winsize(path: str) -> Optional[int]:
     except OSError:
         return None
     try:
-        _rows, cols = struct.unpack(
-            "hh", fcntl.ioctl(fd, termios.TIOCGWINSZ, b"\0" * 4))
+        # The whole struct winsize, its four shorts: Python 3.14 refuses a
+        # buffer shorter than what the ioctl writes ("buffer overflow").
+        _rows, cols, _x, _y = struct.unpack(
+            "hhhh", fcntl.ioctl(fd, termios.TIOCGWINSZ, b"\0" * 8))
         return cols if cols > 0 else None
     except OSError:
         return None

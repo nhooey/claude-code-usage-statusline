@@ -14,3 +14,8 @@ tests/out-subagent/
 
 # The alignment probe is switched on by this file being present.
 tools/align-probe/align-probe.on
+
+# Nix: build outputs, and the dev shell's state.
+result
+result-*
+.direnv/
