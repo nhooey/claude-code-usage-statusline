@@ -500,19 +500,6 @@ async function pressTurn($: $): Promise<void> {
   }
 }
 
-/** A press on an agent's message row: that agent's transcript in the main
- * view, logged as pressTurn's is. */
-async function pressMessage($: $, agent: AgentLike & { id: string }):
-  Promise<void> {
-  const call = '$.ui.view(' + JSON.stringify({ agentId: agent.id }) + ')'
-  const what = `press 🤖📨 ${JSON.stringify(taskOf(agent, agent.type))}: `
-  try {
-    await log($, what + call + ' -> ' +
-      JSON.stringify(await $.ui.view({ agentId: agent.id })))
-  } catch (err) {
-    await log($, what + call + ' threw', err)
-  }
-}
 
 /** The band's rows as they stand, at bandCols, each with its scope: of 🎤,
  * 🤖 and 🎮, those rows.<row>.live draws while a turn runs, and those it
@@ -907,6 +894,11 @@ export const register: Register = on => {
   // message, wrapped, on the same green (asked 2026-10-20: Claude Code's
   // own named the agent's type, in its own colour).  On every other row,
   // Claude Code's own.
+  //
+  // Not pressable: a click on the row is Claude Code's, which expands the
+  // message and collapses it again, as on its own row.  A Button here took
+  // that click (asked 2026-10-21), and no call a press can make toggles a
+  // row (`isExpanded` is read-only), so the row is plain Text.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const from = e.props.from
     if (!from) return next(e)
@@ -915,10 +907,6 @@ export const register: Register = on => {
     const sender = await senderOf($, from.name, e.props.text,
       await agentsNow($))
     const label = taskOf(sender, from.name)
-    // Pressed, the sender's transcript in the main view (pressMessage;
-    // clickable-rows.md, a trial); with the sender unknown, not pressable.
-    const id = sender?.id
-    const press = id ? () => pressMessage($, { ...sender!, id }) : null
     // The band's width before the viewport's, as the footer takes it: the
     // viewport has read wider than the terminal drew (seen live
     // 2026-10-20).  Ending where the band's rows and the receipt's end,
@@ -928,18 +916,17 @@ export const register: Register = on => {
     const cols = (bandCols || (e.viewport?.columns ?? 80)) -
       options().rightEdge
     const st = await settingsOf($)
-    const { Box, Button, Text } = $.ui.resolve(e)
-    const row = (spans: Span[], key: string) => press
-      ? pressable(Button, Text, spans, key, press) : line(Text, spans, key)
+    const { Box, Text } = $.ui.resolve(e)
     if (e.props.isExpanded) {
       return (
         <Box flexDirection="column">
           {messageBlock(st, label, e.props.text, cols).map((l, i) =>
-            row(l, 'agentMessage' + i))}
+            line(Text, l, 'agentMessage' + i))}
         </Box>
       )
     }
-    return row(messageSpans(st, label, e.props.text, cols), 'agentMessage')
+    return line(Text, messageSpans(st, label, e.props.text, cols),
+      'agentMessage')
   })
 }
 

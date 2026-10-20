@@ -30,18 +30,16 @@ const TEXT = 'The right edge is now a setting in both ports, from one ' +
 
 type World = { agents: AgentInfo[]; listed: number;
   replies: Record<string, string>; read: string[];
-  clock: ReturnType<typeof mock.clock>;
-  logged: string[]; views: unknown[]; viewAnswer: { deny?: string } }
+  clock: ReturnType<typeof mock.clock>; views: unknown[] }
 
 /** The engine beneath the mod: its agents as `world.agents` holds them,
  * each list counted; each agent's conversation one user message and the
  * reply `world.replies` holds for it, or a deny where it holds none, each
- * read noted; its own drawing of every row a Box; each `$.ui.log` line
- * and each `$.ui.view` noted, the view answered `world.viewAnswer`. */
+ * read noted; its own drawing of every row a Box; and each `$.ui.view`
+ * noted, so a view the row should not open shows. */
 function world(on: On): World {
   const w: World = { agents: [], listed: 0, replies: {}, read: [],
-    clock: mock.clock(on, { now: NOW }), logged: [], views: [],
-    viewAnswer: {} }
+    clock: mock.clock(on, { now: NOW }), views: [] }
   mock.env(on, { HOME: '/home/fixture' })
   on('agent.list', () => {
     w.listed++
@@ -56,13 +54,10 @@ function world(on: On): World {
       { role: 'assistant', text: reply, toolUses: [] }] }
   })
   on('ui.render', () => h('Box', null) as RenderElement)
-  on('ui.log', ($, e) => {
-    w.logged.push(e.text)
-    return { value: undefined }
-  })
+  on('ui.log', () => ({ value: undefined }))
   on('ui.view', ($, e) => {
     w.views.push({ ...e })
-    return { value: w.viewAnswer }
+    return { value: {} }
   })
   return w
 }
@@ -79,13 +74,9 @@ const FROM: RenderPropsOf['UserMessage'] = {
 type Drawn = { type: string; props?: Record<string, unknown>;
   children?: (Drawn | string)[] }
 
-/** The row's Text: inside the Button a pressable row is drawn in. */
-const rowOf = (tree: Drawn) => tree.type === 'Button'
-  ? (tree.children ?? [])[0] as Drawn : tree
-
 /** The row's pieces as drawn: each nested Text's text, and whether it is
  * dim and bold, less the blanks that pad it to the width. */
-const pieces = (tree: Drawn) => (rowOf(tree).children ?? []).map((c) =>
+const pieces = (tree: Drawn) => (tree.children ?? []).map((c) =>
   typeof c === 'string' ? [c, false, false]
     : [(c.children ?? []).join(''), c.props?.dimColor === true,
         c.props?.bold === true])
@@ -120,14 +111,11 @@ for (const surface of ['terminal', 'desktop'] as const) {
       component: 'UserMessage', props: FROM,
       viewport: { columns: COLS, rows: 40 } })
     const tree = await ui.drawn() as Drawn
-    // Its sender known, the row presses: a plain Button, no hotkey.
-    expect(tree.type).toBe('Button')
-    expect(tree.props?.plain).toBe(true)
-    expect(tree.props?.hotkey).toBeUndefined()
-    expect(rowOf(tree).type).toBe('Text')
-    expect(rowOf(tree).props?.wrap).toBe('truncate-end')
+    // Plain Text, no Button: a click on the row is Claude Code's.
+    expect(tree.type).toBe('Text')
+    expect(tree.props?.wrap).toBe('truncate-end')
     // Not dim as a whole: a dim around the row would dim the task too.
-    expect(rowOf(tree).props?.dimColor).toBe(undefined)
+    expect(tree.props?.dimColor).toBe(undefined)
     expect(pieces(tree)).toEqual(expected(w, FROM))
     expect(pieces(tree).slice(0, 2)).toEqual([['› 🤖📨 ', false, false],
       ['Reclaim the right-edge columns', false, true]])
@@ -238,8 +226,8 @@ test('unfolded, the task over the whole message, wrapped, on the bar',
     // 400 columns of words wrap onto several rows, none past the width.
     expect(rows.length).toBeGreaterThan(4)
     for (const r of rows) {
-      expect(r.type).toBe('Button')
-      for (const c of (rowOf(r).children ?? []) as Drawn[]) {
+      expect(r.type).toBe('Text')
+      for (const c of (r.children ?? []) as Drawn[]) {
         expect(c.props?.backgroundColor).toBeTruthy()
       }
     }
@@ -273,43 +261,22 @@ test('the agents are listed once per CONFIG.agentListMs, not per draw',
     expect(w.listed).toBe(2)
   })
 
-test('pressing the row puts its sender\'s transcript in the main view, ' +
-  'and logs the call and its answer', async ($, on) => {
-    const w = world(on)
-    w.agents = [agent('a1', 'general-purpose', 'Count the transcript'),
-      agent('a2', 'general-purpose', 'Reclaim the right-edge columns')]
-    w.replies = { a1: 'Still counting.', a2: TEXT }
-    const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
-      component: 'UserMessage', props: FROM,
-      viewport: { columns: COLS, rows: 40 } })
-    await ui.press({ key: 'agentMessage' })
-    expect(w.views).toEqual([{ agentId: 'a2' }])
-    expect(w.logged.some((l) => l.includes('press 🤖📨 "Reclaim the ' +
-      'right-edge columns": $.ui.view({"agentId":"a2"}) -> {}'))).toBe(true)
-    // A view refused is logged with its reason.
-    w.viewAnswer = { deny: 'not person-initiated' }
-    await ui.press({ key: 'agentMessage' })
-    expect(w.logged.some((l) => l.includes('$.ui.view({"agentId":"a2"}) ' +
-      '-> {"deny":"not person-initiated"}'))).toBe(true)
-  })
-
-test('unfolded, every row presses to the same view', async ($, on) => {
-  const w = world(on)
-  w.agents = [agent('a1', 'general-purpose', 'Task')]
-  const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
-    component: 'UserMessage', props: { ...FROM, isExpanded: true },
-    viewport: { columns: COLS, rows: 40 } })
-  await ui.press({ key: 'agentMessage2' })
-  expect(w.views).toEqual([{ agentId: 'a1' }])
-})
-
-test('a sender not found: the row does not press', async ($, on) => {
-  const w = world(on)
-  w.agents = [agent('a1', 'general-purpose', 'One'),
-    agent('a2', 'general-purpose', 'Two')]
-  const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
-    component: 'UserMessage', props: FROM,
-    viewport: { columns: COLS, rows: 40 } })
-  expect(await ui.findAll({ type: 'Button' })).toEqual([])
-  expect((await ui.drawn() as Drawn).type).toBe('Text')
-})
+for (const isExpanded of [false, true]) {
+  test(`its sender known, the row holds no Button, so a click on it is ` +
+    `Claude Code's to expand and collapse (${isExpanded ? 'un' : ''}folded)`,
+    async ($, on) => {
+      const w = world(on)
+      w.agents = [agent('a1', 'general-purpose', 'Count the transcript'),
+        agent('a2', 'general-purpose', 'Reclaim the right-edge columns')]
+      w.replies = { a1: 'Still counting.', a2: TEXT }
+      const ui = await $.ui.mount({ plugin: 'usage-band',
+        surface: 'terminal', component: 'UserMessage',
+        props: { ...FROM, isExpanded },
+        viewport: { columns: COLS, rows: 40 } })
+      // The sender was found: the row is named by its task.
+      expect(JSON.stringify(await ui.drawn()))
+        .toContain('Reclaim the right-edge columns')
+      expect(await ui.findAll({ type: 'Button' })).toEqual([])
+      expect(w.views).toEqual([])
+    })
+}
