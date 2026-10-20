@@ -22,6 +22,9 @@ declare module 'claude-code' {
       /** Whether the band still draws a done turn's 🎤 and 🎮 rows, until
        * just after its receipt is stamped. */
       held: boolean;
+      /** Bumped by each read of the configuration files that changes the
+       * options, so every drawing draws again with them. */
+      configured: number;
     }
   }
 }

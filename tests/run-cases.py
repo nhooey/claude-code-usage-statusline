@@ -149,12 +149,15 @@ class Suite:
         # the project walk starts in the case's repository, whose .git
         # stops it: no golden reads this machine's own config files,
         # whatever the payload's directory or the developer's environment.
+        # The right edge too: the panel's goldens are drawn 5 columns short
+        # of the edge, the band's [-] room, which the derived default (2,
+        # under the mod's default live-place) is not (Decided 13).
         source = "auto" if e["source"] is None else "cmd:" + cmd
         config = os.path.join(self.tmp, "config-" + name)
         if not os.path.exists(config):
             os.makedirs(config)
             with open(os.path.join(config, "config.jsonc"), "w") as fh:
-                json.dump({"usage-source": source}, fh)
+                json.dump({"usage-source": source, "right-edge": 5}, fh)
         env["CODING_AGENT_USAGE_LINE_CONFIG_DIR"] = config
         env["CODING_AGENT_USAGE_LINE_PROJECT_DIR"] = self.repos[e["repo"]]
         return env, self.repos[e["repo"]]

@@ -93,8 +93,9 @@ claude plugin marketplace add "$PWD"
 claude plugin install usage-band@claude-code-usage-statusline
 ```
 
-Its settings, such as the usage source and what it hides, are in
-`mod/hooks/config.ts`; [`mod/README.md`](mod/README.md) has the rest.
+Its settings, such as the usage source and what it hides, are in the
+[configuration files](docs/options.md#configuration-files) the panel reads
+too; [`mod/README.md`](mod/README.md) has the rest.
 
 The agent panel is the Python program's. Merge
 [`examples/claude/settings.json`](examples/claude/settings.json) into
@@ -309,7 +310,8 @@ in detail.
 ## Customizing
 
 `--hide scope[.group[.metric]]` hides a row, a group of cells or one cell,
-the same path on every readout: in `mod/hooks/config.ts` for the mod, and as
+the same path on every readout: `hide` in a
+[configuration file](docs/options.md#configuration-files) for both, or as
 flags to `subagentStatusLine` for the panel. The mod ships hiding 🔋, 🧠's
 share of the window and 🎯; the renders above hide nothing. See
 [Hiding](docs/layout.md#hiding).
@@ -317,7 +319,7 @@ share of the window and 🎯; the renders above hide nothing. See
 [Options](docs/options.md) lists every flag.
 
 The 💳 row's figures come from the usage source the mod is configured with
-(`usageSource` in `mod/hooks/config.ts`, `claude-usage-tracker` as shipped),
+(`usage-source`, `claude-usage-tracker` as the mod ships),
 and the panel's from `--usage-source`. Besides the rate limits Claude Code
 reports, either can take them from:
 

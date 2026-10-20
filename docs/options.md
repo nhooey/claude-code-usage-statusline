@@ -63,7 +63,7 @@ These work for both agents.
 | `--from-figures PATH` | none | Claude: draw a saved figures document instead of reading any input. The test suite saves one per case; useful for redrawing a captured layout. See [the tests' README](../tests/README.md#figures). |
 | `--diagnose` | off | Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Claude's status line adds the session's cost and lines two ways, as a check on each other: `cost_usd` and `lines`, this program's own over the transcript and the agent files, as the cost line totals them, and `claude_cost_usd` and `claude_lines`, the totals Claude Code's payload gave; each is blank where its side has none. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses. |
 | `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
-| `--right-edge N` | `5` | The columns every agent-panel row leaves blank at the terminal's right edge. `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt; `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge. Claude only. |
+| `--right-edge N` | `2`, or `5` under `live-place` `above` | The columns every agent-panel row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `live-place` from the files, so the panel and the band end in one column; a panel run without the mod sets it where it wants another. Claude only. |
 | `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). Only the agent panel draws on the grid so far; the other modes, and Codex, accept it and ignore it. |
 <!-- options:end shared -->
 
@@ -198,10 +198,10 @@ draws the panel's chrome before each row, `  ◯ ` at the top level and two
 more blanks for each level an agent started by another agent sits below it
 (the depth is `spawnDepth` in the agent's `.meta.json` sidecar, or the
 panel's own tree); the row counts it toward the width and does not print it.
-Every row ends five columns short of the terminal's edge, as the band does
-above the prompt; `--right-edge 2` ends it where the mod's rows under the
-footer line end, two columns short, where Claude Code's footer container
-stops.
+Every row ends two columns short of the terminal's edge, where the mod's
+rows under the footer line end, at Claude Code's footer container; with
+the mod's `live-place` `above`, five short, as the band does above the
+prompt. `--right-edge` (or `right-edge` in a file) sets another.
 The columns follow from the width and `--hide` alone, kept for two levels of
 nesting whether any agent runs or not, so no column moves when an agent
 starts; a deeper row cuts its own label instead. On a narrow terminal whole
@@ -297,13 +297,29 @@ on stderr naming the file, and an unknown key's names the nearest known one.
 for an option the mod reads too (`hide`, `right-edge`, `usage-source`, …) is
 said as well, since the band then draws the file's.
 
-The mod reads the files once per load (a session's start or a
-`/reload-plugins`) and writes what each file gave and every warning to
-`usage-band.log` in the state directory, one line each. For now it still
-draws from `CONFIG` in `mod/hooks/config.ts`; drawing from the files, the
-re-reads on a changed file or a moved root, and a notice for a bad file
-come with the next step of
-[the plan](../agents/plans/config-merge.md#the-build-order).
+The mod draws from the same merged options. It reads the files at each
+load (a session's start or a `/reload-plugins`), again on `session.start`,
+and every 30 seconds while idle, a stat of each file, reading again only
+when one has come, gone or changed, or `/cd` has moved the session's root;
+a change draws every row again under the new options, with no reload. Each
+read writes what each file gave and every warning to `usage-band.log` in
+the state directory, one line each, and a read that changes the options
+writes them too, each with its layer. A file with a warning also gets one
+notice line in the transcript, `usage-band: config <path>: …`, once per
+change to the file.
+
+Under the files the mod has one layer of its own, `mod`: `SETTINGS` in
+`mod/hooks/config.ts`, which holds the settings it drew with before it
+read files and that are not the defaults: `usage-source`
+`claude-usage-tracker`, `hide` `*.plan.five_hour`, `*.context.share`,
+`*.tokens.cache`, `account.workspace.project` and
+`account.workspace.branch`, and `rows` with 🎤, 🤖 and
+🎮 all live `"running"` and stamped. A file that sets one wins over it.
+`--show-config` does not know this layer; the mod's log names it.
+
+`right-edge` follows `live-place` when no layer sets it, as `label` follows
+`usage-text`: 2 under the default `"footer"`, 5 under `"above"`, in the
+panel too, so one setting moves the band and the panel together.
 
 `--show-config` prints the merged options, each with the layer it came from
 and the layers' files, and the warnings, and exits. It reads no stdin, so

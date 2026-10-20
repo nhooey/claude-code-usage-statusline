@@ -15,10 +15,6 @@ from .options_spec import OPTIONS
 # for a value worked out from another option's when no layer set it.
 LAYERS = ("flag", "project-local", "project", "user", "default")
 
-# Derived values the merge leaves alone for now: right-edge follows
-# live-place once the mod draws from the merged options too (Decided 13).
-_NOT_DERIVED_YET = {"right-edge"}
-
 # This port's options, by every spelling of their flags.
 _PY = {name: o for name, o in OPTIONS.items() if "py" in o["ports"]}
 _BY_FLAG = {}
@@ -153,13 +149,27 @@ def merge(flags, files=(), ports=("py",), warnings=()):
             values[name], layers[name] = option["default"], "default"
     for name, option in OPTIONS.items():
         derived = option.get("derived")
-        if (derived and layers.get(name) == "default"
-                and name not in _NOT_DERIVED_YET
-                and derived["from"] in values):
-            key = _derive_key(values[derived["from"]])
+        if derived and layers.get(name) == "default":
+            key = _derive_key(_merged_value(derived["from"], values, flags,
+                                            files))
             if key in derived["map"]:
                 values[name], layers[name] = derived["map"][key], "derived"
     return Options(values, layers, fields, warnings)
+
+
+def _merged_value(name, values, flags, files):
+    """The merged value of `name`, which a derived option follows: as the
+    merge gave it, or for an option of the other port only, which these
+    Options leave out (right-edge follows the mod's live-place, Decided
+    13), from the highest layer that sets it."""
+    if name in values:
+        return values[name]
+    if name in flags:
+        return flags[name]
+    for f in files:
+        if name in f.values:
+            return f.values[name]
+    return OPTIONS[name]["default"]
 
 
 def from_flags(parsed, files=()):

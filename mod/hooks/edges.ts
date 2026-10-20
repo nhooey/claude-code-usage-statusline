@@ -65,9 +65,16 @@ import type { RateSample } from '../src/claude.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import { isDict, pyGet, utf8 } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
-import { load as loadConfig } from '../src/config.ts'
-import type { ConfigEnv, ConfigFs, Found } from '../src/config.ts'
-import { CONFIG } from './config.ts'
+import {
+  FILE_LAYERS, MOD_LAYER, abspath, find as findConfig, load as loadConfig,
+  merge as mergeConfig, optionsOf,
+} from '../src/config.ts'
+import type { ConfigEnv, ConfigFs, Found, Layer, Merged, Rows }
+  from '../src/config.ts'
+import { OPTIONS } from '../src/options_spec.ts'
+import type { Options } from '../src/options_spec.ts'
+import { LOG_NAME } from '../src/modlog.ts'
+import { CONFIG, SETTINGS } from './config.ts'
 import { log } from './log.ts'
 
 type $ = EngineInterface
@@ -898,7 +905,7 @@ async function storeFind($: $, dir: string, agent: string, account: string,
 async function preparedVia($: $, places: Places, raw: Dict,
   sessionId: string, model: string, now: number):
   Promise<PreparedClaudeReading> {
-  const spec = CONFIG.usageSource
+  const { usageSource: spec, account, accountPeriod } = options()
   const context = statusSourceContext(spec, sessionId, model, now, raw)
   const dir = places.stateDir
   const store: Store = {
@@ -909,7 +916,7 @@ async function preparedVia($: $, places: Places, raw: Dict,
   const fetch: Fetch = (selected, ctx) =>
     fetchOne($, places.home, selected, ctx)
   const env: Env = {}
-  return prepareClaudeReading(spec, CONFIG.account, CONFIG.period, context,
+  return prepareClaudeReading(spec, account, accountPeriod, context,
     now, env, store, fetch, () => configAccountVia($, places.home))
 }
 
@@ -1222,34 +1229,163 @@ function configFs($: $): ConfigFs {
  * the mod").  The walk starts at the session's root, and a usage source a
  * file names is checked as Claude's panel checks it. */
 export async function configVia($: $): Promise<Found> {
+  const [start, env] = await configWhere($)
+  return loadConfig(start, env, configFs($), 'claude')
+}
+
+/** Where the walk starts, the session's root, and the variables it
+ * reads. */
+async function configWhere($: $): Promise<[string, ConfigEnv]> {
   const env: ConfigEnv = {
     HOME: await $.env.get('HOME'),
     XDG_CONFIG_HOME: await $.env.get('XDG_CONFIG_HOME'),
     CODING_AGENT_USAGE_LINE_CONFIG_DIR:
       await $.env.get('CODING_AGENT_USAGE_LINE_CONFIG_DIR'),
   }
-  const start = await $.session.root().catch(() => $.session.cwd())
-  return loadConfig(start, env, configFs($), 'claude')
+  return [await $.session.root().catch(() => $.session.cwd()), env]
 }
+
+/** The mod's own settings as a layer under the files (MOD_LAYER). */
+const MOD_SETTINGS: Layer = { name: MOD_LAYER, path: 'mod/hooks/config.ts',
+  mtimeMs: 0, values: SETTINGS }
+
+/** The files `found` gave over the mod's settings and the defaults; the
+ * mod's settings over the defaults before any read. */
+export function mergedOf(found: Found | null): Merged {
+  return mergeConfig([...found?.layers ?? [], MOD_SETTINGS],
+    found?.options.warnings ?? [])
+}
+
+/** The options with no configuration file: the mod's settings over the
+ * defaults, what it draws with before the first read. */
+export const unconfigured = (): Options => optionsOf(mergedOf(null))
 
 // What the last read of the configuration files found; null before one.
 let configFound: Found | null = null
+// The options merged from it, and what the files were when it was read.
+let merged: Merged = mergedOf(null)
+let current: Options = optionsOf(merged)
+let configStamp = ''
+// The read under way, which a second caller waits on rather than reading
+// again beside it.
+let configReading: Promise<boolean> | null = null
+// The files a notice has been shown for, each at a modification time.
+const noticed = new Set<string>()
 
 /** The last read of the configuration files, or null before one. */
 export const configNow = (): Found | null => configFound
 
-/** Reads the configuration files and logs what they gave and every
- * warning, once per read.  Nothing draws from them yet: CONFIG is still
- * the mod's settings, until options() takes its place (step 6). */
-export async function readConfig($: $): Promise<Found> {
-  const found = await configVia($)
+/** The options the mod draws with, as the last read merged them: the
+ * files, then the mod's settings (hooks/config.ts, SETTINGS), then the
+ * defaults, with right-edge derived from live-place where none set it.
+ * Before the first read, the mod's settings and the defaults. */
+export const options = (): Options => current
+
+/** What the files are, as one string: where the walk starts, then each
+ * layer's path and its modification time, "-" for none.  The walk's
+ * stats alone, no read: a new root, a file come, gone or written each
+ * change it. */
+async function stampOf($: $, start: string, env: ConfigEnv):
+  Promise<string> {
+  const fs = configFs($)
+  const { paths } = await findConfig(start, env, fs)
+  const parts = [abspath(start)]
+  for (const name of FILE_LAYERS) {
+    const path = paths[name]
+    const st = path === null ? null : await fs.stat(path)
+    parts.push(`${path ?? '-'}@${st?.mtimeMs ?? '-'}`)
+  }
+  return JSON.stringify(parts)
+}
+
+/** Reads the configuration files again where they have changed since the
+ * last read, or the session's root has moved, and on the first call:
+ * true when the options it merged differ from the last.  Each read logs
+ * the files and what each gave, and every warning; a read that changes
+ * the options logs them, each that a layer above the defaults gave, with
+ * its layer; a file with warnings shows one notice in the transcript per
+ * modification time.  One read at a time. */
+export async function readConfig($: $): Promise<boolean> {
+  configReading ??= reread($).finally(() => {
+    configReading = null
+  })
+  return configReading
+}
+
+async function reread($: $): Promise<boolean> {
+  const [start, env] = await configWhere($)
+  // Taken before the read: a file written between the two is read again
+  // next time, rather than missed.
+  const stamp = await stampOf($, start, env)
+  const first = configFound === null
+  if (!first && stamp === configStamp) return false
+  const found = await loadConfig(start, env, configFs($), 'claude')
+  configStamp = stamp
   configFound = found
   const files = found.layers.map((l) =>
     `${l.name} ${l.path} (${Object.keys(l.values).join(', ')})`)
   await log($, `config from ${found.start}: ` +
     (files.length ? files.join('; ') : 'no files'))
   for (const w of found.options.warnings) await log($, 'config: ' + w)
-  return found
+  await notice($, found)
+  const next = mergedOf(found)
+  const changed = JSON.stringify([next.values, next.layers, next.fields]) !==
+    JSON.stringify([merged.values, merged.layers, merged.fields])
+  merged = next
+  current = optionsOf(next)
+  if (changed || first) await log($, 'config options: ' + optionsTable(next))
+  return changed
+}
+
+/** Each option the mod reads, and each table field, that a layer above
+ * the defaults gave, `name value (layer)`, "; " between them, in the
+ * spec's order; "defaults" for none. */
+export function optionsTable(m: Merged): string {
+  const out: string[] = []
+  for (const [name, option] of Object.entries(OPTIONS)) {
+    const layer = m.layers[name]
+    const value = m.values[name]
+    if (layer === 'default' ||
+        !(option.ports as readonly string[]).includes('mod')) continue
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [row, rec] of Object.entries(value as Rows)) {
+        for (const [field, v] of Object.entries(rec)) {
+          const by = m.fields[`${name}.${row}.${field}`]
+          if (by) out.push(`${name}.${row}.${field} ${JSON.stringify(v)} (${by})`)
+        }
+      }
+      continue
+    }
+    out.push(`${name} ${JSON.stringify(value)} (${layer})`)
+  }
+  return out.length ? out.join('; ') : 'defaults'
+}
+
+/** One line in the transcript for each file with warnings, the first of
+ * them and how many more, once per file and modification time: seen the
+ * first time, not on every read (config-merge.md, "Unknown keys and bad
+ * values").  Not a toast: a toast takes the footer's line, hiding the 💳
+ * at its end.  `$.ui.notice` is a line under a tool call's dialog, which
+ * a file's read has none of. */
+async function notice($: $, found: Found): Promise<void> {
+  const fs = configFs($)
+  for (const name of FILE_LAYERS) {
+    const path = found.paths[name]
+    if (path === null) continue
+    const said = found.options.warnings.filter((w) =>
+      w.startsWith(path + ': '))
+    if (!said.length) continue
+    const key = `${path}@${(await fs.stat(path))?.mtimeMs ?? '-'}`
+    if (noticed.has(key)) continue
+    noticed.add(key)
+    const more = said.length > 1
+      ? ` (and ${said.length - 1} more in ${LOG_NAME})` : ''
+    try {
+      $.ui.log(`usage-band: config ${said[0]}${more}`)
+    } catch (err) {
+      await log($, 'config: no notice', err)
+    }
+  }
 }
 
 /** The status line's payload, made from `$.session` and what the handlers

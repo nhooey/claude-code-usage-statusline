@@ -29,22 +29,24 @@ import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { accountLine, bandRows, bandScoped, footerRuler, footerTail,
-  modeOfHint, workspaceOf }
+import { ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler,
+  footerTail, modeOfHint, workspaceOf }
   from '../src/band.ts'
+import type { RowsLive } from '../src/band.ts'
 import {
   newestBilled, receiptLines, startLine, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
+import type { Options } from '../src/options_spec.ts'
 import { candidates, firstLine, lastReply, messageBlock, messageSpans, saidBy, soleSender,
   taskOf } from '../src/agent_message.ts'
 import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import * as spec from '../src/spec.ts'
-import { BAND_EDGE, CONFIG } from './config.ts'
-import { costDoc, permissionModeOf, placesOf, readConfig, seen, statusDoc,
-  steps, transcriptPath, turnsNow } from './edges.ts'
+import { CONFIG } from './config.ts'
+import { costDoc, options, permissionModeOf, placesOf, readConfig, seen,
+  statusDoc, steps, transcriptPath, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -57,6 +59,10 @@ const rate = atom({ plugin: 'usage-band', key: 'rate' } as const, null)
 const filed = atom({ plugin: 'usage-band', key: 'filed' } as const, 0)
 const clockNow = atom({ plugin: 'usage-band', key: 'now' } as const, 0)
 const held = atom({ plugin: 'usage-band', key: 'held' } as const, false)
+// Bumped by each read of the configuration files that changes the
+// options, so every drawing that reads it draws again with them.
+const configured = atom({ plugin: 'usage-band', key: 'configured' } as const,
+  0)
 
 /** The store's key for a start line: its prompt's text. */
 export const startKey = (text: string) =>
@@ -64,23 +70,59 @@ export const startKey = (text: string) =>
 
 let places: Places | null = null
 let st: Settings | null = null
+// The options `st` was made under.
+let stKey = ''
 
 async function placesFor($: $): Promise<Places> {
   places ??= await placesOf($)
   return places
 }
 
+/** The settings the rows are drawn under, made again when the options
+ * they take have changed. */
 async function settingsOf($: $): Promise<Settings> {
-  if (st) return st
+  const o = options()
+  // right-edge: derived from live-place, 2 under the footer line, where
+  // there is no [-], and 5 above the prompt, where the band's [-] stands.
+  const key = JSON.stringify([o.markSpacing, o.subscriptDecimals,
+    o.rightEdge])
+  if (st && key === stKey) return st
   const env: { [k: string]: string | undefined } = {}
   // The variables formatting.settings reads for the terminal's profile.
   env.TMUX = await $.env.get('TMUX')
   env.TERMINAL_EMULATOR = await $.env.get('TERMINAL_EMULATOR')
   env.TERM_PROGRAM = await $.env.get('TERM_PROGRAM')
-  // BAND_EDGE: no [-] under the footer line, so no room kept for one.
-  st = settings(env as Env, CONFIG.markSpacing, CONFIG.subscriptDecimals,
-    BAND_EDGE)
+  st = settings(env as Env, o.markSpacing, o.subscriptDecimals, o.rightEdge)
+  stKey = key
   return st
+}
+
+/** When each of the band's rows is drawn, from the options' rows. */
+function liveOf(o: Options): RowsLive {
+  return { turn: o.rows.turn.live, agent: o.rows.agent.live,
+    session: o.rows.session.live }
+}
+
+/** Whether the turn's tag lines are drawn, 🔻🔖 under the prompt and the
+ * receipt's 🔺🔖: rows.tag.transcript, and not the hide path `name.tag`. */
+function tagsShown(o: Options): boolean {
+  return o.rows.tag.transcript && !tagsHidden(o.hide)
+}
+
+/** How far in the band's rows' container stands: hint-inset under the
+ * footer line, none above the prompt. */
+function insetOf(o: Options): number {
+  return o.livePlace === 'footer' ? o.hintInset : 0
+}
+
+/** The configuration files read again where they have changed, or the
+ * session's root has moved: a change draws everything again under the
+ * new options, and reads the figures again, whose source or account may
+ * be what changed. */
+async function reconfigure($: $): Promise<void> {
+  if (!await readConfig($)) return
+  await update($, configured, (n) => n + 1)
+  void refresh($).catch((err) => log($, 'refresh', err))
 }
 
 let refreshing: Promise<void> | null = null
@@ -94,14 +136,16 @@ let turnRunning = false
 let toastAt = 0
 
 /** A read that took `ms`: logged, with each step's ms, and shown as a
- * toast at most once per slowToastMs, so a slow read is seen as it happens
- * (asked 2026-10-19: the mod times itself and warns when it is slow). */
+ * toast at most once per slowToastMs under the option slow-toast, so a slow
+ * read is seen as it happens (asked 2026-10-19: the mod times itself and
+ * warns when it is slow).  Off by default: the toast took the footer's
+ * line, hiding the 💳 account at its right end (seen live 2026-10-20). */
 async function slow($: $, ms: number): Promise<void> {
   const parts = Object.entries(steps).map(([k, v]) => `${k} ${v}`)
   const text = `slow read: ${Math.round(ms)}ms (${parts.join(', ')})`
   await log($, text)
   const now = await $.clock.now()
-  if (CONFIG.slowToast && now - toastAt >= CONFIG.slowToastMs) {
+  if (options().slowToast && now - toastAt >= CONFIG.slowToastMs) {
     toastAt = now
     $.ui.toast(text)
   }
@@ -174,7 +218,9 @@ async function fileStart($: $, doc: Dict): Promise<void> {
   const tr = doc.transcript as Dict | undefined
   if (!pending || !tr?.prompt_id || tr.prompt_id === pending.before) return
   if (typeof tr.prompt_id === 'string') opened = tr.prompt_id
-  const spans = startLine(doc, CONFIG.hide)
+  // Filed whether or not the tag lines are drawn: the UserMessage that
+  // draws it asks the options (tagsShown), so a change shows or hides it.
+  const spans = startLine(doc)
   const text = pending.text
   pending = null
   if (spans.length) await remember($, 'starts', startKey(text), spans)
@@ -183,11 +229,20 @@ async function fileStart($: $, doc: Dict): Promise<void> {
 // Reads the figures again every tickMs while idle, and every
 // tickRunningMs while a turn runs, spaced by readSpacing times the last
 // read's length.  It looks each clockMs, so a turn that starts mid-wait
-// gets the faster pace at once.
+// gets the faster pace at once.  Every tickMs it looks at the
+// configuration files too, a stat of each, and reads them again where one
+// has changed or the session's root has moved (reconfigure): the engine
+// has no file-watch event for a mod.
 async function tick($: $, mine: number) {
+  let configAt = await $.clock.now()
   while ((await read($, generation)) === mine) {
     await $.clock.sleep(CONFIG.clockMs)
     if ((await read($, generation)) !== mine) return
+    const now = await $.clock.now()
+    if (now - configAt >= CONFIG.tickMs) {
+      configAt = now
+      await reconfigure($).catch((err) => log($, 'config', err))
+    }
     const pace = turnRunning
       ? Math.max(CONFIG.tickRunningMs, CONFIG.readSpacing * readMs)
       : CONFIG.tickMs
@@ -229,8 +284,9 @@ async function start($: $, by: string): Promise<void> {
   try {
     const cwd = await $.session.cwd().catch(() => '?')
     await log($, `started by ${by} in ${cwd}`)
-    // The configuration files, once per load, into the log.
-    void readConfig($).catch((err) => log($, 'config', err))
+    // The configuration files, at each load; until they are read the
+    // options are the mod's settings and the defaults.
+    void reconfigure($).catch((err) => log($, 'config', err))
     const mine = (await read($, generation)) + 1
     await update($, generation, () => mine)
     void tick($, mine).catch((err) => log($, 'tick stopped', err))
@@ -241,13 +297,13 @@ async function start($: $, by: string): Promise<void> {
 }
 
 /** Keep `key` in the store under `index`, the newest last, dropping the
- * oldest past CONFIG.startsKept so the store stays small. */
+ * oldest past the option starts-kept so the store stays small. */
 async function remember($: $, index: string, key: string, value: unknown) {
   await $.store.set(key, value)
   const keys = ((await $.store.get(index)) as string[] | undefined) ?? []
   const kept = [...keys.filter((k) => k !== key), key]
   for (const old of kept.splice(0, Math.max(0,
-    kept.length - CONFIG.startsKept))) {
+    kept.length - options().startsKept))) {
     await $.store.delete(old)
   }
   await $.store.set(index, kept)
@@ -342,11 +398,13 @@ async function stamp($: $, durationMs: number, prompt: string):
       { home: where.home, rate: null, phase: 'done' }).main : null
     // Laid out as the band is, at its width, edge and inset, so the rows
     // stack on the band's: under the footer line, the band's rows are
-    // CONFIG.hintInset columns in, and so are the receipt's (asked
-    // 2026-10-20).
-    const inset = CONFIG.bandPlace === 'hint' ? CONFIG.hintInset : 0
-    const lines = receiptLines(st, fig, bandCols || 80, CONFIG.hide, ws,
-      true, main, CONFIG.sticky, inset)
+    // hint-inset columns in, and so are the receipt's (asked 2026-10-20).
+    // The rows whose rows.<row>.transcript is true, and the tag line
+    // under rows.tag.transcript.
+    const o = options()
+    const stamped = ROW_NAMES.filter((r) => o.rows[r].transcript)
+    const lines = receiptLines(st, fig, bandCols || 80, o.hide, ws,
+      true, main, stamped, insetOf(o), tagsShown(o))
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs), lines)
   } finally {
@@ -394,7 +452,7 @@ function pressable(Button: any, Text: any, spans: readonly Span[],
 
 // The composer prompts' render instances, by startKey of the prompt's
 // text: the `requestId` each UserMessage draw saw, so a press on 🎤 can
-// scroll to it.  The oldest dropped past CONFIG.startsKept, as the start
+// scroll to it.  The oldest dropped past starts-kept, as the start
 // lines are.  A module variable: a render hook may not write state.
 const promptIds = new Map<string, string>()
 // startKey of the prompt the last main-thread turn opened with: whose
@@ -406,7 +464,7 @@ function notePrompt(text: string, requestId: string): void {
   if (promptIds.get(key) === requestId) return
   promptIds.delete(key)
   promptIds.set(key, requestId)
-  while (promptIds.size > CONFIG.startsKept) {
+  while (promptIds.size > options().startsKept) {
     promptIds.delete(promptIds.keys().next().value!)
   }
 }
@@ -446,20 +504,22 @@ async function pressMessage($: $, agent: AgentLike & { id: string }):
   }
 }
 
-/** The band's rows as they stand, at bandCols, each with its scope: 🎤,
- * 🤖 and 🎮 while a turn runs, the sticky ones once it ends; none without
- * a status document.  `inset` is how far in from the terminal's left edge
- * the container they are drawn in starts. */
+/** The band's rows as they stand, at bandCols, each with its scope: of 🎤,
+ * 🤖 and 🎮, those rows.<row>.live draws while a turn runs, and those it
+ * keeps once it ends; none without a status document.  `inset` is how far
+ * in from the terminal's left edge the container they are drawn in
+ * starts. */
 async function bandNow($: $, isWorking: boolean, inset = 0):
   Promise<{ scope: string; spans: Span[] }[]> {
   const doc = await read($, status)
   if (doc === null) return []
+  const o = options()
   // At no indent, as the receipt's rows are (asked 2026-10-19).
   return bandScoped(await settingsOf($),
-    at(doc as Dict, await read($, clockNow)), bandCols || 80, CONFIG.hide,
+    at(doc as Dict, await read($, clockNow)), bandCols || 80, o.hide,
     { home: await home($), rate: await read($, rate),
       phase: isWorking || await read($, held) ? 'running' : 'done',
-      sticky: CONFIG.sticky, inset })
+      live: liveOf(o), inset })
 }
 
 /** The transcript's path, from a classic event's envelope, and the session
@@ -604,9 +664,12 @@ export const register: Register = on => {
   // The reads are not awaited: a session with many agents read for 34s
   // after a reload (seen live 2026-10-20), its parsing the hook's own time,
   // past the engine's 10s budget for a hook.
+  // A session's start may be in another project: its configuration files
+  // are looked at again (reconfigure), as the tick looks at them.
   on('session.start', async ($, e, next) => {
     const result = await next(e)
     await start($, 'session.start')
+    void reconfigure($).catch((err) => log($, 'config', err))
     void refresh($).catch((err) => log($, 'refresh', err))
     return result
   })
@@ -677,12 +740,16 @@ export const register: Register = on => {
     return result
   })
 
-  // The band above the prompt, where CONFIG.bandPlace puts it there.  Its
+  // Each drawing below reads `configured`, so a change of the options
+  // draws it again.
+
+  // The band above the prompt, where live-place puts it there.  Its
   // width is taken either way: the footer and the receipt are laid out at
   // it.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     bandCols = e.props.bodyColumns + 5
-    if (CONFIG.bandPlace !== 'above' || e.props.hasSurvey) return next(e)
+    await read($, configured)
+    if (options().livePlace !== 'above' || e.props.hasSurvey) return next(e)
     const lines = await bandNow($, e.props.isWorking)
     // Between turns the receipt carries the rows, and the band has none.
     if (!lines.length) return next(e)
@@ -707,15 +774,16 @@ export const register: Register = on => {
   on('ui.render', { component: 'TurnDuration' }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     await read($, filed)
+    await read($, configured)
     const got = (await $.store.get(receiptAt(e.props.durationMs))) as
       Span[][] | undefined
-    if (got) {
+    if (got?.length) {
       // A blank row above, so the receipt stands apart from the answer,
       // and one under its tag line (asked 2026-10-19), which goes with the
-      // tag line under the hide path `name.tag`.
+      // tag line (tagsShown).
       return (
         <Box flexDirection="column" marginTop={1}
-          marginBottom={tagsHidden(CONFIG.hide) ? 0 : 1}>
+          marginBottom={tagsShown(options()) ? 1 : 0}>
           {got.map((l, i) => line(Text, l, 'receipt' + i))}
         </Box>
       )
@@ -737,15 +805,22 @@ export const register: Register = on => {
     const mode = hintMode ?? permissionMode
     const doc = await read($, status)
     if (doc === null) return next(e)
+    await read($, configured)
+    const o = options()
     const st = await settingsOf($)
     // The band's width before the viewport's: the viewport read 10 columns
     // wider than the terminal drew, pushing the 🕐 off the row (seen live
     // 2026-10-20), and the band's is where its rows end.
     const cols = bandCols || (e.viewport?.columns ?? 80)
     const fig = at(doc as Dict, await read($, clockNow))
-    const text = CONFIG.accountPlace === 'tail' ? footerTail(st, fig,
-      CONFIG.hide, e.props.hint, cols, mode, await home($)) : ''
-    const tail = CONFIG.footerRuler && text ? footerRuler(st, text, cols)
+    // The 💳 account, where rows.account.live draws it now: "running"
+    // while a turn runs, as the band's rows are.
+    const live = o.rows.account.live
+    const accounted = live === 'always' || (live === 'running' &&
+      (e.props.isWorking || await read($, held)))
+    const text = accounted && o.accountPlace === 'tail' ? footerTail(st, fig,
+      o.hide, e.props.hint, cols, mode, await home($)) : ''
+    const tail = o.footerRuler && text ? footerRuler(st, text, cols)
       : text
     // What the padding was worked out from, each time it changes, so a
     // tail drawn too wide can be checked against the line it was given.
@@ -761,22 +836,22 @@ export const register: Register = on => {
     // colours: Claude Code's own line first, from next(e), so its pills
     // stay live, and a node beside it in a column goes on the row below it
     // (seen live 2026-10-20).  Claude Code draws the line's container
-    // CONFIG.hintInset columns in, so the rows are drawn that much
-    // narrower on the panel's columns: drawn at the full width, each cell
-    // stood that many columns right of the agent panel's, and the 💳 row
-    // ended past the grid (seen live 2026-10-20).
-    const inset = CONFIG.hintInset
-    const account = CONFIG.accountPlace === 'row'
-      ? accountLine(st, fig, CONFIG.hide, cols - inset, await home($)) : []
+    // hint-inset columns in, so the rows are drawn that much narrower on
+    // the panel's columns: drawn at the full width, each cell stood that
+    // many columns right of the agent panel's, and the 💳 row ended past
+    // the grid (seen live 2026-10-20).
+    const inset = o.hintInset
+    const account = accounted && o.accountPlace === 'row'
+      ? accountLine(st, fig, o.hide, cols - inset, await home($)) : []
     const lines = [...account.length ? [{ scope: 'account', spans: account }]
-      : [], ...CONFIG.bandPlace === 'hint'
+      : [], ...o.livePlace === 'footer'
       ? await bandNow($, e.props.isWorking, inset) : []]
     if (!lines.length) return row
     const { Box, Button, Text } = $.ui.resolve(e)
     // 🎤 is pressable: it scrolls to the prompt that opened the turn
     // (pressTurn; clickable-rows.md, a trial).
     return (
-      <Box flexDirection="column" marginBottom={CONFIG.hintTuck ? -1 : 0}>
+      <Box flexDirection="column" marginBottom={o.hintTuck ? -1 : 0}>
         {row}
         {lines.map((l, i) => l.scope === 'turn'
           ? pressable(Button, Text, l.spans, 'band' + i, () => pressTurn($))
@@ -790,7 +865,8 @@ export const register: Register = on => {
     if (e.props.origin.kind !== 'composer') return row
     // Its instance, for a press on 🎤 to scroll to (pressTurn).
     notePrompt(e.props.text, e.requestId)
-    if (tagsHidden(CONFIG.hide)) return row
+    await read($, configured)
+    if (!tagsShown(options())) return row
     await read($, filed)
     const tag = (await $.store.get(startKey(e.props.text))) as
       Span[] | undefined
@@ -810,7 +886,7 @@ export const register: Register = on => {
   // A message another agent sent, folded: Claude Code's `› Message from
   // @general-purpose (ctrl+o to expand)` drawn as the agent's task and the
   // message's first line, the task bold and the rest dim
-  // (CONFIG.agentMessageRow; agent_message.ts has how the agent is found,
+  // (agent-message-row; agent_message.ts has how the agent is found,
   // senderOf what that reads).  A tree, not a rewritten `text`: folded,
   // Claude Code draws the sender's name and not the text, so a new text
   // would change nothing there.  The tree is the row's own look as far as
@@ -821,7 +897,9 @@ export const register: Register = on => {
   // Claude Code's own.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const from = e.props.from
-    if (!CONFIG.agentMessageRow || !from) return next(e)
+    if (!from) return next(e)
+    await read($, configured)
+    if (!options().agentMessageRow) return next(e)
     const sender = await senderOf($, from.name, e.props.text,
       await agentsNow($))
     const label = taskOf(sender, from.name)
@@ -832,10 +910,11 @@ export const register: Register = on => {
     // The band's width before the viewport's, as the footer takes it: the
     // viewport has read wider than the terminal drew (seen live
     // 2026-10-20).  Ending where the band's rows and the receipt's end,
-    // BAND_EDGE short of the edge (asked 2026-10-20: it ran to the edge).
+    // right-edge short of the edge (asked 2026-10-20: it ran to the edge).
     // Should the row stand in from the edge, the Text's truncate-end cuts
     // what the ellipsis did not.
-    const cols = (bandCols || (e.viewport?.columns ?? 80)) - BAND_EDGE
+    const cols = (bandCols || (e.viewport?.columns ?? 80)) -
+      options().rightEdge
     const st = await settingsOf($)
     const { Box, Button, Text } = $.ui.resolve(e)
     const row = (spans: Span[], key: string) => press

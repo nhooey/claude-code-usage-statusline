@@ -32,7 +32,8 @@ import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
 import type { Row } from "./grid.ts";
 import {
-  accountingSplit, fixedKeys, shareCells, stickyScopes, turnCache, turnTokens,
+  ROW_NAMES, accountingSplit, fixedKeys, scopesOf, shareCells, turnCache,
+  turnTokens,
 } from "./band.ts";
 import type { RowName } from "./band.ts";
 import type { Dict } from "./py.ts";
@@ -301,26 +302,27 @@ export function receiptHead(all: Dict, hide: readonly string[]): Span[] {
  * row, where there is one, and 🎮 on the band's fixed grid, at no indent,
  * as the band's rows are, then the tag line
  * (receiptHead) under them (decided 2026-10-19).  A hidden scope's row is
- * left out, and so is a `sticky` row (RowName), which the band keeps
- * instead.  `dim` draws every span dim, as the stamped receipt is
- * drawn, its colours kept. */
+ * left out, and so is a row not `stamped` (RowName: the rows whose
+ * `rows.<row>.transcript` is true), and the tag line without `tags`
+ * (`rows.tag.transcript`).  `dim` draws every span dim, as the stamped
+ * receipt is drawn, its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null, dim = false,
-  main: Row | null = null, sticky: readonly RowName[] = [],
-  inset = 0): Span[][] {
+  main: Row | null = null, stamped: readonly RowName[] = ROW_NAMES,
+  inset = 0, tags = true): Span[][] {
   const { turn, session } = receiptRows(st, fig, ws);
   // 🤖 between 🎤 and 🎮, as the band stacks them, where the caller has
   // the band's row for it (asked 2026-10-20).
-  const kept = stickyScopes(sticky);
+  const kept = scopesOf(stamped);
   // `inset` columns in, led by as many blanks and that much narrower, so
   // they stack on the band's rows where those are drawn inset (asked
   // 2026-10-20); the tag line stays at no indent, under the prompt's.
   const lines = drawRows(st, [turn, main, session].filter((r): r is Row =>
-    r !== null && !kept.includes(r.scope)), cols - inset, hide)
+    r !== null && kept.includes(r.scope)), cols - inset, hide)
     .map((l) => inset ? [span(" ".repeat(inset)), ...l] : l);
   // A blank row before the tag line (asked 2026-10-20): a space, since Ink
   // measures an empty Text as no row at all.
-  const head = receiptHead(fig, hide);
+  const head = tags ? receiptHead(fig, hide) : [];
   if (head.length) lines.push([span(" ")], head);
   return dim ? lines.map(dimmed) : lines;
 }

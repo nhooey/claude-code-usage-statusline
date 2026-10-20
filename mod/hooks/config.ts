@@ -1,91 +1,15 @@
-// The mod's configuration, in one place.
+// The mod's constants, and the settings it carries until the user's own
+// configuration file holds them.
 //
-// What the Python program takes as flags (`--usage-source`, `--hide`,
-// `--mark-spacing`) the mod takes here, set to what the agent panel's
-// subagentStatusLine runs with, so the mod and the panel read one source
-// and draw one grid (agents/plans/_implemented/redesign.md, "Where the plan
-// figures come from").  A change here is a change to the mod: edit, then
-// /reload-plugins.
-import type { BandPlace, RowName } from '../src/band.ts'
-import { RIGHT_EDGE } from '../src/spec.ts'
+// What the mod draws is set by the options (spec/options.jsonc), merged
+// from the configuration files the way the Python merges them
+// (docs/options.md, "Configuration files"; edges.ts, options()).  What
+// stays here are the constants no file may set: the version the caches are
+// keyed by, and the timings (agents/plans/config-merge.md, Decided 5 and
+// 15).  A change here is a change to the mod: edit, then /reload-plugins.
+import type { Value } from '../src/config.ts'
 
 export const CONFIG = {
-  // The usage source, as --usage-source names it: "claude-usage-tracker"
-  // reads the menu-bar app's store; "auto", "native", "none" and
-  // "cmd:<path>" as the status line takes them.
-  usageSource: "claude-usage-tracker",
-  // --account and --account-period, for the source's cache scope.
-  account: "default",
-  period: "day",
-  // --hide paths, `scope[.group[.metric]]` with `*` for any one part.
-  // 🔋 the 5-hour limit, 🧠's ٪ of the window, and 🎯 the cache hit rate,
-  // in every row (asked 2026-10-19).  Keep subagentStatusLine's --hide
-  // flags in ~/.claude/settings.json the same, so the panel stacks.
-  // 'name.tag' hides the turn's tag lines, 🔻🔖 under the prompt and the
-  // receipt's 🔺🔖, with the blank rows around them.  The account row's
-  // 📦 project and 🌿 branch, which 🎮 draws under it (asked 2026-10-20):
-  // the status line has no account row, so no flag to match.
-  hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache',
-    'account.workspace.project', 'account.workspace.branch'] as
-    readonly string[],
-  // Which of the band's rows, 🎤 "turn", 🤖 "agent" and 🎮 "session", stay
-  // where the band draws them once a turn ends; the receipt stamps the
-  // others into the transcript (asked 2026-10-20).  None: the receipt has
-  // all three, and the band is empty between turns.
-  sticky: [] as readonly RowName[],
-  // Where the band's rows are drawn: "hint", under Claude Code's footer
-  // line (`-- INSERT -- ⏵⏵ auto mode on …`), or "above", over the prompt,
-  // where the band can be collapsed with its [-] and scrolled (asked
-  // 2026-10-20, to try them under the footer).  Under the footer there is
-  // no [-], and the band's rows and the 💳 row end BAND_EDGE (below) short
-  // of the terminal's edge instead of RIGHT_EDGE: keep subagentStatusLine's
-  // `--right-edge` the same, 2 for "hint" and 5 for "above", so the panel
-  // stacks.
-  bandPlace: "hint" as BandPlace,
-  // Where the 💳 account is drawn: "row", a row of its own under Claude
-  // Code's footer line, in that line's container and in its colours, or
-  // "tail", in plain text at the right end of the footer line (asked
-  // 2026-10-20, to put it under the line; back on the line, asked
-  // 2026-10-20 again).
-  accountPlace: "tail" as "row" | "tail",
-  // The rows under the footer line drawn with a bottom margin of -1, to
-  // take up the blank row Claude Code leaves between the footer and the
-  // agent panel's `* main` (asked 2026-10-20, to see whether it can go).
-  // Off: the blank row stays under the footer line and the 💳 at its end
-  // (asked 2026-10-20).
-  hintTuck: false,
-  // How many columns in from the terminal's left edge Claude Code draws
-  // the footer line's container, which the 💳 row and the band's rows
-  // under it share: they are drawn that much narrower, so their cells
-  // stack on the agent panel's and they end where its rows end (seen live
-  // 2026-10-20: drawn at the full width, every cell stood 2 columns right
-  // of the panel's).
-  hintInset: 2,
-  // Draw the footer's tail as a ruler of column digits, each the last digit
-  // of the column the mod reckons it lands in, to check the padding in each
-  // footer shape: right, it ends on the band's last column (asked
-  // 2026-10-20).
-  footerRuler: false,
-  // Draw the folded row of a message another agent sent, Claude Code's
-  // `› Message from @general-purpose (ctrl+o to expand)`, as the sending
-  // agent's task and the message's first line instead, `› 🤖📨 <task>:
-  // <line>…`, the task bold and the rest dim, cut to the terminal's width
-  // (asked 2026-10-20).  Off, Claude Code's own row.  ctrl+o shows the
-  // whole message either way.
-  agentMessageRow: true,
-  // How long the agents `$.agent.list()` gave are taken as standing, for
-  // that row to find its sender's task in: the row is drawn on every draw
-  // of the transcript, and a list each time would cross to the engine
-  // each time.  An agent starting or ending lists them again at once.
-  agentListMs: 5_000,
-  // How many messages that row keeps the sender of, once their words have
-  // picked it out of several agents of one name: a message never changes,
-  // so its agents' replies are read once and not on every draw.  The
-  // oldest goes first.
-  agentSenderMemo: 256,
-  // --mark-spacing and --subscript-decimals.
-  markSpacing: true,
-  subscriptDecimals: false,
   // The version the mod's caches are keyed by, apart from the Python's
   // digest of its source: a change to the accounting is a new version.
   version: "usage-band 0.2.0",
@@ -98,7 +22,8 @@ export const CONFIG = {
   // a reload reads on from it.
   foldSaveMs: 60_000,
   // How often the band reads its figures again with nothing else
-  // happening, so the clocks and the 🔜 resets move while idle.
+  // happening, so the clocks and the 🔜 resets move while idle; and how
+  // often it looks at the configuration files for a change.
   tickMs: 30_000,
   // How often it reads again while a main-thread turn runs, so 🛫 and the
   // totals keep up with the clocks (decided 2026-10-19); never more often
@@ -107,19 +32,13 @@ export const CONFIG = {
   tickRunningMs: 5_000,
   readSpacing: 3,
   // A read that takes longer is logged, with how long each of its steps
-  // took, and with slowToast shown as a toast at most once per
-  // slowToastMs.  Off: the toast took the footer's line, hiding the 💳
-  // account at its right end (seen live 2026-10-20).
+  // took, and with the option slow-toast shown as a toast at most once per
+  // slowToastMs.
   slowReadMs: 2_000,
-  slowToast: false,
   slowToastMs: 60_000,
   // How often the band and the footer redraw their clocks (🔧 ⌛ ⛳ 🕐 🔜)
   // against the time now, between reads, without reading anything.
   clockMs: 1_000,
-  // How many start lines the store keeps, and as many keys of receipts
-  // stamped, newest first: each is a few hundred bytes, and the store
-  // holds 4 MiB in all.
-  startsKept: 400,
   // How long the receipt waits, from turn.complete, for the transcript to
   // bill the turn just ended (Claude Code writes its records after the
   // Stop hooks), and how often it looks.
@@ -128,13 +47,43 @@ export const CONFIG = {
   // How long the band keeps a done turn's 🎤 and 🎮 rows after its receipt
   // is stamped, so the receipt is there before they go.
   receiptHoldMs: 1_000,
+  // How long the agents `$.agent.list()` gave are taken as standing, for
+  // an agent's message row to find its sender's task in: the row is drawn
+  // on every draw of the transcript, and a list each time would cross to
+  // the engine each time.  An agent starting or ending lists them again
+  // at once.
+  agentListMs: 5_000,
+  // How many messages that row keeps the sender of, once their words have
+  // picked it out of several agents of one name: a message never changes,
+  // so its agents' replies are read once and not on every draw.  The
+  // oldest goes first.
+  agentSenderMemo: 256,
 } as const;
 
-// The columns the band's rows and the 💳 row end short of the terminal's
-// edge, from CONFIG.bandPlace: RIGHT_EDGE above the prompt, where Claude
-// Code draws the band's [-], and under the footer line the 2 columns its
-// container keeps blank on the right, as on the left (seen live
-// 2026-10-20: at 0, every row there was cut 2 columns short, ending in
-// "…").  subagentStatusLine's `--right-edge` must say the same, so the
-// agent panel's rows stack on the band's.
-export const BAND_EDGE = CONFIG.bandPlace === 'hint' ? 2 : RIGHT_EDGE;
+// The settings the mod has drawn with that are not the options' defaults,
+// as one more layer under the configuration files, named "mod": a file
+// that sets one of them wins, the defaults (spec/options.jsonc) are under
+// them, and with no file the mod draws as it did before it read files.
+// Each moves to the user's own file, ~/.config/coding-agent-usage-line/
+// config.jsonc, and goes from here once it is there (config-merge.md, step
+// 7); the agent panel's command keeps its own flags until then.  Every
+// other option's default is the setting the mod had.
+export const SETTINGS: { readonly [option: string]: Value } = {
+  // The menu-bar app's store, which the agent panel reads too
+  // (`--usage-source claude-usage-tracker`).
+  "usage-source": "claude-usage-tracker",
+  // 🔋 the 5-hour limit, 🧠's ٪ of the window, and 🎯 the cache hit rate,
+  // in every row (asked 2026-10-19); the panel's `--hide` flags say the
+  // same, so it stacks.  The 💳 tail's 📦 project and 🌿 branch, which 🎮
+  // draws under it (asked 2026-10-20).
+  "hide": ['*.plan.five_hour', '*.context.share', '*.tokens.cache',
+    'account.workspace.project', 'account.workspace.branch'],
+  // 🎤, 🤖 and 🎮 drawn while a turn runs, gone at its end, and stamped
+  // into the transcript (asked 2026-10-20): the receipt has all three,
+  // and the band is empty between turns.
+  "rows": {
+    "turn": { "live": "running", "transcript": true },
+    "agent": { "live": "running", "transcript": true },
+    "session": { "live": "running", "transcript": true },
+  },
+}

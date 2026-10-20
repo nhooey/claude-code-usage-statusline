@@ -11,26 +11,27 @@
 // FILE is a figures document, such as one of tests/fixtures/figures/.
 // A status document draws the band (--part band, the default), the 💳
 // account row (--part account), the start line (--part start), or what
-// the mod draws under Claude Code's footer line with CONFIG.bandPlace
-// "hint" (--part footer): --hint, standing for Claude Code's own line,
+// the mod draws under Claude Code's footer line with live-place
+// "footer" (--part footer): --hint, standing for Claude Code's own line,
 // then the account row and the band's rows, each after --inset blanks,
 // the columns Claude Code's container stands in; or, with
-// CONFIG.accountPlace "tail" (--part tail), the account as the tail of
+// account-place "tail" (--part tail), the account as the tail of
 // that line, after Claude Code's " · ".  --inset also draws the
 // band and the account row that much narrower, as the mod does under the
 // footer line, and the receipt's 🎤 🤖 🎮 rows that far in and that much
 // narrower, as the mod stamps them to stack on those; --right-edge is the
 // columns every row ends short of the terminal's edge, RIGHT_EDGE by
-// default.  The mod's own, with CONFIG.bandPlace "hint", are --inset 2
-// (CONFIG.hintInset) and --right-edge 2 (BAND_EDGE).  A cost document
+// default.  The mod's own, with live-place "footer", are --inset 2
+// (hint-inset) and --right-edge 2 (right-edge, derived).  A cost document
 // draws the receipt.  The
 // receipt's 📦 🌿 come from --workspace, a status document standing for
 // the band's last one, as the mod keeps it.  --rate is the 🛫 the mod
 // would pass, in tokens a second.  --home stands for HOME, "${HOME}" by
 // default, which is what the fixtures' paths are written under.
 // --sticky names the rows, of turn, agent and session, that stay on the
-// band once a turn ends, the mod's CONFIG.sticky: the band's done phase
-// draws those, and the receipt the rest; 🤖 on the receipt comes from
+// band once a turn ends, as `rows.<row>` `{"live": "always",
+// "transcript": false}` in the mod's options: the band's done phase draws
+// those, and the receipt the rest; 🤖 on the receipt comes from
 // --workspace.
 //
 // The clock is drawn in the document's `clock.tz`, as the edge would set
@@ -112,8 +113,10 @@ const tz = (fig.clock as Dict).tz as string | null;
 if (tz) process.env.TZ = tz;
 const st = settings(process.env, true, false, rightEdge);
 
+const live = Object.fromEntries(sticky.map((r) => [r, "always"]));
+const stamped = ROW_NAMES.filter((r) => !sticky.includes(r));
 const band = (): Span[][] =>
-  bandLines(st, fig, cols, hide, { home, rate, phase, sticky, inset });
+  bandLines(st, fig, cols, hide, { home, rate, phase, live, inset });
 const account = (): Span[][] => {
   const row = accountLine(st, fig, hide, cols - inset, home);
   return row.length ? [row] : [];
@@ -139,7 +142,7 @@ if (part === "band") {
   const ws = status ? workspaceOf(status, home) : null;
   const main = status
     ? bandRows(st, status, { home, rate: null, phase: "done" }).main : null;
-  lines = receiptLines(st, fig, cols, hide, ws, false, main, sticky, inset);
+  lines = receiptLines(st, fig, cols, hide, ws, false, main, stamped, inset);
 } else {
   fail("--part: invalid choice: '" + part + "'");
 }

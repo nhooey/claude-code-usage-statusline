@@ -1,10 +1,9 @@
 # Configuration: one set of options, merged from files and flags
 
-Being built: steps 1 to 5 are done (each has its Status), so the Python
-reads the files, and the mod reads them too but does not yet draw from
-them. [Options](../../docs/options.md)
-is the reference for the flags and the files, and `mod/hooks/config.ts` for
-the mod. This document collects the design as it is decided.
+Being built: steps 1 to 6 are done (each has its Status), so both ports
+read the files and draw from them; steps 7 and 8 are the user's, by hand.
+[Options](../../docs/options.md) is the reference for the flags and the
+files. This document collects the design as it is decided.
 
 ## Why
 
@@ -636,12 +635,92 @@ and `npm test`.
    tick and a moved root; the redraw on change; the log and the notice.
    `config.ts` keeps only `version` and the timings (Decided 15).
    `BAND_EDGE` becomes the derived `right-edge`, 2 by default (Decided 13).
+
+   **Status 2026-10-21: done.** As built:
+   - `options()` in `mod/hooks/edges.ts` is the merged value, typed as
+     the generated `Options` (`optionsOf` in `mod/src/config.ts`, camel
+     case); every `CONFIG.x` that is an option reads it, in
+     `register.tsx`, `edges.ts` (the source, account and period) and the
+     settings `settingsOf` makes, which it makes again when
+     `mark-spacing`, `subscript-decimals` or `right-edge` change.
+     `config.ts` keeps `version`, the timings, `readSpacing`,
+     `agentListMs` and `agentSenderMemo` as `CONFIG`; `BAND_EDGE` is gone.
+   - Byte for byte as before with no file: the settings the mod drew with
+     that are not the spec's defaults (`usage-source`
+     `claude-usage-tracker`, the hide list, and `rows` with 🎤, 🤖 and 🎮
+     live `"running"` and all three stamped, today's `sticky: []`) are a
+     layer of the mod's own, `mod` (`SETTINGS` in `config.ts`,
+     `MOD_LAYER`), under the files and over the defaults, so the spec's
+     defaults stay the program's (Decided 17). Step 7 moves them to the
+     user's file and empties `SETTINGS`. `--show-config` does not know
+     the layer; the mod's log names it. `mod-tests/config.test.ts` holds
+     the options with no file to the old `CONFIG`, field by field, and
+     every band, row, receipt, figures fixture and golden is unchanged.
+   - The rows table: `phaseRows` takes each row's `live` (`RowsLive`),
+     `receiptLines` the rows `transcript` stamps and whether the tag
+     line is drawn; `sticky` and `stickyScopes` are gone
+     (`draw-figures.ts --sticky` stays, as live `"always"` and not
+     stamped). `rows.tag.transcript` false drops 🔻🔖 and 🔺🔖 as
+     `name.tag` does; `rows.tag.live` draws nothing yet, there being no
+     live tag row. `rows.account.live` draws the 💳 tail or row always,
+     while a turn runs, or never. The hide paths that drop a whole row
+     still drop it, beside the table: retiring them is not done.
+   - The re-reads: `readConfig` stamps the walk (`find`'s paths and each
+     one's `mtimeMs`, and the start), and reads again only when the
+     stamp has changed, so a file come, gone or written and a moved root
+     are all one check; at load, on each `session.start` and every
+     `tickMs` on the tick. One read at a time. A read that changes the
+     options bumps a `configured` atom, which every drawing reads, and
+     reads the figures again.
+   - The log: each read logs the files and every warning, as in step 5,
+     and a read that changes the options (or the first) logs
+     `config options:` with each mod option and table field a layer above
+     the defaults gave, and its layer.
+   - The notice: `$.ui.notice` is a line under a tool call's open dialog
+     in this engine (2.1.303's types: `notice(tool_use_id, text)`), with
+     no call to hang a file's warning on, so the notice is a `$.ui.log`
+     line in the transcript, `usage-band: config <the first warning>
+     (and N more in usage-band.log)`, once per file and `mtimeMs` per
+     load. Not a toast, as decided.
+   - `right-edge` is derived in both ports: `_NOT_DERIVED_YET` is gone,
+     and the Python derives from `live-place` though it is not one of its
+     options (`options._merged_value`), so the panel's default is 2. The
+     goldens' harness (`tests/run-cases.py`) writes `"right-edge": 5` in
+     its scratch user file, the edge the panel's goldens are drawn at.
+     The shared case `right-edge-not-yet-derived` is `right-edge-derived`,
+     and `right-edge-set` is new: 38 cases.
+   - `_flag` and `_costOpts(argv)` in `mod/src/claude_cost.ts` stay a
+     test's reading of a case's flags: the mod draws no cost line.
 7. **Move today's settings into files.** The user's `hide` list and
    `--usage-source`, `--mark-spacing` leave the `subagentStatusLine` command
    in `~/.claude/settings.json` and `CONFIG` for the user-global file, so the
    band and the panel read one copy. The command keeps only
    `--agent claude --mode subagent`. This is the user's file, so the step is
    a short note in `docs/options.md` and done by hand, not in a commit.
+
+   Since step 6 the mod's own settings are `SETTINGS` in `config.ts`.
+   The user file that draws as now, band and panel, checked with
+   `--show-config` (no warning; `right-edge` derived 2):
+
+   ```jsonc
+   {
+     "usage-source": "claude-usage-tracker",
+     "hide": ["*.plan.five_hour", "*.context.share", "*.tokens.cache",
+              "account.workspace.project", "account.workspace.branch"],
+     "rows": {
+       "turn":    { "live": "running", "transcript": true },
+       "agent":   { "live": "running", "transcript": true },
+       "session": { "live": "running", "transcript": true }
+     }
+   }
+   ```
+
+   Acceptance 1 has the user file with no `rows`, taking the defaults
+   (🤖 and 🎮 kept between turns, 🎤 alone stamped): leaving `rows` out
+   is that change of look, the user's call. Then the panel's command
+   drops its `--mark-spacing`, `--usage-source`, `--right-edge` and
+   `--hide` flags in the same edit (a flag that differs from the file is
+   warned about, Decided 1), and `SETTINGS` empties to `{}` in a commit.
 8. **The acceptance check**, below.
 
 ## Acceptance

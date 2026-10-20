@@ -21,6 +21,7 @@
 // json.dumps with and without ensure_ascii.
 
 import { OPTIONS } from "./options_spec.ts";
+import type { Options } from "./options_spec.ts";
 import { PY_SPACE, pyFloatRepr, pyStrip } from "./py.ts";
 import { pyJsonDumps, validateSource } from "./sources.ts";
 
@@ -35,10 +36,6 @@ export const CONFIG_DIR_ENV = "CODING_AGENT_USAGE_LINE_CONFIG_DIR";
 // The file layers, highest first.
 export const FILE_LAYERS = ["project-local", "project", "user"] as const;
 export type FileLayer = typeof FILE_LAYERS[number];
-
-// Derived values the merge leaves alone for now: right-edge follows
-// live-place once the mod draws from the merged options (step 6, Decided 13).
-const NOT_DERIVED_YET = new Set(["right-edge"]);
 
 // ── What the caller hands in ──────────────────────────────────────────────
 
@@ -598,8 +595,14 @@ export function check(name: string, value: Json):
 /** One file's part in the merge: its layer, its path, its modification
  * time, and the values it gave that passed their checks, by option name.
  * A table's value holds only the rows and fields the file set. */
-export type Layer = { name: FileLayer; path: string; mtimeMs: number;
-  values: { [option: string]: Value } };
+export type Layer = { name: FileLayer | ModLayer; path: string;
+  mtimeMs: number; values: { [option: string]: Value } };
+
+/** The mod's own settings (hooks/config.ts, SETTINGS), a layer under the
+ * files that the Python has no counterpart of: the settings the mod drew
+ * with before it read files, until the user's file holds them. */
+export const MOD_LAYER = "mod";
+export type ModLayer = typeof MOD_LAYER;
 
 type Read = { values: Layer["values"]; warnings: string[];
   mtimeMs: number | null };
@@ -647,14 +650,14 @@ export async function readFile(path: string, fs: ConfigFs): Promise<Read> {
 
 /** The layer an option's value came from: a file's, "default", or
  * "derived" for a value worked out from another option's. */
-export type LayerName = FileLayer | "default" | "derived";
+export type LayerName = Layer["name"] | "default" | "derived";
 
 /** Every option's merged value and layer, each table field's layer where
  * a file set it (keyed "name.row.field"), and the files' warnings. */
 export type Merged = {
   values: { [option: string]: Value };
   layers: { [option: string]: LayerName };
-  fields: { [path: string]: FileLayer };
+  fields: { [path: string]: Layer["name"] };
   warnings: readonly string[];
 };
 
@@ -698,7 +701,7 @@ export function merge(files: readonly Layer[], warnings: readonly string[]):
   }
   for (const [name, option] of Object.entries(SPEC)) {
     const derived = option.derived;
-    if (derived && layers[name] === "default" && !NOT_DERIVED_YET.has(name) &&
+    if (derived && layers[name] === "default" &&
         Object.hasOwn(values, derived.from)) {
       const key = deriveKey(values[derived.from]);
       if (Object.hasOwn(derived.map, key)) {
@@ -708,6 +711,23 @@ export function merge(files: readonly Layer[], warnings: readonly string[]):
     }
   }
   return { values, layers, fields, warnings: [...warnings] };
+}
+
+/** `name` in camel case, as the Options type names it: `usage-source`
+ * is `usageSource`. */
+export const camel = (name: string): string =>
+  name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+
+/** The merged options the mod reads, by the camel case of their names:
+ * every option with "mod" in its ports. */
+export function optionsOf(merged: Merged): Options {
+  const out: { [name: string]: Value } = {};
+  for (const [name, option] of Object.entries(OPTIONS)) {
+    if ((option.ports as readonly string[]).includes("mod")) {
+      out[camel(name)] = merged.values[name];
+    }
+  }
+  return out as unknown as Options;
 }
 
 /** What `load` found: where the walk started, the project root (null for

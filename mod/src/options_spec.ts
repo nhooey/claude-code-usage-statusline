@@ -118,8 +118,8 @@ export const OPTIONS = {
     "doc": "Terminal width. `0` means \"unknown\", which forces the fallback layout. Claude only; Codex accepts and ignores it.",
   },
   // The panel's rows end where the band's do: 2 short of the edge with
-  // the mod's rows under the footer line, 5 with them above the prompt
-  // (the mod's BAND_EDGE).  Unset in every layer, it follows live-place.
+  // the mod's rows under the footer line, 5 with them above the prompt.
+  // Unset in every layer, it follows live-place, in both ports.
   "right-edge": {
     "type": "int",
     "metavar": "N",
@@ -130,8 +130,9 @@ export const OPTIONS = {
     "file": true,
     "flag": "--right-edge",
     "doc-table": "shared",
-    "usage": "Columns every agent-panel row leaves blank at the terminal's right edge (default: 5, the band's [-] room above the prompt; 2 with the mod's rows under the footer line).",
-    "doc": "The columns every agent-panel row leaves blank at the terminal's right edge. `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt; `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge. Claude only.",
+    "doc-default": "`2`, or `5` under `live-place` `above`",
+    "usage": "Columns every agent-panel row leaves blank at the terminal's right edge (default: 2 with the mod's rows under the footer line, its live-place's default; 5, the band's [-] room, with them above the prompt).",
+    "doc": "The columns every agent-panel row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `live-place` from the files, so the panel and the band end in one column; a panel run without the mod sets it where it wants another. Claude only.",
   },
   // One list for the band and the panel.  The rows table, not hide,
   // drops a whole row (config-merge.md, Decided 9).
@@ -344,8 +345,7 @@ export const OPTIONS = {
   // ── The mod's, set in files only ─────────────────────────────────────
   // Where the mod draws its live rows: under Claude Code's footer line
   // (`-- INSERT -- ⏵⏵ auto mode on …`), or above the prompt, where the
-  // band can be collapsed with its [-] and scrolled.  CONFIG.bandPlace,
-  // whose "hint" is "footer" here.
+  // band can be collapsed with its [-] and scrolled.
   "live-place": {
     "type": "enum",
     "items": ["footer", "above"],
@@ -358,8 +358,7 @@ export const OPTIONS = {
   },
   // Each row the mod can draw, by when the mod draws it and whether a
   // turn's end stamps it into the transcript (config-merge.md, "The rows
-  // table").  It replaces CONFIG.sticky and the hide paths that drop a
-  // whole row.  Tables merge per field across layers.
+  // table").  Tables merge per field across layers.
   "rows": {
     "type": "table",
     "fields": {
@@ -389,7 +388,6 @@ export const OPTIONS = {
     "doc-table": null,
     "doc": "Each row the mod draws, 🎤 `turn`, 🤖 `agent`, 🎮 `session`, the 🔖 `tag` lines and the 💳 `account` row: `live`, whether it is drawn `never`, while a turn is `running` or `always`, and `transcript`, whether a turn's end stamps it into the transcript.",
   },
-  // CONFIG.accountPlace.
   "account-place": {
     "type": "enum",
     "items": ["row", "tail"],
@@ -400,7 +398,6 @@ export const OPTIONS = {
     "doc-table": null,
     "doc": "Where the 💳 account is drawn when `rows.account.live` draws it: `row`, a row of its own under Claude Code's footer line, in that line's container and colours, or `tail`, in plain text at the right end of the footer line.",
   },
-  // CONFIG.hintTuck.
   "hint-tuck": {
     "type": "bool",
     "default": false,
@@ -410,7 +407,6 @@ export const OPTIONS = {
     "doc-table": null,
     "doc": "Draw the rows under the footer line with a bottom margin of -1, taking up the blank row Claude Code leaves between the footer and the agent panel's `* main`.",
   },
-  // CONFIG.hintInset.
   "hint-inset": {
     "type": "int",
     "default": 2,
@@ -421,7 +417,7 @@ export const OPTIONS = {
     "doc-table": null,
     "doc": "How many columns in from the terminal's left edge Claude Code draws the footer line's container, which the rows under it are drawn that much narrower to stack on the agent panel's.",
   },
-  // CONFIG.footerRuler: a debugging aid.
+  // A debugging aid.
   "footer-ruler": {
     "type": "bool",
     "default": false,
@@ -431,7 +427,6 @@ export const OPTIONS = {
     "doc-table": null,
     "doc": "A debugging aid: draw the footer's tail as a ruler of column digits, each the last digit of the column the mod reckons it lands in.",
   },
-  // CONFIG.agentMessageRow.
   "agent-message-row": {
     "type": "bool",
     "default": true,
@@ -441,7 +436,7 @@ export const OPTIONS = {
     "doc-table": null,
     "doc": "Draw the folded row of a message another agent sent as the sending agent's task and the message's first line, `› 🤖📨 <task>: <line>…`, instead of Claude Code's own row.",
   },
-  // CONFIG.slowToast.  Off: a toast takes the footer's line and hides
+  // Off: a toast takes the footer's line and hides
   // the 💳 at its right end (seen live 2026-10-20).
   "slow-toast": {
     "type": "bool",
@@ -452,7 +447,7 @@ export const OPTIONS = {
     "doc-table": null,
     "doc": "Show a slow read as a toast as well as in the mod's log.",
   },
-  // CONFIG.startsKept: a store size, not a timing.
+  // A store size, not a timing.
   "starts-kept": {
     "type": "int",
     "default": 400,

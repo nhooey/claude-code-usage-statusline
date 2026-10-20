@@ -13,6 +13,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import { LOG_NAME } from '../hooks/log.ts'
+import { unconfigured } from '../hooks/edges.ts'
 
 const HOME = '/home/fixture'
 const STATE = '/state'
@@ -127,6 +128,56 @@ test('a session start reads the config files and logs every warning once',
     for (const w of warnings) {
       expect(log.split('config: ' + w).length - 1).toBe(1)
     }
+  })
+
+// The settings the mod drew with before it read files, field by field:
+// with no file it draws as it did.  The options' defaults give the most;
+// the mod's own layer (hooks/config.ts, SETTINGS) the source, the hide
+// list and the rows, until the user's file has them; right-edge is
+// derived from live-place.
+test('with no configuration file the options are the settings the mod ' +
+  'drew with', () => {
+  expect(unconfigured()).toEqual({
+    usageSource: 'claude-usage-tracker',
+    account: 'default',
+    accountPeriod: 'day',
+    rightEdge: 2,
+    hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache',
+      'account.workspace.project', 'account.workspace.branch'],
+    markSpacing: true,
+    subscriptDecimals: false,
+    livePlace: 'footer',
+    rows: {
+      turn: { live: 'running', transcript: true },
+      agent: { live: 'running', transcript: true },
+      session: { live: 'running', transcript: true },
+      tag: { live: 'never', transcript: true },
+      account: { live: 'always', transcript: false },
+    },
+    accountPlace: 'tail',
+    hintTuck: false,
+    hintInset: 2,
+    footerRuler: false,
+    agentMessageRow: true,
+    slowToast: false,
+    startsKept: 400,
+  })
+})
+
+test('a session start logs the options the files and the mod gave',
+  async ($, on) => {
+    const w = world(on)
+    await $.session.start({ cwd: PROJECT, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    const log = w.files.get(STATE + '/' + LOG_NAME) ?? ''
+    expect(log).toContain('config options: ' +
+      'usage-source "claude-usage-tracker" (mod); account "u" (user); ' +
+      'right-edge 2 (derived); hide [] (project); ' +
+      'rows.turn.live "running" (mod); rows.turn.transcript true (mod); ' +
+      'rows.agent.live "running" (mod); rows.agent.transcript true (mod); ' +
+      'rows.session.live "running" (mod); ' +
+      'rows.session.transcript true (mod)')
   })
 
 test('the mod asks for no path outside the world it is handed',

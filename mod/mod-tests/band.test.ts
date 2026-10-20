@@ -22,10 +22,10 @@ import type { MockClock } from 'claude-code/testing'
 import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
-import { fromBase64 } from '../hooks/edges.ts'
+import { fromBase64, unconfigured } from '../hooks/edges.ts'
 import { startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
-import { BAND_EDGE, CONFIG } from '../hooks/config.ts'
+import { CONFIG } from '../hooks/config.ts'
 import {
   _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, foldAgentBytes,
   newAgentFold, readPayload, transcriptOf, turnsOf,
@@ -53,7 +53,7 @@ import {
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
-import { bandLines, bandRows, workspaceOf } from '../src/band.ts'
+import { ROW_NAMES, bandLines, bandRows, workspaceOf } from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
 } from '../src/receipt.ts'
@@ -68,15 +68,24 @@ const SESSION = 'fixture-session'
 const MODEL = 'claude-opus-5[1m]'
 const WINDOW = 1_000_000
 const COLS = 150
-// How far in the band's rows' container stands, where CONFIG.bandPlace
-// draws them: under the footer line, CONFIG.hintInset columns.
-const INSET = CONFIG.bandPlace === 'hint' ? CONFIG.hintInset : 0
-// The settings the band is drawn under: its right edge, BAND_EDGE, is
-// CONFIG.bandPlace's too, and the receipt's, which stacks on the band.
-const BAND_ST = settings({}, true, false, BAND_EDGE)
+// The options the mod draws with here: the world has no configuration
+// file, so the mod's settings over the defaults.
+const OPTIONS = unconfigured()
+const HIDE = OPTIONS.hide
+// When the band draws each row, and the rows the receipt stamps.
+const LIVE = { turn: OPTIONS.rows.turn.live, agent: OPTIONS.rows.agent.live,
+  session: OPTIONS.rows.session.live }
+const STAMPED = ROW_NAMES.filter((r) => OPTIONS.rows[r].transcript)
+// How far in the band's rows' container stands, where live-place draws
+// them: under the footer line, hint-inset columns.
+const INSET = OPTIONS.livePlace === 'footer' ? OPTIONS.hintInset : 0
+// The settings the band is drawn under: its right edge, right-edge,
+// derived from live-place, and the receipt's, which stacks on the band.
+const BAND_ST = settings({}, OPTIONS.markSpacing, OPTIONS.subscriptDecimals,
+  OPTIONS.rightEdge)
 const encoder = new TextEncoder()
 
-/** The band where CONFIG.bandPlace draws it, mounted: above the prompt,
+/** The band where live-place draws it, mounted: above the prompt,
  * or under the footer line, whose mount the band's own sets the width
  * of first, as Claude Code draws the two.  Under the footer, the drawing
  * leaves out Claude Code's own line, which comes first, and the 💳
@@ -85,14 +94,14 @@ async function mountBand($: any, surface: 'terminal' | 'desktop',
   props: RenderPropsOf['AbovePrompt']) {
   const above = await $.ui.mount({ plugin: 'usage-band', surface,
     component: 'AbovePrompt', props })
-  if (CONFIG.bandPlace === 'above') return above
+  if (OPTIONS.livePlace === 'above') return above
   const hint = await $.ui.mount({ plugin: 'usage-band', surface,
     component: 'PromptHint', props: { isDraft: false,
       isWorking: props.isWorking, hint: '-- INSERT --' } })
   return { ...hint, drawn: async () => {
     const tree = await hint.drawn() as Drawn
     // And the 💳 account's row, under it, where it has one.
-    const skip = CONFIG.accountPlace === 'row' ? 2 : 1
+    const skip = OPTIONS.accountPlace === 'row' ? 2 : 1
     return tree.type === 'Box'
       ? { ...tree, children: (tree.children ?? []).slice(skip) } : tree
   } }
@@ -369,8 +378,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
         .toEqual(JSON.parse(JSON.stringify(want)))
       const ui = await mountBand($, surface, BAND)
       // Between turns the band draws nothing: the receipt has the rows.
-      const lines = bandLines(BAND_ST, doc, COLS, CONFIG.hide, { home: HOME,
-        rate: null, phase: 'done', inset: INSET })
+      const lines = bandLines(BAND_ST, doc, COLS, HIDE, { home: HOME,
+        rate: null, phase: 'done', live: LIVE, inset: INSET })
       expect(lines).toEqual([])
       expect(await drawnRows(ui)).toEqual([])
     })
@@ -381,8 +390,8 @@ test('a turn running draws the running phase', async ($, on) => {
   await start($, 'terminal', STATUS)
   const doc = lastDoc(w)
   const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
-  const lines = bandLines(BAND_ST, doc, COLS, CONFIG.hide, { home: HOME,
-    rate: null, phase: 'running', inset: INSET })
+  const lines = bandLines(BAND_ST, doc, COLS, HIDE, { home: HOME,
+    rate: null, phase: 'running', live: LIVE, inset: INSET })
   expect(await drawnRows(ui)).toEqual(expected(lines))
   // No blank top row, where Claude Code's `[-]` would stand alone.
   expect(((await ui.drawn()) as Drawn).props?.marginTop).toBeUndefined()
@@ -964,8 +973,8 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
   const main = bandRows(BAND_ST, doc,
     { home: HOME, rate: null, phase: 'done' }).main
-  return receiptLines(BAND_ST, fig, COLS, CONFIG.hide,
-    workspaceOf(doc, HOME), true, main, [], INSET)
+  return receiptLines(BAND_ST, fig, COLS, HIDE,
+    workspaceOf(doc, HOME), true, main, STAMPED, INSET)
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -1163,7 +1172,8 @@ async function drewAll($: any, w: World) {
     const now = Math.max(Number((doc.clock as Dict).now),
       w.clock.now() / 1000)
     return bandLines(st, { ...doc, clock: { ...(doc.clock as Dict), now } },
-      COLS, CONFIG.hide, { home: HOME, rate: null, phase, inset: INSET })
+      COLS, HIDE, { home: HOME, rate: null, phase, live: LIVE,
+        inset: INSET })
   }
   // The turn has ended, but until its receipt is stamped, and a second
   // more, the band keeps its 🎤 and 🎮 rows.
@@ -1198,6 +1208,90 @@ test('a resumed session whose first turn calls no tool draws all three',
     await askAndAnswer($, w)
     await drewAll($, w)
     expect(logOf(w)).toContain('started by session.start in ' + CWD)
+  })
+
+// The project's local file the acceptance check writes
+// (config-merge.md, "Acceptance"): 🎤, 🤖 and 🎮 kept under the footer
+// line between turns, and stamped into the transcript too.
+const LOCAL = CWD + '/.config/coding-agent-usage-line/config.local.jsonc'
+const KEPT_AND_STAMPED = '{"rows": {' +
+  '"turn": {"live": "always", "transcript": true}, ' +
+  '"agent": {"live": "always", "transcript": true}, ' +
+  '"session": {"live": "always", "transcript": true}}}'
+
+test('a project file found on the tick keeps the rows and stamps them, ' +
+  'with no reload', async ($, on) => {
+  const w = world(on)
+  resumed(w)
+  await $.session.start({ cwd: CWD, surface: 'terminal',
+    isInteractive: true })
+  await settle()
+  await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'AbovePrompt', props: BAND })
+  expect(logOf(w)).toContain(`config from ${CWD}: no files`)
+  // The file comes after the session's start; the tick's next look at the
+  // files reads it.
+  w.files.set(LOCAL, encoder.encode(KEPT_AND_STAMPED))
+  await w.clock.advance(CONFIG.tickMs)
+  await settle()
+  expect(logOf(w)).toContain(`config from ${CWD}: project-local ${LOCAL}` +
+    ' (rows)')
+  expect(logOf(w)).toContain('config options: ' +
+    'usage-source "claude-usage-tracker" (mod); right-edge 2 (derived); ' +
+    'hide ' + JSON.stringify(HIDE) + ' (mod); rows.turn.live "always" (project-local); ' +
+    'rows.turn.transcript true (project-local); ' +
+    'rows.agent.live "always" (project-local); ' +
+    'rows.agent.transcript true (project-local); ' +
+    'rows.session.live "always" (project-local); ' +
+    'rows.session.transcript true (project-local)')
+  await askLive($, w, true)
+  await until(w, 5_000)
+  expect(stamped(w)).toBe(true)
+  await w.clock.advance(1_000)
+  // The turn is done, and the band keeps all three rows.
+  const doc = lastDoc(w)
+  const now = Math.max(Number((doc.clock as Dict).now), w.clock.now() / 1000)
+  const kept = bandLines(BAND_ST, { ...doc, clock: { ...(doc.clock as Dict),
+    now } }, COLS, HIDE, { home: HOME, rate: null, phase: 'done',
+    live: { turn: 'always', agent: 'always', session: 'always' },
+    inset: INSET })
+  expect(kept.length).toBe(3)
+  expect(await drawnRows(await mountBand($, 'terminal', BAND)))
+    .toEqual(expected(kept))
+  // And the receipt stamps all three too: three rows, a blank row and the
+  // tag line.
+  expect((await closing($, ASKED_MS)).length).toBe(5)
+  // A good file: no notice in the transcript.
+  expect(w.logged.filter((l) => l.includes('config'))).toEqual([])
+})
+
+test('a bad value in a file is logged, noticed once, and its default kept',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    w.files.set(LOCAL, encoder.encode(
+      '{"rows": {"turn": {"live": "allways"}}}'))
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    const warning = `${LOCAL}: "rows.turn.live" must be one of "never", ` +
+      '"running", "always" (did you mean "always"?); skipped'
+    expect(logOf(w)).toContain('config: ' + warning)
+    expect(w.logged).toEqual(['usage-band: config ' + warning])
+    // Another session's start, and a tick: the file is as it was, so no
+    // second read and no second notice.
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await w.clock.advance(CONFIG.tickMs)
+    await settle()
+    expect(w.logged.length).toBe(1)
+    expect(logOf(w).split('config: ' + warning).length - 1).toBe(1)
+    // 🎤 at its default, "running": gone once the turn ends.
+    await askLive($, w, true)
+    await until(w, 5_000)
+    await w.clock.advance(1_000)
+    expect(await drawnRows(await mountBand($, 'terminal', BAND)))
+      .toEqual([])
   })
 
 test('a turn before any session.start still draws all three',

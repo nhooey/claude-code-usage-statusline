@@ -26,7 +26,7 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `$.state` contract. It draws four places, and writes one:
 
 - **The band,** under Claude Code's footer line by default
-  (`CONFIG.bandPlace` `"hint"`), or above the prompt with `"above"`; see
+  (`live-place` `"footer"`), or above the prompt with `"above"`; see
   [docs/layout.md](../docs/layout.md#under-the-footer-line). It holds the
   grid's rows for the session, from the last status figures document,
   redrawn as the
@@ -57,15 +57,31 @@ files keep their reads in `src/*_node.ts`, which only Node imports, and
 
 ### Configuration
 
-`hooks/config.ts` holds it, in one place: the usage source
-(`claude-usage-tracker` by default, as `--usage-source` names it), the
-account and period, the `--hide` paths (here `*.plan.five_hour`, 🔋 in
-every row, and `*.context.share`, 🧠's ٪ of the window, which only the
-mod draws apart from 🧠's size), `--mark-spacing` and
-`--subscript-decimals`, the ticks (idle, running, and the clocks'), how many start lines are kept, how long
-the receipt waits for its turn, and the version the mod's caches are
-keyed by. Set them to what your status line runs with, so the two read
-one reading and draw one grid. Edit it, then `/reload-plugins`.
+The mod draws from the options the agent panel reads too, merged from the
+[configuration files](../docs/options.md#configuration-files): the
+project's local file, the project's, the user's, then the defaults, with
+`right-edge` following `live-place` where no file sets it. Every option the
+mod reads is listed in `spec/options.jsonc`, `"mod"` among its ports: the
+usage source, the account and period, the `hide` paths, `mark-spacing`
+and `subscript-decimals`, `live-place`, the `rows` table (when each of 🎤,
+🤖, 🎮, the 🔖 tag lines and 💳 is drawn, and which a turn's end stamps
+into the transcript), and the footer's layout. `hooks/edges.ts` reads the
+files at each load, on `session.start`, and every 30 seconds on the tick,
+a stat of each file, reading again only one that has changed, or the
+files of a new root after a `/cd`; a change draws everything again, with
+no `/reload-plugins`. Each read goes to `usage-band.log` (the files, the
+options a layer above the defaults gave, and every warning), and a file
+with a warning gets one notice line in the transcript per change.
+
+`hooks/config.ts` holds what no file sets: the ticks (idle, running, and
+the clocks'), how long the receipt waits for its turn, and the version the
+mod's caches are keyed by. It also holds `SETTINGS`, the mod's own layer
+under the files: the usage source (`claude-usage-tracker`), the `hide`
+paths (`*.plan.five_hour`, 🔋 in every row, `*.context.share`, 🧠's ٪ of
+the window, `*.tokens.cache`, 🎯, and the 💳 tail's 📦 and 🌿) and the
+rows (🎤, 🤖 and 🎮 drawn while a turn runs and all three stamped), the
+settings the mod drew with that are not the options' defaults. Each goes
+from there once the user's file holds it.
 
 The state directory and the projects directory are the status line's:
 `CODING_AGENT_USAGE_LINE_STATE_DIR` (else
@@ -117,12 +133,13 @@ then the turn's tag line, drawn as the start tag is, so its 🔺🔖 is under
 the 🔻🔖; then a blank row. Until the stamp lands the closing line is a
 blank row, and the band keeps the turn's rows until a second after it
 lands (`receiptHoldMs`), so neither place is ever without them; then the
-band draws none. `sticky` in `hooks/config.ts` (`--sticky` to
-`tools/draw-figures.ts`) names the rows, any of `turn`, `agent` and
-`session`, that stay on the band once the turn ends; the receipt stamps
-the rest. None are sticky by default, so the receipt has all three.
-`bandPlace` draws the band under the footer line (`hint`, the default)
-or above the prompt (`above`). A
+band draws none. The option `rows` sets, for each of `turn`, `agent` and
+`session`, whether it stays on the band once the turn ends (`live`
+`"always"`) and whether the receipt stamps it (`transcript`), apart
+(`--sticky` to `tools/draw-figures.ts` keeps a row and does not stamp
+it). As the mod ships, none stays, so the receipt has all three.
+`live-place` draws the band under the footer line (`footer`, the
+default) or above the prompt (`above`). A
 `$.ui.log` line was tried first:
 Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
 blank row after, in plain dim text.

@@ -16,7 +16,11 @@ import type { AgentInfo, On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { settings } from '../src/formatting.ts'
 import { messageSpans, senderLabel } from '../src/agent_message.ts'
-import { BAND_EDGE, CONFIG } from '../hooks/config.ts'
+import { CONFIG } from '../hooks/config.ts'
+import { unconfigured } from '../hooks/edges.ts'
+
+// The options the mod draws with here, with no configuration file.
+const OPTIONS = unconfigured()
 
 const NOW = 1_790_000_000_000
 const COLS = 60
@@ -101,8 +105,9 @@ async function drawn($: any, props: RenderPropsOf['UserMessage']):
  * `label`, by default the one its sender's name alone finds. */
 const expected = (w: World, props: RenderPropsOf['UserMessage'],
   label = senderLabel(props.from!.name, w.agents)) =>
-  messageSpans(settings({}, CONFIG.markSpacing, CONFIG.subscriptDecimals),
-    label, props.text, COLS - BAND_EDGE).map((s) => [s.text, s.dim, s.bold])
+  messageSpans(settings({}, OPTIONS.markSpacing, OPTIONS.subscriptDecimals),
+    label, props.text, COLS - OPTIONS.rightEdge)
+    .map((s) => [s.text, s.dim, s.bold])
 
 for (const surface of ['terminal', 'desktop'] as const) {
   test(`one agent of the sender's type: its task bold, the first line ` +

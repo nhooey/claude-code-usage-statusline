@@ -41,7 +41,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CM3` | **Done 2026-10-20.** The Python reads `Options`, not `argv` | `CM2` | `CA`, `RT9` | `claude.py` (every `_flag`), the Codex path |
 | `CM4` | **Done 2026-10-20.** The Python reads the files | `CM3` | none | `config.py` (new), `tests/config.py`, shared config cases |
 | `CM5` | **Done 2026-10-20.** The mod reads the files | `CM1`, `CM4` (its shared cases) | none | `mod/src/config.ts` (new), `mod/hooks/edges.ts` (the read), `config.test.ts` |
-| `CM6` | The mod draws from `options()`; the rows table | `CM5` | `RT8`, `RT8i` | `mod/hooks/register.tsx`, `mod/hooks/edges.ts` (every `CONFIG.x`), `mod/hooks/config.ts` |
+| `CM6` | **Done 2026-10-21.** The mod draws from `options()`; the rows table (ran before `CK2`, which rebases over it) | `CM5` | `RT8`, `RT8i` | `mod/hooks/register.tsx`, `mod/hooks/edges.ts` (every `CONFIG.x`), `mod/hooks/config.ts` |
 | `CM7` | Today's settings move into files | `CM6` | none | `~/.claude/settings.json` (by hand), `.config/coding-agent-usage-line/`, `.gitignore` |
 | `CM8` | The acceptance check, live | `CM7` | none | none |
 | `RT6` | **Done 2026-10-20.** The cold read folds in Python | none | none | `mod/scripts/agent_lines.py`, `mod/hooks/edges.ts` (`foldOf`), `main_fold.{py,ts}` |

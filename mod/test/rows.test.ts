@@ -114,33 +114,53 @@ test("the band's columns do not move with the phase or the figures", () => {
   }
 });
 
-test("sticky rows stay on the band, and the receipt stamps the others", () => {
-  const st = settings({});
-  const status = document("status/01-baseline@196");
-  const cost = document("cost/09-agents@196");
-  const opts = { home: HOME, rate: null, phase: "done" as const };
-  const main = inZone(status, () => bandRows(st, status, opts).main);
-  const marks = (lines: Span[][]) => lines.map((l) =>
-    Array.from(stripAnsi(join(l)))[0]);
-  for (const [sticky, stamp, keep] of [
-    [[], ["🎤", "🤖", "🎮"], []],
-    [["agent", "session"], ["🎤"], ["🤖", "🎮"]],
-    [["session"], ["🎤", "🤖"], ["🎮"]],
-    // Any of the three, not only the rows under a cut.
-    [["turn", "session"], ["🤖"], ["🎤", "🎮"]],
-    [["agent"], ["🎤", "🎮"], ["🤖"]],
-  ] as const) {
-    const name = sticky.join(",") || "none";
-    const receipt = inZone(cost, () => receiptLines(st, cost, 196, [], null,
-      false, main, sticky));
-    // The rows, then a blank row and the 🔺🔖 tag line.
-    assert.deepEqual(marks(receipt).slice(0, -2), stamp, name);
-    assert.equal(marks(receipt).at(-2), " ", name);
-    const band = inZone(status, () => bandLines(st, status, 196, [],
-      { ...opts, sticky }));
-    assert.deepEqual(marks(band), keep, name);
-  }
-});
+test("each row's live and transcript pick the band's rows and the receipt's",
+  () => {
+    const st = settings({});
+    const status = document("status/01-baseline@196");
+    const cost = document("cost/09-agents@196");
+    const opts = { home: HOME, rate: null, phase: "done" as const };
+    const main = inZone(status, () => bandRows(st, status, opts).main);
+    const marks = (lines: Span[][]) => lines.map((l) =>
+      Array.from(stripAnsi(join(l)))[0]);
+    // live by row, the rows stamped, then what the receipt, the band
+    // while a turn runs and the band once it ends draw.
+    for (const [live, stamped, stamp, running, done] of [
+      [{}, ["turn", "agent", "session"], ["🎤", "🤖", "🎮"],
+        ["🎤", "🤖", "🎮"], []],
+      // The options' defaults.
+      [{ agent: "always", session: "always" }, ["turn"], ["🎤"],
+        ["🎤", "🤖", "🎮"], ["🤖", "🎮"]],
+      // Kept live and stamped too.
+      [{ turn: "always", agent: "always", session: "always" },
+        ["turn", "agent", "session"], ["🎤", "🤖", "🎮"],
+        ["🎤", "🤖", "🎮"], ["🎤", "🤖", "🎮"]],
+      // Live while running only, and stamped nowhere.
+      [{ session: "running" }, ["turn"], ["🎤"], ["🎤", "🤖", "🎮"], []],
+      // In the transcript only.
+      [{ turn: "never", agent: "never" }, ["turn", "agent"], ["🎤", "🤖"],
+        ["🎮"], []],
+      [{ turn: "always", session: "always" }, ["agent"], ["🤖"],
+        ["🎤", "🤖", "🎮"], ["🎤", "🎮"]],
+    ] as const) {
+      const name = JSON.stringify([live, stamped]);
+      const receipt = inZone(cost, () => receiptLines(st, cost, 196, [],
+        null, false, main, stamped));
+      // The rows, then a blank row and the 🔺🔖 tag line.
+      assert.deepEqual(marks(receipt).slice(0, -2), stamp, name);
+      assert.equal(marks(receipt).at(-2), " ", name);
+      for (const [phase, want] of [["running", running], ["done", done]] as
+        const) {
+        const band = inZone(status, () => bandLines(st, status, 196, [],
+          { ...opts, phase, live }));
+        assert.deepEqual(marks(band), want, name + " " + phase);
+      }
+    }
+    // The tag line, its blank row with it, left out without `tags`.
+    const untagged = inZone(cost, () => receiptLines(st, cost, 196, [],
+      null, false, main, ["turn"], 0, false));
+    assert.deepEqual(marks(untagged), ["🎤"]);
+  });
 
 test("name.tag hides both tag lines and the receipt's blank row", () => {
   const st = settings({});
@@ -180,7 +200,7 @@ test("the 💳 account's own row ends where the band's rows end, in colour", () 
 });
 
 test("rows inset under the footer line stack on the agent panel's columns", () => {
-  // Claude Code draws the footer line's container CONFIG.hintInset columns
+  // Claude Code draws the footer line's container hint-inset columns
   // in; drawn at the full width there, every cell of the band stood that
   // many columns right of the panel's (seen live 2026-10-20).  At the
   // default edge, and at 0, where the band under the footer line and the

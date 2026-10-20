@@ -62,25 +62,34 @@ export type BandOpts = {
    * agent panel's columns and it ends where they end.  None where
    * absent. */
   readonly inset?: number;
-  /** The rows that stay where they are drawn once a turn ends; see
-   * RowName.  None where absent. */
-  readonly sticky?: readonly RowName[];
+  /** When each row is drawn, by its name (RowsLive); "running" for a row
+   * absent, so none stays once a turn ends. */
+  readonly live?: RowsLive;
 };
 
-/** A row of the band as the configuration names it: 🎤 "turn", 🤖
- * "agent", 🎮 "session".  A sticky row stays where the band draws it once
- * a turn ends, and the receipt stamps the others, any of the three either
- * way (asked 2026-10-20). */
+/** A row of the band as the configuration's `rows` table names it: 🎤
+ * "turn", 🤖 "agent", 🎮 "session". */
 export type RowName = "turn" | "agent" | "session";
 
-/** Where the band's rows are drawn: "above" the prompt, or under its
- * "hint", the footer line. */
-export type BandPlace = "above" | "hint";
+/** When the band draws a row, its `rows.<row>.live`: "never"; "running",
+ * while a turn runs; "always", while a turn runs and kept after it ends.
+ * Whether the receipt stamps it is apart (receiptLines). */
+export type Live = "never" | "running" | "always";
+
+/** Each row's Live, by its name. */
+export type RowsLive = { readonly [row in RowName]?: Live };
+
 export const ROW_NAMES: readonly RowName[] = ["turn", "agent", "session"];
 
-/** The scopes of the rows `sticky` names. */
-export function stickyScopes(sticky: readonly RowName[] = []): string[] {
-  return sticky.map((n) => n === "agent" ? "main" : n);
+/** The scope of the band's row the configuration names `row`: 🤖's is
+ * `main`. */
+export function scopeOf(row: RowName): string {
+  return row === "agent" ? "main" : row;
+}
+
+/** The scopes of `rows`. */
+export function scopesOf(rows: readonly RowName[]): string[] {
+  return rows.map(scopeOf);
 }
 
 /** The band's four rows, whichever the phase draws. */
@@ -416,18 +425,20 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
   };
 }
 
-/** The rows a phase draws, top to bottom: 🎤, 🤖💬 and 🎮 while a turn
- * runs, the order the receipt stamps them in (asked 2026-10-20), and once
- * it ends the `sticky` ones, which the receipt does not stamp: none by
- * default (asked 2026-10-20).  💳 is not among them: it is drawn
- * on the footer under the prompt, right-aligned, as `accountText` gives it
- * (decided 2026-10-19). */
+/** The rows a phase draws, top to bottom, of 🎤, 🤖💬 and 🎮, the order
+ * the receipt stamps them in (asked 2026-10-20): while a turn runs, each
+ * whose `live` is not "never", and once it ends, each whose `live` is
+ * "always".  A row absent from `live` is "running".  💳 is not among
+ * them: it is drawn on the footer under the prompt, right-aligned, as
+ * `accountText` gives it (decided 2026-10-19). */
 export function phaseRows(rows: BandRows, phase: Phase,
-  sticky: readonly RowName[] = []): Row[] {
-  const all = [rows.turn, rows.main, rows.session];
-  if (phase === "running") return all;
-  const kept = stickyScopes(sticky);
-  return all.filter((r) => kept.includes(r.scope));
+  live: RowsLive = {}): Row[] {
+  const named: [RowName, Row][] = [["turn", rows.turn], ["agent", rows.main],
+    ["session", rows.session]];
+  return named.filter(([name]) => {
+    const when = live[name] ?? "running";
+    return phase === "running" ? when !== "never" : when === "always";
+  }).map(([, row]) => row);
 }
 
 /** The 💳 row's label as one line of plain text after the workspace,
@@ -640,7 +651,7 @@ export function bandScoped(st: Settings, fig: Dict, cols: number,
   { scope: string; spans: Span[] }[] {
   const keys = fixedKeys(st, cols, hide);
   const drawn = cols - (opts.inset ?? 0);
-  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.sticky)
+  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.live)
     .filter((r) => !hidden(hide, r.scope))
     .map((r) => ({ scope: r.scope,
       spans: draw(st, indented(r, opts.indent ?? 0), keys, drawn, hide) }));

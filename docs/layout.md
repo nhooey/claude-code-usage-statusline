@@ -65,7 +65,7 @@ tests/fixtures/figures/status/01-baseline@196.json --cols 160 --part footer
 
 The first line is Claude Code's, drawn by Claude Code, so its pills stay
 live; the mod draws the rest under it, in the same container (`PromptHint`,
-with `CONFIG.bandPlace` `"hint"` in `mod/hooks/config.ts`). The fixture's
+with `live-place` `"footer"`, the default). The fixture's
 transcript writes no lines and reports no ETA, so 💾 and ⛳ are blank here;
 the [agent panel's render](#the-agent-panel) has both.
 
@@ -86,13 +86,13 @@ the turn ends they become [its rows](#the-receipt), frozen, in the
 transcript just above.
 
 Claude Code draws the footer's container two columns in from each edge, so
-every row the mod draws there starts two columns in (`CONFIG.hintInset`)
-and ends two columns short of the terminal's right edge (`BAND_EDGE`). With
-those, each cell falls on the same screen column as the agent panel's under
-it, whose `subagentStatusLine` runs with `--right-edge 2` to match. Under
-them Claude Code's blank row stays, between the footer and the panel's
-`⏺ main`; `CONFIG.hintTuck` draws them with a bottom margin of -1 instead,
-taking it up.
+every row the mod draws there starts two columns in (`hint-inset`)
+and ends two columns short of the terminal's right edge (`right-edge`,
+which follows `live-place`). With those, each cell falls on the same screen
+column as the agent panel's under it, whose `right-edge` follows the same
+`live-place` from the same files. Under them Claude Code's blank row stays,
+between the footer and the panel's `⏺ main`; `hint-tuck` draws them with a
+bottom margin of -1 instead, taking it up.
 
 **The 💳 row** is all label, right-aligned to end where the other rows end:
 where the session works, 📦 project, 🌿 branch and 📁 directory, as 🎮's
@@ -263,9 +263,11 @@ only the 💳 row stays under the footer line (`--phase done`):
 ```
 
 The rows stay a second after the stamp lands (`CONFIG.receiptHoldMs`), so
-neither place is ever without them. `CONFIG.sticky` names the rows, any of
-`turn`, `agent` and `session`, that stay instead; the receipt stamps the
-rest. None are sticky by default. With `agent` sticky (`--sticky agent`):
+neither place is ever without them. The option `rows` sets, for each of
+`turn`, `agent` and `session`, whether it stays instead (`live`
+`"always"`) and whether the receipt stamps it (`transcript`), apart; as
+the mod ships, none stays and the receipt stamps all three. With `agent`
+kept and not stamped (`--sticky agent`):
 
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
@@ -281,7 +283,9 @@ otherwise; their clocks (🔧 ⌛ ⛳ 🕐 🔜) move each second between reads.
 
 `--hide scope[.group[.metric]]`, repeatable, with `*` for any one part. One
 path means the same on the mod's rows, the receipt and the agent panel: the
-mod takes the paths in `CONFIG.hide`, and `subagentStatusLine` as flags.
+mod and the panel take the paths in the option `hide`, from the
+[configuration files](options.md#configuration-files), and the panel as
+flags too.
 
 | Part | Values |
 |---|---|
@@ -300,7 +304,7 @@ A column hidden on every row it could show on is removed, and the others
 close up; hidden on some rows, it is left blank there. Keep the panel's
 flags the same as the mod's, so the columns stack.
 
-`mod/hooks/config.ts` ships hiding 🔋 (`*.plan.five_hour`), 🧠's share of
+The mod ships hiding 🔋 (`*.plan.five_hour`), 🧠's share of
 the window (`*.context.share`), 🎯 (`*.tokens.cache`), and the 💳 row's 📦
 and 🌿 (`account.workspace.project`, `account.workspace.branch`), which 🎮
 draws under it:
@@ -656,7 +660,7 @@ kept for the message's later draws. Where no reply holds it, or more than
 one does, the row names the sender as Claude Code did, as in the second
 row: a guess between two agents' tasks would put one agent's words under
 the other's. ctrl+o shows the whole message either way, and
-`CONFIG.agentMessageRow` turns the row off. No figures document holds a
+`agent-message-row` turns the row off. No figures document holds a
 message, so the render is drawn from `agent_message.ts` itself, run from
 `mod/`:
 
@@ -744,7 +748,7 @@ nearest dark blue that draws the same either way.
 
 ### Above the prompt
 
-With `CONFIG.bandPlace` `"above"`, the 🎤, 🤖 and 🎮 rows are drawn above the
+With `live-place` `"above"`, the 🎤, 🤖 and 🎮 rows are drawn above the
 prompt instead (`AbovePrompt`), the band Claude Code can collapse with its
 `[-]` and ctrl+x ctrl+a. Claude Code draws `[-]` in the five rightmost
 columns of the band's first row, so every row there ends five columns short
@@ -756,13 +760,13 @@ of the edge (`RIGHT_EDGE`), at no inset (`--part band`):
 🎮 📦repo 🌿golden-clean                          💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋3.8٪  🪫8.45٪
 ```
 
-The receipt is then stamped at no inset, and `subagentStatusLine` runs
-without `--right-edge`, five being its default, so the panel's rows stack
-on these. The 💳 row stays under the footer line.
+The receipt is then stamped at no inset, and the panel's `right-edge`
+follows `live-place` to five, so its rows stack on these. The 💳 row stays
+under the footer line.
 
 ### The footer's tail
 
-With `CONFIG.accountPlace` `"tail"`, as the mod ships, the 💳 row is not a
+With `account-place` `"tail"`, the default, the 💳 row is not a
 row of its own: its text goes at the right end of Claude Code's footer
 line, plain and dim, after Claude Code's ` · ` (`--part tail`, with the
 hiding the mod ships):
@@ -775,7 +779,7 @@ Claude Code trims the tail's leading spaces and draws a run of spaces as
 one, so the padding that ends it where the rows end is U+2800, a blank cell
 that is not whitespace. The footer line hands the mod its words without the
 permission mode's pill, so the pill's width is counted apart, and the
-padding is a guess at the drawn width; `CONFIG.footerRuler` draws a ruler of
+padding is a guess at the drawn width; `footer-ruler` draws a ruler of
 column digits in its place to check it.
 
 ### The status line and the Stop hook

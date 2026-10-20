@@ -213,9 +213,11 @@ CASES = [
     case("derived-label-set", "a label a layer sets is not derived",
          {USER: '{"label": "L"}', PROJECT: '{"usage-text": false}',
           "home/p/.git/": None}),
-    case("right-edge-not-yet-derived", "right-edge keeps its default under"
-         " live-place until the mod draws from the merged options",
+    case("right-edge-derived", "right-edge follows live-place from a file",
          {PROJECT: '{"live-place": "above"}', "home/p/.git/": None}),
+    case("right-edge-set", "a right-edge a layer sets is not derived",
+         {USER: '{"right-edge": 0}', PROJECT: '{"live-place": "above"}',
+          "home/p/.git/": None}),
 ]
 
 

@@ -3425,11 +3425,12 @@ options (all modes):
                      repeatable.  The agent panel only, for now: the other
                      modes accept it and ignore it.  docs/options.md, "Hiding".
   --right-edge N     the columns every agent-panel row leaves blank at the
-                     terminal's right edge.  Default 5, the room Claude
-                     Code keeps for the band's [-] when the mod draws it
-                     above the prompt; 0 when the mod draws the band under
-                     the footer line, where there is no [-], so the panel
-                     ends where the band's rows do.
+                     terminal's right edge.  Unset, it follows the mod's
+                     live-place: 2 under the footer line, the default,
+                     where the footer's container stops two short of the
+                     edge; 5 above the prompt, the room Claude Code keeps
+                     for the band's [-].  The panel ends where the band's
+                     rows do.
   --cols N           terminal width, overriding the ancestry walk.  Chiefly
                      for the golden test, which must be deterministic.  "0"
                      means "pretend the width is unknown".
@@ -3494,9 +3495,9 @@ def main(options: Options, raw: Optional[str] = None) -> int:
     # Same reason, one layer in: it changes what the five numeric formatters
     # emit, and every field on both readouts is measured from that.
     set_subscript_decimals(options["subscript-decimals"])
-    # Before anything renders, as both above: where every grid row ends.
-    if options.given("right-edge"):
-        set_right_edge(options["right-edge"])
+    # Before anything renders, as both above: where every grid row ends,
+    # given or derived from the mod's live-place (Decided 13).
+    set_right_edge(options["right-edge"])
     mode = options["mode"]
     # Stage two alone, from a figures document: no stdin, no transcript, no
     # source and no clock.  See "The figures boundary".
