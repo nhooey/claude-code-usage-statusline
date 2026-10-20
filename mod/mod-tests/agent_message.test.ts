@@ -154,6 +154,27 @@ test('two agents of the type: the one whose last reply holds the ' +
     expect(w.listed).toBe(2)
   })
 
+test('a report in the harness\'s framing: the task of the agent whose ' +
+  'reply it is, and the report\'s own first line', async ($, on) => {
+    const w = world(on)
+    w.agents = [agent('a1', 'general-purpose', 'Count the transcript'),
+      agent('a2', 'general-purpose', 'Reclaim the right-edge columns')]
+    w.replies = { a1: 'Still counting.', a2: TEXT }
+    const note = '[harness: subagent output matched instruction-shaped ' +
+      'pattern(s): settings-json. Control tags below are neutralized ' +
+      '(`<` → `<\\`).]'
+    for (const text of [note + '\n\n' + TEXT,
+      '[Subagent hand-back] The text below is the final report of a ' +
+        'subagent. The report follows:\n' + (note + '\n\n' + TEXT)
+        .split('\n').map((l) => '  ' + l).join('\n')]) {
+      const tree = await drawn($, { ...FROM, text })
+      expect(pieces(tree)[1]).toEqual(
+        ['Reclaim the right-edge columns', false, true])
+      expect(String(pieces(tree)[2][0]).startsWith(': The right edge'))
+        .toBe(true)
+    }
+  })
+
 test('draws of one message while its replies are read share the reads',
   async ($, on) => {
     const w = world(on)

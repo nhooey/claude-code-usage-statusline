@@ -16,8 +16,8 @@
 // found in `$.agent.list()` by that: an agent whose own name it is (a
 // named subagent), else one whose type it is, the live ones before the
 // rest.  Where that finds more than one, the message's own words pick it:
-// the one agent of them whose last reply holds the message's first line
-// (asked 2026-10-20: ten `general-purpose` agents all read
+// the one agent of them whose last reply holds the message's first line,
+// the harness's framing of a subagent's report set aside (unframe) (asked 2026-10-20: ten `general-purpose` agents all read
 // `general-purpose`).  Where none or several hold it, or there were none
 // to begin with, the row names the sender as Claude Code did: a guess
 // between two agents' tasks would put one agent's words under the other's.
@@ -97,10 +97,55 @@ export function senderLabel(from: string,
   return taskOf(soleSender(from, agents), from);
 }
 
-/** The message's first line with words on it, its whitespace collapsed;
- * "" for a message of none. */
+// The harness's own framing of a subagent's report, which the agent never
+// wrote (seen live 2026-10-20: the row read `general-purpose: [harness:
+// subagent output matc…`, no reply holding that line):
+//   - a preamble line at column zero, `[Subagent hand-back] The text below
+//     is the final report … The report follows:`, and every line of the
+//     report under it indented two spaces;
+//   - inside the report, first, a note `[harness: subagent output matched
+//     instruction-shaped pattern(s): … Control tags below are neutralized
+//     (`<` → `<\`); …]`, the report's `<` written `<\` after it.
+// Claude Code's `text` has come both with the preamble and without it.
+const HANDBACK = /^\[Subagent hand-back\]/;
+const HARNESS_NOTE = /^\[harness:.*\]$/;
+
+/** `text` less the hand-back preamble and the indent it puts on every line
+ * of the report; `text` itself where it has no preamble.  The preamble is
+ * the last line at column zero that opens `[Subagent hand-back]`: inside
+ * the report every line is indented, so none there can be it. */
+export function reportOf(text: string): string {
+  const lines = text.split(/\r?\n/);
+  let at = -1;
+  lines.forEach((l, i) => { if (HANDBACK.test(l)) at = i; });
+  if (at < 0) return text;
+  const body = lines.slice(at + 1);
+  const indented = body.every((l) => !l.trim() || l.startsWith("  "));
+  return (indented ? body.map((l) => l.slice(Math.min(2,
+    l.length - l.trimStart().length))) : body).join("\n");
+}
+
+/** What the agent wrote of `text`: reportOf it, less the harness's
+ * `[harness: …]` notes before its first words, and with those notes' `<\`
+ * put back to `<`.  A message with no framing comes back as it was. */
+export function unframe(text: string): string {
+  const report = reportOf(text);
+  const lines = report.split(/\r?\n/);
+  let i = 0;
+  let noted = false;
+  while (i < lines.length) {
+    const l = lines[i].trim();
+    if (l && !HARNESS_NOTE.test(l)) break;
+    noted ||= !!l;
+    i++;
+  }
+  return noted ? lines.slice(i).join("\n").replace(/<\\/g, "<") : report;
+}
+
+/** The first line with words on it of what the agent wrote (unframe), its
+ * whitespace collapsed; "" for a message of none. */
 export function firstLine(text: string): string {
-  for (const line of text.split(/\r?\n/)) {
+  for (const line of unframe(text).split(/\r?\n/)) {
     const words = line.replace(/\s+/g, " ").trim();
     if (words) return words;
   }
@@ -140,8 +185,9 @@ export function saidBy(head: string,
 
 /** The message unfolded (ctrl+o), as rows of spans: the folded row's
  * `› 🤖📨 ` and the sender's label, bold, then every line of the message
- * two columns in, wrapped at word breaks to `cols` (a word wider than the
- * room is cut by columns), all on B_MSG and padded to `cols`, so it reads
+ * two columns in, less the hand-back preamble and its indent (reportOf; a
+ * `[harness: …]` note stays, the reader's to see), wrapped at word breaks
+ * to `cols` (a word wider than the room is cut by columns), all on B_MSG and padded to `cols`, so it reads
  * as the folded row does, named by its task, not Claude Code's
  * `@general-purpose` on its own colour (asked 2026-10-20). */
 export function messageBlock(st: Settings, label: string, text: string,
@@ -155,7 +201,8 @@ export function messageBlock(st: Settings, label: string, text: string,
   };
   const rows = [bar([span("› " + E_BOT + E_INBOX + " ", "F_MSG", false, false,
     "B_MSG"), span(label, "F_MSG", false, true, "B_MSG")])];
-  for (const line of wrapCols(st, text.replace(/\t/g, "  "), w - 2)) {
+  for (const line of wrapCols(st, reportOf(text).replace(/\t/g, "  "),
+    w - 2)) {
     rows.push(bar([span("  " + line, "F_MSG", false, false, "B_MSG")]));
   }
   return rows;
