@@ -157,4 +157,34 @@ with tempfile.TemporaryDirectory() as tmp:
             os.environ.pop("CODING_AGENT_USAGE_LINE_STATE_DIR", None)
         else:
             os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = saved
+
+# One account and window name one calibration cache, whether the render
+# fetched the reading or took the cache an earlier render left: the shared
+# scenario mod/test/sources.test.ts replays too.  A cached reading lost its
+# account and window, so the panel and the mod wrote and read two files.
+with open(os.path.join(HERE, "fixtures", "sources", "collect.json")) as fh:
+    scenario = [c for c in json.load(fh)
+                if c["name"] == "tracker: fresh, then cached, one scope"][0]
+SCOPE = "claude-usage-tracker\0session:s1\0" "1786838400"
+with tempfile.TemporaryDirectory() as tmp:
+    saved = {k: os.environ.get(k) for k in (
+        "CODING_AGENT_USAGE_LINE_STATE_DIR",
+        "CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST")}
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = os.path.join(tmp, "s")
+    tracker = os.path.join(tmp, "tracker.plist")
+    os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST"] = tracker
+    try:
+        for s in scenario["steps"]:
+            with open(tracker, "w") as fh:
+                fh.write(s["tracker"])
+            p = claude_sources.prepare_claude_reading(
+                s["spec"], s["account"], s["period"], s["built_context"],
+                s["now"])
+            got = claude.seed_limits_snapshot(p.limits, p.reading)["_scope"]
+            assert got == s["scope"] == SCOPE, (s["now"], got)
+        assert len(scenario["steps"]) == 3
+    finally:
+        for k, v in saved.items():
+            if v is None: os.environ.pop(k, None)
+            else: os.environ[k] = v
 print("ok Claude source bridge")

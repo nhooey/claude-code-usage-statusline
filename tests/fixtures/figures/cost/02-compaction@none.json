@@ -184,6 +184,8 @@
     },
     "reading": {
       "account": {},
+      "account_name": "session:02-compaction",
+      "agent": "claude",
       "as_of": 1786847000,
       "attempted_at": 1786847000,
       "buckets": [
@@ -208,6 +210,7 @@
       ],
       "fail_count": 0,
       "fetched_at": 1786847000,
+      "period_start": "1786838400",
       "schema_version": 1,
       "source": "cmd:${SCRATCH}/tmp/claude-source-app-41-63",
       "stale": false

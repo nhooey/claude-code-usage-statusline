@@ -12,10 +12,11 @@ import {
   pyJsonLoads,
 } from "../src/sources_node.ts";
 import type { Dict } from "../src/sources_node.ts";
-import { isDict } from "../src/py.ts";
+import { isDict, pyGet, pyTruthy } from "../src/py.ts";
+import { seedLimitsSnapshot } from "../src/claude_calib_node.ts";
 import {
-  legacyLimits, plistLoads, prepareClaudeReading, statusSourceContext,
-  trackerReading,
+  legacyLimits, NO_LIMITS, plistLoads, prepareClaudeReading,
+  statusSourceContext, trackerReading,
 } from "../src/claude_sources_node.ts";
 
 const FIXTURES = path.join(import.meta.dirname, "..", "..", "tests",
@@ -214,6 +215,12 @@ test("collect: scenarios over one state directory", async () => {
           spec, s.account, s.period, context, s.now, env);
         same(scrub(prepared.reading), s.reading, what + " reading");
         same(prepared.limits, s.limits, what + " limits");
+        // The calibration cache's scope, fresh or cached alike.
+        const snap = seedLimitsSnapshot(
+          pyTruthy(prepared.reading) ? prepared.limits : NO_LIMITS,
+          prepared.reading);
+        assert.equal(scrub(String(pyGet(snap, "_scope", ""))), s.scope,
+                     what + " scope");
         // Every cache file, as Python left it: the same contents under the
         // same names, which is what lets the two share one cache.
         const files: Dict[] = [];

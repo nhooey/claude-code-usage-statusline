@@ -993,6 +993,8 @@
     },
     "reading": {
       "account": {},
+      "account_name": "session:f1xture0-0000-4000-8000-00000000c0de",
+      "agent": "claude",
       "as_of": 1786847000,
       "buckets": [
         {
@@ -1015,6 +1017,7 @@
         }
       ],
       "fetched_at": 1786847000,
+      "period_start": "1786838400",
       "schema_version": 1,
       "source": "native",
       "stale": false

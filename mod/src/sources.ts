@@ -898,13 +898,17 @@ export async function collect(agent: string, spec: string | null,
   let selected = spec;
   if (spec === "auto") {
     if (pyTruthy(cachedNative) && !pyTruthy(cachedNative.stale)) {
-      return cachedNative;
+      return tagIdentity(cachedNative, agent, "native", namespace, periodKey);
     }
     selected = agent === "codex" ? "codex-app-server" : "claude-usage-tracker";
   }
   const ttl = HTTP_SOURCES.includes(selected) ? 300 : 60;
   const rawCache = await store.load(agent, selected, namespace, periodKey);
-  const cached = cachedReading(rawCache, selected, now, ttl);
+  // cachedReading whitelists the source fields, dropping the identity;
+  // every return carries it again, since the calibration cache is named
+  // from it and a cached reading must name the same file as a fresh one.
+  const cached = tagIdentity(cachedReading(rawCache, selected, now, ttl),
+                             agent, selected, namespace, periodKey);
   if (!refreshDue(rawCache, now, ttl)) return cached;
   const failure: Dict = {};
   let fresh: unknown = await fetch(selected, ctx, start, end, failure);

@@ -24,7 +24,8 @@ What the files hold:
   limits.json     readings and a time zone in, legacy_limits out.
   collect.json    scenarios: steps sharing one state directory, each a
                   spec, payload and clock in, and the prepared reading, its
-                  limits and every cache file afterwards out.
+                  limits, its calibration scope and every cache file
+                  afterwards out.
 
 Paths under the scratch directory are written as ${DIR}, which the test
 puts back as its own.
@@ -662,6 +663,13 @@ SCENARIOS = [
         step(N + 62, spec="none"),
         step(N + 63, spec="off", payload=PAYLOAD),
     ]),
+    # The live panel and mod: a fetch, then the cache it left, then a
+    # fetch again.  Each names one calibration cache, by one scope.
+    ("tracker: fresh, then cached, one scope", [
+        step(N, spec="claude-usage-tracker"),
+        step(N + 30, spec="claude-usage-tracker"),
+        step(N + 61, spec="claude-usage-tracker"),
+    ]),
     ("tracker: a reset that has passed", [
         step(N, spec="claude-usage-tracker", tracker=golden_store(
             dict(TRACKER_USAGE, sessionResetTime=N - 1 - APPLE))),
@@ -723,6 +731,11 @@ def collect_cases(scratch):
                                          s["payload"])
             prepared = claude_sources.prepare_claude_reading(
                 spec, s["account"], s["period"], context, s["now"])
+            # The calibration cache's scope, which names its file: the
+            # same for a fresh reading and a cached one.
+            scope = claude.seed_limits_snapshot(
+                prepared.limits if prepared.reading else claude.NO_LIMITS,
+                prepared.reading).get("_scope", "")
             files = []
             for entry in sorted(os.listdir(state_dir)):
                 if entry.endswith(".json"):
@@ -733,7 +746,7 @@ def collect_cases(scratch):
             done.append(scrub(dict(s, built_context=context,
                                    reading=prepared.reading,
                                    limits=prepared.limits._asdict(),
-                                   state=files), directory))
+                                   scope=scope, state=files), directory))
         out.append({"name": name, "steps": done})
     return out
 

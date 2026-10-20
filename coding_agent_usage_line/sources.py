@@ -593,16 +593,23 @@ def collect(agent, spec="auto", account="default", period="day", context=None, n
                              agent, source, namespace, period_key)
     selected = spec
     if spec == "auto":
-        if cached_native and not cached_native.get("stale"): return cached_native
+        if cached_native and not cached_native.get("stale"):
+            return _tag_identity(cached_native, agent, "native", namespace, period_key)
         selected = "codex-app-server" if agent == "codex" else "claude-usage-tracker"
     ttl = 300 if selected in ("anthropic-admin", "openai-admin", "experimental-claude-oauth", "experimental-codex-api") else 60
+    # _cached_reading whitelists the source fields, dropping the identity;
+    # every return carries it again, since the calibration cache is named
+    # from it and a cached reading must name the same file as a fresh one.
+    def cached_of(raw):
+        return _tag_identity(_cached_reading(raw, selected, now, ttl), agent,
+                             selected, namespace, period_key)
     raw_cache = state.load(agent, selected, namespace, period_key)
-    cached = _cached_reading(raw_cache, selected, now, ttl)
+    cached = cached_of(raw_cache)
     if not _refresh_due(raw_cache, now, ttl): return cached
     with state.refresh_lock(agent, selected, namespace, period_key) as acquired:
         if not acquired: return cached
         raw_cache = state.load(agent, selected, namespace, period_key)
-        cached = _cached_reading(raw_cache, selected, now, ttl)
+        cached = cached_of(raw_cache)
         if not _refresh_due(raw_cache, now, ttl): return cached
         failure = {}
         if selected.startswith("cmd:"): fresh = command_reading(selected[4:], context)
