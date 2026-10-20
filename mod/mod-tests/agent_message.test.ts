@@ -15,7 +15,7 @@ import type { AgentInfo, On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { settings } from '../src/formatting.ts'
 import { messageRow, senderLabel } from '../src/agent_message.ts'
-import { CONFIG } from '../hooks/config.ts'
+import { BAND_EDGE, CONFIG } from '../hooks/config.ts'
 
 const NOW = 1_790_000_000_000
 const COLS = 60
@@ -63,7 +63,7 @@ async function drawn($: any, props: RenderPropsOf['UserMessage']):
 /** The row as agent_message.ts would draw it from the same agents. */
 const expected = (w: World, props: RenderPropsOf['UserMessage']) =>
   messageRow(settings({}, CONFIG.markSpacing, CONFIG.subscriptDecimals),
-    senderLabel(props.from!.name, w.agents), props.text, COLS)
+    senderLabel(props.from!.name, w.agents), props.text, COLS - BAND_EDGE)
 
 for (const surface of ['terminal', 'desktop'] as const) {
   test(`one agent of the sender's type: its task and the first line, ` +
@@ -92,7 +92,7 @@ test('two agents of the type: the sender named as Claude Code names it',
       agent('a2', 'general-purpose', 'Two')]
     const tree = await drawn($, FROM)
     expect((tree.children ?? []).join('')).toBe('› 🤖 general-purpose: The ' +
-      'right edge is now a setting in bo…')
+      'right edge is now a setting in …')
     expect((tree.children ?? []).join('')).toBe(expected(w, FROM))
   })
 

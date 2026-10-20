@@ -687,9 +687,11 @@ export const register: Register = on => {
     const label = senderLabel(from.name, await agentsNow($))
     // The band's width before the viewport's, as the footer takes it: the
     // viewport has read wider than the terminal drew (seen live
-    // 2026-10-20).  Should the row stand in from the edge, the Text's
-    // truncate-end cuts what the ellipsis did not.
-    const cols = bandCols || (e.viewport?.columns ?? 80)
+    // 2026-10-20).  Ending where the band's rows and the receipt's end,
+    // BAND_EDGE short of the edge (asked 2026-10-20: it ran to the edge).
+    // Should the row stand in from the edge, the Text's truncate-end cuts
+    // what the ellipsis did not.
+    const cols = (bandCols || (e.viewport?.columns ?? 80)) - BAND_EDGE
     const row = messageRow(await settingsOf($), label, e.props.text, cols)
     const { Text } = $.ui.resolve(e)
     return <Text dimColor wrap="truncate-end">{row}</Text>
