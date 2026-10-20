@@ -22,7 +22,8 @@ import type { MockClock } from 'claude-code/testing'
 import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
-import { fromBase64, unconfigured } from '../hooks/edges.ts'
+import { fromBase64 } from '../hooks/edges.ts'
+import { merge as mergeConfig, optionsOf } from '../src/config.ts'
 import { startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
 import { CONFIG } from '../hooks/config.ts'
@@ -68,9 +69,23 @@ const SESSION = 'fixture-session'
 const MODEL = 'claude-opus-5[1m]'
 const WINDOW = 1_000_000
 const COLS = 150
-// The options the mod draws with here: the world has no configuration
-// file, so the mod's settings over the defaults.
-const OPTIONS = unconfigured()
+// The world's user file (world, below): the look these tests draw, the
+// tracker's store, five figures hidden, and 🎤, 🤖 and 🎮 drawn while a
+// turn runs and stamped into the transcript.
+const USER_FILE = HOME + '/.config/coding-agent-usage-line/config.jsonc'
+const USER_SETTINGS = {
+  'usage-source': 'claude-usage-tracker',
+  'hide': ['*.plan.five_hour', '*.context.share', '*.tokens.cache',
+    'account.workspace.project', 'account.workspace.branch'],
+  'rows': {
+    turn: { live: 'running', transcript: true },
+    agent: { live: 'running', transcript: true },
+    session: { live: 'running', transcript: true },
+  },
+}
+// The options the mod draws with here: the user file over the defaults.
+const OPTIONS = optionsOf(mergeConfig([{ name: 'user', path: USER_FILE,
+  mtimeMs: 0, values: USER_SETTINGS }], []))
 const HIDE = OPTIONS.hide
 // When the band draws each row, and the rows the receipt stamps.
 const LIVE = { turn: OPTIONS.rows.turn.live, agent: OPTIONS.rows.agent.live,
@@ -121,6 +136,8 @@ type World = {
   store: Map<string, unknown>
   // Each status document the mod filed in `$.state`, oldest first.
   docs: Dict[]
+  // Whether `$.session.usage` is refused.
+  usage: { down: boolean }
   // Each line the mod sent the debug log.
   debug: string[]
   // Each line the mod wrote into the transcript, `$.ui.log`'s default.
@@ -136,14 +153,15 @@ const NO_GIT_HERE: Ran = { exitCode: 128, stdout: '',
   isStderrTruncated: false }
 
 /** The engine beneath the mod, answered from memory; `run` answers
- * `$.process.run`, a directory with no git by default, the first
- * `usageFails` reads of `$.session.usage` are refused, and a fresh
- * calibration is planted unless `calib` is false. */
+ * `$.process.run`, a directory with no git by default, `$.session.usage`
+ * is refused while `usage.down`, which `usageDown` starts it at, and a
+ * fresh calibration is planted unless `calib` is false. */
 function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
-  usageFails = 0, calib = true): World {
+  usageDown = false, calib = true): World {
   const files = new Map<string, Uint8Array>()
   for (const [p, b64] of Object.entries(FILES)) files.set(p, fromBase64(b64))
   files.set('/tracker.plist', encoder.encode(TRACKER))
+  files.set(USER_FILE, encoder.encode(JSON.stringify(USER_SETTINGS)))
   const clock = mock.clock(on, { now: NOW * 1000 })
   const store = new Map<string, unknown>()
   on('store.get', ($, e) => ({ value: store.get(e.key) }))
@@ -220,7 +238,8 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   on('session.root', () => ({ value: CWD }))
   on('session.model', () => ({ value: MODEL }))
   on('session.id', () => ({ value: SESSION }))
-  on('session.usage', () => usageFails-- > 0
+  const usage = { down: usageDown }
+  on('session.usage', () => usage.down
     ? { deny: 'usage unavailable' } as any
     : { value: { startedAt: NOW * 1000,
       context: { tokens: 1000, window: WINDOW }, rateLimits: [] } })
@@ -238,7 +257,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     ;(e.to === 'debug' ? debug : logged).push(e.text)
     return { value: undefined }
   })
-  return { files, store, docs, debug, logged, clock }
+  return { files, store, docs, usage, debug, logged, clock }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -561,7 +580,7 @@ test('a scan writes the shared window-cost cache through a rename',
       viaShell.push(path)
       w.files.set(path, encoder.encode(e.init?.stdin ?? ''))
       return { ...NO_GIT_HERE, exitCode: 0, stderr: '' }
-    }, 0, false)
+    }, false, false)
     const path = '/claude/projects/-work/scanned.jsonl'
     const bytes = w.files.get(MAIN)!
     w.files.set(path, bytes)
@@ -1228,17 +1247,18 @@ test('a project file found on the tick keeps the rows and stamps them, ' +
   await settle()
   await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
     component: 'AbovePrompt', props: BAND })
-  expect(logOf(w)).toContain(`config from ${CWD}: no files`)
+  expect(logOf(w)).toContain(`config from ${CWD}: user ${USER_FILE}` +
+    ' (usage-source, hide, rows)')
   // The file comes after the session's start; the tick's next look at the
   // files reads it.
   w.files.set(LOCAL, encoder.encode(KEPT_AND_STAMPED))
   await w.clock.advance(CONFIG.tickMs)
   await settle()
   expect(logOf(w)).toContain(`config from ${CWD}: project-local ${LOCAL}` +
-    ' (rows)')
+    ` (rows); user ${USER_FILE} (usage-source, hide, rows)`)
   expect(logOf(w)).toContain('config options: ' +
-    'usage-source "claude-usage-tracker" (mod); right-edge 2 (derived); ' +
-    'hide ' + JSON.stringify(HIDE) + ' (mod); rows.turn.live "always" (project-local); ' +
+    'usage-source "claude-usage-tracker" (user); right-edge 2 (derived); ' +
+    'hide ' + JSON.stringify(HIDE) + ' (user); rows.turn.live "always" (project-local); ' +
     'rows.turn.transcript true (project-local); ' +
     'rows.agent.live "always" (project-local); ' +
     'rows.agent.transcript true (project-local); ' +
@@ -1286,7 +1306,8 @@ test('a bad value in a file is logged, noticed once, and its default kept',
     await settle()
     expect(w.logged.length).toBe(1)
     expect(logOf(w).split('config: ' + warning).length - 1).toBe(1)
-    // 🎤 at its default, "running": gone once the turn ends.
+    // 🎤 as the layer under the file has it, "running": gone once the
+    // turn ends.
     await askLive($, w, true)
     await until(w, 5_000)
     await w.clock.advance(1_000)
@@ -1304,19 +1325,20 @@ test('a turn before any session.start still draws all three',
     expect(logOf(w)).toContain('started by turn.start')
   })
 
-test('a refresh that throws once is logged, and the next one draws',
+test('a refresh that throws is logged, and the next one draws',
   async ($, on) => {
-    const w = world(on, undefined, 1)
+    const w = world(on, undefined, true)
     resumed(w)
     await $.session.start({ cwd: CWD, surface: 'terminal',
       isInteractive: true })
     await settle()
-    // The first read failed: nothing filed, and the log says why, in its
-    // file and in the debug log.
+    // The start's reads failed: nothing filed, and the log says why, in
+    // its file and in the debug log.
     expect(w.docs.length).toBe(0)
     const why = /refresh: no status document: .*usage unavailable/
     expect(logOf(w)).toMatch(why)
     expect(w.debug.some((l) => why.test(l))).toBe(true)
+    w.usage.down = false
     await askAndAnswer($, w)
     await drewAll($, w)
   })

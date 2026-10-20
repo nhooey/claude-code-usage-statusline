@@ -309,13 +309,11 @@ notice line in the transcript, `usage-band: config <path>: …`, once per
 change to the file.
 
 Under the files the mod has one layer of its own, `mod`: `SETTINGS` in
-`mod/hooks/config.ts`, which holds the settings it drew with before it
-read files and that are not the defaults: `usage-source`
-`claude-usage-tracker`, `hide` `*.plan.five_hour`, `*.context.share`,
-`*.tokens.cache`, `account.workspace.project` and
-`account.workspace.branch`, and `rows` with 🎤, 🤖 and
-🎮 all live `"running"` and stamped. A file that sets one wins over it.
-`--show-config` does not know this layer; the mod's log names it.
+`mod/hooks/config.ts`, for a setting it draws with that is not the
+default and that no file gives. It is empty: a person's own settings go in
+their user file, which the band and the panel both read, and the panel's
+command keeps only `--agent claude --mode subagent`. `--show-config` does
+not know this layer; the mod's log names it.
 
 `right-edge` follows `live-place` when no layer sets it, as `label` follows
 `usage-text`: 2 under the default `"footer"`, 5 under `"above"`, in the

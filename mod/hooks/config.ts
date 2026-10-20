@@ -60,30 +60,9 @@ export const CONFIG = {
   agentSenderMemo: 256,
 } as const;
 
-// The settings the mod has drawn with that are not the options' defaults,
-// as one more layer under the configuration files, named "mod": a file
-// that sets one of them wins, the defaults (spec/options.jsonc) are under
-// them, and with no file the mod draws as it did before it read files.
-// Each moves to the user's own file, ~/.config/coding-agent-usage-line/
-// config.jsonc, and goes from here once it is there (config-merge.md, step
-// 7); the agent panel's command keeps its own flags until then.  Every
-// other option's default is the setting the mod had.
-export const SETTINGS: { readonly [option: string]: Value } = {
-  // The menu-bar app's store, which the agent panel reads too
-  // (`--usage-source claude-usage-tracker`).
-  "usage-source": "claude-usage-tracker",
-  // 🔋 the 5-hour limit, 🧠's ٪ of the window, and 🎯 the cache hit rate,
-  // in every row (asked 2026-10-19); the panel's `--hide` flags say the
-  // same, so it stacks.  The 💳 tail's 📦 project and 🌿 branch, which 🎮
-  // draws under it (asked 2026-10-20).
-  "hide": ['*.plan.five_hour', '*.context.share', '*.tokens.cache',
-    'account.workspace.project', 'account.workspace.branch'],
-  // 🎤, 🤖 and 🎮 drawn while a turn runs, gone at its end, and stamped
-  // into the transcript (asked 2026-10-20): the receipt has all three,
-  // and the band is empty between turns.
-  "rows": {
-    "turn": { "live": "running", "transcript": true },
-    "agent": { "live": "running", "transcript": true },
-    "session": { "live": "running", "transcript": true },
-  },
-}
+// One more layer under the configuration files, named "mod": a setting
+// the mod draws with that is not the options' default and that no file
+// gives.  Empty: a person's settings are in their own file,
+// ~/.config/coding-agent-usage-line/config.jsonc (docs/options.md), which
+// the band and the agent panel both read.
+export const SETTINGS: { readonly [option: string]: Value } = {}

@@ -24,3 +24,7 @@ result-*
 # Project-scope skill installs from the dev shell's reconcile startup hook.
 # Symlinks into the Nix store, not source.
 /.claude/skills/
+
+# One person's settings under the project's .config/ (config.local.jsonc,
+# mise's mise.local.toml, ...), never committed.
+/.config/**/*.local.*

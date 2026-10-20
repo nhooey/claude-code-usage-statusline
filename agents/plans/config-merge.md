@@ -721,6 +721,10 @@ and `npm test`.
    drops its `--mark-spacing`, `--usage-source`, `--right-edge` and
    `--hide` flags in the same edit (a flag that differs from the file is
    warned about, Decided 1), and `SETTINGS` empties to `{}` in a commit.
+
+   **Status 2026-10-21: done,** with `rows` kept (the user's call): the
+   user file above is written, `SETTINGS` is `{}` and the ignore line is
+   in `.gitignore`; the panel's command is the user's to cut down.
 8. **The acceptance check**, below.
 
 ## Acceptance

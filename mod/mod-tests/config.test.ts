@@ -13,7 +13,8 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import { LOG_NAME } from '../hooks/log.ts'
-import { unconfigured } from '../hooks/edges.ts'
+import { optionsTable, unconfigured } from '../hooks/edges.ts'
+import { MOD_LAYER, merge as mergeConfig, optionsOf } from '../src/config.ts'
 
 const HOME = '/home/fixture'
 const STATE = '/state'
@@ -130,27 +131,23 @@ test('a session start reads the config files and logs every warning once',
     }
   })
 
-// The settings the mod drew with before it read files, field by field:
-// with no file it draws as it did.  The options' defaults give the most;
-// the mod's own layer (hooks/config.ts, SETTINGS) the source, the hide
-// list and the rows, until the user's file has them; right-edge is
-// derived from live-place.
-test('with no configuration file the options are the settings the mod ' +
-  'drew with', () => {
+// The options with no file, field by field: the spec's defaults
+// (spec/options.jsonc), the mod's own layer (hooks/config.ts, SETTINGS)
+// being empty; right-edge is derived from live-place.
+test('with no configuration file the options are the defaults', () => {
   expect(unconfigured()).toEqual({
-    usageSource: 'claude-usage-tracker',
+    usageSource: 'auto',
     account: 'default',
     accountPeriod: 'day',
     rightEdge: 2,
-    hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache',
-      'account.workspace.project', 'account.workspace.branch'],
+    hide: [],
     markSpacing: true,
     subscriptDecimals: false,
     livePlace: 'footer',
     rows: {
       turn: { live: 'running', transcript: true },
-      agent: { live: 'running', transcript: true },
-      session: { live: 'running', transcript: true },
+      agent: { live: 'always', transcript: false },
+      session: { live: 'always', transcript: false },
       tag: { live: 'never', transcript: true },
       account: { live: 'always', transcript: false },
     },
@@ -164,7 +161,7 @@ test('with no configuration file the options are the settings the mod ' +
   })
 })
 
-test('a session start logs the options the files and the mod gave',
+test('a session start logs the options the files gave',
   async ($, on) => {
     const w = world(on)
     await $.session.start({ cwd: PROJECT, surface: 'terminal',
@@ -172,12 +169,29 @@ test('a session start logs the options the files and the mod gave',
     await settle()
     const log = w.files.get(STATE + '/' + LOG_NAME) ?? ''
     expect(log).toContain('config options: ' +
-      'usage-source "claude-usage-tracker" (mod); account "u" (user); ' +
-      'right-edge 2 (derived); hide [] (project); ' +
-      'rows.turn.live "running" (mod); rows.turn.transcript true (mod); ' +
-      'rows.agent.live "running" (mod); rows.agent.transcript true (mod); ' +
-      'rows.session.live "running" (mod); ' +
-      'rows.session.transcript true (mod)')
+      'account "u" (user); right-edge 2 (derived); hide [] (project)\n')
+  })
+
+// The mod's own layer, were SETTINGS to hold any: under every file, over
+// the defaults, per field in a table, and named "mod" in the log's table.
+test('a non-empty mod layer merges under the files and is named in the log',
+  () => {
+    const m = mergeConfig([
+      { name: 'user', path: USER_FILE, mtimeMs: 1,
+        values: { 'hide': [], 'rows': { agent: { live: 'never' } } } },
+      { name: MOD_LAYER, path: 'mod/hooks/config.ts', mtimeMs: 0,
+        values: { 'usage-source': 'claude-usage-tracker',
+          'hide': ['*.context.share'],
+          'rows': { agent: { live: 'running', transcript: true } } } },
+    ], [])
+    const o = optionsOf(m)
+    expect(o.usageSource).toBe('claude-usage-tracker')
+    expect(o.hide).toEqual([])
+    expect(o.rows.agent).toEqual({ live: 'never', transcript: true })
+    expect(optionsTable(m)).toBe(
+      'usage-source "claude-usage-tracker" (mod); right-edge 2 (derived); ' +
+      'hide [] (user); rows.agent.live "never" (user); ' +
+      'rows.agent.transcript true (mod)')
   })
 
 test('the mod asks for no path outside the world it is handed',
