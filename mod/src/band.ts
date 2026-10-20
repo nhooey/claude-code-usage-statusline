@@ -514,8 +514,11 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   const plain = accountText(st, fig, hide, home);
   if (!plain) return "";
   const pillW = pillWidth(st, hint, MODE_PILLS[mode ?? ""] ?? "");
-  const room = cols - st.rightEdge - 2 - pillW - visWidth(hint, st.widths) -
-    visWidth(FOOTER_JOIN, st.widths);
+  // TAIL_CUT more than a row: Claude Code cuts the tail a column short of
+  // where a row under the line ends (seen live 2026-10-20: at a right edge
+  // of 2 the 🕐 ended `18:58:…`, the line one column over).
+  const room = cols - st.rightEdge - 2 - TAIL_CUT - pillW -
+    visWidth(hint, st.widths) - visWidth(FOOTER_JOIN, st.widths);
   // The workspace, the 💳 account and 📅 🕐, FOOTER_GAP columns apart,
   // both gaps fewer, down to one, where the row is short (asked
   // 2026-10-20).
@@ -617,6 +620,8 @@ export const MODE_PILLS: Readonly<Record<string, string>> = {
   plan: "⏸ plan mode on",
   bypassPermissions: "⏵⏵ bypass permissions on",
 };
+/** The columns Claude Code cuts the footer's tail short of a row's end. */
+export const TAIL_CUT = 1;
 /** U+2800, a blank cell that is not whitespace, so no trim takes it. */
 export const TAIL_BLANK = "⠀";
 

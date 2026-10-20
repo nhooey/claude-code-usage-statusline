@@ -16,7 +16,7 @@ import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
 import { panelLayout } from "../src/claude_subagent_render.ts";
 import {
-  FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, accountLine, accountText, footerParts, modeOfHint, bandLines, bandRows, fixedKeys, footerTail,
+  FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, TAIL_CUT, accountLine, accountText, footerParts, modeOfHint, bandLines, bandRows, fixedKeys, footerTail,
   phaseRows,
   workspaceOf,
 } from "../src/band.ts";
@@ -253,19 +253,19 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   // band's right edge, padded with blanks no trim takes.
   assert.equal(2 + visWidth(hint, st.widths) +
     visWidth(FOOTER_JOIN, st.widths) + visWidth(tail, st.widths),
-  240 - RIGHT_EDGE);
+  240 - RIGHT_EDGE - TAIL_CUT);
   // The mode's pill, left out of the hint, is drawn before it all the same.
   const bare = "-- INSERT -- 2 shells";
   const auto = inZone(fig, () => footerTail(st, fig, [], bare, 240, "auto"));
   assert.equal(2 + visWidth(MODE_PILLS.auto + FOOTER_JOIN + bare, st.widths) +
     visWidth(FOOTER_JOIN, st.widths) + visWidth(auto, st.widths),
-  240 - RIGHT_EDGE);
+  240 - RIGHT_EDGE - TAIL_CUT);
   // Before "(shift+tab to cycle)" the pill is drawn with one space.
   const cyc = "-- INSERT -- (shift+tab to cycle)";
   const cycTail = inZone(fig, () => footerTail(st, fig, [], cyc, 240, "auto"));
   assert.equal(2 + visWidth("-- INSERT -- " + MODE_PILLS.auto +
     " (shift+tab to cycle)", st.widths) + visWidth(FOOTER_JOIN, st.widths) +
-    visWidth(cycTail, st.widths), 240 - RIGHT_EDGE);
+    visWidth(cycTail, st.widths), 240 - RIGHT_EDGE - TAIL_CUT);
   // Each shape the hint was seen in, by what the footer drew for it.
   const drawn: [string, string, string][] = [
     ["-- INSERT -- (shift+tab to cycle)", "plan",
@@ -280,7 +280,7 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
   for (const [h, mode, line] of drawn) {
     const t = inZone(fig, () => footerTail(st, fig, [], h, 240, mode));
     assert.equal(2 + visWidth(line + FOOTER_JOIN, st.widths) +
-      visWidth(t, st.widths), 240 - RIGHT_EDGE, h);
+      visWidth(t, st.widths), 240 - RIGHT_EDGE - TAIL_CUT, h);
   }
   // The words are the mode turned off; the one turned on is the next.
   assert.equal(modeOfHint("-- INSERT -- accept edits on (shift+tab to cycle)"),
