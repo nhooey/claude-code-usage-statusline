@@ -83,6 +83,13 @@ names them, so a `/reload-plugins` reads on from there rather than from
 the start. A saved fold is passed over when the transcript is no longer
 the bytes it was folded from, or its format is not the spec's.
 
+A megabyte or more to fold, as on the first read of a long session, is
+folded by `scripts/agent_lines.py` in Python, with the repository's
+package beside `mod/`. A copy of `mod/` on its own, installed from GitHub
+or as a dev mod, has no package beside it, and the mod folds the
+transcript itself, 8 MiB at a time: slower, but only until the fold is
+saved.
+
 ### The receipt
 
 As a turn ends the mod stamps its receipt as the turn's closing line, in
@@ -196,8 +203,10 @@ says why (`refresh: no status document: …`), as does a turn that got no
 receipt (`no receipt: …`). The mod times each read, step by step, and a
 read over two seconds is logged and shown as a toast, at most one a
 minute, with each step's length in ms: `slow read: <ms> (records,
-shell, pieces, decode, parse, agents, sum, turns, usage, calib, git)`,
-each followed by its figure; `pieces` counts the shell reads.
+worker, load, fold, shell, pieces, decode, parse, agents, sum, turns,
+usage, calib, git)`, each followed by its figure; `pieces` counts the
+shell reads, and `foldPieces` the pieces the mod folded itself where the
+worker could not run.
 
 In the debug log, `classic.SessionStart bypassed by cc-plugin-sec-default`
 is expected: Claude Code's security plugin passes the classic events by a

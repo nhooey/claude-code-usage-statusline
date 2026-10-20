@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import * as cr from "../src/claude_records_node.ts";
 import * as mf from "../src/main_fold.ts";
@@ -349,6 +349,27 @@ test("the worker saves the fold as the mod saves it", () => {
     }
   }
 });
+
+// A copy of mod/ on its own, as a GitHub install or a dev mod has it, has
+// no package beside the worker: it exits 1, says so, and writes nothing,
+// so foldOf folds the bytes itself (mod-tests/band.test.ts).
+test("the worker with no package beside it exits 1 and writes nothing",
+  () => {
+    const root = tmp();
+    const scripts = path.join(root, "mod", "scripts");
+    fs.mkdirSync(scripts, { recursive: true });
+    fs.copyFileSync(WORKER, path.join(scripts, "agent_lines.py"));
+    const dir = tmp();
+    const p = FILES[0];
+    const r = spawnSync("python3", [path.join(scripts, "agent_lines.py"),
+      "fold", p, String(fs.statSync(p).size), dir], { encoding: "utf-8" });
+    assert.equal(r.status, 1, r.stderr);
+    assert.equal(r.stdout, "");
+    assert.match(r.stderr, /no coding_agent_usage_line package beside mod/);
+    assert.deepEqual(fs.readdirSync(dir), []);
+    fs.rmSync(root, { recursive: true });
+    fs.rmSync(dir, { recursive: true });
+  });
 
 test("a head over its cap is not saved", () => {
   const f = mf.newMainFold();

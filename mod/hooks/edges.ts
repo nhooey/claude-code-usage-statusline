@@ -20,13 +20,13 @@ import type { EngineInterface } from 'claude-code'
 import {
   _agentDir, _agentStatePath, _recordsOf, agentFoldOf, agentFoldText,
   agentLabelOf, agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr,
-  EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, mainCutHeadOf,
-  mainCutPartOf, newAgentFold, pyJoin, readPayload, transcriptFinish,
-  transcriptFoldWith, turnsFinish, turnsFoldWith,
+  EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, newAgentFold, pyJoin,
+  readPayload, transcriptFinish, transcriptFoldWith, turnsFinish,
+  turnsFoldWith,
 } from '../src/claude_records.ts'
 import type {
-  AgentEta, AgentFold, AgentReading, AgentRec, Payload, Rec, Transcript,
-  Turn, TurnsFold,
+  AgentEta, AgentFold, AgentReading, AgentRec, Payload, Transcript, Turn,
+  TurnsFold,
 } from '../src/claude_records.ts'
 import {
   FOLD_CHECK_BYTES, FOLD_PART_BYTES, foldHeadOf, foldMain, foldOfSaved,
@@ -219,11 +219,12 @@ async function timed<T>($: $, name: string, f: () => Promise<T>): Promise<T> {
  * folded to the last complete line, with the bytes after it, since a live
  * transcript's last line can be half written, folded on a copy each time.
  * A reload reads on from the state saved under the contract
- * (src/main_fold.ts), else from the saved cut, else from the start; and the
- * state is saved again at most once per CONFIG.foldSaveMs.  A stretch of
- * AGENT_LINES_MIN or more past what is folded is folded by the worker
- * (foldWorker) into the saved state, which is then read back.  A file that
- * shrank is folded again from the start.  null where there is no file. */
+ * (src/main_fold.ts), else from the start; and the state is saved again at
+ * most once per CONFIG.foldSaveMs.  A stretch of AGENT_LINES_MIN or more
+ * past what is folded is folded by the worker (foldWorker) into the saved
+ * state, which is then read back; where the worker cannot run, the mod
+ * folds it itself, FOLD_PIECE at a time.  A file that shrank is folded
+ * again from the start.  null where there is no file. */
 export async function foldOf($: $, path: string): Promise<MainFold | null> {
   const size = await fileSize($, path)
   if (size === null) {
@@ -231,6 +232,10 @@ export async function foldOf($: $, path: string): Promise<MainFold | null> {
     return null
   }
   const { stateDir } = await placesOf($)
+  if (!cutsDropped) {
+    cutsDropped = true
+    void dropCuts($, stateDir).catch(() => {})
+  }
   const dir = mainFoldDir(stateDir, path)
   let got = folded.get(path)
   if (got && size < got.offset) got = undefined
@@ -259,29 +264,52 @@ export async function foldOf($: $, path: string): Promise<MainFold | null> {
       }
     }
   }
-  if (size - got.offset >= AGENT_LINES_MIN) {
-    await mainLines($, path, got, size)
-  }
-  let data: Uint8Array
+  // Whatever the worker left, a piece of FOLD_PIECE at a time: only where
+  // it failed is that more than a megabyte, but then it can be the whole
+  // transcript, which read in one piece crashed the hooks worker at 157 MB
+  // (seen live 2026-10-20).
+  let data: Uint8Array = new Uint8Array(0)
+  let want = FOLD_PIECE
   try {
-    data = await readRange($, path, got.offset, size)
+    for (;;) {
+      const end = Math.min(size, got.offset + want)
+      data = await readRange($, path, got.offset, end, size)
+      if (end === size) break
+      const nl = data.lastIndexOf(10)
+      if (nl < 0) {
+        // One line longer than a piece: the piece grows to hold it.
+        want *= 2
+        continue
+      }
+      await foldLines($, got, data.subarray(0, nl + 1))
+      steps.foldPieces = ((steps.foldPieces as number) || 0) + 1
+      want = FOLD_PIECE
+    }
   } catch {
+    await saveMainFold($, stateDir, path, got, size)
     return got.fold
   }
   const nl = data.lastIndexOf(10)
-  if (nl >= 0) {
-    const f = got.fold
-    await timed($, 'fold', async () => {
-      for (const r of _recordsOf(data.subarray(0, nl + 1))) foldMain(f, r)
-    })
-    got.offset += nl + 1
-  }
+  if (nl >= 0) await foldLines($, got, data.subarray(0, nl + 1))
   await saveMainFold($, stateDir, path, got, size)
   const rest = data.subarray(nl + 1)
   if (!rest.length) return got.fold
   const tail = _recordsOf(rest)
   return { tr: transcriptFoldWith(got.fold.tr, tail),
     tu: turnsFoldWith(got.fold.tu, tail) }
+}
+
+/** The bytes foldOf reads past the worker at a time. */
+const FOLD_PIECE = 8 * 1024 * 1024
+
+/** `got`'s folds read on over `lines`, the whole lines from its offset. */
+async function foldLines($: $, got: Folded, lines: Uint8Array):
+  Promise<void> {
+  const f = got.fold
+  await timed($, 'fold', async () => {
+    for (const r of _recordsOf(lines)) foldMain(f, r)
+  })
+  got.offset += lines.length
 }
 
 /** What foldOf keeps of a transcript: its folds to `offset`, a whole
@@ -330,8 +358,9 @@ let foldWorkerFailed = false
  * folds the lines past it and saves it back as saveMainFold would, so
  * neither the transcript nor its records pass through the hooks worker or
  * the 4 MiB the engine keeps of a process's output.  False where Python
- * fails, logged once, and from then on, for the main mode or the bytes to
- * be read instead. */
+ * fails, logged once, and from then on, for foldOf to fold the bytes
+ * itself: always so for a copy of mod/ on its own (a GitHub install, a dev
+ * mod), which has no package beside it for the worker to import. */
 async function foldWorker($: $, path: string, dir: string, end: number):
   Promise<boolean> {
   if (foldWorkerFailed) return false
@@ -340,8 +369,8 @@ async function foldWorker($: $, path: string, dir: string, end: number):
     String(end), dir], { timeoutMs: CONFIG.agentLinesTimeoutMs }))
   if (r.exitCode !== 0) {
     foldWorkerFailed = true
-    void log($, 'fold worker: python3 exited ' + r.exitCode + ', reading ' +
-      'the records instead: ' + r.stderr.slice(-300))
+    void log($, 'fold worker: python3 exited ' + r.exitCode + ', folding ' +
+      'the bytes instead: ' + r.stderr.slice(-300))
     return false
   }
   steps.workerTo = Number(r.stdout.trim())
@@ -350,7 +379,7 @@ async function foldWorker($: $, path: string, dir: string, end: number):
 
 /** The folds a reload starts from: the newest saved head whose transcript
  * still holds what it was folded from and whose parts read whole; else
- * the saved cut folded; else nothing folded. */
+ * nothing folded. */
 async function loadFold($: $, stateDir: string, path: string, size: number):
   Promise<Folded> {
   const dir = mainFoldDir(stateDir, path)
@@ -382,16 +411,8 @@ async function loadFold($: $, stateDir: string, path: string, size: number):
         savedAt: now, savedTo: got.meta.offset }
     }
   }
-  const fold = newMainFold()
-  const cut = await savedCut($, stateDir, path)
-  if (cut && cut.stable <= size) {
-    await timed($, 'fold', async () => {
-      for (const r of cut.records) foldMain(fold, r)
-    })
-    return { fold, offset: cut.stable, mark: null, savedAt: -Infinity,
-      savedTo: 0 }
-  }
-  return { fold, offset: 0, mark: null, savedAt: -Infinity, savedTo: 0 }
+  return { fold: newMainFold(), offset: 0, mark: null, savedAt: -Infinity,
+    savedTo: 0 }
 }
 
 /** Save `got` under the contract, at most once per CONFIG.foldSaveMs (or
@@ -430,6 +451,47 @@ async function saveMainFold($: $, stateDir: string, path: string,
     got.mark = null
     void log($, 'main fold not saved', err)
   }
+}
+
+/** Where the mod once saved each session's transcript cut down to its
+ * records (20 MB for one session), which nothing reads now that the folds
+ * are saved: a directory of digests, each holding a head and its parts. */
+const CUTS_DIR = 'claude-main-cuts-mod'
+const CUT_DIR_NAME = /^[0-9a-f]{32}$/
+const CUT_FILE_NAME = /^(?:head\.json|part-\d+\.jsonl)$/
+/** How many paths one `rm` is handed. */
+const RM_AT_ONCE = 500
+// Tried once a load.
+let cutsDropped = false
+
+/** CUTS_DIR removed from the state directory.  `$.fs` removes nothing, so
+ * `rm` does, handed only the names a cut was saved under, and `rmdir`
+ * then each directory, which leaves one that holds anything else. */
+export async function dropCuts($: $, stateDir: string): Promise<void> {
+  const top = pyJoin(stateDir, CUTS_DIR)
+  try {
+    if ((await $.fs.stat(top)).kind !== 'dir') return
+  } catch {
+    return
+  }
+  const files: string[] = []
+  const dirs: string[] = []
+  for (const d of await listDir($, top)) {
+    if (d.kind !== 'dir' || !CUT_DIR_NAME.test(d.name)) continue
+    const dir = pyJoin(top, d.name)
+    for (const f of await listDir($, dir)) {
+      if (f.kind === 'file' && CUT_FILE_NAME.test(f.name)) {
+        files.push(pyJoin(dir, f.name))
+      }
+    }
+    dirs.push(dir)
+  }
+  for (let i = 0; i < files.length; i += RM_AT_ONCE) {
+    await $.process.run(['/bin/rm', '-f', '--',
+      ...files.slice(i, i + RM_AT_ONCE)], { timeoutMs: 15_000 })
+  }
+  await $.process.run(['/bin/rmdir', '--', ...dirs, top],
+    { timeoutMs: 15_000 })
 }
 
 const AGENT_NAME = /^agent-[\s\S]*\.jsonl$/
@@ -534,41 +596,6 @@ async function atOnce<T>(items: readonly T[], n: number,
 }
 
 let agentLinesFailed = false
-let mainLinesFailed = false
-
-/** Fold `path`'s whole lines from `got.offset` to `end` into `got`, read
- * through scripts/agent_lines.py's main mode, cut down to what
- * claude_records.ts reads: a session's own transcript, read whole into
- * the hooks worker, crashed it at 157 MB (seen live 2026-10-20).  Where
- * Python fails, logged once, `got` as it was, for the bytes to be read.
- * A piece is parsed whole before any of it is folded, so a piece that
- * will not parse leaves `got` at its last whole piece. */
-async function mainLines($: $, path: string, got: Folded, end: number):
-  Promise<void> {
-  if (mainLinesFailed) return
-  while (got.offset < end) {
-    const r = await timed($, 'lines', () => $.process.run(['/usr/bin/env',
-      'python3', $.plugin.root + '/scripts/agent_lines.py', path,
-      String(got.offset), String(end), 'main'],
-      { timeoutMs: CONFIG.agentLinesTimeoutMs }))
-    if (r.exitCode !== 0 || r.isStdoutTruncated) {
-      mainLinesFailed = true
-      void log($, 'main lines: python3 exited ' + r.exitCode + ', reading ' +
-        'the bytes instead: ' + r.stderr.slice(-300))
-      return
-    }
-    const lines = r.stdout.split('\n')
-    const stop = Number(lines[0])
-    const records = await timed($, 'parse', async () =>
-      lines.slice(1).filter(Boolean).map((l) => JSON.parse(l) as Rec))
-    await timed($, 'fold', async () => {
-      for (const rec of records) foldMain(got.fold, rec)
-    })
-    steps.linePieces = ((steps.linePieces as number) || 0) + 1
-    if (stop <= got.offset) break
-    got.offset = stop
-  }
-}
 
 /** Fold `path`'s whole lines from `fold.pos` to `end` into `fold`, through
  * scripts/agent_lines.py: its parsing is the process's time, which no
@@ -638,34 +665,6 @@ async function saveFold($: $, stateDir: string, transcript: string,
   } catch (err) {
     void log($, 'agent fold not saved', err)
   }
-}
-
-/** Where a session's transcript, as read so far, is saved (MainCut), so
- * a reload reads on from there: 157 MB of transcript took 3.2s of Python
- * to cut down again on each (seen live 2026-10-20).  `part` names a part,
- * and none the head. */
-function cutPath(stateDir: string, transcript: string, part?: number) {
-  return pyJoin(stateDir, 'claude-main-cuts-mod/' +
-    sha256Hex(transcript).slice(0, 32) + '/' +
-    (part === undefined ? 'head.json' : 'part-' + part + '.jsonl'))
-}
-
-/** The records a saved cut holds, which the mod no longer writes: read
- * when there is no saved fold, so the first reload after the fold was
- * saved folds the cut and not the transcript. */
-async function savedCut($: $, stateDir: string, transcript: string):
-  Promise<{ stable: number; records: Rec[] } | null> {
-  const text = await readText($, cutPath(stateDir, transcript))
-  const head = text === null ? null : mainCutHeadOf(text, CONFIG.version)
-  if (!head) return null
-  const records: Rec[] = []
-  for (const [i, n] of head.counts.entries()) {
-    const part = await readText($, cutPath(stateDir, transcript, i))
-    const got = part === null ? null : mainCutPartOf(part, n)
-    if (!got) return null
-    records.push(...got)
-  }
-  return { stable: head.stable, records }
 }
 
 /** agent_label's reading of a file's sidecar, as agentReadings read it. */

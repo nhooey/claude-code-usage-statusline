@@ -556,8 +556,8 @@ test('a saved fold of other bytes is not read, and is saved over',
 // is a megabyte or more behind.  Here it saves the fold of the whole
 // transcript, though half was planted, so the document says whose fold the
 // mod read on from: the worker's, read back through `$.fs`, with no records
-// passed and no main mode run.  test/main_fold.test.ts checks that the
-// worker writes what the mod writes.
+// passed.  test/main_fold.test.ts checks that the worker writes what the
+// mod writes.
 test('a reload reads on from the state the worker saved', async ($, on) => {
   const path = '/claude/projects/-work/worker-fold.jsonl'
   const ran: string[] = []
@@ -590,6 +590,95 @@ test('a reload reads on from the state the worker saved', async ($, on) => {
   expect(doc).toEqual(await statusOver(w, path, bytes, rate))
   expect(doc).not.toEqual(await statusOver(w, path, bytes.subarray(half),
     rate))
+})
+
+// A copy of mod/ on its own (a GitHub install, a dev mod) has no package
+// beside the worker, which exits 1: the mod then folds the transcript
+// itself, a piece at a time, so no more than a piece of it is held at
+// once, and saves the fold, as the worker would have.  The copies of
+// main.jsonl's records past two pieces' length put piece ends mid-record.
+test('with no package for the worker, the mod folds the bytes in pieces',
+  { timeoutMs: 60_000 }, async ($, on) => {
+    const path = '/claude/projects/-work/no-worker.jsonl'
+    const ran: string[] = []
+    let widest = 0
+    // Where each shell read starts: read whole, every one is a multiple of
+    // its 2 MiB; read in pieces, each piece after the first starts at a
+    // line's end, off that grid.
+    const froms: number[] = []
+    const w: World = world(on, (e) => {
+      const [cmd, , script, mode, from, file, want] = e.argv
+      if (script?.endsWith('/scripts/agent_lines.py')) {
+        ran.push(mode)
+        return { ...NO_GIT_HERE, exitCode: 1, stderr:
+          'no coding_agent_usage_line package beside mod/' }
+      }
+      if (cmd !== '/bin/sh' || !script.includes('base64')) return NO_GIT_HERE
+      widest = Math.max(widest, Number(want))
+      // Not the check digests' reads, of 4 KiB.
+      if (Number(want) > 4096) froms.push(Number(from) - 1)
+      const f = w.files.get(file)!
+      const piece = f.subarray(Number(from) - 1,
+        Number(from) - 1 + Number(want))
+      const s: string[] = []
+      for (let i = 0; i < piece.length; i += 8192) {
+        s.push(String.fromCharCode(...piece.subarray(i, i + 8192)))
+      }
+      return { ...NO_GIT_HERE, exitCode: 0, stdout: btoa(s.join('')) + '\n',
+        stderr: '' }
+    })
+    const one = w.files.get(MAIN)!
+    const copies = Math.ceil((17 * 1024 * 1024) / one.length)
+    const bytes = new Uint8Array(one.length * copies)
+    for (let i = 0; i < copies; i++) bytes.set(one, i * one.length)
+    w.files.set(path, bytes)
+    await start($, 'terminal', path)
+    expect(ran).toEqual(['fold'])
+    expect(widest).toBeLessThanOrEqual(2 * 1024 * 1024)
+    const starts = froms.filter((at) => at % (2 * 1024 * 1024) !== 0 &&
+      bytes[at - 1] === 10)
+    expect(starts.length).toBeGreaterThanOrEqual(2)
+    const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+    expect(doc).toEqual(await statusOver(w, path, bytes,
+      doc.rate as number | null))
+    const whole = newMainFold()
+    for (const r of _recordsOf(bytes)) foldMain(whole, r)
+    const dir = statePath(STATE, 'main-fold', path)
+    const back = foldLoad((n) => {
+      const f = w.files.get(dir + '/' + n)
+      return f ? new TextDecoder().decode(f) : null
+    })
+    expect(back?.meta).toEqual(foldMeta(bytes, bytes.length))
+    expect(JSON.stringify(foldSave(back!.fold, back!.meta)))
+      .toBe(JSON.stringify(foldSave(whole, back!.meta)))
+  })
+
+// The saved cuts the mod once kept are removed on its first read: `rm`
+// is handed only the names a cut was saved under, and `rmdir` each
+// directory, so one that holds anything else stays.
+test('the old saved cuts are removed, by their names alone', async ($, on) => {
+  const ran: (readonly string[])[] = []
+  const w = world(on, (e) => {
+    if (e.argv[0] === '/bin/rm' || e.argv[0] === '/bin/rmdir') {
+      ran.push(e.argv)
+      return { ...NO_GIT_HERE, exitCode: 0, stderr: '' }
+    }
+    return NO_GIT_HERE
+  })
+  const cuts = STATE + '/claude-main-cuts-mod'
+  const a = cuts + '/' + '0123456789abcdef'.repeat(2)
+  const b = cuts + '/' + 'fedcba9876543210'.repeat(2)
+  for (const p of [a + '/head.json', a + '/part-0.jsonl', a + '/part-12.jsonl',
+    b + '/head.json', b + '/notes.txt', cuts + '/keep/head.json',
+    cuts + '/stray.json']) {
+    w.files.set(p, encoder.encode('{}'))
+  }
+  await start($, 'terminal', MAIN)
+  expect(ran).toEqual([
+    ['/bin/rm', '-f', '--', a + '/head.json', a + '/part-0.jsonl',
+      a + '/part-12.jsonl', b + '/head.json'],
+    ['/bin/rmdir', '--', a, b, cuts],
+  ])
 })
 
 // ════════════════════════════════════════════════════════════════════════════

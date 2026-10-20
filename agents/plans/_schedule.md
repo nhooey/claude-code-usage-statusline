@@ -44,7 +44,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CM7` | Today's settings move into files | `CM6` | none | `~/.claude/settings.json` (by hand), `.config/coding-agent-usage-line/`, `.gitignore` |
 | `CM8` | The acceptance check, live | `CM7` | none | none |
 | `RT6` | **Done 2026-10-20.** The cold read folds in Python | none | none | `mod/scripts/agent_lines.py`, `mod/hooks/edges.ts` (`foldOf`), `main_fold.{py,ts}` |
-| `RT7` | The cut, dropped | `RT6` | none | `mod/hooks/edges.ts`, `mod/src/claude_records.ts`, `mod/scripts/agent_lines.py` |
+| `RT7` | **Done 2026-10-20.** The cut, dropped | `RT6` | none | `mod/hooks/edges.ts`, `mod/src/claude_records.ts`, `mod/scripts/agent_lines.py` |
 | `RT8` | The panel on the agent folds | `RT7` | `CM3` | `claude.py` (`read_agent_usage`), `claude_records.{py,ts}` (agent fold), `spec/state.jsonc`, `mod/hooks/edges.ts` |
 | `RT8i` | The inbox moves to the folds | `RT8` | none | `claude_records.{py,ts}` (`inbox_counts`), `claude.py` (the panel's inbox) |
 | `RT9` | The window costs, one file | none | `CA` | `claude.py` (`_window_costs`), `mod/src/claude_calib_node.ts`, `spec/state.jsonc` |

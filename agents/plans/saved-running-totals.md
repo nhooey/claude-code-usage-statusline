@@ -467,6 +467,40 @@ Each step lands as its own commit, and the tests pass after each one.
    the `MainCut` code, `MAIN_CUT_VERSION`, `savedCut` and `saveCut`, and the
    part of `main` mode that wrote records. `claude-main-cuts-mod/` is deleted
    on the mod's first run (20 MB for this session alone).
+
+   **Status 2026-10-20: done.** As built:
+   - The cut's code is gone from `claude_records.ts` and `edges.ts`
+     (`MAIN_CUT_VERSION`, `MAIN_CUT_PART`, `mainCut*`, `cutPath`,
+     `savedCut`), and so is `agent_lines.py`'s `main` mode with
+     `mainLines`, its caller. A reload with no saved fold starts from
+     nothing.
+   - **The fallback where the worker cannot run** is the mod folding the
+     bytes itself, `FOLD_PIECE` (8 MiB) at a time, so no more than a piece
+     is held at once: reading the rest in one piece is what crashed the
+     hooks worker at 157 MB. A copy of `mod/` on its own (a GitHub install,
+     a dev mod) has no package beside the worker, which then exits 1
+     naming that and writes nothing. Vendoring the package into `mod/` was
+     passed over: the worker needs `main_fold`, `claude_records`,
+     `formatting`, `state` and the specs, about 6,000 lines that would need
+     a generator and a staleness check, and it would still leave a mod
+     with no `python3` without a sound path. The bytes cost the fallback
+     only once a transcript, since the fold is saved after: Node folds the
+     221 MB transcript in 8 MiB pieces in 0.8 s at 212 MB peak RSS, before
+     the shell's reads and base64.
+   - `dropCuts` (`edges.ts`) removes `claude-main-cuts-mod/` on a load's
+     first read, as the calibration sweep does: `$.fs` removes nothing, so
+     `/bin/rm -f --` is handed only the names a cut was saved under (a
+     32-hex directory's `head.json` and `part-N.jsonl`), then `/bin/rmdir
+     --` each directory and the top, which leaves one holding anything
+     else.
+   - Cases: `main_fold.test.ts` runs the worker copied alone into an
+     empty tree; `band.test.ts` folds a 17 MiB transcript with the worker
+     failing, checks the reads restart at line ends and the saved fold is
+     the whole one, and checks the `rm` and `rmdir` argv over a planted
+     cuts directory with a stray file in it.
+   - To check live: `/reload-plugins` in a session with a cut leaves no
+     `claude-main-cuts-mod/` in the state directory, and a dev-mod copy
+     logs `fold worker: python3 exited 1` once, then draws.
 8. **The panel on the agent folds.** The agent fold grows to hold what
    `read_agent_usage` needs as well as what `foldAgentRecord` keeps now:
    compactions, the last stamp, the API-error flag, the cwd, the block
