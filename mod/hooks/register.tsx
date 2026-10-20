@@ -34,9 +34,10 @@ import { ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler,
   from '../src/band.ts'
 import type { RowsLive } from '../src/band.ts'
 import {
-  newestBilled, receiptLines, startLine, tagsHidden, turnKey,
+  billedNothing, newestBilled, receiptLines, startLine, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
+import type { TurnEnd } from '../src/receipt.ts'
 import type { Options } from '../src/options_spec.ts'
 import { candidates, firstLine, lastReply, messageBlock, messageSpans, saidBy, soleSender,
   taskOf } from '../src/agent_message.ts'
@@ -355,9 +356,12 @@ const receiptAt = (durationMs: number) => 'receipt-at:' + durationMs
  * turn is billed and two reads agree on what it billed, for up to
  * CONFIG.receiptWaitMs.  Then the cost document, the receipt's two lines,
  * filed for the closing line to draw.  Each turn is stamped once (receiptKey); one
- * whose records never land is logged, and nothing stamped. */
-async function stamp($: $, durationMs: number, prompt: string):
-  Promise<void> {
+ * whose records never land is logged, and nothing stamped.  One that billed
+ * nothing, as `end` (how turn.complete says it ended) or the transcript
+ * tells (billedNothing), is logged in a line as soon as that is known, and
+ * nothing stamped. */
+async function stamp($: $, durationMs: number, prompt: string,
+  end: TurnEnd | null = null): Promise<void> {
   const where = await placesFor($)
   const deadline = (await $.clock.now()) + CONFIG.receiptWaitMs
   let got: { path: string; turns: Turn[] } | null = null
@@ -366,6 +370,12 @@ async function stamp($: $, durationMs: number, prompt: string):
     got = await turnsNow($, where)
     const turns = got?.turns ?? []
     const billed = newestBilled(turns, prompt)
+    const none = billed ? '' : billedNothing(turns, prompt, end)
+    if (none) {
+      await log($, 'no receipt: the turn billed nothing (' + none + '): ' +
+        (prompt.slice(0, 8) || 'no prompt'))
+      return
+    }
     const key = billed ? turnKey(turns) : ''
     if (key && key === last) break
     const late = (await $.clock.now()) >= deadline
@@ -730,7 +740,9 @@ export const register: Register = on => {
       const tr = (await read($, status))?.transcript as Dict | undefined
       const prompt = seen ||
         (typeof tr?.prompt_id === 'string' ? tr.prompt_id : '')
-      await stamp($, e.durationMs, prompt)
+      await stamp($, e.durationMs, prompt,
+        { reason: e.isAborted ? 'aborted' : e.reason,
+          usage: e.usage !== undefined })
     })()
       .catch((err) => log($, 'no receipt', err))
       .finally(async () => {

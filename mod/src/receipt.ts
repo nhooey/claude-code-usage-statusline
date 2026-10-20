@@ -162,6 +162,37 @@ export function newestBilled(all: readonly Turn[], prompt = ""): boolean {
   return true;
 }
 
+/** How a turn ended, as its turn.complete says: `reason`, and `usage`,
+ * whether the engine counted any of its requests. */
+export interface TurnEnd {
+  readonly reason: string;
+  readonly usage: boolean;
+}
+
+/** Why the turn that opened with `prompt` billed nothing, where that is
+ * known, else "": it may yet bill.  A turn the fold shows billed is never
+ * one.  Ended by an interrupt or an API error with no request counted
+ * (`end`), it is "interrupted" or "an API error"; a prompt sent before it
+ * was finished is rewound so, before any reply (seen live 2026-10-20).
+ * Or "replaced": no call of its own and a later prompt in the same turn
+ * slot, its turnPosition's turnIndex, as the full prompt that replaced
+ * that one was written ~2 min on. */
+export function billedNothing(all: readonly Turn[], prompt: string,
+  end: TurnEnd | null = null): string {
+  const [turns] = inTurns(all, []);
+  const at = prompt ? turns.findIndex((t) => t.prompt_id === prompt) : -1;
+  const own = at >= 0 ? turns[at] : null;
+  if (own && own.calls) return "";
+  if (end && !end.usage) {
+    if (end.reason === "aborted") return "interrupted";
+    if (end.reason === "error") return "an API error";
+  }
+  if (own && own.turn_index !== null && turns.slice(at + 1).some((t) =>
+    !t.agent && !t.compact && t.prompt_id && t.prompt_id !== prompt &&
+    t.turn_index === own.turn_index)) return "replaced";
+  return "";
+}
+
 /** The billed turn, as one key: its tag, its first stamp and how many
  * calls it has billed, so the same turn read again is the same key and a
  * turn that went on is not; "" with none. */

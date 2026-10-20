@@ -1164,6 +1164,82 @@ test('a turn whose records never land logs why and stamps nothing',
       'within 30s')
   })
 
+/** A prompt sent before it was finished, as the transcript held it live
+ * (session 4b531313, 2026-10-20, prompt 8d8ad942): the prompt in turn slot
+ * 320, its attachment, two requests and no reply; then, `replaced`, the
+ * full prompt in the same slot under the same parent. */
+function rewound(w: World, replaced: boolean) {
+  const at = { promptIndex: 250, turnIndex: 320 }
+  if (!replaced) {
+    grow(w, { message: { content: 'Blocked:' }, parentUuid: 'u-before',
+      promptId: 'p-cut', promptSource: 'typed',
+      timestamp: '2026-08-16T02:20:00Z', turnPosition: at, type: 'user',
+      userType: 'external', uuid: 'u-cut' },
+    { attachment: { type: 'total_tokens_reminder' }, parentUuid: 'u-cut',
+      timestamp: '2026-08-16T02:20:00Z', type: 'attachment',
+      uuid: 'u-cut-att' },
+    { querySource: 'repl_main_thread', timestamp: '2026-08-16T02:20:00Z',
+      type: 'api-request' },
+    { lastPrompt: 'Blocked:', leafUuid: 'u-cut-att', type: 'last-prompt' },
+    { querySource: 'repl_main_thread', timestamp: '2026-08-16T02:20:01Z',
+      type: 'api-request' })
+    return
+  }
+  grow(w, { message: { content: 'Blocked:\n1. Y' }, parentUuid: 'u-before',
+    promptId: 'p-full', promptSource: 'typed',
+    timestamp: '2026-08-16T02:22:00Z', turnPosition: at, type: 'user',
+    userType: 'external', uuid: 'u-full' })
+}
+
+test('a prompt rewound before any reply logs that it billed nothing, at once',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    rewound(w, false)
+    await $.turn.start({ text: 'Blocked:', turnId: 't-cut' })
+    await settle()
+    // Interrupted: nothing counted, so no usage.
+    await $.turn.complete({ answer: '', durationMs: 2_000, isAborted: true,
+      turnId: 't-cut', reason: 'aborted' })
+    await settle()
+    await until(w, 2_000)
+    expect(stamped(w)).toBe(false)
+    expect(logOf(w)).toContain('no receipt: the turn billed nothing ' +
+      '(interrupted): p-cut')
+    await w.clock.advance(31_000)
+    expect(logOf(w)).not.toContain('not billed within')
+    expect(logOf(w).split('no receipt').length).toBe(2)
+  })
+
+test('a prompt replaced in its turn slot logs that it billed nothing',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    rewound(w, false)
+    await $.turn.start({ text: 'Blocked:', turnId: 't-cut' })
+    await settle()
+    // An end that says nothing of the interrupt: the transcript tells,
+    // once the full prompt takes the slot.
+    await $.turn.complete({ answer: '', durationMs: 2_000, isAborted: false,
+      turnId: 't-cut', reason: 'answer' })
+    await settle()
+    await until(w, 5_000)
+    expect(logOf(w)).not.toContain('no receipt')
+    rewound(w, true)
+    await until(w, 2_000)
+    expect(stamped(w)).toBe(false)
+    expect(logOf(w)).toContain('no receipt: the turn billed nothing ' +
+      '(replaced): p-cut')
+    await w.clock.advance(31_000)
+    expect(logOf(w)).not.toContain('not billed within')
+  })
+
 /** The mod's log file, as the world holds it. */
 function logOf(w: World): string {
   const f = w.files.get(STATE + '/' + LOG_NAME)
