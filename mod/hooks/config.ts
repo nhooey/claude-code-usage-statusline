@@ -21,8 +21,11 @@ export const CONFIG = {
   // in every row (asked 2026-10-19).  Keep subagentStatusLine's --hide
   // flags in ~/.claude/settings.json the same, so the panel stacks.
   // 'name.tag' hides the turn's tag lines, 🔻🔖 under the prompt and the
-  // receipt's 🔺🔖, with the blank rows around them.
-  hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache'] as
+  // receipt's 🔺🔖, with the blank rows around them.  The account row's
+  // 📦 project and 🌿 branch, which 🎮 draws under it (asked 2026-10-20):
+  // the status line has no account row, so no flag to match.
+  hide: ['*.plan.five_hour', '*.context.share', '*.tokens.cache',
+    'account.workspace.project', 'account.workspace.branch'] as
     readonly string[],
   // Which of the band's rows, 🎤 "turn", 🤖 "agent" and 🎮 "session", stay
   // where the band draws them once a turn ends; the receipt stamps the
@@ -39,6 +42,10 @@ export const CONFIG = {
   // "tail", in plain text at the right end of the footer line (asked
   // 2026-10-20, to put it under the line).
   accountPlace: "row" as "row" | "tail",
+  // The rows under the footer line drawn with a bottom margin of -1, to
+  // take up the blank row Claude Code leaves between the footer and the
+  // agent panel's `* main` (asked 2026-10-20, to see whether it can go).
+  hintTuck: true,
   // Draw the footer's tail as a ruler of column digits, each the last digit
   // of the column the mod reckons it lands in, to check the padding in each
   // footer shape: right, it ends on the band's last column (asked

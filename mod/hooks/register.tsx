@@ -583,7 +583,7 @@ export const register: Register = on => {
     if (!lines.length) return row
     const { Box, Text } = $.ui.resolve(e)
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginBottom={CONFIG.hintTuck ? -1 : 0}>
         {row}
         {lines.map((l, i) => line(Text, l, 'band' + i))}
       </Box>
