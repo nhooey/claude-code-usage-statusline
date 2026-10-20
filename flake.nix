@@ -10,8 +10,12 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
     systems.url = "github:nix-systems/default";
-    devshell = {
-      url = "github:numtide/devshell";
+    # The dev-shell skills wiring (flakeModules.devshellSkills), which
+    # bundles numtide/devshell.  The skill sources are not inputs here: they
+    # live only in skills-devshell/'s lock, which the dev shell runs on
+    # entry, so this flake stays a leaf with no skill inputs.
+    agent-skill-flake = {
+      url = "github:nhooey/agent-skill-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {
@@ -30,9 +34,20 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import systems;
       imports = [
-        inputs.devshell.flakeModule
+        # Bundles numtide/devshell, the skills startup that installs
+        # skills-devshell/'s skills into .claude/skills, and the check, fmt,
+        # update-flake, reap-skills and update-skills-devshell commands.
+        inputs.agent-skill-flake.flakeModules.devshellSkills
         inputs.treefmt-nix.flakeModule
       ];
+
+      agent-skill-flake.devshellSkills = {
+        name = "coding-agent-usage-line";
+        motd = ''
+          {bold}{14}📊 Entering the coding-agent-usage-line dev shell{reset}
+          Run {bold}menu{reset} to list available commands.
+        '';
+      };
 
       perSystem =
         { pkgs, ... }:
@@ -52,12 +67,8 @@
           };
         in
         {
+          # Repo-specific packages and commands, merged onto the module's.
           devshells.default = {
-            name = "coding-agent-usage-line";
-            motd = ''
-              {bold}{14}📊 Entering the coding-agent-usage-line dev shell{reset}
-              Run {bold}menu{reset} to list available commands.
-            '';
             packages = [
               nodejs
               pkgs.git
@@ -94,12 +105,6 @@
               }
 
               # update
-              {
-                category = "update";
-                name = "update-flake";
-                help = "update the flake's inputs (flake.lock)";
-                command = ''nix flake update --flake "$PRJ_ROOT" "$@"'';
-              }
               {
                 category = "update";
                 name = "update-npm-lock";
