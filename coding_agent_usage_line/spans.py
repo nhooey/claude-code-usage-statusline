@@ -10,7 +10,9 @@ written by `join`, once, where the text is printed.
 A plain string stands in for one uncoloured span wherever spans are taken,
 so a mark or a pad need not be wrapped.
 """
-from typing import List, NamedTuple, Optional, Sequence, Union
+import os
+import re
+from typing import List, Mapping, NamedTuple, Optional, Sequence, Union
 
 from . import spec
 
@@ -150,13 +152,84 @@ def _runs_on(s: Span, nxt: Optional[Span]) -> bool:
     return nxt is not None and bare(s) and bare(nxt)
 
 
-def _sgr(s: Span) -> str:
+# The variables colour_level reads.  A test pins the level by setting these
+# and no others.
+COLOUR_VARS = ("FORCE_COLOR", "NO_COLOR", "TERM", "COLORTERM", "TERM_PROGRAM",
+               "TERM_PROGRAM_VERSION", "TMUX", "CLAUDE_CODE_TMUX_TRUECOLOR")
+# The TERMs Claude Code lifts to true colour on a terminal, whatever chalk
+# made of them.
+TRUE_TERMS = ("alacritty", "contour", "foot", "ghostty", "rio", "wezterm",
+              "xterm-ghostty", "xterm-kitty")
+
+
+def colour_level(env: Optional[Mapping[str, str]] = None) -> int:
+    """The colour level Claude Code draws at, from the environment it runs
+    in, which the panel inherits and the mod reads: 3 for true colour, 2
+    for 256, 1 for 16, 0 for none.
+
+    Claude Code 2.1.304's own rules, in its order: chalk's supports-color
+    for a terminal, then NO_COLOR turns colour off unless FORCE_COLOR is
+    set, VS Code at 256 is lifted to true colour, so is a TERM of
+    TRUE_TERMS, and under tmux true colour is lowered to 256 unless
+    CLAUDE_CODE_TMUX_TRUECOLOR is set.  Left out: its --color flags, which
+    the panel and the mod cannot see, chalk's CI and Windows branches, and
+    a remote client's own clamp.  Each errs to 256, which draws right in
+    true colour too."""
+    e = os.environ if env is None else env
+    force = e.get("FORCE_COLOR")
+    term = e.get("TERM") or ""
+    if force is not None:
+        forced = (1 if force in ("true", "") else 0 if force == "false"
+                  else min(int(force) if force.isdigit() else 0, 3))
+        if forced == 0:
+            return 0
+    else:
+        forced = None
+    level = forced or 0
+    if term == "dumb":
+        pass
+    elif e.get("COLORTERM") == "truecolor" or term in (
+            "xterm-kitty", "xterm-ghostty", "wezterm"):
+        level = 3
+    elif e.get("TERM_PROGRAM") == "iTerm.app":
+        major = (e.get("TERM_PROGRAM_VERSION") or "").split(".")[0]
+        level = 3 if major.isdigit() and int(major) >= 3 else 2
+    elif e.get("TERM_PROGRAM") == "Apple_Terminal":
+        level = 2
+    elif re.search(r"-256(color)?$", term, re.I):
+        level = 2
+    elif re.search(r"^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin"
+                   r"|linux", term, re.I) or "COLORTERM" in e:
+        level = 1
+    if e.get("NO_COLOR") and force is None and level > 0:
+        level = 0
+    if e.get("TERM_PROGRAM") == "vscode" and level == 2:
+        level = 3
+    if (not e.get("NO_COLOR") and force is None and term in TRUE_TERMS
+            and level < 3):
+        level = 3
+    if (e.get("TMUX") and not e.get("CLAUDE_CODE_TMUX_TRUECOLOR")
+            and level > 2):
+        level = 2
+    return level
+
+
+def colour(name: str, true: Optional[bool] = None) -> str:
+    """The escape for the colour constant `name`: its true value where
+    Claude Code draws true colour, else its own.  `true` None asks the
+    environment, as the panel's process has it."""
+    if true is None:
+        true = colour_level() >= 3
+    return spec.TRUE_COLOURS[name] if true else getattr(spec, name)
+
+
+def _sgr(s: Span, true: bool) -> str:
     """The escapes that open `s`: background, dim, bold, then colour, the
     order the renderers wrote them in (B_DRK + DIM + F_CHAT_U)."""
-    return "".join((getattr(spec, s.bg) if s.bg else "",
+    return "".join((colour(s.bg, true) if s.bg else "",
                     DIM if s.dim else "",
                     BOLD if s.bold else "",
-                    getattr(spec, s.colour) if s.colour else ""))
+                    colour(s.colour, true) if s.colour else ""))
 
 
 def join(x: SpanLike, close: bool = False, runs: bool = False) -> str:
@@ -179,14 +252,19 @@ def join(x: SpanLike, close: bool = False, runs: bool = False) -> str:
     bare colours, F_TUP ▴ then F_TDN ▾, with one reset after the run, so
     with it a span that is a colour alone is not reset before another.
     The status line's cells reset each half, which is why it is asked for.
+
+    The colours are the true set where Claude Code draws true colour and
+    the 256 set elsewhere (colour_level), read from the environment once
+    a call.
     """
     out = []
     items = spans(x)
+    true = colour_level() >= 3
     for i, s in enumerate(items):
         if not s.styled():
             out.append(s.text)
             continue
-        out.append(_sgr(s) + s.text)
+        out.append(_sgr(s, true) + s.text)
         nxt = items[i + 1] if i + 1 < len(items) else None
         if (nxt is not None and s.colour and nxt.colour == s.colour
                 and nxt.bg and not s.bg and not s.bold):

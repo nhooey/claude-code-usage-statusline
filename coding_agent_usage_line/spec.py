@@ -390,12 +390,13 @@ F_AMB = "\033[38;2;255;175;0m"             # amber       — *_WARN thresholds
 F_RED = "\033[38;2;255;175;175m"           # red         — *_CRIT thresholds.
                                            #  The 🪫 row's figures are dim
                                            #  under their cut, and no red
-                                           #  of the palette's survives
+                                           #  of the 256 set's survives
                                            #  faint: rgb(255, 0, 0) is
                                            #  1.90:1 on black, under the
                                            #  floor in tools/gen-spec.py.
-                                           #  This is the reddest entry
-                                           #  over it, F_PROJ's own.
+                                           #  Its 256 value is the reddest
+                                           #  entry over it, F_PROJ's own;
+                                           #  the true value is 2.32:1.
 F_CYN = "\033[38;2;0;215;255m"             # cyan        — PR, output style
 F_PUR = "\033[38;2;215;175;255m"           # purple      — model
 F_TUP = "\033[38;2;175;215;215m"           # teal        — ▴ input tokens
@@ -418,7 +419,7 @@ F_TDN = "\033[38;2;255;175;215m"           # pink        — ▾ output tokens
 F_YEL = "\033[38;2;255;215;0m"             # yellow      — cost (never tiered)
 F_PNK = "\033[38;2;255;175;255m"           # pink        — context %, and
                                            #  🧠's size, dim under its cut:
-                                           #  the hot pinks of the palette
+                                           #  the hot pinks of the 256 set
                                            #  are all under the faint floor
 F_PNK2 = "\033[38;2;175;0;175m"            # dark pink   — context size
 F_CRM = "\033[38;2;215;215;175m"           # cream       — default text
@@ -434,7 +435,7 @@ F_PRW = "\033[38;2;175;175;255m"           # periwinkle  — the ⌛ row.  It wa
                                            #
                                            #  Not F_BLU or F_BLU2 (📁), the
                                            #  two blues already on row 3.
-                                           #  29 ΔE from the nearer, more than
+                                           #  In the 256 set: 29 ΔE from the nearer, more than
                                            #  the separation those two keep
                                            #  from each other (24) while
                                            #  sitting side by side; these sit
@@ -446,8 +447,8 @@ F_PRW = "\033[38;2;175;175;255m"           # periwinkle  — the ⌛ row.  It wa
 F_ETA = "\033[38;2;255;215;255m"           # light magenta — ⛳ time left.  It
                                            #  was F_PRW, the ⌛ beside it, and
                                            #  the two figures read as one.  A
-                                           #  cool hue apart from the others:
-                                           #  30 ΔE from F_PRW, 25 from F_PUR,
+                                           #  cool hue apart from the others,
+                                           #  in the 256 set 30 ΔE from F_PRW, 25 from F_PUR,
                                            #  27 from F_PNK.  Not warm, for the
                                            #  reason F_PRW gives; the late "+"
                                            #  stays F_AMB.  The full magenta
@@ -465,16 +466,19 @@ F_OVER = "\033[38;2;255;0;0m"              # bright red  — an agent row's ⛳
 F_SPIN = F_RED                             # the agent row's E_SPIN spinner
 F_CHAT_U = "\033[38;2;168;168;168m"        # light grey  — user chat row
 F_CHAT_B = "\033[38;2;118;118;118m"        # mid grey    — assistant chat row.
-                                           #  Both neutral: the palette has no
-                                           #  warm or cool grey, so lightness
-                                           #  alone tells them apart.
+                                           #  The 256 values are neutral: that
+                                           #  palette has no warm or cool
+                                           #  grey, so lightness alone tells
+                                           #  them apart there.  The true
+                                           #  values are warm and cool.
 B_DRK = "\033[48;2;18;18;18m"              # near-black background, chat rows
 B_MSG = "\033[48;2;175;0;175m"             # purple background, the row
                                            #  of a message another agent
                                            #  sent, apart from the user's
                                            #  dark blue prompts (asked
-                                           #  2026-10-20).  The darkest
-                                           #  purple the palette has: no
+                                           #  2026-10-20).  The 256 value
+                                           #  is the darkest purple that
+                                           #  palette has: no
                                            #  colour channel can be 95 or
                                            #  135 (see the palette note
                                            #  in tools/gen-spec.py), and
@@ -482,7 +486,8 @@ B_MSG = "\033[48;2;175;0;175m"             # purple background, the row
                                            #  colours drew as one teal
                                            #  under tmux (seen live
                                            #  2026-10-20).  White on it
-                                           #  is 6.1:1.  It shares its
+                                           #  is 6.1:1; on the true value,
+                                           #  the old dark purple, more.  It shares its
                                            #  entry with F_PNK2, a
                                            #  foreground never drawn on it.
 F_MSG = "\033[38;2;255;255;255m"           # white, that row's text on
@@ -521,7 +526,8 @@ F_SHARE = F_AMB
 # in its sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
 # every strike from 20ppem to 160 — a flat neutral grey, no hue at all, which
 # is not what an emoji named SOON looks like it should be.  L* 32.3.  This
-# is the palette's nearest grey to it, rgb(78,78,78), 0.9 ΔE away.
+# is its true value; the 256 value is that palette's nearest grey to it,
+# rgb(78,78,78), 0.9 ΔE away.
 #
 # It is the mark that takes this and not the figure.  On the two limit rows,
 # the countdown's figure carries the row's colour and 🔜 paints itself this
@@ -1440,3 +1446,38 @@ DROP_ORDER = (
     "five",
     "cost",
 )
+
+# Every F_ and B_ name's true-colour value, aliases resolved: what is drawn
+# in place of the name's own (256) value when Claude Code draws true colour.
+# See colour_level in spans.
+TRUE_COLOURS = {
+    "F_BLU": "\033[38;2;100;170;255m",
+    "F_PROJ": "\033[38;2;255;140;90m",
+    "F_BLU2": "\033[38;2;70;115;185m",
+    "F_GRN": "\033[38;2;120;200;80m",
+    "F_AMB": "\033[38;2;255;200;0m",
+    "F_RED": "\033[38;2;255;90;90m",
+    "F_CYN": "\033[38;2;80;200;220m",
+    "F_PUR": "\033[38;2;200;130;255m",
+    "F_TUP": "\033[38;2;120;200;220m",
+    "F_RATE": "\033[38;2;100;225;180m",
+    "F_TDN": "\033[38;2;220;140;200m",
+    "F_YEL": "\033[38;2;255;210;60m",
+    "F_PNK": "\033[38;2;255;120;190m",
+    "F_PNK2": "\033[38;2;178;84;133m",
+    "F_CRM": "\033[38;2;211;215;207m",
+    "F_PRW": "\033[38;2;140;150;255m",
+    "F_ETA": "\033[38;2;255;77;255m",
+    "F_OVER": "\033[38;2;255;40;40m",
+    "F_SPIN": "\033[38;2;255;90;90m",
+    "F_CHAT_U": "\033[38;2;166;170;158m",
+    "F_CHAT_B": "\033[38;2;112;126;140m",
+    "B_DRK": "\033[48;2;12;14;18m",
+    "B_MSG": "\033[48;2;95;0;95m",
+    "F_MSG": "\033[38;2;255;255;255m",
+    "F_LIM_SESS": "\033[38;2;120;200;80m",
+    "F_LIM_WEEK": "\033[38;2;255;90;90m",
+    "F_SHARE": "\033[38;2;255;200;0m",
+    "F_SUM": "\033[38;2;76;76;76m",
+    "F_RULE": "\033[38;2;76;76;76m",
+}

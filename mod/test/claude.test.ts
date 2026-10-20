@@ -98,8 +98,8 @@ const status = cases.filter((c) => c.suite === "status");
 const cost = cases.filter((c) => c.suite === "cost");
 
 test("every status and cost case is here", () => {
-  assert.equal(status.length, 141);
-  assert.equal(cost.length, 87);
+  assert.equal(status.length, 142);
+  assert.equal(cost.length, 88);
 });
 
 for (const c of status) {

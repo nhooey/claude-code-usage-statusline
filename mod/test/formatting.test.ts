@@ -68,6 +68,9 @@ test("settings: the constants and the colour escapes", () => {
   for (const [name, esc] of Object.entries(SETTINGS.escapes)) {
     assert.equal(sp.escape(name), esc, name);
   }
+  for (const [name, esc] of Object.entries(SETTINGS.trueEscapes)) {
+    assert.equal(sp.escape(name, true), esc, name);
+  }
 });
 
 // Each Python function by name, called with the case's arguments as the
@@ -86,6 +89,7 @@ const FNS: { [fn: string]: (st: Settings, a: any[]) => unknown } = {
   fit_path: (_st, a) => fm.fitPath(a[0], a[1]),
   seg_gap: (_st, a) => fm.segGap(a[0]),
   term_profile: (_st, a) => fm.termProfile(a[0]),
+  colour_level: (_st, a) => sp.colourLevel(a[0]),
   widths_for: (_st, a) => {
     const w = fm.widthsFor(a[0]);
     return [w.narrow, w.icons, w.clusters, w.wide];

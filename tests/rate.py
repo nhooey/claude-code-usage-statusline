@@ -25,7 +25,8 @@ import tempfile
 DIR = os.path.dirname(os.path.abspath(__file__))
 PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
-from _checks import check, drawn, near, tally, unpainted  # noqa: E402
+from _checks import (check, drawn, near, pin_colour, tally,  # noqa: E402
+                     unpainted)
 
 NOW = 1786847000.0      # the shared cases' PIN_NOW, for no reason but habit
 TOL = 1e-6              # how near a rate has to come, in tokens a second
@@ -38,6 +39,7 @@ def main():
     os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = os.path.join(scratch, "state")
     # The profile the goldens pin, so _PAD is empty and the cell widths
     # below are the ones in the golden files.
+    pin_colour()
     os.environ.pop("TMUX", None)
     os.environ.pop("TERM_PROGRAM", None)
     os.environ["TERMINAL_EMULATOR"] = "JetBrains-JediTerm"

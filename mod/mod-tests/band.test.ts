@@ -158,7 +158,8 @@ const NO_GIT_HERE: Ran = { exitCode: 128, stdout: '',
  * is refused while `usage.down`, which `usageDown` starts it at, and a
  * fresh calibration is planted unless `calib` is false. */
 function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
-  usageDown = false, calib = true): World {
+  usageDown = false, calib = true,
+  terminal: Record<string, string> = {}): World {
   const files = new Map<string, Uint8Array>()
   for (const [p, b64] of Object.entries(FILES)) files.set(p, fromBase64(b64))
   files.set('/tracker.plist', encoder.encode(TRACKER))
@@ -185,6 +186,9 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     HOME, CODING_AGENT_USAGE_LINE_STATE_DIR: STATE,
     CLAUDE_CONFIG_DIR: '/claude',
     CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST: '/tracker.plist',
+    // The terminal's variables, none by default: Claude Code's colour
+    // level is then under true colour, and the 256 set is drawn.
+    ...terminal,
   })
   // The calibration the environment plants, under whatever name the
   // snapshot's scope gives it, and fresh.
@@ -348,8 +352,9 @@ async function tagDrawn(ui: { drawn: () => Promise<unknown> }) {
   return { beside: false, text: rows[rows.length - 1]?.text }
 }
 
-function expected(lines: readonly (readonly Span[])[]) {
-  const named = spec as unknown as Record<string, string>
+function expected(lines: readonly (readonly Span[])[], truecolor = false) {
+  const named = truecolor ? spec.TRUE_COLOURS
+    : spec as unknown as Record<string, string>
   return lines.map((l) => ({ text: text(l),
     colours: l.map((s) => s.colour ? named[s.colour] : null) }))
 }
@@ -416,6 +421,37 @@ test('a turn running draws the running phase', async ($, on) => {
   // No blank top row, where Claude Code's `[-]` would stand alone.
   expect(((await ui.drawn()) as Drawn).props?.marginTop).toBeUndefined()
 })
+
+test('where Claude Code draws true colour the band draws the true set',
+  async ($, on) => {
+    const w = world(on, undefined, false, true,
+      { TERM: 'xterm-256color', COLORTERM: 'truecolor' })
+    await start($, 'terminal', STATUS)
+    const doc = lastDoc(w)
+    const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
+    const lines = bandLines(BAND_ST, doc, COLS, HIDE, { home: HOME,
+      rate: null, phase: 'running', live: LIVE, inset: INSET })
+    const rows = await drawnRows(ui)
+    expect(rows).toEqual(expected(lines, true))
+    expect(rows).not.toEqual(expected(lines))
+  })
+
+test('under tmux the band draws the 256 set, true colour or not',
+  async ($, on) => {
+    const tmux = { TMUX: '/tmp/t,1,0', TERM: 'tmux-256color',
+      COLORTERM: 'truecolor' }
+    const w = world(on, undefined, false, true, tmux)
+    await start($, 'terminal', STATUS)
+    const doc = lastDoc(w)
+    const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
+    // tmux's own profile, which pads its marks.
+    const st = settings(tmux, OPTIONS.markSpacing, OPTIONS.subscriptDecimals,
+      OPTIONS.rightEdge)
+    expect(st.truecolor).toBe(false)
+    const lines = bandLines(st, doc, COLS, HIDE, { home: HOME,
+      rate: null, phase: 'running', live: LIVE, inset: INSET })
+    expect(await drawnRows(ui)).toEqual(expected(lines))
+  })
 
 test('a survey above the prompt leaves the band to the engine',
   async ($, on) => {

@@ -55,6 +55,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FIXTURES = os.path.join(HERE, "fixtures")
 FIGURES = os.path.join(FIXTURES, "figures")
 PROGRAM = os.path.join(os.path.dirname(HERE), "coding-agent-usage-line.py")
+sys.path.insert(0, os.path.dirname(HERE))
+from coding_agent_usage_line.spans import COLOUR_VARS  # noqa: E402
 
 
 def git(*args):
@@ -109,7 +111,11 @@ class Suite:
                 e = self.envs[name] = json.load(fh)
         env = {k: v for k, v in os.environ.items()
                if k not in ("TMUX", "TERM_PROGRAM", "TERMINAL_EMULATOR")
+               and k not in COLOUR_VARS
                and not k.startswith("CODING_AGENT_USAGE_LINE_")}
+        # Claude Code's 256-colour level, whatever the developer's terminal
+        # draws, unless the environment names its own.
+        env["TERM"] = "xterm-256color"
         env.update(e["terminal"])
         env.update({
             "CODING_AGENT_USAGE_LINE_NOW": str(e["now"]),

@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Draw spec/layout.jsonc's colours beside an earlier revision's, to review
-a palette change by eye in a true-colour terminal.
+"""Draw spec/layout.jsonc's two colour sets side by side, to review them by
+eye in a true-colour terminal.
 
-    python3 tools/palette-review.py                      # against HEAD
-    python3 tools/palette-review.py --old origin/master --nearest 4
-    python3 tools/palette-review.py --old-tree ../old > review.ansi
+    python3 tools/palette-review.py > review.ansi       # this tree's sets
+    python3 tools/palette-review.py --old origin/master  # beside a revision's
+    python3 tools/palette-review.py --nearest 4
 
-One row a colour: its name, the old colour, what Claude Code draws the old
-one as under tmux's 256 colours, the new colour and its palette index, and
-the role its comment gives.  --nearest adds that many palette entries
-closest to the old colour.  Then the pairs whose roles must stay apart,
-with how far apart they are before and after, and any two names that share
-one entry.  --old-tree, a checkout of the old revision, adds real rows
-drawn by tools/draw-panel.py and mod/tools/draw-figures.ts in that tree and
-in this one.  The palette and the check are tools/gen-spec.py's.
+One row a colour: its name, its true value, its 256 value with its palette
+index, what Claude Code would draw the true value as at 256 colours if it
+were handed that and left to round it (chalk's rgbToAnsi256 on the xterm
+palette), and the role its comment gives.  Each cell is a block, the text
+"841k" and the text "98٪" faint, as a figure under its magnitude cut is
+drawn, with the faint text's contrast on black; a colour a dim figure takes
+is marked * and must clear the floor in tools/gen-spec.py.  --nearest adds
+that many palette entries closest to each true value.  --old adds a column
+for a revision's 256 value.  Then the pairs whose roles must stay apart,
+how far apart they are in each set, any two names that share one 256
+entry, and real rows drawn at each level: the agent panel, the band and the
+receipt, true colour then 256.  The palette and the checks are gen-spec's.
 """
 import argparse
 import importlib.util
@@ -26,7 +30,7 @@ LAYOUT = os.path.join("spec", "layout.jsonc")
 RESET = "\x1b[0m"
 # Claude Code's default dark theme's user-message background, which B_MSG
 # sits against in the transcript.
-PROMPT_BG = ("prompt background", (0, 0, 95))
+PROMPT_BG = ("prompt background", (0, 0, 95), (0, 0, 95))
 # Roles a reader compares, so their colours must stay apart.
 PAIRS = [("F_LIM_SESS", "F_LIM_WEEK"), ("F_CHAT_U", "F_CHAT_B"),
          ("F_CHAT_U", "F_CRM"), ("F_CHAT_B", "F_SUM"), ("B_DRK", "B_MSG"),
@@ -36,19 +40,29 @@ PAIRS = [("F_LIM_SESS", "F_LIM_WEEK"), ("F_CHAT_U", "F_CHAT_B"),
          ("F_TUP", "F_CYN"), ("F_TUP", "F_RATE"), ("F_GRN", "F_RATE"),
          ("F_PUR", "F_ETA"), ("F_PUR", "F_PRW"), ("F_PNK", "F_ETA"),
          ("F_BLU2", "F_CYN"), ("F_PROJ", "F_TDN"), ("F_CRM", "F_TUP"),
-         ("F_GRN", "F_AMB")]
-# Real rows: (label, command run from the tree's root).
+         ("F_GRN", "F_AMB"), ("F_RED", "F_PROJ")]
+# The environments the rows are drawn under: Claude Code at true colour,
+# then at 256 colours.
+LEVELS = [("true colour", {"TERM": "xterm-256color", "COLORTERM": "truecolor"},
+           "true-colour-panel"),
+          ("256 colours", {"TERM": "xterm-256color"}, "app-41-63")]
+# Real rows: (label, command run from the tree's root, given the level's
+# fixture environment for the panel).
 DRAWINGS = [
     ("the agent panel, 01-mixed at 150",
-     ["python3", "tools/draw-panel.py", "--ansi", "01-mixed.json", "150"]),
+     lambda env: ["python3", "tools/draw-panel.py", "--ansi", "--env", env,
+                  "01-mixed.json", "150"]),
     ("the band, 01-baseline at 196",
-     ["node", "mod/tools/draw-figures.ts",
-      "tests/fixtures/figures/status/01-baseline@196.json", "--cols", "196"]),
+     lambda env: ["node", "mod/tools/draw-figures.ts",
+                  "tests/fixtures/figures/status/01-baseline@196.json",
+                  "--cols", "196"]),
     ("the receipt, 01-plain at 150",
-     ["node", "mod/tools/draw-figures.ts",
-      "tests/fixtures/figures/cost/01-plain@150.json", "--cols", "150"]),
+     lambda env: ["node", "mod/tools/draw-figures.ts",
+                  "tests/fixtures/figures/cost/01-plain@150.json",
+                  "--cols", "150"]),
 ]
-GOLDEN = os.path.join("tests", "golden", "status", "01-baseline@196.txt")
+GOLDENS = [("true colour", "status/true-colour-01@196.txt"),
+           ("256 colours", "status/01-baseline@196.txt")]
 
 
 def gen_spec():
@@ -63,7 +77,8 @@ G = gen_spec()
 
 
 def colours(text):
-    """{name: (rgb, alias or None, role)} for every F_ and B_ name."""
+    """{name: (rgb 256, rgb true, alias or None, role)} for every F_ and
+    B_ name.  A revision whose colours have one value has it in both."""
     r = G.Reader(text)
     r.lead()
     out = {}
@@ -72,12 +87,18 @@ def colours(text):
             continue
         alias = G.same_as(m)
         if alias is not None:
-            rgb = out[alias][0]
+            c256, ctrue = out[alias][:2]
         else:
-            rgb = tuple(int(x) for x in G.RGB.match(m.value).groups())
+            both = G.two_values(m) if hasattr(G, "two_values") else None
+            c256 = G.rgb_of(m.key, both[0] if both else m)
+            ctrue = G.rgb_of(m.key, both[1]) if both else c256
         role = " ".join(t.strip() for t in m.tail[:1])
-        out[m.key] = (rgb, alias, role)
+        out[m.key] = (c256, ctrue, alias, role)
     return out
+
+
+def faint_ratio(rgb):
+    return G.contrast(G.faint(rgb), (0, 0, 0))
 
 
 def swatch(rgb, name):
@@ -92,6 +113,8 @@ def cell(rgb, name, index=None):
     tag = "%3d,%3d,%3d" % rgb
     if index is not None:
         tag += " %3d" % index
+    if name.startswith("F_"):
+        tag += " %4.2f" % faint_ratio(rgb)
     return "%s %s" % (swatch(rgb, name), tag)
 
 
@@ -99,81 +122,86 @@ def name_of(item):
     return item if isinstance(item, str) else item[0]
 
 
-def rgb_of(item, table):
-    return table[item][0] if isinstance(item, str) else item[1]
-
-
-def run(tree, argv):
-    p = subprocess.run(argv, cwd=tree, capture_output=True, text=True,
-                       env=dict(os.environ, COLORTERM="truecolor"))
+def run(argv, env):
+    full = {k: v for k, v in os.environ.items()
+            if k not in ("TMUX", "TERM_PROGRAM", "TERMINAL_EMULATOR",
+                         "FORCE_COLOR", "NO_COLOR", "COLORTERM",
+                         "TERM_PROGRAM_VERSION",
+                         "CLAUDE_CODE_TMUX_TRUECOLOR")}
+    full.update(env)
+    p = subprocess.run(argv, cwd=REPO, capture_output=True, text=True,
+                       env=full)
     return p.stdout if p.returncode == 0 else p.stdout + p.stderr
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--old", default="HEAD",
-                    help="the revision to compare with (default: HEAD)")
+    ap.add_argument("--old", metavar="REV",
+                    help="also show a revision's 256 value")
     ap.add_argument("--nearest", type=int, default=0, metavar="N",
-                    help="list the N palette entries nearest each old colour")
-    ap.add_argument("--old-tree", metavar="DIR",
-                    help="a checkout of the old revision, to draw real rows")
+                    help="list the N palette entries nearest each true value")
+    ap.add_argument("--no-drawings", action="store_true",
+                    help="leave out the real rows")
     args = ap.parse_args()
 
-    old_text = subprocess.run(
-        ["git", "show", "%s:%s" % (args.old, LAYOUT)], cwd=REPO, check=True,
-        capture_output=True, text=True).stdout
     with open(os.path.join(REPO, LAYOUT), encoding="utf-8") as fh:
-        new_text = fh.read()
-    old, new = colours(old_text), colours(new_text)
+        new = colours(fh.read())
+    old = None
+    if args.old:
+        old = colours(subprocess.run(
+            ["git", "show", "%s:%s" % (args.old, LAYOUT)], cwd=REPO,
+            check=True, capture_output=True, text=True).stdout)
 
-    out = ["\x1b[1mColours, %s -> this tree\x1b[0m   (old | old as tmux "
-           "draws it | new + index; each: block, text, faint text)" % args.old,
-           ""]
-    for name, (rgb, alias, role) in new.items():
-        was = old.get(name, (rgb, None, ""))[0]
-        tmux = G.xterm(G.ansi256(was))
-        idx = G.ansi256(rgb)
-        mark = " " if G.xterm(idx) == rgb else "!"
-        line = "%-10s %s | %s | %s%s  %s" % (
-            name, cell(was, name), cell(tmux, name), cell(rgb, name, idx),
-            mark, ("= " + alias) if alias else role)
-        out.append(line)
+    out = ["\x1b[1mThe two colour sets\x1b[0m   (true | 256 + index | the "
+           "true value as chalk rounds it at 256%s; each: block, text, faint "
+           "text, faint contrast on black; * a dim figure takes it, floor "
+           "%.1f)" % (" | " + args.old + "'s 256" if old else "",
+                      G.FAINT_FLOOR), ""]
+    for name, (c256, ctrue, alias, role) in new.items():
+        idx = G.ansi256(c256)
+        rounded = G.xterm(G.ansi256(ctrue))
+        mark = "*" if name in G.DIMMED else " "
+        line = "%-10s%s %s | %s | %s" % (
+            name, mark, cell(ctrue, name), cell(c256, name, idx),
+            cell(rounded, name))
+        if old:
+            line += " | " + cell(old.get(name, new[name])[0], name)
+        out.append(line + "  " + (("= " + alias) if alias else role))
         if args.nearest:
-            out.append("%-10s nearest: %s" % ("", "  ".join(
+            out.append("%-11s nearest: %s" % ("", "  ".join(
                 "%3d %s ΔE %.1f" % (i, cell(G.xterm(i), name),
-                                     G.delta_e(was, G.xterm(i)))
-                for i in G.nearest(was, args.nearest))))
+                                     G.delta_e(ctrue, G.xterm(i)))
+                for i in G.nearest(ctrue, args.nearest))))
 
-    out += ["", "\x1b[1mPairs that must stay apart\x1b[0m   (ΔE old, "
-            "old under tmux, new)", ""]
+    out += ["", "\x1b[1mPairs that must stay apart\x1b[0m   (ΔE true, 256)",
+            ""]
     for a, b in PAIRS:
-        ra_old, rb_old = rgb_of(a, old), rgb_of(b, old)
-        ra, rb = rgb_of(a, new), rgb_of(b, new)
-        d_old = G.delta_e(ra_old, rb_old)
-        d_tmux = G.delta_e(G.xterm(G.ansi256(ra_old)),
-                           G.xterm(G.ansi256(rb_old)))
-        d_new = G.delta_e(ra, rb)
-        out.append("%-10s %-17s %5.1f %5.1f %5.1f  %s  %s" % (
-            name_of(a), name_of(b), d_old, d_tmux, d_new,
-            cell(ra, name_of(a)), cell(rb, name_of(b))))
+        pa = new[a] if isinstance(a, str) else (a[1], a[2])
+        pb = new[b] if isinstance(b, str) else (b[1], b[2])
+        out.append("%-10s %-17s %5.1f %5.1f  %s  %s  |  %s  %s" % (
+            name_of(a), name_of(b), G.delta_e(pa[1], pb[1]),
+            G.delta_e(pa[0], pb[0]),
+            cell(pa[1], name_of(a)), cell(pb[1], name_of(b)),
+            cell(pa[0], name_of(a)), cell(pb[0], name_of(b))))
 
     shared = {}
-    for name, (rgb, alias, _) in new.items():
+    for name, (c256, _, alias, _) in new.items():
         if alias is None:
-            shared.setdefault(rgb, []).append(name)
-    out += ["", "\x1b[1mNames sharing one entry\x1b[0m (same_as aside): " +
-            ("; ".join(" ".join(v) for v in shared.values() if len(v) > 1)
-             or "none")]
+            shared.setdefault(c256, []).append(name)
+    out += ["", "\x1b[1mNames sharing one 256 entry\x1b[0m (same_as aside): "
+            + ("; ".join(" ".join(v) for v in shared.values() if len(v) > 1)
+               or "none")]
 
-    if args.old_tree:
+    if not args.no_drawings:
         for label, argv in DRAWINGS:
-            for which, tree in (("before", args.old_tree), ("after", REPO)):
-                out += ["", "\x1b[1m%s, %s\x1b[0m" % (label, which), ""]
-                out.append(run(tree, argv).rstrip("\n"))
-        for which, tree in (("before", args.old_tree), ("after", REPO)):
-            out += ["", "\x1b[1mthe status line, %s, %s\x1b[0m" % (
-                GOLDEN, which), ""]
-            with open(os.path.join(tree, GOLDEN), encoding="utf-8") as fh:
+            for level, env, fixture_env in LEVELS:
+                out += ["", "\x1b[1m%s, at %s\x1b[0m" % (label, level), ""]
+                out.append(run(argv(fixture_env), env).rstrip("\n"))
+        for level, golden in GOLDENS:
+            out += ["", "\x1b[1mthe status line golden %s, at %s\x1b[0m" % (
+                golden, level), ""]
+            with open(os.path.join(REPO, "tests", "golden", golden),
+                      encoding="utf-8") as fh:
                 out.append(fh.read().rstrip("\n"))
     sys.stdout.write("\n".join(out) + "\n")
     return 0

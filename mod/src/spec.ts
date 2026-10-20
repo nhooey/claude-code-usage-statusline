@@ -390,12 +390,13 @@ export const F_AMB = "#ffaf00";                          // amber       — *_WA
 export const F_RED = "#ffafaf";                          // red         — *_CRIT thresholds.
                                                          //  The 🪫 row's figures are dim
                                                          //  under their cut, and no red
-                                                         //  of the palette's survives
+                                                         //  of the 256 set's survives
                                                          //  faint: rgb(255, 0, 0) is
                                                          //  1.90:1 on black, under the
                                                          //  floor in tools/gen-spec.py.
-                                                         //  This is the reddest entry
-                                                         //  over it, F_PROJ's own.
+                                                         //  Its 256 value is the reddest
+                                                         //  entry over it, F_PROJ's own;
+                                                         //  the true value is 2.32:1.
 export const F_CYN = "#00d7ff";                          // cyan        — PR, output style
 export const F_PUR = "#d7afff";                          // purple      — model
 export const F_TUP = "#afd7d7";                          // teal        — ▴ input tokens
@@ -418,7 +419,7 @@ export const F_TDN = "#ffafd7";                          // pink        — ▾ 
 export const F_YEL = "#ffd700";                          // yellow      — cost (never tiered)
 export const F_PNK = "#ffafff";                          // pink        — context %, and
                                                          //  🧠's size, dim under its cut:
-                                                         //  the hot pinks of the palette
+                                                         //  the hot pinks of the 256 set
                                                          //  are all under the faint floor
 export const F_PNK2 = "#af00af";                         // dark pink   — context size
 export const F_CRM = "#d7d7af";                          // cream       — default text
@@ -434,7 +435,7 @@ export const F_PRW = "#afafff";                          // periwinkle  — the 
                                                          //
                                                          //  Not F_BLU or F_BLU2 (📁), the
                                                          //  two blues already on row 3.
-                                                         //  29 ΔE from the nearer, more than
+                                                         //  In the 256 set: 29 ΔE from the nearer, more than
                                                          //  the separation those two keep
                                                          //  from each other (24) while
                                                          //  sitting side by side; these sit
@@ -446,8 +447,8 @@ export const F_PRW = "#afafff";                          // periwinkle  — the 
 export const F_ETA = "#ffd7ff";                          // light magenta — ⛳ time left.  It
                                                          //  was F_PRW, the ⌛ beside it, and
                                                          //  the two figures read as one.  A
-                                                         //  cool hue apart from the others:
-                                                         //  30 ΔE from F_PRW, 25 from F_PUR,
+                                                         //  cool hue apart from the others,
+                                                         //  in the 256 set 30 ΔE from F_PRW, 25 from F_PUR,
                                                          //  27 from F_PNK.  Not warm, for the
                                                          //  reason F_PRW gives; the late "+"
                                                          //  stays F_AMB.  The full magenta
@@ -465,16 +466,19 @@ export const F_OVER = "#ff0000";                         // bright red  — an a
 export const F_SPIN = F_RED;                             // the agent row's E_SPIN spinner
 export const F_CHAT_U = "#a8a8a8";                       // light grey  — user chat row
 export const F_CHAT_B = "#767676";                       // mid grey    — assistant chat row.
-                                                         //  Both neutral: the palette has no
-                                                         //  warm or cool grey, so lightness
-                                                         //  alone tells them apart.
+                                                         //  The 256 values are neutral: that
+                                                         //  palette has no warm or cool
+                                                         //  grey, so lightness alone tells
+                                                         //  them apart there.  The true
+                                                         //  values are warm and cool.
 export const B_DRK = "#121212";                          // near-black background, chat rows
 export const B_MSG = "#af00af";                          // purple background, the row
                                                          //  of a message another agent
                                                          //  sent, apart from the user's
                                                          //  dark blue prompts (asked
-                                                         //  2026-10-20).  The darkest
-                                                         //  purple the palette has: no
+                                                         //  2026-10-20).  The 256 value
+                                                         //  is the darkest purple that
+                                                         //  palette has: no
                                                          //  colour channel can be 95 or
                                                          //  135 (see the palette note
                                                          //  in tools/gen-spec.py), and
@@ -482,7 +486,8 @@ export const B_MSG = "#af00af";                          // purple background, t
                                                          //  colours drew as one teal
                                                          //  under tmux (seen live
                                                          //  2026-10-20).  White on it
-                                                         //  is 6.1:1.  It shares its
+                                                         //  is 6.1:1; on the true value,
+                                                         //  the old dark purple, more.  It shares its
                                                          //  entry with F_PNK2, a
                                                          //  foreground never drawn on it.
 export const F_MSG = "#ffffff";                          // white, that row's text on
@@ -521,7 +526,8 @@ export const F_SHARE = F_AMB;
 // in its sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
 // every strike from 20ppem to 160 — a flat neutral grey, no hue at all, which
 // is not what an emoji named SOON looks like it should be.  L* 32.3.  This
-// is the palette's nearest grey to it, rgb(78,78,78), 0.9 ΔE away.
+// is its true value; the 256 value is that palette's nearest grey to it,
+// rgb(78,78,78), 0.9 ΔE away.
 //
 // It is the mark that takes this and not the figure.  On the two limit rows,
 // the countdown's figure carries the row's colour and 🔜 paints itself this
@@ -1432,3 +1438,38 @@ export const DROP_ORDER = [
   "five",
   "cost",
 ];
+
+// Every F_ and B_ name's true-colour value, aliases resolved: what is drawn
+// in place of the name's own (256) value when Claude Code draws true colour.
+// See colour_level in spans.
+export const TRUE_COLOURS: { readonly [name: string]: string } = {
+  "F_BLU": "#64aaff",
+  "F_PROJ": "#ff8c5a",
+  "F_BLU2": "#4673b9",
+  "F_GRN": "#78c850",
+  "F_AMB": "#ffc800",
+  "F_RED": "#ff5a5a",
+  "F_CYN": "#50c8dc",
+  "F_PUR": "#c882ff",
+  "F_TUP": "#78c8dc",
+  "F_RATE": "#64e1b4",
+  "F_TDN": "#dc8cc8",
+  "F_YEL": "#ffd23c",
+  "F_PNK": "#ff78be",
+  "F_PNK2": "#b25485",
+  "F_CRM": "#d3d7cf",
+  "F_PRW": "#8c96ff",
+  "F_ETA": "#ff4dff",
+  "F_OVER": "#ff2828",
+  "F_SPIN": "#ff5a5a",
+  "F_CHAT_U": "#a6aa9e",
+  "F_CHAT_B": "#707e8c",
+  "B_DRK": "#0c0e12",
+  "B_MSG": "#5f005f",
+  "F_MSG": "#ffffff",
+  "F_LIM_SESS": "#78c850",
+  "F_LIM_WEEK": "#ff5a5a",
+  "F_SHARE": "#ffc800",
+  "F_SUM": "#4c4c4c",
+  "F_RULE": "#4c4c4c",
+};

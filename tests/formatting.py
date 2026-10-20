@@ -26,6 +26,22 @@ assert f.term_profile({"TMUX": ""}) == "unknown"
 assert f.term_profile({"TERMINAL_EMULATOR": "JetBrains-JediTerm"}) == "jediterm"
 assert f.term_profile({"TERM_PROGRAM": "iTerm.app"}) == "iterm"
 assert f.term_profile({"TERM_PROGRAM": "ghostty"}) == "unknown"
+# The colour level, as Claude Code 2.1.304 decides it: true colour lowered
+# to 256 under tmux unless CLAUDE_CODE_TMUX_TRUECOLOR, and lifted on the
+# terminals it names.
+from coding_agent_usage_line.spans import colour_level  # noqa: E402
+assert colour_level({"TERM": "xterm-256color"}) == 2
+assert colour_level({"TERM": "xterm-256color", "COLORTERM": "truecolor"}) == 3
+assert colour_level({"TMUX": "/tmp/t,1,0", "COLORTERM": "truecolor"}) == 2
+assert colour_level({"TMUX": "/tmp/t,1,0", "COLORTERM": "truecolor",
+                     "CLAUDE_CODE_TMUX_TRUECOLOR": "1"}) == 3
+assert colour_level({"TERM": "foot"}) == 3
+assert colour_level({"TERM": "foot", "FORCE_COLOR": "2"}) == 2
+assert colour_level({"TERM_PROGRAM": "vscode", "TERM": "xterm-256color"}) == 3
+assert colour_level({"COLORTERM": "truecolor", "NO_COLOR": "1"}) == 0
+assert colour_level({"TERM_PROGRAM": "iTerm.app"}) == 2
+assert colour_level({"TERM_PROGRAM": "iTerm.app",
+                     "TERM_PROGRAM_VERSION": "3.5.10"}) == 3
 # spec.py, state_spec.py, options_spec.py, their .ts and the option tables
 # of docs/options.md are generated from spec/*.jsonc.
 import subprocess

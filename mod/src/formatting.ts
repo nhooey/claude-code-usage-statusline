@@ -154,10 +154,14 @@ export type Settings = {
   readonly rightEdge: number;        // RIGHT_EDGE_COLS: the columns every
                                      // grid row ends short of the
                                      // terminal's edge
+  readonly truecolor: boolean;       // Claude Code draws true colour, so
+                                     // the true set is drawn (spans.py
+                                     // colour_level)
 };
 
 /** The settings for a terminal described by `env` (TMUX,
- * TERMINAL_EMULATOR and TERM_PROGRAM are what is read), with the blank
+ * TERMINAL_EMULATOR and TERM_PROGRAM are what is read for the profile,
+ * and spans.COLOUR_VARS for the colour level), with the blank
  * between a column-4 mark and its value on or off (--no-mark-spacing), the
  * subscript fraction form on or off (--subscript-decimals), and the
  * columns every grid row ends short of the terminal's edge (--right-edge,
@@ -197,6 +201,7 @@ export function settings(env: Env, markSpacing = true,
     doingPad: pad,
     col2Val2W: VAL2_W + pad.length,
     rightEdge,
+    truecolor: sp.colourLevel(env) >= 3,
   });
 }
 

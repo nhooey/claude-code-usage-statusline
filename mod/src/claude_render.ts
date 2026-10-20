@@ -603,9 +603,10 @@ export function renderChatRows(st: Settings, tr: Transcript,
 
 /** One printed line of the readout: the row's spans joined into escapes
  * between the clears.  `grid` says the row ends on a grid row, whose
- * closing reset join writes. */
-export function drawnLine(row: SpanLike, grid = true): string {
-  return LINE_CLEAR + join(row, grid) + EOL_CLEAR;
+ * closing reset join writes; `truecolor` draws the true set. */
+export function drawnLine(row: SpanLike, grid = true,
+  truecolor = false): string {
+  return LINE_CLEAR + join(row, grid, false, truecolor) + EOL_CLEAR;
 }
 
 /** The whole readout, as one string ending in a newline: three rows, or
@@ -694,9 +695,10 @@ export function renderStatus(st: Settings, pay: Payload, tr: Transcript,
       git, background);
     // Line 3 starts where rows 1 and 2 put their tails.
     const pad = width(row1, st.widths) - width(usage, st.widths);
-    return `${drawnLine(row1)}\n${drawnLine(row2)}\n` +
-      `${drawnLine([" ".repeat(Math.max(0, pad)), right])}\n` +
-      `${drawnLine(left, false)}\n`;
+    const tc = st.truecolor;
+    return `${drawnLine(row1, true, tc)}\n${drawnLine(row2, true, tc)}\n` +
+      `${drawnLine([" ".repeat(Math.max(0, pad)), right], true, tc)}\n` +
+      `${drawnLine(left, false, tc)}\n`;
   }
 
   let line3: SpanLike;
@@ -714,5 +716,7 @@ export function renderStatus(st: Settings, pay: Payload, tr: Transcript,
       fitPath(pwdDisplay, st.pwdMaxFallback - bgW), branchDisplay, git,
       background), " ".repeat(MIN_GAP), right];
   }
-  return `${drawnLine(row1)}\n${drawnLine(row2)}\n${drawnLine(line3)}\n`;
+  const tc = st.truecolor;
+  return `${drawnLine(row1, true, tc)}\n${drawnLine(row2, true, tc)}\n` +
+    `${drawnLine(line3, true, tc)}\n`;
 }

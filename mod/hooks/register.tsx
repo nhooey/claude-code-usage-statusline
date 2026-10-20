@@ -27,6 +27,7 @@ import type { EngineInterface, Register, RenderElement } from 'claude-code'
 import type { FiguresDoc } from '../types'
 import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
+import { hexOf } from '../src/spans.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
 import { ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler,
@@ -44,7 +45,6 @@ import { candidates, firstLine, lastReply, messageBlock, messageSpans, saidBy, s
 import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
-import * as spec from '../src/spec.ts'
 import { CONFIG } from './config.ts'
 import { costDoc, options, permissionModeOf, placesOf, readConfig, seen,
   statusDoc, steps, transcriptPath, turnsNow } from './edges.ts'
@@ -93,6 +93,15 @@ async function settingsOf($: $): Promise<Settings> {
   env.TMUX = await $.env.get('TMUX')
   env.TERMINAL_EMULATOR = await $.env.get('TERMINAL_EMULATOR')
   env.TERM_PROGRAM = await $.env.get('TERM_PROGRAM')
+  // And the ones it reads for the colour level Claude Code draws at, from
+  // the same process environment Claude Code read it from
+  // (spans.COLOUR_VARS).
+  env.FORCE_COLOR = await $.env.get('FORCE_COLOR')
+  env.NO_COLOR = await $.env.get('NO_COLOR')
+  env.TERM = await $.env.get('TERM')
+  env.COLORTERM = await $.env.get('COLORTERM')
+  env.TERM_PROGRAM_VERSION = await $.env.get('TERM_PROGRAM_VERSION')
+  env.CLAUDE_CODE_TMUX_TRUECOLOR = await $.env.get('CLAUDE_CODE_TMUX_TRUECOLOR')
   st = settings(env as Env, o.markSpacing, o.subscriptDecimals, o.rightEdge)
   stKey = key
   return st
@@ -428,11 +437,15 @@ function line(Text: any, spans: readonly Span[], key: string,
   dim = false): RenderElement {
   // Only the props a span sets: a Text's props are plain values, and an
   // undefined one is not.
+  // The true set where Claude Code draws true colour: given the 256 set
+  // there, chalk would draw it as given, and the softer true colours are
+  // the ones chosen to be seen.  Given the true set at 256, chalk would
+  // round it onto entries nobody chose (see spec/layout.jsonc).
+  const truecolor = st?.truecolor ?? false
   const style = (s: Span) => {
     const p: Record<string, string | boolean> = {}
-    const named = spec as unknown as Record<string, string>
-    if (s.colour) p.color = named[s.colour]
-    if (s.bg) p.backgroundColor = named[s.bg]
+    if (s.colour) p.color = hexOf(s.colour, truecolor)
+    if (s.bg) p.backgroundColor = hexOf(s.bg, truecolor)
     if (s.dim) p.dimColor = true
     if (s.bold) p.bold = true
     return p
@@ -665,6 +678,9 @@ export const register: Register = on => {
   // are looked at again (reconfigure), as the tick looks at them.
   on('session.start', async ($, e, next) => {
     const result = await next(e)
+    // The terminal's variables are read again, the colour level's with
+    // them: settingsOf otherwise keeps what it read until an option moves.
+    st = null
     await start($, 'session.start')
     void reconfigure($).catch((err) => log($, 'config', err))
     void refresh($).catch((err) => log($, 'refresh', err))

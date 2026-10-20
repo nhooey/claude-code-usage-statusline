@@ -61,6 +61,8 @@ PYTHON = "/usr/bin/python3"
 
 sys.path.insert(0, HERE)
 from cases import PIN_NOW, SUBAGENT_PAYLOADS  # noqa: E402
+sys.path.insert(0, REPO)
+from coding_agent_usage_line.spans import COLOUR_VARS  # noqa: E402
 
 NOW = float(PIN_NOW)
 
@@ -912,7 +914,10 @@ def handmade():
 def child_env(terminal):
     env = {k: v for k, v in os.environ.items()
            if k not in ("TMUX", "TERM_PROGRAM", "TERMINAL_EMULATOR")
+           and k not in COLOUR_VARS
            and not k.startswith("CODING_AGENT_USAGE_LINE_")}
+    # The 256-colour level unless the group's terminal names its own.
+    env["TERM"] = "xterm-256color"
     env.update(terminal)
     env.update({"TZ": "UTC", "LC_ALL": "en_US.UTF-8"})
     return env
@@ -1056,8 +1061,12 @@ def corpus(python=PYTHON):
             if got.returncode:
                 raise RuntimeError(got.stderr.decode("utf-8", "replace"))
             res = json.loads(rc.unfill(got.stdout.decode("utf-8"), scratch))
+            # The profile's variables, and the colour level's where the
+            # case's environment names its own.
+            named = suite.envs[case["env"]]["terminal"]
             terminal = {k: env[k] for k in ("TMUX", "TERM_PROGRAM",
                                             "TERMINAL_EMULATOR") if k in env}
+            terminal.update({k: named[k] for k in COLOUR_VARS if k in named})
             sets = settings(
                 terminal=terminal,
                 mark_spacing="--no-mark-spacing" not in case["flags"],

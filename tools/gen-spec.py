@@ -19,10 +19,15 @@ runs --check.
 Each JSONC is one object of NAME: value, in the order the values are written
 out.  Three forms are read specially:
 
-    "F_BLU": "rgb(100, 170, 255)"   an F_ or B_ name: a foreground or
+    "F_BLU": "rgb(0, 175, 255)"     an F_ or B_ name: a foreground or
                                     background colour, written out as an
                                     escape code in Python and as hex in
                                     TypeScript
+    "F_BLU": {"256": "rgb(0, 175, 255)", "true": "rgb(100, 170, 255)"}
+                                    a colour with a 256 value, which the
+                                    name holds, and a true-colour one,
+                                    which TRUE_COLOURS holds by name; one
+                                    written once is the same in both
     "F_SPIN": {"same_as": "F_RED"}  another name's value, which must come
                                     earlier
     [1, 2]                          an array: a tuple in Python
@@ -211,7 +216,8 @@ def read(path):
     if r.peek()[0] != "eof":
         raise SystemExit(NAME + ": text after the closing brace")
     names = set()
-    colours = {}
+    # Each colour's 256 value and its true one, aliases resolved.
+    colours, trues = {}, {}
     for m in root.value:
         if not re.fullmatch(r"[A-Z][A-Z0-9_]*", m.key):
             raise SystemExit("%s: %r is not a constant's name"
@@ -221,27 +227,38 @@ def read(path):
             raise SystemExit("%s: %s is the same as %s, which is not "
                              "written above it" % (NAME, m.key, alias))
         if m.key[:2] in ("F_", "B_"):
-            if alias is None:
-                colours[m.key] = check_colour(m)
+            if alias is not None:
+                colours[m.key], trues[m.key] = colours[alias], trues[alias]
             else:
-                colours[m.key] = colours.get(alias)
+                both = two_values(m)
+                colours[m.key] = check_colour(m.key, both[0] if both else m)
+                trues[m.key] = (rgb_of(m.key, both[1]) if both
+                                else colours[m.key])
         names.add(m.key)
     for key in sorted(DIMMED & colours.keys()):
-        check_faint(key, colours[key])
+        check_faint(key, colours[key], "256")
+        check_faint(key, trues[key], "true")
+    root.trues = trues
     return root
 
 
 # ── The 256-colour palette ──────────────────────────────────────────────────
 #
-# Claude Code draws in 256 colours under tmux, and turns each colour into
-# an index the way chalk's rgbToAnsi256 does: a grey (r == g == b) onto the
-# ramp 232-255 by round((v - 8) / 247 * 24), anything else onto the cube by
-# round(v / 255 * 5) a channel.  The terminal then draws that index from
-# the xterm palette, whose cube steps are 0, 95, 135, 175, 215, 255 and not
-# the even fifths the rounding assumes: 95 rounds to the 135 step and 135 to
-# the 175 one.  So a colour draws the same in true colour and in 256 only if
+# Each colour has two values: "true", drawn when Claude Code draws true
+# colour, and "256", drawn otherwise (spans.colour_level says which).  The
+# 256 value is checked here; the true one is free but for the faint floor.
+#
+# Claude Code draws in 256 colours under tmux, and turns each colour the mod
+# gives it into an index the way chalk's rgbToAnsi256 does: a grey (r == g
+# == b) onto the ramp 232-255 by round((v - 8) / 247 * 24), anything else
+# onto the cube by round(v / 255 * 5) a channel.  The terminal then draws
+# that index from the xterm palette, whose cube steps are 0, 95, 135, 175,
+# 215, 255 and not the even fifths the rounding assumes: 95 rounds to the
+# 135 step and 135 to the 175 one.  So a 256 value draws as itself only if
 # it is an xterm entry the rounding gives back: a cube colour whose channels
 # are all 0, 175, 215 or 255, black, white, or a ramp grey from 8 to 178.
+# (The panel's own escapes go through a nearest-step mapping instead, which
+# gives every one of these back too.)
 
 CUBE = (0, 95, 135, 175, 215, 255)
 
@@ -296,19 +313,33 @@ def nearest(rgb, n=1):
     return sorted(PALETTE, key=lambda i: delta_e(rgb, xterm(i)))[:n]
 
 
-def check_colour(m):
-    """Refuse an F_ or B_ colour that is not a palette entry."""
-    match = RGB.match(m.value) if m.kind == "str" else None
+def two_values(node):
+    """A colour's ("256", "true") value nodes, or None for a colour written
+    once, which is both."""
+    if node.kind == "obj" and [c.key for c in node.value] == ["256", "true"]:
+        return node.value[0], node.value[1]
+    return None
+
+
+def rgb_of(key, node):
+    """The (r, g, b) a colour's value node holds."""
+    match = RGB.match(node.value) if node.kind == "str" else None
     if not match:
-        raise SystemExit('%s: %s is not written "rgb(r, g, b)"'
-                         % (NAME, m.key))
-    rgb = tuple(int(x) for x in match.groups())
+        raise SystemExit('%s: %s is not written "rgb(r, g, b)" or '
+                         '{"256": "rgb(r, g, b)", "true": "rgb(r, g, b)"}'
+                         % (NAME, key))
+    return tuple(int(x) for x in match.groups())
+
+
+def check_colour(key, node):
+    """Refuse a 256 value that is not a palette entry; its (r, g, b)."""
+    rgb = rgb_of(key, node)
     if ansi256(rgb) not in PALETTE or xterm(ansi256(rgb)) != rgb:
         i = nearest(rgb)[0]
         raise SystemExit(
             "%s: %s rgb%s is not on the 256-colour palette, so it draws "
             "as rgb%s under tmux; the nearest entry is %d, "
-            '"rgb(%d, %d, %d)"' % (NAME, m.key, rgb,
+            '"rgb(%d, %d, %d)"' % (NAME, key, rgb,
                                    xterm(ansi256(rgb)), i, *xterm(i)))
     return rgb
 
@@ -350,14 +381,14 @@ def faint(rgb):
     return tuple(v // 2 for v in rgb)
 
 
-def check_faint(key, rgb):
+def check_faint(key, rgb, which):
     """Refuse a dimmed colour that drawn faint is under the floor."""
     c = contrast(faint(rgb), (0, 0, 0))
     if c < FAINT_FLOOR:
         raise SystemExit(
-            "%s: %s rgb%s is drawn faint under its magnitude cut, and faint "
-            "on black it is %.2f:1, under the %.1f:1 floor; pick a lighter "
-            "entry of its hue" % (NAME, key, rgb, c, FAINT_FLOOR))
+            "%s: %s's %s value rgb%s is drawn faint under its magnitude cut, "
+            "and faint on black it is %.2f:1, under the %.1f:1 floor; pick a "
+            "lighter one of its hue" % (NAME, key, which, rgb, c, FAINT_FLOOR))
 
 
 def same_as(node):
@@ -409,12 +440,15 @@ class Lang:
             return node.value
         m = RGB.match(node.value) if key and key[:2] in ("F_", "B_") else None
         if m:
-            rgb = [int(x) for x in m.groups()]
-            if self.name == "py":
-                return '"\\033[%d;2;%d;%d;%dm"' % (
-                    38 if key.startswith("F_") else 48, *rgb)
-            return '"#%02x%02x%02x"' % tuple(rgb)
+            return self.colour(key, [int(x) for x in m.groups()])
         return string(node.value, self.name)
+
+    def colour(self, key, rgb):
+        """A colour as this language holds it: an escape, or hex."""
+        if self.name == "py":
+            return '"\\033[%d;2;%d;%d;%dm"' % (
+                38 if key.startswith("F_") else 48, *rgb)
+        return '"#%02x%02x%02x"' % tuple(rgb)
 
     def flat(self, node, key=None):
         """The value on one line, or None if a comment inside forbids it."""
@@ -434,6 +468,11 @@ class Lang:
             alias = same_as(node)
             if alias is not None and key is not None:
                 return alias
+            both = two_values(node) if key and key[:2] in ("F_", "B_") \
+                else None
+            if both:
+                # The name holds the 256 value; TRUE_COLOURS the true one.
+                return self.scalar(both[0], key)
             parts = []
             for c in node.value:
                 if c.lead or c.tail:
@@ -500,6 +539,28 @@ class Lang:
         return lines
 
 
+def true_colours(lang, trues):
+    """TRUE_COLOURS: every colour's true value by name, aliases resolved,
+    for spans to draw in place of the name's own 256 value."""
+    c = lang.comment
+    lines = [c + " Every F_ and B_ name's true-colour value, aliases resolved:"
+             " what is drawn",
+             c + " in place of the name's own (256) value when Claude Code"
+             " draws true colour.",
+             c + " See colour_level in spans."]
+    if lang.name == "py":
+        lines.append("TRUE_COLOURS = {")
+    else:
+        lines.append("export const TRUE_COLOURS: "
+                     "{ readonly [name: string]: string } = {")
+    pad = " " * lang.indent
+    for key, rgb in trues.items():
+        lines.append("%s%s: %s," % (pad, string(key, lang.name),
+                                    lang.colour(key, rgb)))
+    lines.append("}" if lang.name == "py" else "};")
+    return lines
+
+
 PY = Lang("py", "#", 4, "(", ")")
 TS = Lang("ts", "//", 2, "[", "]")
 HEAD = ("Generated by tools/gen-spec.py from %s.  Do not edit:",
@@ -518,6 +579,8 @@ def render(lang, root, source):
             prefix, col = "export const " + m.key + " = ", m.col + 12
             suffix = " as const;" if m.key in AS_CONST else ";"
         lines += lang.block(prefix, m, suffix, 0, col)
+    if getattr(root, "trues", None):
+        lines += [""] + true_colours(lang, root.trues)
     if lang.name == "ts" and root.value and root.value[0].key == "OPTIONS":
         lines += [""] + options_type(plain(root.value[0]))
     return "\n".join(l.rstrip() for l in lines) + "\n"

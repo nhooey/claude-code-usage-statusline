@@ -8,11 +8,14 @@
 //
 // One object of NAME: value, written out in this order.  An F_ or B_ name
 // holding "rgb(r, g, b)" is a foreground or background colour, and
-// {"same_as": "NAME"} is an earlier name's value.  Every colour is an entry
-// of the 256-colour palette that Claude Code's rounding under tmux gives
-// back, so it draws the same in true colour and in 256: a cube colour with
+// {"same_as": "NAME"} is an earlier name's value.  A colour has two values,
+// {"256": ..., "true": ...}, or one for both.  The true value is drawn when
+// Claude Code draws true colour, and is free.  The 256 value is drawn
+// otherwise, under tmux most often, and is an entry of the 256-colour
+// palette that Claude Code's rounding gives back: a cube colour with
 // channels from 0, 175, 215 and 255, black, white, or a grey from 8 to 178
-// in steps of 10.  gen-spec.py refuses any other and names the nearest.  A value computed from
+// in steps of 10.  gen-spec.py refuses any other and names the nearest, and
+// refuses a value a dim figure takes that is too dark drawn faint.  A value computed from
 // these, an S_ form or RIGHT_GRID, stays in formatting.py: those are rules,
 // and each language computes them.
 {
@@ -392,29 +395,40 @@
                            // East_Asian_Width Wide — smaller as drawings, twice the
                            // width as cells.
 
-  "F_BLU": "rgb(0, 175, 255)",                 // blue        — 📁 the cwd
+  "F_BLU": {"256": "rgb(0, 175, 255)",
+            "true": "rgb(100, 170, 255)"},     // blue        — 📁 the cwd
                                                //  on the 🎮 row, an agent's
                                                //  name
-  "F_PROJ": "rgb(255, 175, 175)",              // coral       — 📦 project
+  "F_PROJ": {"256": "rgb(255, 175, 175)",
+             "true": "rgb(255, 140, 90)"},     // coral       — 📦 project
                                                //  name, apart from 📁's
                                                //  blue beside it (decided
                                                //  2026-10-19)
-  "F_BLU2": "rgb(0, 175, 215)",                // dark blue   — pwd
-  "F_GRN": "rgb(0, 175, 0)",                   // green       — healthy / clean
-  "F_AMB": "rgb(255, 175, 0)",                 // amber       — *_WARN thresholds
-  "F_RED": "rgb(255, 175, 175)",               // red         — *_CRIT thresholds.
+  "F_BLU2": {"256": "rgb(0, 175, 215)",
+             "true": "rgb(70, 115, 185)"},     // dark blue   — pwd
+  "F_GRN": {"256": "rgb(0, 175, 0)",
+            "true": "rgb(120, 200, 80)"},      // green       — healthy / clean
+  "F_AMB": {"256": "rgb(255, 175, 0)",
+            "true": "rgb(255, 200, 0)"},       // amber       — *_WARN thresholds
+  "F_RED": {"256": "rgb(255, 175, 175)",
+            "true": "rgb(255, 90, 90)"},       // red         — *_CRIT thresholds.
                                                //  The 🪫 row's figures are dim
                                                //  under their cut, and no red
-                                               //  of the palette's survives
+                                               //  of the 256 set's survives
                                                //  faint: rgb(255, 0, 0) is
                                                //  1.90:1 on black, under the
                                                //  floor in tools/gen-spec.py.
-                                               //  This is the reddest entry
-                                               //  over it, F_PROJ's own.
-  "F_CYN": "rgb(0, 215, 255)",                 // cyan        — PR, output style
-  "F_PUR": "rgb(215, 175, 255)",               // purple      — model
-  "F_TUP": "rgb(175, 215, 215)",               // teal        — ▴ input tokens
-  "F_RATE": "rgb(0, 215, 175)",                // mint        — 🛫 tokens per second.
+                                               //  Its 256 value is the reddest
+                                               //  entry over it, F_PROJ's own;
+                                               //  the true value is 2.32:1.
+  "F_CYN": {"256": "rgb(0, 215, 255)",
+            "true": "rgb(80, 200, 220)"},      // cyan        — PR, output style
+  "F_PUR": {"256": "rgb(215, 175, 255)",
+            "true": "rgb(200, 130, 255)"},     // purple      — model
+  "F_TUP": {"256": "rgb(175, 215, 215)",
+            "true": "rgb(120, 200, 220)"},     // teal        — ▴ input tokens
+  "F_RATE": {"256": "rgb(0, 215, 175)",
+             "true": "rgb(100, 225, 180)"},    // mint        — 🛫 tokens per second.
                                                // Its own hue since 2026-09-13: it
                                                // was F_TUP, the ▴ figure's, and on
                                                // the status line it now sits one
@@ -429,15 +443,21 @@
                                                // rate is never in.  F_PUR2, the
                                                // dark purple of the model's second
                                                // field, went with 📏 the same day.
-  "F_TDN": "rgb(255, 175, 215)",               // pink        — ▾ output tokens
-  "F_YEL": "rgb(255, 215, 0)",                 // yellow      — cost (never tiered)
-  "F_PNK": "rgb(255, 175, 255)",               // pink        — context %, and
+  "F_TDN": {"256": "rgb(255, 175, 215)",
+            "true": "rgb(220, 140, 200)"},     // pink        — ▾ output tokens
+  "F_YEL": {"256": "rgb(255, 215, 0)",
+            "true": "rgb(255, 210, 60)"},      // yellow      — cost (never tiered)
+  "F_PNK": {"256": "rgb(255, 175, 255)",
+            "true": "rgb(255, 120, 190)"},     // pink        — context %, and
                                                //  🧠's size, dim under its cut:
-                                               //  the hot pinks of the palette
+                                               //  the hot pinks of the 256 set
                                                //  are all under the faint floor
-  "F_PNK2": "rgb(175, 0, 175)",                // dark pink   — context size
-  "F_CRM": "rgb(215, 215, 175)",               // cream       — default text
-  "F_PRW": "rgb(175, 175, 255)",               // periwinkle  — the ⌛ row.  It was
+  "F_PNK2": {"256": "rgb(175, 0, 175)",
+             "true": "rgb(178, 84, 133)"},     // dark pink   — context size
+  "F_CRM": {"256": "rgb(215, 215, 175)",
+            "true": "rgb(211, 215, 207)"},     // cream       — default text
+  "F_PRW": {"256": "rgb(175, 175, 255)",
+            "true": "rgb(140, 150, 255)"},     // periwinkle  — the ⌛ row.  It was
                                                //  orange, and orange had the same
                                                //  problem F_AMB has: amber means "a
                                                //  threshold was crossed" everywhere
@@ -449,7 +469,7 @@
                                                //
                                                //  Not F_BLU or F_BLU2 (📁), the
                                                //  two blues already on row 3.
-                                               //  29 ΔE from the nearer, more than
+                                               //  In the 256 set: 29 ΔE from the nearer, more than
                                                //  the separation those two keep
                                                //  from each other (24) while
                                                //  sitting side by side; these sit
@@ -458,18 +478,20 @@
                                                //  the row keeps the weight it read
                                                //  at.  13 ΔE from F_PUR, the
                                                //  nearest the palette allows.
-  "F_ETA": "rgb(255, 215, 255)",               // light magenta — ⛳ time left.  It
+  "F_ETA": {"256": "rgb(255, 215, 255)",
+            "true": "rgb(255, 77, 255)"},      // light magenta — ⛳ time left.  It
                                                //  was F_PRW, the ⌛ beside it, and
                                                //  the two figures read as one.  A
-                                               //  cool hue apart from the others:
-                                               //  30 ΔE from F_PRW, 25 from F_PUR,
+                                               //  cool hue apart from the others,
+                                               //  in the 256 set 30 ΔE from F_PRW, 25 from F_PUR,
                                                //  27 from F_PNK.  Not warm, for the
                                                //  reason F_PRW gives; the late "+"
                                                //  stays F_AMB.  The full magenta
                                                //  was too dark to read faint, as ⛳
                                                //  is under its cut (seen live under
                                                //  tmux 2026-10-21).
-  "F_OVER": "rgb(255, 0, 0)",                  // bright red  — an agent row's ⛳
+  "F_OVER": {"256": "rgb(255, 0, 0)",
+             "true": "rgb(255, 40, 40)"},      // bright red  — an agent row's ⛳
                                                //  past a report of ZERO.  An
                                                //  estimate that ran out is amber:
                                                //  the agent guessed short.  This
@@ -478,18 +500,25 @@
                                                //  fact, so it is redder than F_RED
                                                //  and not that row hue itself.
   "F_SPIN": {"same_as": "F_RED"},              // the agent row's E_SPIN spinner
-  "F_CHAT_U": "rgb(168, 168, 168)",            // light grey  — user chat row
-  "F_CHAT_B": "rgb(118, 118, 118)",            // mid grey    — assistant chat row.
-                                               //  Both neutral: the palette has no
-                                               //  warm or cool grey, so lightness
-                                               //  alone tells them apart.
-  "B_DRK": "rgb(18, 18, 18)",                  // near-black background, chat rows
-  "B_MSG": "rgb(175, 0, 175)",                 // purple background, the row
+  "F_CHAT_U": {"256": "rgb(168, 168, 168)",
+               "true": "rgb(166, 170, 158)"},  // light grey  — user chat row
+  "F_CHAT_B": {"256": "rgb(118, 118, 118)",
+               "true": "rgb(112, 126, 140)"},  // mid grey    — assistant chat row.
+                                               //  The 256 values are neutral: that
+                                               //  palette has no warm or cool
+                                               //  grey, so lightness alone tells
+                                               //  them apart there.  The true
+                                               //  values are warm and cool.
+  "B_DRK": {"256": "rgb(18, 18, 18)",
+            "true": "rgb(12, 14, 18)"},        // near-black background, chat rows
+  "B_MSG": {"256": "rgb(175, 0, 175)",
+            "true": "rgb(95, 0, 95)"},         // purple background, the row
                                                //  of a message another agent
                                                //  sent, apart from the user's
                                                //  dark blue prompts (asked
-                                               //  2026-10-20).  The darkest
-                                               //  purple the palette has: no
+                                               //  2026-10-20).  The 256 value
+                                               //  is the darkest purple that
+                                               //  palette has: no
                                                //  colour channel can be 95 or
                                                //  135 (see the palette note
                                                //  in tools/gen-spec.py), and
@@ -497,7 +526,8 @@
                                                //  colours drew as one teal
                                                //  under tmux (seen live
                                                //  2026-10-20).  White on it
-                                               //  is 6.1:1.  It shares its
+                                               //  is 6.1:1; on the true value,
+                                               //  the old dark purple, more.  It shares its
                                                //  entry with F_PNK2, a
                                                //  foreground never drawn on it.
   "F_MSG": "rgb(255, 255, 255)",               // white, that row's text on
@@ -536,7 +566,8 @@
   // in its sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
   // every strike from 20ppem to 160 — a flat neutral grey, no hue at all, which
   // is not what an emoji named SOON looks like it should be.  L* 32.3.  This
-  // is the palette's nearest grey to it, rgb(78,78,78), 0.9 ΔE away.
+  // is its true value; the 256 value is that palette's nearest grey to it,
+  // rgb(78,78,78), 0.9 ΔE away.
   //
   // It is the mark that takes this and not the figure.  On the two limit rows,
   // the countdown's figure carries the row's colour and 🔜 paints itself this
@@ -549,7 +580,8 @@
   // It is dim on purpose and it is dim in fact: 2.2:1 against the chat rows'
   // background, which is under every legibility threshold there is.  That is the
   // 🔜's own contrast — this only stops Σ from being the exception.
-  "F_SUM": "rgb(78, 78, 78)",                 // the SOON arrow's ink, sampled
+  "F_SUM": {"256": "rgb(78, 78, 78)",
+            "true": "rgb(76, 76, 76)"},       // the SOON arrow's ink, sampled
 
   // The rules between the grid's columns, deliberately the same ink as F_SUM.
   // One chrome level and not two: a rule and a receding mark are the same kind

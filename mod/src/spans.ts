@@ -176,11 +176,71 @@ function runsOn(s: Span, nxt: Span | null): boolean {
 
 const SPEC = spec as unknown as { [name: string]: unknown };
 
-/** The escape spec.py holds for the colour constant `name`: a B_ name lays
- * a background (48), any other a foreground (38), from the hex spec.ts
- * holds.  An unknown name throws, as getattr(spec, name) raises. */
-export function escape(name: string): string {
-  const hex = Object.hasOwn(SPEC, name) ? SPEC[name] : undefined;
+/** The variables colourLevel reads.  A test pins the level by setting
+ * these and no others. */
+export const COLOUR_VARS = ["FORCE_COLOR", "NO_COLOR", "TERM", "COLORTERM",
+  "TERM_PROGRAM", "TERM_PROGRAM_VERSION", "TMUX",
+  "CLAUDE_CODE_TMUX_TRUECOLOR"] as const;
+// The TERMs Claude Code lifts to true colour on a terminal.
+const TRUE_TERMS = ["alacritty", "contour", "foot", "ghostty", "rio",
+  "wezterm", "xterm-ghostty", "xterm-kitty"];
+
+/** The colour level Claude Code draws at, from the environment it runs in:
+ * 3 for true colour, 2 for 256, 1 for 16, 0 for none.  spans.py's
+ * colour_level says which of Claude Code's rules are followed and which
+ * are left out. */
+export function colourLevel(
+  env: { readonly [name: string]: string | undefined }): number {
+  const force = env.FORCE_COLOR;
+  const term = env.TERM ?? "";
+  let forced: number | null = null;
+  if (force !== undefined) {
+    forced = force === "true" || force === "" ? 1 : force === "false" ? 0
+      : Math.min(/^\d+$/.test(force) ? parseInt(force, 10) : 0, 3);
+    if (forced === 0) return 0;
+  }
+  let level = forced ?? 0;
+  if (term === "dumb") {
+    // the forced level, or none
+  } else if (env.COLORTERM === "truecolor" ||
+    ["xterm-kitty", "xterm-ghostty", "wezterm"].includes(term)) {
+    level = 3;
+  } else if (env.TERM_PROGRAM === "iTerm.app") {
+    const major = (env.TERM_PROGRAM_VERSION ?? "").split(".")[0];
+    level = /^\d+$/.test(major) && parseInt(major, 10) >= 3 ? 3 : 2;
+  } else if (env.TERM_PROGRAM === "Apple_Terminal") {
+    level = 2;
+  } else if (/-256(color)?$/i.test(term)) {
+    level = 2;
+  } else if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i
+    .test(term) || env.COLORTERM !== undefined) {
+    level = 1;
+  }
+  if (env.NO_COLOR && force === undefined && level > 0) level = 0;
+  if (env.TERM_PROGRAM === "vscode" && level === 2) level = 3;
+  if (!env.NO_COLOR && force === undefined && TRUE_TERMS.includes(term) &&
+    level < 3) level = 3;
+  if (env.TMUX && !env.CLAUDE_CODE_TMUX_TRUECOLOR && level > 2) level = 2;
+  return level;
+}
+
+/** The hex the mod draws the colour constant `name` in: its true value
+ * where Claude Code draws true colour, else its own. */
+export function hexOf(name: string, truecolor = false): string {
+  const hex = truecolor
+    ? (Object.hasOwn(spec.TRUE_COLOURS, name)
+      ? spec.TRUE_COLOURS[name] : undefined)
+    : Object.hasOwn(SPEC, name) ? SPEC[name] : undefined;
+  if (typeof hex !== "string") throw new Error("no colour " + name + " in spec");
+  return hex;
+}
+
+/** The escape spec.py holds for the colour constant `name`, or its
+ * TRUE_COLOURS entry where `truecolor`: a B_ name lays a background (48),
+ * any other a foreground (38), from the hex spec.ts holds.  An unknown
+ * name throws, as getattr(spec, name) raises. */
+export function escape(name: string, truecolor = false): string {
+  const hex = hexOf(name, truecolor);
   const m = typeof hex === "string" ? /^#([0-9a-f]{6})$/i.exec(hex) : null;
   if (!m) throw new Error("no colour " + name + " in spec");
   const n = parseInt(m[1], 16);
@@ -190,9 +250,9 @@ export function escape(name: string): string {
 
 /** The escapes that open `s`: background, dim, bold, then colour, the
  * order the renderers wrote them in (B_DRK + DIM + F_CHAT_U). */
-function sgr(s: Span): string {
-  return (s.bg ? escape(s.bg) : "") + (s.dim ? DIM : "") +
-    (s.bold ? BOLD : "") + (s.colour ? escape(s.colour) : "");
+function sgr(s: Span, truecolor: boolean): string {
+  return (s.bg ? escape(s.bg, truecolor) : "") + (s.dim ? DIM : "") +
+    (s.bold ? BOLD : "") + (s.colour ? escape(s.colour, truecolor) : "");
 }
 
 /** The spans as the terminal draws them, with their escape codes.
@@ -211,8 +271,12 @@ function sgr(s: Span): string {
  *
  * `runs` keeps the receipt's bytes: its metric groups wrote a run of bare
  * colours, F_TUP ▴ then F_TDN ▾, with one reset after the run, so with it
- * a span that is a colour alone is not reset before another. */
-export function join(x: SpanLike, close = false, runs = false): string {
+ * a span that is a colour alone is not reset before another.
+ *
+ * `truecolor` draws the true set, where Claude Code draws true colour
+ * (Settings.truecolor); spans.py's join reads that from its environment. */
+export function join(x: SpanLike, close = false, runs = false,
+  truecolor = false): string {
   let out = "";
   const items = spans(x);
   items.forEach((s, i) => {
@@ -220,7 +284,7 @@ export function join(x: SpanLike, close = false, runs = false): string {
       out += s.text;
       return;
     }
-    out += sgr(s) + s.text;
+    out += sgr(s, truecolor) + s.text;
     const nxt = i + 1 < items.length ? items[i + 1] : null;
     if (nxt !== null && s.colour && nxt.colour === s.colour && nxt.bg &&
       !s.bg && !s.bold) {

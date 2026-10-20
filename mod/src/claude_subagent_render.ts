@@ -937,5 +937,5 @@ export function renderTaskRows(st: Settings, prepared: readonly Prepared[],
   limits: Limits, cols: number | null = null, now: number | null = null,
   hide: readonly string[] = []): [string, string][] {
   return renderTaskRowSpans(st, prepared, limits, cols, now, hide)
-    .map(([tid, row]) => [tid, join(row)]);
+    .map(([tid, row]) => [tid, join(row, false, false, st.truecolor)]);
 }

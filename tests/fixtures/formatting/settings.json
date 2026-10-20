@@ -30,6 +30,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -276,6 +277,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -522,6 +524,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -768,6 +771,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -1014,6 +1018,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -1264,6 +1269,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -1514,6 +1520,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -1764,6 +1771,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -2014,6 +2022,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -2265,6 +2274,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -2516,6 +2526,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -2767,6 +2778,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -3018,6 +3030,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -3269,6 +3282,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -3520,6 +3534,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -3771,6 +3786,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -4022,6 +4038,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -4273,6 +4290,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -4524,6 +4542,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -4775,6 +4794,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -5026,6 +5046,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -5276,6 +5297,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -5526,6 +5548,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -5776,6 +5799,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [
@@ -6026,6 +6050,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -6277,6 +6302,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -6528,6 +6554,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -6779,6 +6806,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": true,
     "icons": [
@@ -7030,6 +7058,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -7276,6 +7305,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -7522,6 +7552,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -7768,6 +7799,7 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -8014,6 +8046,7 @@
    "spacing": true,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -8260,6 +8293,7 @@
    "spacing": true,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -8506,6 +8540,7 @@
    "spacing": false,
    "subDec": true,
    "subscript": true,
+   "truecolor": false,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -8752,6 +8787,995 @@
    "spacing": false,
    "subDec": false,
    "subscript": false,
+   "truecolor": false,
+   "widths": {
+    "clusters": false,
+    "icons": [],
+    "narrow": [],
+    "wide": [
+     [
+      4352,
+      4447
+     ],
+     [
+      8986,
+      8987
+     ],
+     [
+      9001,
+      9002
+     ],
+     [
+      9193,
+      9203
+     ],
+     [
+      9725,
+      9726
+     ],
+     [
+      9748,
+      9749
+     ],
+     [
+      9800,
+      9811
+     ],
+     [
+      9855,
+      9855
+     ],
+     [
+      9875,
+      9875
+     ],
+     [
+      9889,
+      9889
+     ],
+     [
+      9898,
+      9899
+     ],
+     [
+      9917,
+      9925
+     ],
+     [
+      9934,
+      9940
+     ],
+     [
+      9962,
+      9995
+     ],
+     [
+      10024,
+      10024
+     ],
+     [
+      10060,
+      10071
+     ],
+     [
+      10133,
+      10135
+     ],
+     [
+      10160,
+      10160
+     ],
+     [
+      10175,
+      10175
+     ],
+     [
+      11035,
+      11036
+     ],
+     [
+      11088,
+      11093
+     ],
+     [
+      11904,
+      12019
+     ],
+     [
+      12032,
+      12245
+     ],
+     [
+      12272,
+      12771
+     ],
+     [
+      12784,
+      12871
+     ],
+     [
+      12880,
+      19903
+     ],
+     [
+      19968,
+      42182
+     ],
+     [
+      43360,
+      43388
+     ],
+     [
+      44032,
+      55203
+     ],
+     [
+      63744,
+      64255
+     ],
+     [
+      65040,
+      65049
+     ],
+     [
+      65072,
+      65131
+     ],
+     [
+      65281,
+      65376
+     ],
+     [
+      65504,
+      65510
+     ],
+     [
+      94176,
+      94180
+     ],
+     [
+      94192,
+      94193
+     ],
+     [
+      94208,
+      100343
+     ],
+     [
+      100352,
+      101589
+     ],
+     [
+      101632,
+      101640
+     ],
+     [
+      110576,
+      110882
+     ],
+     [
+      110898,
+      110898
+     ],
+     [
+      110928,
+      110933
+     ],
+     [
+      110948,
+      110951
+     ],
+     [
+      110960,
+      111355
+     ],
+     [
+      126980,
+      126980
+     ],
+     [
+      127183,
+      127183
+     ],
+     [
+      127374,
+      127386
+     ],
+     [
+      127462,
+      127490
+     ],
+     [
+      127504,
+      127569
+     ],
+     [
+      127584,
+      127589
+     ],
+     [
+      127744,
+      130047
+     ],
+     [
+      131072,
+      262141
+     ]
+    ]
+   }
+  },
+  {
+   "cCache": 6,
+   "cLimTot": 7,
+   "cSess": 16,
+   "cTok": 14,
+   "col2Val2W": 6,
+   "doingPad": "",
+   "env": "true-colour",
+   "line3Reserved": 120,
+   "markSp": " ",
+   "pad": "",
+   "profile": "unknown",
+   "pwdMaxFallback": 45,
+   "rightEdge": 5,
+   "rightGrid": [
+    11,
+    13,
+    16,
+    34,
+    14
+   ],
+   "sCache": "🎯",
+   "sCost": "💰",
+   "sCtx": "🧠",
+   "sMod": "🤖",
+   "sRate": "🛫",
+   "sTok": "🧩",
+   "spacing": true,
+   "subDec": true,
+   "subscript": true,
+   "truecolor": true,
+   "widths": {
+    "clusters": false,
+    "icons": [],
+    "narrow": [],
+    "wide": [
+     [
+      4352,
+      4447
+     ],
+     [
+      8986,
+      8987
+     ],
+     [
+      9001,
+      9002
+     ],
+     [
+      9193,
+      9203
+     ],
+     [
+      9725,
+      9726
+     ],
+     [
+      9748,
+      9749
+     ],
+     [
+      9800,
+      9811
+     ],
+     [
+      9855,
+      9855
+     ],
+     [
+      9875,
+      9875
+     ],
+     [
+      9889,
+      9889
+     ],
+     [
+      9898,
+      9899
+     ],
+     [
+      9917,
+      9925
+     ],
+     [
+      9934,
+      9940
+     ],
+     [
+      9962,
+      9995
+     ],
+     [
+      10024,
+      10024
+     ],
+     [
+      10060,
+      10071
+     ],
+     [
+      10133,
+      10135
+     ],
+     [
+      10160,
+      10160
+     ],
+     [
+      10175,
+      10175
+     ],
+     [
+      11035,
+      11036
+     ],
+     [
+      11088,
+      11093
+     ],
+     [
+      11904,
+      12019
+     ],
+     [
+      12032,
+      12245
+     ],
+     [
+      12272,
+      12771
+     ],
+     [
+      12784,
+      12871
+     ],
+     [
+      12880,
+      19903
+     ],
+     [
+      19968,
+      42182
+     ],
+     [
+      43360,
+      43388
+     ],
+     [
+      44032,
+      55203
+     ],
+     [
+      63744,
+      64255
+     ],
+     [
+      65040,
+      65049
+     ],
+     [
+      65072,
+      65131
+     ],
+     [
+      65281,
+      65376
+     ],
+     [
+      65504,
+      65510
+     ],
+     [
+      94176,
+      94180
+     ],
+     [
+      94192,
+      94193
+     ],
+     [
+      94208,
+      100343
+     ],
+     [
+      100352,
+      101589
+     ],
+     [
+      101632,
+      101640
+     ],
+     [
+      110576,
+      110882
+     ],
+     [
+      110898,
+      110898
+     ],
+     [
+      110928,
+      110933
+     ],
+     [
+      110948,
+      110951
+     ],
+     [
+      110960,
+      111355
+     ],
+     [
+      126980,
+      126980
+     ],
+     [
+      127183,
+      127183
+     ],
+     [
+      127374,
+      127386
+     ],
+     [
+      127462,
+      127490
+     ],
+     [
+      127504,
+      127569
+     ],
+     [
+      127584,
+      127589
+     ],
+     [
+      127744,
+      130047
+     ],
+     [
+      131072,
+      262141
+     ]
+    ]
+   }
+  },
+  {
+   "cCache": 6,
+   "cLimTot": 7,
+   "cSess": 16,
+   "cTok": 14,
+   "col2Val2W": 6,
+   "doingPad": "",
+   "env": "true-colour",
+   "line3Reserved": 120,
+   "markSp": " ",
+   "pad": "",
+   "profile": "unknown",
+   "pwdMaxFallback": 45,
+   "rightEdge": 5,
+   "rightGrid": [
+    11,
+    13,
+    16,
+    34,
+    14
+   ],
+   "sCache": "🎯",
+   "sCost": "💰",
+   "sCtx": "🧠",
+   "sMod": "🤖",
+   "sRate": "🛫",
+   "sTok": "🧩",
+   "spacing": true,
+   "subDec": false,
+   "subscript": false,
+   "truecolor": true,
+   "widths": {
+    "clusters": false,
+    "icons": [],
+    "narrow": [],
+    "wide": [
+     [
+      4352,
+      4447
+     ],
+     [
+      8986,
+      8987
+     ],
+     [
+      9001,
+      9002
+     ],
+     [
+      9193,
+      9203
+     ],
+     [
+      9725,
+      9726
+     ],
+     [
+      9748,
+      9749
+     ],
+     [
+      9800,
+      9811
+     ],
+     [
+      9855,
+      9855
+     ],
+     [
+      9875,
+      9875
+     ],
+     [
+      9889,
+      9889
+     ],
+     [
+      9898,
+      9899
+     ],
+     [
+      9917,
+      9925
+     ],
+     [
+      9934,
+      9940
+     ],
+     [
+      9962,
+      9995
+     ],
+     [
+      10024,
+      10024
+     ],
+     [
+      10060,
+      10071
+     ],
+     [
+      10133,
+      10135
+     ],
+     [
+      10160,
+      10160
+     ],
+     [
+      10175,
+      10175
+     ],
+     [
+      11035,
+      11036
+     ],
+     [
+      11088,
+      11093
+     ],
+     [
+      11904,
+      12019
+     ],
+     [
+      12032,
+      12245
+     ],
+     [
+      12272,
+      12771
+     ],
+     [
+      12784,
+      12871
+     ],
+     [
+      12880,
+      19903
+     ],
+     [
+      19968,
+      42182
+     ],
+     [
+      43360,
+      43388
+     ],
+     [
+      44032,
+      55203
+     ],
+     [
+      63744,
+      64255
+     ],
+     [
+      65040,
+      65049
+     ],
+     [
+      65072,
+      65131
+     ],
+     [
+      65281,
+      65376
+     ],
+     [
+      65504,
+      65510
+     ],
+     [
+      94176,
+      94180
+     ],
+     [
+      94192,
+      94193
+     ],
+     [
+      94208,
+      100343
+     ],
+     [
+      100352,
+      101589
+     ],
+     [
+      101632,
+      101640
+     ],
+     [
+      110576,
+      110882
+     ],
+     [
+      110898,
+      110898
+     ],
+     [
+      110928,
+      110933
+     ],
+     [
+      110948,
+      110951
+     ],
+     [
+      110960,
+      111355
+     ],
+     [
+      126980,
+      126980
+     ],
+     [
+      127183,
+      127183
+     ],
+     [
+      127374,
+      127386
+     ],
+     [
+      127462,
+      127490
+     ],
+     [
+      127504,
+      127569
+     ],
+     [
+      127584,
+      127589
+     ],
+     [
+      127744,
+      130047
+     ],
+     [
+      131072,
+      262141
+     ]
+    ]
+   }
+  },
+  {
+   "cCache": 5,
+   "cLimTot": 6,
+   "cSess": 15,
+   "cTok": 13,
+   "col2Val2W": 6,
+   "doingPad": "",
+   "env": "true-colour",
+   "line3Reserved": 114,
+   "markSp": "",
+   "pad": "",
+   "profile": "unknown",
+   "pwdMaxFallback": 51,
+   "rightEdge": 5,
+   "rightGrid": [
+    11,
+    13,
+    14,
+    30,
+    14
+   ],
+   "sCache": "🎯",
+   "sCost": "💰",
+   "sCtx": "🧠",
+   "sMod": "🤖",
+   "sRate": "🛫",
+   "sTok": "🧩",
+   "spacing": false,
+   "subDec": true,
+   "subscript": true,
+   "truecolor": true,
+   "widths": {
+    "clusters": false,
+    "icons": [],
+    "narrow": [],
+    "wide": [
+     [
+      4352,
+      4447
+     ],
+     [
+      8986,
+      8987
+     ],
+     [
+      9001,
+      9002
+     ],
+     [
+      9193,
+      9203
+     ],
+     [
+      9725,
+      9726
+     ],
+     [
+      9748,
+      9749
+     ],
+     [
+      9800,
+      9811
+     ],
+     [
+      9855,
+      9855
+     ],
+     [
+      9875,
+      9875
+     ],
+     [
+      9889,
+      9889
+     ],
+     [
+      9898,
+      9899
+     ],
+     [
+      9917,
+      9925
+     ],
+     [
+      9934,
+      9940
+     ],
+     [
+      9962,
+      9995
+     ],
+     [
+      10024,
+      10024
+     ],
+     [
+      10060,
+      10071
+     ],
+     [
+      10133,
+      10135
+     ],
+     [
+      10160,
+      10160
+     ],
+     [
+      10175,
+      10175
+     ],
+     [
+      11035,
+      11036
+     ],
+     [
+      11088,
+      11093
+     ],
+     [
+      11904,
+      12019
+     ],
+     [
+      12032,
+      12245
+     ],
+     [
+      12272,
+      12771
+     ],
+     [
+      12784,
+      12871
+     ],
+     [
+      12880,
+      19903
+     ],
+     [
+      19968,
+      42182
+     ],
+     [
+      43360,
+      43388
+     ],
+     [
+      44032,
+      55203
+     ],
+     [
+      63744,
+      64255
+     ],
+     [
+      65040,
+      65049
+     ],
+     [
+      65072,
+      65131
+     ],
+     [
+      65281,
+      65376
+     ],
+     [
+      65504,
+      65510
+     ],
+     [
+      94176,
+      94180
+     ],
+     [
+      94192,
+      94193
+     ],
+     [
+      94208,
+      100343
+     ],
+     [
+      100352,
+      101589
+     ],
+     [
+      101632,
+      101640
+     ],
+     [
+      110576,
+      110882
+     ],
+     [
+      110898,
+      110898
+     ],
+     [
+      110928,
+      110933
+     ],
+     [
+      110948,
+      110951
+     ],
+     [
+      110960,
+      111355
+     ],
+     [
+      126980,
+      126980
+     ],
+     [
+      127183,
+      127183
+     ],
+     [
+      127374,
+      127386
+     ],
+     [
+      127462,
+      127490
+     ],
+     [
+      127504,
+      127569
+     ],
+     [
+      127584,
+      127589
+     ],
+     [
+      127744,
+      130047
+     ],
+     [
+      131072,
+      262141
+     ]
+    ]
+   }
+  },
+  {
+   "cCache": 5,
+   "cLimTot": 6,
+   "cSess": 15,
+   "cTok": 13,
+   "col2Val2W": 6,
+   "doingPad": "",
+   "env": "true-colour",
+   "line3Reserved": 114,
+   "markSp": "",
+   "pad": "",
+   "profile": "unknown",
+   "pwdMaxFallback": 51,
+   "rightEdge": 5,
+   "rightGrid": [
+    11,
+    13,
+    14,
+    30,
+    14
+   ],
+   "sCache": "🎯",
+   "sCost": "💰",
+   "sCtx": "🧠",
+   "sMod": "🤖",
+   "sRate": "🛫",
+   "sTok": "🧩",
+   "spacing": false,
+   "subDec": false,
+   "subscript": false,
+   "truecolor": true,
    "widths": {
     "clusters": false,
     "icons": [],
@@ -9038,6 +10062,10 @@
    "TERMINAL_EMULATOR": "JetBrains-JediTerm",
    "TMUX": "/tmp/t,1,0"
   },
+  "true-colour": {
+   "COLORTERM": "truecolor",
+   "TERM": "xterm-256color"
+  },
   "unknown": {}
  },
  "escapes": {
@@ -9070,5 +10098,36 @@
   "F_TDN": "\u001b[38;2;255;175;215m",
   "F_TUP": "\u001b[38;2;175;215;215m",
   "F_YEL": "\u001b[38;2;255;215;0m"
+ },
+ "trueEscapes": {
+  "B_DRK": "\u001b[48;2;12;14;18m",
+  "B_MSG": "\u001b[48;2;95;0;95m",
+  "F_AMB": "\u001b[38;2;255;200;0m",
+  "F_BLU": "\u001b[38;2;100;170;255m",
+  "F_BLU2": "\u001b[38;2;70;115;185m",
+  "F_CHAT_B": "\u001b[38;2;112;126;140m",
+  "F_CHAT_U": "\u001b[38;2;166;170;158m",
+  "F_CRM": "\u001b[38;2;211;215;207m",
+  "F_CYN": "\u001b[38;2;80;200;220m",
+  "F_ETA": "\u001b[38;2;255;77;255m",
+  "F_GRN": "\u001b[38;2;120;200;80m",
+  "F_LIM_SESS": "\u001b[38;2;120;200;80m",
+  "F_LIM_WEEK": "\u001b[38;2;255;90;90m",
+  "F_MSG": "\u001b[38;2;255;255;255m",
+  "F_OVER": "\u001b[38;2;255;40;40m",
+  "F_PNK": "\u001b[38;2;255;120;190m",
+  "F_PNK2": "\u001b[38;2;178;84;133m",
+  "F_PROJ": "\u001b[38;2;255;140;90m",
+  "F_PRW": "\u001b[38;2;140;150;255m",
+  "F_PUR": "\u001b[38;2;200;130;255m",
+  "F_RATE": "\u001b[38;2;100;225;180m",
+  "F_RED": "\u001b[38;2;255;90;90m",
+  "F_RULE": "\u001b[38;2;76;76;76m",
+  "F_SHARE": "\u001b[38;2;255;200;0m",
+  "F_SPIN": "\u001b[38;2;255;90;90m",
+  "F_SUM": "\u001b[38;2;76;76;76m",
+  "F_TDN": "\u001b[38;2;220;140;200m",
+  "F_TUP": "\u001b[38;2;120;200;220m",
+  "F_YEL": "\u001b[38;2;255;210;60m"
  }
 }

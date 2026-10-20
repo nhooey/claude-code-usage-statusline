@@ -10,6 +10,22 @@ import re
 passed = failed = 0
 
 
+def pin_colour(env=None):
+    """Claude Code's 256-colour level, the one the fixtures are drawn at,
+    for this process (or `env`) and what it runs, whatever the developer's
+    terminal draws: the colour variables set to that and no others."""
+    import sys
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from coding_agent_usage_line.spans import COLOUR_VARS
+    env = os.environ if env is None else env
+    for var in COLOUR_VARS:
+        env.pop(var, None)
+    env["TERM"] = "xterm-256color"
+    return env
+
+
 def ok(name):
     global passed
     passed += 1

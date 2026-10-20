@@ -49,7 +49,10 @@ from coding_agent_usage_line import formatting as fm  # noqa: E402
 from coding_agent_usage_line import spans as sp  # noqa: E402
 from coding_agent_usage_line import spec  # noqa: E402
 
-PROFILE_VARS = ("TMUX", "TERMINAL_EMULATOR", "TERM_PROGRAM")
+# What an environment here sets in full: the profile's variables and the
+# colour level's, so neither comes from the developer's terminal.
+PROFILE_VARS = tuple(dict.fromkeys(
+    ("TMUX", "TERMINAL_EMULATOR", "TERM_PROGRAM") + sp.COLOUR_VARS))
 
 # The environments a profile is read from: one per profile, and the ones
 # that test the rules' order and their values.
@@ -65,6 +68,29 @@ ENVS = {
     "empty-tmux": {"TMUX": "", "TERM_PROGRAM": "iTerm.app"},
     "ghostty": {"TERM_PROGRAM": "ghostty"},
     "other-emulator": {"TERMINAL_EMULATOR": "JetBrains-JediTerm2"},
+    "true-colour": {"TERM": "xterm-256color", "COLORTERM": "truecolor"},
+}
+
+# The environments colour_level is read from: each of Claude Code's rules
+# once.
+COLOUR_ENVS = {
+    "unknown": {},
+    "xterm-256": {"TERM": "xterm-256color"},
+    "colorterm": {"TERM": "xterm-256color", "COLORTERM": "truecolor"},
+    "iterm-3": {"TERM_PROGRAM": "iTerm.app", "TERM_PROGRAM_VERSION": "3.5.10",
+                "TERM": "xterm-256color"},
+    "ghostty-term": {"TERM": "xterm-ghostty", "TERM_PROGRAM": "ghostty"},
+    "foot": {"TERM": "foot"},
+    "vscode": {"TERM_PROGRAM": "vscode", "TERM": "xterm-256color"},
+    "tmux-true": {"TMUX": "/tmp/t,1,0", "TERM": "tmux-256color",
+                  "COLORTERM": "truecolor"},
+    "tmux-true-lifted": {"TMUX": "/tmp/t,1,0", "TERM": "tmux-256color",
+                         "COLORTERM": "truecolor",
+                         "CLAUDE_CODE_TMUX_TRUECOLOR": "1"},
+    "no-color": {"COLORTERM": "truecolor", "NO_COLOR": "1"},
+    "forced-256": {"FORCE_COLOR": "2", "TERM": "foot"},
+    "forced-off": {"FORCE_COLOR": "0", "COLORTERM": "truecolor"},
+    "dumb": {"TERM": "dumb", "COLORTERM": "truecolor"},
 }
 
 # The configurations every function runs under: each profile's width
@@ -180,6 +206,7 @@ def settings():
                     "sCost": fm.S_COST, "doingPad": fm.DOING_PAD,
                     "col2Val2W": fm.COL2_VAL2_W,
                     "rightEdge": fm.RIGHT_EDGE_COLS,
+                    "truecolor": sp.colour_level() >= 3,
                 })
     constants = {k: enc(getattr(fm, k)) for k in (
         "LINE_CLEAR", "EOL_CLEAR", "SI_UNITS", "C_LABEL", "C_TOTALS_LABEL",
@@ -191,8 +218,9 @@ def settings():
     escapes = {k: getattr(spec, k) for k in dir(spec)
                if k[:2] in ("F_", "B_") and isinstance(getattr(spec, k), str)}
     write("settings", {"envs": ENVS, "configs": configs,
-                       "constants": constants, "escapes": escapes})
-    return len(configs) + len(constants) + len(escapes)
+                       "constants": constants, "escapes": escapes,
+                       "trueEscapes": spec.TRUE_COLOURS})
+    return len(configs) + len(constants) + 2 * len(escapes)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -314,6 +342,8 @@ def values():
         add("seg_gap", None, [rule], fm.seg_gap)
     for env in ENVS:
         add("term_profile", None, [ENVS[env]], fm.term_profile)
+    for env in COLOUR_ENVS:
+        add("colour_level", None, [COLOUR_ENVS[env]], sp.colour_level)
     for prof in ("unknown", "jediterm", "iterm", "tmux", "ghostty", ""):
         w = fm.widths_for(prof)
         cases.append({"fn": "widths_for", "cfg": None, "args": [prof],

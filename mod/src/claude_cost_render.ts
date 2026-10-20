@@ -249,8 +249,8 @@ export function renderCostLine(st: Settings, turns: readonly Turn[],
   const lead = pending.length + (last.compact ? 1 : 0);
 
   const drawn = (rows: readonly SpanLike[], newline = leadNewline): string =>
-    (newline ? "\n" : "") + rows.map((row) => join(row, false, true))
-      .join("\n");
+    (newline ? "\n" : "") + rows.map((row) =>
+      join(row, false, true, st.truecolor)).join("\n");
 
   const laidOut = (ownLine: boolean): Span[][] => {
     const flat = ownLine ? flatten(spec) : spec;
@@ -310,6 +310,7 @@ export function renderCostLine(st: Settings, turns: readonly Turn[],
   chart = indent(rows[0]);
   const pad = chart - (C_CHROME_LEFT - C_CHROME_CONT) -
     visWidth(E_TURN_PAST, st.widths);
-  return " ".repeat(Math.max(0, pad)) + join(tag) + "\n" +
+  return " ".repeat(Math.max(0, pad)) +
+    join(tag, false, false, st.truecolor) + "\n" +
     drawn(rows, false);
 }

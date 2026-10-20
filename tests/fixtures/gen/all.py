@@ -13,6 +13,16 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(os.path.dirname(ROOT)))
+
+from coding_agent_usage_line.spans import COLOUR_VARS  # noqa: E402
+
+# Every fixture is drawn at Claude Code's 256-colour level, whatever the
+# developer's terminal draws: the colour variables set to that and no
+# others, for this process and every one it runs.
+for var in COLOUR_VARS:
+    os.environ.pop(var, None)
+os.environ["TERM"] = "xterm-256color"
 
 import calib  # noqa: E402
 import config  # noqa: E402

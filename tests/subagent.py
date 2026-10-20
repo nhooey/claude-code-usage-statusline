@@ -25,8 +25,8 @@ import tempfile
 DIR = os.path.dirname(os.path.abspath(__file__))
 PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
-from _checks import (check, drawn, near, tally, unpainted,  # noqa: E402
-                     write_jsonl)
+from _checks import (check, drawn, near, pin_colour, tally,  # noqa: E402
+                     unpainted, write_jsonl)
 
 
 def load_program():
@@ -220,6 +220,7 @@ def run(tmp):
     SOURCE = "cmd:" + fixture_source
     os.environ.pop("CLAUDE_USAGE_SOURCE", None)
     os.environ["TMPDIR"] = tmp          # isolate subprocess scratch files too
+    pin_colour()
     os.environ.pop("TMUX", None)
     os.environ.pop("TERM_PROGRAM", None)
     os.environ["TERMINAL_EMULATOR"] = "JetBrains-JediTerm"

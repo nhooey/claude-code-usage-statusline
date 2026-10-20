@@ -1160,6 +1160,14 @@
     },
     {
       "cols": 196,
+      "env": "true-colour",
+      "flags": [],
+      "id": "true-colour-01@196",
+      "input": "payloads/status/01-baseline.json",
+      "suite": "status"
+    },
+    {
+      "cols": 196,
       "env": "app-41-63",
       "flags": [],
       "id": "01-plain@196",
@@ -1904,6 +1912,16 @@
       "suite": "cost"
     },
     {
+      "cols": 196,
+      "env": "true-colour-panel",
+      "flags": [
+        "--color"
+      ],
+      "id": "true-colour-01@196",
+      "input": "transcripts/cost/01-plain.jsonl",
+      "suite": "cost"
+    },
+    {
       "cols": 220,
       "env": "app-41-63",
       "flags": [],
@@ -2277,6 +2295,22 @@
       "flags": [],
       "id": "unknown-term-03-tree@120",
       "input": "payloads/subagent/03-tree.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "true-colour-panel",
+      "flags": [],
+      "id": "true-colour-01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
+      "suite": "subagent"
+    },
+    {
+      "cols": 220,
+      "env": "tmux-true-colour",
+      "flags": [],
+      "id": "tmux-true-colour-01-mixed@220",
+      "input": "payloads/subagent/01-mixed.json",
       "suite": "subagent"
     }
   ]

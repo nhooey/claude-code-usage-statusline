@@ -119,6 +119,18 @@ ENVS.update({
     "iterm": env(_APP_41_63, terminal={"TERM_PROGRAM": "iTerm.app"}),
     "unknown-term": env(_APP_41_63, terminal={}),
 })
+# Where Claude Code draws true colour, so the true set is drawn: every
+# other environment is at its 256 level (run-cases.py sets TERM to
+# xterm-256color and clears the other colour variables).  The second under
+# tmux with CLAUDE_CODE_TMUX_TRUECOLOR, the one way tmux draws true colour.
+_TRUE = {"TERMINAL_EMULATOR": "JetBrains-JediTerm", "COLORTERM": "truecolor"}
+ENVS.update({
+    "true-colour": env(terminal=_TRUE),
+    "true-colour-panel": env(_APP_41_63, terminal=_TRUE),
+    "tmux-true-colour": env(_APP_41_63, terminal={
+        "TMUX": "/tmp/tmux-501/default,1,0", "COLORTERM": "truecolor",
+        "CLAUDE_CODE_TMUX_TRUECOLOR": "1"}),
+})
 
 
 def width(c):
@@ -176,6 +188,8 @@ def status_cases():
     # short_model's branches no corpus payload reaches; see gen/status.py.
     case("model-fable", "model-fable", 196)
     case("model-mythos", "model-mythos", 196)
+    # The true-colour set, where every case above draws the 256 one.
+    case("true-colour-01", "01-baseline", 196, env="true-colour")
     return out
 
 
@@ -241,6 +255,9 @@ def cost_cases():
         case("subdec-01", "01-plain", c, env="plan-cache", flags=sub)
     case("subdec-tight-01", "01-plain", 196, env="plan-cache",
          flags=sub + tight)
+    # In colour, as the cost line draws only when asked.
+    case("true-colour-01", "01-plain", 196, env="true-colour-panel",
+         flags=["--color"])
     return out
 
 
@@ -267,6 +284,9 @@ def subagent_cases():
             case("subdec-" + p, p, c, flags=["--subscript-decimals"])
             for e in ("tmux", "iterm", "unknown-term"):
                 case(e + "-" + p, p, c, env=e)
+    case("true-colour-01-mixed", "01-mixed", 220, env="true-colour-panel")
+    case("tmux-true-colour-01-mixed", "01-mixed", 220,
+         env="tmux-true-colour")
     return out
 
 

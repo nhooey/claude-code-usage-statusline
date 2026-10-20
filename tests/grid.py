@@ -21,9 +21,12 @@ CASES = os.path.join(HERE, "fixtures", "grid")
 
 from coding_agent_usage_line import formatting as fm  # noqa: E402
 from coding_agent_usage_line import grid  # noqa: E402
-from coding_agent_usage_line.spans import Span, join  # noqa: E402
+from coding_agent_usage_line.spans import COLOUR_VARS, Span, join  # noqa: E402
 
-PROFILE_VARS = ("TMUX", "TERMINAL_EMULATOR", "TERM_PROGRAM")
+# A profile's environment sets these in full, the colour level's included,
+# so the 256 set is drawn whatever the developer's terminal draws.
+PROFILE_VARS = tuple(dict.fromkeys(
+    ("TMUX", "TERMINAL_EMULATOR", "TERM_PROGRAM") + COLOUR_VARS))
 
 
 def configure(env):

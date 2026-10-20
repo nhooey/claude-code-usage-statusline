@@ -146,5 +146,7 @@ if (part === "band") {
 } else {
   fail("--part: invalid choice: '" + part + "'");
 }
-const text = lines.map((l) => pyRstrip(join(l))).join("\n");
+// In the set Claude Code would draw this terminal's rows in.
+const text = lines.map((l) => pyRstrip(join(l, false, false, st.truecolor)))
+  .join("\n");
 process.stdout.write((plain ? stripAnsi(text) : text) + "\n");

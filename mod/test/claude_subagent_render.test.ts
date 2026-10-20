@@ -60,5 +60,5 @@ for (const file of FILES) {
 }
 
 test("panel: every case was run", () => {
-  assert.equal(total, 281);
+  assert.equal(total, 283);
 });

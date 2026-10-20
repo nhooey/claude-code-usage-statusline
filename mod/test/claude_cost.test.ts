@@ -35,7 +35,7 @@ const cases: Case[] = JSON.parse(fs.readFileSync(
   .filter((c: Case) => c.suite === "cost");
 
 test("every cost case is here", () => {
-  assert.equal(cases.length, 87);
+  assert.equal(cases.length, 88);
 });
 
 const savedTz = process.env.TZ;
