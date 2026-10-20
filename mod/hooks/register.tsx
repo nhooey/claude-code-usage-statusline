@@ -36,8 +36,9 @@ import {
   newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
-import { messageRow, senderLabel } from '../src/agent_message.ts'
-import type { AgentLike } from '../src/agent_message.ts'
+import { candidates, firstLine, lastReply, messageSpans, saidBy, soleSender,
+  taskOf } from '../src/agent_message.ts'
+import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import * as spec from '../src/spec.ts'
@@ -434,9 +435,60 @@ async function agentsNow($: $): Promise<readonly AgentLike[]> {
   return agentListing
 }
 
-/** An agent has started or ended: the next message row lists them again. */
+/** An agent has started or ended: the next message row lists them again,
+ * and a message no reply held is looked for again, in case its sender is
+ * the agent just come or its reply the one just written. */
 function agentsChanged(): void {
   agentListAt = 0
+  for (const [text, agent] of senders) {
+    if (!agent) senders.delete(text)
+  }
+}
+
+// The sender of each message its words have been looked for by, keyed by
+// its text, null where no one reply held it; the oldest dropped past
+// CONFIG.agentSenderMemo.  A module variable, as the agent list is.  A
+// message never changes, so a sender once found is its sender for good.
+const senders = new Map<string, AgentLike | null>()
+// The lookups out, so draws that come while one is out wait on it.
+const sending = new Map<string, Promise<AgentLike | null>>()
+
+/** The agent that sent `text` as `from`: the one agent of that name or
+ * type, with no read; else the one of them whose last reply holds the
+ * message's first line (agent_message.ts), each candidate's conversation
+ * read once per message; null where neither finds one.  A read that fails
+ * is logged and counts as no reply. */
+async function senderOf($: $, from: string, text: string,
+  agents: readonly AgentLike[]): Promise<AgentLike | null> {
+  const sole = soleSender(from, agents)
+  if (sole) return sole
+  if (senders.has(text)) return senders.get(text)!
+  let lookup = sending.get(text)
+  if (!lookup) {
+    lookup = (async () => {
+      const among = candidates(from, agents).filter((a) => a.id)
+      const replies = await Promise.all(among.map(async (a) => {
+        try {
+          const got = await $.session.messages({ agentId: a.id! })
+          return [a, Array.isArray(got)
+            ? lastReply(got as readonly MessageLike[]) : ''] as const
+        } catch (err) {
+          await log($, 'no messages for ' + a.id, err)
+          return [a, ''] as const
+        }
+      }))
+      const found = saidBy(firstLine(text), replies)
+      senders.set(text, found)
+      while (senders.size > CONFIG.agentSenderMemo) {
+        senders.delete(senders.keys().next().value!)
+      }
+      return found
+    })().finally(() => {
+      sending.delete(text)
+    })
+    sending.set(text, lookup)
+  }
+  return lookup
 }
 
 export const register: Register = on => {
@@ -673,11 +725,12 @@ export const register: Register = on => {
 
   // A message another agent sent, folded: Claude Code's `› Message from
   // @general-purpose (ctrl+o to expand)` drawn as the agent's task and the
-  // message's first line (CONFIG.agentMessageRow; agent_message.ts has
-  // how the agent is found).  A tree, not a rewritten `text`: folded,
+  // message's first line, the task bold and the rest dim
+  // (CONFIG.agentMessageRow; agent_message.ts has how the agent is found,
+  // senderOf what that reads).  A tree, not a rewritten `text`: folded,
   // Claude Code draws the sender's name and not the text, so a new text
   // would change nothing there.  The tree is the row's own look as far as
-  // a tree can give it, one dim line led by `›`.  Unfolded (ctrl+o, or a
+  // a tree can give it, one line led by a dim `›`.  Unfolded (ctrl+o, or a
   // surface that draws every row in full) and on every other row, Claude
   // Code's own, `onScreen` and all, so the whole message is still there.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
@@ -685,7 +738,8 @@ export const register: Register = on => {
     if (!CONFIG.agentMessageRow || !from || e.props.isExpanded) {
       return next(e)
     }
-    const label = senderLabel(from.name, await agentsNow($))
+    const label = taskOf(await senderOf($, from.name, e.props.text,
+      await agentsNow($)), from.name)
     // The band's width before the viewport's, as the footer takes it: the
     // viewport has read wider than the terminal drew (seen live
     // 2026-10-20).  Ending where the band's rows and the receipt's end,
@@ -693,9 +747,9 @@ export const register: Register = on => {
     // Should the row stand in from the edge, the Text's truncate-end cuts
     // what the ellipsis did not.
     const cols = (bandCols || (e.viewport?.columns ?? 80)) - BAND_EDGE
-    const row = messageRow(await settingsOf($), label, e.props.text, cols)
+    const row = messageSpans(await settingsOf($), label, e.props.text, cols)
     const { Text } = $.ui.resolve(e)
-    return <Text dimColor wrap="truncate-end">{row}</Text>
+    return line(Text, row, 'agentMessage')
   })
 }
 

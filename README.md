@@ -285,7 +285,7 @@ to tell the two apart.
 |---|---|---|
 | 🔻🔖 | Start | under a prompt, the turn it opens: the first 8 characters of its `promptId`, then Claude Code's turn index, and when it started |
 | 🔺🔖 | End | under the receipt, the turn it bills, already answered, and when it was stamped |
-| `› 🤖` | Message | a message from another agent, folded: the sender's task, then the message's first line |
+| `› 🤖📨` | Message | a message from another agent, folded: the sender's task in bold, then the message's first line, dim; where several agents share the sender's name, the one whose last reply holds that line |
 
 ## Three rules the display follows
 

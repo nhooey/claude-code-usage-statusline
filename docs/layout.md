@@ -620,24 +620,36 @@ are blank without a plan reading, and `?` without a calibration.
 Claude Code folds a message another agent sent into one dim row naming its
 sender, `› Message from @general-purpose (ctrl+o to expand)`: for a subagent
 with no name of its own that is only its type, so two agents of one type
-read alike. The mod draws the row as the sending agent's task, as its Agent
-call described it, and the message's first line, cut with `…` to end where
-the rows under the footer line end, two columns short of the edge
-(`messageRow` in `mod/src/agent_message.ts`, at 100 columns):
+read alike. The mod draws the row as 🤖📨, the sending agent's task, as its
+Agent call described it, and the message's first line, cut with `…` to end
+where the rows under the footer line end, two columns short of the edge
+(`messageSpans` in `mod/src/agent_message.ts`, at 100 columns):
 
 ```
-› 🤖 Reclaim the right-edge columns: The right edge is now a setting in both ports, and the panel…
-› 🤖 general-purpose: Done.
+› 🤖📨 Reclaim the right-edge columns: The right edge is now a setting in both ports, and the pan…
+› 🤖📨 general-purpose: Done.
 ```
+
+The task is bold at full strength and the rest of the row dim, so the task
+is what the eye finds; the render above is the text alone.
 
 The sender is known only by name, so its agent is found by that among the
 session's agents: one whose own name it is, else one whose type it is, the
-live ones before the rest. Where that finds more than one, or none, the row
-names the sender as Claude Code did, as in the second row: a guess between
-two agents' tasks would put one agent's words under the other's. ctrl+o
-shows the whole message either way, and `CONFIG.agentMessageRow` turns the
-row off. No figures document holds a message, so these rows are drawn from
-`agent_message.ts` itself, with the agents and text of its own tests.
+live ones before the rest. Where that finds several, the message's words
+pick one: the agent whose last reply, its text or what it sent with a tool,
+holds the message's first line, whitespace folded on both sides. Each
+candidate's conversation is read once per message, and the sender found is
+kept for the message's later draws. Where no reply holds it, or more than
+one does, the row names the sender as Claude Code did, as in the second
+row: a guess between two agents' tasks would put one agent's words under
+the other's. ctrl+o shows the whole message either way, and
+`CONFIG.agentMessageRow` turns the row off. No figures document holds a
+message, so the render is drawn from `agent_message.ts` itself, run from
+`mod/`:
+
+```
+node -e 'Promise.all([import("./src/agent_message.ts"), import("./src/formatting.ts"), import("./src/spans.ts")]).then(([m, f, s]) => { for (const [l, t] of [["Reclaim the right-edge columns", "The right edge is now a setting in both ports, and the panel and the band end two columns short.\nMore."], ["general-purpose", "Done."]]) console.log(s.text(m.messageSpans(f.settings({}), l, t, 98))) })'
+```
 
 ## Colour and brightness
 

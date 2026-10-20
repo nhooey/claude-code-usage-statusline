@@ -1005,7 +1005,9 @@ export const E_MODE_API_ERROR = "💥";          // 💥  its last answer died o
                                                //    retries are spent; the status alone says ✅
 export const E_INBOX = "📨";           // 📨  messages sent to it and not yet delivered:
                                        //    the panel's own "N queued".  On the status
-                                       //    line, the ones waiting for the main thread
+                                       //    line, the ones waiting for the main thread.
+                                       //    After 🤖, the mod's folded row of a message
+                                       //    from another agent (agent_message.ts)
 // 🔇 U+1F507, how long a running agent had written nothing, left the panel's
 // head on 2026-10-05: the 🤖 state in the Doing cell says it now.
 export const E_KIDS = "👶🏻";                  // 👶🏻  how many agents hang under it on the

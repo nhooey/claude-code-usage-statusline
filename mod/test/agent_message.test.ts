@@ -1,10 +1,14 @@
 // The row a message from another agent is drawn as: which agent's task
-// names the sender, the message's first line, and the cut to the width.
+// names the sender, by its name or by the words of its last reply, the
+// message's first line, and the row's styles and cut to the width.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { settings, visWidth } from "../src/formatting.ts";
-import { firstLine, messageRow, senderLabel } from "../src/agent_message.ts";
-import type { AgentLike } from "../src/agent_message.ts";
+import {
+  candidates, firstLine, lastReply, messageSpans, saidBy, senderLabel,
+} from "../src/agent_message.ts";
+import type { AgentLike, MessageLike } from "../src/agent_message.ts";
+import { text as spansText } from "../src/spans.ts";
 
 const st = settings({}, true, false);
 
@@ -67,22 +71,113 @@ test("the first line is the first with words on it, folded", () => {
   assert.equal(firstLine(" \n "), "");
 });
 
-test("the row: the label, a colon and the first line", () => {
-  assert.equal(messageRow(st, "Reclaim the right-edge columns",
-    "The right edge is now a setting.\nDetails.", 200),
-  "› 🤖 Reclaim the right-edge columns: The right edge is now a setting.");
-  assert.equal(messageRow(st, "Explore", "", 80), "› 🤖 Explore");
+const said = (role: string, text: string,
+  ...inputs: Record<string, unknown>[]): MessageLike =>
+  ({ role, text, toolUses: inputs.map((input) => ({ input })) });
+
+test("the candidates: every agent of the name or type, the live first", () => {
+  const agents = [agent("general-purpose", "One"),
+    agent("general-purpose", "Two"),
+    agent("general-purpose", "Done", "completed"),
+    agent("Explore", "Named", "running", "general-purpose"),
+    agent("Explore", "Other")];
+  assert.deepEqual(candidates("general-purpose", agents)
+    .map((a) => a.description), ["One", "Two", "Named"]);
+  // With none live, the done ones.
+  assert.deepEqual(candidates("Plan", [agent("Plan", "A", "completed"),
+    agent("Plan", "B", "killed")]).map((a) => a.description), ["A", "B"]);
+  assert.deepEqual(candidates("Plan", agents), []);
+});
+
+test("the last reply: the last assistant message's text and its tool " +
+  "calls' string arguments, folded", () => {
+  assert.equal(lastReply([said("assistant", "Old."),
+    said("assistant", " The edge\n is  set. ",
+      { to: "main", message: "Sent\twith a tool.", count: 3 }),
+    said("user", "A tool's result.")]),
+  "The edge is set. main Sent with a tool.");
+  assert.equal(lastReply([said("user", "Only asked.")]), "");
+  assert.equal(lastReply([]), "");
+  // A message with no tool calls listed at all.
+  assert.equal(lastReply([{ role: "assistant", text: "Bare." }]), "Bare.");
+});
+
+test("the message's words pick its sender out of several", () => {
+  const one = agent("general-purpose", "Reclaim the right edge");
+  const two = agent("general-purpose", "Count the transcript");
+  const head = firstLine("The right edge is now a setting.\nMore.");
+  // One reply holds it: that agent.
+  assert.equal(saidBy(head, [[one, "Done. The right edge is now a " +
+    "setting. More."], [two, "Still counting."]]), one);
+  // None does, or both do: no one.
+  assert.equal(saidBy(head, [[one, "Other."], [two, "Still counting."]]),
+    null);
+  assert.equal(saidBy(head, [[one, "The right edge is now a setting."],
+    [two, "Quoting: The right edge is now a setting."]]), null);
+  // A blank message picks no one, though every reply holds "".
+  assert.equal(saidBy("", [[one, "Anything."]]), null);
+  assert.equal(saidBy(head, []), null);
+});
+
+test("the match folds whitespace on both sides alike", () => {
+  const one = agent("general-purpose", "One");
+  const two = agent("general-purpose", "Two");
+  const head = firstLine("  The right\tedge   is set.  \n\nMore.");
+  const reply = lastReply([said("assistant",
+    "The right\n  edge is\r\n set.  \n\nMore.")]);
+  assert.equal(saidBy(head, [[one, reply], [two, ""]]), one);
+});
+
+const styles = (spans: ReturnType<typeof messageSpans>) =>
+  spans.map((s) => [s.text, s.dim, s.bold]);
+
+test("the row: `› 🤖📨 ` dim, the label bold, the first line dim", () => {
+  const row = messageSpans(st, "Reclaim the right-edge columns",
+    "The right edge is now a setting.\nDetails.", 200);
+  assert.deepEqual(styles(row), [
+    ["› 🤖📨 ", true, false],
+    ["Reclaim the right-edge columns", false, true],
+    [": The right edge is now a setting.", true, false],
+  ]);
+  for (const s of row) assert.equal(s.colour, null);
+  assert.deepEqual(styles(messageSpans(st, "Explore", "", 80)),
+    [["› 🤖📨 ", true, false], ["Explore", false, true]]);
+});
+
+test("📨 is two columns in every profile, as 🤖 is", () => {
+  const envs = [{}, { TMUX: "1" },
+    { TERMINAL_EMULATOR: "JetBrains-JediTerm" },
+    { TERM_PROGRAM: "iTerm.app" }];
+  assert.deepEqual(envs.map((env) => settings(env).profile),
+    ["unknown", "tmux", "jediterm", "iterm"]);
+  for (const env of envs) {
+    const w = settings(env).widths;
+    assert.equal(visWidth("📨", w), 2, JSON.stringify(env));
+    assert.equal(visWidth("› 🤖📨 ", w), 7, JSON.stringify(env));
+  }
 });
 
 test("a long row is cut to the width, by columns, with an ellipsis", () => {
   const text = "The right edge is now a setting in both ports, and more";
-  for (const cols of [10, 30, 47, 60]) {
-    const row = messageRow(st, "Reclaim the right-edge columns", text, cols);
-    assert.ok(visWidth(row, st.widths) <= cols, `${cols}: ${row}`);
-    assert.ok(row.endsWith("…"), `${cols}: ${row}`);
-    assert.ok(row.startsWith("› "), `${cols}: ${row}`);
+  for (const cols of [5, 8, 10, 30, 47, 60]) {
+    const row = messageSpans(st, "Reclaim the right-edge columns", text,
+      cols);
+    const drawn = spansText(row);
+    assert.ok(visWidth(drawn, st.widths) <= cols, `${cols}: ${drawn}`);
+    assert.ok(drawn.endsWith("…"), `${cols}: ${drawn}`);
+    assert.ok(drawn.startsWith("› "), `${cols}: ${drawn}`);
   }
-  // 🤖 takes two columns: a cut at five leaves `› ` and no half glyph.
-  const five = messageRow(st, "Label", text, 5);
-  assert.ok(visWidth(five, st.widths) <= 5, five);
+  // Cut in the label, the `…` is bold with it and nothing follows.
+  const inLabel = messageSpans(st, "Reclaim the right-edge columns", text,
+    20);
+  assert.deepEqual(styles(inLabel),
+    [["› 🤖📨 ", true, false], ["Reclaim the …", false, true]]);
+  // Cut in the message, the `…` is dim with it.
+  const inText = messageSpans(st, "Task", text, 24);
+  assert.deepEqual(styles(inText), [["› 🤖📨 ", true, false],
+    ["Task", false, true], [": The right …", true, false]]);
+  // 🤖 and 📨 take two columns each: a cut at five leaves `› 🤖` and the
+  // `…`, and no half glyph.
+  const five = spansText(messageSpans(st, "Label", text, 5));
+  assert.equal(five, "› 🤖…");
 });
