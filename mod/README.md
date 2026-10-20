@@ -75,6 +75,14 @@ The state directory and the projects directory are the status line's:
 `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST`, is read as the status line
 reads it.
 
+The mod keeps the session's transcript as its two running folds, and folds
+only the lines written since the last read. It saves them once a minute
+(`foldSaveMs`) into the state directory, in
+`claude-main-fold-<digest>/`, as `spec/state.jsonc`'s `main-fold` row
+names them, so a `/reload-plugins` reads on from there rather than from
+the start. A saved fold is passed over when the transcript is no longer
+the bytes it was folded from, or its format is not the spec's.
+
 ### The receipt
 
 As a turn ends the mod stamps its receipt as the turn's closing line, in

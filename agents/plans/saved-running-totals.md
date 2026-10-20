@@ -368,6 +368,43 @@ Each step lands as its own commit, and the tests pass after each one.
    from it once the checks in "What invalidates a saved state" pass. The
    saved cut is still read when there is no state, so the first reload after
    upgrading folds the cut and not the transcript.
+
+   **Status 2026-10-20: done.** As built:
+   - `foldOf` in `mod/hooks/edges.ts` keeps the folds, their offset and
+     the last save's mark per transcript. It folds the whole lines past
+     the offset, through `agent_lines.py`'s main mode for a megabyte or
+     more, else from the bytes, and folds a half-written last line on a
+     copy (`transcriptFoldWith`, `turnsFoldWith`). `statusDoc` and
+     `turnsNow` call `transcriptFinish` and `turnsFinish`.
+   - A reload reads both head slots, newest `seq` first. It takes the first
+     whose offset is within the file, whose two digests match, and whose
+     parts read whole. Else it folds the saved cut, else the transcript.
+     The cut is read but no longer written.
+   - A save writes the new parts, then the head. A save that starts over
+     (no mark: a fresh fold, or a save that failed) first empties both
+     head slots, so an older head never reads parts it was not written
+     beside. A head over its cap is logged once and not saved.
+   - `readRange` takes the file's size: a small range of a file over
+     4 MiB went to `$.fs.read`, which refuses it. The window costs' tail
+     digest had the same fault and now passes the size too.
+   - Two harness tests in `mod/mod-tests/band.test.ts`. A fold planted
+     empty at the halfway line is read on from: the document is the second
+     half's. A fold planted against other bytes is passed over, the
+     transcript folded whole, and saved over.
+   - Measured in Node, over the whole of each transcript:
+
+     | Transcript | `sum` before | `turns` before | Load | `sum` after | `turns` after |
+     |---|---|---|---|---|---|
+     | 165 MB (this repo) | 168 ms | 78 ms | 7 ms | 1.0 ms | 0.7 ms |
+     | 206 MB | 503 ms | 252 ms | 38 ms | 3.2 ms | 2.9 ms |
+     | 156 MB | 442 ms | 238 ms | 46 ms | 1.5 ms | 3.3 ms |
+
+     Before, every document paid `sum` and `turns` over all records, not
+     only the first after a reload. In the mod's runtime the log showed
+     `sum 1080, turns 962` (2,421 ms in all) for the first read after a
+     reload of the 165 MB session. A live reload's own numbers are still
+     to be read from `usage-band.log`. It logs only reads over the slow
+     threshold, and a read from a saved fold should no longer be one.
 6. **The cold read folds in Python.** `agent_lines.py`'s `main` mode becomes
    a `fold` mode. It loads the saved state, folds the transcript from its
    offset to the end, writes the parts and the head itself with

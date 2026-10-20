@@ -13,20 +13,27 @@
 // The reads keep what they have read in memory between documents, as the
 // Python keeps its agent cache and cost cache on disk: a transcript is only
 // ever appended to, so each document reads only the bytes past the last
-// complete line it parsed before.
+// complete line it parsed before.  The main transcript is kept as its two
+// folds, which are saved to disk too, so a reload reads on from them.
 import type { EngineInterface } from 'claude-code'
 
 import {
   _agentDir, _agentStatePath, _recordsOf, agentFoldOf, agentFoldText,
   agentLabelOf, agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr,
-  EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, mainCutHead, mainCutHeadOf, mainCutPartOf,
-  mainCutParts,
-  newAgentFold, pyJoin, readPayload, transcriptOf, turnsOf,
+  EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, mainCutHeadOf,
+  mainCutPartOf, newAgentFold, pyJoin, readPayload, transcriptFinish,
+  transcriptFoldWith, turnsFinish, turnsFoldWith,
 } from '../src/claude_records.ts'
 import type {
   AgentEta, AgentFold, AgentReading, AgentRec, Payload, Rec, Transcript,
-  Turn,
+  Turn, TurnsFold,
 } from '../src/claude_records.ts'
+import {
+  FOLD_CHECK_BYTES, FOLD_PART_BYTES, foldHeadOf, foldMain, foldOfSaved,
+  foldSave, HEAD_SLOTS, newMainFold, newSaveMark, partName,
+} from '../src/main_fold.ts'
+import type { FoldMeta, MainFold, SaveMark } from '../src/main_fold.ts'
+import { statePath } from '../src/state.ts'
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
   _pricedRecord, _windowCostsOf, _windowsKey, _windowStarts, CALIB_TTL,
@@ -109,13 +116,14 @@ export async function fileSize($: $, path: string): Promise<number | null> {
   }
 }
 
-/** The bytes of `path` from `start` to `end`.  A file `$.fs.read` takes
- * whole is read so and cut; a larger one, which it refuses, in pieces
- * through the shell, since `$.fs` reads no range. */
+/** The bytes of `path` from `start` to `end`, of a file `size` long (`end`
+ * where it is read to its end).  A file `$.fs.read` takes whole is read so
+ * and cut; a larger one, which it refuses, in pieces through the shell,
+ * since `$.fs` reads no range. */
 export async function readRange($: $, path: string, start: number,
-  end: number): Promise<Uint8Array> {
+  end: number, size: number = end): Promise<Uint8Array> {
   if (end <= start) return new Uint8Array(0)
-  if (end <= FS_READ_MAX) {
+  if (size <= FS_READ_MAX) {
     const got = await $.fs.read(path, { as: 'bytes' })
     return fromBase64(got.base64).subarray(start, end)
   }
@@ -160,10 +168,10 @@ async function writeText($: $, path: string, text: string): Promise<boolean> {
 //
 // Module state, not objects that hold `$`: the engine follows `$` only into
 // functions declared at the top of a file, so each read is one, and what
-// it keeps lives here.  A reload starts it over, which costs one full read.
+// it keeps lives here.  A reload starts it over, and reads on from what was
+// saved to disk.
 // ════════════════════════════════════════════════════════════════════════════
 
-type Parsed = { stable: number; records: Rec[] }
 type AgentKept = { stamp: string; fold: AgentFold; reading: AgentReading }
 type CostKept = { off: number; tail: string | null; recs: Priced[] }
 
@@ -175,7 +183,6 @@ type CostKept = { off: number; tail: string | null; recs: Priced[] }
 export type Seen = { transcript: string; session: string; effort: string }
 
 export const seen: Seen = { transcript: '', session: '', effort: '' }
-const parsed = new Map<string, Parsed>()
 const agentKept = new Map<string, AgentKept>()
 const agentLabels = new Map<string, [string, string]>()
 const costs = new Map<string, CostKept>()
@@ -204,38 +211,162 @@ async function timed<T>($: $, name: string, f: () => Promise<T>): Promise<T> {
 // The transcripts.
 // ════════════════════════════════════════════════════════════════════════════
 
-/** A file's records as _recordsOf reads them, kept between documents: the
- * records up to the last complete line, and the bytes after it read again
- * each time, since a live transcript's last line can be half written.  A
- * file that shrank is read again from the start. */
-export async function recordsOf($: $, path: string): Promise<Rec[]> {
+/** The main transcript's two folds as they stand, kept between documents:
+ * folded to the last complete line, with the bytes after it, since a live
+ * transcript's last line can be half written, folded on a copy each time.
+ * A reload reads on from the state saved under the contract
+ * (src/main_fold.ts), else from the saved cut, else from the start; and the
+ * state is saved again at most once per CONFIG.foldSaveMs.  A file that
+ * shrank is folded again from the start.  null where there is no file. */
+export async function foldOf($: $, path: string): Promise<MainFold | null> {
   const size = await fileSize($, path)
   if (size === null) {
-    parsed.delete(path)
-    return []
+    folded.delete(path)
+    return null
   }
   const { stateDir } = await placesOf($)
-  let got = parsed.get(path) ?? await savedCut($, stateDir, path)
-  if (!got || size < got.stable) got = { stable: 0, records: [] }
-  if (size - got.stable >= AGENT_LINES_MIN) {
-    got = await mainLines($, path, got, size)
+  let got = folded.get(path)
+  if (got && size < got.offset) got = undefined
+  if (!got) {
+    got = await timed($, 'load', () => loadFold($, stateDir, path, size))
+    folded.set(path, got)
+  }
+  if (size - got.offset >= AGENT_LINES_MIN) {
+    await mainLines($, path, got, size)
   }
   let data: Uint8Array
   try {
-    data = await readRange($, path, got.stable, size)
+    data = await readRange($, path, got.offset, size)
   } catch {
-    return got.records
+    return got.fold
   }
   const nl = data.lastIndexOf(10)
   if (nl >= 0) {
-    const fresh = await timed($, 'parse', async () =>
-      _recordsOf(data.subarray(0, nl + 1)))
-    got = { stable: got.stable + nl + 1, records: [...got.records, ...fresh] }
+    const f = got.fold
+    await timed($, 'fold', async () => {
+      for (const r of _recordsOf(data.subarray(0, nl + 1))) foldMain(f, r)
+    })
+    got.offset += nl + 1
   }
-  parsed.set(path, got)
-  await saveCut($, stateDir, path, got)
+  await saveMainFold($, stateDir, path, got, size)
   const rest = data.subarray(nl + 1)
-  return rest.length ? [...got.records, ..._recordsOf(rest)] : got.records
+  if (!rest.length) return got.fold
+  const tail = _recordsOf(rest)
+  return { tr: transcriptFoldWith(got.fold.tr, tail),
+    tu: turnsFoldWith(got.fold.tu, tail) }
+}
+
+/** What foldOf keeps of a transcript: its folds to `offset`, a whole
+ * line's end; the mark the last save left, null for none since the folds
+ * were started over; when it was saved, and to where. */
+type Folded = { fold: MainFold; offset: number; mark: SaveMark | null;
+  savedAt: number; savedTo: number }
+
+const folded = new Map<string, Folded>()
+// Logged once a process: a head too big to save.
+let headTooBig = false
+
+/** Where a transcript's folds are saved: the contract's directory, with
+ * the heads and parts inside. */
+function mainFoldDir(stateDir: string, transcript: string): string {
+  return statePath(stateDir, 'main-fold', transcript)
+}
+
+/** The check digests of `path`, `size` long, folded to `offset`, as
+ * foldMeta takes them over the whole file. */
+async function metaOf($: $, path: string, offset: number, size: number):
+  Promise<FoldMeta> {
+  const first = await readRange($, path, 0,
+    Math.min(FOLD_CHECK_BYTES, offset), size)
+  const tail = await readRange($, path,
+    Math.max(0, offset - FOLD_CHECK_BYTES), offset, size)
+  return { offset, first: sha256Hex(first), tail: sha256Hex(tail) }
+}
+
+/** The folds a reload starts from: the newest saved head whose transcript
+ * still holds what it was folded from and whose parts read whole; else
+ * the saved cut folded; else nothing folded. */
+async function loadFold($: $, stateDir: string, path: string, size: number):
+  Promise<Folded> {
+  const dir = mainFoldDir(stateDir, path)
+  const heads = []
+  for (const slot of HEAD_SLOTS) {
+    const h = foldHeadOf(await readText($, pyJoin(dir, slot)))
+    if (h) heads.push(h)
+  }
+  heads.sort((a, b) => b.seq - a.seq)
+  const now = await $.clock.now()
+  for (const got of heads) {
+    if (got.meta.offset > size) continue
+    try {
+      const meta = await metaOf($, path, got.meta.offset, size)
+      if (meta.first !== got.meta.first || meta.tail !== got.meta.tail) {
+        continue
+      }
+    } catch {
+      continue
+    }
+    const parts: (string | null)[] = []
+    for (let i = 0; i < got.counts.length; i++) {
+      parts.push(await readText($, pyJoin(dir, partName(i))))
+    }
+    const back = await timed($, 'parse', async () => foldOfSaved(got, parts))
+    if (back) {
+      steps.saved = got.meta.offset
+      return { fold: back.fold, offset: got.meta.offset, mark: back.mark,
+        savedAt: now, savedTo: got.meta.offset }
+    }
+  }
+  const fold = newMainFold()
+  const cut = await savedCut($, stateDir, path)
+  if (cut && cut.stable <= size) {
+    await timed($, 'fold', async () => {
+      for (const r of cut.records) foldMain(fold, r)
+    })
+    return { fold, offset: cut.stable, mark: null, savedAt: -Infinity,
+      savedTo: 0 }
+  }
+  return { fold, offset: 0, mark: null, savedAt: -Infinity, savedTo: 0 }
+}
+
+/** Save `got` under the contract, at most once per CONFIG.foldSaveMs and
+ * only once it reaches further: the parts first, then the head, in the
+ * slot the one before it is not in.  $.fs.write truncates and then
+ * writes, so a save started over first empties both heads: neither could
+ * then read a part it was not written beside. */
+async function saveMainFold($: $, stateDir: string, path: string,
+  got: Folded, size: number): Promise<void> {
+  const now = await $.clock.now()
+  if (got.offset <= got.savedTo || now - got.savedAt < CONFIG.foldSaveMs) {
+    return
+  }
+  got.savedAt = now
+  const dir = mainFoldDir(stateDir, path)
+  try {
+    const meta = await metaOf($, path, got.offset, size)
+    const save = foldSave(got.fold, meta, got.mark ?? newSaveMark())
+    if (!save) {
+      if (!headTooBig) {
+        headTooBig = true
+        void log($, 'main fold not saved: its head is over ' +
+          FOLD_PART_BYTES + ' bytes')
+      }
+      return
+    }
+    if (!got.mark) {
+      for (const slot of HEAD_SLOTS) await $.fs.write(pyJoin(dir, slot), '')
+    }
+    for (const [i, text] of save.parts) {
+      await $.fs.write(pyJoin(dir, partName(i)), text)
+    }
+    await $.fs.write(pyJoin(dir, save.slot), save.head)
+    got.mark = save.mark
+    got.savedTo = got.offset
+  } catch (err) {
+    // Started over next time: a part may be half written.
+    got.mark = null
+    void log($, 'main fold not saved', err)
+  }
 }
 
 const AGENT_NAME = /^agent-[\s\S]*\.jsonl$/
@@ -342,37 +473,38 @@ async function atOnce<T>(items: readonly T[], n: number,
 let agentLinesFailed = false
 let mainLinesFailed = false
 
-/** `got` with `path`'s whole lines from `got.stable` to `end` read
+/** Fold `path`'s whole lines from `got.offset` to `end` into `got`, read
  * through scripts/agent_lines.py's main mode, cut down to what
  * claude_records.ts reads: a session's own transcript, read whole into
  * the hooks worker, crashed it at 157 MB (seen live 2026-10-20).  Where
- * Python fails, logged once, `got` as it was, for the bytes to be read. */
-async function mainLines($: $, path: string, got: Parsed, end: number):
-  Promise<Parsed> {
-  if (mainLinesFailed) return got
-  let stable = got.stable
-  const records = [...got.records]
-  while (stable < end) {
+ * Python fails, logged once, `got` as it was, for the bytes to be read.
+ * A piece is parsed whole before any of it is folded, so a piece that
+ * will not parse leaves `got` at its last whole piece. */
+async function mainLines($: $, path: string, got: Folded, end: number):
+  Promise<void> {
+  if (mainLinesFailed) return
+  while (got.offset < end) {
     const r = await timed($, 'lines', () => $.process.run(['/usr/bin/env',
       'python3', $.plugin.root + '/scripts/agent_lines.py', path,
-      String(stable), String(end), 'main'],
+      String(got.offset), String(end), 'main'],
       { timeoutMs: CONFIG.agentLinesTimeoutMs }))
     if (r.exitCode !== 0 || r.isStdoutTruncated) {
       mainLinesFailed = true
       void log($, 'main lines: python3 exited ' + r.exitCode + ', reading ' +
         'the bytes instead: ' + r.stderr.slice(-300))
-      return got
+      return
     }
     const lines = r.stdout.split('\n')
     const stop = Number(lines[0])
-    await timed($, 'parse', async () => {
-      for (const l of lines.slice(1)) if (l) records.push(JSON.parse(l))
+    const records = await timed($, 'parse', async () =>
+      lines.slice(1).filter(Boolean).map((l) => JSON.parse(l) as Rec))
+    await timed($, 'fold', async () => {
+      for (const rec of records) foldMain(got.fold, rec)
     })
     steps.linePieces = ((steps.linePieces as number) || 0) + 1
-    if (stop <= stable) break
-    stable = stop
+    if (stop <= got.offset) break
+    got.offset = stop
   }
-  return { stable, records }
 }
 
 /** Fold `path`'s whole lines from `fold.pos` to `end` into `fold`, through
@@ -455,14 +587,11 @@ function cutPath(stateDir: string, transcript: string, part?: number) {
     (part === undefined ? 'head.json' : 'part-' + part + '.jsonl'))
 }
 
-// What each transcript's saved cut holds, and when it was saved: at most
-// once per CONFIG.foldSaveMs, and only once it reaches further.  Every
-// part but the last is full, and never written again.
-type CutSaved = { at: number; stable: number; counts: number[] }
-const cutSaved = new Map<string, CutSaved>()
-
+/** The records a saved cut holds, which the mod no longer writes: read
+ * when there is no saved fold, so the first reload after the fold was
+ * saved folds the cut and not the transcript. */
 async function savedCut($: $, stateDir: string, transcript: string):
-  Promise<Parsed | null> {
+  Promise<{ stable: number; records: Rec[] } | null> {
   const text = await readText($, cutPath(stateDir, transcript))
   const head = text === null ? null : mainCutHeadOf(text, CONFIG.version)
   if (!head) return null
@@ -473,34 +602,7 @@ async function savedCut($: $, stateDir: string, transcript: string):
     if (!got) return null
     records.push(...got)
   }
-  cutSaved.set(transcript, { at: await $.clock.now(), stable: head.stable,
-    counts: head.counts })
   return { stable: head.stable, records }
-}
-
-async function saveCut($: $, stateDir: string, transcript: string,
-  got: Parsed): Promise<void> {
-  const last = cutSaved.get(transcript) ??
-    { at: -Infinity, stable: 0, counts: [] }
-  const now = await $.clock.now()
-  if (got.stable <= last.stable || now - last.at < CONFIG.foldSaveMs) return
-  // The last part saved is written again, with what follows it.
-  const full = last.counts.slice(0, -1)
-  const from = full.reduce((a, b) => a + b, 0)
-  const parts = mainCutParts(got.records, from)
-  const counts = [...full, ...parts.map((p) => p.count)]
-  cutSaved.set(transcript, { at: now, stable: got.stable, counts })
-  try {
-    for (const [i, p] of parts.entries()) {
-      await $.fs.write(cutPath(stateDir, transcript, full.length + i), p.text)
-    }
-    // The head last: until it is written, the one before reads true.
-    await $.fs.write(cutPath(stateDir, transcript),
-      mainCutHead(got.stable, counts, CONFIG.version))
-  } catch (err) {
-    cutSaved.set(transcript, last)
-    void log($, 'transcript cut not saved', err)
-  }
 }
 
 /** agent_label's reading of a file's sidecar, as agentReadings read it. */
@@ -521,13 +623,12 @@ export async function agentOffsets($: $, transcript: string,
   }
 }
 
-/** read_turns over records already read, with the agents' readings and
+/** read_turns' finish over the turns' fold, with the agents' readings and
  * the published offsets. */
-async function turnsVia($: $, places: Places, path: string,
-  records: readonly Rec[], readings: [string, AgentReading][]):
-  Promise<Turn[]> {
+async function turnsVia($: $, places: Places, path: string, fold: TurnsFold,
+  readings: [string, AgentReading][]): Promise<Turn[]> {
   const offsets = await agentOffsets($, path, places.stateDir)
-  return turnsOf(records, (s) => agentRecordsOf(readings, s, null),
+  return turnsFinish(fold, (s) => agentRecordsOf(readings, s, null),
     offsets, new Map(), labelOf)
 }
 
@@ -758,12 +859,13 @@ async function saveCosts($: $, places: Places,
   }
 }
 
-/** _tailDigest through `$`: the COST_TAIL_BYTES before `off`. */
-async function tailOf($: $, path: string, off: number):
+/** _tailDigest through `$`: the COST_TAIL_BYTES before `off`, of a file
+ * `size` long. */
+async function tailOf($: $, path: string, off: number, size: number):
   Promise<string | null> {
   try {
     const b = await readRange($, path, Math.max(0, off - COST_TAIL_BYTES),
-      off)
+      off, size)
     return b.length === Math.min(off, COST_TAIL_BYTES) ? sha256Hex(b) : null
   } catch {
     return null
@@ -776,7 +878,7 @@ async function pricedOf($: $, path: string): Promise<Priced[]> {
   const size = await fileSize($, path)
   if (size === null) return []
   let got = costs.get(path)
-  if (got && (got.off > size || await tailOf($, path, got.off) !==
+  if (got && (got.off > size || await tailOf($, path, got.off, size) !==
       got.tail)) {
     got = undefined
   }
@@ -807,7 +909,7 @@ async function pricedOf($: $, path: string): Promise<Priced[]> {
   }
   off += s
   recs = [...recs, ...fresh]
-  costs.set(path, { off, tail: await tailOf($, path, off), recs })
+  costs.set(path, { off, tail: await tailOf($, path, off, size), recs })
   return partial !== null && !seenIds.has(_idKey(partial[1]))
     ? [...recs, partial] : recs
 }
@@ -953,16 +1055,16 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
   const { raw, payload } = await payloadOf($, path)
   let tr: Transcript = EMPTY_TRANSCRIPT
   let turns: Turn[] | null = null
-  if (path && await fileSize($, path) !== null) {
-    const records = await timed($, 'records', () => recordsOf($, path))
+  const fold = path ? await timed($, 'records', () => foldOf($, path)) : null
+  if (path && fold) {
     const readings = await timed($, 'agents', () => agentReadings($, path))
     const etas: AgentEta[] = []
     const agents: AgentRec[] = agentRecordsOf(readings, null, etas)
     // A tool call still running counts to now: this is a live session.
     tr = await timed($, 'sum', async () =>
-      transcriptOf(records, agents, etas, now))
+      transcriptFinish(fold.tr, agents, etas, now))
     turns = await timed($, 'turns', () =>
-      turnsVia($, places, path, records, readings))
+      turnsVia($, places, path, fold.tu, readings))
   }
   const prepared = await timed($, 'usage', () => preparedVia($, places, raw,
     payload.session_id, payload.model_id || payload.model, now))
@@ -987,9 +1089,9 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
 export async function turnsNow($: $, places: Places):
   Promise<{ path: string; turns: Turn[] } | null> {
   const path = await transcriptPath($, places)
-  if (!path || await fileSize($, path) === null) return null
-  const records = await recordsOf($, path)
-  return { path, turns: await turnsVia($, places, path, records,
+  const fold = path ? await foldOf($, path) : null
+  if (!path || !fold) return null
+  return { path, turns: await turnsVia($, places, path, fold.tu,
     await agentReadings($, path)) }
 }
 

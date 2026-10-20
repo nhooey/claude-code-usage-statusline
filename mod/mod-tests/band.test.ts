@@ -31,6 +31,11 @@ import {
   transcriptOf, turnsOf,
 } from '../src/claude_records.ts'
 import type { AgentEta, AgentReading } from '../src/claude_records.ts'
+import {
+  foldLoad, foldMain, foldMeta, foldSave, newMainFold, partName,
+} from '../src/main_fold.ts'
+import type { FoldMeta, MainFold } from '../src/main_fold.ts'
+import { statePath } from '../src/state.ts'
 import { seedLimitsSnapshot } from '../src/claude_calib.ts'
 import {
   plistLoads, prepareClaudeReading, statusSourceContext, trackerReading,
@@ -471,6 +476,80 @@ test('a transcript over 4 MiB is read in pieces through the shell',
     const want = await statusOf(w, MAIN, doc.rate as number | null)
     expect(JSON.parse(JSON.stringify(doc)))
       .toEqual(JSON.parse(JSON.stringify(want)))
+  })
+
+// ════════════════════════════════════════════════════════════════════════════
+// The folds saved, and a reload reading on from them.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** A transcript of main.jsonl's bytes at a path no other test reads, so no
+ * fold is kept for it yet; and the line end halfway through. */
+function savedWorld(on: On, path: string) {
+  const w = world(on)
+  const bytes = w.files.get(MAIN)!
+  w.files.set(path, bytes)
+  const half = bytes.indexOf(10, bytes.length >> 1) + 1
+  return { w, bytes, half, dir: statePath(STATE, 'main-fold', path) }
+}
+
+/** `fold` saved for a transcript, with `meta`, into `dir`, as a first save
+ * writes it. */
+function plant(w: World, dir: string, fold: MainFold, meta: FoldMeta) {
+  const save = foldSave(fold, meta)!
+  for (const [i, t] of save.parts) {
+    w.files.set(dir + '/' + partName(i), encoder.encode(t))
+  }
+  w.files.set(dir + '/' + save.slot, encoder.encode(save.head))
+}
+
+/** The status document over `bytes` in place of `path`'s own. */
+async function statusOver(w: World, path: string, bytes: Uint8Array,
+  rate: number | null) {
+  const was = w.files.get(path)!
+  w.files.set(path, bytes)
+  try {
+    return JSON.parse(JSON.stringify(await statusOf(w, path, rate)))
+  } finally {
+    w.files.set(path, was)
+  }
+}
+
+// The saved fold planted empty, at the halfway line: a reload that reads
+// on from it folds only the lines after it, which the document shows.
+test('a reload reads on from the saved fold, not the whole transcript',
+  async ($, on) => {
+    const path = '/claude/projects/-work/saved-fold.jsonl'
+    const { w, bytes, half, dir } = savedWorld(on, path)
+    plant(w, dir, newMainFold(), foldMeta(bytes, half))
+    await start($, 'terminal', path)
+    const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+    const rate = doc.rate as number | null
+    expect(doc).toEqual(await statusOver(w, path, bytes.subarray(half), rate))
+    expect(doc).not.toEqual(await statusOver(w, path, bytes, rate))
+  })
+
+// One whose transcript's bytes are not the ones it was folded from is
+// passed over, the transcript folded from the start, and saved afresh.
+test('a saved fold of other bytes is not read, and is saved over',
+  async ($, on) => {
+    const path = '/claude/projects/-work/saved-other.jsonl'
+    const { w, bytes, half, dir } = savedWorld(on, path)
+    const other = bytes.slice()
+    other[0] = 0x20
+    plant(w, dir, newMainFold(), foldMeta(other, half))
+    await start($, 'terminal', path)
+    const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+    expect(doc).toEqual(await statusOver(w, path, bytes,
+      doc.rate as number | null))
+    const whole = newMainFold()
+    for (const r of _recordsOf(bytes)) foldMain(whole, r)
+    const back = foldLoad((n) => {
+      const f = w.files.get(dir + '/' + n)
+      return f ? new TextDecoder().decode(f) : null
+    })
+    expect(back?.meta).toEqual(foldMeta(bytes, bytes.lastIndexOf(10) + 1))
+    expect(JSON.stringify(foldSave(back!.fold, back!.meta)))
+      .toBe(JSON.stringify(foldSave(whole, back!.meta)))
   })
 
 // ════════════════════════════════════════════════════════════════════════════

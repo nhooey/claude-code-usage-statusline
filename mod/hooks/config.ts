@@ -94,7 +94,8 @@ export const CONFIG = {
   // goes through gigabytes, and runs in that process, outside any hook's
   // 10s budget (asked 2026-10-20, so the first read does not crash it).
   agentLinesTimeoutMs: 300_000,
-  // How often a live agent's fold is saved, so a reload reads on from it.
+  // How often a live agent's fold, and the main transcript's, is saved, so
+  // a reload reads on from it.
   foldSaveMs: 60_000,
   // How often the band reads its figures again with nothing else
   // happening, so the clocks and the 🔜 resets move while idle.
