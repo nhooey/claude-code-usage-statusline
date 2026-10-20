@@ -547,3 +547,6 @@ The rows table set in this project only:
    live `"always"`, and the three cost rows are stamped too.
 9. **The rows table** replaces `sticky`, `bandPlace` and the hide paths
    that drop a whole row; see [The rows table](#the-rows-table).
+10. **Tables merge per field** across layers, while lists replace: a
+    project that sets `rows.agent.transcript` alone keeps every other row
+    and field from the layers under it.
