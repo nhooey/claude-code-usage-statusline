@@ -7,10 +7,12 @@ side by side, with one line per suite on how it went:
 ```sh
 bash tests/all.sh                  # every suite, about 17 s
 bash tests/all.sh status node      # the ones named
+bash tests/all.sh --repeat 20 node # again, until a round fails
 ```
 
 It exits with the number of suites that failed and prints the end of each
-failing one's output. The mod's suites want `mod/node_modules` (`npm ci`),
+failing one's output. `--repeat N` is for a flaky suite: it stops at the first
+round with a failure and exits with that round's status. The mod's suites want `mod/node_modules` (`npm ci`),
 the engine's types under `mod/.claude-plugin/types/` and the `claude` CLI;
 without them those lines fail and the rest still run. Or one at a time, in
 bash or zsh:

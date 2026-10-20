@@ -85,6 +85,18 @@
               # dev
               {
                 category = "dev";
+                name = "diff-grid-fixtures";
+                help = "say how tests/fixtures/grid changed since a commit (HEAD)";
+                command = ''python3 "$PRJ_ROOT/tools/diff-grid-fixtures.py" "$@"'';
+              }
+              {
+                category = "dev";
+                name = "draw-panel";
+                help = "draw the agent panel for a payload at a width";
+                command = ''python3 "$PRJ_ROOT/tools/draw-panel.py" "$@"'';
+              }
+              {
+                category = "dev";
                 name = "regen-spec";
                 help = "regenerate spec.py and spec.ts from spec/layout.jsonc";
                 command = ''python3 "$PRJ_ROOT/tools/gen-spec.py" "$@"'';
@@ -94,7 +106,7 @@
               {
                 category = "test";
                 name = "tests";
-                help = "run every suite, or the ones named (tests/all.sh)";
+                help = "run every suite, or the ones named; --repeat N to catch a flake (tests/all.sh)";
                 command = ''bash "$PRJ_ROOT/tests/all.sh" "$@"'';
               }
               {

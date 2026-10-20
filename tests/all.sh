@@ -3,6 +3,7 @@
 #
 #   bash tests/all.sh              # every suite
 #   bash tests/all.sh status node  # the ones named
+#   bash tests/all.sh --repeat 20 node grid  # until one fails, 20 at most
 #
 # The suites share no state, so they run at once; the longest, the status
 # goldens' chain of cases, is about the wall time of the whole.  Each line
@@ -10,9 +11,31 @@
 # printed.  A failing suite's output follows the table, and the exit status
 # is the number of suites that failed.  The manual checks of docs/tests.md
 # are not here.
+#
+# --repeat N, first, runs the whole selection again, round after round, and
+# stops at the first round with a failure, whose status is the exit status:
+# for a flaky suite, the way to catch it failing.
 set -u
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [ "${1:-}" = "--repeat" ]; then
+  rounds="${2:-}"
+  case "$rounds" in
+    '' | *[!0-9]*)
+      echo "--repeat takes a number of rounds" >&2
+      exit 2
+      ;;
+  esac
+  shift 2
+  for ((i = 1; i <= rounds; i++)); do
+    echo "=== round $i of $rounds"
+    bash "$0" "$@"
+    rc=$?
+    [ "$rc" -eq 0 ] || exit "$rc"
+  done
+  exit 0
+fi
 work="$(mktemp -d "${TMPDIR:-/tmp}/all-suites.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
