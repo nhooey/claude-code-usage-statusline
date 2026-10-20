@@ -701,6 +701,34 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     expect(logOf(w)).not.toContain('no receipt')
   })
 
+test('a turn a task notification follows still gets its receipt and tag',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'AbovePrompt', props: BAND })
+    await askLive($, w, true)
+    // Delivered as the turn ends, after its answer, and written as a turn
+    // of its own that never runs (seen live 2026-10-20).
+    grow(w, { message: { content: '<task-notification>\n<task-id>a1' +
+      '</task-id>\n<status>completed</status>\n</task-notification>' },
+    origin: { kind: 'task-notification' }, promptId: 'p-notice',
+    promptSource: 'system', timestamp: '2026-08-16T02:20:06Z',
+    type: 'user', userType: 'external' })
+    await until(w, 5_000)
+    expect(stamped(w)).toBe(true)
+    const want = await receiptOf(w, w.clock.now() / 1000)
+    expect(text(want.at(-1)!)).toContain('p-resume'.slice(0, 8))
+    expect(text(want.at(-1)!).startsWith(spec.E_TURN_PAST)).toBe(true)
+    expect(await closing($, ASKED_MS)).toEqual(expected(want))
+    // On past the band's hold, which the stamp's handler sleeps through.
+    await w.clock.advance(5_000)
+    expect(logOf(w)).not.toContain('no receipt')
+  })
+
 test('a turn whose records never land logs why and stamps nothing',
   async ($, on) => {
     const w = world(on)

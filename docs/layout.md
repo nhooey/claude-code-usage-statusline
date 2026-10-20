@@ -350,10 +350,12 @@ above the receipt, one before its tag line and one after it.
 
 Claude Code writes a turn's records to the transcript only after its Stop
 hooks have run, so the mod waits for them: it reads the transcript every
-half second until the newest prompt's turn is billed and two reads agree on
-it, for up to 30 seconds. Until then the closing line is one blank row. A
-turn whose records never land leaves it blank and says why in the mod's log
-([mod/README.md](../mod/README.md#its-log)). Each turn is stamped once.
+half second until the turn that just ended is billed and two reads agree on
+it, for up to 30 seconds; a task notification written after it, as a turn
+of its own, does not hold it back. Until then the closing line is one blank
+row. A turn whose records never land leaves it blank and says why in the
+mod's log ([mod/README.md](../mod/README.md#its-log)). Each turn is stamped
+once.
 
 ### The turn tags
 

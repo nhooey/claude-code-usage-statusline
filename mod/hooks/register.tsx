@@ -33,7 +33,7 @@ import { accountLine, bandLines, bandRows, footerRuler, footerTail,
   modeOfHint, workspaceOf }
   from '../src/band.ts'
 import {
-  newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
+  newestBilled, receiptLines, startLine, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
 import { candidates, firstLine, lastReply, messageSpans, saidBy, soleSender,
@@ -301,8 +301,7 @@ async function stamp($: $, durationMs: number, prompt: string):
   for (;;) {
     got = await turnsNow($, where)
     const turns = got?.turns ?? []
-    const billed = newestBilled(turns) && (!prompt ||
-      turns[receiptTurn(turns)].prompt_id === prompt)
+    const billed = newestBilled(turns, prompt)
     const key = billed ? turnKey(turns) : ''
     if (key && key === last) break
     const late = (await $.clock.now()) >= deadline

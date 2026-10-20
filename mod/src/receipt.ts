@@ -49,16 +49,21 @@ export function receiptTurn(turns: readonly Turn[]): number {
   return turns.length - 1;
 }
 
-/** Whether the billed turn is the newest of the main thread's turns.  One
- * before it is the turn before's, read before this turn's records were
+/** Whether the billed turn is the turn that opened with `prompt`, its
+ * promptId, or with none given, the newest of the main thread's turns.
+ * One before it is the turn before's, read before this turn's records were
  * written: Claude Code writes a turn's assistant records only after its
  * Stop hooks have run, and its prompt's record as it opens, so until then
- * the newest prompt bills nothing and receiptTurn falls back past it. */
-export function newestBilled(turns: readonly Turn[]): boolean {
+ * the newest prompt bills nothing and receiptTurn falls back past it.
+ * With `prompt`, a turn opened after it does not count: a task
+ * notification delivered as the turn ends is written as a turn of its own
+ * that may never run, and the turn it follows is billed all the same. */
+export function newestBilled(turns: readonly Turn[], prompt = ""): boolean {
   const i = receiptTurn(turns);
   if (i < 0 || !turns[i].calls || turns[i].compact || turns[i].agent) {
     return false;
   }
+  if (prompt) return turns[i].prompt_id === prompt;
   for (let j = turns.length - 1; j > i; j--) {
     if (!turns[j].agent && !turns[j].compact) return false;
   }
