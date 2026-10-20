@@ -550,3 +550,8 @@ The rows table set in this project only:
 10. **Tables merge per field** across layers, while lists replace: a
     project that sets `rows.agent.transcript` alone keeps every other row
     and field from the layers under it.
+11. **The files stay JSONC,** over YAML and TOML: each port parses it with
+    its own JSON reader after stripping comments and trailing commas, with
+    no vendored parser and no implicit typing (YAML would need PyYAML and
+    the `yaml` package vendored and agreeing; TOML a Python of 3.11 or
+    later for the panel and a vendored parser in the mod).
