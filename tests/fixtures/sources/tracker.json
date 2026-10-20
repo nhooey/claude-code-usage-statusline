@@ -2,6 +2,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 1786846800.0,
    "buckets": [
     {
@@ -29,6 +30,7 @@
   "name": "golden store",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n",
   "tracker_reading": {
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 1786846800.0,
    "session_pct": 41,
    "session_resets_at": 1786852800.0,
@@ -41,6 +43,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:fbeae7c18667b6987518f3ae",
    "as_of": 1786846940.0,
    "buckets": [
     {
@@ -74,6 +77,7 @@
   "name": "app store",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>P1</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
   "tracker_reading": {
+   "account_id": "profile:fbeae7c18667b6987518f3ae",
    "as_of": 1786846940.0,
    "session_pct": 98,
    "session_resets_at": 1788864600.363,
@@ -86,6 +90,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "buckets": [
     {
@@ -113,6 +118,7 @@
   "name": "active P0",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>P0</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
   "tracker_reading": {
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "session_pct": 1,
    "session_resets_at": null,
@@ -125,6 +131,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "buckets": [
     {
@@ -152,6 +159,7 @@
   "name": "selected fallback",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>gone</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tdHJ1ZX0sIHsiaWQiOiAiUDEiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50\n\tYWdlIjogOTgsICJzZXNzaW9uUmVzZXRUaW1lIjogODEwNTU3NDAwLjM2Mjk5OTksICJ3\n\tZWVrbHlQZXJjZW50YWdlIjogMTAsICJvcHVzV2Vla2x5UGVyY2VudGFnZSI6IDMsICJ3\n\tZWVrbHlSZXNldFRpbWUiOiA4MTExMjY4MDAuMzYyOTk5OSwgImxhc3RVcGRhdGVkIjog\n\tODA4NTM5NzQwfSwgIm9hdXRoQWNjb3VudEpTT04iOiAib2F1dGgtY2FuYXJ5LW11c3Qt\n\tbmV2ZXItYmUtY29waWVkIn1d\n\t</data>\n</dict>\n</plist>\n",
   "tracker_reading": {
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "session_pct": 1,
    "session_resets_at": null,
@@ -164,6 +172,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "buckets": [
     {
@@ -191,6 +200,7 @@
   "name": "first fallback",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>activeProfileId</key>\n\t<string>gone</string>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
   "tracker_reading": {
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "session_pct": 1,
    "session_resets_at": null,
@@ -203,6 +213,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "buckets": [
     {
@@ -230,6 +241,7 @@
   "name": "no active id",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>profiles_v3</key>\n\t<data>\n\tW3siaWQiOiAiUDAiLCAiY2xhdWRlVXNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjog\n\tMSwgIndlZWtseVBlcmNlbnRhZ2UiOiAxfSwgImlzU2VsZWN0ZWRGb3JEaXNwbGF5Ijog\n\tZmFsc2V9LCB7ImlkIjogIlAxIiwgImNsYXVkZVVzYWdlIjogeyJzZXNzaW9uUGVyY2Vu\n\tdGFnZSI6IDk4LCAic2Vzc2lvblJlc2V0VGltZSI6IDgxMDU1NzQwMC4zNjI5OTk5LCAi\n\td2Vla2x5UGVyY2VudGFnZSI6IDEwLCAib3B1c1dlZWtseVBlcmNlbnRhZ2UiOiAzLCAi\n\td2Vla2x5UmVzZXRUaW1lIjogODExMTI2ODAwLjM2Mjk5OTksICJsYXN0VXBkYXRlZCI6\n\tIDgwODUzOTc0MH0sICJvYXV0aEFjY291bnRKU09OIjogIm9hdXRoLWNhbmFyeS1tdXN0\n\tLW5ldmVyLWJlLWNvcGllZCJ9XQ==\n\t</data>\n</dict>\n</plist>\n",
   "tracker_reading": {
+   "account_id": "profile:2842de9d43a98b535ed75b31",
    "as_of": null,
    "session_pct": 1,
    "session_resets_at": null,
@@ -242,6 +254,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": null,
    "buckets": [
     {
@@ -263,6 +276,7 @@
   "name": "weekly only",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"weeklyPercentage\":63,\"weeklyResetTime\":808707800}}]</string>\n</dict></plist>\n",
   "tracker_reading": {
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": null,
    "session_pct": null,
    "session_resets_at": null,
@@ -275,6 +289,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 2765168400.0,
    "buckets": [
     {
@@ -302,6 +317,7 @@
   "name": "stamps and strings",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":\"41.5\",\"sessionResetTime\":\" 808545600 \",\"weeklyPercentage\":63,\"weeklyResetTime\":\"2026-08-18 01:00\",\"lastUpdated\":\"2026-08-16  2:20\"}}]</string>\n</dict></plist>\n",
   "tracker_reading": {
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 2765168400.0,
    "session_pct": "41.5",
    "session_resets_at": 1786852800.0,
@@ -314,6 +330,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": null,
    "buckets": [
     {
@@ -341,6 +358,7 @@
   "name": "bad stamps",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":1,\"sessionResetTime\":\"2026-02-30 01:00\",\"weeklyPercentage\":2,\"weeklyResetTime\":true,\"lastUpdated\":\"nan\"}}]</string>\n</dict></plist>\n",
   "tracker_reading": {
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": NaN,
    "session_pct": 1,
    "session_resets_at": null,
@@ -353,6 +371,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 1786846800.0,
    "buckets": [
     {
@@ -380,6 +399,7 @@
   "name": "reset passed",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808539795,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n",
   "tracker_reading": {
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 1786846800.0,
    "session_pct": 41,
    "session_resets_at": 1786846995.0,
@@ -496,6 +516,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:fbeae7c18667b6987518f3ae",
    "as_of": 1786846940.0,
    "buckets": [
     {
@@ -529,6 +550,7 @@
   "name": "data, ragged base64",
   "plist": "<?xml version=\"1.0\"?><plist version=\"1.0\"><dict><key>profiles_v3</key><data>\n\tW3siaWQiOiAiUDEiLCAiY2xhdWRlVX\n\tNhZ2UiOiB7InNlc3Npb25QZXJjZW50YWdlIjogOTgsICJzZXNzaW9uUmVzZXRUaW1lIjogODEwNTU3NDAwLjM2Mjk5OTksICJ3ZWVrbHlQZXJjZW50YWdlIjogMTAsICJvcHVzV2Vla2x5UGVyY2VudGFnZSI6IDMsICJ3ZWVrbHlSZXNldFRpbWUiOiA4MTExMjY4MDAuMzYyOTk5OSwgImxhc3RVcGRhdGVkIjogODA4NTM5NzQwfX1d !\n</data></dict></plist>",
   "tracker_reading": {
+   "account_id": "profile:fbeae7c18667b6987518f3ae",
    "as_of": 1786846940.0,
    "session_pct": 98,
    "session_resets_at": 1788864600.363,
@@ -550,6 +572,7 @@
  {
   "expected": {
    "account": {},
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 1786846800.0,
    "buckets": [
     {
@@ -577,6 +600,7 @@
   "name": "types",
   "plist": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a comment -->\n<plist version=\"1.0\"><dict>\n<key>n</key><integer>0x1F</integer><key>m</key><integer>-1_0</integer><key>r</key><real>2.5e1</real><key>t</key><true/><key>f</key><false/><key>d</key><date>2026-08-16T02:23:20Z</date><key>a</key><array><string>x &amp; &#x3c;y&#62;</string><string><![CDATA[<z>]]></string></array><key>activeProfileId</key><string>golden</string><key>profiles_v3</key><string>[{\"id\": \"golden\", \"claudeUsage\": {\"sessionPercentage\": 41, \"sessionResetTime\": 808545600, \"weeklyPercentage\": 63, \"weeklyResetTime\": 808707800, \"lastUpdated\": 808539600}}]</string></dict></plist>\r\n",
   "tracker_reading": {
+   "account_id": "profile:dd56de4137951d9c92681b03",
    "as_of": 1786846800.0,
    "session_pct": 41,
    "session_resets_at": 1786852800.0,

@@ -392,8 +392,9 @@ def tracker_reading(store: dict) -> dict:
 
     NOTHING ELSE IS TOUCHED, and the reason is two keys along from the one
     that is: the same profile record holds `oauthAccountJSON` and an API
-    session key.  This function names the six fields it wants and
-    The shared collector whitelists the returned v1 fields before private,
+    session key.  This function names the six fields it wants, and the
+    record's `id` only as a hash (`account_id`, which keys the calibration
+    cache to the account).  The shared collector whitelists the returned v1 fields before private,
     scoped caching; a credential therefore cannot enter application state.
 
     THE OLD SHAPE IS GONE.  Until 2026-09 the store held `usageHistory_<uuid>`
@@ -437,7 +438,7 @@ def tracker_reading(store: dict) -> dict:
         t = _as_epoch(v)
         return None if t is None else t + APPLE_EPOCH
 
-    return {
+    out = {
         "session_pct": u.get("sessionPercentage"),
         "session_resets_at": unix(u.get("sessionResetTime")),
         "weekly_pct": u.get("weeklyPercentage"),
@@ -445,6 +446,53 @@ def tracker_reading(store: dict) -> dict:
         "weekly_resets_at": unix(u.get("weeklyResetTime")),
         "as_of": unix(u.get("lastUpdated")),
     }
+    account = hashed_account_id("profile", prof.get("id"))
+    if account:
+        out["account_id"] = account
+    return out
+
+
+def hashed_account_id(kind: str, value) -> str:
+    """`kind:` and the first 24 hex digits of the sha256 of an account's
+    id, or "" for no id: what keys the calibration cache to an account
+    (seed_limits_snapshot) without the id itself reaching any file."""
+    if not isinstance(value, str) or not value:
+        return ""
+    return kind + ":" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:24]
+
+
+_CONFIG_ACCOUNT: Dict[str, tuple] = {}
+
+
+def config_account_id() -> str:
+    """Claude Code's signed-in account, hashed: `oauthAccount.accountUuid`
+    in its global config, $CLAUDE_CONFIG_DIR/.claude.json or ~/.claude.json.
+
+    The native reading comes from Claude Code's own payload, which names no
+    account; this one does.  Only the uuid is read.  The file is a quarter
+    of a megabyte and rewritten often, so the answer is kept against its
+    mtime and size."""
+    config = os.environ.get("CLAUDE_CONFIG_DIR")
+    path = (os.path.join(os.path.expanduser(config), ".claude.json")
+            if config else os.path.expanduser("~/.claude.json"))
+    try:
+        st = os.stat(path)
+    except OSError:
+        return ""
+    stamp = (st.st_mtime_ns, st.st_size)
+    hit = _CONFIG_ACCOUNT.get(path)
+    if hit and hit[0] == stamp:
+        return hit[1]
+    try:
+        with open(path, "rb") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return ""
+    account = data.get("oauthAccount") if isinstance(data, dict) else None
+    uuid = account.get("accountUuid") if isinstance(account, dict) else None
+    answer = hashed_account_id("account", uuid)
+    _CONFIG_ACCOUNT[path] = (stamp, answer)
+    return answer
 
 
 _SNAPSHOT = None
@@ -465,15 +513,24 @@ def seed_limits_snapshot(lim: Limits, reading: Optional[dict] = None) -> dict:
     """Install a selected v1 projection for local accounting only.
 
     ``reading`` contributes a non-secret identity used to scope calibration
-    files.  It is never rendered or persisted verbatim.
+    files: its source, its `account_id` (an account's id, hashed: the
+    tracker profile's or Claude Code's signed-in account's) or failing that
+    its cache namespace, and its period.  It is never rendered or persisted
+    verbatim.
     """
     global _SNAPSHOT
     if lim == NO_LIMITS:
         _SNAPSHOT = {}
         return _SNAPSHOT
-    source = reading.get("source") if isinstance(reading, dict) else ""
-    account = reading.get("account_name") if isinstance(reading, dict) else ""
-    period = reading.get("period_start") if isinstance(reading, dict) else ""
+    reading = reading if isinstance(reading, dict) else {}
+    source = reading.get("source")
+    # The account the reading is of, hashed, where the source names one:
+    # calibration is the machine's cost over the plan's percentage, nothing
+    # in it per session, so every session of one account shares the file.
+    # The reading caches' namespace is the fallback; for `--account
+    # default` that is the session, which shares nothing.
+    account = reading.get("account_id") or reading.get("account_name")
+    period = reading.get("period_start")
     scope = "\0".join(str(value or "") for value in (source, account, period))
     # The percentages go in as NUMBERS, the form the old plan cache carried
     # and the one calibration compares against CALIB_MIN_PCT.  Limits carries
@@ -515,8 +572,8 @@ _old_calib_checked = False
 def _remove_old_calibrations() -> int:
     """Remove the old calibration caches, once; how many this run removed.
 
-    Names only: one listing, nothing opened.  The mod cannot remove a file,
-    so the Python does it for both.
+    Names only: one listing, nothing opened.  The mod leaves these to the
+    Python; it sweeps only today's names (_sweep_calibrations).
     """
     global _old_calib_checked
     if _old_calib_checked:
@@ -541,6 +598,59 @@ def _remove_old_calibrations() -> int:
                 pass
         with open(marker, "w"):
             pass
+    except OSError:
+        pass
+    return removed
+
+
+# The calibration caches as spec/state.jsonc names them.  One per scope, and
+# a scope is a source, an account and a period, so a new period, a new
+# account or a session-keyed scope (an account with no id) leaves one
+# behind each time; nothing reads a file once its scope has passed.
+_CALIB_NAME = re.compile(r"claude-calibration-[0-9a-f]{64}\.cache\Z")
+# A scope's file is rewritten at least every CALIB_TTL while it is in use;
+# one untouched this long is a past period's, the weekly window's included.
+CALIB_MAX_AGE_S = 8 * 86400
+# Written by each sweep; a sweep runs once its mtime is a day old.
+CALIB_SWEPT = "claude-calibration-swept"
+CALIB_SWEEP_EVERY_S = 86400
+_calib_swept = False
+
+
+def _sweep_calibrations(now: Optional[float] = None) -> int:
+    """Remove the calibration caches untouched for CALIB_MAX_AGE_S, at most
+    once a day across processes; how many this run removed.
+
+    The mod sweeps the same files (sweepCalibrationsVia in hooks/edges.ts),
+    through `rm`, since its `$.fs` cannot remove a file."""
+    global _calib_swept
+    # An override names the one file in use, outside the directory.
+    if _calib_swept or CALIB_CACHE_OVERRIDE:
+        return 0
+    _calib_swept = True
+    now = time.time() if now is None else now
+    d = state.state_dir()
+    marker = os.path.join(d, CALIB_SWEPT)
+    try:
+        if now - os.stat(marker).st_mtime < CALIB_SWEEP_EVERY_S:
+            return 0
+    except OSError:
+        pass
+    removed = 0
+    try:
+        with open(marker, "w"):
+            pass
+        os.utime(marker, (now, now))
+        for name in os.listdir(d):
+            if not _CALIB_NAME.match(name):
+                continue
+            path = os.path.join(d, name)
+            try:
+                if now - os.stat(path).st_mtime > CALIB_MAX_AGE_S:
+                    os.remove(path)
+                    removed += 1
+            except OSError:
+                pass
     except OSError:
         pass
     return removed
@@ -1304,8 +1414,19 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     consumed as much again the reading is 2٪, the unit falls to $7, and the
     same $14 session reads 2٪ when its true share is 1٪.
 
+    ONE FILE PER ACCOUNT, NOT PER SESSION.  Nothing here is a session's:
+    the cost is the machine's and the percentage the plan's.  So the file is
+    named by seed_limits_snapshot's scope, the source, the account's hashed
+    id and the period, and every session of one account on this machine
+    shares it, the panel's and the mod's alike.  The id is what keeps two
+    accounts apart, since their windows can open at the same minute and the
+    percentage stored with the scan is one account's.  A source that names
+    no account falls back to the reading caches' namespace, which for
+    `--account default` is the session.  _sweep_calibrations removes the
+    files of scopes gone by.
+
     Written via a temp file and os.replace: the path is shared by every
-    session on the machine, and two hooks finishing together were previously
+    session of the account, and two hooks finishing together were previously
     able to interleave a write.
 
     `scan=False` never runs the scan.  It takes the cached one for these
@@ -1316,6 +1437,7 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     for it again.  The status line and the Stop hook keep the cache filled.
     """
     _remove_old_calibrations()
+    _sweep_calibrations()
     snap = limits_snapshot()
     ss, ws = _window_starts()
     out = {"sess": None, "week": None}

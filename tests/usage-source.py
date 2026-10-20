@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Offline v1 coverage for Claude tracker, command, and scoped cache intake."""
-import json, os, plistlib, sys, tempfile, time
+import hashlib, json, os, plistlib, sys, tempfile, time
 
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); sys.path.insert(0, ROOT)
 from coding_agent_usage_line import claude, sources, state
@@ -37,7 +37,8 @@ with tempfile.TemporaryDirectory(prefix="usage-source.") as tmp:
     wins=reading["buckets"][0]["windows"]
     check("v1 tracker session",wins[0]["used_percent"],98.0); check("v1 tracker reset",wins[0]["resets_at"],1788864600.363)
     check("v1 tracker as_of",reading["as_of"],NOW-60)
-    check("v1 strict envelope keys",sorted(reading),["account","as_of","buckets","schema_version","source"])
+    check("v1 strict envelope keys",sorted(reading),["account","account_id","as_of","buckets","schema_version","source"])
+    check("v1 tracker account id hashed",reading["account_id"],"profile:"+hashlib.sha256(b"P1").hexdigest()[:24])
     assert CANARY not in repr(reading); passed+=1; print("  ok    tracker canary whitelist")
     # Active, selected-display, first-profile fallback and bad old schemas.
     other=os.path.join(tmp,"other.plist"); store(other,active="P0")

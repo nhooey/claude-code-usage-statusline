@@ -21,7 +21,11 @@
   "STATE_KINDS": {
     // The calibration scan: the costs in each plan window, the plan reading
     // taken with them and the windows they were measured over.  One file
-    // per scope (source, account and period), which a reset overwrites.
+    // per scope, which a reset overwrites: the source, the account's
+    // hashed id (or, where the source names none, the reading caches'
+    // namespace) and the period, joined by NULs (seed_limits_snapshot), so
+    // every session of one account shares it.  A file untouched for eight
+    // days is swept (_sweep_calibrations, sweepCalibrationsVia).
     "calibration": {
       "prefix": "claude-calibration-",
       "key": ["scope"],

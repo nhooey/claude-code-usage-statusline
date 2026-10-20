@@ -19,6 +19,7 @@
      },
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -122,6 +123,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -213,6 +215,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -304,6 +307,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -321,6 +325,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -352,12 +357,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -430,6 +436,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -447,6 +454,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -478,12 +486,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -556,6 +565,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -573,6 +583,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -604,12 +615,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -683,6 +695,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -700,6 +713,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -732,12 +746,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -811,6 +826,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -828,6 +844,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -860,12 +877,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -939,6 +957,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -956,6 +975,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -987,12 +1007,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -1070,6 +1091,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -1089,6 +1111,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -1120,12 +1143,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -1167,6 +1191,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -1184,6 +1209,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -1215,12 +1241,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -1262,6 +1289,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -1279,6 +1307,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786843200.0,
@@ -1310,12 +1339,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786843200.0,
@@ -1367,6 +1397,7 @@
      },
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -1391,6 +1422,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -1422,12 +1454,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "auto",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -1482,6 +1515,7 @@
      },
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": {
      "rate_limits": {
@@ -1571,6 +1605,7 @@
      },
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": {
      "rate_limits": {
@@ -1628,6 +1663,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -1657,6 +1693,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -1688,12 +1725,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "claude-usage-tracker",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -1735,6 +1773,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -1764,6 +1803,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -1795,12 +1835,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "claude-usage-tracker",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -1843,6 +1884,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -1860,6 +1902,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -1892,12 +1935,13 @@
      "source": "claude-usage-tracker",
      "stale": false
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "none",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -1950,6 +1994,7 @@
      },
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -2014,6 +2059,7 @@
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -2092,6 +2138,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -2109,6 +2156,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -2140,12 +2188,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "claude-usage-tracker",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -2187,6 +2236,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -2204,6 +2254,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -2230,6 +2281,774 @@
      ],
      "fail_count": 0.0,
      "fetched_at": 1786847000.0,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "claude-usage-tracker",
+     "stale": true
+    },
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
+    "session": "s1",
+    "spec": "claude-usage-tracker",
+    "state": [
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847000,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   },
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847061,
+     "model": "claude-opus-5-5",
+     "session": "s1"
+    },
+    "claude_json": null,
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:03",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847061,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786846800.0,
+     "attempted_at": 1786847061,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786852800.0,
+         "used_percent": 41.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787015000.0,
+         "used_percent": 63.0
+        }
+       ]
+      }
+     ],
+     "fail_count": 0,
+     "fetched_at": 1786847061,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "claude-usage-tracker",
+     "stale": true
+    },
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
+    "session": "s1",
+    "spec": "claude-usage-tracker",
+    "state": [
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847061,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847061,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   }
+  ]
+ },
+ {
+  "name": "tracker: two sessions, one profile, one scope",
+  "steps": [
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847000,
+     "model": "claude-opus-5-5",
+     "session": "s1"
+    },
+    "claude_json": null,
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:03",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847000,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786846800.0,
+     "attempted_at": 1786847000,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786852800.0,
+         "used_percent": 41.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787015000.0,
+         "used_percent": 63.0
+        }
+       ]
+      }
+     ],
+     "fail_count": 0,
+     "fetched_at": 1786847000,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "claude-usage-tracker",
+     "stale": true
+    },
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
+    "session": "s1",
+    "spec": "claude-usage-tracker",
+    "state": [
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847000,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   },
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847001,
+     "model": "claude-opus-5-5",
+     "session": "s2"
+    },
+    "claude_json": null,
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:03",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847001,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
+     "account_name": "session:s2",
+     "agent": "claude",
+     "as_of": 1786846800.0,
+     "attempted_at": 1786847001,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786852800.0,
+         "used_percent": 41.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787015000.0,
+         "used_percent": 63.0
+        }
+       ]
+      }
+     ],
+     "fail_count": 0,
+     "fetched_at": 1786847001,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "claude-usage-tracker",
+     "stale": true
+    },
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
+    "session": "s2",
+    "spec": "claude-usage-tracker",
+    "state": [
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847000,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     },
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s2",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847001,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847001,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   },
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847002,
+     "model": "claude-opus-5-5",
+     "session": "s2"
+    },
+    "claude_json": null,
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:03",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847002,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
+     "account_name": "session:s2",
+     "agent": "claude",
+     "as_of": 1786846800.0,
+     "attempted_at": 1786847001.0,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786852800.0,
+         "used_percent": 41.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787015000.0,
+         "used_percent": 63.0
+        }
+       ]
+      }
+     ],
+     "fail_count": 0.0,
+     "fetched_at": 1786847001.0,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "claude-usage-tracker",
+     "stale": true
+    },
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
+    "session": "s2",
+    "spec": "claude-usage-tracker",
+    "state": [
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847000,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     },
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s2",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847001,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847001,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   }
+  ]
+ },
+ {
+  "name": "tracker: another profile, another scope",
+  "steps": [
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847000,
+     "model": "claude-opus-5-5",
+     "session": "s1"
+    },
+    "claude_json": null,
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:03",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847000,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786846800.0,
+     "attempted_at": 1786847000,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786852800.0,
+         "used_percent": 41.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787015000.0,
+         "used_percent": 63.0
+        }
+       ]
+      }
+     ],
+     "fail_count": 0,
+     "fetched_at": 1786847000,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "claude-usage-tracker",
+     "stale": true
+    },
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
+    "session": "s1",
+    "spec": "claude-usage-tracker",
+    "state": [
+     {
+      "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847000,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   },
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847061,
+     "model": "claude-opus-5-5",
+     "session": "s1"
+    },
+    "claude_json": null,
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:03",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847061,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "profile:d9298a10d1b0735837dc4bd8",
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786846800.0,
+     "attempted_at": 1786847061,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786852800.0,
+         "used_percent": 41.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787015000.0,
+         "used_percent": 63.0
+        }
+       ]
+      }
+     ],
+     "fail_count": 0,
+     "fetched_at": 1786847061,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "claude-usage-tracker",
+     "stale": true
+    },
+    "scope": "claude-usage-tracker\u0000profile:d9298a10d1b0735837dc4bd8\u00001786838400",
+    "session": "s1",
+    "spec": "claude-usage-tracker",
+    "state": [
+     {
+      "account": {},
+      "account_id": "profile:d9298a10d1b0735837dc4bd8",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847061,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847061,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>other</string>\n<key>profiles_v3</key><string>[{\"id\":\"other\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   }
+  ]
+ },
+ {
+  "name": "tracker: a profile with no id, the session",
+  "steps": [
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847000,
+     "model": "claude-opus-5-5",
+     "session": "s1"
+    },
+    "claude_json": null,
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:03",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847000,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786846800.0,
+     "attempted_at": 1786847000,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786852800.0,
+         "used_percent": 41.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787015000.0,
+         "used_percent": 63.0
+        }
+       ]
+      }
+     ],
+     "fail_count": 0,
+     "fetched_at": 1786847000,
      "period_start": "1786838400",
      "schema_version": 1,
      "source": "claude-usage-tracker",
@@ -2273,15 +3092,16 @@
       "stale": true
      }
     ],
-    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
    },
    {
     "account": "default",
     "built_context": {
-     "as_of": 1786847061,
+     "as_of": 1786847001,
      "model": "claude-opus-5-5",
-     "session": "s1"
+     "session": "s2"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -2294,15 +3114,15 @@
      "weekly_share": "",
      "weekly_turn": ""
     },
-    "now": 1786847061,
+    "now": 1786847001,
     "payload": null,
     "period": "day",
     "reading": {
      "account": {},
-     "account_name": "session:s1",
+     "account_name": "session:s2",
      "agent": "claude",
      "as_of": 1786846800.0,
-     "attempted_at": 1786847061,
+     "attempted_at": 1786847001,
      "buckets": [
       {
        "id": "default",
@@ -2324,14 +3144,14 @@
       }
      ],
      "fail_count": 0,
-     "fetched_at": 1786847061,
+     "fetched_at": 1786847001,
      "period_start": "1786838400",
      "schema_version": 1,
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
-    "session": "s1",
+    "scope": "claude-usage-tracker\u0000session:s2\u00001786838400",
+    "session": "s2",
     "spec": "claude-usage-tracker",
     "state": [
      {
@@ -2339,7 +3159,7 @@
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
-      "attempted_at": 1786847061,
+      "attempted_at": 1786847000,
       "buckets": [
        {
         "id": "default",
@@ -2361,14 +3181,47 @@
        }
       ],
       "fail_count": 0,
-      "fetched_at": 1786847061,
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "claude-usage-tracker",
+      "stale": true
+     },
+     {
+      "account": {},
+      "account_name": "session:s2",
+      "agent": "claude",
+      "as_of": 1786846800.0,
+      "attempted_at": 1786847001,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786852800.0,
+          "used_percent": 41.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787015000.0,
+          "used_percent": 63.0
+         }
+        ]
+       }
+      ],
+      "fail_count": 0,
+      "fetched_at": 1786847001,
       "period_start": "1786838400",
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
      }
     ],
-    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
    }
   ]
  },
@@ -2382,6 +3235,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -2399,6 +3253,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "session:s1",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -2431,12 +3286,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000session:s1\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "s1",
     "spec": "claude-usage-tracker",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "session:s1",
       "agent": "claude",
       "as_of": 1786846800.0,
@@ -2484,6 +3340,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {
      "cmd-ok": "#!/bin/sh\ncat > \"$0.stdin\"\nprintf '%s\\n' '{\"schema_version\": 1, \"as_of\": 1786847000, \"windows\": [{\"id\": \"session\", \"duration_seconds\": 18000, \"used_percent\": 15, \"resets_at\": \"2026-08-16T02:30:00Z\"}, {\"id\": \"week\", \"duration_seconds\": 604800, \"used_percent\": 87, \"resets_at\": \"2026-08-18T01:00:00Z\"}]}'\n"
     },
@@ -2581,6 +3438,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {
      "cmd-ok": "#!/bin/sh\nexit 1\n"
     },
@@ -2679,6 +3537,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -2776,6 +3635,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {
      "cmd-ok": "#!/bin/sh\ncat > \"$0.stdin\"\nprintf '%s\\n' '{\"schema_version\": 1, \"as_of\": 1786847000, \"windows\": [{\"id\": \"session\", \"duration_seconds\": 18000, \"used_percent\": 15, \"resets_at\": \"2026-08-16T02:30:00Z\"}, {\"id\": \"week\", \"duration_seconds\": 604800, \"used_percent\": 87, \"resets_at\": \"2026-08-18T01:00:00Z\"}]}'\n"
     },
@@ -2873,6 +3733,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -2968,6 +3829,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -3036,6 +3898,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {
      "flat": "#!/bin/sh\ncat > \"$0.stdin\"\nprintf '%s\\n' '{\"session_pct\": 7, \"weekly_pct\": 8, \"session_resets_at\": 1786854200, \"weekly_resets_at\": \"2026-08-18T01:00:00Z\"}'\n"
     },
@@ -3133,6 +3996,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -3261,6 +4125,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -3363,6 +4228,604 @@
   ]
  },
  {
+  "name": "native: two sessions, one signed-in account",
+  "steps": [
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847000,
+     "model": "claude-opus-5-5",
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session": "s1"
+    },
+    "claude_json": "{\"numStartups\": 3, \"oauthAccount\": {\"accountUuid\": \"11111111-2222-3333-4444-555555555555\", \"emailAddress\": \"canary@example.invalid\", \"organizationUuid\": \"org-canary\"}}",
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "15",
+     "session_reset": "2026-08-16 02:30",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "87.5",
+     "weekly_reset": "2026-08-17 22:50",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847000,
+    "payload": {
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session_id": "s1"
+    },
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "account:666ff6ccaa5b3c07feaa3a95",
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786847000.0,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786847400.0,
+         "used_percent": 15.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787007000.0,
+         "used_percent": 87.5
+        }
+       ]
+      }
+     ],
+     "fetched_at": 1786847000,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "native",
+     "stale": false
+    },
+    "scope": "native\u0000account:666ff6ccaa5b3c07feaa3a95\u00001786838400",
+    "session": "s1",
+    "spec": "native",
+    "state": [
+     {
+      "account": {},
+      "account_id": "account:666ff6ccaa5b3c07feaa3a95",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786847000.0,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786847400.0,
+          "used_percent": 15.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787007000.0,
+          "used_percent": 87.5
+         }
+        ]
+       }
+      ],
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "native",
+      "stale": false
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   },
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847005,
+     "model": "claude-opus-5-5",
+     "session": "s1"
+    },
+    "claude_json": "{\"numStartups\": 3, \"oauthAccount\": {\"accountUuid\": \"11111111-2222-3333-4444-555555555555\", \"emailAddress\": \"canary@example.invalid\", \"organizationUuid\": \"org-canary\"}}",
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "15",
+     "session_reset": "2026-08-16 02:30",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "87.5",
+     "weekly_reset": "2026-08-17 22:50",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847005,
+    "payload": null,
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "account:666ff6ccaa5b3c07feaa3a95",
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786847000.0,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786847400.0,
+         "used_percent": 15.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787007000.0,
+         "used_percent": 87.5
+        }
+       ]
+      }
+     ],
+     "fetched_at": 1786847000.0,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "native",
+     "stale": false
+    },
+    "scope": "native\u0000account:666ff6ccaa5b3c07feaa3a95\u00001786838400",
+    "session": "s1",
+    "spec": "native",
+    "state": [
+     {
+      "account": {},
+      "account_id": "account:666ff6ccaa5b3c07feaa3a95",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786847000.0,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786847400.0,
+          "used_percent": 15.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787007000.0,
+          "used_percent": 87.5
+         }
+        ]
+       }
+      ],
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "native",
+      "stale": false
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   },
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847006,
+     "model": "claude-opus-5-5",
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session": "s2"
+    },
+    "claude_json": "{\"numStartups\": 3, \"oauthAccount\": {\"accountUuid\": \"11111111-2222-3333-4444-555555555555\", \"emailAddress\": \"canary@example.invalid\", \"organizationUuid\": \"org-canary\"}}",
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "15",
+     "session_reset": "2026-08-16 02:30",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "87.5",
+     "weekly_reset": "2026-08-17 22:50",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847006,
+    "payload": {
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session_id": "s2"
+    },
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "account:666ff6ccaa5b3c07feaa3a95",
+     "account_name": "session:s2",
+     "agent": "claude",
+     "as_of": 1786847006.0,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786847400.0,
+         "used_percent": 15.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787007000.0,
+         "used_percent": 87.5
+        }
+       ]
+      }
+     ],
+     "fetched_at": 1786847006,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "native",
+     "stale": false
+    },
+    "scope": "native\u0000account:666ff6ccaa5b3c07feaa3a95\u00001786838400",
+    "session": "s2",
+    "spec": "auto",
+    "state": [
+     {
+      "account": {},
+      "account_id": "account:666ff6ccaa5b3c07feaa3a95",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786847000.0,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786847400.0,
+          "used_percent": 15.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787007000.0,
+          "used_percent": 87.5
+         }
+        ]
+       }
+      ],
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "native",
+      "stale": false
+     },
+     {
+      "account": {},
+      "account_id": "account:666ff6ccaa5b3c07feaa3a95",
+      "account_name": "session:s2",
+      "agent": "claude",
+      "as_of": 1786847006.0,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786847400.0,
+          "used_percent": 15.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787007000.0,
+          "used_percent": 87.5
+         }
+        ]
+       }
+      ],
+      "fetched_at": 1786847006,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "native",
+      "stale": false
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   }
+  ]
+ },
+ {
+  "name": "native: another account, another scope",
+  "steps": [
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847000,
+     "model": "claude-opus-5-5",
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session": "s1"
+    },
+    "claude_json": "{\"numStartups\": 3, \"oauthAccount\": {\"accountUuid\": \"66666666-7777-8888-9999-000000000000\", \"emailAddress\": \"canary@example.invalid\", \"organizationUuid\": \"org-canary\"}}",
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "15",
+     "session_reset": "2026-08-16 02:30",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "87.5",
+     "weekly_reset": "2026-08-17 22:50",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847000,
+    "payload": {
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session_id": "s1"
+    },
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_id": "account:278ec6a36068c0901295e62c",
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786847000.0,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786847400.0,
+         "used_percent": 15.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787007000.0,
+         "used_percent": 87.5
+        }
+       ]
+      }
+     ],
+     "fetched_at": 1786847000,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "native",
+     "stale": false
+    },
+    "scope": "native\u0000account:278ec6a36068c0901295e62c\u00001786838400",
+    "session": "s1",
+    "spec": "native",
+    "state": [
+     {
+      "account": {},
+      "account_id": "account:278ec6a36068c0901295e62c",
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786847000.0,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786847400.0,
+          "used_percent": 15.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787007000.0,
+          "used_percent": 87.5
+         }
+        ]
+       }
+      ],
+      "fetched_at": 1786847000,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "native",
+      "stale": false
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   },
+   {
+    "account": "default",
+    "built_context": {
+     "as_of": 1786847001,
+     "model": "claude-opus-5-5",
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session": "s1"
+    },
+    "claude_json": "{\"oauthAccount\": {\"accountUuid\": 5}}",
+    "commands": {},
+    "context": null,
+    "limits": {
+     "session_pct": "15",
+     "session_reset": "2026-08-16 02:30",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "87.5",
+     "weekly_reset": "2026-08-17 22:50",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    "now": 1786847001,
+    "payload": {
+     "rate_limits": {
+      "five_hour": {
+       "resets_at": 1786847400,
+       "used_percentage": 15
+      },
+      "seven_day": {
+       "resets_at": 1787007000,
+       "used_percentage": 87.5
+      }
+     },
+     "session_id": "s1"
+    },
+    "period": "day",
+    "reading": {
+     "account": {},
+     "account_name": "session:s1",
+     "agent": "claude",
+     "as_of": 1786847001.0,
+     "buckets": [
+      {
+       "id": "default",
+       "label": "default",
+       "windows": [
+        {
+         "duration_seconds": 18000.0,
+         "id": "five_hour",
+         "resets_at": 1786847400.0,
+         "used_percent": 15.0
+        },
+        {
+         "duration_seconds": 604800.0,
+         "id": "seven_day",
+         "resets_at": 1787007000.0,
+         "used_percent": 87.5
+        }
+       ]
+      }
+     ],
+     "fetched_at": 1786847001,
+     "period_start": "1786838400",
+     "schema_version": 1,
+     "source": "native",
+     "stale": false
+    },
+    "scope": "native\u0000session:s1\u00001786838400",
+    "session": "s1",
+    "spec": "native",
+    "state": [
+     {
+      "account": {},
+      "account_name": "session:s1",
+      "agent": "claude",
+      "as_of": 1786847001.0,
+      "buckets": [
+       {
+        "id": "default",
+        "label": "default",
+        "windows": [
+         {
+          "duration_seconds": 18000.0,
+          "id": "five_hour",
+          "resets_at": 1786847400.0,
+          "used_percent": 15.0
+         },
+         {
+          "duration_seconds": 604800.0,
+          "id": "seven_day",
+          "resets_at": 1787007000.0,
+          "used_percent": 87.5
+         }
+        ]
+       }
+      ],
+      "fetched_at": 1786847001,
+      "period_start": "1786838400",
+      "schema_version": 1,
+      "source": "native",
+      "stale": false
+     }
+    ],
+    "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
+   }
+  ]
+ },
+ {
   "name": "native: live, then cached, then none",
   "steps": [
    {
@@ -3382,6 +4845,7 @@
      },
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -3485,6 +4949,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -3576,6 +5041,7 @@
      "model": "claude-opus-5-5",
      "session": "s1"
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -3668,6 +5134,7 @@
      "model": "claude-opus-5-5",
      "session": ""
     },
+    "claude_json": null,
     "commands": {},
     "context": null,
     "limits": {
@@ -3685,6 +5152,7 @@
     "period": "day",
     "reading": {
      "account": {},
+     "account_id": "profile:dd56de4137951d9c92681b03",
      "account_name": "default",
      "agent": "claude",
      "as_of": 1786846800.0,
@@ -3716,12 +5184,13 @@
      "source": "claude-usage-tracker",
      "stale": true
     },
-    "scope": "claude-usage-tracker\u0000default\u00001786838400",
+    "scope": "claude-usage-tracker\u0000profile:dd56de4137951d9c92681b03\u00001786838400",
     "session": "",
     "spec": "",
     "state": [
      {
       "account": {},
+      "account_id": "profile:dd56de4137951d9c92681b03",
       "account_name": "default",
       "agent": "claude",
       "as_of": 1786846800.0,

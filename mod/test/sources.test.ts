@@ -190,8 +190,11 @@ test("collect: scenarios over one state directory", async () => {
     const dir = scratch();
     const stateDir = path.join(dir, "state");
     const tracker = path.join(dir, "tracker.plist");
+    const config = path.join(dir, "config");
+    fs.mkdirSync(config);
     const env = { CODING_AGENT_USAGE_LINE_STATE_DIR: stateDir,
-                  CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST: tracker };
+                  CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST: tracker,
+                  CLAUDE_CONFIG_DIR: config };
     const put = (value: unknown) =>
       pyJsonLoads(JSON.stringify(value).replaceAll("${DIR}", dir));
     const scrub = (value: unknown) =>
@@ -206,6 +209,9 @@ test("collect: scenarios over one state directory", async () => {
         }
         if (s.tracker === null) fs.rmSync(tracker, { force: true });
         else fs.writeFileSync(tracker, s.tracker);
+        const configFile = path.join(config, ".claude.json");
+        if (s.claude_json === null) fs.rmSync(configFile, { force: true });
+        else fs.writeFileSync(configFile, s.claude_json);
         const spec = s.spec.replaceAll("${DIR}", dir);
         const context = s.context !== null ? s.context
           : statusSourceContext(spec, s.session, "claude-opus-5-5", s.now,
@@ -234,6 +240,8 @@ test("collect: scenarios over one state directory", async () => {
                                         value.period_start as string),
                        what + " cache name");
           files.push(scrub(value));
+          // The config's other fields never reach a cache.
+          assert.ok(!JSON.stringify(value).includes("canary"), what);
         }
         const order = (list: unknown[]) =>
           list.map((f) => canon(f)).sort((a, b) =>

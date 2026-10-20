@@ -36,8 +36,9 @@ import type { FoldMeta, MainFold, SaveMark } from '../src/main_fold.ts'
 import { statePath } from '../src/state.ts'
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
-  _pricedRecord, _windowCostsOf, _windowsKey, _windowStarts, CALIB_TTL,
-  COST_TAIL_BYTES, seedLimitsSnapshot,
+  _pricedRecord, _windowCostsOf, _windowsKey, _windowStarts,
+  CALIB_SWEEP_EVERY_S, CALIB_SWEPT, CALIB_TTL, COST_TAIL_BYTES,
+  seedLimitsSnapshot, staleCalibrations,
 } from '../src/claude_calib.ts'
 import type { Calib, Priced, Snapshot } from '../src/claude_calib.ts'
 import {
@@ -46,7 +47,8 @@ import {
 } from '../src/sources.ts'
 import type { Env, Fetch, Store } from '../src/sources.ts'
 import {
-  plistLoads, prepareClaudeReading, statusSourceContext, trackerReading,
+  configAccountOf, plistLoads, prepareClaudeReading, statusSourceContext,
+  trackerReading,
 } from '../src/claude_sources.ts'
 import type { PreparedClaudeReading } from '../src/claude_sources.ts'
 import {
@@ -188,6 +190,8 @@ const agentLabels = new Map<string, [string, string]>()
 const costs = new Map<string, CostKept>()
 let costsRead = false
 let scanning = false
+/** When this load last swept the calibration caches, in Unix seconds. */
+let swept = 0
 let samples: RateSample[] = []
 
 /** How long each step of the last statusDoc took, in ms, in the order they
@@ -687,6 +691,29 @@ async function fetchOne($: $, home: string, selected: string,
   return {}
 }
 
+let configAccount: { path: string; stamp: string; id: string } | null = null
+
+/** config_account_id through `$`: Claude Code's signed-in account, hashed,
+ * from its global config, kept against the file's mtime and size, since
+ * the file is a quarter of a megabyte and rewritten often. */
+async function configAccountVia($: $, home: string): Promise<string> {
+  const dir = await $.env.get('CLAUDE_CONFIG_DIR')
+  const path = dir ? (dir.startsWith('~/') ? home + dir.slice(1) : dir) +
+    '/.claude.json' : home + '/.claude.json'
+  try {
+    const st = await $.fs.stat(path)
+    const stamp = st.mtimeMs + '/' + st.size
+    if (configAccount?.path === path && configAccount.stamp === stamp) {
+      return configAccount.id
+    }
+    const id = configAccountOf(await $.fs.read(path))
+    configAccount = { path, stamp, id }
+    return id
+  } catch {
+    return ''
+  }
+}
+
 /** A cache file of the shared store, or {} where there is none. */
 async function readJson($: $, path: string): Promise<Dict> {
   const text = await readText($, path)
@@ -757,7 +784,7 @@ async function preparedVia($: $, places: Places, raw: Dict,
     fetchOne($, places.home, selected, ctx)
   const env: Env = {}
   return prepareClaudeReading(spec, CONFIG.account, CONFIG.period, context,
-    now, env, store, fetch)
+    now, env, store, fetch, () => configAccountVia($, places.home))
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -787,6 +814,10 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
   } catch {
     // No scan for these windows yet.
   }
+  if (now - swept > CALIB_SWEEP_EVERY_S) {
+    swept = now
+    void sweepCalibrationsVia($, places, now).catch(() => {})
+  }
   if (!fresh && !scanning && (ss !== null || ws !== null)) {
     scanning = true
     void scanWindows($, places, snap, windows, path).catch(() => {})
@@ -795,6 +826,28 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
       })
   }
   return _calibrationOf(snap, cached, null)
+}
+
+/** _sweep_calibrations through `$`: the calibration caches untouched for
+ * CALIB_MAX_AGE_S, removed at most once a day between this and the Python,
+ * by the marker both stamp.  `$.fs` cannot remove a file, so `rm` does,
+ * handed only names staleCalibrations matched, under the state directory. */
+async function sweepCalibrationsVia($: $, places: Places,
+  now: number): Promise<void> {
+  const marker = pyJoin(places.stateDir, CALIB_SWEPT)
+  try {
+    const st = await $.fs.stat(marker)
+    if (now - st.mtimeMs / 1000 < CALIB_SWEEP_EVERY_S) return
+  } catch {
+    // Never swept.
+  }
+  if (!await writeText($, marker, '')) return
+  const stale = staleCalibrations(await listDir($, places.stateDir), now)
+    .map((name) => pyJoin(places.stateDir, name))
+  if (stale.length) {
+    await $.process.run(['/bin/rm', '-f', '--', ...stale],
+      { timeoutMs: 15_000 })
+  }
 }
 
 /** _windowCosts through `$`, then the cache written as _writeCalibCache

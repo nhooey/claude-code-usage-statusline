@@ -183,8 +183,9 @@ file, because a running app's latest preferences may not have reached the file
 yet. The account named by `activeProfileId` is read, falling back to the one
 marked `isSelectedForDisplay`, then to the first. Only the usage figures are
 taken: the five-hour, weekly and Opus-weekly percentages, their reset times,
-and when the app last updated them. The same record holds an OAuth account and
-a session key, and neither is read.
+and when the app last updated them, with the record's `id` hashed (see
+[Calibration cache](#calibration-cache)). The same record holds an OAuth
+account and a session key, and neither is read.
 
 Set `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST` to read an exported store
 from a file instead, for example one copied from another machine.
@@ -223,6 +224,33 @@ With `--account default`, the account scope is the credential in use (hashed)
 for a source that has one, and otherwise the session — so two sessions never
 share a reading that might belong to different accounts. Name the account
 with `--account` to share a reading across sessions.
+
+### Calibration cache
+
+The calibration (the dollars in one percent of a plan window) is kept in its
+own file, `claude-calibration-<sha256>.cache`, which the status line and the
+mod share. It is keyed by source, account and period, but not by session:
+the cost it divides is everything spent on this machine in the window, and
+the percentage is the plan's, so every session of one account shares it.
+The account part is a hashed id, the first 24 hex digits of a sha256, from
+the source:
+
+| Source | Account id |
+|---|---|
+| Claude Usage Tracker | `profile:` and the hash of the profile record's `id` |
+| native (Claude Code's payload) | `account:` and the hash of `oauthAccount.accountUuid` in `$CLAUDE_CONFIG_DIR/.claude.json` (`~/.claude.json` by default) |
+
+Only those two fields are read, and only the hash is kept. The id is what
+keeps two accounts apart, since the percentage stored with a scan is one
+account's and two accounts' windows can open at the same minute. A source
+with no id, or a tracker profile without one, falls back to the reading
+cache's account scope above (for `--account default`, the session).
+
+A calibration file untouched for eight days belongs to a period, account or
+session that has passed, and is removed. Both the status line and the mod
+sweep, at most once a day between them, by the stamp on
+`claude-calibration-swept`; the mod removes files with `rm`, since its file
+API cannot.
 
 HTTP sources use fixed HTTPS endpoints, refuse redirects, cap response size
 and pagination, and share one time budget per refresh.

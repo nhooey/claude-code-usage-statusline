@@ -124,6 +124,9 @@ class Suite:
             "CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST":
                 os.path.join(self.tmp, "tracker.plist"),
             "CODING_AGENT_USAGE_LINE_USAGE_SOURCE": "auto",
+            # Never this machine's config: the native reading would carry
+            # its signed-in account.
+            "CLAUDE_CONFIG_DIR": os.path.join(self.tmp, "claude-config"),
         })
         # Written before every case, not once: the program may rewrite the
         # calibration cache, and a case must see its environment's.

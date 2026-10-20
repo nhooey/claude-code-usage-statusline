@@ -52,6 +52,7 @@ from cases import ENVS, PIN_NOW  # noqa: E402
 OUT = os.path.join(FIXTURES, "sources")
 APPLE = 978307200
 TRACKER_ENV = "CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST"
+CONFIG_ENV = "CLAUDE_CONFIG_DIR"
 STATE_ENV = "CODING_AGENT_USAGE_LINE_STATE_DIR"
 
 # run-cases.py's tracker store: profiles_v3 as a <string>, as the goldens
@@ -66,10 +67,13 @@ TRACKER = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
-def golden_store(usage):
-    profiles = json.dumps([{"id": "golden", "claudeUsage": usage}],
-                          separators=(",", ":"))
-    return TRACKER % profiles.replace("&", "&amp;").replace("<", "&lt;")
+def golden_store(usage, ident="golden"):
+    """A store of one profile; ident None leaves its `id` out."""
+    profile = ({"claudeUsage": usage} if ident is None
+               else {"id": ident, "claudeUsage": usage})
+    profiles = json.dumps([profile], separators=(",", ":"))
+    text = TRACKER % profiles.replace("&", "&amp;").replace("<", "&lt;")
+    return text.replace(">golden<", ">%s<" % ident) if ident else text
 
 
 def plist_store(usage, active="P1", selected=False, extra=None):
@@ -624,10 +628,22 @@ CMD_FAIL = "#!/bin/sh\nexit 1\n"
 
 
 def step(now, spec="auto", payload=None, context=None, tracker=GOLDEN,
-         commands=None, account="default", period="day", session="s1"):
+         commands=None, account="default", period="day", session="s1",
+         claude_json=None):
+    """claude_json is Claude Code's global config, written to
+    $CLAUDE_CONFIG_DIR/.claude.json; None leaves none there."""
     return {"now": now, "spec": spec, "payload": payload, "context": context,
             "tracker": tracker, "commands": commands or {},
-            "account": account, "period": period, "session": session}
+            "account": account, "period": period, "session": session,
+            "claude_json": claude_json}
+
+
+def claude_json(uuid):
+    """A config with its signed-in account, beside the fields that must
+    not be read."""
+    return json.dumps({"numStartups": 3, "oauthAccount": {
+        "accountUuid": uuid, "emailAddress": "canary@example.invalid",
+        "organizationUuid": "org-canary"}})
 
 
 N = PIN_NOW
@@ -670,6 +686,26 @@ SCENARIOS = [
         step(N + 30, spec="claude-usage-tracker"),
         step(N + 61, spec="claude-usage-tracker"),
     ]),
+    # The calibration cache is the account's, not the session's: two
+    # sessions on one tracker profile read through two reading caches and
+    # name one calibration file, and another profile names another.
+    ("tracker: two sessions, one profile, one scope", [
+        step(N, spec="claude-usage-tracker", session="s1"),
+        step(N + 1, spec="claude-usage-tracker", session="s2"),
+        step(N + 2, spec="claude-usage-tracker", session="s2"),
+    ]),
+    ("tracker: another profile, another scope", [
+        step(N, spec="claude-usage-tracker"),
+        step(N + 61, spec="claude-usage-tracker",
+             tracker=golden_store(TRACKER_USAGE, ident="other")),
+    ]),
+    # No id to key by: the session, as the reading caches are keyed.
+    ("tracker: a profile with no id, the session", [
+        step(N, spec="claude-usage-tracker",
+             tracker=golden_store(TRACKER_USAGE, ident=None)),
+        step(N + 1, spec="claude-usage-tracker", session="s2",
+             tracker=golden_store(TRACKER_USAGE, ident=None)),
+    ]),
     ("tracker: a reset that has passed", [
         step(N, spec="claude-usage-tracker", tracker=golden_store(
             dict(TRACKER_USAGE, sessionResetTime=N - 1 - APPLE))),
@@ -691,6 +727,21 @@ SCENARIOS = [
         step(N + 1, spec="cmd:${DIR}/flat", period="month"),
         step(N + 2, spec="cmd:${DIR}/missing", period="month"),
     ]),
+    ("native: two sessions, one signed-in account", [
+        step(N, spec="native", payload=PAYLOAD, claude_json=claude_json(
+            "11111111-2222-3333-4444-555555555555")),
+        step(N + 5, spec="native", claude_json=claude_json(
+            "11111111-2222-3333-4444-555555555555")),
+        step(N + 6, spec="auto", session="s2",
+             payload={"session_id": "s2", "rate_limits": CLAUDE_LIMITS},
+             claude_json=claude_json("11111111-2222-3333-4444-555555555555")),
+    ]),
+    ("native: another account, another scope", [
+        step(N, spec="native", payload=PAYLOAD, claude_json=claude_json(
+            "66666666-7777-8888-9999-000000000000")),
+        step(N + 1, spec="native", payload=PAYLOAD,
+             claude_json='{"oauthAccount": {"accountUuid": 5}}'),
+    ]),
     ("native: live, then cached, then none", [
         step(N, spec="native", payload=PAYLOAD),
         step(N + 5, spec="native"),
@@ -706,8 +757,11 @@ def collect_cases(scratch):
         directory = tempfile.mkdtemp(dir=scratch)
         state_dir = os.path.join(directory, "state")
         tracker = os.path.join(directory, "tracker.plist")
+        config = os.path.join(directory, "config")
+        os.makedirs(config)
         os.environ[STATE_ENV] = state_dir
         os.environ[TRACKER_ENV] = tracker
+        os.environ[CONFIG_ENV] = config
         done = []
         for s in steps:
             for cmd, script in s["commands"].items():
@@ -721,6 +775,13 @@ def collect_cases(scratch):
             else:
                 with open(tracker, "w", encoding="utf-8") as fh:
                     fh.write(s["tracker"])
+            config_file = os.path.join(config, ".claude.json")
+            if s["claude_json"] is None:
+                if os.path.exists(config_file):
+                    os.unlink(config_file)
+            else:
+                with open(config_file, "w", encoding="utf-8") as fh:
+                    fh.write(s["claude_json"])
             spec = s["spec"].replace("${DIR}", directory)
             context = s["context"]
             if context is None:
@@ -758,6 +819,9 @@ def main():
         os.environ.pop(name, None)
     set_tz("UTC")
     scratch = tempfile.mkdtemp(prefix="sources-fixtures.")
+    # Never this machine's own config: a payload's reading would carry its
+    # account.  collect_cases points each scenario at its own.
+    os.environ[CONFIG_ENV] = os.path.join(scratch, "no-config")
     try:
         shutil.rmtree(OUT, ignore_errors=True)
         write("values.json", values())

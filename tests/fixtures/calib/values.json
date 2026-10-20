@@ -6545,6 +6545,64 @@
   {
    "args": [
     {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "profile:0123456789abcdef01234567",
+     "account_name": "session:s1",
+     "period_start": "1786800000",
+     "source": "claude-usage-tracker"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "",
+     "account_name": "session:s2",
+     "period_start": "1786800000",
+     "source": "native"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {}
+  },
+  {
+   "args": [
+    {}
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
      "session_pct": "41",
      "session_reset": "2026-08-16 04:00",
      "session_share": "",
@@ -6794,6 +6852,94 @@
   {
    "args": [
     {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "profile:0123456789abcdef01234567",
+     "account_name": "session:s1",
+     "period_start": "1786800000",
+     "source": "claude-usage-tracker"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
+     "session_pct": "41",
+     "session_reset": "2026-08-16 04:00",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "63",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "",
+     "account_name": "session:s2",
+     "period_start": "1786800000",
+     "source": "native"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "native\u0000session:s2\u00001786800000",
+    "session_pct": 41.0,
+    "session_resets_at": "2026-08-16 04:00",
+    "weekly_pct": 63.0,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "native\u0000session:s2\u00001786800000",
+     "session_pct": 41.0,
+     "session_resets_at": "2026-08-16 04:00",
+     "weekly_pct": 63.0,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {
+    "sess": 41.0,
+    "week": 63.0
+   }
+  },
+  {
+   "args": [
+    {
      "session_pct": "0.38",
      "session_reset": "",
      "session_share": "",
@@ -7025,6 +7171,88 @@
   {
    "args": [
     {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "profile:0123456789abcdef01234567",
+     "account_name": "session:s1",
+     "period_start": "1786800000",
+     "source": "claude-usage-tracker"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "0.38",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "",
+     "account_name": "session:s2",
+     "period_start": "1786800000",
+     "source": "native"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "native\u0000session:s2\u00001786800000",
+    "session_pct": 0.38,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "native\u0000session:s2\u00001786800000",
+     "session_pct": 0.38,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
      "session_pct": "",
      "session_reset": "",
      "session_share": "",
@@ -7258,6 +7486,88 @@
     {
      "session_pct": "",
      "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "profile:0123456789abcdef01234567",
+     "account_name": "session:s1",
+     "period_start": "1786800000",
+     "source": "claude-usage-tracker"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "",
+     "session_turn": "",
+     "weekly_pct": "abc",
+     "weekly_reset": "2026-08-18 01:00",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "",
+     "account_name": "session:s2",
+     "period_start": "1786800000",
+     "source": "native"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "native\u0000session:s2\u00001786800000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": "2026-08-18 01:00"
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "native\u0000session:s2\u00001786800000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": "2026-08-18 01:00"
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
      "session_share": "5",
      "session_turn": "",
      "weekly_pct": "",
@@ -7475,6 +7785,88 @@
    "args": [
     {
      "_scope": "['a']\u0000{'x': 1}\u0000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "profile:0123456789abcdef01234567",
+     "account_name": "session:s1",
+     "period_start": "1786800000",
+     "source": "claude-usage-tracker"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "claude-usage-tracker\u0000profile:0123456789abcdef01234567\u00001786800000",
+     "session_pct": null,
+     "session_resets_at": "",
+     "weekly_pct": null,
+     "weekly_resets_at": ""
+    }
+   ],
+   "fn": "plan_totals",
+   "out": {}
+  },
+  {
+   "args": [
+    {
+     "session_pct": "",
+     "session_reset": "",
+     "session_share": "5",
+     "session_turn": "",
+     "weekly_pct": "",
+     "weekly_reset": "",
+     "weekly_share": "",
+     "weekly_turn": ""
+    },
+    {
+     "account_id": "",
+     "account_name": "session:s2",
+     "period_start": "1786800000",
+     "source": "native"
+    }
+   ],
+   "fn": "seed_limits_snapshot",
+   "out": {
+    "_scope": "native\u0000session:s2\u00001786800000",
+    "session_pct": null,
+    "session_resets_at": "",
+    "weekly_pct": null,
+    "weekly_resets_at": ""
+   }
+  },
+  {
+   "args": [
+    {
+     "_scope": "native\u0000session:s2\u00001786800000",
      "session_pct": null,
      "session_resets_at": "",
      "weekly_pct": null,

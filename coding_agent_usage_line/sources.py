@@ -1,5 +1,5 @@
 """Usage source selection and the versioned, safe custom-command contract."""
-import json, os, subprocess, time, math, selectors, signal, hashlib, plistlib
+import json, os, re, subprocess, time, math, selectors, signal, hashlib, plistlib
 from . import state
 from datetime import datetime, timezone
 from xml.parsers.expat import ExpatError
@@ -116,6 +116,15 @@ def has_reading(value):
                for name in ("input_tokens", "cached_input_tokens", "output_tokens",
                             "reasoning_output_tokens", "cost_usd"))
 
+# An account's id as hashed_account_id gives it, and nothing else: the one
+# identity a reading carries from its source, through the cache, to the
+# calibration scope.
+_ACCOUNT_ID = re.compile(r"(?:profile|account):[0-9a-f]{24}\Z")
+
+def _account_id(value):
+    text = value.get("account_id") if isinstance(value, dict) else None
+    return text if isinstance(text, str) and _ACCOUNT_ID.match(text) else None
+
 def _cached_reading(value, source, now, ttl):
     """Re-whitelist cache content and make stale/expired state visible."""
     clean = normalise(value, source)
@@ -126,6 +135,9 @@ def _cached_reading(value, source, now, ttl):
     for name in ("fetched_at", "attempted_at", "retry_at", "fail_count"):
         n = _number(value.get(name))
         if n is not None: clean[name] = n
+    # Not normalise's: a command's output does not name the account.
+    account = _account_id(value)
+    if account is not None: clean["account_id"] = account
     # A quota whose reset has passed is historical, not a live availability.
     for bucket in clean.get("buckets", []):
         for window in bucket.get("windows", []):
@@ -545,7 +557,10 @@ def claude_usage_tracker():
                                             ("seven_day", raw.get("weekly_pct"), raw.get("weekly_resets_at"), 604800),
                                             ("seven_day_opus", raw.get("weekly_opus_pct"), raw.get("weekly_resets_at"), 604800)):
             if pct is not None: windows.append({"id": ident, "duration_seconds": duration, "used_percent": pct, "resets_at": reset})
-        return normalise({"schema_version":1, "as_of":raw.get("as_of"), "windows":windows}, "claude-usage-tracker")
+        reading = normalise({"schema_version":1, "as_of":raw.get("as_of"), "windows":windows}, "claude-usage-tracker")
+        account = _account_id(raw)
+        if reading and account is not None: reading["account_id"] = account
+        return reading
     # ExpatError is a store that is not XML, and AttributeError one that is
     # not a dict; either used to escape and take the status line down.
     except (OSError, ValueError, TypeError, ExpatError, AttributeError): return {}
@@ -561,6 +576,11 @@ def collect(agent, spec="auto", account="default", period="day", context=None, n
                     "period_start": start, "period_end": end})
     namespace = _cache_namespace(spec, account, context)
     native = native_reading(agent, context)
+    if native and agent == "claude":
+        # The payload names no account; Claude Code's config does.
+        from . import claude
+        account_id = claude.config_account_id()
+        if account_id: native["account_id"] = account_id
     stale_native = {}
     raw_native_cache = state.load(agent, "native", namespace, period_key)
     cached_native = _cached_reading(raw_native_cache, "native", now, 60)

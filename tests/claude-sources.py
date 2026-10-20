@@ -36,7 +36,7 @@ assert claude_sources.legacy_limits(dict(p.reading, stale=True)) == p.limits
 # The seeded snapshot carries NUMBERS, the form calibration compares against
 # CALIB_MIN_PCT.  Seeding the renderer's strings raised a TypeError that
 # _with_shares swallowed, and every share cell drew "?" on the live readout.
-import json, tempfile
+import hashlib, json, tempfile
 from coding_agent_usage_line import claude
 snap = claude.seed_limits_snapshot(p.limits, p.reading)
 assert snap["session_pct"] == 12.0 and snap["weekly_pct"] == 34.0, snap
@@ -97,6 +97,7 @@ with tempfile.TemporaryDirectory() as tmp:
         with open(path, "w") as fh:
             fh.write(claude.calib_cache_text(windows, 6.0, 17.0, 12.0, 34.0))
         os.utime(path, (1, 1))
+        claude._calib_swept = True  # which would take a file this old
         assert claude.calibration(scan=False) == {"sess": 0.5, "week": 0.5}
         # The Python writes the same bytes the mod's pyJsonDumps does.
         claude._write_calib_cache(windows, 6, 17.0, 12.0, 34)
@@ -159,32 +160,128 @@ with tempfile.TemporaryDirectory() as tmp:
             os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = saved
 
 # One account and window name one calibration cache, whether the render
-# fetched the reading or took the cache an earlier render left: the shared
-# scenario mod/test/sources.test.ts replays too.  A cached reading lost its
-# account and window, so the panel and the mod wrote and read two files.
+# fetched the reading or took the cache an earlier render left, and whichever
+# session it is: the shared scenarios mod/test/sources.test.ts replays too.
+# A cached reading lost its account and window, so the panel and the mod
+# wrote and read two files; and the scope was the session's, so every
+# session of one account scanned for a file of its own.
 with open(os.path.join(HERE, "fixtures", "sources", "collect.json")) as fh:
-    scenario = [c for c in json.load(fh)
-                if c["name"] == "tracker: fresh, then cached, one scope"][0]
-SCOPE = "claude-usage-tracker\0session:s1\0" "1786838400"
+    scenarios = {c["name"]: c["steps"] for c in json.load(fh)}
+PROFILE = "profile:" + hashlib.sha256(b"golden").hexdigest()[:24]
+SCOPE = "claude-usage-tracker\0" + PROFILE + "\0" "1786838400"
+ACCOUNT = "account:" + hashlib.sha256(
+    b"11111111-2222-3333-4444-555555555555").hexdigest()[:24]
+EXPECT = {
+    "tracker: fresh, then cached, one scope": [SCOPE] * 3,
+    "tracker: two sessions, one profile, one scope": [SCOPE] * 3,
+    "tracker: another profile, another scope": [
+        SCOPE, SCOPE.replace(PROFILE, "profile:" + hashlib.sha256(
+            b"other").hexdigest()[:24])],
+    "tracker: a profile with no id, the session": [
+        "claude-usage-tracker\0session:s1\0" "1786838400",
+        "claude-usage-tracker\0session:s2\0" "1786838400"],
+    "native: two sessions, one signed-in account": [
+        "native\0" + ACCOUNT + "\0" "1786838400"] * 3,
+}
+ENV = ("CODING_AGENT_USAGE_LINE_STATE_DIR",
+       "CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST", "CLAUDE_CONFIG_DIR")
+for name, scopes in EXPECT.items():
+    steps = scenarios[name]
+    assert [s["scope"] for s in steps] == scopes, name
+    sessions = {s["built_context"]["session"] for s in steps}
+    with tempfile.TemporaryDirectory() as tmp:
+        saved = {k: os.environ.get(k) for k in ENV}
+        os.environ[ENV[0]] = os.path.join(tmp, "s")
+        tracker = os.environ[ENV[1]] = os.path.join(tmp, "tracker.plist")
+        config = os.environ[ENV[2]] = os.path.join(tmp, "config")
+        os.makedirs(config)
+        try:
+            for s in steps:
+                with open(tracker, "w") as fh:
+                    fh.write(s["tracker"])
+                if s["claude_json"] is not None:
+                    with open(os.path.join(config, ".claude.json"),
+                              "w") as fh:
+                        fh.write(s["claude_json"])
+                p = claude_sources.prepare_claude_reading(
+                    s["spec"], s["account"], s["period"],
+                    s["built_context"], s["now"])
+                got = claude.seed_limits_snapshot(p.limits,
+                                                  p.reading)["_scope"]
+                assert got == s["scope"], (name, s["now"], got)
+                # The reading caches stay the session's.
+                assert p.reading["account_name"] == (
+                    "session:" + s["built_context"]["session"]), p.reading
+            files = os.listdir(os.path.join(tmp, "s"))
+            assert all("canary" not in open(os.path.join(tmp, "s", f)).read()
+                       for f in files if f.endswith(".json"))
+        finally:
+            for k, v in saved.items():
+                if v is None: os.environ.pop(k, None)
+                else: os.environ[k] = v
+    assert len(sessions) == (1 if "fresh" in name or "another" in name
+                             else 2), (name, sessions)
+
+# The tracker's id and the config's uuid are read hashed, and only them.
+store = {"activeProfileId": "P1", "profiles_v3": json.dumps([
+    {"id": "P1", "claudeUsage": {"sessionPercentage": 1},
+     "oauthAccountJSON": "oauth-canary"}]).encode()}
+reading = claude.tracker_reading(store)
+assert reading["account_id"] == "profile:" + hashlib.sha256(
+    b"P1").hexdigest()[:24], reading
+assert "canary" not in json.dumps(reading)
+assert "account_id" not in claude.tracker_reading(
+    {"profiles_v3": json.dumps([{"claudeUsage": {}}])})
+# A command cannot name the account: normalise has no such field, and the
+# cache takes only the hashed form.
+assert "account_id" not in sources.normalise(
+    {"schema_version": 1, "account_id": "profile:" + "0" * 24,
+     "windows": [{"id": "w", "used_percent": 1}]}, "cmd")
+assert "account_id" not in sources._cached_reading(
+    {"schema_version": 1, "account_id": "me", "as_of": 1,
+     "windows": [{"id": "w", "used_percent": 1}]}, "cmd", 1, 60)
+
+# The sweep: calibration caches untouched for CALIB_MAX_AGE_S, by name, at
+# most once a day across processes, and never with an override in force.
 with tempfile.TemporaryDirectory() as tmp:
-    saved = {k: os.environ.get(k) for k in (
-        "CODING_AGENT_USAGE_LINE_STATE_DIR",
-        "CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST")}
-    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = os.path.join(tmp, "s")
-    tracker = os.path.join(tmp, "tracker.plist")
-    os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST"] = tracker
+    saved = (os.environ.get("CODING_AGENT_USAGE_LINE_STATE_DIR"),
+             claude.CALIB_CACHE_OVERRIDE)
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = tmp
+    claude.CALIB_CACHE_OVERRIDE = ""
+    now = 2000000000.0
+    old_t = now - claude.CALIB_MAX_AGE_S - 60
+    def plant(name, t):
+        path = os.path.join(tmp, name)
+        open(path, "w").close()
+        os.utime(path, (t, t))
+    c = "claude-calibration-"
+    h = "0123456789abcdef" * 4
     try:
-        for s in scenario["steps"]:
-            with open(tracker, "w") as fh:
-                fh.write(s["tracker"])
-            p = claude_sources.prepare_claude_reading(
-                s["spec"], s["account"], s["period"], s["built_context"],
-                s["now"])
-            got = claude.seed_limits_snapshot(p.limits, p.reading)["_scope"]
-            assert got == s["scope"] == SCOPE, (s["now"], got)
-        assert len(scenario["steps"]) == 3
+        plant(c + h + ".cache", old_t)
+        plant(c + h.replace("0", "a") + ".cache", now - 3600)
+        plant(c + h + ".cache.tmp", old_t)
+        plant(h + ".json", old_t)
+        claude._calib_swept = False
+        assert claude._sweep_calibrations(now) == 1
+        left = sorted(os.listdir(tmp))
+        assert left == sorted([c + h.replace("0", "a") + ".cache",
+                               c + h + ".cache.tmp", h + ".json",
+                               claude.CALIB_SWEPT]), left
+        plant(c + h + ".cache", old_t)
+        assert claude._sweep_calibrations(now) == 0      # once a process
+        claude._calib_swept = False
+        assert claude._sweep_calibrations(now) == 0      # once a day
+        claude._calib_swept = False
+        assert claude._sweep_calibrations(
+            now + claude.CALIB_SWEEP_EVERY_S + 1) == 1
+        plant(c + h + ".cache", old_t)
+        claude._calib_swept = False
+        claude.CALIB_CACHE_OVERRIDE = os.path.join(tmp, "calib.json")
+        assert claude._sweep_calibrations(now + 9e6) == 0
     finally:
-        for k, v in saved.items():
-            if v is None: os.environ.pop(k, None)
-            else: os.environ[k] = v
+        if saved[0] is None:
+            os.environ.pop("CODING_AGENT_USAGE_LINE_STATE_DIR", None)
+        else:
+            os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = saved[0]
+        claude.CALIB_CACHE_OVERRIDE = saved[1]
 print("ok Claude source bridge")

@@ -536,6 +536,25 @@ export function hasReading(value: unknown): boolean {
     .some((name) => number(pyGet(account, name)) !== null);
 }
 
+// `kind:` and the first 24 hex digits of the sha256 of an account's id, or
+// "" for no id: what keys the calibration cache to an account
+// (seedLimitsSnapshot) without the id itself reaching any file.  In
+// claude.py, beside the tracker reader.
+export function hashedAccountId(kind: string, value: unknown): string {
+  if (typeof value !== "string" || !value) return "";
+  return kind + ":" + sha256Hex(value).slice(0, 24);
+}
+
+// An account's id as hashedAccountId gives it, and nothing else: the one
+// identity a reading carries from its source, through the cache, to the
+// calibration scope.
+const ACCOUNT_ID = /^(?:profile|account):[0-9a-f]{24}$/;
+
+export function accountId(value: unknown): string | null {
+  const text = isDict(value) ? pyGet(value, "account_id") : null;
+  return typeof text === "string" && ACCOUNT_ID.test(text) ? text : null;
+}
+
 // Re-whitelist cache content and make stale/expired state visible.
 export function cachedReading(value: unknown, source: string, now: number,
                               ttl: number): Reading {
@@ -549,6 +568,9 @@ export function cachedReading(value: unknown, source: string, now: number,
     const n = number(pyGet(value as Dict, name));
     if (n !== null) clean[name] = n;
   }
+  // Not normalise's: a command's output does not name the account.
+  const account = accountId(value);
+  if (account !== null) clean.account_id = account;
   // A quota whose reset has passed is historical, not a live availability.
   for (const bucket of clean.buckets as Dict[]) {
     for (const window of bucket.windows as Dict[]) {
@@ -770,8 +792,11 @@ export function trackerV1(raw: Dict): Reading {
                      used_percent: pct, resets_at: reset });
     }
   }
-  return normalise({ schema_version: 1, as_of: pyGet(raw, "as_of"), windows },
-                   "claude-usage-tracker");
+  const reading = normalise({ schema_version: 1, as_of: pyGet(raw, "as_of"),
+                              windows }, "claude-usage-tracker");
+  const account = accountId(raw);
+  if (pyTruthy(reading) && account !== null) reading.account_id = account;
+  return reading;
 }
 
 // What a command is handed on stdin: the scalar scope, never a payload.
@@ -837,6 +862,10 @@ export type Fetch = (selected: string, context: Dict, start: number,
 
 export type Env = { [name: string]: string | undefined };
 
+// Claude Code's signed-in account, hashed, as claude.config_account_id
+// reads it from its config; "" for none.  The edge reads the file.
+export type AccountOf = () => string | Promise<string>;
+
 const HTTP_SOURCES = ["anthropic-admin", "openai-admin",
                       "experimental-claude-oauth", "experimental-codex-api"];
 
@@ -850,7 +879,9 @@ const HTTP_SOURCES = ["anthropic-admin", "openai-admin",
 export async function collect(agent: string, spec: string | null,
                               account: string, period: string,
                               context: unknown, now: number, store: Store,
-                              fetch: Fetch, env: Env = {}): Promise<Reading> {
+                              fetch: Fetch, env: Env = {},
+                              configAccount: AccountOf = () => ""):
+    Promise<Reading> {
   spec = validateSource(agent, spec);
   const [start, end] = periodBounds(period, now);
   const periodKey = String(start);
@@ -858,6 +889,11 @@ export async function collect(agent: string, spec: string | null,
                       period, period_start: start, period_end: end };
   const namespace = cacheNamespace(spec, account, ctx, env);
   const native = nativeReading(agent, ctx);
+  if (pyTruthy(native) && agent === "claude") {
+    // The payload names no account; Claude Code's config does.
+    const id = await configAccount();
+    if (id) native.account_id = id;
+  }
   let staleNative: Reading = {};
   const rawNativeCache = await store.load(agent, "native", namespace, periodKey);
   let cachedNative = cachedReading(rawNativeCache, "native", now, 60);

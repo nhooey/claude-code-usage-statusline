@@ -17,9 +17,11 @@
 import { STAMP_FMT } from "./spec.ts";
 import { isDict, pyGet, pyStrip, pyTruthy, utf8 } from "./py.ts";
 import {
-  collect, pyFloatText, pyJsonLoads, splitTimestamp,
+  collect, hashedAccountId, pyFloatText, pyJsonLoads, splitTimestamp,
 } from "./sources.ts";
-import type { Dict, Env, Fetch, Reading, Store } from "./sources.ts";
+import type {
+  AccountOf, Dict, Env, Fetch, Reading, Store,
+} from "./sources.ts";
 
 // The two plan windows, as claude_records.Limits holds them.  Percentages
 // are strings because a missing figure is the empty string throughout.
@@ -143,10 +145,11 @@ export function legacyLimits(reading: unknown): Limits {
 export async function prepareClaudeReading(
     spec: string | null, account: string, period: string, context: unknown,
     now: number, env: Env, store: Store,
-    fetch: Fetch): Promise<PreparedClaudeReading> {
+    fetch: Fetch, configAccount: AccountOf = () => ""):
+    Promise<PreparedClaudeReading> {
   const safe = isDict(context) ? context : {};
   const reading = await collect("claude", spec, account, period, safe, now,
-                                store, fetch, env);
+                                store, fetch, env, configAccount);
   return { reading, limits: legacyLimits(reading) };
 }
 
@@ -221,7 +224,9 @@ export function asEpoch(v: unknown): number | null {
 // account; `activeProfileId` names the one to read, `isSelectedForDisplay`
 // is the fallback and the first record the fallback's fallback.  The same
 // record holds an OAuth account and a session key, so this names the six
-// fields it wants and touches nothing else.
+// fields it wants, and the record's `id` only as a hash (`account_id`,
+// which keys the calibration cache to the account), and touches nothing
+// else.
 export function trackerReading(store: unknown): Dict {
   if (!isDict(store)) throw new TypeError("the store is not a dict");
   let profs = pyGet(store, "profiles_v3");
@@ -252,7 +257,7 @@ export function trackerReading(store: unknown): Dict {
     const t = asEpoch(v);
     return t === null ? null : t + APPLE_EPOCH;
   };
-  return {
+  const out: Dict = {
     session_pct: pyGet(u, "sessionPercentage"),
     session_resets_at: unix(pyGet(u, "sessionResetTime")),
     weekly_pct: pyGet(u, "weeklyPercentage"),
@@ -260,6 +265,20 @@ export function trackerReading(store: unknown): Dict {
     weekly_resets_at: unix(pyGet(u, "weeklyResetTime")),
     as_of: unix(pyGet(u, "lastUpdated")),
   };
+  const account = hashedAccountId("profile", pyGet(prof as Dict, "id"));
+  if (account) out.account_id = account;
+  return out;
+}
+
+// Claude Code's global config (~/.claude.json) read down to its signed-in
+// account, hashed: `oauthAccount.accountUuid`, and nothing else.  The read
+// is the edge's; claude.config_account_id does both.
+export function configAccountOf(text: string): string {
+  let data: unknown;
+  try { data = JSON.parse(text); } catch { return ""; }
+  const account = isDict(data) ? pyGet(data, "oauthAccount") : null;
+  return hashedAccountId("account",
+    isDict(account) ? pyGet(account, "accountUuid") : null);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

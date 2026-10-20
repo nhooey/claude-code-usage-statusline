@@ -237,7 +237,15 @@ def values():
                 {"source": "cmd", "account_name": "me",
                  "period_start": 1786800000},
                 {"source": None, "account_name": 0, "period_start": 1.5},
-                {"source": ["a"], "account_name": {"x": 1}}]
+                {"source": ["a"], "account_name": {"x": 1}},
+                # The account's id wins over the namespace; an empty one
+                # falls back to it.
+                {"source": "claude-usage-tracker",
+                 "account_name": "session:s1",
+                 "account_id": "profile:0123456789abcdef01234567",
+                 "period_start": "1786800000"},
+                {"source": "native", "account_name": "session:s2",
+                 "account_id": "", "period_start": "1786800000"}]
     for lim in lims:
         for reading in readings:
             snap = claude.seed_limits_snapshot(lim, reading)

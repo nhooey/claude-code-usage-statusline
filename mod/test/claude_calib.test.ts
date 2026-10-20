@@ -285,3 +285,24 @@ function scenario(c: Case): void {
 for (const c of load("scan")) {
   test(`scan: ${c.name} (${c.steps.length} steps)`, () => scenario(c));
 }
+
+// The mod's half of _sweep_calibrations (tests/claude-sources.py has the
+// Python's): a calibration cache's name, as a regular file, untouched for
+// CALIB_MAX_AGE_S, and nothing else in the state directory.
+test("staleCalibrations: old calibration caches by name", () => {
+  const now = 2_000_000_000;
+  const old = (now - cc.CALIB_MAX_AGE_S - 60) * 1000;
+  const h = "0123456789abcdef".repeat(4);
+  const c = "claude-calibration-";
+  assert.deepEqual(cc.staleCalibrations([
+    { name: c + h + ".cache", kind: "file", mtimeMs: old },
+    { name: c + h.replaceAll("0", "a") + ".cache", kind: "file",
+      mtimeMs: (now - 3600) * 1000 },
+    { name: c + h + ".cache.tmp", kind: "file", mtimeMs: old },
+    { name: c + h.slice(1) + ".cache", kind: "file", mtimeMs: old },
+    { name: c + h.replaceAll("0", "b") + ".cache", kind: "other",
+      mtimeMs: old },
+    { name: h + ".json", kind: "file", mtimeMs: old },
+    { name: cc.CALIB_SWEPT, kind: "file", mtimeMs: old },
+  ], now), [c + h + ".cache"]);
+});

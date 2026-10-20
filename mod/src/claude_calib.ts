@@ -263,8 +263,14 @@ export function seedLimitsSnapshot(lim: Limits,
   reading: unknown = null): Snapshot {
   if (limitsEqual(lim, NO_LIMITS)) return {};
   const part = (k: string) => isDict(reading) ? pyGet(reading, k) : "";
-  const scope = ["source", "account_name", "period_start"]
-    .map((k) => pyStr(pyOr(part(k), ""))).join("\0");
+  // The account the reading is of, hashed, where the source names one:
+  // calibration is the machine's cost over the plan's percentage, nothing
+  // in it per session, so every session of one account shares the file.
+  // The reading caches' namespace is the fallback; for `--account default`
+  // that is the session, which shares nothing.
+  const scope = [part("source"),
+    pyOr(part("account_id"), part("account_name")), part("period_start")]
+    .map((v) => pyStr(pyOr(v, ""))).join("\0");
   return { session_pct: _pctNum(lim.session_pct),
     session_resets_at: lim.session_reset,
     weekly_pct: _pctNum(lim.weekly_pct),
@@ -608,6 +614,26 @@ export function _calibrationOf(snap: Snapshot, cached: Dict | null,
  * calibration_cache_path gives.  The windows are inside the file. */
 export function _calibrationCacheName(snap: Snapshot): string {
   return stateName("calibration", pyStr(pyGet(snap, "_scope", "")));
+}
+
+// The calibration caches as spec/state.jsonc names them, one per scope; a
+// past period's, account's or session's is never read again.
+const CALIB_NAME = /^claude-calibration-[0-9a-f]{64}\.cache$/;
+/** A scope's file is rewritten at least every CALIB_TTL while in use; one
+ * untouched this long is a past period's, the weekly window's included. */
+export const CALIB_MAX_AGE_S = 8 * 86400;
+/** Written by each sweep, the Python's and the mod's alike; a sweep runs
+ * once its mtime is a day old. */
+export const CALIB_SWEPT = "claude-calibration-swept";
+export const CALIB_SWEEP_EVERY_S = 86400;
+
+/** _sweep_calibrations' choice: the names in a listing of the state
+ * directory that are calibration caches untouched for CALIB_MAX_AGE_S. */
+export function staleCalibrations(
+  entries: readonly { name: string; kind: string; mtimeMs: number }[],
+  now: number): string[] {
+  return entries.filter((e) => e.kind === "file" && CALIB_NAME.test(e.name) &&
+    now - e.mtimeMs / 1000 > CALIB_MAX_AGE_S).map((e) => e.name);
 }
 
 /** The calibration cache's text, byte for byte as calib_cache_text writes
