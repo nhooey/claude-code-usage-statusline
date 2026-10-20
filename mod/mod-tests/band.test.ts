@@ -61,7 +61,7 @@ const COLS = 150
 // draws them: under the footer line, CONFIG.hintInset columns.
 const INSET = CONFIG.bandPlace === 'hint' ? CONFIG.hintInset : 0
 // The settings the band is drawn under: its right edge, BAND_EDGE, is
-// CONFIG.bandPlace's too.  The receipt keeps RIGHT_EDGE, as settings({}).
+// CONFIG.bandPlace's too, and the receipt's, which stacks on the band.
 const BAND_ST = settings({}, true, false, BAND_EDGE)
 const encoder = new TextEncoder()
 
@@ -565,11 +565,10 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
   const fig = withEngineDuration(costFigures(turns, windowFor(turns,
     Number(doc.context_window)), CALIB, snap, prepared, now,
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
-  const st = settings({})
-  const main = bandRows(st, doc, { home: HOME, rate: null, phase: 'done' })
-    .main
-  return receiptLines(st, fig, COLS, CONFIG.hide, workspaceOf(doc, HOME),
-    true, main)
+  const main = bandRows(BAND_ST, doc,
+    { home: HOME, rate: null, phase: 'done' }).main
+  return receiptLines(BAND_ST, fig, COLS, CONFIG.hide,
+    workspaceOf(doc, HOME), true, main, [], INSET)
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -596,9 +595,9 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     // 🎤, 🤖 and 🎮 at no indent, a blank row, then the 🔺🔖 tag line,
     // drawn as the start line is.
     expect(want.length).toBe(5)
-    expect(text(want[0]).startsWith(spec.E_TURN)).toBe(true)
-    expect(text(want[1]).startsWith(spec.E_BOT)).toBe(true)
-    expect(text(want[2]).startsWith(spec.E_SESSION)).toBe(true)
+    expect(text(want[0]).trimStart().startsWith(spec.E_TURN)).toBe(true)
+    expect(text(want[1]).trimStart().startsWith(spec.E_BOT)).toBe(true)
+    expect(text(want[2]).trimStart().startsWith(spec.E_SESSION)).toBe(true)
     expect(text(want[3])).toBe(' ')
     expect(text(want[4])).toContain('p-resume'.slice(0, 8))
     expect(text(want[4]).startsWith(spec.E_TURN_PAST)).toBe(true)

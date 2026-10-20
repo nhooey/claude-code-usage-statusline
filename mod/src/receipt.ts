@@ -206,13 +206,18 @@ export function receiptHead(fig: Dict, hide: readonly string[]): Span[] {
  * drawn, its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null, dim = false,
-  main: Row | null = null, sticky: readonly RowName[] = []): Span[][] {
+  main: Row | null = null, sticky: readonly RowName[] = [],
+  inset = 0): Span[][] {
   const { turn, session } = receiptRows(st, fig, ws);
   // 🤖 between 🎤 and 🎮, as the band stacks them, where the caller has
   // the band's row for it (asked 2026-10-20).
   const kept = stickyScopes(sticky);
+  // `inset` columns in, led by as many blanks and that much narrower, so
+  // they stack on the band's rows where those are drawn inset (asked
+  // 2026-10-20); the tag line stays at no indent, under the prompt's.
   const lines = drawRows(st, [turn, main, session].filter((r): r is Row =>
-    r !== null && !kept.includes(r.scope)), cols, hide);
+    r !== null && !kept.includes(r.scope)), cols - inset, hide)
+    .map((l) => inset ? [span(" ".repeat(inset)), ...l] : l);
   // A blank row before the tag line (asked 2026-10-20): a space, since Ink
   // measures an empty Text as no row at all.
   const head = receiptHead(fig, hide);

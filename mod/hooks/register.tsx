@@ -331,12 +331,13 @@ async function stamp($: $, durationMs: number, prompt: string):
     const st = await settingsOf($)
     const main = doc ? bandRows(st, doc as Dict,
       { home: where.home, rate: null, phase: 'done' }).main : null
-    // Laid out as the band is, so the rows' columns are the band's, but
-    // ending RIGHT_EDGE short of the edge wherever the band is: the edge
-    // was taken back for the rows under the footer line only (asked
-    // 2026-10-20), and the receipt is drawn in the transcript.
-    const lines = receiptLines({ ...st, rightEdge: spec.RIGHT_EDGE }, fig,
-      bandCols || 80, CONFIG.hide, ws, true, main, CONFIG.sticky)
+    // Laid out as the band is, at its width, edge and inset, so the rows
+    // stack on the band's: under the footer line, the band's rows are
+    // CONFIG.hintInset columns in, and so are the receipt's (asked
+    // 2026-10-20).
+    const inset = CONFIG.bandPlace === 'hint' ? CONFIG.hintInset : 0
+    const lines = receiptLines(st, fig, bandCols || 80, CONFIG.hide, ws,
+      true, main, CONFIG.sticky, inset)
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs), lines)
   } finally {
