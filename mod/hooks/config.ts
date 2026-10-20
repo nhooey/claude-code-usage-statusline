@@ -45,12 +45,15 @@ export const CONFIG = {
   // Where the 💳 account is drawn: "row", a row of its own under Claude
   // Code's footer line, in that line's container and in its colours, or
   // "tail", in plain text at the right end of the footer line (asked
-  // 2026-10-20, to put it under the line).
-  accountPlace: "row" as "row" | "tail",
+  // 2026-10-20, to put it under the line; back on the line, asked
+  // 2026-10-20 again).
+  accountPlace: "tail" as "row" | "tail",
   // The rows under the footer line drawn with a bottom margin of -1, to
   // take up the blank row Claude Code leaves between the footer and the
   // agent panel's `* main` (asked 2026-10-20, to see whether it can go).
-  hintTuck: true,
+  // Off: the blank row stays under the footer line and the 💳 at its end
+  // (asked 2026-10-20).
+  hintTuck: false,
   // How many columns in from the terminal's left edge Claude Code draws
   // the footer line's container, which the 💳 row and the band's rows
   // under it share: they are drawn that much narrower, so their cells

@@ -88,9 +88,10 @@ Claude Code draws the footer's container two columns in from each edge, so
 every row the mod draws there starts two columns in (`CONFIG.hintInset`)
 and ends two columns short of the terminal's right edge (`BAND_EDGE`). With
 those, each cell falls on the same screen column as the agent panel's under
-it, whose `subagentStatusLine` runs with `--right-edge 2` to match. The rows
-are drawn with a bottom margin of -1 (`CONFIG.hintTuck`), taking up the
-blank row Claude Code leaves between the footer and the panel's `⏺ main`.
+it, whose `subagentStatusLine` runs with `--right-edge 2` to match. Under
+them Claude Code's blank row stays, between the footer and the panel's
+`⏺ main`; `CONFIG.hintTuck` draws them with a bottom margin of -1 instead,
+taking it up.
 
 **The 💳 row** is all label, right-aligned to end where the other rows end:
 where the session works, 📦 project, 🌿 branch and 📁 directory, as 🎮's
@@ -709,9 +710,10 @@ on these. The 💳 row stays under the footer line.
 
 ### The footer's tail
 
-With `CONFIG.accountPlace` `"tail"`, the 💳 row is not a row of its own: its
-text goes at the right end of Claude Code's footer line, plain and dim,
-after Claude Code's ` · ` (`--part tail`, with the hiding the mod ships):
+With `CONFIG.accountPlace` `"tail"`, as the mod ships, the 💳 row is not a
+row of its own: its text goes at the right end of Claude Code's footer
+line, plain and dim, after Claude Code's ` · ` (`--part tail`, with the
+hiding the mod ships):
 
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle) · ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀📁~/src/statusline-fixture/deep/tree ⠀⠀⠀💳 🪫 87٪ 🔜 1.9d ⠀⠀⠀📅 2026-08-16 ⠀🕐 02:23:20
