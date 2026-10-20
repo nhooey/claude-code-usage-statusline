@@ -15,6 +15,20 @@ export const STATE_KINDS = {
     "suffix": ".cache",
     "format": 1,
   },
+  // The window costs: every transcript's priced records, each file's
+  // offset and the sha256 of the 4 KiB before it, kept from one scan to
+  // the next so a scan reads only what was appended since
+  // (_window_costs, _windowCosts, scanWindows).  One file for the
+  // machine, written whole by whichever port scans, through a temporary
+  // file renamed over it (window_costs_text, _windowCostsText).  Bump the
+  // format whenever the prices, what is billed or the text change:
+  // tests/fixtures/calib/scan.json pins the text for each step.
+  "window-costs": {
+    "prefix": "claude-window-costs-",
+    "key": [],
+    "suffix": ".cache",
+    "format": 1,
+  },
   // The main transcript's two folds, the status line's and the turns',
   // saved as running totals so a reload reads on from where they stopped
   // (main_fold.py and main_fold.ts).  One directory per transcript path:

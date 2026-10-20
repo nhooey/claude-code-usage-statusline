@@ -36,10 +36,9 @@
 //     OverflowError in Python, is Infinity here.
 //   - Rounding.  `round` rounds half to even; see `_pyRound`.
 //   - Sums.  Left to right, as 3.9's sum() adds; 3.12's compensates.
-//   - Caches.  The calibration cache is one file both write and read, named
-//     by spec/state.jsonc (state.ts).  The scan's cost cache is still each
-//     port's own: the Python keys it by a digest of its own source, this by
-//     the mod's version.
+//   - Caches.  The calibration cache and the scan's cost cache are each one
+//     file both write and read, named by spec/state.jsonc (state.ts), and
+//     written in the same bytes (`_calibCacheText`, `_windowCostsText`).
 //   - File order.  The scan visits files in the order the directory lists
 //     them, which is the filesystem's, as glob.glob does.  A request id in
 //     two files is billed at the first, so the order can matter; the shared
@@ -619,6 +618,9 @@ export function _calibrationCacheName(snap: Snapshot): string {
 // The calibration caches as spec/state.jsonc names them, one per scope; a
 // past period's, account's or session's is never read again.
 const CALIB_NAME = /^claude-calibration-[0-9a-f]{64}\.cache$/;
+// The window-cost cache, swept with them: a format moved on leaves the old
+// one behind, and a save killed mid-write its temporary file.
+const COSTS_NAME = /^claude-window-costs-[0-9a-f]{64}\.cache(\.\d+)?$/;
 /** A scope's file is rewritten at least every CALIB_TTL while in use; one
  * untouched this long is a past period's, the weekly window's included. */
 export const CALIB_MAX_AGE_S = 8 * 86400;
@@ -628,12 +630,56 @@ export const CALIB_SWEPT = "claude-calibration-swept";
 export const CALIB_SWEEP_EVERY_S = 86400;
 
 /** _sweep_calibrations' choice: the names in a listing of the state
- * directory that are calibration caches untouched for CALIB_MAX_AGE_S. */
+ * directory that are calibration or window-cost caches untouched for
+ * CALIB_MAX_AGE_S. */
 export function staleCalibrations(
   entries: readonly { name: string; kind: string; mtimeMs: number }[],
   now: number): string[] {
-  return entries.filter((e) => e.kind === "file" && CALIB_NAME.test(e.name) &&
+  return entries.filter((e) => e.kind === "file" &&
+    (CALIB_NAME.test(e.name) || COSTS_NAME.test(e.name)) &&
     now - e.mtimeMs / 1000 > CALIB_MAX_AGE_S).map((e) => e.name);
+}
+
+/** The window-cost caches as they were named before spec/state.jsonc's
+ * window-costs kind (the Python's, the Node port's and the mod's), and the
+ * temporary files of the Python's a killed save left: _OLD_COSTS. */
+const OLD_COSTS = /^claude-window-costs(-ts|-mod)?\.cache(\.\d+)?$/;
+/** Written once they are gone, by either port: OLD_COSTS_DONE. */
+export const OLD_COSTS_DONE = "claude-window-costs-old-removed";
+
+/** _remove_old_window_costs' choice: the names in a listing of the state
+ * directory that are old window-cost caches. */
+export function oldWindowCosts(
+  entries: readonly { name: string; kind: string }[]): string[] {
+  return entries.filter((e) => e.kind === "file" && OLD_COSTS.test(e.name))
+    .map((e) => e.name);
+}
+
+/** What the scan's cost cache keeps per file: the offset of the last whole
+ * line read, the sha256 of the COST_TAIL_BYTES before it, and the priced
+ * records up to it. */
+export type CostKept = { off: number; tail: string | null; recs: Priced[] };
+
+/** The window-cost cache's text, byte for byte as window_costs_text writes
+ * it: compact, every object's keys sorted, every number in a record a
+ * float. */
+export function _windowCostsText(files: Readonly<Record<string, CostKept>>):
+  string {
+  return pyJsonDumps({ files }, true, [""]);
+}
+
+/** The files a window-cost cache's text keeps, or null where it will not
+ * parse (none yet, or torn) or is not the shape it writes. */
+export function _windowCostsFiles(text: string):
+  Record<string, CostKept> | null {
+  let d: unknown;
+  try {
+    d = pyJsonLoads(text);
+  } catch {
+    return null;
+  }
+  const files = isDict(d) ? pyGet(d, "files") : null;
+  return isDict(files) ? files as Record<string, CostKept> : null;
 }
 
 /** The calibration cache's text, byte for byte as calib_cache_text writes

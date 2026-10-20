@@ -36,11 +36,14 @@ import type { FoldMeta, MainFold, SaveMark } from '../src/main_fold.ts'
 import { statePath } from '../src/state.ts'
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
-  _pricedRecord, _windowCostsOf, _windowsKey, _windowStarts,
-  CALIB_SWEEP_EVERY_S, CALIB_SWEPT, CALIB_TTL, COST_TAIL_BYTES,
-  seedLimitsSnapshot, staleCalibrations,
+  _pricedRecord, _windowCostsFiles, _windowCostsOf, _windowCostsText,
+  _windowsKey, _windowStarts, CALIB_SWEEP_EVERY_S, CALIB_SWEPT, CALIB_TTL,
+  COST_TAIL_BYTES, OLD_COSTS_DONE, oldWindowCosts, seedLimitsSnapshot,
+  staleCalibrations,
 } from '../src/claude_calib.ts'
-import type { Calib, Priced, Snapshot } from '../src/claude_calib.ts'
+import type {
+  Calib, CostKept, Priced, Snapshot,
+} from '../src/claude_calib.ts'
 import {
   cacheName, commandInput, commandOutput, identity, isCacheName, pyFloat,
   pyJsonDumps, pyJsonLoads, pyStr, trackerV1,
@@ -175,7 +178,6 @@ async function writeText($: $, path: string, text: string): Promise<boolean> {
 // ════════════════════════════════════════════════════════════════════════════
 
 type AgentKept = { stamp: string; fold: AgentFold; reading: AgentReading }
-type CostKept = { off: number; tail: string | null; recs: Priced[] }
 
 /** What the session tells the mod that the status line's payload carries,
  * as handlers learn it: the transcript from a classic event, the model's
@@ -192,6 +194,8 @@ let costsRead = false
 let scanning = false
 /** When this load last swept the calibration caches, in Unix seconds. */
 let swept = 0
+/** Whether this load has looked for the old window-cost caches. */
+let oldCostsChecked = false
 let samples: RateSample[] = []
 
 /** How long each step of the last statusDoc took, in ms, in the order they
@@ -876,6 +880,10 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
     swept = now
     void sweepCalibrationsVia($, places, now).catch(() => {})
   }
+  if (!oldCostsChecked) {
+    oldCostsChecked = true
+    void removeOldCostsVia($, places).catch(() => {})
+  }
   if (!fresh && !scanning && (ss !== null || ws !== null)) {
     scanning = true
     void scanWindows($, places, snap, windows, path).catch(() => {})
@@ -908,6 +916,40 @@ async function sweepCalibrationsVia($: $, places: Places,
   }
 }
 
+/** _remove_old_window_costs through `$`: the window-cost caches as they
+ * were named before spec/state.jsonc's window-costs kind, removed once,
+ * by the marker the Python writes too.  `rm` is handed only the names
+ * oldWindowCosts matched, under the state directory. */
+async function removeOldCostsVia($: $, places: Places): Promise<void> {
+  const marker = pyJoin(places.stateDir, OLD_COSTS_DONE)
+  if (await fileSize($, marker) !== null) return
+  const old = oldWindowCosts(await listDir($, places.stateDir))
+    .map((name) => pyJoin(places.stateDir, name))
+  if (old.length) {
+    const r = await $.process.run(['/bin/rm', '-f', '--', ...old],
+      { timeoutMs: 15_000 })
+    if (r.exitCode !== 0) return
+  }
+  await writeText($, marker, '')
+}
+
+/** A whole file written so no reader sees it torn: `$.fs.write` truncates
+ * and then writes, and holds 4 MiB at most, so the text goes through the
+ * shell's stdin to a temporary file beside `path`, renamed over it, as the
+ * Python's os.replace does.  False where it could not be written. */
+async function writeAtomicVia($: $, path: string, text: string):
+  Promise<boolean> {
+  try {
+    const r = await $.process.run(['/bin/sh', '-c',
+      'umask 077 && t="$1.$$" && cat > "$t" && mv -f -- "$t" "$1" ||' +
+      ' { rm -f -- "$t"; exit 1; }', 'sh', path],
+    { stdin: text, timeoutMs: 30_000 })
+    return r.exitCode === 0
+  } catch {
+    return false
+  }
+}
+
 /** _windowCosts through `$`, then the cache written as _writeCalibCache
  * writes it.  The files are listed with their mtimes first, so only the
  * ones _windowCostsOf would open are read. */
@@ -932,42 +974,41 @@ async function scanWindows($: $, places: Places, snap: Snapshot,
     pyGet(snap, 'session_pct'), pyGet(snap, 'weekly_pct')))
 }
 
-function costsPath(places: Places): string {
-  return pyJoin(places.stateDir, 'claude-window-costs-mod.cache')
-}
-
 /** The cost cache, once a load: each file's offset, the digest of the
  * bytes before it, and its priced records up to it, as _CostCache keeps
- * them, in a file of the mod's own. */
+ * them, in the one file spec/state.jsonc's window-costs kind names, which
+ * the Python reads and writes too.  Read in pieces past 4 MiB. */
 async function readCosts($: $, places: Places): Promise<void> {
   if (costsRead) return
   costsRead = true
-  const text = await readText($, costsPath(places))
-  if (text === null) return
+  const path = statePath(places.stateDir, 'window-costs')
+  const size = await fileSize($, path)
+  if (size === null) return
+  let files: Record<string, CostKept> | null = null
   try {
-    const d = pyJsonLoads(text)
-    if (isDict(d) && d.version === CONFIG.version && isDict(d.files)) {
-      for (const [k, v] of Object.entries(d.files)) {
-        costs.set(k, v as CostKept)
-      }
-    }
+    // ASCII, as both ports write it.
+    files = _windowCostsFiles(new TextDecoder()
+      .decode(await readRange($, path, 0, size)))
   } catch {
-    // A cache that will not parse: read everything.
+    // Unreadable: read everything.
   }
+  for (const [k, v] of Object.entries(files ?? {})) costs.set(k, v)
 }
 
 /** The cost cache written back, keeping only the files this scan read:
  * the others have aged out of both windows. */
 async function saveCosts($: $, places: Places,
   keep: ReadonlySet<string>): Promise<void> {
-  const files: Dict = {}
+  const files: Record<string, CostKept> = {}
   for (const [k, v] of costs) if (keep.has(k)) files[k] = v
+  let text: string
   try {
-    await writeText($, costsPath(places), pyJsonDumps(
-      { version: CONFIG.version, files }, false, ['']))
+    text = _windowCostsText(files)
   } catch {
-    // Unwritable: the next load scans again.
+    return
   }
+  // Unwritable: the next load scans again.
+  await writeAtomicVia($, statePath(places.stateDir, 'window-costs'), text)
 }
 
 /** _tailDigest through `$`: the COST_TAIL_BYTES before `off`, of a file

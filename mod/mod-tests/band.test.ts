@@ -36,7 +36,9 @@ import {
 } from '../src/main_fold.ts'
 import type { FoldMeta, MainFold } from '../src/main_fold.ts'
 import { statePath } from '../src/state.ts'
-import { seedLimitsSnapshot } from '../src/claude_calib.ts'
+import {
+  _windowCostsFiles, _windowCostsText, seedLimitsSnapshot,
+} from '../src/claude_calib.ts'
 import {
   plistLoads, prepareClaudeReading, statusSourceContext, trackerReading,
 } from '../src/claude_sources.ts'
@@ -113,7 +115,7 @@ type World = {
   clock: MockClock
 }
 
-type Run = { argv: readonly string[] }
+type Run = { argv: readonly string[]; init?: { stdin?: string } }
 type Ran = { exitCode: number; stdout: string; stderr: string;
   isStdoutTruncated: boolean; isStderrTruncated: boolean }
 const NO_GIT_HERE: Ran = { exitCode: 128, stdout: '',
@@ -121,10 +123,11 @@ const NO_GIT_HERE: Ran = { exitCode: 128, stdout: '',
   isStderrTruncated: false }
 
 /** The engine beneath the mod, answered from memory; `run` answers
- * `$.process.run`, a directory with no git by default, and the first
- * `usageFails` reads of `$.session.usage` are refused. */
+ * `$.process.run`, a directory with no git by default, the first
+ * `usageFails` reads of `$.session.usage` are refused, and a fresh
+ * calibration is planted unless `calib` is false. */
 function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
-  usageFails = 0): World {
+  usageFails = 0, calib = true): World {
   const files = new Map<string, Uint8Array>()
   for (const [p, b64] of Object.entries(FILES)) files.set(p, fromBase64(b64))
   files.set('/tracker.plist', encoder.encode(TRACKER))
@@ -153,8 +156,9 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   })
   // The calibration the environment plants, under whatever name the
   // snapshot's scope gives it, and fresh.
-  const planted = (p: string) => /\/claude-calibration-[0-9a-f]{64}\.cache$/
-    .test(p) ? encoder.encode(JSON.stringify(CALIB)) : undefined
+  const planted = (p: string) => calib &&
+    /\/claude-calibration-[0-9a-f]{64}\.cache$/.test(p)
+    ? encoder.encode(JSON.stringify(CALIB)) : undefined
   const fileAt = (p: string) => files.get(p) ?? planted(p)
   const isDir = (p: string) => [...files.keys()].some((f) =>
     f.startsWith(p.endsWith('/') ? p : p + '/'))
@@ -476,6 +480,34 @@ test('a transcript over 4 MiB is read in pieces through the shell',
     const want = await statusOf(w, MAIN, doc.rate as number | null)
     expect(JSON.parse(JSON.stringify(doc)))
       .toEqual(JSON.parse(JSON.stringify(want)))
+  })
+
+// With no calibration yet, a document starts the scan behind it, which
+// writes the window-cost cache the Python shares, in window_costs_text's
+// bytes, through the shell: a temporary file renamed over it, never
+// `$.fs.write`, which a reader can see torn.
+test('a scan writes the shared window-cost cache through a rename',
+  async ($, on) => {
+    const costs = statePath(STATE, 'window-costs')
+    const viaShell: string[] = []
+    const w: World = world(on, (e) => {
+      const [cmd, , script, , path] = e.argv
+      if (cmd !== '/bin/sh' || !script.includes('mv -f')) return NO_GIT_HERE
+      viaShell.push(path)
+      w.files.set(path, encoder.encode(e.init?.stdin ?? ''))
+      return { ...NO_GIT_HERE, exitCode: 0, stderr: '' }
+    }, 0, false)
+    const path = '/claude/projects/-work/scanned.jsonl'
+    const bytes = w.files.get(MAIN)!
+    w.files.set(path, bytes)
+    await start($, 'terminal', MAIN)
+    for (let i = 0; i < 20 && !w.files.has(costs); i++) await settle()
+    expect(viaShell).toEqual([costs])
+    const text = new TextDecoder().decode(w.files.get(costs)!)
+    const files = _windowCostsFiles(text)!
+    expect(_windowCostsText(files)).toBe(text)
+    expect(files[path].off).toBe(bytes.lastIndexOf(10) + 1)
+    expect(files[path].recs.length).toBeGreaterThan(0)
   })
 
 // ════════════════════════════════════════════════════════════════════════════

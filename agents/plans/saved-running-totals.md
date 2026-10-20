@@ -515,6 +515,60 @@ Each step lands as its own commit, and the tests pass after each one.
    contract. It is keyed by the format, no longer by `_source_digest` or
    `CONFIG.version`, and written by whichever port scans.
 
+   **Status 2026-10-20: done.** As built:
+   - `spec/state.jsonc`'s `window-costs` row has no key parts, so the file
+     is `claude-window-costs-<sha256("1")>.cache`, one for the machine, not
+     the `claude-window-costs.cache` the table above names. Its text is
+     `{"files":{<path>:{"off":…,"recs":[[epoch,id,usd],…],"tail":…}}}`:
+     compact, every object's keys sorted, and every number in a record a
+     float (`window_costs_text`, `_windowCostsText`). Sorted keys make the
+     bytes the same whatever order each port listed the files in.
+   - Both write through a rename. The Python writes a temporary file and
+     calls `os.replace`, as before; the Node port uses `writeAtomic`. The
+     mod pipes the text to `/bin/sh` on stdin, `cat` to `<path>.$$`, then
+     `mv -f` (`writeAtomicVia`), which also lifts `$.fs.write`'s 4 MiB cap.
+     It reads the file through `readRange`, in pieces past 4 MiB.
+   - `_source_digest` is gone. The format is now bumped by hand, and
+     `tests/fixtures/calib/costs-format.json` holds it honest: it pins the
+     corpus scan's text under the format it was written with, and
+     `gen/calib.py` refuses to write a moved text under the same format,
+     as `claude_calib.test.ts` checks the TypeScript's.
+   - `tests/fixtures/calib/scan.json` now pins each step's scan cache as
+     its text, which the TypeScript must write byte for byte. A new
+     `shared` scenario plants a cache billing ten times over (the other
+     port's, read as its own), one torn in half and an empty one, which
+     each port must read as none and write whole again.
+   - Old files: the Python lists the state directory once and removes
+     `claude-window-costs.cache`, `-ts.cache`, `-mod.cache` and the
+     `claude-window-costs.cache.<pid>` files killed saves left (35 here,
+     up to 4 MB each), then writes `claude-window-costs-old-removed`. The
+     mod does the same once a load, with `/bin/rm -f --` on the exact
+     names `oldWindowCosts` matched, by the same marker. As with step 1, a
+     mod still running the old code writes `-mod.cache` after the marker;
+     removing the marker once every session's mod is refreshed sweeps it.
+   - `tests/claude-sources.py` ran one `calibration()` against the real
+     state directory, which the old-file removals then listed. It now
+     runs in a scratch one. The daily sweep
+     also removes a `claude-window-costs-<hex>.cache` (a past format's)
+     or its temporary file untouched for eight days.
+   - A harness test in `band.test.ts` starts a scan with no calibration
+     planted, and checks the mod wrote the shared file through the shell,
+     in `_windowCostsText`'s bytes.
+   - Measured by `time-window-costs` (new, in the dev shell) over this
+     machine's `~/.claude/projects`, a week's window, into a scratch state
+     directory:
+
+     | Port | Cold scan before | after | Cache hit before | after | Cache |
+     |---|---|---|---|---|---|
+     | Python | 22.2 s | 19.5 s | 74–172 ms | 72–106 ms | 1.94 MB |
+     | Node | 114 s | 112 s | 233–479 ms | 240–326 ms | 1.95 MB |
+
+     The scans cost what they did: the change is where the cache lives,
+     not how it is read. What it buys is the second port's cold scan. Each
+     port used to pay its own, on every upgrade for the Python and every
+     version for the mod; now whichever scans first warms the file for the
+     other, and only a format bump starts it cold.
+
 Steps 1, 2 and 3 are independent of one another. Steps 4 to 7 must land in
 order. Step 8 needs the contract from step 1 and the text form from step 4.
 Step 9 needs only step 1.

@@ -8,16 +8,19 @@
 // exported from here too, so a Node caller imports one module.
 import * as fs from "node:fs";
 import * as crypto from "node:crypto";
-import { isDict, pyGet, pyHas, pyOr } from "./py.ts";
-import { expandUser, pyJsonDumps, pyJsonLoads } from "./sources_node.ts";
+import { isDict, pyGet, pyHas } from "./py.ts";
+import { expandUser, pyJsonLoads } from "./sources_node.ts";
 import { cmpStr, pyJoin } from "./claude_records.ts";
 import { writeAtomic } from "./claude_records_node.ts";
+import { statePath } from "./state.ts";
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
-  _pricedRecord, _windowCostsOf, _windowsKey, _windowStarts, CALIB_TTL,
-  COST_SAVE_EVERY_S, COST_TAIL_BYTES,
+  _pricedRecord, _windowCostsFiles, _windowCostsOf, _windowCostsText,
+  _windowsKey, _windowStarts, CALIB_TTL, COST_SAVE_EVERY_S, COST_TAIL_BYTES,
 } from "./claude_calib.ts";
-import type { Calib, Naive, Priced, Snapshot } from "./claude_calib.ts";
+import type {
+  Calib, CostKept, Naive, Priced, Snapshot,
+} from "./claude_calib.ts";
 import type { Dict } from "./py.ts";
 
 export * from "./claude_calib.ts";
@@ -28,7 +31,6 @@ export * from "./claude_calib.ts";
 export interface CalibEnv {
   readonly projectsDir: string;   // ~/.claude/projects
   readonly stateDir: string;      // the private state directory
-  readonly version: string;       // the mod's version, which keys its caches
   readonly now: number;           // time.time()
   // CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE, for planted fixtures.
   readonly calibCacheOverride?: string;
@@ -185,7 +187,7 @@ function* linesFrom(fd: number, off: number): Generator<Uint8Array> {
   if (carry.length) yield carry;
 }
 
-type Kept = { off: number; tail: string | null; recs: Priced[] };
+type Kept = CostKept;
 
 /** Every scanned file's priced records, kept from one scan to the next.
  *
@@ -197,28 +199,21 @@ type Kept = { off: number; tail: string | null; recs: Priced[] };
  * one file a request id after its first record is dropped as it is read.
  * A last line with no newline yet is billed if it parses, but not kept.
  *
- * Keyed by the mod's version, as the Python's is by a digest of its
- * source, since the prices and the rules for what counts are both in it,
- * and named apart from the Python's. */
+ * The one file spec/state.jsonc's window-costs kind names, which the
+ * Python and the mod read and write too, in `_windowCostsText`'s bytes. */
 export class _CostCache {
   readonly path: string;
-  readonly version: string;
   kept: Record<string, Kept> = {};
   keep: Record<string, Kept> = {};
   dirty = false;
 
-  constructor(stateDir: string, version: string) {
-    this.path = pyJoin(stateDir, "claude-window-costs-ts.cache");
-    this.version = version;
+  constructor(stateDir: string) {
+    this.path = statePath(stateDir, "window-costs");
     try {
-      const d = pyJsonLoads(new TextDecoder("utf-8", { fatal: true })
-        .decode(fs.readFileSync(this.path)));
-      if (isDict(d) && pyGet(d, "version") === version) {
-        const files = pyOr(pyGet(d, "files"), {});
-        if (isDict(files)) this.kept = files as Record<string, Kept>;
-      }
+      this.kept = _windowCostsFiles(new TextDecoder("utf-8", { fatal: true })
+        .decode(fs.readFileSync(this.path))) ?? {};
     } catch {
-      // No cache yet, or one that will not parse: read everything.
+      // No cache yet: read everything.
     }
   }
 
@@ -284,9 +279,7 @@ export class _CostCache {
     const files = final ? this.keep : { ...this.kept, ...this.keep };
     let text: string;
     try {
-      // Every number in a record written as a float, so a -0.0 id comes
-      // back as itself rather than as 0.
-      text = pyJsonDumps({ version: this.version, files }, false, [""]);
+      text = _windowCostsText(files);
     } catch {
       return;
     }
@@ -301,7 +294,7 @@ export class _CostCache {
 export function _windowCosts(sessStart: Naive | null,
   weekStart: Naive | null, env: CalibEnv): [number, number] {
   const files = (env.glob ?? projectFiles)(env.projectsDir);
-  const cache = new _CostCache(env.stateDir, env.version);
+  const cache = new _CostCache(env.stateDir);
   const monotonic = env.monotonic ?? (() => performance.now() / 1000);
   let saved = monotonic();
   const tick = () => {

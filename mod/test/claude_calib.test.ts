@@ -15,8 +15,8 @@ import type { CalibEnv, Naive } from "../src/claude_calib_node.ts";
 import type { Turn } from "../src/claude_records.ts";
 import type { Limits } from "../src/claude_sources.ts";
 import { isDict } from "../src/py.ts";
-import { pyJsonLoads } from "../src/sources_node.ts";
-import { stateName } from "../src/state.ts";
+import { stateName, statePath } from "../src/state.ts";
+import { STATE_KINDS } from "../src/state_spec.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
   "../..");
@@ -173,15 +173,6 @@ suite("shares", {
 // scan.json
 // ════════════════════════════════════════════════════════════════════════════
 
-/** A JSON file's content as the generator reads it, or null. */
-function readJson(p: string): unknown {
-  try {
-    return plain(pyJsonLoads(fs.readFileSync(p, "utf-8")));
-  } catch {
-    return null;
-  }
-}
-
 function scrub(v: unknown, dir: string): unknown {
   if (typeof v === "string") return v.replaceAll(dir, "${DIR}");
   if (Array.isArray(v)) return v.map((x) => scrub(x, dir));
@@ -216,13 +207,19 @@ function scenario(c: Case): void {
   for (const f of c.files) put(f);
   let override = "";
   let last: unknown = null;
+  // The one scan cache both ports share, so byte for byte.
+  const costsPath = statePath(state, "window-costs");
   const costsCache = (s: Case, where: string) => {
-    const d = readJson(path.join(state, "claude-window-costs-ts.cache"));
-    const got = isDict(d) ? scrub(d.files, dir) : null;
+    let got: string | null = null;
+    try {
+      got = scrub(fs.readFileSync(costsPath, "utf-8"), dir) as string;
+    } catch {
+      // None written.
+    }
     if (s.costs_cache === "same") {
-      assert.deepEqual(got, last, `${where}: the scan cache changed`);
+      assert.equal(got, last, `${where}: the scan cache changed`);
     } else {
-      assert.deepEqual(got, s.costs_cache, `${where}: the scan cache`);
+      assert.equal(got, s.costs_cache, `${where}: the scan cache`);
       last = got;
     }
   };
@@ -230,7 +227,7 @@ function scenario(c: Case): void {
     c.steps.forEach((s: Case, i: number) => {
       const where = `${c.name} step ${i} (${s.op})`;
       const env: CalibEnv = {
-        projectsDir: projects, stateDir: state, version: "test",
+        projectsDir: projects, stateDir: state,
         now: s.now ?? PIN_NOW, calibCacheOverride: override,
         glob: () => s.glob.map((r: string) => path.join(projects, r)),
       };
@@ -245,6 +242,9 @@ function scenario(c: Case): void {
       }
       if (s.op === "append" || s.op === "replace") {
         put(s, s.op === "append");
+      } else if (s.op === "plant_costs") {
+        fs.mkdirSync(state, { recursive: true });
+        fs.writeFileSync(costsPath, s.content.replaceAll("${DIR}", dir));
       } else if (s.op === "override") {
         override = s.path ? path.join(dir, s.path) : "";
       } else if (s.op === "plant" || s.op === "age") {
@@ -286,6 +286,17 @@ for (const c of load("scan")) {
   test(`scan: ${c.name} (${c.steps.length} steps)`, () => scenario(c));
 }
 
+// gen/calib.py's pin_costs_format: while the window-cost cache's format is
+// the pinned one, the corpus's scan cache is the pinned text, so a change
+// to what this port bills or writes has to bump the format too.
+test("the window-cost cache's text is held to its format", () => {
+  const pin = JSON.parse(fs.readFileSync(path.join(DIR, "costs-format.json"),
+    "utf-8"));
+  assert.equal(pin.format, STATE_KINDS["window-costs"].format,
+    "costs-format.json is for another format: run gen/calib.py");
+  assert.equal(load("scan")[0].steps[0].costs_cache, pin.text);
+});
+
 // The mod's half of _sweep_calibrations (tests/claude-sources.py has the
 // Python's): a calibration cache's name, as a regular file, untouched for
 // CALIB_MAX_AGE_S, and nothing else in the state directory.
@@ -294,6 +305,7 @@ test("staleCalibrations: old calibration caches by name", () => {
   const old = (now - cc.CALIB_MAX_AGE_S - 60) * 1000;
   const h = "0123456789abcdef".repeat(4);
   const c = "claude-calibration-";
+  const w = "claude-window-costs-";
   assert.deepEqual(cc.staleCalibrations([
     { name: c + h + ".cache", kind: "file", mtimeMs: old },
     { name: c + h.replaceAll("0", "a") + ".cache", kind: "file",
@@ -304,5 +316,24 @@ test("staleCalibrations: old calibration caches by name", () => {
       mtimeMs: old },
     { name: h + ".json", kind: "file", mtimeMs: old },
     { name: cc.CALIB_SWEPT, kind: "file", mtimeMs: old },
-  ], now), [c + h + ".cache"]);
+    { name: w + h + ".cache", kind: "file", mtimeMs: old },
+    { name: w + h + ".cache.4242", kind: "file", mtimeMs: old },
+    { name: w + h.replaceAll("0", "a") + ".cache", kind: "file",
+      mtimeMs: (now - 3600) * 1000 },
+    { name: w + h + ".cache.tmp", kind: "file", mtimeMs: old },
+  ], now), [c + h + ".cache", w + h + ".cache", w + h + ".cache.4242"]);
+});
+
+// The mod's half of _remove_old_window_costs: the names before
+// spec/state.jsonc's window-costs kind, and nothing else.
+test("oldWindowCosts: the window-cost caches by their old names", () => {
+  const h = "0123456789abcdef".repeat(4);
+  const w = "claude-window-costs";
+  const names = [w + ".cache", w + ".cache.12242", w + "-ts.cache",
+    w + "-mod.cache", w + "-" + h + ".cache", w + ".cache.tmp",
+    w + "-x.cache", w + ".json", cc.OLD_COSTS_DONE];
+  assert.deepEqual(cc.oldWindowCosts([
+    ...names.map((name) => ({ name, kind: "file" })),
+    { name: w + "-ts.cache", kind: "dir" },
+  ]), names.slice(0, 4));
 });

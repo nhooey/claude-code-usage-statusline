@@ -325,16 +325,19 @@ against the cached pair. Dividing a cached cost by a live percentage is wrong
 right after a reset, when the cost is seconds old and the percentage is
 climbing, and can make a turn's share larger than the account's.
 
-Each file's priced requests are kept between scans in
-`claude-window-costs.cache` in private state, with the offset of the last
-complete line read and a digest of the 4 KiB before it. A scan reads only what
-was appended since. A file that shrank, or whose bytes before the offset
+Each file's priced requests are kept between scans in one
+`claude-window-costs-<sha256>.cache` in private state, with the offset of the
+last complete line read and a digest of the 4 KiB before it. A scan reads only
+what was appended since. A file that shrank, or whose bytes before the offset
 changed, is read again from the start. Reading everything took 6.2 seconds on
-a week of 836 MB; a scan from the cache takes a tenth of a second. The cache
-is keyed to the program's source, so an upgrade starts it cold, and while it
-fills it is saved every second: Claude Code kills a status line when the next
-refresh starts, and a killed scan leaves the next one only the files it had
-not reached.
+a week of 836 MB; a scan from the cache takes a tenth of a second. The Python
+and the mod read and write the same file, in the same bytes, through a
+temporary file renamed over it, so whichever scans first warms it for the
+other. Its name is a digest of its format in `spec/state.jsonc`, which moves
+when the prices or what is billed do, so only such a change starts it cold.
+While it fills, the Python saves it every second: Claude Code kills a status
+line when the next refresh starts, and a killed scan leaves the next one only
+the files it had not reached.
 
 The agent panel never runs the scan. Claude Code kills its command after five
 seconds and puts its own rows back, so a panel tick that started a cold scan

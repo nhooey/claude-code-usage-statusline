@@ -51,7 +51,6 @@ in any project, not only one whose devshell supplies newer packages.
 """
 
 import decimal
-import functools
 import glob
 import hashlib
 import json
@@ -579,15 +578,42 @@ def _remove_old_calibrations() -> int:
     if _old_calib_checked:
         return 0
     _old_calib_checked = True
+    return _remove_old_names(_OLD_CALIB, OLD_CALIB_DONE)
+
+
+# The window-cost caches as they were named before spec/state.jsonc's
+# window-costs kind: the Python's, keyed inside by a digest of its source,
+# the Node port's and the mod's, keyed by the mod's version; and the
+# temporary files of the Python's that a killed save left behind.
+_OLD_COSTS = re.compile(r"claude-window-costs(?:-ts|-mod)?\.cache(?:\.\d+)?\Z")
+OLD_COSTS_DONE = "claude-window-costs-old-removed"
+_old_costs_checked = False
+
+
+def _remove_old_window_costs() -> int:
+    """Remove the old window-cost caches, once; how many this run removed.
+    The mod removes them too (removeOldCostsVia), by the same marker."""
+    global _old_costs_checked
+    if _old_costs_checked:
+        return 0
+    _old_costs_checked = True
+    return _remove_old_names(_OLD_COSTS, OLD_COSTS_DONE)
+
+
+def _remove_old_names(pattern, done: str) -> int:
+    """Remove the files of the state directory whose names `pattern`
+    matches, then write the marker `done`, unless it is there already; how
+    many this run removed.  A run stops at OLD_CALIB_BUDGET_S and leaves
+    the marker unwritten, and the next goes on."""
     d = state.state_dir()
-    marker = os.path.join(d, OLD_CALIB_DONE)
+    marker = os.path.join(d, done)
     if os.path.exists(marker):
         return 0
     deadline = time.monotonic() + OLD_CALIB_BUDGET_S
     removed = 0
     try:
         for name in os.listdir(d):
-            if not _OLD_CALIB.match(name):
+            if not pattern.match(name):
                 continue
             if time.monotonic() > deadline:
                 return removed
@@ -608,8 +634,14 @@ def _remove_old_calibrations() -> int:
 # account or a session-keyed scope (an account with no id) leaves one
 # behind each time; nothing reads a file once its scope has passed.
 _CALIB_NAME = re.compile(r"claude-calibration-[0-9a-f]{64}\.cache\Z")
+# The window-cost cache goes the same way, swept with them: a format moved
+# on leaves the old one behind, and a save killed mid-write its temporary
+# file (the Python's ends in its pid, the mod's in its shell's).
+_COSTS_NAME = re.compile(r"claude-window-costs-[0-9a-f]{64}\.cache(?:\.\d+)?\Z")
 # A scope's file is rewritten at least every CALIB_TTL while it is in use;
 # one untouched this long is a past period's, the weekly window's included.
+# The window costs' is rewritten whenever a scan finds anything new, and
+# nothing in one untouched this long is inside either window.
 CALIB_MAX_AGE_S = 8 * 86400
 # Written by each sweep; a sweep runs once its mtime is a day old.
 CALIB_SWEPT = "claude-calibration-swept"
@@ -642,7 +674,7 @@ def _sweep_calibrations(now: Optional[float] = None) -> int:
             pass
         os.utime(marker, (now, now))
         for name in os.listdir(d):
-            if not _CALIB_NAME.match(name):
+            if not (_CALIB_NAME.match(name) or _COSTS_NAME.match(name)):
                 continue
             path = os.path.join(d, name)
             try:
@@ -1165,7 +1197,7 @@ def _window_costs(sess_start: Optional[datetime],
     panel's five-second timeout: Claude Code killed the panel's command, put
     its stock rows back, and the next tick started the same scan again.
 
-    A cold scan, after an upgrade changes the cache's version, still reads
+    A cold scan, after a change to the cache's format, still reads
     everything, and the status line is killed too when the next refresh
     starts.  So the cache is saved every COST_SAVE_EVERY_S while it fills,
     and a killed scan leaves the next one only the files it had not reached.
@@ -1264,23 +1296,26 @@ class _CostCache:
     A last line with no newline yet may be half written.  It is billed if it
     parses, but not kept, and is read again whole on the next scan.
 
-    Keyed by a digest of the package's source, like the agent-file cache,
-    since the prices and the rules for what counts are both in it.  Not a
-    .json file: state.find_compatible reads every .json in the directory as
-    a usage cache.
+    One file for the machine, spec/state.jsonc's window-costs kind, which
+    the mod reads and writes too: its name is a digest of the kind's
+    format, which moves when the prices or the rules for what counts do, so
+    a file priced under other rules is never asked for.  Its text is
+    window_costs_text, byte for byte what the mod writes.
     """
 
     def __init__(self) -> None:
-        self.path = os.path.join(state.state_dir(), "claude-window-costs.cache")
+        self.path = state.state_path("window-costs")
         self.kept: dict = {}
         self.keep: dict = {}
         self.dirty = False
         try:
-            with open(self.path, "r") as fh:
+            with open(self.path, "r", encoding="utf-8") as fh:
                 d = json.load(fh)
-            if isinstance(d, dict) and d.get("version") == _source_digest():
-                self.kept = d.get("files") or {}
+            files = d.get("files") if isinstance(d, dict) else None
+            if isinstance(files, dict):
+                self.kept = files
         except (OSError, ValueError):
+            # None yet, or torn: read everything.
             pass
 
     def records(self, path: str) -> list:
@@ -1326,14 +1361,29 @@ class _CostCache:
         try:
             os.makedirs(os.path.dirname(self.path), mode=0o700, exist_ok=True)
             tmp = "%s.%d" % (self.path, os.getpid())
-            with open(tmp, "w") as fh:
-                json.dump({"version": _source_digest(), "files": files},
-                          fh, separators=(",", ":"))
+            with open(tmp, "w", encoding="utf-8") as fh:
+                fh.write(window_costs_text(files))
             os.chmod(tmp, 0o600)
             os.replace(tmp, self.path)
             self.dirty = False
         except OSError:
             pass
+
+
+def window_costs_text(files: dict) -> str:
+    """The window-cost cache's text, byte for byte as the mod writes it
+    (_windowCostsText): compact, every object's keys sorted, and every
+    number in a record a float, as pyJsonDumps writes the numbers in a
+    list it is told are floats.  Sorted, so two ports that listed the
+    files in different orders still write the same bytes."""
+    def num(v):
+        if isinstance(v, int) and not isinstance(v, bool):
+            return float(v)
+        return v
+    out = {}
+    for path, f in files.items():
+        out[path] = dict(f, recs=[[num(v) for v in r] for r in f["recs"]])
+    return json.dumps({"files": out}, separators=(",", ":"), sort_keys=True)
 
 
 def _tail_digest(fh, off: int) -> Optional[str]:
@@ -1346,22 +1396,6 @@ def _tail_digest(fh, off: int) -> Optional[str]:
     if len(data) != off - start:
         return None
     return hashlib.sha256(data).hexdigest()
-
-
-@functools.lru_cache(maxsize=1)
-def _source_digest() -> str:
-    """A digest of this package's source, so records priced by one version
-    are never served to another."""
-    h = hashlib.sha256()
-    d = os.path.dirname(os.path.abspath(__file__))
-    for name in sorted(os.listdir(d)):
-        if name.endswith(".py"):
-            try:
-                with open(os.path.join(d, name), "rb") as fh:
-                    h.update(name.encode("utf-8") + b"\0" + fh.read())
-            except OSError:
-                pass
-    return h.hexdigest()
 
 
 def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
@@ -1437,6 +1471,7 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     for it again.  The status line and the Stop hook keep the cache filled.
     """
     _remove_old_calibrations()
+    _remove_old_window_costs()
     _sweep_calibrations()
     snap = limits_snapshot()
     ss, ws = _window_starts()

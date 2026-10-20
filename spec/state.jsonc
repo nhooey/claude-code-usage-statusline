@@ -15,8 +15,7 @@
 //
 // Every suffix is .cache, never .json: state.find_compatible reads .json
 // files as usage caches.  The kinds still to come under this table are in
-// agents/plans/saved-running-totals.md: the main fold, the agent fold and
-// the window costs.
+// agents/plans/saved-running-totals.md: the agent fold.
 {
   "STATE_KINDS": {
     // The calibration scan: the costs in each plan window, the plan reading
@@ -29,6 +28,20 @@
     "calibration": {
       "prefix": "claude-calibration-",
       "key": ["scope"],
+      "suffix": ".cache",
+      "format": 1
+    },
+    // The window costs: every transcript's priced records, each file's
+    // offset and the sha256 of the 4 KiB before it, kept from one scan to
+    // the next so a scan reads only what was appended since
+    // (_window_costs, _windowCosts, scanWindows).  One file for the
+    // machine, written whole by whichever port scans, through a temporary
+    // file renamed over it (window_costs_text, _windowCostsText).  Bump the
+    // format whenever the prices, what is billed or the text change:
+    // tests/fixtures/calib/scan.json pins the text for each step.
+    "window-costs": {
+      "prefix": "claude-window-costs-",
+      "key": [],
       "suffix": ".cache",
       "format": 1
     },

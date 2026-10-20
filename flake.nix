@@ -117,6 +117,12 @@
               }
               {
                 category = "test";
+                name = "time-window-costs";
+                help = "time the window-cost scan over ~/.claude/projects, cold and cached, in both ports; [--runs N]";
+                command = ''python3 "$PRJ_ROOT/tools/time-window-costs.py" "$@" && node "$PRJ_ROOT/mod/tools/time-window-costs.ts" "$@"'';
+              }
+              {
+                category = "test";
                 name = "typecheck";
                 help = "type-check the TypeScript port and the mod";
                 command = ''cd "$PRJ_ROOT/mod" && npm run -s typecheck'';

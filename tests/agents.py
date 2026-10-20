@@ -892,8 +892,7 @@ def run(tmp):
     # A scan killed part way, as Claude Code kills a status line the next
     # refresh overtakes, keeps what it had read: the next scan reads only
     # the files it had not reached.
-    os.remove(os.path.join(os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"],
-                           "claude-window-costs.cache"))
+    os.remove(sl.state.state_path("window-costs"))
     every, sl.COST_SAVE_EVERY_S = sl.COST_SAVE_EVERY_S, -1.0
 
     def killed(line):

@@ -24,9 +24,10 @@ What the files under tests/fixtures/calib/ hold:
                corpus and hand-made files, with mtimes, then steps sharing
                one state directory — calibration, _window_costs, appends,
                rewrites, planted caches — each with its result and the
-               caches it left.  The calibration cache is one file both ports
-               share, so it is kept as its text, which the TypeScript must
-               write byte for byte.
+               caches it left.  The calibration cache and the scan cache
+               are each one file both ports share, so each is kept as its
+               text, which the TypeScript must write byte for byte; a
+               planted scan cache is the other port's, read as its own.
 
 A naive datetime is written as str() writes it, "2026-08-16 01:31:00".
 FLOATS as gen/records.py writes them: repr, and {"$float": ...} for what
@@ -568,13 +569,17 @@ class Scenario:
                                                 "agent-*.jsonl"),
                                    recursive=True)]
 
+    def costs_path(self):
+        return os.path.join(self.state,
+                            claude.state.state_name("window-costs"))
+
     def costs_cache(self):
-        """The scan cache's files, or "same" when no different from the
-        last step that wrote them out, which keeps the corpus's small."""
+        """The scan cache's text, which the TypeScript must have written
+        byte for byte, or "same" when no different from the last step that
+        wrote it out, which keeps the corpus's small."""
         try:
-            with open(os.path.join(self.state,
-                                   "claude-window-costs.cache")) as fh:
-                got = self.scrub(enc(json.load(fh)["files"]))
+            with open(self.costs_path(), "rb") as fh:
+                got = self.scrub(fh.read().decode("utf-8"))
         except OSError:
             got = None
         if got == getattr(self, "last", None):
@@ -609,6 +614,13 @@ class Scenario:
             if kw.get("age") is not None:
                 at = CLOCK.now - kw["age"]
                 os.utime(path, (at, at))
+        elif op == "plant_costs":
+            # The scan cache as the other port left it: the same text, with
+            # ${DIR} for this scenario's directory.
+            os.makedirs(self.state, exist_ok=True)
+            with open(self.costs_path(), "wb") as fh:
+                fh.write(kw["content"].replace("${DIR}", self.dir)
+                         .encode("utf-8"))
         elif op == "age":
             path = claude.calibration_cache_path()
             at = CLOCK.now - kw["age"]
@@ -682,6 +694,31 @@ def scan():
     sc.step("window_costs", ss=w[0], ws=w[1])
     sc.step("window_costs", ss=None, ws=None)
     sc.step("calibration", snap=snap)
+    cases.append(sc.done())
+
+    # The scan cache is one file both ports read and write.  One the other
+    # port wrote is read as this one's own: a planted cache whose records
+    # bill ten times over, against unchanged files, is what the scan sums.
+    # A torn one reads as none, and the scan starts over and writes it
+    # whole.
+    sc = Scenario("shared", "UTC", [
+        {"path": "p/s1.jsonl", "text": base, "mtime": RECENT},
+        {"path": "p/s2.jsonl", "text": line("b1", tokens=3),
+         "mtime": RECENT}])
+    sc.step("window_costs", ss=w[0], ws=w[1])
+    with open(sc.costs_path(), encoding="utf-8") as fh:
+        kept = json.load(fh)["files"]
+    for f in kept.values():
+        f["recs"] = [[t, k, c * 10] for t, k, c in f["recs"]]
+    planted = sc.scrub(claude.window_costs_text(kept))
+    sc.step("plant_costs", content=planted)
+    sc.step("window_costs", ss=w[0], ws=w[1])
+    sc.step("append", path="p/s2.jsonl", text=line("b2", tokens=5))
+    sc.step("window_costs", ss=w[0], ws=w[1])
+    sc.step("plant_costs", content=planted[:len(planted) // 2])
+    sc.step("window_costs", ss=w[0], ws=w[1])
+    sc.step("plant_costs", content="")
+    sc.step("window_costs", ss=w[0], ws=w[1])
     cases.append(sc.done())
 
     # Request ids as a Python set keys them, across one file and two.
@@ -825,7 +862,31 @@ def scan():
                 "_scope": "x"}
         sc.step("calibration", snap=snap)
         cases.append(sc.done())
+    pin_costs_format(cases[0]["steps"][0]["costs_cache"])
     return write("scan", cases)
+
+
+def pin_costs_format(text):
+    """Hold the window-cost cache's format to its text: costs-format.json
+    keeps the corpus's scan cache as it was written under the format it
+    names, and while spec/state.jsonc's format is that one, the text may
+    not move.  A cache under the old rules would be read as the new's, so
+    a change to the prices, to what is billed or to the text has to bump
+    the format, which names a new file.  The TypeScript checks its own
+    text against the same pin."""
+    fmt = claude.state.STATE_KINDS["window-costs"]["format"]
+    path = os.path.join(OUT, "costs-format.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            pinned = json.load(fh)
+    except OSError:
+        pinned = None
+    if pinned and pinned["format"] == fmt and pinned["text"] != text:
+        sys.exit("the window-cost cache's text moved under format %d: "
+                 "bump window-costs' format in spec/state.jsonc" % fmt)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"format": fmt, "text": text}, fh, indent=1)
+        fh.write("\n")
 
 
 def windows_of(snap):

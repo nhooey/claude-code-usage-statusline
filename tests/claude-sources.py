@@ -50,10 +50,18 @@ with tempfile.TemporaryDirectory() as tmp:
                    "sess_pct": "12", "week_pct": "34"}, fh)
     saved = claude.CALIB_CACHE_OVERRIDE
     claude.CALIB_CACHE_OVERRIDE = cache
+    # And the state directory too: calibration() removes the old caches
+    # from it, which must never be the user's own.
+    saved_dir = os.environ.get("CODING_AGENT_USAGE_LINE_STATE_DIR")
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = tmp
     try:
         assert claude.calibration() == {"sess": 0.5, "week": 0.5}, claude.calibration()
     finally:
         claude.CALIB_CACHE_OVERRIDE = saved
+        if saved_dir is None:
+            os.environ.pop("CODING_AGENT_USAGE_LINE_STATE_DIR", None)
+        else:
+            os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = saved_dir
 
 # The calibration cache both ports share: its name and its text as the
 # shared cases pin them, which mod/test/claude_calib.test.ts checks the
@@ -153,6 +161,26 @@ with tempfile.TemporaryDirectory() as tmp:
         assert not os.path.exists(os.path.join(tmp, claude.OLD_CALIB_DONE))
         claude._old_calib_checked = False
         assert claude._remove_old_calibrations() == 1
+        # The old window-cost caches go the same way: the Python's, its
+        # killed saves' temporary files, the Node port's and the mod's.
+        # Today's name, and anything else, stays.
+        w = "claude-window-costs"
+        old_w = [w + ".cache", w + ".cache.12242", w + "-ts.cache",
+                 w + "-mod.cache"]
+        kept_w = [w + "-" + h + ".cache", w + ".cache.tmp",
+                  w + "-x.cache", w + ".json"]
+        for n in old_w + kept_w:
+            open(os.path.join(tmp, n), "w").close()
+        before = set(os.listdir(tmp))
+        claude._old_costs_checked = False
+        assert claude._remove_old_window_costs() == 4
+        assert (set(os.listdir(tmp))
+                == before - set(old_w) | {claude.OLD_COSTS_DONE})
+        open(os.path.join(tmp, old_w[0]), "w").close()
+        assert claude._remove_old_window_costs() == 0    # once a process
+        claude._old_costs_checked = False
+        assert claude._remove_old_window_costs() == 0    # and once at all
+        assert os.path.exists(os.path.join(tmp, old_w[0]))
     finally:
         if saved is None:
             os.environ.pop("CODING_AGENT_USAGE_LINE_STATE_DIR", None)
@@ -261,11 +289,20 @@ with tempfile.TemporaryDirectory() as tmp:
         plant(c + h.replace("0", "a") + ".cache", now - 3600)
         plant(c + h + ".cache.tmp", old_t)
         plant(h + ".json", old_t)
+        # The window-cost cache and its killed saves' temporary files go the
+        # same way; a live one, or a name it does not write, stays.
+        w = "claude-window-costs-"
+        plant(w + h + ".cache", old_t)
+        plant(w + h.replace("0", "b") + ".cache.4242", old_t)
+        plant(w + h.replace("0", "a") + ".cache", now - 3600)
+        plant(w + h + ".cache.tmp", old_t)
         claude._calib_swept = False
-        assert claude._sweep_calibrations(now) == 1
+        assert claude._sweep_calibrations(now) == 3
         left = sorted(os.listdir(tmp))
         assert left == sorted([c + h.replace("0", "a") + ".cache",
                                c + h + ".cache.tmp", h + ".json",
+                               w + h.replace("0", "a") + ".cache",
+                               w + h + ".cache.tmp",
                                claude.CALIB_SWEPT]), left
         plant(c + h + ".cache", old_t)
         assert claude._sweep_calibrations(now) == 0      # once a process
