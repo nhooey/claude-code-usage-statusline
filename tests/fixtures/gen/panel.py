@@ -635,6 +635,25 @@ def g_counts():
             compactions=11, background=[["mon1", "monitor"]]),
             {"parentAgentId": "p1", "spawnDepth": 2}),
         row(ptask("b1", "", type="local_bash", description="make"), BARE)])
+    # One row runs a shell, another's name and activity are the longest:
+    # the activity is cut before 💻 leaves (220 to 180), then 💻 leaves
+    # every row at once (170), so the names hold one column, and only past
+    # that are the names cut (160).  At 220 💻 once left the longest row
+    # alone.
+    for c in (240, 220, 200, 180, 170, 160):
+        g.case("names-aligned@%d" % c, [
+            row(ptask("a1", "CK1 trial + harness-frame fix",
+                      label="Debugging 12 failing plugin-test cases"),
+                usage()),
+            row(ptask("a2", "CM3: Python reads Options",
+                      label="Running the port-cli.py Options tests"),
+                usage()),
+            row(ptask("a3", "PL1: snap colours to 256 palette",
+                      label="Testing palette check in gen-spec.py"),
+                usage(background=[["sh1", "bash"]])),
+            row(ptask("a4", "Receipt missing after fold change",
+                      label="Verifying the new band.test.ts test fails "
+                      "without the fix"), usage())], cols=c)
     return g
 
 

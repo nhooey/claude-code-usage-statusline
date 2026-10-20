@@ -561,14 +561,15 @@ def agent_label(task, usage, meta, waiting_on=False, kids=0, kids_w=0, widths=No
     worktree the agent works in apart from the session's
     (`workspace.branch`), and what it is doing (`chat.doing`).
 
-    The kind, the name, the branch and the activity have no drop rank, as on
-    the mockup's agent rows: a label too long for its room is cut from the
-    end, the activity first, then the branch, then the name.  The counts
-    leave whole before anything is cut, the quickest to pass first, so a
-    narrow label keeps its name rather than the blanks that hold another
-    row's 📨.  The steadiest stand first — 👶🏻 and 🤏 stay once they come;
-    💻 and 📡 last as long as a shell or a Monitor runs; 📨 passes quickest
-    — so the passing ones shift the fewest.
+    No piece has a drop rank: a label too long for its room is cut from
+    the end, the activity first, then the branch, then the name.  The
+    counts leave as columns, from every row at once, which the panel
+    decides (panel_counts): once the activity and branch are cut, while
+    some row's name still does not fit, so a narrow row keeps its name;
+    and a count one row dropped alone would move that row's name off the
+    column the others' stand in.  The steadiest stand first — 👶🏻 and 🤏
+    stay once they come; 💻 and 📡 last as long as a shell or a Monitor
+    runs; 📨 passes quickest — so the passing ones shift the fewest.
     """
     widths = widths or {}
     status, kind = str(task.get("status") or ""), str(task.get("type") or "")
@@ -578,13 +579,13 @@ def agent_label(task, usage, meta, waiting_on=False, kids=0, kids_w=0, widths=No
                   render_kind(str(meta.get("agentType") or ""), kind),
                   seg(A_STATE_W, render_phase(status, usage, waiting_on)), " "])
     out = [grid.Piece("name.kind", head, 0)]
-    for path, w, cell, drop in (
-            ("state.kids", kids_w, render_kids(kids), 5),
-            ("state.compact", widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0)), 4),
-            ("state.shells", widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash")), 3),
-            ("state.monitors", widths.get("monitors", 0), render_background(E_MODE_MONITOR, background_count(status, usage, "monitor")), 2),
-            ("state.inbox", widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0)), 1)):
-        if w: out.append(grid.Piece(path, seg(w, cell) + [Span(" ")], drop))
+    for path, w, cell in (
+            ("state.kids", kids_w, render_kids(kids)),
+            ("state.compact", widths.get("compact", 0), render_compactions(getattr(usage,"compactions",0))),
+            ("state.shells", widths.get("shells", 0), render_background(E_MODE_SHELL, background_count(status, usage, "bash"))),
+            ("state.monitors", widths.get("monitors", 0), render_background(E_MODE_MONITOR, background_count(status, usage, "monitor"))),
+            ("state.inbox", widths.get("inbox", 0), render_inbox(getattr(usage,"inbox",0)))):
+        if w: out.append(grid.Piece(path, seg(w, cell) + [Span(" ")], 0))
     desc=squash(str(task.get("description") or "")); name=str(task.get("name") or "") or desc; act=squash(str(task.get("label") or ""))
     if act == desc: act=""
     branch=str(getattr(usage,"branch","") or "")
@@ -618,15 +619,54 @@ def render_agent_row(task, usage, meta, shares, limits, cols=None, now=None, eta
     toward the width, and it is not printed.  Nor is a copy of the panel's
     tree, which the design does not draw.
     """
-    task, meta, shares = task or {}, meta or {}, shares or {}
     cols, keys = panel_layout(cols, hide)
-    row = grid.Row("agent",
-                   agent_label(task, usage, meta, waiting_on, kids, kids_w, widths),
-                   agent_cells(task, usage, meta, shares, limits, now, eta, waiting_on),
-                   spawn_depth(task, meta) if depth is None else depth)
+    return draw_agent_row(agent_row(task, usage, meta, shares, limits, now, eta,
+                                    waiting_on, depth, kids, kids_w, widths),
+                          keys, cols, hide)
+
+def agent_row(task, usage, meta, shares, limits, now=None, eta=False,
+              waiting_on=False, depth=None, kids=0, kids_w=0, widths=None):
+    """The grid row for one prepared task; see render_agent_row."""
+    task, meta, shares = task or {}, meta or {}, shares or {}
+    return grid.Row("agent",
+                    agent_label(task, usage, meta, waiting_on, kids, kids_w, widths),
+                    agent_cells(task, usage, meta, shares, limits, now, eta, waiting_on),
+                    spawn_depth(task, meta) if depth is None else depth)
+
+def draw_agent_row(row, keys, cols, hide=()):
+    """The row on the panel's columns, without the chrome Claude Code draws."""
     out, head = grid.draw(row, keys, cols, hide), grid.chrome(row.depth)
     # A terminal too narrow for even the chrome leaves the row nothing.
     return rstrip(out[len(head):] if out[:len(head)] == head else [])
+
+# The counts in the order their columns leave the panel, the quickest to
+# pass first: 📨, 📡, 💻, 🤏, then 👶🏻.
+COUNTS_LEAVING = ("inbox", "monitors", "shells", "compact", "kids")
+
+# The label's pieces that are cut before a count column leaves.
+CUT_FIRST = ("workspace.branch", "chat.doing")
+
+def label_fits(row, keys, cols, hide=()):
+    """Whether the row's label, but for its branch and activity, fits the
+    room the grid gives it: those are cut before a count column leaves."""
+    kept = [p for p in row.label if p.path not in CUT_FIRST
+            and not grid.hidden(hide, row.scope + "." + p.path)]
+    return width(spans([list(p.spans) for p in kept])) <= grid.label_room(row, keys, cols, hide)
+
+def panel_counts(relabel, rows, keys, cols, hide=()):
+    """The rows with the count columns the whole panel keeps.
+
+    `relabel(gone)` gives the rows' labels without the counts in `gone`.
+    While some row's label, its branch and activity aside, is wider than
+    its room, the next count in COUNTS_LEAVING leaves every row at once: a
+    narrow row keeps its name, and the names still start in one column."""
+    gone = set()
+    for k in COUNTS_LEAVING:
+        if all(label_fits(r, keys, cols, hide) for r in rows):
+            break
+        gone.add(k)
+        rows = [r._replace(label=l) for r, l in zip(rows, relabel(gone))]
+    return rows
 
 def panel_widths(prepared_tasks, now=None):
     """The widest 📨, 📡, 💻 and 🤏 cell on the panel, each 0 where no row
@@ -665,8 +705,18 @@ def render_task_rows(prepared_tasks, limits, cols=None, now=None, hide=()):
         if p: kids[p]=kids.get(p, 0) + 1
     kids_w=max([vis_width(E_KIDS) + len(str(n)) for n in kids.values()] or [0])
     widths=panel_widths(prepared_tasks, now)
-    for task, usage, meta, shares in prepared_tasks:
-        if isinstance(task, dict) and task.get("id"):
-            tid=str(task["id"])
-            rows.append((tid, join(render_agent_row(task, usage, meta, shares, limits, cols, now, etas.get(tid, False), tid in busy, shape[tid][1], kids.get(tid, 0), kids_w, widths, hide))))
+    live=[(str(t["id"]), t, u, m, sh) for t, u, m, sh in prepared_tasks
+          if isinstance(t, dict) and t.get("id")]
+    cols, keys = panel_layout(cols, hide)
+    def relabel(gone):
+        w = {k: 0 if k in gone else v for k, v in widths.items()}
+        return [agent_label(t, u, m or {}, tid in busy, kids.get(tid, 0),
+                            0 if "kids" in gone else kids_w, w)
+                for tid, t, u, m, _ in live]
+    drawn = panel_counts(relabel, [
+        agent_row(t, u, m, sh, limits, now, etas.get(tid, False), tid in busy,
+                  shape[tid][1], kids.get(tid, 0), kids_w, widths)
+        for tid, t, u, m, sh in live], keys, cols, hide)
+    for (tid, *_), row in zip(live, drawn):
+        rows.append((tid, join(draw_agent_row(row, keys, cols, hide))))
     return rows

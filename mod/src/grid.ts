@@ -216,6 +216,23 @@ export function layout(st: Settings, rows: readonly Row[], cols: number,
   return keys;
 }
 
+/** The columns `draw` gives the row's label on the columns `keys`: what
+ * the chrome and the cells leave of the width, and with `spill` the row's
+ * own leading blank columns too. */
+export function labelRoom(st: Settings, row: Row, keys: readonly string[],
+  cols: number, patterns: readonly string[], spill = true): number {
+  const ws = GRID_CELLS.filter((c) => keys.includes(c.key)).map((c) =>
+    [c.gap + colWidth(st, c, patterns), shows(row, c.key, c.hide, patterns)] as
+      const);
+  let room = cols - st.rightEdge - width(chrome(row.depth), st.widths) -
+    ws.reduce((n, [w]) => n + w, 0);
+  for (const [w, shown] of ws) {
+    if (!spill || shown) break;
+    room += w;
+  }
+  return room;
+}
+
 /** One row on the columns `keys`.  With `spill`, the label runs on over
  * the row's own leading blank columns, up to its first figure, instead of
  * stopping where the first column starts.  Every row ends st.rightEdge
@@ -237,11 +254,8 @@ export function draw(st: Settings, row: Row, keys: readonly string[],
   }
   const head = chrome(row.depth);
   const end = cols - st.rightEdge;
-  let room = end - width(head, st.widths) -
-    cells.reduce((n, [w]) => n + w, 0);
-  while (spill && cells.length && cells[0][1] === null) {
-    room += cells.shift()![0];
-  }
+  const room = labelRoom(st, row, keys, cols, patterns, spill);
+  while (spill && cells.length && cells[0][1] === null) cells.shift();
   const right = cells.flatMap(([w, c]) => c ?? [span(" ".repeat(w))]);
   const out = [...head, ...seg(st, room, labelText(st, row, patterns, room)),
     ...right];

@@ -200,6 +200,23 @@ def layout(rows: Sequence[Row], cols: int, patterns: Sequence[str],
     return keys
 
 
+def label_room(row: Row, keys: Sequence[str], cols: int,
+               patterns: Sequence[str], spill: bool = True) -> int:
+    """The columns `draw` gives the row's label on the columns `keys`: what
+    the chrome and the cells leave of the width, and with `spill` the row's
+    own leading blank columns too."""
+    ws = [(c["gap"] + _col_width(c, patterns),
+           _shows(row, c["key"], c["hide"], patterns))
+          for c in GRID_CELLS if c["key"] in keys]
+    room = (cols - fmt.RIGHT_EDGE_COLS - width(chrome(row.depth))
+            - sum(w for w, _ in ws))
+    for w, shown in ws:
+        if not spill or shown:
+            break
+        room += w
+    return room
+
+
 def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
          spill: bool = True) -> List[Span]:
     """One row on the columns `keys`.  With `spill`, the label runs on over
@@ -222,9 +239,9 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
                       else None])
     head = chrome(row.depth)
     end = cols - fmt.RIGHT_EDGE_COLS
-    room = end - width(head) - sum(w for w, _ in cells)
+    room = label_room(row, keys, cols, patterns, spill)
     while spill and cells and cells[0][1] is None:
-        room += cells.pop(0)[0]
+        cells.pop(0)
     right = []
     for w, c in cells:
         right.extend(c if c is not None else [Span(" " * w)])

@@ -425,8 +425,10 @@ and then on every row, padded to the panel's widest, so the names after them
 hold their column. The ones that stay once they come, 👶🏻 and 🤏, sit
 furthest left, then 💻 and 📡, which last as long as a shell or a Monitor
 runs, so 📨 coming and going moves the fewest. On a label too short for
-them, the counts leave whole before anything is cut; then the activity is
-cut, then the branch, then the name.
+them, the activity is cut first, then the branch. Where some row's name
+still does not fit beside the counts, a count leaves every row at once,
+📨 first and 👶🏻 last, so the names keep one column and the narrowest row
+keeps its name; only once the counts are gone is a name cut.
 
 The figures are [the grid's columns](#column-by-column), for that one
 agent, from its own transcript:

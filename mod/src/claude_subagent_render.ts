@@ -53,7 +53,7 @@ import {
 } from "./claude_render.ts";
 // The redesigned grid the rows are laid out on.  It reads the panel's
 // widths from here in turn; neither module uses the other at load.
-import { cellWidth, chrome, draw, layout } from "./grid.ts";
+import { cellWidth, chrome, draw, hidden, labelRoom, layout } from "./grid.ts";
 import type { Piece, Row } from "./grid.ts";
 
 export const A_STATE_W = 2, A_CLOCK_W = 6, A_RATE_W = 7, A_TICK_S = 5.0;
@@ -743,8 +743,8 @@ export function agentCells(st: Settings, task: Dict, usage: unknown,
 }
 
 /** The row's label as grid pieces under the agent scope: the kind, the
- * counts (ranked, so they leave whole before the name is cut), the name,
- * the branch and the activity; see the Python's agent_label. */
+ * counts (unranked: their columns leave every row at once, panelCounts),
+ * the name, the branch and the activity; see the Python's agent_label. */
 export function agentLabel(st: Settings, task: Dict, usage: unknown,
   meta: unknown, waitingOn = false, kids = 0, kidsW = 0,
   widths0: PanelWidths | null = null): Piece[] {
@@ -755,19 +755,19 @@ export function agentLabel(st: Settings, task: Dict, usage: unknown,
     renderKind(strOr(pyGet(meta, "agentType")), kind),
     seg(st, A_STATE_W, renderPhase(status, usage, waitingOn)), " "]);
   const out: Piece[] = [{ path: "name.kind", spans: head, drop: 0 }];
-  const counts: [string, number, Span[], number][] = [
-    ["state.kids", kidsW, renderKids(kids), 5],
+  const counts: [string, number, Span[]][] = [
+    ["state.kids", kidsW, renderKids(kids)],
     ["state.compact", widths.compact ?? 0,
-      renderCompactions(ua(usage, "compactions", 0) as number), 4],
+      renderCompactions(ua(usage, "compactions", 0) as number)],
     ["state.shells", widths.shells ?? 0, renderBackground(E_MODE_SHELL,
-      backgroundCount(status, usage, "bash")), 3],
+      backgroundCount(status, usage, "bash"))],
     ["state.monitors", widths.monitors ?? 0, renderBackground(E_MODE_MONITOR,
-      backgroundCount(status, usage, "monitor")), 2],
+      backgroundCount(status, usage, "monitor"))],
     ["state.inbox", widths.inbox ?? 0,
-      renderInbox(ua(usage, "inbox", 0) as number), 1],
+      renderInbox(ua(usage, "inbox", 0) as number)],
   ];
-  for (const [path, w, cell, drop] of counts) {
-    if (w) out.push({ path, spans: [...seg(st, w, cell), span(" ")], drop });
+  for (const [path, w, cell] of counts) {
+    if (w) out.push({ path, spans: [...seg(st, w, cell), span(" ")], drop: 0 });
   }
   const desc = squash(strOr(task.description));
   const name = strOr(task.name) || desc;
@@ -796,21 +796,74 @@ export function renderAgentRow(st: Settings, task0: unknown, usage: unknown,
   eta: Eta | false = false, waitingOn = false, depth: number | null = null,
   kids = 0, kidsW = 0, widths: PanelWidths | null = null,
   hide: readonly string[] = []): Span[] {
+  const [cols, keys] = panelLayout(st, cols0, hide);
+  return drawAgentRow(st, agentRow(st, task0, usage, meta0, shares0, limits,
+    now, eta, waitingOn, depth, kids, kidsW, widths), keys, cols, hide);
+}
+
+/** agent_row: the grid row for one prepared task; see renderAgentRow. */
+export function agentRow(st: Settings, task0: unknown, usage: unknown,
+  meta0: unknown, shares0: unknown, limits: Limits,
+  now: number | null = null, eta: Eta | false = false, waitingOn = false,
+  depth: number | null = null, kids = 0, kidsW = 0,
+  widths: PanelWidths | null = null): Row {
   const task = pyOr(task0, {}) as Dict, meta = pyOr(meta0, {});
   const shares = pyOr(shares0, {});
-  const [cols, keys] = panelLayout(st, cols0, hide);
-  const row: Row = {
+  return {
     scope: "agent",
     depth: depth === null ? spawnDepth(task, meta) : depth,
     label: agentLabel(st, task, usage, meta, waitingOn, kids, kidsW, widths),
     cells: agentCells(st, task, usage, meta, shares, limits, now, eta,
       waitingOn),
   };
+}
+
+/** draw_agent_row: the row on the panel's columns, without the chrome
+ * Claude Code draws. */
+export function drawAgentRow(st: Settings, row: Row, keys: readonly string[],
+  cols: number, hide: readonly string[] = []): Span[] {
   const out = draw(st, row, keys, cols, hide), head = chrome(row.depth);
   // A terminal too narrow for even the chrome leaves the row nothing.
   const same = head.every((h, i) => i < out.length &&
     JSON.stringify(out[i]) === JSON.stringify(h));
   return rstrip(same ? out.slice(head.length) : []);
+}
+
+/** The counts in the order their columns leave the panel, the quickest
+ * to pass first: 📨, 📡, 💻, 🤏, then 👶🏻. */
+export const COUNTS_LEAVING = [
+  "inbox", "monitors", "shells", "compact", "kids",
+] as const;
+export type Count = typeof COUNTS_LEAVING[number];
+
+/** The label's pieces that are cut before a count column leaves. */
+export const CUT_FIRST: readonly string[] = ["workspace.branch", "chat.doing"];
+
+/** label_fits: whether the row's label, but for its branch and activity,
+ * fits the room the grid gives it. */
+export function labelFits(st: Settings, row: Row, keys: readonly string[],
+  cols: number, hide: readonly string[] = []): boolean {
+  const kept = row.label.filter((p) => !CUT_FIRST.includes(p.path) &&
+    !hidden(hide, row.scope + "." + p.path));
+  return width(kept.flatMap((p) => p.spans), st.widths) <=
+    labelRoom(st, row, keys, cols, hide);
+}
+
+/** panel_counts: the rows with the count columns the whole panel keeps;
+ * `relabel(gone)` gives their labels without the counts in `gone`. */
+export function panelCounts(st: Settings,
+  relabel: (gone: ReadonlySet<Count>) => Piece[][], rows0: readonly Row[],
+  keys: readonly string[], cols: number,
+  hide: readonly string[] = []): Row[] {
+  let rows = [...rows0];
+  const gone = new Set<Count>();
+  for (const k of COUNTS_LEAVING) {
+    if (rows.every((r) => labelFits(st, r, keys, cols, hide))) break;
+    gone.add(k);
+    const labels = relabel(gone);
+    rows = rows.map((r, i) => ({ ...r, label: labels[i] }));
+  }
+  return rows;
 }
 
 /** The widest 📨, 🤏, 💻 and 📡 cell on the panel; see PanelWidths. */
@@ -837,7 +890,7 @@ export function panelWidths(st: Settings,
  * payload's columns plus PANEL_COLUMNS_SHORT, and `hide` the --hide
  * paths. */
 export function renderTaskRowSpans(st: Settings,
-  prepared: readonly Prepared[], limits: Limits, cols: number | null = null,
+  prepared: readonly Prepared[], limits: Limits, cols0: number | null = null,
   now: number | null = null,
   hide: readonly string[] = []): [string, Span[]][] {
   const rows: [string, Span[]][] = [];
@@ -853,14 +906,28 @@ export function renderTaskRowSpans(st: Settings,
   const kidsW = maxOr0([...kids.values()]
     .map((n) => visWidth(E_KIDS, st.widths) + pyLen(String(n))));
   const widths = panelWidths(st, prepared);
-  for (const [task, usage, meta, shares] of prepared) {
-    if (hasId(task)) {
-      const tid = pyStr(task.id);
-      rows.push([tid, renderAgentRow(st, task, usage, meta, shares, limits,
-        cols, now, etas.has(tid) ? etas.get(tid)! : false, busy.has(tid),
-        shape.get(tid)![1], kids.get(tid) ?? 0, kidsW, widths, hide)]);
-    }
-  }
+  const live = prepared.filter(([t]) => hasId(t))
+    .map(([t, u, m, sh]) => [pyStr((t as Dict).id), t as Dict, u, m, sh] as
+      const);
+  const [cols, keys] = panelLayout(st, cols0, hide);
+  const relabel = (gone: ReadonlySet<Count>): Piece[][] => {
+    const w: PanelWidths = {
+      inbox: gone.has("inbox") ? 0 : widths.inbox,
+      compact: gone.has("compact") ? 0 : widths.compact,
+      shells: gone.has("shells") ? 0 : widths.shells,
+      monitors: gone.has("monitors") ? 0 : widths.monitors,
+    };
+    return live.map(([tid, t, u, m]) => agentLabel(st, t, u, pyOr(m, {}),
+      busy.has(tid), kids.get(tid) ?? 0, gone.has("kids") ? 0 : kidsW, w));
+  };
+  const drawn = panelCounts(st, relabel, live.map(([tid, t, u, m, sh]) =>
+    agentRow(st, t, u, m, sh, limits, now,
+      etas.has(tid) ? etas.get(tid)! : false, busy.has(tid),
+      shape.get(tid)![1], kids.get(tid) ?? 0, kidsW, widths)),
+  keys, cols, hide);
+  live.forEach(([tid], i) => {
+    rows.push([tid, drawAgentRow(st, drawn[i], keys, cols, hide)]);
+  });
   return rows;
 }
 
