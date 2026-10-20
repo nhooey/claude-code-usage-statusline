@@ -25,8 +25,11 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `hooks/register.tsx` is its hooks module, and `types/index.d.ts` its
 `$.state` contract. It draws four places, and writes one:
 
-- **The band,** above the prompt: the grid's rows
-  for the session, from the last status figures document, redrawn as the
+- **The band,** under Claude Code's footer line by default
+  (`CONFIG.bandPlace` `"hint"`), or above the prompt with `"above"`; see
+  [docs/layout.md](../docs/layout.md#under-the-footer-line). It holds the
+  grid's rows for the session, from the last status figures document,
+  redrawn as the
   session starts, after each tool call, as a turn starts and ends, every
   5 seconds while a turn runs (never more often than three times as long
   as the last read took) and every 30 seconds otherwise. Its clocks (🔧 ⌛
