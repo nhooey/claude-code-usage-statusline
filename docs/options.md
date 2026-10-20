@@ -279,7 +279,8 @@ A setting comes from the first of these that has it:
 The project `<root>` is found by walking up from the session's directory
 (the payload's `cwd`; the status line's `workspace.project_dir`; a Codex
 rollout's own when the payload has none; the working directory for
-`--transcript` by hand) to the first directory holding either project file.
+`--transcript` by hand; the mod's session root, where the session started or
+`/cd` took it) to the first directory holding either project file.
 The walk stops at a `.git`, at `$HOME` and at `/`. A git worktree with no
 local file of its own reads its main checkout's.
 
@@ -295,6 +296,14 @@ on stderr naming the file, and an unknown key's names the nearest known one.
 `--diagnose` counts them on its line. A flag that overrides a file's value
 for an option the mod reads too (`hide`, `right-edge`, `usage-source`, …) is
 said as well, since the band then draws the file's.
+
+The mod reads the files once per load (a session's start or a
+`/reload-plugins`) and writes what each file gave and every warning to
+`usage-band.log` in the state directory, one line each. For now it still
+draws from `CONFIG` in `mod/hooks/config.ts`; drawing from the files, the
+re-reads on a changed file or a moved root, and a notice for a bad file
+come with the next step of
+[the plan](../agents/plans/config-merge.md#the-build-order).
 
 `--show-config` prints the merged options, each with the layer it came from
 and the layers' files, and the warnings, and exits. It reads no stdin, so

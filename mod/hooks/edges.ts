@@ -63,8 +63,10 @@ import {
 } from '../src/claude.ts'
 import type { RateSample } from '../src/claude.ts'
 import { sha256Hex } from '../src/sha256.ts'
-import { isDict, pyGet } from '../src/py.ts'
+import { isDict, pyGet, utf8 } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
+import { load as loadConfig } from '../src/config.ts'
+import type { ConfigEnv, ConfigFs, Found } from '../src/config.ts'
 import { CONFIG } from './config.ts'
 import { log } from './log.ts'
 
@@ -1181,6 +1183,73 @@ export async function placesOf($: $): Promise<Places> {
       '/coding-agent-usage-line'
   const config = (await $.env.get('CLAUDE_CONFIG_DIR')) || home + '/.claude'
   return { home, stateDir: state, projectsDir: config + '/projects' }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// The configuration files.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** `$.fs` as src/config.ts's walk reaches it: a stat or a read that fails
+ * is null, and a file is read as bytes and decoded strictly with its
+ * byte-order mark kept, as the Python's open(…, encoding="utf-8") reads
+ * it, so a file the panel finds unreadable or not JSON the band does too. */
+function configFs($: $): ConfigFs {
+  return {
+    stat: async (path) => {
+      try {
+        const s = await $.fs.stat(path)
+        return { kind: s.kind, size: s.size, mtimeMs: s.mtimeMs }
+      } catch {
+        return null
+      }
+    },
+    read: async (path) => {
+      try {
+        const { base64 } = await $.fs.read(path, { as: 'bytes' })
+        return utf8(fromBase64(base64), true, true)
+      } catch {
+        return null
+      }
+    },
+    realPath: async (path) =>
+      (await $.fs.stat(path, { resolve: true }).catch(() => undefined))
+        ?.realPath ?? null,
+  }
+}
+
+/** The configuration files of the session's project and the user, read,
+ * checked and merged over the defaults (config-merge.md, "Reading them in
+ * the mod").  The walk starts at the session's root, and a usage source a
+ * file names is checked as Claude's panel checks it. */
+export async function configVia($: $): Promise<Found> {
+  const env: ConfigEnv = {
+    HOME: await $.env.get('HOME'),
+    XDG_CONFIG_HOME: await $.env.get('XDG_CONFIG_HOME'),
+    CODING_AGENT_USAGE_LINE_CONFIG_DIR:
+      await $.env.get('CODING_AGENT_USAGE_LINE_CONFIG_DIR'),
+  }
+  const start = await $.session.root().catch(() => $.session.cwd())
+  return loadConfig(start, env, configFs($), 'claude')
+}
+
+// What the last read of the configuration files found; null before one.
+let configFound: Found | null = null
+
+/** The last read of the configuration files, or null before one. */
+export const configNow = (): Found | null => configFound
+
+/** Reads the configuration files and logs what they gave and every
+ * warning, once per read.  Nothing draws from them yet: CONFIG is still
+ * the mod's settings, until options() takes its place (step 6). */
+export async function readConfig($: $): Promise<Found> {
+  const found = await configVia($)
+  configFound = found
+  const files = found.layers.map((l) =>
+    `${l.name} ${l.path} (${Object.keys(l.values).join(', ')})`)
+  await log($, `config from ${found.start}: ` +
+    (files.length ? files.join('; ') : 'no files'))
+  for (const w of found.options.warnings) await log($, 'config: ' + w)
+  return found
 }
 
 /** The status line's payload, made from `$.session` and what the handlers

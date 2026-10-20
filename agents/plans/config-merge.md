@@ -1,7 +1,8 @@
 # Configuration: one set of options, merged from files and flags
 
-Being built: steps 1 to 4 are done (each has its Status), so the Python
-reads the files, and the mod does not yet. [Options](../../docs/options.md)
+Being built: steps 1 to 5 are done (each has its Status), so the Python
+reads the files, and the mod reads them too but does not yet draw from
+them. [Options](../../docs/options.md)
 is the reference for the flags and the files, and `mod/hooks/config.ts` for
 the mod. This document collects the design as it is decided.
 
@@ -599,6 +600,37 @@ and `npm test`.
    reading through `$.fs` in `mod/hooks/edges.ts`; `config.test.ts` against
    the shared cases. `CONFIG` is still the defaults' source and nothing
    reads the files' values yet.
+
+   **Status 2026-10-20: done.** As built:
+   - `mod/src/config.ts` ports `config.py` (`find`, `mainCheckout`,
+     `readFile`, `check`, `nearest`), `options.merge` and `cli._merged`'s
+     usage-source loop, with no flags layer. `load(start, env, fs,
+     agent)` takes a `ConfigFs` (`stat`, `read`, `realPath`, each null
+     where Python would fail) and the three variables as a plain object,
+     so it is pure. Paths are `posixpath`'s, written out; JSON is read
+     by a `json.loads` port that keeps keys in the order written (a
+     `Map`) and ints apart from floats (a `bigint`), so `"version": 2.0`
+     and the warnings' quoting (`json.dumps` with and without
+     `ensure_ascii`) come out as the Python's. Each `Layer` carries its
+     file's `mtimeMs` for step 6's tick.
+   - `mod/hooks/edges.ts`: `configVia` reads through `$.fs` (bytes,
+     decoded strictly with the byte-order mark kept, as Python's
+     `open(…, encoding="utf-8")`), starts at `$.session.root()`, and
+     checks `usage-source` as Claude's panel does (`agent` `"claude"`;
+     the shared cases run with none). `readConfig` keeps the result
+     (`configNow()`) and logs one line of the files and the keys each
+     gave, then one line per warning, to `usage-band.log`. It runs once
+     per load, from `start()` in `register.tsx`, not awaited. No notice
+     yet: the notice and the re-reads are step 6's.
+   - `CODING_AGENT_USAGE_LINE_PROJECT_DIR`, the Python's test override,
+     is not read: the mod's tests set `$.session.root` instead.
+   - `mod/test/config.test.ts` runs the 35 cases with no flags over a
+     fake file system built from each case's tree, and fails on any path
+     asked outside it; `mod/mod-tests/config.test.ts` reads two planted
+     files through the harness's `$.fs`, checks the log's lines word for
+     word, and that no path the mod asks for, figures included, lies
+     outside its world (the hermetic check, as `GoldensAreHermetic` is
+     for the Python).
 6. **The mod draws from `options()`.** Every `CONFIG.x` in `register.tsx`
    and `edges.ts` becomes `options().x`; the re-reads on `session.start`, the
    tick and a moved root; the redraw on change; the log and the notice.

@@ -43,8 +43,8 @@ import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import * as spec from '../src/spec.ts'
 import { BAND_EDGE, CONFIG } from './config.ts'
-import { costDoc, permissionModeOf, placesOf, seen, statusDoc, steps,
-  transcriptPath, turnsNow } from './edges.ts'
+import { costDoc, permissionModeOf, placesOf, readConfig, seen, statusDoc,
+  steps, transcriptPath, turnsNow } from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -229,6 +229,8 @@ async function start($: $, by: string): Promise<void> {
   try {
     const cwd = await $.session.cwd().catch(() => '?')
     await log($, `started by ${by} in ${cwd}`)
+    // The configuration files, once per load, into the log.
+    void readConfig($).catch((err) => log($, 'config', err))
     const mine = (await read($, generation)) + 1
     await update($, generation, () => mine)
     void tick($, mine).catch((err) => log($, 'tick stopped', err))

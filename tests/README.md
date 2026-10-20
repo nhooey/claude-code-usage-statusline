@@ -463,7 +463,12 @@ These pin values rather than rows, so they assert instead of comparing files.
 - **`config.py`** — the configuration files: the shared cases in
   `fixtures/config/cases.json`, which `fixtures/gen/config.py` writes and the
   mod's port runs too, `--show-config`, and a check that files planted
-  wherever a developer's own could be change no golden.
+  wherever a developer's own could be change no golden. The mod's side:
+  `mod/test/config.test.ts` runs the cases without flags over a fake file
+  system and fails on any path asked outside the case's tree;
+  `mod/mod-tests/config.test.ts` checks the read through `$.fs`, its lines
+  in the mod's log, and that no path the mod asks for lies outside the
+  test's own world.
 - **`formatting.py`, `claude-subagent-render.py`** — pure helpers, no I/O.
 - **`py39-floor.sh`** — `py_compile` over every file under 3.9 (catches
   syntax), then one render per mode under 3.9 (catches a name 3.9 lacks). It
