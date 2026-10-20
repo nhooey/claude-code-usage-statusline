@@ -417,7 +417,7 @@ result. Together they cover:
 - JSONC: `//` in a string kept, `//` after a value stripped, a trailing comma
   refused;
 - every row of the bad-value table, and the nearest-key hint;
-- the derived values: `right-edge` from `band-place`, `label` from
+- the derived values: `right-edge` from `live-place`, `label` from
   `usage-text`.
 
 ### Python, `tests/`
