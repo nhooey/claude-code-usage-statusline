@@ -122,7 +122,9 @@ export const CONFIG = {
 
 // The columns the band's rows and the 💳 row end short of the terminal's
 // edge, from CONFIG.bandPlace: RIGHT_EDGE above the prompt, where Claude
-// Code draws the band's [-], and 0 under the footer line, where it draws
-// none (asked 2026-10-20).  subagentStatusLine's `--right-edge` must say
-// the same, so the agent panel's rows stack on the band's.
-export const BAND_EDGE = CONFIG.bandPlace === 'hint' ? 0 : RIGHT_EDGE;
+// Code draws the band's [-], and under the footer line the 2 columns its
+// container keeps blank on the right, as on the left (seen live
+// 2026-10-20: at 0, every row there was cut 2 columns short, ending in
+// "…").  subagentStatusLine's `--right-edge` must say the same, so the
+// agent panel's rows stack on the band's.
+export const BAND_EDGE = CONFIG.bandPlace === 'hint' ? 2 : RIGHT_EDGE;
