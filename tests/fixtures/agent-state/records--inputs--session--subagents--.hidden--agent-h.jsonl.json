@@ -1,0 +1,10 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/records/inputs/session/subagents/.hidden/agent-h.jsonl",
+ "texts": [
+  [
+   264,
+   "{\"format\":1,\"seq\":1,\"pos\":264,\"tail\":\"57ebfa5999e62e15470f7e45da0fa45ccaaecbb85689647cc25056f129a8ea3e\",\"pid\":\"\",\"eta\":[[],false,1787000042,null],\"span\":[1787000042,1787000042],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1787000042,\"\",\"claude-opus-5\",1,1,1,1,\"req-h\",264,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000042,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ]
+ ]
+}

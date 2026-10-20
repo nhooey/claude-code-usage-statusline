@@ -1,0 +1,30 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/02-parked/subagents/agent-p2.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"d65b792f0cdcf1000782fabca3603d29d023c941aa65fd1eafba61f61106f09b\",\"pid\":\"p1\",\"eta\":[[],false,1786846000,null],\"span\":[1786846000,1786846000],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846000,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   516,
+   "{\"format\":1,\"seq\":1,\"pos\":516,\"tail\":\"71052cc802f95cb04f9b8418b34c862951a369d4318f2faae0f0cdca264db0ba\",\"pid\":\"p1\",\"eta\":[[],false,1786846010,null],\"span\":[1786846000,1786846010],\"work\":[],\"pending\":[[\"t2\",1786846010,\"Monitor\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2a\",516,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846010,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   721,
+   "{\"format\":1,\"seq\":1,\"pos\":721,\"tail\":\"b007a1db8c10dc6bda1f1c2d2b7bd059764280d58124aa868c09c74d2ab0846a\",\"pid\":\"p1\",\"eta\":[[],false,1786846011,null],\"span\":[1786846000,1786846011],\"work\":[],\"pending\":[],\"tools\":[[1786846010,1786846011]],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2a\",516,0,0]],\"wrote\":[\"t2\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846011,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[[\"mon1\",\"monitor\"]],\"effort\":\"high\"}"
+  ],
+  [
+   1079,
+   "{\"format\":1,\"seq\":1,\"pos\":1079,\"tail\":\"2e57d3bc5b00fdc3279a5ff8c759f9179c6b27ea372c2f8b65692c5a293c8c3c\",\"pid\":\"p1\",\"eta\":[[],false,1786846015,null],\"span\":[1786846000,1786846015],\"work\":[],\"pending\":[[\"t3\",1786846015,\"Bash\"]],\"tools\":[[1786846010,1786846011]],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2a\",516,0,0],[1786846015,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2b\",1079,0,0]],\"wrote\":[\"t2\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846015,\"api_error\":false,\"cwd\":\"\",\"blocks\":2,\"background\":[[\"mon1\",\"monitor\"]],\"effort\":\"high\"}"
+  ],
+  [
+   1272,
+   "{\"format\":1,\"seq\":1,\"pos\":1272,\"tail\":\"4116c226298d72aae6d5ba6ad9fe9e2f06437feedf695d3066f63a58f80ab3f7\",\"pid\":\"p1\",\"eta\":[[],false,1786846016,null],\"span\":[1786846000,1786846016],\"work\":[],\"pending\":[],\"tools\":[[1786846010,1786846011],[1786846015,1786846016]],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2a\",516,0,0],[1786846015,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2b\",1079,0,0]],\"wrote\":[\"t2\",\"t3\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846016,\"api_error\":false,\"cwd\":\"\",\"blocks\":2,\"background\":[[\"mon1\",\"monitor\"],[\"sh2\",\"bash\"]],\"effort\":\"high\"}"
+  ],
+  [
+   1645,
+   "{\"format\":1,\"seq\":1,\"pos\":1645,\"tail\":\"5f8ccc002d9cac5dd3b465ba2adc0c21958702f1f5e7a586cc238078a7192496\",\"pid\":\"p1\",\"eta\":[[],true,1786846020,null],\"span\":[null,null],\"work\":[[1786846000,1786846020]],\"pending\":[],\"tools\":[[1786846010,1786846011],[1786846015,1786846016]],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2a\",516,0,0],[1786846015,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2b\",1079,0,0],[1786846020,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p2c\",1645,0,0]],\"wrote\":[\"t2\",\"t3\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846020,\"api_error\":false,\"cwd\":\"\",\"blocks\":3,\"background\":[[\"mon1\",\"monitor\"],[\"sh2\",\"bash\"]],\"effort\":\"high\"}"
+  ]
+ ]
+}

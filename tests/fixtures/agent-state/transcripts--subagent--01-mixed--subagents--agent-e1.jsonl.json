@@ -1,0 +1,18 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/01-mixed/subagents/agent-e1.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"84f006f17195a57427f365b15ca20f719c28d4c89a6d737c468785bbb773a23d\",\"pid\":\"p1\",\"eta\":[[],false,1786845800,null],\"span\":[1786845800,1786845800],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845800,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   497,
+   "{\"format\":1,\"seq\":1,\"pos\":497,\"tail\":\"c11e3f0fe006d8142306fc6d134942092433e214520707de31d0c377cc3ebf2b\",\"pid\":\"p1\",\"eta\":[[],false,1786845850,null],\"span\":[1786845800,1786845850],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1786845850,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"e1a\",497,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845850,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   865,
+   "{\"format\":1,\"seq\":1,\"pos\":865,\"tail\":\"2299bd633922efd54e1883a1b437e234ea3ea2183365f810e9638af51fc47fd1\",\"pid\":\"p1\",\"eta\":[[],false,1786845900,null],\"span\":[1786845800,1786845900],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1786845850,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"e1a\",497,0,0],[1786845900,\"p1\",\"claude-opus-5\",0,0,0,0,\"e1b\",865,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845900,\"api_error\":true,\"cwd\":\"\",\"blocks\":2,\"background\":[],\"effort\":\"high\"}"
+  ]
+ ]
+}

@@ -296,14 +296,36 @@ with tempfile.TemporaryDirectory() as tmp:
         plant(w + h.replace("0", "b") + ".cache.4242", old_t)
         plant(w + h.replace("0", "a") + ".cache", now - 3600)
         plant(w + h + ".cache.tmp", old_t)
+        # A fold directory goes once none of its files has been written for
+        # as long, by the names a fold writes; one still in use stays, and
+        # so does one holding anything else.
+        def plant_dir(name, files, t):
+            os.mkdir(os.path.join(tmp, name))
+            for f in files:
+                plant(os.path.join(name, f), t)
+        af, mf = "claude-agent-fold-", "claude-main-fold-"
+        plant_dir(af + h, [h + "-a.cache", h + "-b.cache",
+                           h + "-a.cache.77.tmp"], old_t)
+        plant_dir(mf + h, ["head-a.cache", "head-b.cache", "part-0.cache",
+                           "part-11.cache"], old_t)
+        plant_dir(af + h.replace("0", "a"), [h + "-a.cache"], old_t)
+        plant(os.path.join(af + h.replace("0", "a"), h + "-b.cache"),
+              now - 3600)
+        plant_dir(mf + h.replace("0", "a"), ["head-a.cache", "notes"], old_t)
         claude._calib_swept = False
-        assert claude._sweep_calibrations(now) == 3
+        assert claude._sweep_calibrations(now) == 3 + 3 + 4 + 1
         left = sorted(os.listdir(tmp))
         assert left == sorted([c + h.replace("0", "a") + ".cache",
                                c + h + ".cache.tmp", h + ".json",
                                w + h.replace("0", "a") + ".cache",
                                w + h + ".cache.tmp",
+                               af + h.replace("0", "a"),
+                               mf + h.replace("0", "a"),
                                claude.CALIB_SWEPT]), left
+        assert os.listdir(os.path.join(tmp, mf + h.replace("0", "a"))) \
+            == ["notes"]
+        assert len(os.listdir(os.path.join(tmp, af + h.replace("0", "a")))) \
+            == 2
         plant(c + h + ".cache", old_t)
         assert claude._sweep_calibrations(now) == 0      # once a process
         claude._calib_swept = False

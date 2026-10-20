@@ -1,0 +1,22 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/cost/09-agents/subagents/agent-fork1.jsonl",
+ "texts": [
+  [
+   165,
+   "{\"format\":1,\"seq\":1,\"pos\":165,\"tail\":\"2ed69cc71e0cbb273f14ca34911fba1798ac9e65a7ac00fe99ba172d1f0bdc99\",\"pid\":\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"eta\":[[],false,1786842660,null],\"span\":[1786842660,1786842660],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786842660,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   448,
+   "{\"format\":1,\"seq\":1,\"pos\":448,\"tail\":\"b25663e84b77235df6652960b5e6560a531b7dfdd5b0e0b273fdc43895d4975c\",\"pid\":\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"eta\":[[],false,1786842720,null],\"span\":[1786842660,1786842720],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1786842720,\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"claude-opus-5\",20,3000,61000,2200,\"req-f1\",448,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786842720,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   729,
+   "{\"format\":1,\"seq\":1,\"pos\":729,\"tail\":\"dd58d3d2bc4f9f7a8b3cef88b300bc56f1990c1ee2f194f4454cf5f0c75ed0a9\",\"pid\":\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"eta\":[[],false,1786842760,null],\"span\":[1786842660,1786842760],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1786842720,\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"claude-opus-5\",20,3000,61000,2200,\"req-f1\",448,0,0],[1786842760,\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"claude-opus-5\",5,500,64000,1800,\"req-f2\",729,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786842760,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   1009,
+   "{\"format\":1,\"seq\":1,\"pos\":1009,\"tail\":\"a3780dd75839a6de2aff9746b612970a2665c7a2f9a8c31031a948d47a53b4bf\",\"pid\":\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"eta\":[[],false,1786843020,null],\"span\":[1786842660,1786843020],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1786842720,\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"claude-opus-5\",20,3000,61000,2200,\"req-f1\",448,0,0],[1786842760,\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"claude-opus-5\",5,500,64000,1800,\"req-f2\",729,0,0],[1786843020,\"3a9e51c0-2f6d-4b1e-9c07-5d8e2b4f6a11\",\"claude-opus-5\",4,300,66000,900,\"req-f3\",1009,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786843020,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ]
+ ]
+}

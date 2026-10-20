@@ -324,6 +324,25 @@ test("staleCalibrations: old calibration caches by name", () => {
   ], now), [c + h + ".cache", w + h + ".cache", w + h + ".cache.4242"]);
 });
 
+// The mod's half of _sweep_fold_dir: a fold directory's own names, once
+// none of its entries has been written for CALIB_MAX_AGE_S.
+test("staleFoldFiles: a fold directory nobody has written to", () => {
+  const now = 2_000_000_000;
+  const old = (now - cc.CALIB_MAX_AGE_S - 60) * 1000;
+  const h = "0123456789abcdef".repeat(4);
+  const files = [h + "-a.cache", h + "-b.cache", h + "-a.cache.77.tmp",
+    "head-a.cache", "part-12.cache", "notes", h + "-c.cache"];
+  assert.deepEqual(cc.staleFoldFiles(files.map((name) => ({ name,
+    kind: "file", mtimeMs: old })), now), files.slice(0, 5));
+  assert.equal(cc.staleFoldFiles([
+    { name: h + "-a.cache", kind: "file", mtimeMs: old },
+    { name: h + "-b.cache", kind: "file", mtimeMs: (now - 3600) * 1000 },
+  ], now), null);
+  assert.ok(cc.FOLD_DIR.test("claude-agent-fold-" + h));
+  assert.ok(cc.FOLD_DIR.test("claude-main-fold-" + h));
+  assert.ok(!cc.FOLD_DIR.test("claude-agent-folds-mod"));
+});
+
 // The mod's half of _remove_old_window_costs: the names before
 // spec/state.jsonc's window-costs kind, and nothing else.
 test("oldWindowCosts: the window-cost caches by their old names", () => {

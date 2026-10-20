@@ -24,10 +24,13 @@ sys.path.insert(0, ROOT)
 os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = tempfile.mkdtemp()
 
 from _checks import check, tally  # noqa: E402
+from coding_agent_usage_line import agent_fold as af  # noqa: E402
+from coding_agent_usage_line import claude  # noqa: E402
 from coding_agent_usage_line import claude_records as cr  # noqa: E402
 from coding_agent_usage_line import main_fold as mf  # noqa: E402
 
 STATE = os.path.join(ROOT, "tests", "fixtures", "state")
+AGENT_STATE = os.path.join(ROOT, "tests", "fixtures", "agent-state")
 
 
 def fixtures():
@@ -37,6 +40,64 @@ def fixtures():
     return [os.path.join(ROOT, f) for f in out.split()
             if f.endswith(".jsonl")
             and not os.path.basename(f).startswith("agent-")]
+
+
+def check_agent_fold(path):
+    """An agent's fold: saved at each line end as tests/fixtures/
+    agent-state/ holds it, which mod/test/agent_fold.test.ts holds the
+    TypeScript to as well; each text read back and read on to the last;
+    and the panel's reading and agent_records' of what was read on, the
+    whole file's."""
+    name = os.path.relpath(path, ROOT)
+    fixture = os.path.join(AGENT_STATE, os.path.relpath(path, os.path.join(
+        ROOT, "tests", "fixtures")).replace("/", "--") + ".json")
+    with open(fixture, encoding="utf-8") as fh:
+        want = json.load(fh)
+    if want["format"] != af.AGENT_FOLD_FORMAT:
+        check("%s: tests/fixtures/agent-state/ is at the spec's format; run "
+              "tests/fixtures/gen/state.py" % name, want["format"],
+              af.AGENT_FOLD_FORMAT)
+        return
+    with open(path, "rb") as fh:
+        data = fh.read()
+    texts = want["texts"]
+    if not texts:
+        return
+    f, at, got = cr.AgentFold(), 0, []
+    for k, _ in texts:
+        cr.fold_agent_bytes(f, data[at:k])
+        at = k
+        got.append([k, af.fold_text(f, 1, af.tail_digest(
+            data[max(0, k - af.FOLD_CHECK_BYTES):k]))])
+    check("%s: each line end's fold saved as tests/fixtures/agent-state/ "
+          "holds it; a change to the fold needs a new format in "
+          "spec/state.jsonc" % name, got, texts)
+    last = texts[-1][1]
+    broke = []
+    for k, text in texts:
+        seq, _tail, g = af.fold_of_text(text)
+        if af.fold_text(g, seq, _tail) != text:
+            broke.append(("read back otherwise", k))
+        cr.fold_agent_bytes(g, data[k:texts[-1][0]])
+        if af.fold_text(g, 1, _tail_of(data, texts[-1][0])) != last:
+            broke.append(("read on otherwise", k))
+        if (claude.agent_usage_of(g), cr.agent_reading_of(g)) != (
+                claude.agent_usage_of(f), cr.agent_reading_of(f)):
+            broke.append(("reads otherwise", k))
+    check("%s: read back at any line end, read on to the whole" % name,
+          broke, [])
+
+
+def _tail_of(data, k):
+    return af.tail_digest(data[max(0, k - af.FOLD_CHECK_BYTES):k])
+
+
+def agent_fixtures():
+    out = subprocess.run(["git", "ls-files", "tests/fixtures"], cwd=ROOT,
+                         capture_output=True, text=True, check=True).stdout
+    return [os.path.join(ROOT, f) for f in out.split()
+            if f.endswith(".jsonl")
+            and os.path.basename(f).startswith("agent-")]
 
 
 def dicts(records):
@@ -286,6 +347,10 @@ def main():
         check("%s: a half-written last line reads now and once completed"
               % name, broken, [])
         check_saves(path)
+
+    print("--- the agents' folds ---")
+    for path in agent_fixtures():
+        check_agent_fold(path)
 
     print()
     shutil.rmtree(WORK)

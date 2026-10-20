@@ -13,9 +13,9 @@ import { fileURLToPath } from "node:url";
 import * as cr from "../src/claude_records_node.ts";
 import { execFileSync } from "node:child_process";
 import {
-  agentFoldOf, agentFoldText, agentReadingOf, foldAgentBytes,
-  foldAgentRecord, newAgentFold,
+  agentReadingOf, foldAgentBytes, foldAgentRecord, newAgentFold,
 } from "../src/claude_records.ts";
+import { agentFoldOf, agentFoldText } from "../src/agent_fold.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
   "../..");
@@ -132,11 +132,11 @@ const RUN: Record<string, (c: Case) => unknown> = {
     const etas: (readonly [number | null, number | null])[] = [];
     const seen = c.args.length > 1 ? new Set<unknown>(c.args[1]) : null;
     const got = cr.agentRecords(c.args[0], seen, seen ? null : etas);
-    // The same reading through the cache, written then served from it.
-    const cache = { stateDir: tmp(), version: "test", now: 1e12 };
+    // The same reading through the saved folds, written then read on.
+    const stateDir = tmp();
     for (let i = 0; i < 2; i++) {
       assert.deepEqual(cr.agentRecords(c.args[0], seen && new Set(c.args[1]),
-        null, cache), got);
+        null, stateDir), got);
     }
     return [got, etas];
   },
@@ -278,19 +278,25 @@ test("an agent file's lines cut down by agent_lines.py read as it does whole",
       }
       foldAgentBytes(fold, data.subarray(fold.pos), true);
       assert.deepEqual(agentReadingOf(fold), c.out, c.args[0]);
+      // And the whole fold, the panel's fields too.
+      const all = newAgentFold();
+      foldAgentBytes(all, data, true);
+      assert.equal(agentFoldText(fold, 1, ""), agentFoldText(all, 1, ""),
+        c.args[0]);
     }
   });
 
 // A fold saved halfway and read back goes on to the same reading, and one
-// saved under another tag is not read back.
+// saved under another format is not read back.
 test("an agent fold saved and read back reads on as before", () => {
   for (const c of agentCases()) {
     const data = fs.readFileSync(c.args[0]);
     const fold = newAgentFold();
     foldAgentBytes(fold, data.subarray(0, data.length >> 1));
-    const text = agentFoldText(fold, "v1");
-    assert.equal(agentFoldOf(text, "v2"), null);
-    const back = agentFoldOf(text, "v1")!;
+    const text = agentFoldText(fold, 1, "");
+    assert.equal(agentFoldOf(text.replace(/^\{"format":\d+/,
+      '{"format":0')), null);
+    const back = agentFoldOf(text)![2];
     foldAgentBytes(back, data.subarray(back.pos), true);
     assert.deepEqual(agentReadingOf(back), c.out, c.args[0]);
   }

@@ -117,6 +117,12 @@
               }
               {
                 category = "test";
+                name = "time-panel";
+                help = "time the agent panel's read of the session with the most agents, cold and off its saved folds; [--runs N] [TRANSCRIPT]";
+                command = ''python3 "$PRJ_ROOT/tools/time-panel.py" "$@"'';
+              }
+              {
+                category = "test";
                 name = "time-window-costs";
                 help = "time the window-cost scan over ~/.claude/projects, cold and cached, in both ports; [--runs N]";
                 command = ''python3 "$PRJ_ROOT/tools/time-window-costs.py" "$@" && node "$PRJ_ROOT/mod/tools/time-window-costs.ts" "$@"'';

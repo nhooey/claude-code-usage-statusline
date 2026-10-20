@@ -91,6 +91,7 @@ the app.
 | `tests/compaction-once.py [TRANSCRIPT…]` | replays your real sessions to check every compaction is reported exactly once; minutes, not seconds |
 | `tests/agents-once.py [TRANSCRIPT…]` | the same for agent spend reported late |
 | `check-folds [--largest N] [FILE…]` | breaks the transcript folds over every real transcript, in both ports; minutes over your whole history |
+| `time-panel [--runs N] [TRANSCRIPT]` | times the agent panel's read of the session with the most agents, cold and off its saved folds |
 | `./coding-agent-usage-line.py --selftest` | measures the layout in the terminal you run it in; needs a real tty |
 | `bash tests/probe-advance.sh` | measures every glyph's cursor advance in this terminal; needs a real tty and asserts nothing |
 

@@ -511,6 +511,73 @@ Each step lands as its own commit, and the tests pass after each one.
    deliveries join the folds, the main fold's and each agent's, so
    `inbox_counts` stops scanning the main transcript from the start on each
    tick. The agent-files caches of both ports are replaced and removed.
+
+   **Status 2026-10-20: done,** but for the inbox, which is `RT8i`. As
+   built:
+   - `spec/state.jsonc`'s `agent-fold` row, format 1, `check_bytes` 4,096:
+     one directory per session,
+     `claude-agent-fold-<sha(format\0transcript)>/`, and in it one fold per
+     agent file, `<sha256(path)>-a.cache` and `-b.cache`, not the
+     `<sha(path)>.cache` the table above sketched. `$.fs.write` can tear,
+     so a fold is written whole to the two slots in turn, as the main
+     fold's head is: its text starts `{"format":1,"seq":N,`, a reader tries
+     the higher `seq` first and falls back to the other slot, and a fold
+     started over saves after the highest `seq` either slot holds. A fold
+     names `pos`, the offset folded to, and `tail`, the sha256 of the 4 KiB
+     before it. It is read on from only while both still fit the file, so
+     a file rewritten in place, even to the same size, is folded afresh.
+   - The fold is `AgentFold` in both ports (`claude_records.{py,ts}`), as
+     before, plus the compactions, the last stamp, the API-error flag, the
+     cwd, the block count, the background tasks and the effort of the last
+     request it bills (first wins, as `_dedupe_usage` keeps; the request
+     ids for that are rebuilt on a load, not saved). Its text is
+     `agent_fold.fold_text` and `agentFoldText` (`agent_fold.{py,ts}`,
+     new): one JSON object, every set and map a list in insertion order.
+   - The panel: `prepare_subagent_tasks` reads each agent through
+     `agent_fold.fold_file` and finishes it with `agent_usage_of`.
+     `read_agent_usage(path)` is that finish over a whole fold. The
+     Python's `_agent_file_readings`, the Node port's `_agentFileReadings`
+     (its `cache` argument is now a state directory) and the mod's
+     `agentReadings` read on from the same files, so the panel, the Stop
+     hook and the mod share one fold per agent. The Python saves on every
+     read that folded anything, through `os.replace`. The mod saves at most
+     once per `CONFIG.foldSaveMs`, with the tail taken from the bytes it
+     read. A last line with no newline is folded on a copy and not saved.
+   - Removed: `claude-agent-files-<h>.cache` and `-ts-<h>.cache`, with
+     `_agent_cache_version`'s source-digest key and the two-second settle
+     rule, by the Python once (marker `claude-agent-files-old-removed`);
+     and the mod's `claude-agent-folds-mod/`, by the mod on a load's first
+     read, through `rm` and `rmdir` on the names it wrote (`dropOldDir`,
+     which `dropCuts` now calls too).
+   - Swept: the daily calibration sweep, in both ports, also removes a
+     `claude-agent-fold-` or `claude-main-fold-` directory none of whose
+     files was written for eight days: the names a fold writes, then the
+     directory (`_sweep_fold_dir`, `staleFoldFiles`).
+   - Cases: `tests/fixtures/agent-state/` holds the text of each of 37
+     fixture agents' folds at every line end, written by
+     `tests/fixtures/gen/state.py`. `tests/fold.py` and
+     `mod/test/agent_fold.test.ts` hold each port to it byte for byte, and
+     read each text back on to the last, whose panel reading must be the
+     whole file's. `agent_fold.test.ts` also hands a fold from the Python
+     to the Node port and back through one state directory. `band.test.ts`
+     plants a fold halfway, a torn newer slot and a fold of other bytes,
+     and checks the slot the mod writes, and the old directory's removal.
+     `tests/agents.py` checks the slots, a read on, and a same-size
+     rewrite read afresh.
+   - Measured by `time-panel` (new, in the dev shell): the panel's read,
+     `prepare_subagent_tasks`, with every agent of a session as a task,
+     against a scratch state directory. "The rest" is the tick less
+     `inbox_counts`, which `RT8i` moves:
+
+     | Session | Agents | Their files | Tick before | After, warm | The rest before | After, warm | Cold, after |
+     |---|---|---|---|---|---|---|---|
+     | most agents here | 1,662 | 137 MB | 1,100–1,160 ms | 500–540 ms | 1,000–1,065 ms | 410–460 ms | 2.1 s |
+     | this repo's | 82 | 214 MB | 2,000–2,060 ms | 390–410 ms | 1,590–1,640 ms | 34–35 ms | 2.0 s |
+
+     Before, every tick read every agent file whole. The cold tick is that
+     read once, and saves 1.3 to 1.7 MB of folds. What is left of a warm
+     tick with 1,662 agents is opening two slots and 4 KiB of each file,
+     the sidecars and the git checks: about 0.25 ms an agent.
 9. **The window costs, one file.** The three copies become one under the
    contract. It is keyed by the format, no longer by `_source_digest` or
    `CONFIG.version`, and written by whichever port scans.

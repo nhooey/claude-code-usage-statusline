@@ -1,0 +1,26 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/03-tree/subagents/agent-t1.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"469670d09ed87babbb30e180ec77c4204ccaa9dc91dfad339b670b9345b9020d\",\"pid\":\"p1\",\"eta\":[[],false,1786845000,null],\"span\":[1786845000,1786845000],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845000,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   242,
+   "{\"format\":1,\"seq\":1,\"pos\":242,\"tail\":\"7cbc543a21a0e5efd735d64f00129621f0cb7f2f80375918dd1589274d3fc695\",\"pid\":\"p1\",\"eta\":[[],false,1786845100,null],\"span\":[1786845000,1786845100],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":1,\"last_seen\":1786845100,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   329,
+   "{\"format\":1,\"seq\":1,\"pos\":329,\"tail\":\"84f177de3a0534e7995fed3c56515c4bed1a120d29067337c9a1c1d9aa6cb8df\",\"pid\":\"p1\",\"eta\":[[],false,1786845500,null],\"span\":[1786845000,1786845500],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":2,\"last_seen\":1786845500,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   689,
+   "{\"format\":1,\"seq\":1,\"pos\":689,\"tail\":\"d666914c6853ed2ccf7870bd22fa4fb65bde2d97209fa3bbb1d980f60f1b290a\",\"pid\":\"p1\",\"eta\":[[],false,1786845600,null],\"span\":[1786845000,1786845600],\"work\":[],\"pending\":[[\"u1\",1786845600,\"Agent\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786845600,\"p1\",\"claude-opus-5\",500,8000,90000,2000,\"t1a\",689,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":2,\"last_seen\":1786845600,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   1048,
+   "{\"format\":1,\"seq\":1,\"pos\":1048,\"tail\":\"a4b5908170fd4d225b34ef7461a30dd46f446b79526dad2c61443bd4c114778d\",\"pid\":\"p1\",\"eta\":[[],false,1786845610,null],\"span\":[1786845000,1786845610],\"work\":[],\"pending\":[[\"u1\",1786845600,\"Agent\"],[\"u2\",1786845610,\"Agent\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786845600,\"p1\",\"claude-opus-5\",500,8000,90000,2000,\"t1a\",689,0,0],[1786845610,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"t1b\",1048,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":2,\"last_seen\":1786845610,\"api_error\":false,\"cwd\":\"\",\"blocks\":2,\"background\":[],\"effort\":\"high\"}"
+  ]
+ ]
+}

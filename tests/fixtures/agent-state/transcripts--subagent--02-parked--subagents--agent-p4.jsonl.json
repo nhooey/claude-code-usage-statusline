@@ -1,0 +1,22 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/02-parked/subagents/agent-p4.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"84f006f17195a57427f365b15ca20f719c28d4c89a6d737c468785bbb773a23d\",\"pid\":\"p1\",\"eta\":[[],false,1786845800,null],\"span\":[1786845800,1786845800],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845800,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   514,
+   "{\"format\":1,\"seq\":1,\"pos\":514,\"tail\":\"2d438f0fc503a7999062fd3053d176b3de41cac9da6d3186e9f1d3a82cb8d05b\",\"pid\":\"p1\",\"eta\":[[],false,1786845810,null],\"span\":[1786845800,1786845810],\"work\":[],\"pending\":[[\"t4\",1786845810,\"Agent\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786845810,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p4a\",514,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845810,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   661,
+   "{\"format\":1,\"seq\":1,\"pos\":661,\"tail\":\"ccfcd146761f0607d05e1c82c9e699e996756678700b6f64fec9a3a569181d7b\",\"pid\":\"p1\",\"eta\":[[],false,1786845820,null],\"span\":[1786845800,1786845820],\"work\":[],\"pending\":[],\"tools\":[[1786845810,1786845820]],\"waiting\":[[1786845810,1786845820]],\"recs\":[[1786845810,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p4a\",514,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845820,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   1094,
+   "{\"format\":1,\"seq\":1,\"pos\":1094,\"tail\":\"efef01417cef23577f692d75e8698aacd88a8e11ef04423356929919ee8bb18b\",\"pid\":\"p1\",\"eta\":[[1786845830,300],false,1786845830,\"p4b\"],\"span\":[null,null],\"work\":[[1786845800,1786845830]],\"pending\":[],\"tools\":[[1786845810,1786845820]],\"waiting\":[[1786845810,1786845820]],\"recs\":[[1786845810,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p4a\",514,0,0],[1786845830,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p4b\",1094,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786845830,\"api_error\":false,\"cwd\":\"\",\"blocks\":2,\"background\":[],\"effort\":\"high\"}"
+  ]
+ ]
+}

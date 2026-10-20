@@ -48,4 +48,23 @@ STATE_KINDS = {
         "part_bytes": 1000000,
         "check_bytes": 4096,
     },
+    # Each agent transcript's fold, the AgentFold both ports keep (the
+    # mod's agent readings, agent_records and the agent panel), saved so a
+    # read goes on from where the last stopped (agent_fold.py and
+    # agent_fold.ts).  One directory per session's transcript path, and in
+    # it one fold per agent file, named by the sha256 of its path, written
+    # whole to <digest>-a.cache and <digest>-b.cache in turn, each with a
+    # seq, since $.fs.write truncates and then writes and a reader can see
+    # the file torn.  A fold names the byte offset folded to and the sha256
+    # of the check_bytes before it.  A directory none of whose files was
+    # written for eight days is swept with the calibrations.  Bump the
+    # format whenever the fold, or what is saved of it, changes:
+    # tests/fixtures/agent-state/ fails until then.
+    "agent-fold": {
+        "prefix": "claude-agent-fold-",
+        "key": ("transcript",),
+        "suffix": "",
+        "format": 1,
+        "check_bytes": 4096,
+    },
 }

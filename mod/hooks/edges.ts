@@ -18,8 +18,8 @@
 import type { EngineInterface } from 'claude-code'
 
 import {
-  _agentDir, _agentStatePath, _recordsOf, agentFoldOf, agentFoldText,
-  agentLabelOf, agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr,
+  _agentDir, _agentStatePath, _recordsOf, agentLabelOf, agentOffsetsOf,
+  agentReadingOf, agentRecordsOf, cmpStr,
   EMPTY_TRANSCRIPT, foldAgentBytes, foldAgentRecord, newAgentFold, pyJoin,
   readPayload, transcriptFinish, transcriptFoldWith, turnsFinish,
   turnsFoldWith,
@@ -33,13 +33,17 @@ import {
   foldWrites, HEAD_SLOTS, newMainFold, partName,
 } from '../src/main_fold.ts'
 import type { FoldMeta, MainFold, SaveMark } from '../src/main_fold.ts'
+import {
+  agentFoldText, FOLD_CHECK_BYTES as AGENT_CHECK_BYTES, foldCandidates,
+  foldDir as agentFoldDir, slotNames, tailDigest,
+} from '../src/agent_fold.ts'
 import { statePath } from '../src/state.ts'
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
   _pricedRecord, _windowCostsFiles, _windowCostsOf, _windowCostsText,
   _windowsKey, _windowStarts, CALIB_SWEEP_EVERY_S, CALIB_SWEPT, CALIB_TTL,
-  COST_TAIL_BYTES, OLD_COSTS_DONE, oldWindowCosts, seedLimitsSnapshot,
-  staleCalibrations,
+  COST_TAIL_BYTES, FOLD_DIR, OLD_COSTS_DONE, oldWindowCosts,
+  seedLimitsSnapshot, staleCalibrations, staleFoldFiles,
 } from '../src/claude_calib.ts'
 import type {
   Calib, CostKept, Priced, Snapshot,
@@ -177,7 +181,12 @@ async function writeText($: $, path: string, text: string): Promise<boolean> {
 // saved to disk.
 // ════════════════════════════════════════════════════════════════════════════
 
-type AgentKept = { stamp: string; fold: AgentFold; reading: AgentReading }
+/** An agent file's fold as this load keeps it: the file's size and mtime
+ * it was read at, the fold, its reading, and the sequence number of the
+ * last save of it (agent_fold.ts), which the next save goes after. */
+type AgentKept = {
+  stamp: string; fold: AgentFold; reading: AgentReading; seq: number
+}
 
 /** What the session tells the mod that the status line's payload carries,
  * as handlers learn it: the transcript from a classic event, the model's
@@ -472,7 +481,24 @@ let cutsDropped = false
  * `rm` does, handed only the names a cut was saved under, and `rmdir`
  * then each directory, which leaves one that holds anything else. */
 export async function dropCuts($: $, stateDir: string): Promise<void> {
-  const top = pyJoin(stateDir, CUTS_DIR)
+  await dropOldDir($, pyJoin(stateDir, CUTS_DIR), CUT_DIR_NAME,
+    CUT_FILE_NAME)
+}
+
+/** Where the mod once saved each agent file's fold, keyed by its version,
+ * before spec/state.jsonc's agent-fold kind: a directory per session, a
+ * file per agent, each named by a digest cut to 32 digits. */
+const OLD_AGENT_FOLDS_DIR = 'claude-agent-folds-mod'
+const OLD_AGENT_FOLD_NAME = /^[0-9a-f]{32}\.json$/
+// Tried once a load.
+let oldAgentFoldsDropped = false
+
+/** `top`, a directory of directories, removed: in each directory whose
+ * name `dirName` matches, the files whose names `fileName` matches, by
+ * `rm`, then `rmdir` each directory and `top`, which leaves one that holds
+ * anything else. */
+async function dropOldDir($: $, top: string, dirName: RegExp,
+  fileName: RegExp): Promise<void> {
   try {
     if ((await $.fs.stat(top)).kind !== 'dir') return
   } catch {
@@ -481,10 +507,10 @@ export async function dropCuts($: $, stateDir: string): Promise<void> {
   const files: string[] = []
   const dirs: string[] = []
   for (const d of await listDir($, top)) {
-    if (d.kind !== 'dir' || !CUT_DIR_NAME.test(d.name)) continue
+    if (d.kind !== 'dir' || !dirName.test(d.name)) continue
     const dir = pyJoin(top, d.name)
     for (const f of await listDir($, dir)) {
-      if (f.kind === 'file' && CUT_FILE_NAME.test(f.name)) {
+      if (f.kind === 'file' && fileName.test(f.name)) {
         files.push(pyJoin(dir, f.name))
       }
     }
@@ -546,23 +572,37 @@ export async function agentReadings($: $, transcript: string):
     f.size + ':' + f.mtimeMs
   const stale = files.filter((f) => agentKept.get(f.path)?.stamp !== stamp(f))
   const { stateDir } = await placesOf($)
+  if (!oldAgentFoldsDropped) {
+    oldAgentFoldsDropped = true
+    void dropOldDir($, pyJoin(stateDir, OLD_AGENT_FOLDS_DIR), CUT_DIR_NAME,
+      OLD_AGENT_FOLD_NAME).catch(() => {})
+  }
+  const dir = agentFoldDir(stateDir, transcript)
   await atOnce(stale, AGENT_READS_AT_ONCE, async (f) => {
-    let fold = agentKept.get(f.path)?.fold ??
-      await savedFold($, stateDir, transcript, f.path)
-    if (!fold || fold.pos > f.size) fold = newAgentFold()
+    const kept = agentKept.get(f.path)
+    let [fold, seq] = kept ? [kept.fold, kept.seq]
+      : await savedFold($, dir, f.path, f.size)
+    if (fold.pos > f.size) fold = newAgentFold()
     const from = fold.pos
+    let tail: string
     try {
       if (f.size - fold.pos >= AGENT_LINES_MIN) {
         await agentLines($, f.path, fold, f.size)
       }
-      foldAgentBytes(fold, await readRange($, f.path, fold.pos, f.size))
+      // From the check bytes before the fold on, so the digest a save
+      // takes is in hand.
+      const lo = Math.max(0, fold.pos - AGENT_CHECK_BYTES)
+      const data = await readRange($, f.path, lo, f.size)
+      foldAgentBytes(fold, data.subarray(fold.pos - lo))
+      tail = tailDigest(data.subarray(
+        Math.max(0, fold.pos - AGENT_CHECK_BYTES) - lo, fold.pos - lo))
     } catch {
       agentKept.delete(f.path)
       return
     }
+    if (fold.pos > from) seq = await saveFold($, dir, f.path, fold, seq, tail)
     agentKept.set(f.path, { stamp: stamp(f), fold,
-      reading: agentReadingOf(fold) })
-    if (fold.pos > from) await saveFold($, stateDir, transcript, f.path, fold)
+      reading: agentReadingOf(fold), seq })
   })
   const out: [string, AgentReading][] = []
   for (const f of files) {
@@ -640,34 +680,56 @@ async function agentLines($: $, path: string, fold: AgentFold, end: number):
   }
 }
 
-/** Where an agent file's fold is saved: per session, per file, under
- * digests, as the Python keeps its agent offsets. */
-function foldPath(stateDir: string, transcript: string, path: string) {
-  return pyJoin(stateDir, 'claude-agent-folds-mod/' +
-    sha256Hex(transcript).slice(0, 32) + '/' +
-    sha256Hex(path).slice(0, 32) + '.json')
+/** The check digest of agent file `path`, `size` long, at `pos`. */
+async function agentTail($: $, path: string, pos: number, size: number):
+  Promise<string> {
+  return tailDigest(await readRange($, path,
+    Math.max(0, pos - AGENT_CHECK_BYTES), pos, size))
 }
 
-async function savedFold($: $, stateDir: string, transcript: string,
-  path: string): Promise<AgentFold | null> {
-  const text = await readText($, foldPath(stateDir, transcript, path))
-  return text === null ? null : agentFoldOf(text, CONFIG.version)
+/** The fold saved in `dir` for agent file `path`, `size` long, and its
+ * sequence number, as agent_fold.fold_file reads it: from the newer slot
+ * whose offset is within the file and whose check digest still matches,
+ * else the other; else a new fold, and the highest sequence number either
+ * slot holds. */
+async function savedFold($: $, dir: string, path: string, size: number):
+  Promise<[AgentFold, number]> {
+  const { folds, newest } = foldCandidates(await Promise.all(
+    slotNames(path).map((n) => readText($, pyJoin(dir, n)))))
+  for (const [seq, tail, fold] of folds) {
+    try {
+      if (fold.pos <= size &&
+        await agentTail($, path, fold.pos, size) === tail) {
+        return [fold, seq]
+      }
+    } catch {
+      // A file that will not read is read again from its start.
+    }
+  }
+  return [newAgentFold(), newest]
 }
 
 // When each file's fold was last saved: a live agent's at most once per
 // CONFIG.foldSaveMs, a reload reading on from there.
 const foldSaved = new Map<string, number>()
 
-async function saveFold($: $, stateDir: string, transcript: string,
-  path: string, fold: AgentFold): Promise<void> {
+/** `fold` of agent file `path`, with `tail` its check digest, saved to
+ * the slot after the one `seq` went to, at most once per
+ * CONFIG.foldSaveMs: the sequence number it was saved under, else `seq`.
+ * `$.fs.write` can be read torn, which is why there are two slots: a
+ * reader falls back to the other. */
+async function saveFold($: $, dir: string, path: string, fold: AgentFold,
+  seq: number, tail: string): Promise<number> {
   const now = await $.clock.now()
-  if (now - (foldSaved.get(path) ?? -Infinity) < CONFIG.foldSaveMs) return
+  if (now - (foldSaved.get(path) ?? -Infinity) < CONFIG.foldSaveMs) return seq
   foldSaved.set(path, now)
   try {
-    await $.fs.write(foldPath(stateDir, transcript, path),
-      agentFoldText(fold, CONFIG.version))
+    await $.fs.write(pyJoin(dir, slotNames(path)[(seq + 1) % 2]),
+      agentFoldText(fold, seq + 1, tail))
+    return seq + 1
   } catch (err) {
     void log($, 'agent fold not saved', err)
+    return seq
   }
 }
 
@@ -895,9 +957,12 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
 }
 
 /** _sweep_calibrations through `$`: the calibration caches untouched for
- * CALIB_MAX_AGE_S, removed at most once a day between this and the Python,
- * by the marker both stamp.  `$.fs` cannot remove a file, so `rm` does,
- * handed only names staleCalibrations matched, under the state directory. */
+ * CALIB_MAX_AGE_S, and the folds' directories none of whose files was
+ * written for as long, removed at most once a day between this and the
+ * Python, by the marker both stamp.  `$.fs` cannot remove a file, so `rm`
+ * does, handed only names staleCalibrations and staleFoldFiles matched,
+ * under the state directory, and `rmdir` then each fold directory, which
+ * leaves one that holds anything else. */
 async function sweepCalibrationsVia($: $, places: Places,
   now: number): Promise<void> {
   const marker = pyJoin(places.stateDir, CALIB_SWEPT)
@@ -908,11 +973,24 @@ async function sweepCalibrationsVia($: $, places: Places,
     // Never swept.
   }
   if (!await writeText($, marker, '')) return
-  const stale = staleCalibrations(await listDir($, places.stateDir), now)
+  const listed = await listDir($, places.stateDir)
+  const stale = staleCalibrations(listed, now)
     .map((name) => pyJoin(places.stateDir, name))
-  if (stale.length) {
-    await $.process.run(['/bin/rm', '-f', '--', ...stale],
-      { timeoutMs: 15_000 })
+  const dirs: string[] = []
+  for (const e of listed) {
+    if (e.kind !== 'dir' || !FOLD_DIR.test(e.name)) continue
+    const dir = pyJoin(places.stateDir, e.name)
+    const names = staleFoldFiles(await listDir($, dir), now)
+    if (names === null) continue
+    stale.push(...names.map((n) => pyJoin(dir, n)))
+    dirs.push(dir)
+  }
+  for (let i = 0; i < stale.length; i += RM_AT_ONCE) {
+    await $.process.run(['/bin/rm', '-f', '--',
+      ...stale.slice(i, i + RM_AT_ONCE)], { timeoutMs: 15_000 })
+  }
+  if (dirs.length) {
+    await $.process.run(['/bin/rmdir', '--', ...dirs], { timeoutMs: 15_000 })
   }
 }
 

@@ -1341,11 +1341,17 @@ export function _readAgentBytes(data: Uint8Array): AgentReading {
 
 /** _readAgentBytes's fold, kept between reads of a growing file so each
  * reads only what was appended: `pos` is how far into the file it has
- * folded, at a line's end. */
+ * folded, at a line's end.  AgentFold in claude_records.py is the same
+ * fold, and agent_fold.ts saves it as the same text.  Besides what
+ * agentRecordsOf reads, it keeps what the Python's agent panel reads
+ * (agent_usage_of): the compactions, the last stamp, the API-error flag,
+ * the cwd, the block count, the background tasks and the effort of the
+ * last request it bills.  `keys` is the request ids in `recs`, for that
+ * effort; it is not saved, and is rebuilt on a load. */
 export interface AgentFold {
   pid: unknown;
-  readonly etaState: EtaState;
-  readonly spanState: SpanState;
+  etaState: EtaState;
+  spanState: SpanState;
   readonly work: Span[];
   readonly pending: Pending;
   readonly tools: Span[];
@@ -1355,12 +1361,33 @@ export interface AgentFold {
   added: number;
   removed: number;
   pos: number;
+  compactions: number;
+  lastSeen: number | null;
+  apiError: boolean;
+  cwd: string;
+  blocks: number;
+  readonly background: Map<string, string>;
+  effort: unknown;
+  readonly keys: Set<unknown>;
 }
 
 export function newAgentFold(): AgentFold {
   return { pid: "", etaState: newEtaState(), spanState: [null, null],
     work: [], pending: new Map(), tools: [], waiting: [], recs: [],
-    wrote: new Set(), added: 0, removed: 0, pos: 0 };
+    wrote: new Set(), added: 0, removed: 0, pos: 0, compactions: 0,
+    lastSeen: null, apiError: false, cwd: "", blocks: 0,
+    background: new Map(), effort: "", keys: new Set() };
+}
+
+/** A copy of `fold` that folds on apart from it. */
+export function copyAgentFold(fold: AgentFold): AgentFold {
+  return { ...fold, etaState: [fold.etaState[0], fold.etaState[1],
+    fold.etaState[2], fold.etaState[3]],
+  spanState: [fold.spanState[0], fold.spanState[1]],
+  work: fold.work.slice(), pending: new Map(fold.pending),
+  tools: fold.tools.slice(), waiting: fold.waiting.slice(),
+  recs: fold.recs.slice(), wrote: new Set(fold.wrote),
+  background: new Map(fold.background), keys: new Set(fold.keys) };
 }
 
 /** Fold `data`, the file's bytes from `fold.pos` on, into `fold`.  Short
@@ -1380,15 +1407,30 @@ export function foldAgentBytes(fold: AgentFold, data: Uint8Array,
   }
 }
 
+/** A block Claude Code draws as a ⏺: a tool call, or text with something
+ * in it. */
+function isBlock(b: unknown): boolean {
+  if (!isDict(b)) return false;
+  const type = pyGet(b, "type"), text = pyGet(b, "text");
+  return type === "tool_use" ||
+    (type === "text" && typeof text === "string" && pyStrip(text) !== "");
+}
+
 /** Fold one line of the file into `fold`: `length` its bytes, its newline
  * included, and `r` what it parsed to, null for a line that did not. */
 export function foldAgentRecord(fold: AgentFold, length: number,
   r: unknown): void {
   fold.pos += length;
   if (!isDict(r)) return;
+  if (isCompaction(r)) fold.compactions += 1;
+  const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
+  if (t !== null) fold.lastSeen = t;
+  const cwd = pyGet(r, "cwd");
+  if (typeof cwd === "string" && cwd) fold.cwd = cwd;
   liveEta(r, fold.etaState);
   agentSpan(r, fold.spanState, fold.work);
   scanToolSpans(r, fold.pending, fold.tools, fold.waiting);
+  scanBackground(r, fold.background);
   const [a, d] = diffLines(r, fold.wrote);
   fold.added += a;
   fold.removed += d;
@@ -1397,46 +1439,29 @@ export function foldAgentRecord(fold: AgentFold, length: number,
     return;
   }
   if (pyGet(r, "type") !== "assistant") return;
+  fold.apiError = pyTruthy(pyGet(r, "isApiErrorMessage"));
   const m = pyOr(pyGet(r, "message"), {});
+  const content = isDict(m) ? pyGet(m, "content") : null;
+  if (Array.isArray(content)) {
+    for (const b of content) if (isBlock(b)) fold.blocks += 1;
+  }
   const u = pyGet(m, "usage");
   if (!pyTruthy(u)) return;
-  fold.recs.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")), fold.pid,
-    pyGet(m, "model") ?? null, num0(pyGet(u, "input_tokens")),
+  const k = pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?");
+  const rec: AgentRaw = [tsEpoch(pyOr(pyGet(r, "timestamp"), "")),
+    fold.pid, pyGet(m, "model") ?? null, num0(pyGet(u, "input_tokens")),
     num0(pyGet(u, "cache_creation_input_tokens")),
     num0(pyGet(u, "cache_read_input_tokens")),
-    num0(pyGet(u, "output_tokens")),
-    pyOr(pyOr(pyGet(r, "requestId"), pyGet(m, "id")), "?"), fold.pos,
-    fold.added, fold.removed]);
+    num0(pyGet(u, "output_tokens")), k, fold.pos, fold.added,
+    fold.removed];
+  fold.recs.push(rec);
   fold.added = fold.removed = 0;
-}
-
-/** What a saved fold is saved as, so a change to the fold's shape or to
- * what it folds reads no fold saved before it. */
-export const AGENT_FOLD_VERSION = "agent-fold 1";
-
-/** `fold` as text to save: its Map and Set as lists.  `tag` names what
- * saved it, which agentFoldOf must be asked for to read it back. */
-export function agentFoldText(fold: AgentFold, tag = ""): string {
-  return JSON.stringify({ version: AGENT_FOLD_VERSION + "\0" + tag, ...fold,
-    pending: [...fold.pending], wrote: [...fold.wrote] });
-}
-
-/** The fold agentFoldText saved under `tag`, or null for one of another
- * version or tag, or none at all. */
-export function agentFoldOf(text: string, tag = ""): AgentFold | null {
-  try {
-    // Read back as agentFoldText wrote it: the version says its shape.
-    const o = JSON.parse(text) as any;
-    if (o === null || typeof o !== "object" ||
-      o.version !== AGENT_FOLD_VERSION + "\0" + tag) {
-      return null;
+  // _dedupe_usage's choice, first wins, of what the panel bills.
+  if (!fold.keys.has(k)) {
+    fold.keys.add(k);
+    if (rec[3] || rec[4] || rec[5] || rec[6]) {
+      fold.effort = pyOr(pyGet(r, "effort"), fold.effort);
     }
-    return { pid: o.pid, etaState: o.etaState, spanState: o.spanState,
-      work: o.work, pending: new Map(o.pending), tools: o.tools,
-      waiting: o.waiting, recs: o.recs, wrote: new Set(o.wrote),
-      added: o.added, removed: o.removed, pos: o.pos };
-  } catch {
-    return null;
   }
 }
 
@@ -1452,33 +1477,6 @@ export function agentReadingOf(fold: AgentFold): AgentReading {
   }
   return { recs: fold.recs.slice(), work, tools: fold.tools.slice(),
     waiting: fold.waiting.slice(), eta };
-}
-
-// A file last written this long ago is SETTLED, and only a settled file's
-// reading is kept.  Size and mtime are the whole test for a kept reading
-// being current, and a file rewritten within the clock's granularity can
-// come back the same size with the same stamp.  A live agent's file is
-// never settled while it runs, and is read afresh.
-export const AGENT_CACHE_SETTLE_S = 2.0;
-
-/** Where _agentFileReadings keeps its readings: a state directory, a
- * version that a kept reading must match, and the clock that says which
- * files have settled.  The Python keys its cache by a digest of its own
- * source; the mod passes its version, and its file is named apart, so the
- * two never serve each other a reading. */
-export interface AgentCache {
-  readonly stateDir: string;
-  readonly version: string;
-  readonly now: number;
-}
-
-/** Where the TypeScript keeps its readings of this session's agent files.
- * Not .json: the usage caches are every .json in the directory. */
-export function _agentCachePath(transcript: string, stateDir: string): string {
-  let sid = pyBasename(transcript);
-  if (sid.endsWith(".jsonl")) sid = sid.slice(0, -".jsonl".length);
-  const digest = sha256Hex("claude-agent-files-ts\0" + sid);
-  return pyJoin(stateDir, "claude-agent-files-ts-" + digest + ".cache");
 }
 
 /** Where the Stop hook records how far into each agent file it reported.

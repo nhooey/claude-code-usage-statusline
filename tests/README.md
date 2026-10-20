@@ -513,6 +513,20 @@ break the fold is also saved as text, read back and read on. One line a
 file, with its saved state's size, and a total. Over 4,495 files and 10.1 GB on 2026-10-20 the Python
 took 173s and the TypeScript 109s; `--largest 3` takes seconds.
 
+### Timing the agent panel's read
+
+```sh
+time-panel [--runs N] [TRANSCRIPT]   # in the dev shell
+python3 tools/time-panel.py [...]
+```
+
+Builds the payload the agent panel would get for TRANSCRIPT, by default the
+session under `~/.claude/projects/` with the most agent files, one task per
+agent, and times `prepare_subagent_tasks`: once against an empty scratch
+state directory, then N times off the folds the first saved there. Each line
+gives the part `inbox_counts` took. The real state directory is never read
+or written.
+
 ### `--selftest`
 
 ```sh

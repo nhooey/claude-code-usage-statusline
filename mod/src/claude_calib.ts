@@ -640,6 +640,26 @@ export function staleCalibrations(
     now - e.mtimeMs / 1000 > CALIB_MAX_AGE_S).map((e) => e.name);
 }
 
+/** The folds' directories, one per transcript, the agents' and the main
+ * transcript's, swept with the calibrations once none of their files has
+ * been written for CALIB_MAX_AGE_S: _FOLD_DIR and _FOLD_FILE. */
+export const FOLD_DIR = /^claude-(agent|main)-fold-[0-9a-f]{64}$/;
+const FOLD_FILE =
+  /^([0-9a-f]{64}-[ab]|head-[ab]|part-\d+)\.cache(\.\d+\.tmp)?$/;
+
+/** _sweep_fold_dir's choice: in a listing of a fold directory, the names
+ * a fold writes, where none of its entries was written for
+ * CALIB_MAX_AGE_S; else null, and the directory stays. */
+export function staleFoldFiles(
+  entries: readonly { name: string; kind: string; mtimeMs: number }[],
+  now: number): string[] | null {
+  if (entries.some((e) => now - e.mtimeMs / 1000 <= CALIB_MAX_AGE_S)) {
+    return null;
+  }
+  return entries.filter((e) => e.kind === "file" && FOLD_FILE.test(e.name))
+    .map((e) => e.name);
+}
+
 /** The window-cost caches as they were named before spec/state.jsonc's
  * window-costs kind (the Python's, the Node port's and the mod's), and the
  * temporary files of the Python's a killed save left: _OLD_COSTS. */

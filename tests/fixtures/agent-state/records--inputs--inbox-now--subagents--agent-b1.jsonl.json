@@ -1,0 +1,14 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+ "texts": [
+  [
+   87,
+   "{\"format\":1,\"seq\":1,\"pos\":87,\"tail\":\"8dc709a91aad03cd26a91b961fd5d71d4dbc6c75eb8365152abccc4787f0dffa\",\"pid\":\"\",\"eta\":[[],false,1787000001,null],\"span\":[1787000001,1787000001],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000001,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   303,
+   "{\"format\":1,\"seq\":1,\"pos\":303,\"tail\":\"a8bde5f726863f94478ae4f6c5b764bd629fac210c8d54f07056abb021ebddca\",\"pid\":\"\",\"eta\":[[],false,1787000014,null],\"span\":[1787000001,1787000001],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000014,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ]
+ ]
+}

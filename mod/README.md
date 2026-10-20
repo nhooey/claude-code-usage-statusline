@@ -83,6 +83,12 @@ names them, so a `/reload-plugins` reads on from there rather than from
 the start. A saved fold is passed over when the transcript is no longer
 the bytes it was folded from, or its format is not the spec's.
 
+Each agent's file is kept as its fold the same way, in
+`claude-agent-fold-<digest>/`, the `agent-fold` row's directory, one file
+per agent written to two slots in turn. The agent panel's Python reads on
+from the same files, so whichever reads an agent's new lines first saves
+them for the other.
+
 A megabyte or more to fold, as on the first read of a long session, is
 folded by `scripts/agent_lines.py` in Python, with the repository's
 package beside `mod/`. A copy of `mod/` on its own, installed from GitHub

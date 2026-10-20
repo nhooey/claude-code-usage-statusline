@@ -1,0 +1,22 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/02-parked/subagents/agent-p1.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"d65b792f0cdcf1000782fabca3603d29d023c941aa65fd1eafba61f61106f09b\",\"pid\":\"p1\",\"eta\":[[],false,1786846000,null],\"span\":[1786846000,1786846000],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846000,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   513,
+   "{\"format\":1,\"seq\":1,\"pos\":513,\"tail\":\"974cb1e11579e9486268a8e94ee9af1694043e5a33a607fd3171b1a9dd80ab11\",\"pid\":\"p1\",\"eta\":[[],false,1786846010,null],\"span\":[1786846000,1786846010],\"work\":[],\"pending\":[[\"t1\",1786846010,\"Bash\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p1a\",513,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846010,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   706,
+   "{\"format\":1,\"seq\":1,\"pos\":706,\"tail\":\"644c942d54c75ad54c0897aab754caf5eb7a4e1c5d942c0efd4d39312d7858d1\",\"pid\":\"p1\",\"eta\":[[],false,1786846011,null],\"span\":[1786846000,1786846011],\"work\":[],\"pending\":[],\"tools\":[[1786846010,1786846011]],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p1a\",513,0,0]],\"wrote\":[\"t1\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846011,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[[\"sh1\",\"bash\"]],\"effort\":\"high\"}"
+  ],
+  [
+   1091,
+   "{\"format\":1,\"seq\":1,\"pos\":1091,\"tail\":\"b1576ed4ec98c7bd2e04e35412d835be174ab87232fa30b07cc123a329abba16\",\"pid\":\"p1\",\"eta\":[[],true,1786846020,null],\"span\":[null,null],\"work\":[[1786846000,1786846020]],\"pending\":[],\"tools\":[[1786846010,1786846011]],\"waiting\":[],\"recs\":[[1786846010,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p1a\",513,0,0],[1786846020,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"p1b\",1091,0,0]],\"wrote\":[\"t1\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846020,\"api_error\":false,\"cwd\":\"\",\"blocks\":2,\"background\":[[\"sh1\",\"bash\"]],\"effort\":\"high\"}"
+  ]
+ ]
+}

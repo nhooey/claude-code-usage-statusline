@@ -8,6 +8,7 @@ import copy
 import functools
 import glob
 import hashlib
+import io
 import json
 import os
 import re
@@ -611,6 +612,149 @@ def agent_records(transcript: str, seen: Optional[set] = None,
     return tuple(out)
 
 
+class AgentFold:
+    """One agent file folded so far, kept between reads of the growing file
+    so each reads only what was appended: `pos` is how far into the file it
+    has folded, at a line's end.  agent_fold.py saves it, and the mod's
+    AgentFold (src/claude_records.ts) is the same fold, saved as the same
+    text.
+
+    The fields agent_records reads (agent_reading_of): `recs`, every record
+    that carries usage, as (epoch, promptId, model, fresh, cache write,
+    cache read, out, requestId, offset, lines added, lines removed); the
+    clock's spans; the live ETA's state.  And the fields the panel reads
+    besides (agent_usage_of in claude.py): the compactions, the last stamp,
+    the API-error flag, the cwd, the block count, the background tasks and
+    the effort of the last request it bills.  `keys` is the request ids in
+    `recs`, for that effort; it is not saved, and is rebuilt on a load."""
+
+    __slots__ = ("pid", "eta_state", "span_state", "work", "pending",
+                 "tools", "waiting", "recs", "wrote", "added", "removed",
+                 "pos", "compactions", "last_seen", "api_error", "cwd",
+                 "blocks", "background", "effort", "keys")
+
+    def __init__(self):
+        self.pid = ""
+        self.eta_state = new_eta_state()
+        self.span_state: list = [None, None]
+        self.work: List[Tuple[float, float]] = []
+        self.pending: Dict[str, Tuple[float, str]] = {}
+        self.tools: List[Tuple[float, float]] = []
+        self.waiting: List[Tuple[float, float]] = []
+        self.recs: list = []
+        self.wrote = OSet()
+        self.added = 0
+        self.removed = 0
+        self.pos = 0
+        self.compactions = 0
+        self.last_seen: Optional[float] = None
+        self.api_error = False
+        self.cwd = ""
+        self.blocks = 0
+        self.background: Dict[str, str] = {}
+        self.effort = ""
+        self.keys: set = set()
+
+
+def fold_agent_bytes(fold: AgentFold, data: bytes, last: bool = False
+                     ) -> None:
+    """Fold `data`, the file's bytes from `fold.pos` on, into `fold`.  Short
+    of `last`, a line with no newline yet is left for the next read, as one
+    still being written."""
+    for line in io.BytesIO(data):
+        if not last and not line.endswith(b"\n"):
+            break
+        try:
+            r = json.loads(line)
+        except Exception:
+            r = None
+        fold_agent_record(fold, len(line), r)
+
+
+def _is_block(b) -> bool:
+    """A block Claude Code draws as a ⏺: a tool call, or text with
+    something in it."""
+    return isinstance(b, dict) and (
+        b.get("type") == "tool_use" or b.get("type") == "text"
+        and isinstance(b.get("text"), str) and bool(b["text"].strip()))
+
+
+def fold_agent_record(fold: AgentFold, length: int, r) -> None:
+    """Fold one line of the file into `fold`: `length` its bytes, its
+    newline included, and `r` what it parsed to, None for a line that did
+    not."""
+    fold.pos += length
+    if not isinstance(r, dict):
+        return
+    fold.compactions += is_compaction(r)
+    t = ts_epoch(r.get("timestamp") or "")
+    fold.last_seen = t if t is not None else fold.last_seen
+    if isinstance(r.get("cwd"), str) and r["cwd"]:
+        fold.cwd = r["cwd"]
+    live_eta(r, fold.eta_state)
+    agent_span(r, fold.span_state, fold.work)
+    scan_tool_spans(r, fold.pending, fold.tools, fold.waiting)
+    scan_background(r, fold.background)
+    a, d = diff_lines(r, fold.wrote)
+    fold.added += a
+    fold.removed += d
+    if r.get("type") == "user":
+        fold.pid = r.get("promptId") or fold.pid
+        return
+    if r.get("type") != "assistant":
+        return
+    fold.api_error = bool(r.get("isApiErrorMessage"))
+    m = r.get("message") or {}
+    content = m.get("content") if isinstance(m, dict) else None
+    if isinstance(content, list):
+        fold.blocks += sum(1 for b in content if _is_block(b))
+    u = m.get("usage")
+    if not u:
+        return
+    k = r.get("requestId") or m.get("id") or "?"
+    rec = (ts_epoch(r.get("timestamp") or ""), fold.pid, m.get("model"),
+           u.get("input_tokens") or 0,
+           u.get("cache_creation_input_tokens") or 0,
+           u.get("cache_read_input_tokens") or 0,
+           u.get("output_tokens") or 0, k, fold.pos, fold.added,
+           fold.removed)
+    fold.recs.append(rec)
+    fold.added = fold.removed = 0
+    # _dedupe_usage's choice, first wins, of what the panel bills.
+    if k not in fold.keys:
+        fold.keys.add(k)
+        if rec[3] or rec[4] or rec[5] or rec[6]:
+            fold.effort = r.get("effort") or fold.effort
+
+
+def agent_reading_of(fold: AgentFold) -> dict:
+    """The reading `fold` comes to so far, as _read_agent_file gives it, its
+    open span closed on a copy so the fold can go on."""
+    work = list(fold.work)
+    close_agent_span(list(fold.span_state), work)
+    eta = None
+    if fold.eta_state[0] and not fold.eta_state[1]:
+        eta = (eta_finish(fold.eta_state[0]), fold.eta_state[2])
+    return {"recs": list(fold.recs), "work": work, "tools": list(fold.tools),
+            "waiting": list(fold.waiting), "eta": eta}
+
+
+def fold_with(fold: AgentFold, data: bytes) -> AgentFold:
+    """`fold` with `data`, the rest of its file, folded in, a last line with
+    no newline included: on a copy where there is such a line, so `fold`
+    itself stays at a line's end and can go on."""
+    if not data:
+        return fold
+    if data.endswith(b"\n"):
+        fold_agent_bytes(fold, data)
+        return fold
+    whole = data.rfind(b"\n") + 1
+    fold_agent_bytes(fold, data[:whole])
+    out = copy.deepcopy(fold)
+    fold_agent_bytes(out, data[whole:], True)
+    return out
+
+
 def _read_agent_file(path: str) -> Optional[dict]:
     """One agent file's part of agent_records, read from it alone.
 
@@ -627,170 +771,34 @@ def _read_agent_file(path: str) -> Optional[dict]:
     `waiting` are that clock's spans, and `eta` is the file's live ETA as
     agent_records hands it on, or None.  None for a file that will not open.
     """
-    pid = ""
-    eta_state = new_eta_state()
-    span_state: list = [None, None]
-    work: List[Tuple[float, float]] = []
-    pending: Dict[str, Tuple[float, str]] = {}
-    tools: List[Tuple[float, float]] = []
-    waiting: List[Tuple[float, float]] = []
-    recs = []
-    wrote: set = set()
-    added = removed = 0
     try:
-        fh = open(path, "rb")
+        with open(path, "rb") as fh:
+            data = fh.read()
     except OSError:
         return None
-    with fh:
-        pos = 0
-        for line in fh:
-            pos += len(line)
-            try:
-                r = json.loads(line)
-            except Exception:
-                continue
-            if not isinstance(r, dict):
-                continue
-            live_eta(r, eta_state)
-            agent_span(r, span_state, work)
-            scan_tool_spans(r, pending, tools, waiting)
-            a, d = diff_lines(r, wrote)
-            added += a
-            removed += d
-            if r.get("type") == "user":
-                pid = r.get("promptId") or pid
-                continue
-            if r.get("type") != "assistant":
-                continue
-            m = r.get("message") or {}
-            u = m.get("usage")
-            if not u:
-                continue
-            recs.append((ts_epoch(r.get("timestamp") or ""), pid,
-                         m.get("model"), u.get("input_tokens") or 0,
-                         u.get("cache_creation_input_tokens") or 0,
-                         u.get("cache_read_input_tokens") or 0,
-                         u.get("output_tokens") or 0,
-                         r.get("requestId") or m.get("id") or "?", pos,
-                         added, removed))
-            added = removed = 0
-    close_agent_span(span_state, work)
-    eta = None
-    if eta_state[0] and not eta_state[1]:
-        eta = (eta_finish(eta_state[0]), eta_state[2])
-    return {"recs": recs, "work": work, "tools": tools, "waiting": waiting,
-            "eta": eta}
-
-
-# A file last written this long ago is SETTLED, and only a settled file's
-# reading is kept.  Size and mtime are the whole test for a kept reading
-# being current, and a file rewritten within the clock's granularity — a
-# few milliseconds on Linux, whose mtime is the coarse clock — can come
-# back the same size with the same stamp.  Git's index has the same race
-# and the same cure: a stamp the writer may still share is not trusted.
-# A live agent's file is never settled while it runs, and is read afresh.
-AGENT_CACHE_SETTLE_S = 2.0
-
-
-def _agent_cache_path(transcript: str) -> str:
-    """Where agent_records keeps its readings of this session's agent files.
-
-    Not .json: state.find_compatible reads every .json in the directory as
-    a usage cache, and this one holds megabytes on a long session.
-    """
-    sid = os.path.basename(transcript)
-    if sid.endswith(".jsonl"):
-        sid = sid[:-len(".jsonl")]
-    digest = hashlib.sha256(("claude-agent-files\0" + sid).encode("utf-8")).hexdigest()
-    return os.path.join(state.state_dir(), "claude-agent-files-" + digest + ".cache")
-
-
-@functools.lru_cache(maxsize=1)
-def _agent_cache_version() -> str:
-    """A digest of this package's source, so a reading kept by one version
-    of the parsing is never served to another.  Every rule _read_agent_file
-    leans on — live_eta's, agent_span's, scan_tool_spans' — lives in it, and
-    a hand-bumped number would be forgotten the first time one changed."""
-    h = hashlib.sha256()
-    d = os.path.dirname(os.path.abspath(__file__))
-    for name in sorted(os.listdir(d)):
-        if name.endswith(".py"):
-            try:
-                with open(os.path.join(d, name), "rb") as fh:
-                    h.update(name.encode("utf-8") + b"\0" + fh.read())
-            except OSError:
-                pass
-    return h.hexdigest()
+    fold = AgentFold()
+    fold_agent_bytes(fold, data, True)
+    return agent_reading_of(fold)
 
 
 def _agent_file_readings(transcript: str) -> List[Tuple[str, dict]]:
-    """_read_agent_file for every agent file, in agent_files' order, from
-    the cache where a file has not changed since it was kept.
+    """_read_agent_file for every agent file, in agent_files' order, each
+    read on from the fold saved for it (agent_fold.py), so a render reads
+    only what was appended since the last.
 
     Without it, every render parsed every agent file the session ever ran.
     A session with 611 of them, 768 MB, took six seconds a render, longer
     than Claude Code's five-second refresh, and its status line stopped at
     the last frame that finished: on 2026-10-01 it held a 98٪ weekly figure
-    for hours after the week had reset to 1٪.  A finished agent's file
-    never changes, so a render now reads only the files that grew.
-
-    A reading is current while the file's size and mtime match the ones
-    stamped when it was read; see AGENT_CACHE_SETTLE_S for why only a
-    settled file is kept.  The file is written back only when a reading was
-    added or a file went away, so a session with nothing new costs one read.
+    for hours after the week had reset to 1٪.
     """
-    paths = agent_files(transcript)
-    if not paths:
-        return []
-    cpath = _agent_cache_path(transcript)
-    version = _agent_cache_version()
-    kept: dict = {}
-    try:
-        with open(cpath, "r") as fh:
-            d = json.load(fh)
-        if isinstance(d, dict) and d.get("version") == version:
-            kept = d.get("files") or {}
-    except (OSError, ValueError):
-        pass
-    settled = time.time() - AGENT_CACHE_SETTLE_S
+    from . import agent_fold
     out = []
-    keep = {}
-    dirty = False
-    for path in paths:
-        try:
-            st = os.stat(path)
-        except OSError:
-            continue
-        stamp = [st.st_size, st.st_mtime_ns]
-        got = kept.get(path)
-        if isinstance(got, dict) and got.get("stamp") == stamp:
-            got = {"recs": [tuple(r) for r in got["recs"]],
-                   "work": [tuple(w) for w in got["work"]],
-                   "tools": [tuple(t) for t in got["tools"]],
-                   "waiting": [tuple(w) for w in got["waiting"]],
-                   "eta": got["eta"]}
-            keep[path] = kept[path]
-        else:
-            # Stamped before the read: a file that grows during it comes
-            # back with a newer stamp next time, and is read again.
-            got = _read_agent_file(path)
-            if got is None:
-                continue
-            if st.st_mtime < settled:
-                keep[path] = dict(got, stamp=stamp)
-                dirty = True
-        out.append((path, got))
-    if dirty or set(kept) != set(keep):
-        try:
-            os.makedirs(os.path.dirname(cpath), mode=0o700, exist_ok=True)
-            tmp = "%s.%d" % (cpath, os.getpid())
-            with open(tmp, "w") as fh:
-                json.dump({"version": version, "files": keep}, fh,
-                          separators=(",", ":"))
-            os.chmod(tmp, 0o600)
-            os.replace(tmp, cpath)
-        except OSError:
-            pass
+    d = agent_fold.fold_dir(transcript)
+    for path in agent_files(transcript):
+        fold = agent_fold.fold_file(transcript, path, d)
+        if fold is not None:
+            out.append((path, agent_reading_of(fold)))
     return out
 
 

@@ -1,0 +1,14 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/01-mixed/subagents/workflows/wf_x/agent-w1.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"2a3241b41a0c574cbdd1122be734b70cab310de98b9bbbf22f2e14a27fa8533f\",\"pid\":\"p1\",\"eta\":[[],false,1786846400,null],\"span\":[1786846400,1786846400],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846400,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   487,
+   "{\"format\":1,\"seq\":1,\"pos\":487,\"tail\":\"19c072a7a70da2e1568d9d401cc14ac8e347dc5a194d99f269f59a8ec9e18693\",\"pid\":\"p1\",\"eta\":[[],false,1786846500,null],\"span\":[1786846400,1786846500],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1786846500,\"p1\",\"claude-haiku-4-5\",10,0,0,10,\"w1a\",487,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846500,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"\"}"
+  ]
+ ]
+}

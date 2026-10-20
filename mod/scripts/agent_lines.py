@@ -34,8 +34,12 @@ import sys
 OUT_MAX = 3 * 1024 * 1024
 # Records the fold reads more of than their type and time, all small.
 WHOLE = {"assistant", "system", "queue-operation"}
-# What the fold reads of a block in a user record's content list.
-BLOCK_KEYS = ("type", "tool_use_id", "id", "name")
+# What the fold reads of a block in a user record's content list: a text
+# block's text is a prompt's or a task notification's, and small; a tool
+# result's own content, the bulk of a file, is not read.
+BLOCK_KEYS = ("type", "tool_use_id", "id", "name", "text")
+# What the fold reads of every other record: its time, and its cwd.
+KEEP = ("type", "timestamp", "cwd")
 
 
 def block(b):
@@ -57,16 +61,27 @@ def hunk(h):
 
 def tool_result(res):
     """diffLines' reading of toolUseResult: the patch's +/- lines, or a
-    created file's line count, kept as that many newlines."""
+    created file's line count, kept as that many newlines; and
+    scanBackground's, the ids of the background tasks it opens or ends."""
     if not isinstance(res, dict):
         return None
+    out = {k: res[k] for k in ("backgroundTaskId", "taskId", "timeoutMs",
+                               "task_id") if k in res}
+    if "message" in res:
+        out["message"] = None
+    task = res.get("task")
+    if isinstance(task, dict):
+        out["task"] = {k: task[k] for k in ("status", "task_id")
+                       if k in task}
     patch = res.get("structuredPatch")
     if isinstance(patch, list) and patch:
-        return {"structuredPatch": [hunk(h) for h in patch]}
+        out["structuredPatch"] = [hunk(h) for h in patch]
+        return out
     content = res.get("content")
     if res.get("type") == "create" and isinstance(content, str):
-        return {"type": "create", "content": "\n" * len(content.splitlines())}
-    return {}
+        out.update(type="create",
+                   content="\n" * len(content.splitlines()))
+    return out
 
 
 def project(r):
@@ -74,7 +89,12 @@ def project(r):
     if t in WHOLE:
         return r
     if t != "user":
-        return {k: r[k] for k in ("type", "timestamp") if k in r}
+        out = {k: r[k] for k in KEEP if k in r}
+        a = r.get("attachment")
+        if isinstance(a, dict) and a.get("type") == "queued_command":
+            # A task notification, delivered to a waiting agent.
+            out["attachment"] = {"type": a["type"], "prompt": a.get("prompt")}
+        return out
     r = dict(r)
     m = r.get("message")
     if isinstance(m, dict) and isinstance(m.get("content"), list):

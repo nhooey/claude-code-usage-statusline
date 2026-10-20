@@ -196,12 +196,14 @@ record; that can miss a request stamped before the Stop but written after it,
 so it errs towards reporting a request at most once.
 
 Every render reads every agent file of the session, and a long session can
-have hundreds of them. So each file's reading is kept, per session, in
-`claude-agent-files-<digest>.cache` in private state, and a render reads
-again only the files whose size or mtime changed. A file written in the
-last two seconds is not kept, since a rewrite inside the clock's granularity
-can leave both unchanged. Requests are deduped across files after the cache,
-on every render, so a kept reading never changes which requests are counted.
+have hundreds of them. So each file's fold is saved, per session, in
+`claude-agent-fold-<digest>/` in private state, as `spec/state.jsonc`'s
+`agent-fold` row names it, and a render reads only the lines written since.
+The agent panel, the status line, the Stop hook and the mod share those
+files. A saved fold is read only while the 4 KiB before its offset are the
+bytes it was folded from, so a file rewritten in place is read afresh.
+Requests are deduped across files after the folds, on every render, so a
+saved fold never changes which requests are counted.
 
 ```
 fork fork1      📊 👥 Usage: Agents (other)  🧩 ▴7.2k ▾900   🎯 99٪                  💰+  0.1   🔋+ 0.01٪ 📖 56٪  🪫+ 0.01٪ 📝  5٪  ⌛🤖+4.3m  🔧+  0s

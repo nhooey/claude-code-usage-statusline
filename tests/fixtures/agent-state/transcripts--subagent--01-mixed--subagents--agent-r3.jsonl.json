@@ -1,0 +1,14 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/01-mixed/subagents/agent-r3.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"d84c42ed55c89effd4a35828c4d98a0516c55e4154556e41f9fe9cc5896ee7e4\",\"pid\":\"p1\",\"eta\":[[],false,1786846700,null],\"span\":[1786846700,1786846700],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846700,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   524,
+   "{\"format\":1,\"seq\":1,\"pos\":524,\"tail\":\"18e879c2f4ae76832cfe6b122348a0ed7e8e08393877519d233c3038c3bb2b02\",\"pid\":\"p1\",\"eta\":[[],false,1786846720,null],\"span\":[1786846700,1786846720],\"work\":[],\"pending\":[[\"t3\",1786846720,\"AskUserQuestion\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786846720,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"r3a\",524,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846720,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ]
+ ]
+}

@@ -27,9 +27,13 @@ import { startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
 import { BAND_EDGE, CONFIG } from '../hooks/config.ts'
 import {
-  _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, readPayload,
-  transcriptOf, turnsOf,
+  _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, foldAgentBytes,
+  newAgentFold, readPayload, transcriptOf, turnsOf,
 } from '../src/claude_records.ts'
+import {
+  agentFoldText, FOLD_CHECK_BYTES as AGENT_CHECK_BYTES, foldDir, slotNames,
+  tailDigest,
+} from '../src/agent_fold.ts'
 import type { AgentEta, AgentReading } from '../src/claude_records.ts'
 import {
   foldLoad, foldMain, foldMeta, foldSave, foldWrites, newMainFold, partName,
@@ -764,6 +768,107 @@ test('the old saved cuts are removed, by their names alone', async ($, on) => {
     ['/bin/rmdir', '--', a, b, cuts],
   ])
 })
+
+// ════════════════════════════════════════════════════════════════════════════
+// The agents' folds saved, and a reload reading on from them.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** The status fixture and its agent at paths no other test reads, so no
+ * fold is kept for them yet: the transcript, the agent's path and bytes,
+ * the line end halfway through those, and the agent's two slots. */
+function agentWorld(on: On, name: string) {
+  const w = world(on)
+  const path = `/claude/projects/-work/${name}.jsonl`
+  const agent = `/claude/projects/-work/${name}/subagents/agent-fork1.jsonl`
+  w.files.set(path, w.files.get(STATUS)!)
+  const bytes = w.files.get(
+    '/fixtures/transcripts/status/agents/subagents/agent-fork1.jsonl')!
+  w.files.set(agent, bytes)
+  const half = bytes.indexOf(10, bytes.length >> 1) + 1
+  const dir = foldDir(STATE, path)
+  const slots = slotNames(agent).map((n) => dir + '/' + n)
+  return { w, path, agent, bytes, half, slots }
+}
+
+/** The check digest of `bytes` at `pos`. */
+function tailAt(bytes: Uint8Array, pos: number) {
+  return tailDigest(bytes.subarray(Math.max(0, pos - AGENT_CHECK_BYTES), pos))
+}
+
+/** An empty fold at `pos`, read on over `bytes` from there. */
+function readOn(bytes: Uint8Array, pos: number) {
+  const f = newAgentFold()
+  f.pos = pos
+  foldAgentBytes(f, bytes.subarray(pos))
+  return f
+}
+
+// An agent's fold planted empty at its halfway line, as a first save
+// writes it, to the second slot: a reload reads on from it, so the fold
+// the mod saves, to the first slot, holds only the second half.
+test('a reload reads an agent on from its saved fold, and saves it to ' +
+  'the other slot', async ($, on) => {
+  const { w, path, bytes, half, slots } = agentWorld(on, 'agent-saved')
+  const empty = newAgentFold()
+  empty.pos = half
+  w.files.set(slots[1], encoder.encode(
+    agentFoldText(empty, 1, tailAt(bytes, half))))
+  await start($, 'terminal', path)
+  const end = bytes.lastIndexOf(10) + 1
+  expect(new TextDecoder().decode(w.files.get(slots[0])!)).toBe(
+    agentFoldText(readOn(bytes, half), 2, tailAt(bytes, end)))
+})
+
+// The newer slot torn, as $.fs.write can leave it to a reader, and the
+// older one sound: the older is read on from, and saved over.
+test('a torn agent fold falls back to the other slot', async ($, on) => {
+  const { w, path, bytes, half, slots } = agentWorld(on, 'agent-torn')
+  const sound = readOn(bytes.subarray(0, half), 0)
+  w.files.set(slots[1], encoder.encode(
+    agentFoldText(sound, 3, tailAt(bytes, half))))
+  const torn = agentFoldText(sound, 4, tailAt(bytes, half))
+  w.files.set(slots[0], encoder.encode(torn.slice(0, torn.length >> 1)))
+  await start($, 'terminal', path)
+  const end = bytes.lastIndexOf(10) + 1
+  expect(new TextDecoder().decode(w.files.get(slots[0])!)).toBe(
+    agentFoldText(readOn(bytes, 0), 4, tailAt(bytes, end)))
+})
+
+// A fold saved against other bytes is passed over, and the file folded
+// from its start, saved after the highest seq either slot holds.
+test('an agent fold of other bytes is not read', async ($, on) => {
+  const { w, path, bytes, half, slots } = agentWorld(on, 'agent-other')
+  w.files.set(slots[0], encoder.encode(
+    agentFoldText(readOn(bytes.subarray(0, half), 0), 6, 'f'.repeat(64))))
+  await start($, 'terminal', path)
+  const end = bytes.lastIndexOf(10) + 1
+  expect(new TextDecoder().decode(w.files.get(slots[1])!)).toBe(
+    agentFoldText(readOn(bytes, 0), 7, tailAt(bytes, end)))
+  expect(w.files.get(slots[0])!.length).toBeGreaterThan(0)
+})
+
+test('the old agent folds are removed, by their names alone',
+  async ($, on) => {
+    const ran: (readonly string[])[] = []
+    const w = world(on, (e) => {
+      if (e.argv[0] === '/bin/rm' || e.argv[0] === '/bin/rmdir') {
+        ran.push(e.argv)
+        return { ...NO_GIT_HERE, exitCode: 0, stderr: '' }
+      }
+      return NO_GIT_HERE
+    })
+    const old = STATE + '/claude-agent-folds-mod'
+    const a = old + '/' + '0123456789abcdef'.repeat(2)
+    const f = '89abcdef01234567'.repeat(2) + '.json'
+    for (const p of [a + '/' + f, a + '/notes.txt', old + '/stray.json']) {
+      w.files.set(p, encoder.encode('{}'))
+    }
+    await start($, 'terminal', STATUS)
+    expect(ran.filter((r) => r.some((x) => x.startsWith(old)))).toEqual([
+      ['/bin/rm', '-f', '--', a + '/' + f],
+      ['/bin/rmdir', '--', a, old],
+    ])
+  })
 
 // ════════════════════════════════════════════════════════════════════════════
 // A resumed session, and the events a live one sends in another order.

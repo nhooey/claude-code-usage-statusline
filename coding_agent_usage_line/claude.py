@@ -81,6 +81,7 @@ from .claude_cost_render import (CostOpts, ink_colour as _c, place,
                                  turn_tag)
 from .claude_sources import prepare_claude_reading
 from .options import Options, from_argv
+from . import agent_fold
 from . import claude_subagent_render as subagent_render
 
 CALIB_TTL = 300        # the scan walks transcripts; five minutes is plenty
@@ -601,6 +602,27 @@ def _remove_old_window_costs() -> int:
     return _remove_old_names(_OLD_COSTS, OLD_COSTS_DONE)
 
 
+# The agent files' readings as each port kept them before spec/state.jsonc's
+# agent-fold kind: the Python's, keyed inside by a digest of its source,
+# and the Node port's; and the temporary files of the Python's that a
+# killed save left behind.
+_OLD_AGENT_FILES = re.compile(
+    r"claude-agent-files-(?:ts-)?[0-9a-f]{64}\.cache(?:\.\d+)?\Z")
+OLD_AGENT_FILES_DONE = "claude-agent-files-old-removed"
+_old_agent_files_checked = False
+
+
+def _remove_old_agent_files() -> int:
+    """Remove the old agent-file caches, once; how many this run removed.
+    The mod never wrote these; it removes its own old folds itself
+    (dropOldDir in hooks/edges.ts)."""
+    global _old_agent_files_checked
+    if _old_agent_files_checked:
+        return 0
+    _old_agent_files_checked = True
+    return _remove_old_names(_OLD_AGENT_FILES, OLD_AGENT_FILES_DONE)
+
+
 def _remove_old_names(pattern, done: str) -> int:
     """Remove the files of the state directory whose names `pattern`
     matches, then write the marker `done`, unless it is there already; how
@@ -639,6 +661,14 @@ _CALIB_NAME = re.compile(r"claude-calibration-[0-9a-f]{64}\.cache\Z")
 # on leaves the old one behind, and a save killed mid-write its temporary
 # file (the Python's ends in its pid, the mod's in its shell's).
 _COSTS_NAME = re.compile(r"claude-window-costs-[0-9a-f]{64}\.cache(?:\.\d+)?\Z")
+# The folds' directories, one per transcript, the agents' and the main
+# transcript's, swept with them once none of their files has been written
+# for as long: a session nobody has read since.  Only the names a fold
+# writes, and the temporary files of the Python's saves, are removed, and
+# the directory only once that leaves it empty.
+_FOLD_DIR = re.compile(r"claude-(?:agent|main)-fold-[0-9a-f]{64}\Z")
+_FOLD_FILE = re.compile(
+    r"(?:[0-9a-f]{64}-[ab]|head-[ab]|part-\d+)\.cache(?:\.\d+\.tmp)?\Z")
 # A scope's file is rewritten at least every CALIB_TTL while it is in use;
 # one untouched this long is a past period's, the weekly window's included.
 # The window costs' is rewritten whenever a scan finds anything new, and
@@ -651,8 +681,9 @@ _calib_swept = False
 
 
 def _sweep_calibrations(now: Optional[float] = None) -> int:
-    """Remove the calibration caches untouched for CALIB_MAX_AGE_S, at most
-    once a day across processes; how many this run removed.
+    """Remove the calibration caches untouched for CALIB_MAX_AGE_S, and the
+    folds' directories none of whose files was written for as long, at
+    most once a day across processes; how many files this run removed.
 
     The mod sweeps the same files (sweepCalibrationsVia in hooks/edges.ts),
     through `rm`, since its `$.fs` cannot remove a file."""
@@ -675,6 +706,9 @@ def _sweep_calibrations(now: Optional[float] = None) -> int:
             pass
         os.utime(marker, (now, now))
         for name in os.listdir(d):
+            if _FOLD_DIR.match(name):
+                removed += _sweep_fold_dir(os.path.join(d, name), now)
+                continue
             if not (_CALIB_NAME.match(name) or _COSTS_NAME.match(name)):
                 continue
             path = os.path.join(d, name)
@@ -684,6 +718,31 @@ def _sweep_calibrations(now: Optional[float] = None) -> int:
                     removed += 1
             except OSError:
                 pass
+    except OSError:
+        pass
+    return removed
+
+
+def _sweep_fold_dir(d: str, now: float) -> int:
+    """A fold directory's files, where none was written for
+    CALIB_MAX_AGE_S, then the directory; how many files it removed."""
+    try:
+        names = os.listdir(d)
+        if any(now - os.stat(os.path.join(d, n)).st_mtime <= CALIB_MAX_AGE_S
+               for n in names):
+            return 0
+    except OSError:
+        return 0
+    removed = 0
+    for n in names:
+        if _FOLD_FILE.match(n):
+            try:
+                os.remove(os.path.join(d, n))
+                removed += 1
+            except OSError:
+                pass
+    try:
+        os.rmdir(d)
     except OSError:
         pass
     return removed
@@ -1473,6 +1532,7 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     """
     _remove_old_calibrations()
     _remove_old_window_costs()
+    _remove_old_agent_files()
     _sweep_calibrations()
     snap = limits_snapshot()
     ss, ws = _window_starts()
@@ -2346,61 +2406,50 @@ def agent_meta(path: str) -> dict:
 
 def read_agent_usage(path: str) -> AgentUsage:
     """One pass over an agent's transcript, the way read_transcript reads the
-    session's: deduped on requestId, summed, priced per record.
+    session's: deduped on requestId, summed, priced per record.  The panel
+    reads on from the fold saved for the file instead (agent_fold), and
+    finishes it the same way: see agent_usage_of.
+    """
+    if not path:
+        return NO_AGENT_USAGE
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read()
+    except OSError:
+        return NO_AGENT_USAGE
+    fold = AgentFold()
+    fold_agent_bytes(fold, data, True)
+    return agent_usage_of(fold)
+
+
+def agent_usage_of(fold: AgentFold) -> AgentUsage:
+    """What an agent's fold comes to: its usage deduped on requestId, first
+    wins, summed and priced per record, and its clock's spans as they stand,
+    the open one closed on a copy so the fold can go on.
 
     Context is the LAST non-zero request's whole input — fresh plus both
     cache classes — which is the same reading 🧠 takes on the status line,
     for the same window question: this agent's, not the session's.
     """
-    if not path:
-        return NO_AGENT_USAGE
-    recs = list(_records(path))
-    eta_state = new_eta_state()
-    span_state = [None, None]
-    work = []
-    pending = {}
-    tools = []
-    waiting = []
-    background = {}
-    compactions = 0
-    last_seen = None
-    api_error = False
-    cwd = ""
-    blocks = 0
-    for r in recs:
-        compactions += is_compaction(r)
-        t = ts_epoch(r.get("timestamp") or "")
-        last_seen = t if t is not None else last_seen
-        if r.get("type") == "assistant":
-            api_error = bool(r.get("isApiErrorMessage"))
-            blocks += sum(1 for b in ((r.get("message") or {}).get("content") or ())
-                          if isinstance(b, dict) and (b.get("type") == "tool_use" or
-                                                      b.get("type") == "text" and (b.get("text") or "").strip()))
-        cwd = r.get("cwd") if isinstance(r.get("cwd"), str) and r.get("cwd") else cwd
-        live_eta(r, eta_state)
-        agent_span(r, span_state, work)
-        scan_tool_spans(r, pending, tools, waiting)
-        scan_background(r, background)
+    eta_state = fold.eta_state
     eta = () if eta_state[1] else eta_state[0]
     # The open span runs on to now only while the model has the floor: a
     # tool still waiting on its result is tool time, and runs to now as 🔧
     # or 🚦 instead; see open_tool_spans.
-    open_at = None if pending else span_state[0]
-    close_agent_span(span_state, work)
-    reqs = _dedupe_usage(recs)
+    open_at = None if fold.pending else fold.span_state[0]
+    work = list(fold.work)
+    close_agent_span(list(fold.span_state), work)
+    seen = set()
     fresh = cwrite = cread = down = 0
     ctx = 0
     cost = 0.0
     parts = []
-    model = effort = ""
+    model = ""
     last = None
-    for r in reqs:
-        m = r.get("message") or {}
-        u = m.get("usage") or {}
-        f = u.get("input_tokens") or 0
-        cw = u.get("cache_creation_input_tokens") or 0
-        cr = u.get("cache_read_input_tokens") or 0
-        o = u.get("output_tokens") or 0
+    for epoch, _pid, m, f, cw, cr, o, k, _pos, _la, _lr in fold.recs:
+        if k in seen:
+            continue
+        seen.add(k)
         if not (f or cw or cr or o):
             continue                        # an interrupted request
         fresh += f
@@ -2409,31 +2458,27 @@ def read_agent_usage(path: str) -> AgentUsage:
         down += o
         if f + cw + cr:
             ctx = f + cw + cr
-        usd = add_up(_usd(m.get("model"), f, cw, cr, o))
+        usd = add_up(_usd(m, f, cw, cr, o))
         cost += usd
-        epoch = ts_epoch(r.get("timestamp") or "")
         parts.append((epoch, usd))
         last = epoch if epoch is not None else last
-        model = m.get("model") or model
-        effort = r.get("effort") or effort
+        model = m or model
     in_all = fresh + cwrite + cread
-    signals = dict(compactions=compactions, last_seen=last_seen,
-                   api_error=api_error, cwd=cwd, blocks=blocks)
+    signals = dict(eta=eta, work=tuple(work), open_at=open_at,
+                   tools=tuple(fold.tools), waiting=tuple(fold.waiting),
+                   pending=tuple(fold.pending.values()),
+                   background=tuple(fold.background.items()),
+                   compactions=fold.compactions, last_seen=fold.last_seen,
+                   api_error=fold.api_error, cwd=fold.cwd,
+                   blocks=fold.blocks)
     if not parts:
-        return NO_AGENT_USAGE._replace(eta=eta, work=tuple(work),
-                                       open_at=open_at, tools=tuple(tools),
-                                       waiting=tuple(waiting),
-                                       pending=tuple(pending.values()),
-                                       background=tuple(background.items()),
-                                       **signals)
+        return NO_AGENT_USAGE._replace(**signals)
     return AgentUsage(
         int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread), down,
         int(100 * cread / in_all) if in_all > 0 else -1,
-        ctx, cost, tuple(parts), model, effort, len(parts), last,
-        *agent_diff(recs), eta=eta, work=tuple(work), open_at=open_at,
-        tools=tuple(tools), waiting=tuple(waiting),
-        pending=tuple(pending.values()), background=tuple(background.items()),
-        **signals)
+        ctx, cost, tuple(parts), model, fold.effort, len(parts), last,
+        sum(r[9] for r in fold.recs) + fold.added,
+        sum(r[10] for r in fold.recs) + fold.removed, **signals)
 
 
 def agent_clock(usage: AgentUsage, running: bool,
@@ -2553,12 +2598,17 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
     transcript = str(pay.get("transcript_path") or "")
     session_cwd = str(pay.get("cwd") or "")
     prepared = []
+    paths = {}
+    folds = agent_fold.fold_dir(transcript)
     for task in pay.get("tasks") or ():
         if not isinstance(task, dict) or not task.get("id"):
             continue
         try:
-            path = agent_file_for(transcript, str(task["id"]))
-            usage = read_agent_usage(path)
+            path = paths[str(task["id"])] = agent_file_for(transcript,
+                                                           str(task["id"]))
+            fold = agent_fold.fold_file(transcript, path, folds) \
+                if path else None
+            usage = agent_usage_of(fold) if fold else NO_AGENT_USAGE
             if path:
                 model_s, tool_s = agent_clock(
                     usage, str(task.get("status") or "") == "running", now)
@@ -2576,7 +2626,7 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
             continue
     # A killed or failed agent's inbox is dropped with it, and a shell has
     # none.  The rest are counted in one pass over every file that can send.
-    targets = {str(t["id"]): agent_file_for(transcript, str(t["id"]))
+    targets = {str(t["id"]): paths[str(t["id"])]
                for t, _, _, _ in prepared
                if str(t.get("status") or "") not in ("killed", "failed")}
     targets = {k: v for k, v in targets.items() if v}

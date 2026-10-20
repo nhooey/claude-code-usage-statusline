@@ -1,0 +1,22 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/01-mixed/subagents/agent-r2.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"b7167ead34a10818a1d3b8992b272939a928a9dbfb1d75801732e3060a6ecd8a\",\"pid\":\"p1\",\"eta\":[[],false,1786846600,null],\"span\":[1786846600,1786846600],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846600,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   513,
+   "{\"format\":1,\"seq\":1,\"pos\":513,\"tail\":\"b3c436321e37112c2b236df9fd52e6378c1766b053417f655f1aa25564d2d08b\",\"pid\":\"p1\",\"eta\":[[],false,1786846620,null],\"span\":[1786846600,1786846620],\"work\":[],\"pending\":[[\"t2\",1786846620,\"Read\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786846620,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"r2a\",513,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846620,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   660,
+   "{\"format\":1,\"seq\":1,\"pos\":660,\"tail\":\"fdb0a1dc5f1b172c3a29c59a3c0527accd1dc64fc6b775e7cab55d576d862f8a\",\"pid\":\"p1\",\"eta\":[[],false,1786846630,null],\"span\":[1786846600,1786846630],\"work\":[],\"pending\":[],\"tools\":[[1786846620,1786846630]],\"waiting\":[],\"recs\":[[1786846620,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"r2a\",513,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846630,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   1003,
+   "{\"format\":1,\"seq\":1,\"pos\":1003,\"tail\":\"ca564173b41c3d85dc0836e1d5989b2ca65257a57594634f6bf1546fdcc9957d\",\"pid\":\"p1\",\"eta\":[[],false,1786846980,null],\"span\":[1786846600,1786846980],\"work\":[],\"pending\":[],\"tools\":[[1786846620,1786846630]],\"waiting\":[],\"recs\":[[1786846620,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"r2a\",513,0,0],[1786846980,\"p1\",\"claude-sonnet-5\",300,0,60000,900,\"r2b\",1003,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846980,\"api_error\":false,\"cwd\":\"\",\"blocks\":2,\"background\":[],\"effort\":\"low\"}"
+  ]
+ ]
+}

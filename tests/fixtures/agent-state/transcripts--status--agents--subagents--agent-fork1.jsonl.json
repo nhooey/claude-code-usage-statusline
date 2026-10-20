@@ -1,0 +1,22 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/status/agents/subagents/agent-fork1.jsonl",
+ "texts": [
+  [
+   134,
+   "{\"format\":1,\"seq\":1,\"pos\":134,\"tail\":\"81a3a2b3fa5606e2f19eb1dfb7bc3fb87cbec662f89090d235d0f20a43bd4c65\",\"pid\":\"p-fork\",\"eta\":[[],false,1786844100,null],\"span\":[1786844100,1786844100],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786844100,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   459,
+   "{\"format\":1,\"seq\":1,\"pos\":459,\"tail\":\"7843f58377af76f6885653f46af8029b8df003a5c39fa7356db2783a20a5f90b\",\"pid\":\"p-fork\",\"eta\":[[],false,1786844200,null],\"span\":[1786844100,1786844200],\"work\":[],\"pending\":[[\"tu-fk\",1786844200,\"Bash\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786844200,\"p-fork\",null,40,6000,80000,2000,\"req-fk1\",459,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786844200,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   626,
+   "{\"format\":1,\"seq\":1,\"pos\":626,\"tail\":\"ad383a7beacc97ee8ef6ea42e7531af865ca3eda68116e645de200076e683cc4\",\"pid\":\"p-fork\",\"eta\":[[],false,1786844300,null],\"span\":[1786844100,1786844300],\"work\":[],\"pending\":[],\"tools\":[[1786844200,1786844300]],\"waiting\":[],\"recs\":[[1786844200,\"p-fork\",null,40,6000,80000,2000,\"req-fk1\",459,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786844300,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   900,
+   "{\"format\":1,\"seq\":1,\"pos\":900,\"tail\":\"39c0473a4ea379182d36d70382a7086848f7e37e037d7fbbf5666c7f270b9ede\",\"pid\":\"p-fork\",\"eta\":[[],false,1786844300,null],\"span\":[1786844100,1786844300],\"work\":[],\"pending\":[],\"tools\":[[1786844200,1786844300]],\"waiting\":[],\"recs\":[[1786844200,\"p-fork\",null,40,6000,80000,2000,\"req-fk1\",459,0,0],[1786844300,\"p-fork\",null,10,2000,84000,1500,\"req-fk2\",900,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786844300,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"\"}"
+  ]
+ ]
+}

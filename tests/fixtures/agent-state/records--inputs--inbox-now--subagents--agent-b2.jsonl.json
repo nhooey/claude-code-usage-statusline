@@ -1,0 +1,22 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+ "texts": [
+  [
+   87,
+   "{\"format\":1,\"seq\":1,\"pos\":87,\"tail\":\"4a1698c27fa04d15a11c8500a6cff7962db3c0171cbcdb71310db977c74a02cf\",\"pid\":\"\",\"eta\":[[],false,1787000002,null],\"span\":[1787000002,1787000002],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000002,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   417,
+   "{\"format\":1,\"seq\":1,\"pos\":417,\"tail\":\"bf2f5cab66488ae4420000d74c4e2707e6e83329363e95417b4bb58bba93cb34\",\"pid\":\"\",\"eta\":[[],false,1787000005,null],\"span\":[1787000002,1787000005],\"work\":[],\"pending\":[[\"t1\",1787000005,\"SendMessage\"]],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000005,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   651,
+   "{\"format\":1,\"seq\":1,\"pos\":651,\"tail\":\"c578a15f4caa7a46715443babd7c4bdd18391f4c5cf010627e059f53fc2c081a\",\"pid\":\"\",\"eta\":[[],false,1787000005,null],\"span\":[1787000002,1787000005],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[\"t1\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000005,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   867,
+   "{\"format\":1,\"seq\":1,\"pos\":867,\"tail\":\"fb3dd40b59115d4d63b3c89ef7d1f2b2fb5d5bc282b24770cbaf5682a6db0f96\",\"pid\":\"\",\"eta\":[[],false,1787000020,null],\"span\":[1787000002,1787000005],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[\"t1\"],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000020,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"\"}"
+  ]
+ ]
+}

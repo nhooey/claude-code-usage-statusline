@@ -8,23 +8,25 @@
 // Node caller imports one module.
 import * as fs from "node:fs";
 import {
-  _agentDir, _agentStatePath, _agentCachePath, _readAgentBytes, _recordsOf,
-  AGENT_CACHE_SETTLE_S, agentLabelOf, agentOffsetsOf, agentRecordsOf, cmpStr,
-  cmpTuple,
-  INBOX_MARKS, inboxDelivery, markedRecordsOf, pyJoin, pyJsonDumps,
-  queuedSend, recordEqual, SEND_QUEUED_MARK, transcriptOf, tsEpoch, turnsOf,
-  _settled, SETTLE_POLL_S, SETTLE_S,
+  agentFoldText, FOLD_CHECK_BYTES, foldCandidates, foldDir, slotNames,
+  tailDigest,
+} from "./agent_fold.ts";
+import {
+  _agentDir, _agentStatePath, _readAgentBytes, _recordsOf, agentLabelOf,
+  agentOffsetsOf, agentReadingOf, agentRecordsOf, cmpStr, cmpTuple,
+  copyAgentFold, foldAgentBytes, INBOX_MARKS, inboxDelivery,
+  markedRecordsOf, newAgentFold, pyJoin, pyJsonDumps, queuedSend,
+  SEND_QUEUED_MARK, transcriptOf, tsEpoch, turnsOf, _settled,
+  SETTLE_POLL_S, SETTLE_S,
 } from "./claude_records.ts";
 import type {
-  AgentCache, AgentEta, AgentReading, AgentRec, Rec, Transcript, Turn,
+  AgentEta, AgentFold, AgentReading, AgentRec, Rec, Transcript, Turn,
 } from "./claude_records.ts";
-import { isDict, pyGet, pyOr } from "./py.ts";
+import { pyGet, pyOr } from "./py.ts";
 
 export * from "./claude_records.ts";
 
 const AGENT_NAME = /^agent-.*\.jsonl$/s;
-
-type Kept = AgentReading & { readonly stamp: readonly [number, string] };
 
 /** Yield parsed JSONL records, skipping any line that will not parse.
  *
@@ -80,12 +82,12 @@ function isDir(p: string): boolean {
 }
 
 /** agentRecordsOf over this session's agent files, read here; see
- * _agentFileReadings for `cache`. */
+ * _agentFileReadings for `stateDir`. */
 export function agentRecords(transcript: string,
   seen: Set<unknown> | null = null,
   etas: AgentEta[] | null = null,
-  cache: AgentCache | null = null): AgentRec[] {
-  return agentRecordsOf(_agentFileReadings(transcript, cache), seen, etas);
+  stateDir: string | null = null): AgentRec[] {
+  return agentRecordsOf(_agentFileReadings(transcript, stateDir), seen, etas);
 }
 
 /** _readAgentBytes off the file, or null for a file that will not open. */
@@ -97,66 +99,75 @@ export function _readAgentFile(path: string): AgentReading | null {
   }
 }
 
-/** _readAgentFile for every agent file, in agentFiles' order, from the
- * cache where a file has not changed since it was kept.
- *
- * Without it, every render parsed every agent file the session ever ran: a
- * session with 611 of them, 768 MB, took six seconds a render.  A finished
- * agent's file never changes, so a render reads only the files that grew.
- * A reading is current while the file's size and mtime match the ones
- * stamped when it was read.  The cache is written back only when a reading
- * was added or a file went away.  With no `cache`, every file is read. */
+/** Agent file `path`'s fold, read on from the one saved for it in `dir`
+ * to the file's end, and saved back where it folded anything:
+ * agent_fold.fold_file's port.  A saved fold is read only where the file
+ * still holds the bytes it was folded from, its offset within the file and
+ * the digest of the bytes before it the same.  A last line with no newline
+ * yet is folded on a copy, which is returned and not saved.  null for a
+ * file that will not open. */
+export function agentFoldFile(dir: string, path: string): AgentFold | null {
+  let fd: number;
+  try {
+    fd = fs.openSync(path, "r");
+  } catch {
+    return null;
+  }
+  const names = slotNames(path);
+  let fold: AgentFold, seq: number, start: number, data: Uint8Array;
+  let whole: number, tail = "";
+  try {
+    const size = fs.fstatSync(fd).size;
+    const tailAt = (pos: number): string => {
+      const lo = Math.max(0, pos - FOLD_CHECK_BYTES);
+      const buf = new Uint8Array(pos - lo);
+      fs.readSync(fd, buf, 0, buf.length, lo);
+      return tailDigest(buf);
+    };
+    const { folds, newest } = foldCandidates(names.map((n) => {
+      try {
+        return fs.readFileSync(pyJoin(dir, n), "utf-8");
+      } catch {
+        return null;
+      }
+    }));
+    const got = folds.find(([, t, f]) => f.pos <= size && tailAt(f.pos) === t);
+    [fold, seq] = got ? [got[2], got[0]] : [newAgentFold(), newest];
+    start = fold.pos;
+    data = new Uint8Array(size - start);
+    fs.readSync(fd, data, 0, data.length, start);
+    whole = data.lastIndexOf(10) + 1;
+    foldAgentBytes(fold, data.subarray(0, whole));
+    if (fold.pos > start) tail = tailAt(fold.pos);
+  } finally {
+    fs.closeSync(fd);
+  }
+  if (fold.pos > start) {
+    writeAtomic(pyJoin(dir, names[(seq + 1) % 2]),
+      agentFoldText(fold, seq + 1, tail));
+  }
+  if (whole === data.length) return fold;
+  const out = copyAgentFold(fold);
+  foldAgentBytes(out, data.subarray(whole), true);
+  return out;
+}
+
+/** _readAgentFile for every agent file, in agentFiles' order, each read on
+ * from the fold saved for it under `stateDir` (agent_fold.ts), so a render
+ * reads only what was appended since the last.  Without it, every render
+ * parsed every agent file the session ever ran: a session with 611 of
+ * them, 768 MB, took six seconds a render.  With no `stateDir`, every file
+ * is read whole and nothing is saved. */
 export function _agentFileReadings(transcript: string,
-  cache: AgentCache | null = null): [string, AgentReading][] {
-  const paths = agentFiles(transcript);
-  if (paths.length === 0) return [];
-  const cpath = cache ? _agentCachePath(transcript, cache.stateDir) : "";
-  let kept: Record<string, Kept> = {};
-  if (cache) {
-    try {
-      const d = JSON.parse(fs.readFileSync(cpath, "utf-8"));
-      if (isDict(d) && d.version === cache.version) {
-        kept = (pyOr(d.files, {}) as Record<string, Kept>);
-      }
-    } catch {
-      // No cache yet, or one that will not parse: read everything.
-    }
-  }
-  const settled = cache ? cache.now - AGENT_CACHE_SETTLE_S : 0;
+  stateDir: string | null = null): [string, AgentReading][] {
   const out: [string, AgentReading][] = [];
-  const keep: Record<string, Kept> = {};
-  let dirty = false;
-  for (const path of paths) {
-    let st: fs.BigIntStats;
-    try {
-      st = fs.statSync(path, { bigint: true });
-    } catch {
-      continue;
-    }
-    const stamp: [number, string] = [Number(st.size), String(st.mtimeNs)];
-    let got: AgentReading | null = Object.hasOwn(kept, path)
-      ? kept[path] : null;
-    if (isDict(got) && recordEqual((got as unknown as Kept).stamp, stamp)) {
-      const { recs, work, tools, waiting, eta } = got;
-      got = { recs, work, tools, waiting, eta };
-      keep[path] = kept[path];
-    } else {
-      // Stamped before the read: a file that grows during it comes back
-      // with a newer stamp next time, and is read again.
-      got = _readAgentFile(path);
-      if (got === null) continue;
-      if (cache && Number(st.mtimeNs) / 1e9 < settled) {
-        keep[path] = { ...got, stamp };
-        dirty = true;
-      }
-    }
-    out.push([path, got]);
-  }
-  const same = (a: object, b: object) =>
-    recordEqual(Object.keys(a).sort(), Object.keys(b).sort());
-  if (cache && (dirty || !same(kept, keep))) {
-    writeAtomic(cpath, JSON.stringify({ version: cache.version,
-      files: keep }));
+  const dir = stateDir === null ? "" : foldDir(stateDir, transcript);
+  for (const path of agentFiles(transcript)) {
+    const got = stateDir === null ? _readAgentFile(path)
+      : agentFoldFile(dir, path);
+    if (got === null) continue;
+    out.push([path, stateDir === null ? got as AgentReading
+      : agentReadingOf(got as AgentFold)]);
   }
   return out;
 }
@@ -299,28 +310,30 @@ export function inboxCounts(files: readonly string[],
 
 /** transcriptOf over the file at `path`.  `agents` is agentRecords'
  * reading of the files beside it, or null to read them here, taking their
- * ETAs off the same walk. */
+ * ETAs off the same walk, and reading on from their folds saved under
+ * `stateDir` where it is not null. */
 export function readTranscript(path: string,
   agents: readonly AgentRec[] | null = null,
   agent_etas: readonly AgentEta[] = [], now: number | null = null,
-  cache: AgentCache | null = null): Transcript {
+  stateDir: string | null = null): Transcript {
   const records = _records(path);
   if (agents === null) {
     const own: AgentEta[] = [];
-    agents = agentRecords(path, null, own, cache);
+    agents = agentRecords(path, null, own, stateDir);
     agent_etas = [...agent_etas, ...own];
   }
   return transcriptOf(records, agents, agent_etas, now);
 }
 
 /** turnsOf over the file at `path`, with the agent files beside it and the
- * offsets the last Stop stored under `stateDir`. */
+ * offsets the last Stop stored under `stateDir`.  The agent files are read
+ * on from their folds saved under `foldsIn` where it is not null. */
 export function readTurns(path: string,
   agents: readonly AgentRec[] | null = null,
   held: Map<string, number> | null = null, stateDir: string | null = null,
-  cache: AgentCache | null = null): Turn[] {
+  foldsIn: string | null = null): Turn[] {
   return turnsOf(_records(path),
-    (seen) => agents ?? agentRecords(path, seen, null, cache),
+    (seen) => agents ?? agentRecords(path, seen, null, foldsIn),
     stateDir === null ? null : agentOffsets(path, stateDir), held,
     agentLabel);
 }
@@ -336,8 +349,8 @@ export function readTurns(path: string,
 export async function readTurnsSettled(path: string, budget = SETTLE_S,
   poll = SETTLE_POLL_S, agents: readonly AgentRec[] | null = null,
   held: Map<string, number> | null = null, stateDir: string | null = null,
-  cache: AgentCache | null = null): Promise<Turn[]> {
-  let turns = readTurns(path, agents, held, stateDir, cache);
+  foldsIn: string | null = null): Promise<Turn[]> {
+  let turns = readTurns(path, agents, held, stateDir, foldsIn);
   if (!budget || _settled(turns)) return turns;
   const deadline = performance.now() + budget * 1000;
   let size: number;
@@ -357,7 +370,7 @@ export async function readTurnsSettled(path: string, budget = SETTLE_S,
     if (grown === size) continue;
     size = grown;
     held?.clear();
-    turns = readTurns(path, agents, held, stateDir, cache);
+    turns = readTurns(path, agents, held, stateDir, foldsIn);
     if (_settled(turns)) break;
   }
   return turns;

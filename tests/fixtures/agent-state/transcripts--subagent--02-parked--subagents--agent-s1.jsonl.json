@@ -1,0 +1,18 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/transcripts/subagent/02-parked/subagents/agent-s1.jsonl",
+ "texts": [
+  [
+   155,
+   "{\"format\":1,\"seq\":1,\"pos\":155,\"tail\":\"e3eb061941066679308e0556e9abfc06ab64dc06f21d2dfd99a47ae27caba6e0\",\"pid\":\"p1\",\"eta\":[[],false,1786846100,null],\"span\":[1786846100,1786846100],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846100,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   546,
+   "{\"format\":1,\"seq\":1,\"pos\":546,\"tail\":\"2d6a811cd4119ed5acbac781914f726d7767eff995ce6938e0a8003bf76e6554\",\"pid\":\"p1\",\"eta\":[[1786846400,120],false,1786846400,\"s1a\"],\"span\":[1786846100,1786846400],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1786846400,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"s1a\",546,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846400,\"api_error\":false,\"cwd\":\"\",\"blocks\":1,\"background\":[],\"effort\":\"high\"}"
+  ],
+  [
+   904,
+   "{\"format\":1,\"seq\":1,\"pos\":904,\"tail\":\"1a68559a3cfc485b39a18a4af90ec2cb712847887feaacd7aee7da88005e6d14\",\"pid\":\"p1\",\"eta\":[[1786846400,120],false,1786846410,\"s1a\"],\"span\":[1786846100,1786846410],\"work\":[],\"pending\":[[\"t5\",1786846410,\"Bash\"]],\"tools\":[],\"waiting\":[],\"recs\":[[1786846400,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"s1a\",546,0,0],[1786846410,\"p1\",\"claude-opus-5\",100,2000,30000,400,\"s1b\",904,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1786846410,\"api_error\":false,\"cwd\":\"\",\"blocks\":2,\"background\":[],\"effort\":\"high\"}"
+  ]
+ ]
+}

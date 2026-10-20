@@ -1,0 +1,30 @@
+{
+ "format": 1,
+ "agent": "tests/fixtures/records/inputs/session/subagents/workflows/wf_1/agent-w1.jsonl",
+ "texts": [
+  [
+   115,
+   "{\"format\":1,\"seq\":1,\"pos\":115,\"tail\":\"054608c0b82178aecf88e286c1e5b44c7601728ca30e7bed371a997f9dc8f5a5\",\"pid\":\"wf-prompt\",\"eta\":[[],false,1787000040,null],\"span\":[1787000040,1787000040],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000040,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   391,
+   "{\"format\":1,\"seq\":1,\"pos\":391,\"tail\":\"d4ea0af82551eedbb91f557abfa054fc455843c4e1737c64d93d235677aea573\",\"pid\":\"wf-prompt\",\"eta\":[[],false,1787000045,null],\"span\":[1787000040,1787000045],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1787000045,\"wf-prompt\",\"claude-haiku-4-5\",5,50,500,5,\"req-w1-1\",391,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000045,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   664,
+   "{\"format\":1,\"seq\":1,\"pos\":664,\"tail\":\"865d8c97efe221b98e52d5224bb925b6b9b5369f5f0a6c2fd0479813a8b837c5\",\"pid\":\"wf-prompt\",\"eta\":[[],false,1787000100,null],\"span\":[1787000040,1787000100],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1787000045,\"wf-prompt\",\"claude-haiku-4-5\",5,50,500,5,\"req-w1-1\",391,0,0],[1787000100,\"wf-prompt\",\"claude-opus-5\",5,50,600,5,\"req-w1-2\",664,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000100,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   917,
+   "{\"format\":1,\"seq\":1,\"pos\":917,\"tail\":\"aa1a5db9ec1bf655c2ff855fee383737b58ed3f7146f40263a53710d37c75c06\",\"pid\":\"wf-prompt\",\"eta\":[[],false,1787000100,null],\"span\":[1787000040,1787000100],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1787000045,\"wf-prompt\",\"claude-haiku-4-5\",5,50,500,5,\"req-w1-1\",391,0,0],[1787000100,\"wf-prompt\",\"claude-opus-5\",5,50,600,5,\"req-w1-2\",664,0,0],[null,\"wf-prompt\",\"claude-opus-5\",5,50,700,5,\"req-w1-3\",917,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000100,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   951,
+   "{\"format\":1,\"seq\":1,\"pos\":951,\"tail\":\"129854a77aac13d00edef98086db95748dde9cbe94970c6c44d71633a706b5db\",\"pid\":\"wf-prompt\",\"eta\":[[],false,1787000100,null],\"span\":[1787000040,1787000100],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1787000045,\"wf-prompt\",\"claude-haiku-4-5\",5,50,500,5,\"req-w1-1\",391,0,0],[1787000100,\"wf-prompt\",\"claude-opus-5\",5,50,600,5,\"req-w1-2\",664,0,0],[null,\"wf-prompt\",\"claude-opus-5\",5,50,700,5,\"req-w1-3\",917,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000100,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ],
+  [
+   1083,
+   "{\"format\":1,\"seq\":1,\"pos\":1083,\"tail\":\"f432a5b139611dcca6d6bbad28fb7e2228afc14870ea479c88e1b137c9cf2cf9\",\"pid\":\"wf-prompt\",\"eta\":[[],false,1787000106,null],\"span\":[1787000040,1787000106],\"work\":[],\"pending\":[],\"tools\":[],\"waiting\":[],\"recs\":[[1787000045,\"wf-prompt\",\"claude-haiku-4-5\",5,50,500,5,\"req-w1-1\",391,0,0],[1787000100,\"wf-prompt\",\"claude-opus-5\",5,50,600,5,\"req-w1-2\",664,0,0],[null,\"wf-prompt\",\"claude-opus-5\",5,50,700,5,\"req-w1-3\",917,0,0],[1787000106,\"wf-prompt\",null,9,0,0,0,\"w1-bom\",1083,0,0]],\"wrote\":[],\"added\":0,\"removed\":0,\"compactions\":0,\"last_seen\":1787000106,\"api_error\":false,\"cwd\":\"\",\"blocks\":0,\"background\":[],\"effort\":\"\"}"
+  ]
+ ]
+}
