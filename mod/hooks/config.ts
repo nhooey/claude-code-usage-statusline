@@ -63,6 +63,17 @@ export const CONFIG = {
   // footer shape: right, it ends on the band's last column (asked
   // 2026-10-20).
   footerRuler: false,
+  // Draw the folded row of a message another agent sent, Claude Code's
+  // `› Message from @general-purpose (ctrl+o to expand)`, as the sending
+  // agent's task and the message's first line instead, `› 🤖 <task>:
+  // <line>…`, dim, cut to the terminal's width (asked 2026-10-20).  Off,
+  // Claude Code's own row.  ctrl+o shows the whole message either way.
+  agentMessageRow: true,
+  // How long the agents `$.agent.list()` gave are taken as standing, for
+  // that row to find its sender's task in: the row is drawn on every draw
+  // of the transcript, and a list each time would cross to the engine
+  // each time.  An agent starting or ending lists them again at once.
+  agentListMs: 5_000,
   // --mark-spacing and --subscript-decimals.
   markSpacing: true,
   subscriptDecimals: false,

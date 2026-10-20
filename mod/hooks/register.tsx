@@ -7,7 +7,9 @@
 //                 blank row above it;
 //   TurnDuration  the turn's closing line: the turn's receipt, blank until
 //                 it is stamped;
-//   UserMessage   under a prompt typed at the composer, its turn's tag.
+//   UserMessage   under a prompt typed at the composer, its turn's tag;
+//                 and a message another agent sent, folded, as that
+//                 agent's task and the message's first line.
 //
 // The band's 🎤 and 🎮 rows are live while a turn runs; once the turn has
 // ended and Claude Code has written its records, the mod stamps them,
@@ -33,6 +35,8 @@ import {
   newestBilled, receiptLines, receiptTurn, startLine, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
+import { messageRow, senderLabel } from '../src/agent_message.ts'
+import type { AgentLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import * as spec from '../src/spec.ts'
@@ -396,6 +400,43 @@ async function home($: $): Promise<string> {
   return (await placesFor($)).home
 }
 
+// The session's agents as `$.agent.list()` last gave them, and when, in
+// ms; 0 for never, or for a list an agent's start or end has made stale.
+// A module variable, not `$.state`: a render hook may not write state, and
+// the row that reads it is drawn afresh with each draw of the transcript.
+let agentList: readonly AgentLike[] = []
+let agentListAt = 0
+let agentListing: Promise<readonly AgentLike[]> | null = null
+
+/** The session's agents, listed again only once CONFIG.agentListMs has
+ * passed since the last list, or an agent started or ended since: a
+ * message row is drawn on every draw, and one list stands for them all.
+ * Draws that come while a list is out wait on that one.  A list that
+ * fails is logged and counts as none, so the row names the sender as
+ * Claude Code did. */
+async function agentsNow($: $): Promise<readonly AgentLike[]> {
+  const now = await $.clock.now()
+  if (agentListAt && now - agentListAt < CONFIG.agentListMs) return agentList
+  agentListing ??= (async () => {
+    try {
+      agentList = await $.agent.list()
+    } catch (err) {
+      await log($, 'no agent list', err)
+      agentList = []
+    }
+    agentListAt = await $.clock.now()
+    return agentList
+  })().finally(() => {
+    agentListing = null
+  })
+  return agentListing
+}
+
+/** An agent has started or ended: the next message row lists them again. */
+function agentsChanged(): void {
+  agentListAt = 0
+}
+
 export const register: Register = on => {
   // Where the transcript is: every classic event names it, when it comes
   // (transcriptPath says why it may not).  Only the envelope is read, and
@@ -455,7 +496,10 @@ export const register: Register = on => {
   on('turn.start', async ($, e, next) => {
     const result = await next(e)
     await start($, 'turn.start')
-    if (e.agentId) return result
+    if (e.agentId) {
+      agentsChanged()
+      return result
+    }
     turnRunning = true
     await update($, held, () => false)
     const tr = (await read($, status))?.transcript as Dict | undefined
@@ -482,6 +526,7 @@ export const register: Register = on => {
       await update($, held, () => true)
     }
     if (e.agentId) {
+      agentsChanged()
       void refresh($).catch((err) => log($, 'refresh', err))
       return result
     }
@@ -622,6 +667,31 @@ export const register: Register = on => {
         {line(Text, tag, 'tag', true)}
       </Box>
     )
+  })
+
+  // A message another agent sent, folded: Claude Code's `› Message from
+  // @general-purpose (ctrl+o to expand)` drawn as the agent's task and the
+  // message's first line (CONFIG.agentMessageRow; agent_message.ts has
+  // how the agent is found).  A tree, not a rewritten `text`: folded,
+  // Claude Code draws the sender's name and not the text, so a new text
+  // would change nothing there.  The tree is the row's own look as far as
+  // a tree can give it, one dim line led by `›`.  Unfolded (ctrl+o, or a
+  // surface that draws every row in full) and on every other row, Claude
+  // Code's own, `onScreen` and all, so the whole message is still there.
+  on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
+    const from = e.props.from
+    if (!CONFIG.agentMessageRow || !from || e.props.isExpanded) {
+      return next(e)
+    }
+    const label = senderLabel(from.name, await agentsNow($))
+    // The band's width before the viewport's, as the footer takes it: the
+    // viewport has read wider than the terminal drew (seen live
+    // 2026-10-20).  Should the row stand in from the edge, the Text's
+    // truncate-end cuts what the ellipsis did not.
+    const cols = bandCols || (e.viewport?.columns ?? 80)
+    const row = messageRow(await settingsOf($), label, e.props.text, cols)
+    const { Text } = $.ui.resolve(e)
+    return <Text dimColor wrap="truncate-end">{row}</Text>
   })
 }
 
