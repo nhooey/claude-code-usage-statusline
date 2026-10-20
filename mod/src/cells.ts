@@ -32,6 +32,7 @@ import { renderCost, renderTokens } from "./claude_render.ts";
 import {
   aCtxW, renderAgentCache, renderAgentCtx, renderAgentDiff, renderAgentEta,
   renderAgentLimit, renderAgentModel, renderAgentRate, renderAgentSplit,
+  renderInbox,
 } from "./claude_subagent_render.ts";
 import type { Piece } from "./grid.ts";
 
@@ -259,10 +260,16 @@ export function turnLabel(prompt: string): Piece[] {
 }
 
 /** 🤖💬 and the main thread's reply, or today's placeholder for none;
- * `doing`, what it is doing, goes before the reply. */
-export function mainLabel(reply: string, doing: Piece | null = null):
-  Piece[] {
-  return [piece("name.label", E_BOT + " "), ...(doing ? [doing] : []),
+ * `doing`, what it is doing, goes before the reply, and before that 📨
+ * and `inbox`, the messages waiting for the main thread's next turn, as
+ * an agent row's 📨 counts its own (agentLabel).  It never leaves the
+ * label whole: the reply after it is cut first. */
+export function mainLabel(reply: string, doing: Piece | null = null,
+  inbox = 0): Piece[] {
+  return [piece("name.label", E_BOT + " "),
+    ...(inbox ? [{ path: "state.inbox",
+      spans: [...renderInbox(inbox), span(" ")], drop: 0 }] : []),
+    ...(doing ? [doing] : []),
     reply ? piece("chat.reply", reply, "F_CHAT_B")
       : piece("chat.reply", "(no reply yet)", "F_CHAT_B", 0, true)];
 }

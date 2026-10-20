@@ -183,7 +183,11 @@ context and no ⛳ of its own.
 - **💳**: see [The rows](#the-rows).
 - **🎤** and the prompt that opened the turn, a queued message or a
   notification included, on one line.
-- **🤖** and the main thread's last reply, on one line.
+- **🤖** and the main thread's last reply, on one line. While messages
+  wait for its next turn (typed while it works, an agent's SendMessage,
+  a task notification), 📨 and how many come before the reply, as an
+  agent row's [📨](#inbox) does; the reply is cut first. The receipt's
+  🤖 row leaves it out.
 - **🎮** and where the session works: 📦 the project (in a linked git
   worktree, the main repository, since 🌿 already names the worktree's
   branch), 🌿 the branch, 📁 the current directory, 🔀 an open PR, 🎨 a
@@ -281,7 +285,7 @@ mod takes the paths in `CONFIG.hide`, and `subagentStatusLine` as flags.
 | Part | Values |
 |---|---|
 | scope | `account`, `turn`, `main` (the 🤖 row), `session`, `agent` |
-| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫; on agent rows also `kids`, `compact`, `shells`, `monitors`, `inbox`: 👶🏻 🤏 💻 📡 📨), `chat` (`prompt`, `reply`, `doing`), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `tag`: the row's name, an agent's kind, the turn's tag lines) |
+| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫; on agent rows also `kids`, `compact`, `shells`, `monitors`, `inbox`: 👶🏻 🤏 💻 📡 📨; on the 🤖 row `inbox`), `chat` (`prompt`, `reply`, `doing`), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `tag`: the row's name, an agent's kind, the turn's tag lines) |
 
 ```
 --hide account              the 💳 row

@@ -331,7 +331,8 @@ function doingCell(st: Settings, tr: Transcript, now: number):
  * 🧩 🎯 `own_tok_*` and `own_cache_pct`; ⌛ its age from `start_s` and the
  * split off `busy_s`, `tool_s` and `blocked_s`, as today's ⌛ row
  * partitions it; 💾 its own lines.  Running, the label says what it is
- * doing before its last reply. */
+ * doing before its last reply; its 📨 counts the messages queued for its
+ * next turn, `queued`. */
 function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   sessPct: string, weekPct: string, opts: BandOpts): Row {
   const pay = decodePayload(fig.payload);
@@ -364,7 +365,11 @@ function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   // the reply ends where 🎤's model starts.
   const doing = opts.phase === "running" ? doingCell(st, tr, now) : null;
   Object.assign(cells, { model: [], rate: doing ?? [] });
-  return { scope: "main", label: mainLabel(tr.asst_text), cells };
+  // 📨 only while it runs too: the receipt stamps this row once the turn
+  // has ended, and a count frozen there would be gone by the next turn.
+  const inbox = opts.phase === "running" ? tr.queued : 0;
+  return { scope: "main", label: mainLabel(tr.asst_text, null, inbox),
+    cells };
 }
 
 /** 🎮: the main thread and every agent, summed.  💰 💾 the accounting's

@@ -54,7 +54,8 @@ const COLS = [200, 155, 120, 80];
 // Each scope's figures hidden, a group on every row, label pieces, and a
 // whole scope with a label part of another, at one width.
 const HIDES: readonly (readonly string[])[] = [
-  ["*.work", "*.state.rate"], ["session.workspace", "*.clock.time"],
+  ["*.work", "*.state.rate", "main.state.inbox"],
+  ["session.workspace", "*.clock.time"],
   ["turn", "main.chat", "*.plan"],
 ];
 const HIDE_COLS = 155;
