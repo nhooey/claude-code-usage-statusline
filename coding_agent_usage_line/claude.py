@@ -2524,8 +2524,8 @@ def main_subagent(argv: Sequence[str], raw: str) -> int:
     else:
         # The payload's `columns` is the terminal's width less
         # PANEL_COLUMNS_SHORT, and the rows are laid out for the terminal's,
-        # so they line up with the band's (agents/plans/redesign.md, "The
-        # whole screen").
+        # so they line up with the band's
+        # (agents/plans/_implemented/redesign.md, "The whole screen").
         c = pay.get("columns")
         cols = (int(c) + PANEL_COLUMNS_SHORT
                 if isinstance(c, (int, float)) and c > 0 else term_cols())
@@ -3195,14 +3195,15 @@ modes:
   --mode subagent    read the agent panel's task list on stdin, print one
                      {"id", "content"} line per task -- the subagentStatusLine
                      setting.  Each row is laid out on the redesigned grid
-                     (agents/plans/redesign.md) for the terminal's width, the
-                     payload's columns plus 6: the kind and its phase, the
-                     name (or the description, where the panel has no name)
-                     and what it is doing, then the grid's columns: model,
-                     what it is doing or its token rate, cost, context,
-                     tokens, cache rate, elapsed, ETA and split, its share
-                     of the two plan windows, and lines written.  --cols,
-                     --hide and --usage-source apply.
+                     (agents/plans/_implemented/redesign.md) for the
+                     terminal's width, the payload's columns plus 6: the
+                     kind and its phase, the name (or the description,
+                     where the panel has no name) and what it is doing,
+                     then the grid's columns: model, what it is doing or
+                     its token rate, cost, context, tokens, cache rate,
+                     elapsed, ETA and split, its share of the two plan
+                     windows, and lines written.  --cols, --hide and
+                     --usage-source apply.
   --selftest         draw specimen rows and measure them against the terminal
 
 options (all modes):

@@ -1297,8 +1297,8 @@ export const MODEL_FAMILIES = ["Opus", "Sonnet", "Haiku", "Fable", "Mythos"];
 //
 // One scope per row, one column per metric: the band, the receipt and the
 // agent panel draw these columns in this order on every row.  The design is
-// agents/plans/redesign.md's; mod/tools/layout-mockup.ts draws it from made-up
-// figures.  Nothing the program draws today reads these yet.
+// agents/plans/_implemented/redesign.md's; mod/tools/layout-mockup.ts draws
+// it from made-up figures.  Nothing the program draws today reads these yet.
 // ════════════════════════════════════════════════════════════════════════════
 
 // The five columns Claude Code keeps for the band's [-] button.  The panel's
