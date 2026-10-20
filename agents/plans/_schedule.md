@@ -30,7 +30,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 
 | Node | What | Logical edges in | File edges in | Main files |
 |---|---|---|---|---|
-| `CA` | Calibration keyed by source, account id and window; old files swept | none (in flight) | none | `sources.py`, `claude.py` (calibration, tracker reading), `mod/src/sources.ts`, `mod/src/claude_calib.ts` |
+| `CA` | **Done 2026-10-20 (defde44).** Calibration keyed by source, account id and window; old files swept | none (in flight) | none | `sources.py`, `claude.py` (calibration, tracker reading), `mod/src/sources.ts`, `mod/src/claude_calib.ts` |
 | `CM1` | **Done 2026-10-20.** The options spec, generated | none | none | `spec/options.jsonc`, `tools/gen-spec.py`, `options_spec.{py,ts}`, `docs/options.md` |
 | `CM2` | The Python parses flags from the spec | `CM1` | none | `cli.py`, `tests/port-cli.py` |
 | `CM3` | The Python reads `Options`, not `argv` | `CM2` | `CA`, `RT9` | `claude.py` (every `_flag`), the Codex path |
@@ -44,7 +44,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `RT8` | The panel on the agent folds | `RT7` | `CM3` | `claude.py` (`read_agent_usage`), `claude_records.{py,ts}` (agent fold), `spec/state.jsonc`, `mod/hooks/edges.ts` |
 | `RT8i` | The inbox moves to the folds | `RT8` | none | `claude_records.{py,ts}` (`inbox_counts`), `claude.py` (the panel's inbox) |
 | `RT9` | The window costs, one file | none | `CA` | `claude.py` (`_window_costs`), `mod/src/claude_calib_node.ts`, `spec/state.jsonc` |
-| `OPS` | Sweep the old `-ts-` calibration files | `CA` | none | `~/.local/state/coding-agent-usage-line/` (by hand) |
+| `OPS` | **Done 2026-10-20.** Sweep the old `-ts-` calibration files | `CA` | none | `~/.local/state/coding-agent-usage-line/` (by hand) |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
