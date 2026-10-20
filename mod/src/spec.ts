@@ -377,21 +377,21 @@ export const E_PCT = "٪";            // percent sign — U+066A ARABIC PERCENT 
                                      // East_Asian_Width Wide — smaller as drawings, twice the
                                      // width as cells.
 
-export const F_BLU = "#64aaff";                          // blue        — 📁 the cwd
+export const F_BLU = "#00afff";                          // blue        — 📁 the cwd
                                                          //  on the 🎮 row, an agent's
                                                          //  name
-export const F_PROJ = "#ff8c5a";                         // coral       — 📦 project
+export const F_PROJ = "#ffafaf";                         // coral       — 📦 project
                                                          //  name, apart from 📁's
                                                          //  blue beside it (decided
                                                          //  2026-10-19)
-export const F_BLU2 = "#4673b9";                         // dark blue   — pwd
-export const F_GRN = "#78c850";                          // green       — healthy / clean
-export const F_AMB = "#ffc800";                          // amber       — *_WARN thresholds
-export const F_RED = "#ff5a5a";                          // red         — *_CRIT thresholds
-export const F_CYN = "#50c8dc";                          // cyan        — PR, output style
-export const F_PUR = "#c882ff";                          // purple      — model
-export const F_TUP = "#78c8dc";                          // teal        — ▴ input tokens
-export const F_RATE = "#64e1b4";                         // mint        — 🛫 tokens per second.
+export const F_BLU2 = "#00afd7";                         // dark blue   — pwd
+export const F_GRN = "#00af00";                          // green       — healthy / clean
+export const F_AMB = "#ffaf00";                          // amber       — *_WARN thresholds
+export const F_RED = "#d70000";                          // red         — *_CRIT thresholds
+export const F_CYN = "#00d7ff";                          // cyan        — PR, output style
+export const F_PUR = "#d7afff";                          // purple      — model
+export const F_TUP = "#afd7d7";                          // teal        — ▴ input tokens
+export const F_RATE = "#00d7af";                         // mint        — 🛫 tokens per second.
                                                          // Its own hue since 2026-09-13: it
                                                          // was F_TUP, the ▴ figure's, and on
                                                          // the status line it now sits one
@@ -406,12 +406,12 @@ export const F_RATE = "#64e1b4";                         // mint        — 🛫
                                                          // rate is never in.  F_PUR2, the
                                                          // dark purple of the model's second
                                                          // field, went with 📏 the same day.
-export const F_TDN = "#dc8cc8";                          // pink        — ▾ output tokens
-export const F_YEL = "#ffd23c";                          // yellow      — cost (never tiered)
-export const F_PNK = "#ff78be";                          // hot pink    — context %
-export const F_PNK2 = "#b25485";                         // dark pink   — context size
-export const F_CRM = "#d3d7cf";                          // cream       — default text
-export const F_PRW = "#8c96ff";                          // periwinkle  — the ⌛ row.  It was
+export const F_TDN = "#ffafd7";                          // pink        — ▾ output tokens
+export const F_YEL = "#ffd700";                          // yellow      — cost (never tiered)
+export const F_PNK = "#ff00af";                          // hot pink    — context %
+export const F_PNK2 = "#af00af";                         // dark pink   — context size
+export const F_CRM = "#d7d7af";                          // cream       — default text
+export const F_PRW = "#afafff";                          // periwinkle  — the ⌛ row.  It was
                                                          //  orange, and orange had the same
                                                          //  problem F_AMB has: amber means "a
                                                          //  threshold was crossed" everywhere
@@ -421,27 +421,29 @@ export const F_PRW = "#8c96ff";                          // periwinkle  — the 
                                                          //  short way from that reading; blue
                                                          //  cannot be given it at all.
                                                          //
-                                                         //  Not F_BLU (📦) or F_BLU2 (📁),
-                                                         //  the two blues already on row 3.
-                                                         //  20.7 ΔE from the nearer, which is
-                                                         //  about the separation those two
-                                                         //  already keep from each other
-                                                         //  (21.7) while sitting side by
-                                                         //  side; these sit at opposite ends
-                                                         //  of the row.  L* 65 against the
-                                                         //  orange's 72, so the row keeps
-                                                         //  roughly the weight it read at.
-export const F_ETA = "#ff4dff";                          // magenta     — ⛳ time left.  It was
+                                                         //  Not F_BLU or F_BLU2 (📁), the
+                                                         //  two blues already on row 3.
+                                                         //  29 ΔE from the nearer, more than
+                                                         //  the separation those two keep
+                                                         //  from each other (24) while
+                                                         //  sitting side by side; these sit
+                                                         //  at opposite ends of the row.
+                                                         //  L* 74, about the orange's 72, so
+                                                         //  the row keeps the weight it read
+                                                         //  at.  13 ΔE from F_PUR, the
+                                                         //  nearest the palette allows.
+export const F_ETA = "#ff00ff";                          // magenta     — ⛳ time left.  It was
                                                          //  F_PRW, the ⌛ beside it, and the
                                                          //  two figures read as one.  Picked
                                                          //  as the cool hue furthest from
-                                                         //  every other F_ colour here: 36 ΔE
-                                                         //  from the nearest, F_PUR (🤖), and
-                                                         //  62 from F_PRW.  Not warm, for the
+                                                         //  every other F_ colour here: 34 ΔE
+                                                         //  from the nearest, F_PNK2, and 84
+                                                         //  from F_PRW.  Not warm, for the
                                                          //  reason F_PRW gives; the late "+"
-                                                         //  stays F_AMB.  L* 65, as F_PRW's,
-                                                         //  so the ⌛ row keeps its weight.
-export const F_OVER = "#ff2828";                         // bright red  — an agent row's ⛳
+                                                         //  stays F_AMB.  L* 60, near
+                                                         //  F_PRW's, so the ⌛ row keeps its
+                                                         //  weight.
+export const F_OVER = "#ff0000";                         // bright red  — an agent row's ⛳
                                                          //  past a report of ZERO.  An
                                                          //  estimate that ran out is amber:
                                                          //  the agent guessed short.  This
@@ -450,22 +452,28 @@ export const F_OVER = "#ff2828";                         // bright red  — an a
                                                          //  fact, so it is redder than F_RED
                                                          //  and not that row hue itself.
 export const F_SPIN = F_RED;                             // the agent row's E_SPIN spinner
-export const F_CHAT_U = "#a6aa9e";                       // warm grey   — user chat row
-export const F_CHAT_B = "#707e8c";                       // cool slate  — assistant chat row
-export const B_DRK = "#0c0e12";                          // near-black background, chat rows
-export const B_MSG = "#5f005f";                          // dark purple background, the
-                                                         //  row of a message another
-                                                         //  agent sent, apart from the
-                                                         //  user's dark blue prompts
-                                                         //  (asked 2026-10-20).  A
-                                                         //  256-palette entry, 53,
-                                                         //  #5f005f: Claude Code draws
-                                                         //  in 256 colours under tmux,
-                                                         //  rounding each channel to
-                                                         //  0, 95, 135…, and off the
-                                                         //  palette two dark colours
-                                                         //  drew as one teal (seen live
-                                                         //  2026-10-20)
+export const F_CHAT_U = "#a8a8a8";                       // light grey  — user chat row
+export const F_CHAT_B = "#767676";                       // mid grey    — assistant chat row.
+                                                         //  Both neutral: the palette has no
+                                                         //  warm or cool grey, so lightness
+                                                         //  alone tells them apart.
+export const B_DRK = "#121212";                          // near-black background, chat rows
+export const B_MSG = "#af00af";                          // purple background, the row
+                                                         //  of a message another agent
+                                                         //  sent, apart from the user's
+                                                         //  dark blue prompts (asked
+                                                         //  2026-10-20).  The darkest
+                                                         //  purple the palette has: no
+                                                         //  colour channel can be 95 or
+                                                         //  135 (see the palette note
+                                                         //  in tools/gen-spec.py), and
+                                                         //  off the palette two dark
+                                                         //  colours drew as one teal
+                                                         //  under tmux (seen live
+                                                         //  2026-10-20).  White on it
+                                                         //  is 6.1:1.  It shares its
+                                                         //  entry with F_PNK2, a
+                                                         //  foreground never drawn on it.
 export const F_MSG = "#ffffff";                          // white, that row's text on
                                                          //  B_MSG (asked 2026-10-20)
 
@@ -501,7 +509,8 @@ export const F_SHARE = F_AMB;
 // itself.  MEASURED, not matched by eye: Apple Color Emoji stores 🔜 as a PNG
 // in its sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
 // every strike from 20ppem to 160 — a flat neutral grey, no hue at all, which
-// is not what an emoji named SOON looks like it should be.  L* 32.3.
+// is not what an emoji named SOON looks like it should be.  L* 32.3.  This
+// is the palette's nearest grey to it, rgb(78,78,78), 0.9 ΔE away.
 //
 // It is the mark that takes this and not the figure.  On the two limit rows,
 // the countdown's figure carries the row's colour and 🔜 paints itself this
@@ -514,7 +523,7 @@ export const F_SHARE = F_AMB;
 // It is dim on purpose and it is dim in fact: 2.2:1 against the chat rows'
 // background, which is under every legibility threshold there is.  That is the
 // 🔜's own contrast — this only stops Σ from being the exception.
-export const F_SUM = "#4c4c4c";                         // the SOON arrow's ink, sampled
+export const F_SUM = "#4e4e4e";                         // the SOON arrow's ink, sampled
 
 // The rules between the grid's columns, deliberately the same ink as F_SUM.
 // One chrome level and not two: a rule and a receding mark are the same kind

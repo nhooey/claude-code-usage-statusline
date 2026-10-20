@@ -1,5 +1,5 @@
-{"id": "b1", "content": "🐚🟢 \u001b[38;2;100;170;255mnpm test\u001b[0m                                       ⌛\u001b[2m\u001b[38;2;140;150;255m  1m\u001b[0m"}
-{"id": "b2", "content": "🐚⚫ \u001b[38;2;100;170;255msleep 5\u001b[0m"}
-{"id": "ra", "content": "🌐🟡 \u001b[38;2;100;170;255mRemote\u001b[0m"}
-{"id": "xx", "content": "👥\u001b[38;2;255;200;0mpa\u001b[0m \u001b[38;2;100;170;255mOddity\u001b[0m"}
-{"id": "nn", "content": "👥🟢 \u001b[38;2;100;170;255mA description for a name\u001b[0m                       ⌛\u001b[2m\u001b[38;2;140;150;255m  5s\u001b[0m"}
+{"id": "b1", "content": "🐚🟢 \u001b[38;2;0;175;255mnpm test\u001b[0m                                       ⌛\u001b[2m\u001b[38;2;175;175;255m  1m\u001b[0m"}
+{"id": "b2", "content": "🐚⚫ \u001b[38;2;0;175;255msleep 5\u001b[0m"}
+{"id": "ra", "content": "🌐🟡 \u001b[38;2;0;175;255mRemote\u001b[0m"}
+{"id": "xx", "content": "👥\u001b[38;2;255;175;0mpa\u001b[0m \u001b[38;2;0;175;255mOddity\u001b[0m"}
+{"id": "nn", "content": "👥🟢 \u001b[38;2;0;175;255mA description for a name\u001b[0m                       ⌛\u001b[2m\u001b[38;2;175;175;255m  5s\u001b[0m"}

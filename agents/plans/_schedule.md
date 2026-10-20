@@ -52,7 +52,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CK1` | **Built 2026-10-20, pending the user's live trial.** The clickable-rows trial: 🎤 and the agent message row as Buttons, tried live | none | none | `mod/hooks/register.tsx` (row drawing, `UserMessage` hooks), `mod/mod-tests/` |
 | `CK2` | The targets: `requestId`s recorded, 🎤 and 🤖 pressable in the band and the receipt | `CK1` (and the user's live report) | none | `mod/hooks/register.tsx`, `mod/src/agent_message.ts` |
 | `CK3` | Docs for the pressable rows | `CK2` | none | `docs/layout.md` |
-| `PL1` | Every default colour snapped to a 256-palette entry, reviewed by eye; gen-spec's check | none | `RT9` | `spec/layout.jsonc`, `tools/gen-spec.py`, `spec.{py,ts}`, every colour fixture and golden |
+| `PL1` | **Done 2026-10-20.** Every default colour snapped to a 256-palette entry, reviewed by eye; gen-spec's check | none | `RT9` | `spec/layout.jsonc`, `tools/gen-spec.py`, `spec.{py,ts}`, every colour fixture and golden |
 | `PL2` | The doc note on themes and `CLAUDE_CODE_TMUX_TRUECOLOR` | `PL1` | none | `docs/` |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,

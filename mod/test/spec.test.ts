@@ -9,7 +9,7 @@ test("glyphs are literals", () => {
 });
 
 test("colours are hex, and an alias is its target's value", () => {
-  assert.equal(spec.F_BLU, "#64aaff");
+  assert.equal(spec.F_BLU, "#00afff");
   assert.equal(spec.F_SPIN, spec.F_RED);
 });
 

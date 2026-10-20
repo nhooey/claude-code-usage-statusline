@@ -377,21 +377,21 @@ E_PCT = "٪"            # percent sign — U+066A ARABIC PERCENT SIGN, not ASCII
                        # East_Asian_Width Wide — smaller as drawings, twice the
                        # width as cells.
 
-F_BLU = "\033[38;2;100;170;255m"           # blue        — 📁 the cwd
+F_BLU = "\033[38;2;0;175;255m"             # blue        — 📁 the cwd
                                            #  on the 🎮 row, an agent's
                                            #  name
-F_PROJ = "\033[38;2;255;140;90m"           # coral       — 📦 project
+F_PROJ = "\033[38;2;255;175;175m"          # coral       — 📦 project
                                            #  name, apart from 📁's
                                            #  blue beside it (decided
                                            #  2026-10-19)
-F_BLU2 = "\033[38;2;70;115;185m"           # dark blue   — pwd
-F_GRN = "\033[38;2;120;200;80m"            # green       — healthy / clean
-F_AMB = "\033[38;2;255;200;0m"             # amber       — *_WARN thresholds
-F_RED = "\033[38;2;255;90;90m"             # red         — *_CRIT thresholds
-F_CYN = "\033[38;2;80;200;220m"            # cyan        — PR, output style
-F_PUR = "\033[38;2;200;130;255m"           # purple      — model
-F_TUP = "\033[38;2;120;200;220m"           # teal        — ▴ input tokens
-F_RATE = "\033[38;2;100;225;180m"          # mint        — 🛫 tokens per second.
+F_BLU2 = "\033[38;2;0;175;215m"            # dark blue   — pwd
+F_GRN = "\033[38;2;0;175;0m"               # green       — healthy / clean
+F_AMB = "\033[38;2;255;175;0m"             # amber       — *_WARN thresholds
+F_RED = "\033[38;2;215;0;0m"               # red         — *_CRIT thresholds
+F_CYN = "\033[38;2;0;215;255m"             # cyan        — PR, output style
+F_PUR = "\033[38;2;215;175;255m"           # purple      — model
+F_TUP = "\033[38;2;175;215;215m"           # teal        — ▴ input tokens
+F_RATE = "\033[38;2;0;215;175m"            # mint        — 🛫 tokens per second.
                                            # Its own hue since 2026-09-13: it
                                            # was F_TUP, the ▴ figure's, and on
                                            # the status line it now sits one
@@ -406,12 +406,12 @@ F_RATE = "\033[38;2;100;225;180m"          # mint        — 🛫 tokens per sec
                                            # rate is never in.  F_PUR2, the
                                            # dark purple of the model's second
                                            # field, went with 📏 the same day.
-F_TDN = "\033[38;2;220;140;200m"           # pink        — ▾ output tokens
-F_YEL = "\033[38;2;255;210;60m"            # yellow      — cost (never tiered)
-F_PNK = "\033[38;2;255;120;190m"           # hot pink    — context %
-F_PNK2 = "\033[38;2;178;84;133m"           # dark pink   — context size
-F_CRM = "\033[38;2;211;215;207m"           # cream       — default text
-F_PRW = "\033[38;2;140;150;255m"           # periwinkle  — the ⌛ row.  It was
+F_TDN = "\033[38;2;255;175;215m"           # pink        — ▾ output tokens
+F_YEL = "\033[38;2;255;215;0m"             # yellow      — cost (never tiered)
+F_PNK = "\033[38;2;255;0;175m"             # hot pink    — context %
+F_PNK2 = "\033[38;2;175;0;175m"            # dark pink   — context size
+F_CRM = "\033[38;2;215;215;175m"           # cream       — default text
+F_PRW = "\033[38;2;175;175;255m"           # periwinkle  — the ⌛ row.  It was
                                            #  orange, and orange had the same
                                            #  problem F_AMB has: amber means "a
                                            #  threshold was crossed" everywhere
@@ -421,27 +421,29 @@ F_PRW = "\033[38;2;140;150;255m"           # periwinkle  — the ⌛ row.  It wa
                                            #  short way from that reading; blue
                                            #  cannot be given it at all.
                                            #
-                                           #  Not F_BLU (📦) or F_BLU2 (📁),
-                                           #  the two blues already on row 3.
-                                           #  20.7 ΔE from the nearer, which is
-                                           #  about the separation those two
-                                           #  already keep from each other
-                                           #  (21.7) while sitting side by
-                                           #  side; these sit at opposite ends
-                                           #  of the row.  L* 65 against the
-                                           #  orange's 72, so the row keeps
-                                           #  roughly the weight it read at.
-F_ETA = "\033[38;2;255;77;255m"            # magenta     — ⛳ time left.  It was
+                                           #  Not F_BLU or F_BLU2 (📁), the
+                                           #  two blues already on row 3.
+                                           #  29 ΔE from the nearer, more than
+                                           #  the separation those two keep
+                                           #  from each other (24) while
+                                           #  sitting side by side; these sit
+                                           #  at opposite ends of the row.
+                                           #  L* 74, about the orange's 72, so
+                                           #  the row keeps the weight it read
+                                           #  at.  13 ΔE from F_PUR, the
+                                           #  nearest the palette allows.
+F_ETA = "\033[38;2;255;0;255m"             # magenta     — ⛳ time left.  It was
                                            #  F_PRW, the ⌛ beside it, and the
                                            #  two figures read as one.  Picked
                                            #  as the cool hue furthest from
-                                           #  every other F_ colour here: 36 ΔE
-                                           #  from the nearest, F_PUR (🤖), and
-                                           #  62 from F_PRW.  Not warm, for the
+                                           #  every other F_ colour here: 34 ΔE
+                                           #  from the nearest, F_PNK2, and 84
+                                           #  from F_PRW.  Not warm, for the
                                            #  reason F_PRW gives; the late "+"
-                                           #  stays F_AMB.  L* 65, as F_PRW's,
-                                           #  so the ⌛ row keeps its weight.
-F_OVER = "\033[38;2;255;40;40m"            # bright red  — an agent row's ⛳
+                                           #  stays F_AMB.  L* 60, near
+                                           #  F_PRW's, so the ⌛ row keeps its
+                                           #  weight.
+F_OVER = "\033[38;2;255;0;0m"              # bright red  — an agent row's ⛳
                                            #  past a report of ZERO.  An
                                            #  estimate that ran out is amber:
                                            #  the agent guessed short.  This
@@ -450,22 +452,28 @@ F_OVER = "\033[38;2;255;40;40m"            # bright red  — an agent row's ⛳
                                            #  fact, so it is redder than F_RED
                                            #  and not that row hue itself.
 F_SPIN = F_RED                             # the agent row's E_SPIN spinner
-F_CHAT_U = "\033[38;2;166;170;158m"        # warm grey   — user chat row
-F_CHAT_B = "\033[38;2;112;126;140m"        # cool slate  — assistant chat row
-B_DRK = "\033[48;2;12;14;18m"              # near-black background, chat rows
-B_MSG = "\033[48;2;95;0;95m"               # dark purple background, the
-                                           #  row of a message another
-                                           #  agent sent, apart from the
-                                           #  user's dark blue prompts
-                                           #  (asked 2026-10-20).  A
-                                           #  256-palette entry, 53,
-                                           #  #5f005f: Claude Code draws
-                                           #  in 256 colours under tmux,
-                                           #  rounding each channel to
-                                           #  0, 95, 135…, and off the
-                                           #  palette two dark colours
-                                           #  drew as one teal (seen live
-                                           #  2026-10-20)
+F_CHAT_U = "\033[38;2;168;168;168m"        # light grey  — user chat row
+F_CHAT_B = "\033[38;2;118;118;118m"        # mid grey    — assistant chat row.
+                                           #  Both neutral: the palette has no
+                                           #  warm or cool grey, so lightness
+                                           #  alone tells them apart.
+B_DRK = "\033[48;2;18;18;18m"              # near-black background, chat rows
+B_MSG = "\033[48;2;175;0;175m"             # purple background, the row
+                                           #  of a message another agent
+                                           #  sent, apart from the user's
+                                           #  dark blue prompts (asked
+                                           #  2026-10-20).  The darkest
+                                           #  purple the palette has: no
+                                           #  colour channel can be 95 or
+                                           #  135 (see the palette note
+                                           #  in tools/gen-spec.py), and
+                                           #  off the palette two dark
+                                           #  colours drew as one teal
+                                           #  under tmux (seen live
+                                           #  2026-10-20).  White on it
+                                           #  is 6.1:1.  It shares its
+                                           #  entry with F_PNK2, a
+                                           #  foreground never drawn on it.
 F_MSG = "\033[38;2;255;255;255m"           # white, that row's text on
                                            #  B_MSG (asked 2026-10-20)
 
@@ -501,7 +509,8 @@ F_SHARE = F_AMB
 # itself.  MEASURED, not matched by eye: Apple Color Emoji stores 🔜 as a PNG
 # in its sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
 # every strike from 20ppem to 160 — a flat neutral grey, no hue at all, which
-# is not what an emoji named SOON looks like it should be.  L* 32.3.
+# is not what an emoji named SOON looks like it should be.  L* 32.3.  This
+# is the palette's nearest grey to it, rgb(78,78,78), 0.9 ΔE away.
 #
 # It is the mark that takes this and not the figure.  On the two limit rows,
 # the countdown's figure carries the row's colour and 🔜 paints itself this
@@ -514,7 +523,7 @@ F_SHARE = F_AMB
 # It is dim on purpose and it is dim in fact: 2.2:1 against the chat rows'
 # background, which is under every legibility threshold there is.  That is the
 # 🔜's own contrast — this only stops Σ from being the exception.
-F_SUM = "\033[38;2;76;76;76m"             # the SOON arrow's ink, sampled
+F_SUM = "\033[38;2;78;78;78m"             # the SOON arrow's ink, sampled
 
 # The rules between the grid's columns, deliberately the same ink as F_SUM.
 # One chrome level and not two: a rule and a receding mark are the same kind

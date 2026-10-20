@@ -219,8 +219,91 @@ def read(path):
         if alias is not None and alias not in names:
             raise SystemExit("%s: %s is the same as %s, which is not "
                              "written above it" % (NAME, m.key, alias))
+        if m.key[:2] in ("F_", "B_") and alias is None:
+            check_colour(m)
         names.add(m.key)
     return root
+
+
+# ── The 256-colour palette ──────────────────────────────────────────────────
+#
+# Claude Code draws in 256 colours under tmux, and turns each colour into
+# an index the way chalk's rgbToAnsi256 does: a grey (r == g == b) onto the
+# ramp 232-255 by round((v - 8) / 247 * 24), anything else onto the cube by
+# round(v / 255 * 5) a channel.  The terminal then draws that index from
+# the xterm palette, whose cube steps are 0, 95, 135, 175, 215, 255 and not
+# the even fifths the rounding assumes: 95 rounds to the 135 step and 135 to
+# the 175 one.  So a colour draws the same in true colour and in 256 only if
+# it is an xterm entry the rounding gives back: a cube colour whose channels
+# are all 0, 175, 215 or 255, black, white, or a ramp grey from 8 to 178.
+
+CUBE = (0, 95, 135, 175, 215, 255)
+
+
+def ansi256(rgb):
+    """The index Claude Code's renderer gives rgb under 256 colours."""
+    r, g, b = rgb
+    if r == g == b:
+        if r < 8:
+            return 16
+        if r > 248:
+            return 231
+        return round((r - 8) / 247 * 24) + 232
+    return 16 + 36 * round(r / 255 * 5) + 6 * round(g / 255 * 5) \
+        + round(b / 255 * 5)
+
+
+def xterm(index):
+    """The colour the terminal draws for a 256-colour index from 16 up."""
+    if index >= 232:
+        return (8 + 10 * (index - 232),) * 3
+    i = index - 16
+    return CUBE[i // 36], CUBE[i // 6 % 6], CUBE[i % 6]
+
+
+# The entries that come back as themselves, by index.
+PALETTE = [i for i in range(16, 256) if ansi256(xterm(i)) == i]
+
+
+def lab(rgb):
+    """CIE L*a*b* (D65) of an sRGB colour."""
+    def linear(v):
+        v /= 255
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b = map(linear, rgb)
+    x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+    y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+
+    def f(t):
+        return t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+    return 116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))
+
+
+def delta_e(a, b):
+    """CIE76 distance between two sRGB colours."""
+    return sum((p - q) ** 2 for p, q in zip(lab(a), lab(b))) ** 0.5
+
+
+def nearest(rgb, n=1):
+    """The n palette indices closest to rgb, nearest first."""
+    return sorted(PALETTE, key=lambda i: delta_e(rgb, xterm(i)))[:n]
+
+
+def check_colour(m):
+    """Refuse an F_ or B_ colour that is not a palette entry."""
+    match = RGB.match(m.value) if m.kind == "str" else None
+    if not match:
+        raise SystemExit('%s: %s is not written "rgb(r, g, b)"'
+                         % (NAME, m.key))
+    rgb = tuple(int(x) for x in match.groups())
+    if ansi256(rgb) not in PALETTE or xterm(ansi256(rgb)) != rgb:
+        i = nearest(rgb)[0]
+        raise SystemExit(
+            "%s: %s rgb%s is not on the 256-colour palette, so it draws "
+            "as rgb%s under tmux; the nearest entry is %d, "
+            '"rgb(%d, %d, %d)"' % (NAME, m.key, rgb,
+                                   xterm(ansi256(rgb)), i, *xterm(i)))
 
 
 def same_as(node):
