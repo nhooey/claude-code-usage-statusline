@@ -42,8 +42,8 @@ has it, highest first.
 
 The mod has no flags layer, so for it a project file is the highest. A flag
 the panel's command gives therefore beats a project file for the panel but
-not for the band; see [Open questions](#open-questions) on what to do with
-the flags that must agree.
+not for the band; see [Decided](#decided-2026-10-20), 1, for the flags
+that must agree.
 
 ### One options spec, generated into both ports
 
@@ -118,8 +118,8 @@ shape.
 | Layer | Path | Committed |
 |---|---|---|
 | user-global | `$XDG_CONFIG_HOME/coding-agent-usage-line/config.jsonc`, else `~/.config/coding-agent-usage-line/config.jsonc` | n/a |
-| project | `<root>/.coding-agent-usage-line.jsonc` | yes: what the project wants for everyone |
-| project, local | `<root>/.coding-agent-usage-line.local.jsonc` | no: one person's, in `.git/info/exclude` or a global ignore |
+| project | `<root>/.config/coding-agent-usage-line/config.jsonc` | yes: what the project wants for everyone |
+| project, local | `<root>/.config/coding-agent-usage-line/config.local.jsonc` | no: one person's, ignored by `/.config/**/*.local.*` |
 
 The local file sits above the committed one within the project layer, as
 Claude Code's own `.claude/settings.local.json` sits above
@@ -147,7 +147,8 @@ pays for `git` in the status line.
 The band and the panel start from different fields, but within one checkout
 both walks stop at the same `.git`, so they find the same files. A worktree
 is its own checkout: it sees the committed file, which it checks out, but
-not the main checkout's local file; see [Open questions](#open-questions).
+not the main checkout's local file, so it reads that one when it has none
+of its own; see [Decided](#decided-2026-10-20), 6.
 
 **Reading them in the mod.** Through `$.fs`, with no Node: `$.fs.stat` for
 each candidate path in the walk, `$.fs.read` for the ones found. A config
@@ -242,7 +243,7 @@ applies when its timer is next set, and its record says
 
 | `CONFIG` field | Option | Ports | Flag | Notes |
 |---|---|---|---|---|
-| `usageSource` | `usage-source` | both | `--usage-source` | the env var stays, see [Open questions](#open-questions) |
+| `usageSource` | `usage-source` | both | `--usage-source` | the env var retires, see [Decided](#decided-2026-10-20), 2 |
 | `account` | `account` | both | `--account` | |
 | `period` | `account-period` | both | `--account-period` | renamed to the flag's name |
 | `hide` | `hide` | both | `--hide`, repeatable | one list for the band and the panel; the comment telling the user to keep them in step goes |
@@ -322,9 +323,9 @@ negative. Neither is safe, so the reads move to one merged `Options` value:
    `_flag(argv, "--x")` and `"--no-x" in argv` becomes `options["x"]`.
 3. `_flag` and the forwarding loop in `cli.main` are deleted.
 
-`CODING_AGENT_USAGE_LINE_USAGE_SOURCE` is read once, in step 1, as its own
-layer (see [Open questions](#open-questions)), instead of at five call
-sites as now.
+`CODING_AGENT_USAGE_LINE_USAGE_SOURCE` retires (see
+[Decided](#decided-2026-10-20), 2): its five call sites read the merged
+option instead.
 
 ### The engine's plugin options, considered
 
@@ -440,8 +441,8 @@ and `npm test`.
 
 1. The user-global file has no `sticky`, so the default, none, holds
    everywhere else.
-2. This repository gets `.coding-agent-usage-line.local.jsonc` (or the
-   committed file; see [Open questions](#open-questions)):
+2. This repository gets `.config/coding-agent-usage-line/config.local.jsonc`
+   (see [Decided](#decided-2026-10-20), 8):
 
    ```jsonc
    {
@@ -483,8 +484,7 @@ and `npm test`.
 6. **The project files,** XDG style inside the project (pi0's `config-dir`
    proposal, which cosmiconfig also searches):
    `.config/coding-agent-usage-line/config.jsonc`, committed, and
-   `config.local.jsonc` beside it, one person's own. This supersedes the
-   root dotfiles in "Files" above. A worktree that has no local file
+   `config.local.jsonc` beside it, one person's own. A worktree that has no local file
    reads the main checkout's, found through the git common dir, so
    settings made once follow every worktree.
 7. **The ignore line** in the repository's `.gitignore`, added with the
