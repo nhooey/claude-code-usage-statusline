@@ -1730,6 +1730,12 @@ export function liveAgentEtas(records: readonly Rec[],
   etas: readonly AgentEta[]): AgentEta[] {
   const ends = new Map<string, number>();
   for (const r of records) scanAgentEnd(r, ends);
+  return liveAgentEtasOf(ends, etas);
+}
+
+/** liveAgentEtas with the main transcript's agent ends already scanned. */
+export function liveAgentEtasOf(ends: ReadonlyMap<string, number>,
+  etas: readonly AgentEta[]): AgentEta[] {
   return etas.filter(([, last, aid]) => !(aid !== undefined &&
     ends.has(aid) && last !== null && ends.get(aid)! >= last))
     .map(([f, last]) => [f, last]);
@@ -1814,67 +1820,298 @@ export function agentDiff(records: readonly Rec[]): [number, number] {
  * counts to it; see openToolSpans.  Context size does NOT either: it is a
  * reading of THIS window, the one 🧠 is watched to decide when to compact.
  *
- * The pure core; readTranscript reads the file and the agents. */
+ * The pure core; readTranscript reads the file and the agents.  A fold of
+ * every record, finished: see foldTranscript and transcriptFinish. */
 export function transcriptOf(records: readonly Rec[],
   agents: readonly AgentRec[], agent_etas: readonly AgentEta[] = [],
   now: number | null = null): Transcript {
-  agent_etas = liveAgentEtas(records, agent_etas);
-  const reqs = _dedupeUsage(records);
-  let fresh = 0, cwrite = 0, cread = 0, down = 0;
-  // The main thread's own parts, its requests and its compactions, in one
-  // walk so each compaction falls in its place.  A compaction is priced as
-  // readTurns prices its turn, preTokens at the cache-read rate and the
-  // summary's estimated output once it arrives while no turn has opened
-  // since, and stamped where readTurns stamps that turn: at the /compact
-  // prompt that asked for it, where one is open with no calls, else at the
-  // boundary.
-  const kept = new Set(reqs);
-  type Compacting = [number | null, [number, number]];
-  const parts: ([number | null, number] | Compacting)[] = [];
-  let compacting: Compacting | null = null;
-  let opener: [unknown, string, number] | null = null;
-  let own_est = false;
-  for (const r of records) {
-    const text = turnStartText(r);
-    if (text !== null) {
-      opener = [pyOr(pyGet(r, "timestamp"), ""), text, 0];
-      compacting = null;
-    } else if (pyGet(r, "subtype") === "compact_boundary") {
-      const md = pyOr(pyGet(r, "compactMetadata"), {});
-      const at: unknown = opener !== null && !opener[2] &&
-        pyStrip(opener[1]) === "/compact" ? opener[0]
-        : pyOr(pyGet(r, "timestamp"), "");
-      compacting = [tsEpoch(at), [num0(pyGet(md, "preTokens")) * P_CR, 0.0]];
-      parts.push(compacting);
-      own_est = true;
-      // The compaction is the open turn now, with a call, as readTurns
-      // makes it: a second boundary opens another.
-      opener = [at, "", 1];
-    } else if (pyTruthy(pyGet(r, "isCompactSummary")) && compacting !== null) {
-      const c = pyDig(r, "message", "content");
-      if (typeof c === "string") {
-        compacting[1][1] = Math.trunc(pyLen(c) / SUMMARY_CPT) * P_OUT;
+  return transcriptFinish(foldTranscriptAll(records), agents, agent_etas,
+    now);
+}
+
+/** A part of the main thread's own bill: [epoch, dollars], or for a
+ * compaction [epoch, [cache-read dollars, output dollars]], whose output
+ * its summary fills in once it arrives. */
+export type OwnPart = [number | null, number] |
+  [number | null, [number, number]];
+
+/** A turn's promptId and turnIndex, as _stampTurnId takes them. */
+export type TurnId = { pid: string; tidx: number | null };
+
+/** What transcriptOf carries from one record of the main transcript to the
+ * next.  foldTranscript adds a record to it, and transcriptFinish reads the
+ * figures off it and leaves it as it was, so the fold can go on: nothing
+ * here depends on the agents or the clock, which only the finish is
+ * handed. */
+export interface TranscriptFold {
+  /** The request ids _dedupeUsage has kept, first wins. */
+  reqs: Set<unknown>;
+  /** The main thread's own token sums. */
+  fresh: number;
+  cwrite: number;
+  cread: number;
+  down: number;
+  parts: OwnPart[];
+  /** The index in `parts` of the compaction a summary would price. */
+  compacting: number | null;
+  /** The open turn's [stamp, text, calls]. */
+  opener: [unknown, string, number] | null;
+  ownEst: boolean;
+  ctx: number;
+  firstCtx: number;
+  ctxEst: boolean;
+  userTs: unknown;
+  userText: string;
+  asstTs: unknown;
+  asstText: unknown;
+  /** The clock: closed turns' spans, every answered tool call's, and the
+   * waiting ones among them. */
+  spans: Span[];
+  tools: Span[];
+  blocked: Span[];
+  pending: Pending;
+  first: number | null;
+  openAt: number | null;
+  prev: number | null;
+  etaState: EtaState;
+  queued: number;
+  compactions: number;
+  background: Map<string, string>;
+  idleAt: number;
+  lastSeen: number;
+  /** The turn opened last, for its promptId alone. */
+  opened: TurnId;
+  /** The tool-use ids diffLines has counted. */
+  wrote: Set<string>;
+  added: number;
+  removed: number;
+  /** scanAgentEnd's, for liveAgentEtasOf. */
+  ends: Map<string, number>;
+}
+
+export function newTranscriptFold(): TranscriptFold {
+  return { reqs: new Set(), fresh: 0, cwrite: 0, cread: 0, down: 0,
+    parts: [], compacting: null, opener: null, ownEst: false, ctx: 0,
+    firstCtx: 0, ctxEst: false, userTs: "", userText: "", asstTs: "",
+    asstText: "", spans: [], tools: [], blocked: [], pending: new Map(),
+    first: null, openAt: null, prev: null, etaState: newEtaState(),
+    queued: 0, compactions: 0, background: new Map(), idleAt: 0.0,
+    lastSeen: 0.0, opened: { pid: "", tidx: null }, wrote: new Set(),
+    added: 0, removed: 0, ends: new Map() };
+}
+
+/** `records` folded into `f`, a fresh fold by default. */
+export function foldTranscriptAll(records: readonly Rec[],
+  f: TranscriptFold = newTranscriptFold()): TranscriptFold {
+  for (const r of records) foldTranscript(f, r);
+  return f;
+}
+
+/** A copy of `f` that folding on leaves `f` as it was. */
+export function copyTranscriptFold(f: TranscriptFold): TranscriptFold {
+  return { ...f, reqs: new Set(f.reqs),
+    parts: f.parts.map(([e, c]): OwnPart =>
+      Array.isArray(c) ? [e, [c[0], c[1]]] : [e, c]),
+    opener: f.opener && [f.opener[0], f.opener[1], f.opener[2]],
+    spans: f.spans.slice(), tools: f.tools.slice(),
+    blocked: f.blocked.slice(), pending: new Map(f.pending),
+    etaState: [f.etaState[0].slice(), f.etaState[1], f.etaState[2],
+      f.etaState[3]],
+    background: new Map(f.background), opened: { ...f.opened },
+    wrote: new Set(f.wrote), ends: new Map(f.ends) };
+}
+
+/** `f` with `tail` folded in, on a copy where there is a tail: the records
+ * of a last line with no newline yet, which can be half written.  The fold
+ * itself takes whole lines only, and a half-written line is rare, so the
+ * copy's cost is rare too. */
+export function transcriptFoldWith(f: TranscriptFold,
+  tail: readonly Rec[]): TranscriptFold {
+  return tail.length ? foldTranscriptAll(tail, copyTranscriptFold(f)) : f;
+}
+
+/** Fold one record of the main transcript into `f`: each of transcriptOf's
+ * walks, a step each. */
+export function foldTranscript(f: TranscriptFold, r: Rec): void {
+  // _dedupeUsage's choice: the first record with usage under its id.
+  let kept = false;
+  if (pyTruthy(pyDig(r, "message", "usage"))) {
+    const k = pyOr(pyOr(pyGet(r, "requestId"), pyDig(r, "message", "id")),
+      "?");
+    if (!f.reqs.has(k)) {
+      f.reqs.add(k);
+      kept = true;
+    }
+  }
+  scanAgentEnd(r, f.ends);
+  foldOwnParts(f, r, kept);
+  foldContext(f, r, kept);
+  foldLastTexts(f, r);
+  foldClock(f, r);
+}
+
+/** The main thread's own parts, its requests and its compactions, in one
+ * walk so each compaction falls in its place.  A compaction is priced as
+ * readTurns prices its turn, preTokens at the cache-read rate and the
+ * summary's estimated output once it arrives while no turn has opened
+ * since, and stamped where readTurns stamps that turn: at the /compact
+ * prompt that asked for it, where one is open with no calls, else at the
+ * boundary. */
+function foldOwnParts(f: TranscriptFold, r: Rec, kept: boolean): void {
+  const text = turnStartText(r);
+  if (text !== null) {
+    f.opener = [pyOr(pyGet(r, "timestamp"), ""), text, 0];
+    f.compacting = null;
+  } else if (pyGet(r, "subtype") === "compact_boundary") {
+    const md = pyOr(pyGet(r, "compactMetadata"), {});
+    const opener = f.opener;
+    const at: unknown = opener !== null && !opener[2] &&
+      pyStrip(opener[1]) === "/compact" ? opener[0]
+      : pyOr(pyGet(r, "timestamp"), "");
+    f.compacting = f.parts.length;
+    f.parts.push([tsEpoch(at), [num0(pyGet(md, "preTokens")) * P_CR, 0.0]]);
+    f.ownEst = true;
+    // The compaction is the open turn now, with a call, as readTurns
+    // makes it: a second boundary opens another.
+    f.opener = [at, "", 1];
+  } else if (pyTruthy(pyGet(r, "isCompactSummary")) &&
+    f.compacting !== null) {
+    const c = pyDig(r, "message", "content");
+    if (typeof c === "string") {
+      (f.parts[f.compacting][1] as [number, number])[1] =
+        Math.trunc(pyLen(c) / SUMMARY_CPT) * P_OUT;
+    }
+  }
+  if (!kept) return;
+  const u = pyDig(r, "message", "usage");
+  f.fresh += num0(pyGet(u, "input_tokens"));
+  f.cwrite += num0(pyGet(u, "cache_creation_input_tokens"));
+  f.cread += num0(pyGet(u, "cache_read_input_tokens"));
+  f.down += num0(pyGet(u, "output_tokens"));
+  if (f.opener !== null) f.opener[2] += 1;
+  // Priced per record at its own model, as readTurns prices it.
+  const d = _usd(pyDig(r, "message", "model"),
+    num0(pyGet(u, "input_tokens")),
+    num0(pyGet(u, "cache_creation_input_tokens")),
+    num0(pyGet(u, "cache_read_input_tokens")),
+    num0(pyGet(u, "output_tokens")));
+  f.parts.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")),
+    0 + d[0] + d[1] + d[2] + d[3]]);
+}
+
+/** The context reading, walked over every record rather than the kept
+ * requests alone, so a compaction boundary falls in its place among the
+ * readings. */
+function foldContext(f: TranscriptFold, r: Rec, kept: boolean): void {
+  if (pyGet(r, "isSidechain") === true) return;
+  if (isCompaction(r)) {
+    // A compaction writes no usage record, so until the next request the
+    // last reading is the size from BEFORE it.  postTokens is the
+    // compacted conversation alone; what it leaves out is the system
+    // prompt, the tools and the files re-attached after it, which the
+    // session's first reading carries too, or COMPACT_OVERHEAD without
+    // one.  The Python's comment has the measurements.
+    const post = num0(pyDig(r, "compactMetadata", "postTokens"));
+    if (post) {
+      f.ctx = post + (f.firstCtx || COMPACT_OVERHEAD);
+      f.ctxEst = true;
+    }
+    return;
+  }
+  if (!kept) return;
+  const u = pyDig(r, "message", "usage");
+  // Skip a request whose usage is all zero: that is how an interrupted
+  // request is recorded, and letting it win the last-write would blank
+  // the 🧠 cell for the rest of the session.
+  const c = num0(pyGet(u, "input_tokens")) +
+    num0(pyGet(u, "cache_creation_input_tokens")) +
+    num0(pyGet(u, "cache_read_input_tokens"));
+  if (c) {
+    f.ctx = c;
+    f.ctxEst = false;
+    f.firstCtx = f.firstCtx || c;
+  }
+}
+
+/** The last prompt typed and the last text the assistant wrote. */
+function foldLastTexts(f: TranscriptFold, r: Rec): void {
+  const c = pyDig(r, "message", "content");
+  if (pyGet(r, "type") === "user" && pyGet(r, "userType") === "external" &&
+    typeof c === "string" && c.length > 0 && !c.startsWith("<")) {
+    f.userTs = pyOr(pyGet(r, "timestamp"), "");
+    f.userText = c;
+  }
+  if (pyGet(r, "type") === "assistant") {
+    const blocks = pyOr(pyDig(r, "message", "content"), []);
+    if (Array.isArray(blocks)) {
+      const texts = blocks.filter((b) => isDict(b) &&
+        pyGet(b, "type") === "text");
+      if (texts.length) {
+        f.asstText = pyOr(pyGet(texts[texts.length - 1], "text"), "");
+        f.asstTs = pyOr(pyGet(r, "timestamp"), "");
       }
     }
-    if (!kept.has(r)) continue;
-    const u = pyDig(r, "message", "usage");
-    fresh += num0(pyGet(u, "input_tokens"));
-    cwrite += num0(pyGet(u, "cache_creation_input_tokens"));
-    cread += num0(pyGet(u, "cache_read_input_tokens"));
-    down += num0(pyGet(u, "output_tokens"));
-    if (opener !== null) opener[2] += 1;
-    // Priced per record at its own model, as readTurns prices it.
-    const d = _usd(pyDig(r, "message", "model"),
-      num0(pyGet(u, "input_tokens")),
-      num0(pyGet(u, "cache_creation_input_tokens")),
-      num0(pyGet(u, "cache_read_input_tokens")),
-      num0(pyGet(u, "output_tokens")));
-    parts.push([tsEpoch(pyOr(pyGet(r, "timestamp"), "")),
-      0 + d[0] + d[1] + d[2] + d[3]]);
   }
+}
+
+/** Time spent ANSWERING, which is not the time the session has existed.
+ * A turn runs from the prompt that opens it to the last record before the
+ * next prompt, so summing those spans counts the working time and skips
+ * every gap where the session sat waiting for someone to type.  With the
+ * queue, the ETA (see liveEta), the background tasks, the idle and what
+ * the tool results wrote. */
+function foldClock(f: TranscriptFold, r: Rec): void {
+  f.queued = Math.max(0, f.queued + queueStep(r));
+  f.compactions += isCompaction(r) ? 1 : 0;
+  scanToolSpans(r, f.pending, f.tools, f.blocked);
+  const [a, d] = diffLines(r, f.wrote);
+  f.added += a;
+  f.removed += d;
+  // The tag the start line prints: the promptId and turnIndex of the
+  // turn opened last, read as readTurns reads a turn's.
+  if (turnStartText(r) !== null) f.opened = { pid: "", tidx: null };
+  _stampTurnId(f.opened, r);
+  if (pyGet(r, "isSidechain") !== true) {
+    liveEta(r, f.etaState);
+    scanBackground(r, f.background);
+  }
+  const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
+  if (t === null) return;
+  if (f.first === null) f.first = t;
+  if (pyGet(r, "isSidechain") !== true) {
+    f.lastSeen = t;
+    // The answer ending opens the idle; the next request or tool
+    // result, or a prompt, closes it.  Not any work record: Claude Code
+    // writes system records after the end.
+    if (endsTurn(r)) f.idleAt = t;
+    else if (pyGet(r, "type") === "assistant" || turnStartText(r) !== null ||
+      (pyGet(r, "type") === "user" &&
+        Array.isArray(pyDig(r, "message", "content")))) {
+      f.idleAt = 0.0;
+    }
+  }
+  if (turnStartText(r) !== null) {
+    if (f.openAt !== null && f.prev! > f.openAt) {
+      f.spans.push([f.openAt, f.prev!]);
+    }
+    f.openAt = f.prev = t;
+  } else if (f.openAt !== null && isWork(r)) {
+    f.prev = t;
+  }
+}
+
+/** transcriptOf's figures off a fold, with what is only known at render:
+ * the agents' records and ETAs, and `now`.  `f` is left as it was.  The
+ * agents are added after every main record, as the whole fold adds them,
+ * so the floats come out the same. */
+export function transcriptFinish(f: TranscriptFold,
+  agents: readonly AgentRec[], agent_etas: readonly AgentEta[] = [],
+  now: number | null = null): Transcript {
+  agent_etas = liveAgentEtasOf(f.ends, agent_etas);
+  let { fresh, cwrite, cread, down } = f;
   // A compaction's two halves summed as turnCost sums its turn's: the
   // output, then the cache read.
-  const own_parts = parts.map(([e, c]): [number | null, number] =>
+  const own_parts = f.parts.map(([e, c]): [number | null, number] =>
     [e, Array.isArray(c) ? c[1] + c[0] : c]);
   let ownUsd = 0;
   for (const [, c] of own_parts) ownUsd += c;
@@ -1892,129 +2129,25 @@ export function transcriptOf(records: readonly Rec[],
   }
   const inAll = fresh + cwrite + cread;
 
-  // Walked over `records` rather than `reqs` so a compaction boundary falls
-  // in its place among the readings; `kept` is the dedupe's choice of them.
-  let ctx = 0, firstCtx = 0;
-  let ctx_est = false;
-  for (const r of records) {
-    if (pyGet(r, "isSidechain") === true) continue;
-    if (isCompaction(r)) {
-      // A compaction writes no usage record, so until the next request the
-      // last reading is the size from BEFORE it.  postTokens is the
-      // compacted conversation alone; what it leaves out is the system
-      // prompt, the tools and the files re-attached after it, which the
-      // session's first reading carries too, or COMPACT_OVERHEAD without
-      // one.  The Python's comment has the measurements.
-      const post = num0(pyDig(r, "compactMetadata", "postTokens"));
-      if (post) {
-        ctx = post + (firstCtx || COMPACT_OVERHEAD);
-        ctx_est = true;
-      }
-      continue;
-    }
-    if (!kept.has(r)) continue;
-    const u = pyDig(r, "message", "usage");
-    // Skip a request whose usage is all zero: that is how an interrupted
-    // request is recorded, and letting it win the last-write would blank
-    // the 🧠 cell for the rest of the session.
-    const c = num0(pyGet(u, "input_tokens")) +
-      num0(pyGet(u, "cache_creation_input_tokens")) +
-      num0(pyGet(u, "cache_read_input_tokens"));
-    if (c) {
-      ctx = c;
-      ctx_est = false;
-      firstCtx = firstCtx || c;
-    }
-  }
-
-  let user_ts: unknown = "", user_text = "", asst_ts: unknown = "";
-  let asst_text: unknown = "";
-  for (const r of records) {
-    const c = pyDig(r, "message", "content");
-    if (pyGet(r, "type") === "user" && pyGet(r, "userType") === "external" &&
-      typeof c === "string" && c.length > 0 && !c.startsWith("<")) {
-      user_ts = pyOr(pyGet(r, "timestamp"), "");
-      user_text = c;
-    }
-    if (pyGet(r, "type") === "assistant") {
-      const blocks = pyOr(pyDig(r, "message", "content"), []);
-      if (Array.isArray(blocks)) {
-        const texts = blocks.filter((b) => isDict(b) &&
-          pyGet(b, "type") === "text");
-        if (texts.length) {
-          asst_text = pyOr(pyGet(texts[texts.length - 1], "text"), "");
-          asst_ts = pyOr(pyGet(r, "timestamp"), "");
-        }
-      }
-    }
-  }
-
-  // Time spent ANSWERING, which is not the time the session has existed.
-  // A turn runs from the prompt that opens it to the last record before
-  // the next prompt, so summing those spans counts the working time and
-  // skips every gap where the session sat waiting for someone to type.
-  const spans: Span[] = [];
-  const tools: Span[] = [];
-  const blocked: Span[] = [];
-  const pending: Pending = new Map();
-  let first: number | null = null, openAt: number | null = null;
-  let prev: number | null = null;
-  // The ETA belongs to the turn it was written in; see liveEta.
-  const etaState = newEtaState();
-  let queued = 0, compactions = 0;
-  const background = new Map<string, string>();
-  let idle_at = 0.0, last_seen = 0.0;
-  let opened = _newTurn("", "");    // the open turn, for its promptId alone
-  const wrote = new Set<string>();  // tool-use ids diffLines has counted
-  let added = 0, removed = 0;
-  for (const r of records) {
-    queued = Math.max(0, queued + queueStep(r));
-    compactions += isCompaction(r) ? 1 : 0;
-    scanToolSpans(r, pending, tools, blocked);
-    const [a, d] = diffLines(r, wrote);
-    added += a;
-    removed += d;
-    // The tag the start line prints: the promptId and turnIndex of the
-    // turn opened last, read as readTurns reads a turn's.
-    if (turnStartText(r) !== null) opened = _newTurn("", "");
-    _stampTurnId(opened, r);
-    if (pyGet(r, "isSidechain") !== true) {
-      liveEta(r, etaState);
-      scanBackground(r, background);
-    }
-    const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
-    if (t === null) continue;
-    if (first === null) first = t;
-    if (pyGet(r, "isSidechain") !== true) {
-      last_seen = t;
-      // The answer ending opens the idle; the next request or tool
-      // result, or a prompt, closes it.  Not any work record: Claude Code
-      // writes system records after the end.
-      if (endsTurn(r)) idle_at = t;
-      else if (pyGet(r, "type") === "assistant" || turnStartText(r) !== null ||
-        (pyGet(r, "type") === "user" &&
-          Array.isArray(pyDig(r, "message", "content")))) {
-        idle_at = 0.0;
-      }
-    }
-    if (turnStartText(r) !== null) {
-      if (openAt !== null && prev! > openAt) spans.push([openAt, prev!]);
-      openAt = prev = t;
-    } else if (openAt !== null && isWork(r)) {
-      prev = t;
-    }
-  }
+  const { openAt, prev } = f;
+  const spans = f.spans.slice();
   if (openAt !== null && prev! > openAt) spans.push([openAt, prev!]);
   // The oldest call still running, for the 🛫 cell: only one asked for in
   // the turn still open, since an older one left unanswered was cut off.
   const running: number[] = [], waits: number[] = [];
-  for (const [t, name] of pending.values()) {
+  for (const [t, name] of f.pending.values()) {
     if (!pyTruthy(openAt) || t < openAt!) continue;
     (WAITING_TOOLS.has(name) ? waits : running).push(t);
   }
-  if (now !== null) openToolSpans(pending, now, tools, blocked);
+  const tools = f.tools.slice(), blocked = f.blocked.slice();
+  if (now !== null) openToolSpans(f.pending, now, tools, blocked);
   const [busy, tool, blocked_s] = threadClock(spans, tools, blocked);
   const min = (xs: number[]) => xs.reduce((a, b) => pyMin(a, b));
+  const etaState = f.etaState;
+  const background = f.background;
+  const first = f.first;
+  const { ctx, userTs: user_ts, userText: user_text, asstTs: asst_ts,
+    asstText: asst_text } = f;
 
   return transcript({
     busy_s: busy,
@@ -2027,7 +2160,7 @@ export function transcriptOf(records: readonly Rec[],
     // segment rather than as a zero.
     cache_pct: inAll > 0 ? Math.trunc(100 * cread / inAll) : -1,
     ctx_tokens: ctx,
-    ctx_est,
+    ctx_est: f.ctxEst,
     user_ts: pyStr(user_ts),
     user_text: squash(user_text),
     asst_ts: pyStr(asst_ts),
@@ -2035,26 +2168,26 @@ export function transcriptOf(records: readonly Rec[],
     tool_s: tool,
     blocked_s,
     turn_s: pyOr(openAt, 0.0) as number,
-    eta: etaState[1] ? [] : etaState[0],
+    eta: etaState[1] ? [] : etaState[0].slice(),
     agent_etas: [...agent_etas],
-    queued,
-    compactions,
+    queued: f.queued,
+    compactions: f.compactions,
     shells: [...background.values()].filter((k) => k === "bash").length,
     monitors: [...background.values()].filter((k) => k === "monitor").length,
     tool_at: now !== null && running.length ? min(running) : 0.0,
     wait_at: now !== null && waits.length ? min(waits) : 0.0,
-    idle_at: now !== null ? idle_at : 0.0,
-    last_seen: now !== null ? last_seen : 0.0,
+    idle_at: now !== null ? f.idleAt : 0.0,
+    last_seen: now !== null ? f.lastSeen : 0.0,
     own_tok_up: ownUp,
     own_tok_down: ownDown,
     own_cache_pct: ownCache,
     own_usd: ownUsd,
     own_parts,
-    own_est,
-    lines_added: added,
-    lines_removed: removed,
-    prompt_id: opened.pid,
-    turn_index: opened.tidx,
+    own_est: f.ownEst,
+    lines_added: f.added,
+    lines_removed: f.removed,
+    prompt_id: f.opened.pid,
+    turn_index: f.opened.tidx,
   });
 }
 
@@ -2109,7 +2242,7 @@ export function _newTurn(ts: string, text: string): TurnBuild {
  * promptId, and a turn a queue-operation record opened gets its id from
  * the first tool result instead of from its opener.  A bool is not an
  * index, though Python's int would take it. */
-export function _stampTurnId(cur: TurnBuild, r: Rec): void {
+export function _stampTurnId(cur: TurnId, r: Rec): void {
   const pid = pyGet(r, "promptId");
   if (pyTruthy(pid) && !cur.pid) cur.pid = pyStr(pid);
   const idx = pyDig(r, "turnPosition", "turnIndex");
@@ -2223,137 +2356,205 @@ export function _endedAfter(a: AgentRec,
  *
  * The pure core: `agentsOf` gives the agent records, handed the set of
  * request ids the main thread billed so the two dedupe together; `offsets`
- * is what agentOffsets read; `label` names a late agent turn's file. */
+ * is what agentOffsets read; `label` names a late agent turn's file.  A
+ * fold of every record, finished: see foldTurns and turnsFinish. */
 export function turnsOf(records: readonly Rec[],
   agentsOf: (seen: Set<unknown>) => readonly AgentRec[],
   offsets: ReadonlyMap<string, number> | null = null,
   held: Map<string, number> | null = null,
   label: (path: string) => [string, string] = noSidecar): Turn[] {
-  const turns: TurnBuild[] = [];
-  let settled = 0;      // turns that a Stop hook has already run past
-  let cur: TurnBuild | null = null;
-  const seen = new Set<unknown>();
-  const byPid = new Map<unknown, TurnBuild>();
-  let lastStop: number | null = null;
-  const pending: Pending = new Map();
-  const ends = new Map<string, number>();
-  const wrote = new Set<string>();      // tool-use ids diffLines has counted
-  for (const r of records) {
-    scanAgentEnd(r, ends);
-    // What the record's tool result wrote, onto the turn it is filed under
-    // below: the main thread's 💾, turn by turn.
-    const [added, removed] = diffLines(r, wrote);
-    // Every tool call, onto the turn open when its RESULT arrives: the scan
-    // transcriptOf makes for the status line's 🔧, so the two readouts
-    // count the same calls by the same rule.  A record before the first
-    // prompt is still scanned, and its own spans go nowhere.
-    scanToolSpans(r, pending, cur ? cur.tools : [], cur ? cur.waits : []);
-    const pid = pyGet(r, "promptId");
-    const text = turnStartText(r);
-    if (text !== null) {
-      // A queued message can be recorded BOTH ways — once typed, once
-      // delivered.  The earlier of the two has no records under it yet, so
-      // replacing it in place keeps one turn, with the later timestamp.
-      if (cur !== null && cur.n === 0 && cur.t1 === null &&
-        cur.text === text) {
-        cur.ts = pyOr(pyGet(r, "timestamp"), cur.ts) as string;
-        cur.t0 = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
-      } else {
-        cur = _newTurn(pyStr(pyOr(pyGet(r, "timestamp"), "")), text);
-        turns.push(cur);
-      }
-      _stampTurnId(cur, r);
-      cur.la += added;
-      cur.lr += removed;
-      if (pyTruthy(pid)) byPid.set(pid, cur);
-      continue;
+  return turnsFinish(foldTurnsAll(records), agentsOf, offsets, held, label);
+}
+
+/** What turnsOf carries from one record of the main transcript to the
+ * next: the turns as built so far, the last of them the one open.  Every
+ * turn but the open one is final.  foldTurns adds a record, and
+ * turnsFinish files the agents' records under a copy of the turns, so the
+ * fold can go on. */
+export interface TurnsFold {
+  turns: TurnBuild[];
+  /** Turns that a Stop hook has already run past. */
+  settled: number;
+  /** The request ids billed, first wins, which the agents dedupe
+   * against. */
+  seen: Set<unknown>;
+  /** Each promptId, with the index in `turns` of the turn it files under. */
+  byPid: Map<unknown, number>;
+  lastStop: number | null;
+  pending: Pending;
+  ends: Map<string, number>;
+  /** The tool-use ids diffLines has counted. */
+  wrote: Set<string>;
+}
+
+export function newTurnsFold(): TurnsFold {
+  return { turns: [], settled: 0, seen: new Set(), byPid: new Map(),
+    lastStop: null, pending: new Map(), ends: new Map(), wrote: new Set() };
+}
+
+/** `records` folded into `f`, a fresh fold by default. */
+export function foldTurnsAll(records: readonly Rec[],
+  f: TurnsFold = newTurnsFold()): TurnsFold {
+  for (const r of records) foldTurns(f, r);
+  return f;
+}
+
+/** A copy of `f` that folding on leaves `f` as it was. */
+export function copyTurnsFold(f: TurnsFold): TurnsFold {
+  return { turns: f.turns.map((t) => ({ ...turnCopy(t),
+    tools: t.tools.slice(), waits: t.waits.slice(), eta: t.eta.slice() })),
+    settled: f.settled, seen: new Set(f.seen), byPid: new Map(f.byPid),
+    lastStop: f.lastStop, pending: new Map(f.pending),
+    ends: new Map(f.ends), wrote: new Set(f.wrote) };
+}
+
+/** `f` with `tail` folded in, on a copy where there is a tail; see
+ * transcriptFoldWith. */
+export function turnsFoldWith(f: TurnsFold, tail: readonly Rec[]):
+  TurnsFold {
+  return tail.length ? foldTurnsAll(tail, copyTurnsFold(f)) : f;
+}
+
+/** Fold one record of the main transcript into `f`. */
+export function foldTurns(f: TurnsFold, r: Rec): void {
+  const turns = f.turns;
+  let cur: TurnBuild | null = turns.length ? turns[turns.length - 1] : null;
+  scanAgentEnd(r, f.ends);
+  // What the record's tool result wrote, onto the turn it is filed under
+  // below: the main thread's 💾, turn by turn.
+  const [added, removed] = diffLines(r, f.wrote);
+  // Every tool call, onto the turn open when its RESULT arrives: the scan
+  // transcriptOf makes for the status line's 🔧, so the two readouts
+  // count the same calls by the same rule.  A record before the first
+  // prompt is still scanned, and its own spans go nowhere.
+  scanToolSpans(r, f.pending, cur ? cur.tools : [], cur ? cur.waits : []);
+  const pid = pyGet(r, "promptId");
+  const text = turnStartText(r);
+  if (text !== null) {
+    // A queued message can be recorded BOTH ways — once typed, once
+    // delivered.  The earlier of the two has no records under it yet, so
+    // replacing it in place keeps one turn, with the later timestamp.
+    if (cur !== null && cur.n === 0 && cur.t1 === null &&
+      cur.text === text) {
+      cur.ts = pyOr(pyGet(r, "timestamp"), cur.ts) as string;
+      cur.t0 = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
+    } else {
+      cur = _newTurn(pyStr(pyOr(pyGet(r, "timestamp"), "")), text);
+      turns.push(cur);
     }
-    // Every user record of a turn carries the turn's promptId, so the index
-    // is built from all of them, not from the opener alone.
-    if (pyTruthy(pid) && cur !== null && !pyTruthy(cur.compact)) {
-      if (!byPid.has(pid)) byPid.set(pid, cur);
-      _stampTurnId(cur, r);
-    }
-    if (cur !== null) {
-      cur.la += added;
-      cur.lr += removed;
-      // The last ETA the main thread reported in the turn, read as liveEta
-      // reads one, and here before the dedupe below can skip the record
-      // that carries it.
-      if (pyGet(r, "isSidechain") !== true) {
-        const report = etaReport([r]);
-        if (report.length) cur.eta = report;
-      }
-    }
-    if (pyGet(r, "subtype") === "compact_boundary") {
-      // A compaction leaves NO usage record anywhere; its boundary record's
-      // preTokens is what was fed to the summariser, charged at the
-      // cache-read rate, and its durationMs how long it took.  An AUTO
-      // compaction lands inside whatever turn was running, so it gets a
-      // turn of its own unless the one open is the /compact that asked for
-      // it.  The Python's comment has the measurements.
-      const md = pyOr(pyGet(r, "compactMetadata"), {});
-      if (cur === null || cur.n || pyStrip(cur.text) !== "/compact") {
-        cur = _newTurn(pyStr(pyOr(pyGet(r, "timestamp"), "")),
-          `/compact (${pyStr(pyOr(pyGet(md, "trigger"), "auto"))})`);
-        turns.push(cur);
-      }
-      cur.cr = num0(pyGet(md, "preTokens"));
-      cur.usd[2] = cur.cr * P_CR;
-      cur.n = 1;
-      cur.dur = num0(pyGet(md, "durationMs")) / 1000.0;
-      cur.compact = true;
-    } else if (pyGet(r, "subtype") === "stop_hook_summary" &&
-      !pyTruthy(pyGet(r, "isSidechain"))) {
-      lastStop = pyOr(tsEpoch(pyOr(pyGet(r, "timestamp"), "")), lastStop);
-      // The transcript's own record that a Stop hook RAN: the only mark in
-      // the file of where a previous cost line drew its window.
-      settled = turns.length;
-    } else if (pyTruthy(pyGet(r, "isCompactSummary")) && cur !== null &&
-      pyTruthy(cur.compact)) {
-      // What the summariser WROTE, estimated from the text: the only
-      // estimate on either row.
-      const c = pyDig(r, "message", "content");
-      if (typeof c === "string") {
-        cur.out = Math.trunc(pyLen(c) / SUMMARY_CPT);
-        cur.usd[1] = cur.out * P_OUT;
-      }
-    } else if (pyGet(r, "type") === "assistant" &&
-      pyTruthy(pyDig(r, "message", "usage"))) {
-      const k = pyOr(pyGet(r, "requestId"), pyDig(r, "message", "id")) ?? null;
-      if (seen.has(k) || cur === null) continue;
-      seen.add(k);
-      const u = pyDig(r, "message", "usage");
-      const f = numGet(u, "input_tokens");
-      const cw = numGet(u, "cache_creation_input_tokens");
-      const cr = numGet(u, "cache_read_input_tokens");
-      const o = numGet(u, "output_tokens");
-      cur.fresh += f;
-      cur.cw += cw;
-      cur.cr += cr;
-      cur.out += o;
-      cur.n += 1;
-      // Priced here, per record, at the record's own model: `parts` carries
-      // the same figure, so the parts total the whole EXACTLY.
-      _addUsd(cur, tsEpoch(pyOr(pyGet(r, "timestamp"), "")),
-        pyDig(r, "message", "model") ?? null, f, cw, cr, o);
-      if (!pyTruthy(pyGet(r, "isSidechain"))) {
-        // LAST-WRITE-WINS, but only over readings that exist: an
-        // interrupted request is written with every usage field zero.
-        const c = f + cw + cr;
-        if (c) cur.ctx = c;
-      }
-    }
-    // Every stamped record of the ANSWER moves the turn's end, not just the
-    // billed ones; isWork keeps the user's own time out of it.
-    if (cur !== null && isWork(r)) {
-      const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
-      if (t !== null) cur.t1 = t;
+    _stampTurnId(cur, r);
+    cur.la += added;
+    cur.lr += removed;
+    if (pyTruthy(pid)) f.byPid.set(pid, turns.length - 1);
+    return;
+  }
+  // Every user record of a turn carries the turn's promptId, so the index
+  // is built from all of them, not from the opener alone.
+  if (pyTruthy(pid) && cur !== null && !pyTruthy(cur.compact)) {
+    if (!f.byPid.has(pid)) f.byPid.set(pid, turns.length - 1);
+    _stampTurnId(cur, r);
+  }
+  if (cur !== null) {
+    cur.la += added;
+    cur.lr += removed;
+    // The last ETA the main thread reported in the turn, read as liveEta
+    // reads one, and here before the dedupe below can skip the record
+    // that carries it.
+    if (pyGet(r, "isSidechain") !== true) {
+      const report = etaReport([r]);
+      if (report.length) cur.eta = report;
     }
   }
+  if (pyGet(r, "subtype") === "compact_boundary") {
+    // A compaction leaves NO usage record anywhere; its boundary record's
+    // preTokens is what was fed to the summariser, charged at the
+    // cache-read rate, and its durationMs how long it took.  An AUTO
+    // compaction lands inside whatever turn was running, so it gets a
+    // turn of its own unless the one open is the /compact that asked for
+    // it.  The Python's comment has the measurements.
+    const md = pyOr(pyGet(r, "compactMetadata"), {});
+    if (cur === null || cur.n || pyStrip(cur.text) !== "/compact") {
+      cur = _newTurn(pyStr(pyOr(pyGet(r, "timestamp"), "")),
+        `/compact (${pyStr(pyOr(pyGet(md, "trigger"), "auto"))})`);
+      turns.push(cur);
+    }
+    cur.cr = num0(pyGet(md, "preTokens"));
+    cur.usd[2] = cur.cr * P_CR;
+    cur.n = 1;
+    cur.dur = num0(pyGet(md, "durationMs")) / 1000.0;
+    cur.compact = true;
+  } else if (pyGet(r, "subtype") === "stop_hook_summary" &&
+    !pyTruthy(pyGet(r, "isSidechain"))) {
+    f.lastStop = pyOr(tsEpoch(pyOr(pyGet(r, "timestamp"), "")), f.lastStop);
+    // The transcript's own record that a Stop hook RAN: the only mark in
+    // the file of where a previous cost line drew its window.
+    f.settled = turns.length;
+  } else if (pyTruthy(pyGet(r, "isCompactSummary")) && cur !== null &&
+    pyTruthy(cur.compact)) {
+    // What the summariser WROTE, estimated from the text: the only
+    // estimate on either row.
+    const c = pyDig(r, "message", "content");
+    if (typeof c === "string") {
+      cur.out = Math.trunc(pyLen(c) / SUMMARY_CPT);
+      cur.usd[1] = cur.out * P_OUT;
+    }
+  } else if (pyGet(r, "type") === "assistant" &&
+    pyTruthy(pyDig(r, "message", "usage"))) {
+    const k = pyOr(pyGet(r, "requestId"), pyDig(r, "message", "id")) ?? null;
+    if (f.seen.has(k) || cur === null) return;
+    f.seen.add(k);
+    const u = pyDig(r, "message", "usage");
+    const fr = numGet(u, "input_tokens");
+    const cw = numGet(u, "cache_creation_input_tokens");
+    const cr = numGet(u, "cache_read_input_tokens");
+    const o = numGet(u, "output_tokens");
+    cur.fresh += fr;
+    cur.cw += cw;
+    cur.cr += cr;
+    cur.out += o;
+    cur.n += 1;
+    // Priced here, per record, at the record's own model: `parts` carries
+    // the same figure, so the parts total the whole EXACTLY.
+    _addUsd(cur, tsEpoch(pyOr(pyGet(r, "timestamp"), "")),
+      pyDig(r, "message", "model") ?? null, fr, cw, cr, o);
+    if (!pyTruthy(pyGet(r, "isSidechain"))) {
+      // LAST-WRITE-WINS, but only over readings that exist: an
+      // interrupted request is written with every usage field zero.
+      const c = fr + cw + cr;
+      if (c) cur.ctx = c;
+    }
+  }
+  // Every stamped record of the ANSWER moves the turn's end, not just the
+  // billed ones; isWork keeps the user's own time out of it.
+  if (cur !== null && isWork(r)) {
+    const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
+    if (t !== null) cur.t1 = t;
+  }
+}
 
-  const late = _foldAgents(turns, byPid, agentsOf(seen), lastStop, offsets,
-    ends, held);
+/** A turn as the fold built it, with its own copies of what _foldAgents
+ * adds to, so the agents a finish files under it never reach the fold. */
+function turnCopy(t: TurnBuild): TurnBuild {
+  return { ...t, usd: [t.usd[0], t.usd[1], t.usd[2], t.usd[3]],
+    parts: t.parts.slice(), aids: t.aids.slice() };
+}
+
+/** turnsOf's turns off a fold, with what is only known at render: the
+ * agents' records (`agentsOf`, handed a copy of the requests the main
+ * thread billed), the Stop hook's `offsets`, `held` and `label`.  `f` is
+ * left as it was: the agents are filed under copies of its turns, after
+ * every main record, as the whole fold files them. */
+export function turnsFinish(f: TurnsFold,
+  agentsOf: (seen: Set<unknown>) => readonly AgentRec[],
+  offsets: ReadonlyMap<string, number> | null = null,
+  held: Map<string, number> | null = null,
+  label: (path: string) => [string, string] = noSidecar): Turn[] {
+  const turns = f.turns.map(turnCopy);
+  const byPid = new Map<unknown, TurnBuild>();
+  for (const [pid, i] of f.byPid) byPid.set(pid, turns[i]);
+  const settled = f.settled;
+  const late = _foldAgents(turns, byPid, agentsOf(new Set(f.seen)),
+    f.lastStop, offsets, f.ends, held);
 
   // Context growth per turn.  The first turn gets null rather than its own
   // absolute size, and `prev` SKIPS a turn that carries no reading, so the

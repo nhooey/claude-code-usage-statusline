@@ -4,6 +4,7 @@
 This module owns Claude-specific JSONL interpretation and price accounting.
 It deliberately has no terminal rendering or hook stdin/stdout orchestration.
 """
+import copy
 import functools
 import glob
 import hashlib
@@ -1207,6 +1208,12 @@ def live_agent_etas(records: Sequence[dict], etas: Sequence[tuple]
     ends: Dict[str, float] = {}
     for r in records:
         scan_agent_end(r, ends)
+    return live_agent_etas_of(ends, etas)
+
+
+def live_agent_etas_of(ends: Dict[str, float], etas: Sequence[tuple]
+                       ) -> Tuple[Tuple[float, Optional[float]], ...]:
+    """live_agent_etas with the main transcript's agent ends scanned."""
     return tuple((e[0], e[1]) for e in etas
                  if not (len(e) > 2 and e[2] in ends and e[1] is not None
                          and ends[e[2]] >= e[1]))
@@ -1621,76 +1628,275 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     about when this session needs a /compact.  The `isSidechain` guard on
     the reading below is belt-and-braces: agent records carry the flag, but
     they never reach this loop, which reads the main file alone.
+
+    A fold of every record, finished: see fold_transcript and
+    transcript_finish.
     """
-    records = list(_records(path))
-    reqs = _dedupe_usage(records)
-    fresh = cwrite = cread = down = 0
-    # The main thread's own parts, its requests and its compactions, in one
-    # walk over the records so each compaction falls in its place.  A
-    # compaction is priced as read_turns prices its turn: preTokens at the
-    # cache-read rate, and the summary's estimated output once its record
-    # arrives, while no turn has opened since.  Its part is stamped where
-    # read_turns stamps that turn, so turn_cost_since and the own shares
-    # put it in the same window: at the /compact prompt that asked for it,
-    # where one is open with no calls yet, else at the boundary.
-    kept = {id(r) for r in reqs}
-    own_parts = []          # [epoch, dollars], or for a compaction
-                            # [epoch, [cache-read dollars, output dollars]]
-    compacting = None       # the compaction a summary would price
-    opener = None           # [stamp, text, calls] of the turn open
-    own_est = False
+    f = fold_transcript_all(_records(path))
+    if agents is None:                  # no caller-supplied walk: do it here,
+        own_etas = []                   # and take the agents' ETAs off it too
+        agents = agent_records(path, etas=own_etas)
+        agent_etas = tuple(agent_etas) + tuple(own_etas)
+    return transcript_finish(f, agents, agent_etas, now)
+
+
+class OSet(dict):
+    """A set that keeps the order its members came in, as the TypeScript's
+    Set does: what a saved fold writes out in order."""
+
+    __slots__ = ()
+
+    def add(self, k) -> None:
+        self[k] = None
+
+
+class TranscriptFold:
+    """What read_transcript carries from one record of the main transcript
+    to the next.  fold_transcript adds a record to it, and
+    transcript_finish reads the figures off it and leaves it as it was, so
+    the fold can go on: nothing here depends on the agents or the clock,
+    which only the finish is handed."""
+
+    __slots__ = ("reqs", "fresh", "cwrite", "cread", "down", "parts",
+                 "compacting", "opener", "own_est", "ctx", "first_ctx",
+                 "ctx_est", "user_ts", "user_text", "asst_ts", "asst_text",
+                 "spans", "tools", "blocked", "pending", "first", "open_at",
+                 "prev", "eta_state", "queued", "compactions", "background",
+                 "idle_at", "last_seen", "opened", "wrote", "added",
+                 "removed", "ends")
+
+    def __init__(self):
+        self.reqs = OSet()          # request ids _dedupe_usage has kept
+        self.fresh = self.cwrite = self.cread = self.down = 0
+        self.parts = []             # [epoch, dollars], or for a compaction
+                                    # [epoch, [cache-read $, output $]]
+        self.compacting = None      # the index of the part a summary prices
+        self.opener = None          # [stamp, text, calls] of the turn open
+        self.own_est = False
+        self.ctx = self.first_ctx = 0
+        self.ctx_est = False
+        self.user_ts = self.user_text = self.asst_ts = self.asst_text = ""
+        self.spans = []
+        self.tools = []
+        self.blocked = []
+        self.pending = {}
+        self.first = self.open_at = self.prev = None
+        self.eta_state = new_eta_state()
+        self.queued = self.compactions = 0
+        self.background = {}
+        self.idle_at = self.last_seen = 0.0
+        self.opened = {"pid": "", "tidx": None}   # the turn opened last
+        self.wrote = OSet()         # tool-use ids diff_lines has counted
+        self.added = self.removed = 0
+        self.ends = {}              # scan_agent_end's, for the agents' ETAs
+
+
+def fold_transcript_all(records, f: Optional[TranscriptFold] = None
+                        ) -> TranscriptFold:
+    """`records` folded into `f`, a fresh fold by default."""
+    f = TranscriptFold() if f is None else f
     for r in records:
-        text = turn_start_text(r)
-        if text is not None:
-            opener = [r.get("timestamp") or "", text, 0]
-            compacting = None
-        elif r.get("subtype") == "compact_boundary":
-            md = r.get("compactMetadata") or {}
-            at = (opener[0] if opener is not None and not opener[2]
-                  and opener[1].strip() == "/compact"
-                  else r.get("timestamp") or "")
-            compacting = [ts_epoch(at), [(md.get("preTokens") or 0) * P_CR,
-                                         0.0]]
-            own_parts.append(compacting)
-            own_est = True
-            # The compaction is the open turn now, with a call, as
-            # read_turns makes it: a second boundary opens another.
-            opener = [at, "", 1]
-        elif r.get("isCompactSummary") and compacting is not None:
-            c = (r.get("message") or {}).get("content")
-            if isinstance(c, str):
-                compacting[1][1] = int(len(c) / SUMMARY_CPT) * P_OUT
-        if id(r) not in kept:
-            continue
-        u = r["message"]["usage"]
-        fresh += u.get("input_tokens") or 0
-        cwrite += u.get("cache_creation_input_tokens") or 0
-        cread += u.get("cache_read_input_tokens") or 0
-        down += u.get("output_tokens") or 0
-        if opener is not None:
-            opener[2] += 1
-        # Priced per record at its own model, as read_turns prices it.
-        own_parts.append([ts_epoch(r.get("timestamp") or ""),
-                          add_up(_usd(r["message"].get("model"),
-                                      u.get("input_tokens") or 0,
-                                      u.get("cache_creation_input_tokens")
-                                      or 0,
-                                      u.get("cache_read_input_tokens") or 0,
-                                      u.get("output_tokens") or 0))])
+        fold_transcript(f, r)
+    return f
+
+
+def transcript_fold_with(f: TranscriptFold, tail: Sequence[dict]
+                         ) -> TranscriptFold:
+    """`f` with `tail` folded in, on a copy where there is a tail: the
+    records of a last line with no newline yet, which can be half written.
+    The fold itself takes whole lines only, and a half-written line is
+    rare, so the copy's cost is rare too."""
+    return fold_transcript_all(tail, copy.deepcopy(f)) if tail else f
+
+
+def fold_transcript(f: TranscriptFold, r: dict) -> None:
+    """Fold one record of the main transcript into `f`: each of
+    read_transcript's walks, a step each."""
+    # _dedupe_usage's choice: the first record with usage under its id.
+    kept = False
+    if (r.get("message") or {}).get("usage"):
+        k = r.get("requestId") or (r.get("message") or {}).get("id") or "?"
+        if k not in f.reqs:
+            f.reqs.add(k)
+            kept = True
+    scan_agent_end(r, f.ends)
+    _fold_own_parts(f, r, kept)
+    _fold_context(f, r, kept)
+    _fold_last_texts(f, r)
+    _fold_clock(f, r)
+
+
+def _fold_own_parts(f: TranscriptFold, r: dict, kept: bool) -> None:
+    """The main thread's own parts, its requests and its compactions, in
+    one walk over the records so each compaction falls in its place.  A
+    compaction is priced as read_turns prices its turn: preTokens at the
+    cache-read rate, and the summary's estimated output once its record
+    arrives, while no turn has opened since.  Its part is stamped where
+    read_turns stamps that turn, so turn_cost_since and the own shares put
+    it in the same window: at the /compact prompt that asked for it, where
+    one is open with no calls yet, else at the boundary."""
+    text = turn_start_text(r)
+    if text is not None:
+        f.opener = [r.get("timestamp") or "", text, 0]
+        f.compacting = None
+    elif r.get("subtype") == "compact_boundary":
+        md = r.get("compactMetadata") or {}
+        opener = f.opener
+        at = (opener[0] if opener is not None and not opener[2]
+              and opener[1].strip() == "/compact"
+              else r.get("timestamp") or "")
+        f.compacting = len(f.parts)
+        f.parts.append([ts_epoch(at), [(md.get("preTokens") or 0) * P_CR,
+                                       0.0]])
+        f.own_est = True
+        # The compaction is the open turn now, with a call, as read_turns
+        # makes it: a second boundary opens another.
+        f.opener = [at, "", 1]
+    elif r.get("isCompactSummary") and f.compacting is not None:
+        c = (r.get("message") or {}).get("content")
+        if isinstance(c, str):
+            f.parts[f.compacting][1][1] = int(len(c) / SUMMARY_CPT) * P_OUT
+    if not kept:
+        return
+    u = r["message"]["usage"]
+    f.fresh += u.get("input_tokens") or 0
+    f.cwrite += u.get("cache_creation_input_tokens") or 0
+    f.cread += u.get("cache_read_input_tokens") or 0
+    f.down += u.get("output_tokens") or 0
+    if f.opener is not None:
+        f.opener[2] += 1
+    # Priced per record at its own model, as read_turns prices it.
+    f.parts.append([ts_epoch(r.get("timestamp") or ""),
+                    add_up(_usd(r["message"].get("model"),
+                                u.get("input_tokens") or 0,
+                                u.get("cache_creation_input_tokens") or 0,
+                                u.get("cache_read_input_tokens") or 0,
+                                u.get("output_tokens") or 0))])
+
+
+def _fold_context(f: TranscriptFold, r: dict, kept: bool) -> None:
+    """The context reading, walked over every record rather than the kept
+    requests alone, so a compaction boundary falls in its place among the
+    readings."""
+    if r.get("isSidechain") is True:
+        return
+    if is_compaction(r):
+        # A compaction writes no usage record, so until the next request
+        # the last reading is the size from BEFORE it — 300k on a window
+        # that now holds 80k.  postTokens is the compacted conversation
+        # alone (see read_turns); what it leaves out is the system prompt,
+        # the tools and the files and skills re-attached after it, and
+        # the session's first reading carries the same set.  Over 520
+        # local compactions on 2026-10-16, postTokens + that first reading
+        # came within -5.8k / +9.6k (p10 / p90) of the next request's
+        # reading, median -1k; postTokens + a fixed 46k, the fallback for
+        # a file with no reading before its boundary, ran -6k / +65k.
+        post = (r.get("compactMetadata") or {}).get("postTokens") or 0
+        if post:
+            f.ctx = post + (f.first_ctx or COMPACT_OVERHEAD)
+            f.ctx_est = True
+        return
+    if not kept:
+        return
+    u = r["message"]["usage"]
+    # Skip a request whose usage is all zero.  That is how an
+    # interrupted request is recorded, and letting it win the
+    # last-write would blank the whole 🧠 cell on the status line for
+    # the rest of the session.  See read_turns for the count.
+    _c = ((u.get("input_tokens") or 0)
+          + (u.get("cache_creation_input_tokens") or 0)
+          + (u.get("cache_read_input_tokens") or 0))
+    if _c:
+        f.ctx, f.ctx_est = _c, False
+        f.first_ctx = f.first_ctx or _c
+
+
+def _fold_last_texts(f: TranscriptFold, r: dict) -> None:
+    """The last prompt typed and the last text the assistant wrote."""
+    c = (r.get("message") or {}).get("content")
+    if (r.get("type") == "user" and r.get("userType") == "external"
+            and isinstance(c, str) and len(c) > 0
+            and not c.startswith("<")):
+        f.user_ts, f.user_text = r.get("timestamp") or "", c
+    if r.get("type") == "assistant":
+        blocks = (r.get("message") or {}).get("content") or []
+        if isinstance(blocks, list):
+            texts = [b for b in blocks
+                     if isinstance(b, dict) and b.get("type") == "text"]
+            if texts:
+                f.asst_text = texts[-1].get("text") or ""
+                f.asst_ts = r.get("timestamp") or ""
+
+
+def _fold_clock(f: TranscriptFold, r: dict) -> None:
+    """Time spent ANSWERING, which is not the time the session has existed.
+    A turn runs from the prompt that opens it to the last record before the
+    next prompt, so summing those spans counts the working time and skips
+    every gap where the session sat waiting for someone to type.  The two
+    figures together are the point of the pair: 1.9h of work inside an 18h
+    session says something neither number says alone.
+
+    The ETA belongs to the turn it was written in: a new prompt clears it,
+    and so does the answer finishing — an assistant record that ends its
+    turn, with no work after it.  A report from a turn that is over is not
+    an estimate of anything still running."""
+    f.queued = max(0, f.queued + queue_step(r))
+    f.compactions += is_compaction(r)
+    scan_tool_spans(r, f.pending, f.tools, f.blocked)
+    a, d = diff_lines(r, f.wrote)
+    f.added += a
+    f.removed += d
+    # The tag the start line prints: the promptId and turnIndex of the
+    # turn opened last, read as read_turns reads a turn's.
+    if turn_start_text(r) is not None:
+        f.opened = {"pid": "", "tidx": None}
+    _stamp_turn_id(f.opened, r)
+    if r.get("isSidechain") is not True:
+        live_eta(r, f.eta_state)
+        scan_background(r, f.background)
+    t = ts_epoch(r.get("timestamp") or "")
+    if t is None:
+        return
+    if f.first is None:
+        f.first = t
+    if r.get("isSidechain") is not True:
+        f.last_seen = t
+        # The answer ending opens the idle; the next request or tool
+        # result, or a prompt, closes it.  Not any work record: Claude
+        # Code writes system records after the end, and they are not
+        # the assistant answering.
+        if ends_turn(r):
+            f.idle_at = t
+        elif (r.get("type") == "assistant" or turn_start_text(r) is not None
+              or (r.get("type") == "user" and isinstance(
+                  (r.get("message") or {}).get("content"), list))):
+            f.idle_at = 0.0
+    if turn_start_text(r) is not None:
+        if f.open_at is not None and f.prev > f.open_at:
+            f.spans.append((f.open_at, f.prev))
+        f.open_at = f.prev = t
+    elif f.open_at is not None and is_work(r):
+        f.prev = t
+
+
+def transcript_finish(f: TranscriptFold, agents: Sequence[AgentRec],
+                      agent_etas: Sequence[tuple] = (),
+                      now: Optional[float] = None) -> Transcript:
+    """read_transcript's figures off a fold, with what is only known at
+    render: the agents' records and ETAs, and `now`.  `f` is left as it
+    was.  The agents are added after every main record, as the whole fold
+    adds them, so the floats come out the same."""
+    fresh, cwrite, cread, down = f.fresh, f.cwrite, f.cread, f.down
     # A compaction's two halves summed as turn_cost sums its turn's: the
     # output, then the cache read.
     own_parts = tuple((e, c[1] + c[0] if isinstance(c, list) else c)
-                      for e, c in own_parts)
+                      for e, c in f.parts)
     own_usd = add_up(c for _, c in own_parts) if own_parts else 0.0
     own_in = fresh + cwrite + cread
     own_up = int(fresh + W_CACHE_WRITE * cwrite + W_CACHE_READ * cread)
     own_down = down
     own_cache = int(100 * cread / own_in) if own_in > 0 else -1
-    if agents is None:                  # no caller-supplied walk: do it here,
-        own_etas = []                   # and take the agents' ETAs off it too
-        agents = agent_records(path, etas=own_etas)
-        agent_etas = tuple(agent_etas) + tuple(own_etas)
-    agent_etas = live_agent_etas(records, agent_etas)
+    agent_etas = live_agent_etas_of(f.ends, agent_etas)
     for a in agents:
         fresh += a.fresh
         cwrite += a.cache_write
@@ -1698,120 +1904,8 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
         down += a.out
     in_all = fresh + cwrite + cread
 
-    # Walked over `records` rather than `reqs` so a compaction boundary falls
-    # in its place among the readings; `kept` is the dedupe's choice of them.
-    kept = {id(r) for r in reqs}
-    ctx = first_ctx = 0
-    ctx_est = False
-    for r in records:
-        if r.get("isSidechain") is True:
-            continue
-        if is_compaction(r):
-            # A compaction writes no usage record, so until the next request
-            # the last reading is the size from BEFORE it — 300k on a window
-            # that now holds 80k.  postTokens is the compacted conversation
-            # alone (see read_turns); what it leaves out is the system prompt,
-            # the tools and the files and skills re-attached after it, and
-            # the session's first reading carries the same set.  Over 520
-            # local compactions on 2026-10-16, postTokens + that first reading
-            # came within -5.8k / +9.6k (p10 / p90) of the next request's
-            # reading, median -1k; postTokens + a fixed 46k, the fallback for
-            # a file with no reading before its boundary, ran -6k / +65k.
-            post = (r.get("compactMetadata") or {}).get("postTokens") or 0
-            if post:
-                ctx = post + (first_ctx or COMPACT_OVERHEAD)
-                ctx_est = True
-            continue
-        if id(r) not in kept:
-            continue
-        u = r["message"]["usage"]
-        # Skip a request whose usage is all zero.  That is how an
-        # interrupted request is recorded, and letting it win the
-        # last-write would blank the whole 🧠 cell on the status line for
-        # the rest of the session.  See read_turns for the count.
-        _c = ((u.get("input_tokens") or 0)
-              + (u.get("cache_creation_input_tokens") or 0)
-              + (u.get("cache_read_input_tokens") or 0))
-        if _c:
-            ctx, ctx_est = _c, False
-            first_ctx = first_ctx or _c
-
-    user_ts = user_text = asst_ts = asst_text = ""
-    for r in records:
-        c = (r.get("message") or {}).get("content")
-        if (r.get("type") == "user" and r.get("userType") == "external"
-                and isinstance(c, str) and len(c) > 0
-                and not c.startswith("<")):
-            user_ts, user_text = r.get("timestamp") or "", c
-        if r.get("type") == "assistant":
-            blocks = (r.get("message") or {}).get("content") or []
-            if isinstance(blocks, list):
-                texts = [b for b in blocks
-                         if isinstance(b, dict) and b.get("type") == "text"]
-                if texts:
-                    asst_text = texts[-1].get("text") or ""
-                    asst_ts = r.get("timestamp") or ""
-
-    # Time spent ANSWERING, which is not the time the session has existed.  A
-    # turn runs from the prompt that opens it to the last record before the
-    # next prompt, so summing those spans counts the working time and skips
-    # every gap where the session sat waiting for someone to type.  The two
-    # figures together are the point of the pair: 1.9h of work inside an 18h
-    # session says something neither number says alone.
-    spans = []
-    tools = []
-    blocked = []
-    pending = {}
-    first = open_at = prev = None
-    opened = _new_turn("", "")  # the open turn, for its promptId alone
-    wrote: set = set()          # tool-use ids diff_lines has counted
-    added = removed = 0
-    # The ETA belongs to the turn it was written in: a new prompt clears it,
-    # and so does the answer finishing — an assistant record that ends its
-    # turn, with no work after it.  A report from a turn that is over is not
-    # an estimate of anything still running.
-    eta_state = new_eta_state()
-    queued = compactions = 0
-    background = {}
-    idle_at = last_seen = 0.0
-    for r in records:
-        queued = max(0, queued + queue_step(r))
-        compactions += is_compaction(r)
-        scan_tool_spans(r, pending, tools, blocked)
-        a, d = diff_lines(r, wrote)
-        added += a
-        removed += d
-        # The tag the start line prints: the promptId and turnIndex of the
-        # turn opened last, read as read_turns reads a turn's.
-        if turn_start_text(r) is not None:
-            opened = _new_turn("", "")
-        _stamp_turn_id(opened, r)
-        if r.get("isSidechain") is not True:
-            live_eta(r, eta_state)
-            scan_background(r, background)
-        t = ts_epoch(r.get("timestamp") or "")
-        if t is None:
-            continue
-        if first is None:
-            first = t
-        if r.get("isSidechain") is not True:
-            last_seen = t
-            # The answer ending opens the idle; the next request or tool
-            # result, or a prompt, closes it.  Not any work record: Claude
-            # Code writes system records after the end, and they are not
-            # the assistant answering.
-            if ends_turn(r):
-                idle_at = t
-            elif (r.get("type") == "assistant" or turn_start_text(r) is not None
-                  or (r.get("type") == "user" and isinstance(
-                      (r.get("message") or {}).get("content"), list))):
-                idle_at = 0.0
-        if turn_start_text(r) is not None:
-            if open_at is not None and prev > open_at:
-                spans.append((open_at, prev))
-            open_at = prev = t
-        elif open_at is not None and is_work(r):
-            prev = t
+    open_at, prev, pending = f.open_at, f.prev, f.pending
+    spans = list(f.spans)
     if open_at is not None and prev > open_at:
         spans.append((open_at, prev))
     # The oldest call still running, for the 🛫 cell: only one asked for in
@@ -1820,9 +1914,17 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
                if name not in WAITING_TOOLS and open_at and t >= open_at]
     waits = [t for t, name in pending.values()
              if name in WAITING_TOOLS and open_at and t >= open_at]
+    tools, blocked = list(f.tools), list(f.blocked)
     if now is not None:
         open_tool_spans(pending, now, tools, blocked)
     busy, tool, blocked_s = thread_clock(spans, tools, blocked)
+    first, ctx, ctx_est = f.first, f.ctx, f.ctx_est
+    user_ts, user_text = f.user_ts, f.user_text
+    asst_ts, asst_text = f.asst_ts, f.asst_text
+    eta_state, background = f.eta_state, f.background
+    queued, compactions, idle_at = f.queued, f.compactions, f.idle_at
+    last_seen, own_est = f.last_seen, f.own_est
+    added, removed, opened = f.added, f.removed, f.opened
 
     return Transcript(
         busy_s=busy,
@@ -2380,188 +2482,244 @@ def read_turns(path: str, agents: Optional[Sequence[AgentRec]] = None,
 
     Assistant records appearing before the first recognised prompt are dropped:
     there is no turn to attribute them to.
-    """
-    turns = []      # built mutably here, frozen into NamedTuples on the way out
-    settled = 0     # turns that a Stop hook has already run past
-    cur = None
-    seen = set()
-    by_pid = {}     # promptId → the turn open when a record carrying it was read
-    last_stop = None    # epoch of the last Stop record, for late_agent_turn
-    pending = {}        # tool calls asked for and not yet answered; see below
-    ends = {}           # agent id → when it last finished; see scan_agent_end
-    wrote = set()       # tool-use ids diff_lines has counted
-    for r in _records(path):
-        scan_agent_end(r, ends)
-        # What the record's tool result wrote, onto the turn it is filed
-        # under below: the main thread's 💾, turn by turn.  The ids are
-        # deduped across the file, as the requests are.
-        added, removed = diff_lines(r, wrote)
-        # Every tool call, onto the turn open when its RESULT arrives: the
-        # scan read_transcript makes for the status line's 🔧, so the two
-        # readouts count the same calls by the same rule.  `pending` spans
-        # turns, as it spans the file there.  A record before the first
-        # prompt still has to be scanned — its call can be answered inside
-        # a turn — and its own spans go nowhere, as its billing does.
-        scan_tool_spans(r, pending, cur["tools"] if cur else [],
-                        cur["waits"] if cur else [])
-        pid = r.get("promptId")
-        text = turn_start_text(r)
-        if text is not None:
-            # A queued message can be recorded BOTH ways — once typed, once
-            # delivered — in the one case in 859 where the queue drained
-            # while the assistant was already idle.  The earlier of the two
-            # has no records under it yet, so replacing it in place keeps one
-            # turn rather than two, and keeps the later timestamp, which is
-            # when the answering actually started.
-            if (cur is not None and cur["n"] == 0 and cur["t1"] is None
-                    and cur["text"] == text):
-                cur["ts"] = r.get("timestamp") or cur["ts"]
-                cur["t0"] = ts_epoch(r.get("timestamp") or "")
-            else:
-                cur = _new_turn(r.get("timestamp") or "", text)
-                turns.append(cur)
-            _stamp_turn_id(cur, r)
-            cur["la"] += added
-            cur["lr"] += removed
-            if pid:
-                by_pid[pid] = cur
-            continue
-        # Every user record of a turn carries the turn's promptId — the
-        # opener, a queued delivery, a wake, and every tool result — so the
-        # index is built from all of them, not from the opener alone.  A
-        # turn opened by a queue-operation record has no id on its opener
-        # and is indexed through its tool results instead.
-        if pid and cur is not None and not cur.get("compact"):
-            by_pid.setdefault(pid, cur)
-            _stamp_turn_id(cur, r)
-        if cur is not None:
-            cur["la"] += added
-            cur["lr"] += removed
-            # The last ETA the main thread reported in the turn, read as
-            # live_eta reads one, and here before the dedupe below can skip
-            # the record that carries it: a message's text block shares
-            # its requestId with the rest of the message.
-            if r.get("isSidechain") is not True:
-                report = eta_report([r])
-                if report:
-                    cur["eta"] = report
-        if r.get("subtype") == "compact_boundary":
-            # A compaction is the one expensive operation that leaves NO usage
-            # record anywhere — the request that summarises the conversation
-            # is never written to the transcript.  What IS written is this
-            # boundary record, and between them its fields say almost
-            # everything the row needs:
-            #
-            #   preTokens   what was fed to the summariser.  Measured against
-            #               our own last reading before the boundary — 292,645
-            #               against 289,457 — so it is the same quantity this
-            #               file calls ctx, to within a percent.
-            #   durationMs  how long it took, which is otherwise unknowable:
-            #               the turn has no records to bound it with.
-            #   postTokens  NOT comparable to our readings, and deliberately
-            #               unused: it counts the compacted conversation
-            #               alone, where every reading here also carries the
-            #               system prompt and the tool definitions.  8,737
-            #               against the 95,691 the next request measured.  The
-            #               drop across the boundary is reported by that next
-            #               turn, in units that can be checked.
-            #
-            # The input is charged at the cache-read rate.  The summariser is
-            # handed the conversation that was live seconds earlier, so it
-            # reads the prefix the session has been paying to keep warm; the
-            # alternative — full rate on 300k tokens — would put the figure
-            # ten times too high.
-            # An AUTO compaction has no /compact prompt in front of it: the
-            # boundary lands inside whatever turn was running, and filling
-            # that turn in would overwrite a real prompt's figures with the
-            # compaction's.  So the compaction gets a turn of its own unless
-            # the one open is the /compact that asked for it.
-            md = r.get("compactMetadata") or {}
-            if cur is None or cur["n"] or cur["text"].strip() != "/compact":
-                cur = _new_turn(r.get("timestamp") or "",
-                                "/compact (%s)" % (md.get("trigger") or "auto"))
-                turns.append(cur)
-            cur["cr"] = md.get("preTokens") or 0
-            cur["usd"][2] = cur["cr"] * P_CR
-            cur["n"] = 1
-            cur["dur"] = (md.get("durationMs") or 0) / 1000.0
-            cur["compact"] = True
-        elif (r.get("subtype") == "stop_hook_summary"
-              and not r.get("isSidechain")):
-            last_stop = ts_epoch(r.get("timestamp") or "") or last_stop
-            # The transcript's own record that a Stop hook RAN, written after
-            # the hook returns.  It is the only mark in the file of where a
-            # previous cost line drew its window, and it is what makes
-            # "report each compaction exactly once" true rather than nearly
-            # true.
-            #
-            # The pairing it replaces inferred that boundary from the prompts:
-            # a compaction falls between two consecutive answered prompts, and
-            # the second of them reports it.  That holds only while every Stop
-            # sees its own prompt.  When one does not — the transcript is not
-            # flushed in step with the hook, see read_turns_settled — two
-            # consecutive Stops share a window, the pair that straddles the
-            # compaction never gets a Stop of its own, and the row is not
-            # late: it is gone.  Measured, in this file's own transcript: 18k
-            # of cache-read and 1.2m of wall clock reported nowhere.
-            settled = len(turns)
-        elif r.get("isCompactSummary") and cur is not None and cur.get("compact"):
-            # The one figure the metadata does not carry is what the
-            # summariser WROTE, and this is it — arriving one record after the
-            # boundary, and with an earlier timestamp than it.  Estimated from
-            # the text, and the only estimate on either row: everything else
-            # here is read or measured.
-            _c = (r.get("message") or {}).get("content")
-            if isinstance(_c, str):
-                cur["out"] = int(len(_c) / SUMMARY_CPT)
-                cur["usd"][1] = cur["out"] * P_OUT
-        elif r.get("type") == "assistant" and (r.get("message") or {}).get("usage"):
-            k = r.get("requestId") or (r.get("message") or {}).get("id")
-            if k in seen or cur is None:
-                continue
-            seen.add(k)
-            u = r["message"]["usage"]
-            cur["fresh"] += u.get("input_tokens", 0)
-            cur["cw"] += u.get("cache_creation_input_tokens", 0)
-            cur["cr"] += u.get("cache_read_input_tokens", 0)
-            cur["out"] += u.get("output_tokens", 0)
-            cur["n"] += 1
-            # Priced here, per record, at the record's own model: the four
-            # dollar sums are what turn_cost totals, and `parts` carries the
-            # same figure so that a window-bounded share and an unbounded one
-            # stay on one scale — the parts total the whole EXACTLY.
-            _add_usd(cur, ts_epoch(r.get("timestamp") or ""),
-                     r["message"].get("model"),
-                     u.get("input_tokens", 0),
-                     u.get("cache_creation_input_tokens", 0),
-                     u.get("cache_read_input_tokens", 0),
-                     u.get("output_tokens", 0))
-            if not r.get("isSidechain"):
-                # LAST-WRITE-WINS, but only over readings that exist.  An
-                # interrupted request is written with every usage field zero,
-                # and taking that as the reading WIPES the real one captured
-                # seconds earlier — the turn then reports no context at all
-                # and its 🧠 cell goes blank.  20 such records in 25,782, and
-                # they cluster exactly where they hurt: a request is
-                # interrupted when the user types over it, which is the same
-                # moment they are watching the line for an answer.
-                _ctx = (u.get("input_tokens", 0)
-                        + u.get("cache_creation_input_tokens", 0)
-                        + u.get("cache_read_input_tokens", 0))
-                if _ctx:
-                    cur["ctx"] = _ctx
-        # Every stamped record of the ANSWER moves the turn's end, not just
-        # the billed ones: a turn that finishes with a tool result took until
-        # that result, and counting only usage records would stop the clock
-        # early.  is_work is what keeps the user's own time out of it.
-        if cur is not None and is_work(r):
-            _t = ts_epoch(r.get("timestamp") or "")
-            if _t is not None:
-                cur["t1"] = _t
 
+    A fold of every record, finished: see fold_turns and turns_finish.
+    """
+    f = fold_turns_all(_records(path))
+    return turns_finish(f, agents, path, held)
+
+
+class TurnsFold:
+    """What read_turns carries from one record of the main transcript to
+    the next: the turns as built so far, the last of them the one open.
+    Every turn but the open one is final.  fold_turns adds a record, and
+    turns_finish files the agents' records under a copy of the turns, so
+    the fold can go on."""
+
+    __slots__ = ("turns", "settled", "seen", "by_pid", "last_stop",
+                 "pending", "ends", "wrote")
+
+    def __init__(self):
+        self.turns = []         # built mutably, frozen into Turns by the finish
+        self.settled = 0        # turns that a Stop hook has already run past
+        self.seen = OSet()      # request ids billed, which agents dedupe on
+        self.by_pid = {}        # promptId → the index of the turn open when
+                                # a record carrying it was read
+        self.last_stop = None   # epoch of the last Stop record
+        self.pending = {}       # tool calls asked for, not yet answered
+        self.ends = {}          # agent id → when it last finished
+        self.wrote = OSet()     # tool-use ids diff_lines has counted
+
+
+def fold_turns_all(records, f: Optional[TurnsFold] = None) -> TurnsFold:
+    """`records` folded into `f`, a fresh fold by default."""
+    f = TurnsFold() if f is None else f
+    for r in records:
+        fold_turns(f, r)
+    return f
+
+
+def turns_fold_with(f: TurnsFold, tail: Sequence[dict]) -> TurnsFold:
+    """`f` with `tail` folded in, on a copy where there is a tail; see
+    transcript_fold_with."""
+    return fold_turns_all(tail, copy.deepcopy(f)) if tail else f
+
+
+def fold_turns(f: TurnsFold, r: dict) -> None:
+    """Fold one record of the main transcript into `f`."""
+    turns = f.turns
+    cur = turns[-1] if turns else None
+    scan_agent_end(r, f.ends)
+    # What the record's tool result wrote, onto the turn it is filed under
+    # below: the main thread's 💾, turn by turn.  The ids are deduped across
+    # the file, as the requests are.
+    added, removed = diff_lines(r, f.wrote)
+    # Every tool call, onto the turn open when its RESULT arrives: the scan
+    # read_transcript makes for the status line's 🔧, so the two readouts
+    # count the same calls by the same rule.  `pending` spans turns, as it
+    # spans the file there.  A record before the first prompt still has to
+    # be scanned — its call can be answered inside a turn — and its own
+    # spans go nowhere, as its billing does.
+    scan_tool_spans(r, f.pending, cur["tools"] if cur else [],
+                    cur["waits"] if cur else [])
+    pid = r.get("promptId")
+    text = turn_start_text(r)
+    if text is not None:
+        # A queued message can be recorded BOTH ways — once typed, once
+        # delivered — in the one case in 859 where the queue drained while
+        # the assistant was already idle.  The earlier of the two has no
+        # records under it yet, so replacing it in place keeps one turn
+        # rather than two, and keeps the later timestamp, which is when the
+        # answering actually started.
+        if (cur is not None and cur["n"] == 0 and cur["t1"] is None
+                and cur["text"] == text):
+            cur["ts"] = r.get("timestamp") or cur["ts"]
+            cur["t0"] = ts_epoch(r.get("timestamp") or "")
+        else:
+            cur = _new_turn(r.get("timestamp") or "", text)
+            turns.append(cur)
+        _stamp_turn_id(cur, r)
+        cur["la"] += added
+        cur["lr"] += removed
+        if pid:
+            f.by_pid[pid] = len(turns) - 1
+        return
+    # Every user record of a turn carries the turn's promptId — the opener,
+    # a queued delivery, a wake, and every tool result — so the index is
+    # built from all of them, not from the opener alone.  A turn opened by a
+    # queue-operation record has no id on its opener and is indexed through
+    # its tool results instead.
+    if pid and cur is not None and not cur.get("compact"):
+        f.by_pid.setdefault(pid, len(turns) - 1)
+        _stamp_turn_id(cur, r)
+    if cur is not None:
+        cur["la"] += added
+        cur["lr"] += removed
+        # The last ETA the main thread reported in the turn, read as
+        # live_eta reads one, and here before the dedupe below can skip the
+        # record that carries it: a message's text block shares its
+        # requestId with the rest of the message.
+        if r.get("isSidechain") is not True:
+            report = eta_report([r])
+            if report:
+                cur["eta"] = report
+    if r.get("subtype") == "compact_boundary":
+        # A compaction is the one expensive operation that leaves NO usage
+        # record anywhere — the request that summarises the conversation is
+        # never written to the transcript.  What IS written is this boundary
+        # record, and between them its fields say almost everything the row
+        # needs:
+        #
+        #   preTokens   what was fed to the summariser.  Measured against
+        #               our own last reading before the boundary — 292,645
+        #               against 289,457 — so it is the same quantity this
+        #               file calls ctx, to within a percent.
+        #   durationMs  how long it took, which is otherwise unknowable:
+        #               the turn has no records to bound it with.
+        #   postTokens  NOT comparable to our readings, and deliberately
+        #               unused: it counts the compacted conversation
+        #               alone, where every reading here also carries the
+        #               system prompt and the tool definitions.  8,737
+        #               against the 95,691 the next request measured.  The
+        #               drop across the boundary is reported by that next
+        #               turn, in units that can be checked.
+        #
+        # The input is charged at the cache-read rate.  The summariser is
+        # handed the conversation that was live seconds earlier, so it reads
+        # the prefix the session has been paying to keep warm; the
+        # alternative — full rate on 300k tokens — would put the figure ten
+        # times too high.
+        # An AUTO compaction has no /compact prompt in front of it: the
+        # boundary lands inside whatever turn was running, and filling that
+        # turn in would overwrite a real prompt's figures with the
+        # compaction's.  So the compaction gets a turn of its own unless the
+        # one open is the /compact that asked for it.
+        md = r.get("compactMetadata") or {}
+        if cur is None or cur["n"] or cur["text"].strip() != "/compact":
+            cur = _new_turn(r.get("timestamp") or "",
+                            "/compact (%s)" % (md.get("trigger") or "auto"))
+            turns.append(cur)
+        cur["cr"] = md.get("preTokens") or 0
+        cur["usd"][2] = cur["cr"] * P_CR
+        cur["n"] = 1
+        cur["dur"] = (md.get("durationMs") or 0) / 1000.0
+        cur["compact"] = True
+    elif (r.get("subtype") == "stop_hook_summary"
+          and not r.get("isSidechain")):
+        f.last_stop = ts_epoch(r.get("timestamp") or "") or f.last_stop
+        # The transcript's own record that a Stop hook RAN, written after
+        # the hook returns.  It is the only mark in the file of where a
+        # previous cost line drew its window, and it is what makes "report
+        # each compaction exactly once" true rather than nearly true.
+        #
+        # The pairing it replaces inferred that boundary from the prompts: a
+        # compaction falls between two consecutive answered prompts, and the
+        # second of them reports it.  That holds only while every Stop sees
+        # its own prompt.  When one does not — the transcript is not flushed
+        # in step with the hook, see read_turns_settled — two consecutive
+        # Stops share a window, the pair that straddles the compaction never
+        # gets a Stop of its own, and the row is not late: it is gone.
+        # Measured, in this file's own transcript: 18k of cache-read and
+        # 1.2m of wall clock reported nowhere.
+        f.settled = len(turns)
+    elif r.get("isCompactSummary") and cur is not None and cur.get("compact"):
+        # The one figure the metadata does not carry is what the summariser
+        # WROTE, and this is it — arriving one record after the boundary,
+        # and with an earlier timestamp than it.  Estimated from the text,
+        # and the only estimate on either row: everything else here is read
+        # or measured.
+        _c = (r.get("message") or {}).get("content")
+        if isinstance(_c, str):
+            cur["out"] = int(len(_c) / SUMMARY_CPT)
+            cur["usd"][1] = cur["out"] * P_OUT
+    elif r.get("type") == "assistant" and (r.get("message") or {}).get("usage"):
+        k = r.get("requestId") or (r.get("message") or {}).get("id")
+        if k in f.seen or cur is None:
+            return
+        f.seen.add(k)
+        u = r["message"]["usage"]
+        cur["fresh"] += u.get("input_tokens", 0)
+        cur["cw"] += u.get("cache_creation_input_tokens", 0)
+        cur["cr"] += u.get("cache_read_input_tokens", 0)
+        cur["out"] += u.get("output_tokens", 0)
+        cur["n"] += 1
+        # Priced here, per record, at the record's own model: the four
+        # dollar sums are what turn_cost totals, and `parts` carries the
+        # same figure so that a window-bounded share and an unbounded one
+        # stay on one scale — the parts total the whole EXACTLY.
+        _add_usd(cur, ts_epoch(r.get("timestamp") or ""),
+                 r["message"].get("model"),
+                 u.get("input_tokens", 0),
+                 u.get("cache_creation_input_tokens", 0),
+                 u.get("cache_read_input_tokens", 0),
+                 u.get("output_tokens", 0))
+        if not r.get("isSidechain"):
+            # LAST-WRITE-WINS, but only over readings that exist.  An
+            # interrupted request is written with every usage field zero,
+            # and taking that as the reading WIPES the real one captured
+            # seconds earlier — the turn then reports no context at all and
+            # its 🧠 cell goes blank.  20 such records in 25,782, and they
+            # cluster exactly where they hurt: a request is interrupted when
+            # the user types over it, which is the same moment they are
+            # watching the line for an answer.
+            _ctx = (u.get("input_tokens", 0)
+                    + u.get("cache_creation_input_tokens", 0)
+                    + u.get("cache_read_input_tokens", 0))
+            if _ctx:
+                cur["ctx"] = _ctx
+    # Every stamped record of the ANSWER moves the turn's end, not just the
+    # billed ones: a turn that finishes with a tool result took until that
+    # result, and counting only usage records would stop the clock early.
+    # is_work is what keeps the user's own time out of it.
+    if cur is not None and is_work(r):
+        _t = ts_epoch(r.get("timestamp") or "")
+        if _t is not None:
+            cur["t1"] = _t
+
+
+def _turn_copy(t: dict) -> dict:
+    """A turn as the fold built it, with its own copies of what
+    _fold_agents adds to, so the agents a finish files under it never reach
+    the fold."""
+    return dict(t, usd=list(t["usd"]), parts=list(t["parts"]),
+                aids=list(t["aids"]))
+
+
+def turns_finish(f: TurnsFold, agents: Optional[Sequence[AgentRec]],
+                 path: str, held: Optional[Dict[str, int]] = None
+                 ) -> Tuple[Turn, ...]:
+    """read_turns' turns off a fold, with what is only known at render: the
+    agents' records (None reads them beside `path`, deduped against a copy
+    of the requests the main thread billed), the Stop hook's offsets and
+    `held`.  `f` is left as it was: the agents are filed under copies of
+    its turns, after every main record, as the whole fold files them."""
+    turns = [_turn_copy(t) for t in f.turns]
+    by_pid = {pid: turns[i] for pid, i in f.by_pid.items()}
+    settled = f.settled
     late = _fold_agents(turns, by_pid,
-                        agent_records(path, seen) if agents is None else agents,
-                        last_stop, agent_offsets(path), ends, held)
+                        agent_records(path, set(f.seen))
+                        if agents is None else agents,
+                        f.last_stop, agent_offsets(path), f.ends, held)
 
     # Context growth per turn: how much bigger the window got while this prompt
     # was answered.  The first turn of a transcript gets None rather than its

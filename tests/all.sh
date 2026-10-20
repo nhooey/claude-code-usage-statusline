@@ -56,6 +56,7 @@ codex|.|python3 tests/codex.py
 formatting|.|python3 tests/formatting.py
 port-cli|.|python3 tests/port-cli.py
 agents|.|python3 tests/agents.py
+fold|.|python3 tests/fold.py
 subagent|.|python3 tests/subagent.py
 claude-subagent-render|.|python3 tests/claude-subagent-render.py
 rate|.|python3 tests/rate.py

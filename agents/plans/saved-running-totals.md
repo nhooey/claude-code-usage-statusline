@@ -260,6 +260,34 @@ Each step lands as its own commit, and the tests pass after each one.
    go on to the end, and compare the result with the whole fold, field for
    field. The open-line undo gets cases of its own: a half-written last
    line, finished, then the line completed.
+
+   **Status 2026-10-20: done.** As built:
+   - Two folds, not one: `TranscriptFold` and `TurnsFold` (`TranscriptFold`
+     and `TurnsFold` in the Python too), each with its own `pending`,
+     `wrote` and `ends`. The two request-id sets are not the one set the
+     table above names: the status line's dedupe keys a missing id as `"?"`
+     and counts records before the first prompt, and the turns' does
+     neither, so one set would move a figure. Two folds also keep the
+     Python's `read_transcript` from paying for the turns, and the reverse.
+   - The functions are `foldTranscript` / `transcriptFinish` and
+     `foldTurns` / `turnsFinish` (`fold_transcript`, `transcript_finish`,
+     `fold_turns`, `turns_finish`), with `foldTranscriptAll` and
+     `foldTurnsAll` for a list. `transcriptOf`, `turnsOf`,
+     `read_transcript` and `read_turns` are wrappers, and every shared case
+     and golden passes unchanged.
+   - `byPid` maps to a turn's index, so the finish can file the agents
+     under copies of the turns. The open turn is always the last.
+   - The open line is folded on a copy (`transcriptFoldWith`,
+     `turnsFoldWith`, and `copy.deepcopy` in the Python), not undone: the
+     copy is the whole state, but only while a last line has no newline.
+   - The cases are `mod/test/main_fold.test.ts` and a new suite,
+     `tests/fold.py`: every fixture finished at every record boundary and
+     folded on, and cut inside each line and just before its newline,
+     finished, and completed. The Python's `_records` also yields records
+     that are not objects, which its readers raise on; the suite hands the
+     folds only objects, as the TypeScript's `_recordsOf` keeps them.
+   - The Python is no slower: on the 206 MB transcript, `read_transcript`
+     went from 1.8s to 1.4s and `read_turns` from 1.2s to 1.3s.
 3. **The real-transcript check.** `mod/tools/check-fold.ts` and
    `tests/fold_real.py` walk `~/.claude/projects/**/*.jsonl` (4,484 files
    here), not in CI, since they are private. For each file they compare the

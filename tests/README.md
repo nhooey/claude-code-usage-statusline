@@ -419,6 +419,11 @@ These pin values rather than rows, so they assert instead of comparing files.
   waiting; a call still running counts to now on a live session), and the
   same partition per turn, which the receipt's ⌛🤖 and 🔧 draw and which sums
   to the status line's.
+- **`fold.py`** — `read_transcript` and `read_turns` as a fold and a
+  finish: each fixture transcript folded to every record boundary, finished,
+  and folded on to the end reads as its whole fold, and so does one with a
+  half-written last line folded on a copy and then completed.
+  `mod/test/main_fold.test.ts` runs the same cases through the TypeScript.
 - **`subagent.py`** — `--mode subagent`: finding an agent's file (directly
   under `subagents/`, or under `subagents/workflows/*/`), deduplicating
   requests, lines written, the agent's own ⌛ 🤖 🔧 🚦 split (a coordinator
