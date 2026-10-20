@@ -295,6 +295,19 @@ Each step lands as its own commit, and the tests pass after each one.
    boundaries, mid-line, and either side of every compaction. They also
    report the saved state's size, and that size replaces the estimate above.
    Each later step reruns them before it lands.
+
+   **Status 2026-10-20: done.** As built:
+   - `tests/fold_real.py` and `mod/tools/check-fold.ts`, run together by
+     `check-folds` in the dev shell, with `--largest N`, `--seed S` and
+     transcripts by name. The breaks are three seeded record boundaries,
+     either side of every compaction, and one cut inside a line, folded on
+     a copy and then completed. The finishes take no agents: the agents
+     never reach the fold.
+   - First run, every file under `~/.claude/projects` (4,495, the agents'
+     included, 10.1 GB): none broke, in either port. The Python took 173s
+     and the TypeScript 109s.
+   - There is no saved state yet to measure, so the size is reported from
+     step 4 on, which saves it.
 4. **The state saved as text,** in both ports: the log, the head and its
    cap. Shared cases round-trip each fixture's state at each break point
    across the ports. The Python writes and the TypeScript reads on, then the

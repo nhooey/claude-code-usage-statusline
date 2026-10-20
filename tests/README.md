@@ -487,6 +487,21 @@ Both walk `~/.claude/projects/`, so their runtime scales with your history:
 one run read 149 sessions and took over ten minutes. Pass transcripts to bound
 it, and give it no timeout.
 
+### Breaking the folds over real transcripts
+
+```sh
+check-folds [--largest N] [--seed S] [FILE...]   # in the dev shell
+python3 tests/fold_real.py [...]                 # the Python alone
+node mod/tools/check-fold.ts [...]               # the TypeScript alone
+```
+
+`fold.py` breaks the main transcript's folds over the fixtures; these break
+them over every `*.jsonl` under `~/.claude/projects/`, the agents' files
+too, at three seeded record boundaries, either side of every compaction and
+once inside a line, and check each reads on as the whole fold. One line a
+file and a total. Over 4,495 files and 10.1 GB on 2026-10-20 the Python
+took 173s and the TypeScript 109s; `--largest 3` takes seconds.
+
 ### `--selftest`
 
 ```sh

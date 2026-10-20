@@ -105,6 +105,12 @@
               # test
               {
                 category = "test";
+                name = "check-folds";
+                help = "break the transcript folds over ~/.claude/projects in both ports; [--largest N] [--seed S] [FILE...]";
+                command = ''python3 "$PRJ_ROOT/tests/fold_real.py" "$@" && node "$PRJ_ROOT/mod/tools/check-fold.ts" "$@"'';
+              }
+              {
+                category = "test";
                 name = "tests";
                 help = "run every suite, or the ones named; --repeat N to catch a flake (tests/all.sh)";
                 command = ''bash "$PRJ_ROOT/tests/all.sh" "$@"'';
