@@ -465,31 +465,28 @@ and `npm test`.
 7. Making the file invalid (`"sticky": ["turns"]`) leaves the band drawing
    with the default, logs one warning naming `"turn"`, and shows one notice.
 
+## Decided (2026-10-20)
+
+1. **The flags that must agree.** Step 7 takes `hide` and `right-edge` off
+   the panel's command, and the panel warns when a flag overrides what the
+   files give for an option both ports must agree on.
+2. **The environment.** No environment variable is a setting: retire
+   `CODING_AGENT_USAGE_LINE_USAGE_SOURCE`, the one that is. Kept, as not
+   settings: secrets (`ANTHROPIC_ADMIN_KEY`, `OPENAI_ADMIN_KEY`,
+   `CLAUDE_OAUTH_ACCESS_TOKEN`, `CODEX_USAGE_*`), other programs' own
+   (`TERM*`, `TMUX`, `XDG_STATE_HOME`, `CODEX_HOME`), and the test
+   overrides (`CODING_AGENT_USAGE_LINE_STATE_DIR`, `_NOW`, `_CLAUDE_*`,
+   `_FIGURES_OUT`).
+3. **Lists replace** across layers.
+4. **The notice:** one `$.ui.notice` per file change, and the log.
+5. **The mod's timings** stay constants in `config.ts`, out of the spec.
+
 ## Open questions
 
-1. **The flags that must agree.** A flag on the panel's command beats the
-   project file for the panel, but the band has no flags, so the two can
-   disagree on `hide` or `right-edge` again. Should those options refuse a
-   flag (file only), should the panel warn when a flag differs from what the
-   files give, or is it enough that step 7 removes them from the command?
-2. **Committed or local for `sticky` here.** It is the user's own repository;
-   committed shares the preference with anyone who clones it, local keeps it
-   personal.
-3. **A worktree and the local file.** A worktree does not see the main
-   checkout's untracked `.local` file. Should the walk also look in the main
-   checkout (the `.git` file names it), or is a local file per worktree
-   right?
-4. **The environment variable.** `CODING_AGENT_USAGE_LINE_USAGE_SOURCE` is
-   not in the decided order. Proposed: between flags and the project files,
-   as most tools place the environment; or retire it now that the user file
-   can say the same.
-5. **Lists replace.** Proposed above; confirm, or should `hide` append
-   across layers (with some way to remove a path)?
-6. **File names and format.** `.coding-agent-usage-line.jsonc` at the
-   project root, against a directory (`.coding-agent-usage-line/config.jsonc`)
-   or a place under `.claude/`, which Codex projects lack.
-7. **The notice.** Is a `$.ui.notice` once per file change wanted, or the
-   log alone?
-8. **The mod's timings in files at all.** They are tuning for the mod's
-   author; they could stay in `config.ts` as constants and only the options
-   a person would set go to the spec.
+1. **Committed or private for `sticky` here.** It is the user's own
+   repository; committed shares the preference with anyone who clones it.
+2. **Where a project's private settings live,** so every worktree sees
+   them: an untracked file in the checkout is not in a worktree. Proposed:
+   in the user's config directory, one file per project keyed by its
+   `origin` remote, found from a worktree through the git common dir.
+3. **File names and format** of the committed project file.
