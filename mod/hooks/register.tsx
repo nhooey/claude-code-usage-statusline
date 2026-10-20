@@ -362,8 +362,11 @@ function line(Text: any, spans: readonly Span[], key: string,
 }
 
 /** The band's rows as they stand, at bandCols: 🎤, 🤖 and 🎮 while a turn
- * runs, the sticky ones once it ends; none without a status document. */
-async function bandNow($: $, isWorking: boolean): Promise<Span[][]> {
+ * runs, the sticky ones once it ends; none without a status document.
+ * `inset` is how far in from the terminal's left edge the container they
+ * are drawn in starts. */
+async function bandNow($: $, isWorking: boolean, inset = 0):
+  Promise<Span[][]> {
   const doc = await read($, status)
   if (doc === null) return []
   // At no indent, as the receipt's rows are (asked 2026-10-19).
@@ -371,7 +374,7 @@ async function bandNow($: $, isWorking: boolean): Promise<Span[][]> {
     at(doc as Dict, await read($, clockNow)), bandCols || 80, CONFIG.hide,
     { home: await home($), rate: await read($, rate),
       phase: isWorking || await read($, held) ? 'running' : 'done',
-      sticky: CONFIG.sticky })
+      sticky: CONFIG.sticky, inset })
 }
 
 /** The transcript's path, from a classic event's envelope, and the session
@@ -574,12 +577,17 @@ export const register: Register = on => {
     // The 💳 account and the band's rows under the footer line, in their
     // colours: Claude Code's own line first, from next(e), so its pills
     // stay live, and a node beside it in a column goes on the row below it
-    // (seen live 2026-10-20).
+    // (seen live 2026-10-20).  Claude Code draws the line's container
+    // CONFIG.hintInset columns in, so the rows are drawn that much
+    // narrower on the panel's columns: drawn at the full width, each cell
+    // stood that many columns right of the agent panel's, and the 💳 row
+    // ended past the grid (seen live 2026-10-20).
+    const inset = CONFIG.hintInset
     const account = CONFIG.accountPlace === 'row'
-      ? accountLine(st, fig, CONFIG.hide, cols, await home($)) : []
+      ? accountLine(st, fig, CONFIG.hide, cols - inset, await home($)) : []
     const lines = [...account.length ? [account] : [],
-      ...CONFIG.bandPlace === 'hint' ? await bandNow($, e.props.isWorking)
-        : []]
+      ...CONFIG.bandPlace === 'hint'
+        ? await bandNow($, e.props.isWorking, inset) : []]
     if (!lines.length) return row
     const { Box, Text } = $.ui.resolve(e)
     return (

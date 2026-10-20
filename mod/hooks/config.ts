@@ -46,6 +46,13 @@ export const CONFIG = {
   // take up the blank row Claude Code leaves between the footer and the
   // agent panel's `* main` (asked 2026-10-20, to see whether it can go).
   hintTuck: true,
+  // How many columns in from the terminal's left edge Claude Code draws
+  // the footer line's container, which the 💳 row and the band's rows
+  // under it share: they are drawn that much narrower, so their cells
+  // stack on the agent panel's and they end where its rows end (seen live
+  // 2026-10-20: drawn at the full width, every cell stood 2 columns right
+  // of the panel's).
+  hintInset: 2,
   // Draw the footer's tail as a ruler of column digits, each the last digit
   // of the column the mod reckons it lands in, to check the padding in each
   // footer shape: right, it ends on the band's last column (asked

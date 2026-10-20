@@ -57,6 +57,12 @@ export type BandOpts = {
   readonly phase: Phase;
   /** Blank columns before each row's label (`indented`). */
   readonly indent?: number;
+  /** Columns the container the rows are drawn in already stands in from
+   * the terminal's left edge: each row is drawn that much narrower, on the
+   * columns laid out at the full width, so its cells still land on the
+   * agent panel's columns and it ends where they end.  None where
+   * absent. */
+  readonly inset?: number;
   /** The rows that stay where they are drawn once a turn ends; see
    * RowName.  None where absent. */
   readonly sticky?: readonly RowName[];
@@ -611,11 +617,13 @@ export const MODE_PILLS: Readonly<Record<string, string>> = {
 export const TAIL_BLANK = "⠀";
 
 /** The band as drawn at `cols` under `hide`: its rows' spans, top to
- * bottom, on the fixed grid.  A hidden scope's row is left out. */
+ * bottom, on the fixed grid, each `opts.inset` columns narrower.  A hidden
+ * scope's row is left out. */
 export function bandLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], opts: BandOpts): Span[][] {
   const keys = fixedKeys(st, cols, hide);
+  const drawn = cols - (opts.inset ?? 0);
   return phaseRows(bandRows(st, fig, opts), opts.phase, opts.sticky)
     .filter((r) => !hidden(hide, r.scope))
-    .map((r) => draw(st, indented(r, opts.indent ?? 0), keys, cols, hide));
+    .map((r) => draw(st, indented(r, opts.indent ?? 0), keys, drawn, hide));
 }

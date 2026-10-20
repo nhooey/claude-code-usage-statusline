@@ -14,6 +14,7 @@ import { RIGHT_EDGE } from "../src/spec.ts";
 import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
+import { panelLayout } from "../src/claude_subagent_render.ts";
 import {
   FOOTER_GAP, FOOTER_JOIN, MODE_PILLS, accountLine, accountText, footerParts, modeOfHint, bandLines, bandRows, fixedKeys, footerTail,
   phaseRows,
@@ -176,6 +177,49 @@ test("the 💳 account's own row ends where the band's rows end, in colour", () 
   assert.ok(row.some((s) => s.colour), "no colour kept");
   assert.deepEqual(inZone(fig, () => accountLine(st, fig, ["account"], 196)),
     []);
+});
+
+test("rows inset under the footer line stack on the agent panel's columns", () => {
+  // Claude Code draws the footer line's container CONFIG.hintInset columns
+  // in; drawn at the full width there, every cell of the band stood that
+  // many columns right of the panel's (seen live 2026-10-20).
+  const st = settings({});
+  const fig = document("status/18-agents@196");
+  const hide = ["*.plan.five_hour", "*.context.share", "*.tokens.cache"];
+  const plain = (r: readonly Span[]): string => stripAnsi(join(r));
+  /** The terminal column each of `marks` starts at in `line`. */
+  const at = (line: string): number[] =>
+    ["💰", "🧩", "⌛", "🚦", "🪫"].map((m) => {
+      const i = line.lastIndexOf(m);
+      assert.ok(i >= 0, m + " missing from " + line);
+      return visWidth(line.slice(0, i), st.widths);
+    });
+  for (const cols of [120, 160, 196]) {
+    const opts = { home: HOME, rate: null, phase: "running" as const };
+    const [pcols, keys] = panelLayout(st, cols, hide);
+    assert.deepEqual(keys, fixedKeys(st, cols, hide), String(cols));
+    // The agent panel's row, `  ◯ ` chrome and all, at no indent.
+    const main = inZone(fig, () => bandRows(st, fig, opts)).main;
+    const panel = plain(draw(st, { ...main, scope: "agent", depth: 1 },
+      keys, pcols, hide));
+    for (const inset of [0, 2]) {
+      const band = inZone(fig, () => bandLines(st, fig, cols, hide,
+        { ...opts, inset }));
+      for (const row of band) {
+        const line = " ".repeat(inset) + plain(row);
+        assert.equal(visWidth(line, st.widths), cols - RIGHT_EDGE,
+          [cols, inset, line].join(" "));
+      }
+      const line = " ".repeat(inset) + plain(band[1]);
+      assert.deepEqual(at(line), at(panel), [cols, inset, line].join(" "));
+      // The 💳 row ends where they do, on a terminal wide enough for it.
+      if (cols < 160) continue;
+      const acct = " ".repeat(inset) + plain(inZone(fig, () =>
+        accountLine(st, fig, hide, cols - inset)));
+      assert.equal(visWidth(acct, st.widths), cols - RIGHT_EDGE,
+        [cols, inset, acct].join(" "));
+    }
+  }
 });
 
 test("the footer's tail ends on the 💳 account details where the band's rows end", () => {

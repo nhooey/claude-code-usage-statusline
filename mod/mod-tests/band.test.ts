@@ -57,6 +57,9 @@ const SESSION = 'fixture-session'
 const MODEL = 'claude-opus-5[1m]'
 const WINDOW = 1_000_000
 const COLS = 150
+// How far in the band's rows' container stands, where CONFIG.bandPlace
+// draws them: under the footer line, CONFIG.hintInset columns.
+const INSET = CONFIG.bandPlace === 'hint' ? CONFIG.hintInset : 0
 const encoder = new TextEncoder()
 
 /** The band where CONFIG.bandPlace draws it, mounted: above the prompt,
@@ -349,7 +352,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
       const ui = await mountBand($, surface, BAND)
       // Between turns the band draws nothing: the receipt has the rows.
       const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
-        rate: null, phase: 'done' })
+        rate: null, phase: 'done', inset: INSET })
       expect(lines).toEqual([])
       expect(await drawnRows(ui)).toEqual([])
     })
@@ -361,7 +364,7 @@ test('a turn running draws the running phase', async ($, on) => {
   const doc = lastDoc(w)
   const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
   const lines = bandLines(settings({}), doc, COLS, CONFIG.hide, { home: HOME,
-    rate: null, phase: 'running' })
+    rate: null, phase: 'running', inset: INSET })
   expect(await drawnRows(ui)).toEqual(expected(lines))
   // No blank top row, where Claude Code's `[-]` would stand alone.
   expect(((await ui.drawn()) as Drawn).props?.marginTop).toBeUndefined()
@@ -659,7 +662,7 @@ async function drewAll($: any, w: World) {
     const now = Math.max(Number((doc.clock as Dict).now),
       w.clock.now() / 1000)
     return bandLines(st, { ...doc, clock: { ...(doc.clock as Dict), now } },
-      COLS, CONFIG.hide, { home: HOME, rate: null, phase })
+      COLS, CONFIG.hide, { home: HOME, rate: null, phase, inset: INSET })
   }
   // The turn has ended, but until its receipt is stamped, and a second
   // more, the band keeps its 🎤 and 🎮 rows.
