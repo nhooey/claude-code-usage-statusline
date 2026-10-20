@@ -190,6 +190,77 @@
   },
   {
    "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "_read_agent_file",
+   "kw": {},
+   "out": {
+    "eta": null,
+    "recs": [],
+    "tools": [],
+    "waiting": [],
+    "work": []
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "agent_label_id",
+   "kw": {},
+   "out": "b1"
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "agent_label",
+   "kw": {},
+   "out": [
+    "b1",
+    ""
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "_read_agent_file",
+   "kw": {},
+   "out": {
+    "eta": null,
+    "recs": [],
+    "tools": [],
+    "waiting": [],
+    "work": [
+     [
+      1787000002.0,
+      1787000005.0
+     ]
+    ]
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "agent_label_id",
+   "kw": {},
+   "out": "b2"
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "agent_label",
+   "kw": {},
+   "out": [
+    "b2",
+    ""
+   ]
+  },
+  {
+   "args": [
     "tests/fixtures/records/inputs/session/subagents/.hidden/agent-h.jsonl"
    ],
    "fn": "_read_agent_file",
@@ -5225,6 +5296,913 @@
      "operation": "remove",
      "timestamp": "2026-08-17T20:59:10.000Z",
      "type": "queue-operation"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl"
+   ],
+   "fn": "inbox_classify",
+   "kw": {},
+   "out": [
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "b1",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "b2",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "b1",
+     false
+    ]
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl"
+   ],
+   "fn": "inbox_sends",
+   "kw": {},
+   "out": [
+    [
+     1787000010.0,
+     "b1"
+    ],
+    [
+     1787000011.0,
+     "b2"
+    ],
+    [
+     1787000030.0,
+     "b1"
+    ]
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl"
+   ],
+   "fn": "inbox_deliveries",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl",
+    [
+     "queued for delivery to"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s1",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:30.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b1 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b1",
+       "name": "b1",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s2",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:31.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b2 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b2",
+       "name": "b2",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s4",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:50.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b1 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b1",
+       "name": "b1",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl",
+    [
+     "\"coordinator\"",
+     "\"peer\""
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl",
+    [
+     "{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "go"
+     },
+     "promptId": "P1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s1",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "b1",
+         "recipient_kind": "agent",
+         "summary": "s",
+         "to": "b1",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs1",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:30.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s1",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:30.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b1 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b1",
+       "name": "b1",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s2",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "b2",
+         "recipient_kind": "agent",
+         "summary": "s",
+         "to": "b2",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs2",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:31.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s2",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:31.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b2 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b2",
+       "name": "b2",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s3",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "Other [23b8b9]",
+         "recipient_kind": "name",
+         "summary": "s",
+         "to": "Other [23b8b9]",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs3",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:32.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s3",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:32.100Z",
+     "toolUseResult": {
+      "display": "Sent",
+      "message": "“s” → Other (another Claude session on this machine; in that session's inbox, not yet read by its Claude)",
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s4",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "b1",
+         "recipient_kind": "agent",
+         "summary": "s",
+         "to": "b1",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs4",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s4",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:50.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b1 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b1",
+       "name": "b1",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl",
+    [
+     "zzz"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl",
+    [
+     "}\n{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "go"
+     },
+     "promptId": "P1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s1",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "b1",
+         "recipient_kind": "agent",
+         "summary": "s",
+         "to": "b1",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs1",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:30.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s1",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:30.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b1 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b1",
+       "name": "b1",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s2",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "b2",
+         "recipient_kind": "agent",
+         "summary": "s",
+         "to": "b2",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs2",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:31.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s2",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:31.100Z",
+     "toolUseResult": {
+      "message": "Message queued for delivery to b2 at its next tool round. If it finishes first, it is resumed with the message and notifies again, so wait for that notification before resending.",
+      "pin": {
+       "id": "b2",
+       "name": "b2",
+       "ref": "0123"
+      },
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s3",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "Other [23b8b9]",
+         "recipient_kind": "name",
+         "summary": "s",
+         "to": "Other [23b8b9]",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs3",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:32.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "s3",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:32.100Z",
+     "toolUseResult": {
+      "display": "Sent",
+      "message": "“s” → Other (another Claude session on this machine; in that session's inbox, not yet read by its Claude)",
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "s4",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "b1",
+         "recipient_kind": "agent",
+         "summary": "s",
+         "to": "b1",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rs4",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "assistant"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "inbox_classify",
+   "kw": {},
+   "out": [
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     true
+    ]
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "inbox_sends",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "inbox_deliveries",
+   "kw": {},
+   "out": [
+    1787000014.0
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+    [
+     "queued for delivery to"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+    [
+     "\"coordinator\"",
+     "\"peer\""
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "attachment": {
+      "isMeta": true,
+      "origin": {
+       "kind": "coordinator"
+      },
+      "prompt": "m",
+      "reminderId": "rem",
+      "source_uuid": "u-14",
+      "type": "queued_command"
+     },
+     "timestamp": "2026-08-17T20:53:34.000Z",
+     "type": "attachment"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+    [
+     "{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "a"
+     },
+     "timestamp": "2026-08-17T20:53:21.000Z",
+     "type": "user"
+    },
+    {
+     "attachment": {
+      "isMeta": true,
+      "origin": {
+       "kind": "coordinator"
+      },
+      "prompt": "m",
+      "reminderId": "rem",
+      "source_uuid": "u-14",
+      "type": "queued_command"
+     },
+     "timestamp": "2026-08-17T20:53:34.000Z",
+     "type": "attachment"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+    [
+     "zzz"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+    [
+     "}\n{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "a"
+     },
+     "timestamp": "2026-08-17T20:53:21.000Z",
+     "type": "user"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "inbox_classify",
+   "kw": {},
+   "out": [
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     true
+    ]
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "inbox_sends",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "inbox_deliveries",
+   "kw": {},
+   "out": [
+    1787000020.0
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+    [
+     "queued for delivery to"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+    [
+     "\"coordinator\"",
+     "\"peer\""
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "attachment": {
+      "isMeta": true,
+      "origin": {
+       "kind": "coordinator"
+      },
+      "prompt": "m",
+      "reminderId": "rem",
+      "source_uuid": "u-20",
+      "type": "queued_command"
+     },
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "type": "attachment"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+    [
+     "{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "b"
+     },
+     "timestamp": "2026-08-17T20:53:22.000Z",
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t1",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "main",
+         "recipient_kind": "main",
+         "summary": "s",
+         "to": "main",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rt1",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "t1",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:25.100Z",
+     "toolUseResult": {
+      "message": "Message queued for the main conversation's next turn.",
+      "success": true
+     },
+     "type": "user"
+    },
+    {
+     "attachment": {
+      "isMeta": true,
+      "origin": {
+       "kind": "coordinator"
+      },
+      "prompt": "m",
+      "reminderId": "rem",
+      "source_uuid": "u-20",
+      "type": "queued_command"
+     },
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "type": "attachment"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+    [
+     "zzz"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+    [
+     "}\n{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "b"
+     },
+     "timestamp": "2026-08-17T20:53:22.000Z",
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t1",
+        "input": {
+         "content": "m…",
+         "message": "m",
+         "recipient": "main",
+         "recipient_kind": "main",
+         "summary": "s",
+         "to": "main",
+         "type": "message"
+        },
+        "name": "SendMessage",
+        "type": "tool_use"
+       }
+      ],
+      "id": "rt1",
+      "model": "claude-opus-5"
+     },
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "t1",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "timestamp": "2026-08-17T20:53:25.100Z",
+     "toolUseResult": {
+      "message": "Message queued for the main conversation's next turn.",
+      "success": true
+     },
+     "type": "user"
     }
    ]
   },
@@ -25513,6 +26491,24 @@
    "fn": "inbox_counts",
    "kw": {},
    "out": {}
+  },
+  {
+   "args": [
+    [
+     "tests/fixtures/records/inputs/inbox-now.jsonl",
+     "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+     "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+    ],
+    {
+     "b1": "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+     "b2": "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+    }
+   ],
+   "fn": "inbox_counts",
+   "kw": {},
+   "out": {
+    "b1": 1
+   }
   }
  ]
 }

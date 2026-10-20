@@ -510,6 +510,7 @@ def handmade():
         asst(21, "q1", "x", stop="end_turn"),
     ])
     files.update(session())
+    files.update(inbox_now())
     return files
 
 
@@ -703,6 +704,70 @@ def session():
     return files
 
 
+def inbox_now():
+    """SendMessage's traffic as Claude Code 2.1.302 to 2.1.304 write it,
+    read out of a live session on 2026-10-20: the call names its recipient
+    and its kind; the answer to a busy agent adds a sentence after "at its
+    next tool round." and a `pin`; a send to another session, by name, and
+    an agent's send to the main thread are answered in other words and
+    count for no agent; the delivery attachment carries `isMeta`,
+    `reminderId` and `source_uuid`.  b1 has had two sends and one
+    delivery, b2 one of each."""
+    files = {}
+
+    def put(name, records):
+        files[name] = write_bytes(name, jsonl(records))
+
+    def send(sec, mid, to, kind, answer, **res):
+        call = {"type": "tool_use", "id": mid, "name": "SendMessage",
+                "input": {"to": to, "summary": "s", "message": "m",
+                          "type": "message", "recipient": to,
+                          "recipient_kind": kind, "content": "m…"}}
+        return [{"type": "assistant", "timestamp": stamp(sec),
+                 "message": {"id": "r" + mid, "model": "claude-opus-5",
+                             "content": [call]}},
+                result(sec + 0.1, mid, toolUseResult=dict(
+                    {"success": True, "message": answer}, **res))]
+
+    def queued(sec, mid, aid):
+        return send(sec, mid, aid, "agent",
+                    "Message queued for delivery to %s at its next tool "
+                    "round. If it finishes first, it is resumed with the "
+                    "message and notifies again, so wait for that "
+                    "notification before resending." % aid,
+                    pin={"id": aid, "name": aid, "ref": "0123"})
+
+    def delivery(sec):
+        return {"type": "attachment", "timestamp": stamp(sec),
+                "attachment": {"type": "queued_command", "prompt": "m",
+                               "source_uuid": "u-%d" % sec,
+                               "origin": {"kind": "coordinator"},
+                               "isMeta": True, "reminderId": "rem"}}
+
+    put("inbox-now.jsonl", [
+        prompt(0, "go", promptId="P1"),
+        *queued(10, "s1", "b1"),
+        *queued(11, "s2", "b2"),
+        *send(12, "s3", "Other [23b8b9]", "name",
+              "“s” → Other (another Claude session on this "
+              "machine; in that session's inbox, not yet read by its "
+              "Claude)", display="Sent"),
+        *queued(30, "s4", "b1"),
+    ])
+    sub = "inbox-now/subagents/"
+    put(sub + "agent-b1.jsonl", [
+        {"type": "user", "timestamp": stamp(1), "message": {"content": "a"}},
+        delivery(14),
+    ])
+    put(sub + "agent-b2.jsonl", [
+        {"type": "user", "timestamp": stamp(2), "message": {"content": "b"}},
+        *send(5, "t1", "main", "main",
+              "Message queued for the main conversation's next turn."),
+        delivery(20),
+    ])
+    return files
+
+
 def section_threads(files):
     s = Section("threads")
     paths = corpus() + sorted(files.values())
@@ -861,6 +926,9 @@ def section_agents(files):
         s.case("inbox_counts", senders, targets, since)
     s.case("inbox_counts", senders, {"a1": targets["a1"]})
     s.case("inbox_counts", [main], {"zz": main})
+    now = files["inbox-now.jsonl"]
+    s.case("inbox_counts", [now] + cr.agent_files(now),
+           {cr.agent_label_id(p): p for p in cr.agent_files(now)})
     return s
 
 

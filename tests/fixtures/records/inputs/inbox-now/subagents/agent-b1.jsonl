@@ -1,0 +1,2 @@
+{"type": "user", "timestamp": "2026-08-17T20:53:21.000Z", "message": {"content": "a"}}
+{"type": "attachment", "timestamp": "2026-08-17T20:53:34.000Z", "attachment": {"type": "queued_command", "prompt": "m", "source_uuid": "u-14", "origin": {"kind": "coordinator"}, "isMeta": true, "reminderId": "rem"}}

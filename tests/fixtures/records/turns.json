@@ -431,6 +431,411 @@
   },
   {
    "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": null
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 30.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "P1",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 1787000000.0,
+    "user_text": "go",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787001000.0
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 30.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 1787000030.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "P1",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 1787000000.0,
+    "user_text": "go",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787000116.5
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 30.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 1787000030.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "P1",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 1787000000.0,
+    "user_text": "go",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": null
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 0.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000001.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 0.0,
+    "user_text": "",
+    "user_ts": "",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787001000.0
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 0.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 1787000014.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000001.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 0.0,
+    "user_text": "",
+    "user_ts": "",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787000116.5
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 0.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 1787000014.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000001.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 0.0,
+    "user_text": "",
+    "user_ts": "",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": null
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 0.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000002.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 0.0,
+    "user_text": "",
+    "user_ts": "",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787001000.0
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 0.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 1787000020.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000002.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 0.0,
+    "user_text": "",
+    "user_ts": "",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787000116.5
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "",
+    "asst_ts": "",
+    "blocked_s": 0.0,
+    "busy_s": 0.0,
+    "cache_pct": -1,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 0,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 1787000020.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": -1,
+    "own_est": false,
+    "own_parts": [],
+    "own_tok_down": 0,
+    "own_tok_up": 0,
+    "own_usd": 0.0,
+    "prompt_id": "",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000002.0,
+    "tok_down": 0,
+    "tok_up": 0,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 0.0,
+    "user_text": "",
+    "user_ts": "",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
     "tests/fixtures/records/inputs/marks.jsonl"
    ],
    "fn": "read_transcript",
@@ -11631,6 +12036,368 @@
      "usd_out": 0.0
     }
    ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl",
+    null
+   ],
+   "fn": "read_turns",
+   "kw": {},
+   "out": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 0,
+      "cache_write": 0,
+      "calls": 0,
+      "compact": false,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 30.0,
+      "eta": [],
+      "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 0,
+      "parts": [],
+      "prompt_id": "P1",
+      "reported": false,
+      "text": "go",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": null,
+      "usd_cr": 0.0,
+      "usd_cw": 0.0,
+      "usd_in": 0.0,
+      "usd_out": 0.0
+     }
+    ],
+    {}
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 0,
+     "cache_write": 0,
+     "calls": 0,
+     "compact": false,
+     "ctx": 0,
+     "dctx": null,
+     "dur_s": 30.0,
+     "eta": [],
+     "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 0,
+     "parts": [],
+     "prompt_id": "P1",
+     "reported": false,
+     "text": "go",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": null,
+     "usd_cr": 0.0,
+     "usd_cw": 0.0,
+     "usd_in": 0.0,
+     "usd_out": 0.0
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 30.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 0,
+     "cache_write": 0,
+     "calls": 0,
+     "compact": false,
+     "ctx": 0,
+     "dctx": null,
+     "dur_s": 30.0,
+     "eta": [],
+     "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 0,
+     "parts": [],
+     "prompt_id": "P1",
+     "reported": false,
+     "text": "go",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": null,
+     "usd_cr": 0.0,
+     "usd_cw": 0.0,
+     "usd_in": 0.0,
+     "usd_out": 0.0
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    30.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 0,
+      "cache_write": 0,
+      "calls": 0,
+      "compact": false,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 30.0,
+      "eta": [],
+      "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 0,
+      "parts": [],
+      "prompt_id": "P1",
+      "reported": false,
+      "text": "go",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": null,
+      "usd_cr": 0.0,
+      "usd_cw": 0.0,
+      "usd_in": 0.0,
+      "usd_out": 0.0
+     }
+    ]
+   ],
+   "fn": "_settled",
+   "kw": {},
+   "out": false
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 0,
+      "cache_write": 0,
+      "calls": 0,
+      "compact": false,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 30.0,
+      "eta": [],
+      "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 0,
+      "parts": [],
+      "prompt_id": "P1",
+      "reported": false,
+      "text": "go",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": null,
+      "usd_cr": 0.0,
+      "usd_cw": 0.0,
+      "usd_in": 0.0,
+      "usd_out": 0.0
+     }
+    ]
+   ],
+   "fn": "open_turn",
+   "kw": {},
+   "out": {
+    "agent": false,
+    "agent_calls": 0,
+    "agent_id": "",
+    "agent_ids": [],
+    "agent_model_s": 0.0,
+    "agent_name": "",
+    "agent_tool_s": 0.0,
+    "blocked_s": 0.0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "calls": 0,
+    "compact": false,
+    "ctx": 0,
+    "dctx": null,
+    "dur_s": 30.0,
+    "eta": [],
+    "fresh": 0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "out": 0,
+    "parts": [],
+    "prompt_id": "P1",
+    "reported": false,
+    "text": "go",
+    "tool_s": 0.0,
+    "ts": "2026-08-17T20:53:20.000Z",
+    "turn_index": null,
+    "usd_cr": 0.0,
+    "usd_cw": 0.0,
+    "usd_in": 0.0,
+    "usd_out": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now.jsonl",
+    null
+   ],
+   "fn": "read_turns_settled",
+   "kw": {},
+   "out": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 0,
+     "cache_write": 0,
+     "calls": 0,
+     "compact": false,
+     "ctx": 0,
+     "dctx": null,
+     "dur_s": 30.0,
+     "eta": [],
+     "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 0,
+     "parts": [],
+     "prompt_id": "P1",
+     "reported": false,
+     "text": "go",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": null,
+     "usd_cr": 0.0,
+     "usd_cw": 0.0,
+     "usd_in": 0.0,
+     "usd_out": 0.0
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+    null
+   ],
+   "fn": "read_turns",
+   "kw": {},
+   "out": [
+    [],
+    {}
+   ]
+  },
+  {
+   "args": [
+    []
+   ],
+   "fn": "_settled",
+   "kw": {},
+   "out": false
+  },
+  {
+   "args": [
+    []
+   ],
+   "fn": "open_turn",
+   "kw": {},
+   "out": null
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b1.jsonl",
+    null
+   ],
+   "fn": "read_turns_settled",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+    null
+   ],
+   "fn": "read_turns",
+   "kw": {},
+   "out": [
+    [],
+    {}
+   ]
+  },
+  {
+   "args": [
+    []
+   ],
+   "fn": "_settled",
+   "kw": {},
+   "out": false
+  },
+  {
+   "args": [
+    []
+   ],
+   "fn": "open_turn",
+   "kw": {},
+   "out": null
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/inbox-now/subagents/agent-b2.jsonl",
+    null
+   ],
+   "fn": "read_turns_settled",
+   "kw": {},
+   "out": []
   },
   {
    "args": [
