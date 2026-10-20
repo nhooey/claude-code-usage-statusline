@@ -179,7 +179,7 @@ Where the live rows go is `live-place`, one setting for all of them.
     //               "running" — drawn while a turn runs, gone at its end
     //               "always"  — drawn while a turn runs, and kept after
     //   transcript: stamped into the transcript when the turn ends
-    "turn":    { "live": "always", "transcript": true  },
+    "turn":    { "live": "running", "transcript": true  },
     "agent":   { "live": "always", "transcript": false },
     "session": { "live": "always", "transcript": false },
     // The 🔻🔖 line under the prompt and the receipt's 🔺🔖 line.
@@ -485,8 +485,8 @@ and `npm test`.
 The rows table set in this project only:
 
 1. The user-global file has no `rows`, so the defaults hold everywhere
-   else: every row live `"always"`, and only 🎤 `turn` and the tag lines
-   stamped into the transcript.
+   else: 🎤 `turn` live `"running"`, every other row live `"always"`, and
+   only 🎤 `turn` and the tag lines stamped into the transcript.
 2. This repository gets `.config/coding-agent-usage-line/config.local.jsonc`
    (see [Decided](#decided-2026-10-20), 8 and 9):
 
@@ -509,7 +509,7 @@ The rows table set in this project only:
    three rows, 🎤, 🤖 and 🎮, where it drew them, and the receipt on the
    closing line stamps all three.
 5. A turn in a session started in another repository (or in `/tmp`) ends:
-   the mod keeps all three rows, and the receipt stamps 🎤 alone.
+   the mod keeps 🤖 and 🎮, drops 🎤, and the receipt stamps 🎤 alone.
 6. `/cd` from this repository to the other moves the session's root, and
    the next tick takes the other project's layer: the next turn there
    stamps 🎤 alone.
@@ -555,3 +555,6 @@ The rows table set in this project only:
     no vendored parser and no implicit typing (YAML would need PyYAML and
     the `yaml` package vendored and agreeing; TOML a Python of 3.11 or
     later for the panel and a vendored parser in the mod).
+12. **🎤 `turn` defaults to live `"running"`:** shown while a turn runs,
+    then left to the transcript's stamped copy; the other rows stay
+    `"always"`.
