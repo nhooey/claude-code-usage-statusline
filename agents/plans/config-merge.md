@@ -22,9 +22,10 @@ them in step: `CONFIG.hide` says "keep subagentStatusLine's --hide flags the
 same, so the panel stacks", and `CONFIG.bandPlace` says to keep the panel's
 `--right-edge` at 0 or 5 to match it. Two copies of one value drift.
 
-The first setting that has to differ by project is `sticky`, which of the
-band's rows stay drawn once a turn ends (asked 2026-10-20): all three here,
-none elsewhere. Neither port can say that today.
+The first setting that has to differ by project is where and when each
+row appears: the 🎤, 🤖 and 🎮 rows kept under the footer line between turns
+and stamped into the transcript too, here only (asked 2026-10-20). Neither
+port can say that today; see [The rows table](#the-rows-table).
 
 ## The design
 
@@ -65,16 +66,15 @@ a hand edit.
 Each option is one member:
 
 ```jsonc
-"sticky": {
-  "type": "list",            // bool | int | string | enum | list
-  "items": ["turn", "agent", "session"],   // enum values, or a list's
-  "default": [],
+"live-place": {
+  "type": "enum",            // bool | int | string | enum | list | table
+  "items": ["footer", "above"],   // enum values, or a list's
+  "default": "footer",
   "ports": ["mod"],          // which ports read it: "py", "mod" or both
   "file": true,              // settable in a config file
   "flag": null,              // the CLI flag, or null for none
-  // Which of the band's rows, 🎤 "turn", 🤖 "agent" and 🎮 "session",
-  // stay where the band draws them once a turn ends; the receipt stamps
-  // the others into the transcript.
+  // Where the mod draws its live rows: under Claude Code's footer line,
+  // or above the prompt.
   "doc": "..."
 }
 ```
@@ -83,7 +83,7 @@ The rules the records carry:
 
 - **One name.** A file key is the long flag's name without its `--`:
   `usage-source`, `mark-spacing`, `hide`, `right-edge`. An option with no
-  flag (`sticky`, the mod's timings) takes a name of the same shape. The doc
+  flag (`rows`, `live-place`) takes a name of the same shape. The doc
   table, the file and the flag then use one spelling, and the generated
   TypeScript accessor gives it in camel case (`options.usageSource`).
 - **Booleans.** One option per switch, its positive name, with
@@ -165,19 +165,64 @@ package but `options_spec`. Each run reads afresh: the panel runs every few
 seconds and each run is one process, so there is nothing to cache, and the
 cost is a handful of `stat` calls and two small reads.
 
+### The rows table
+
+Each row the mod can draw is set on its own, by when the mod draws it and
+whether a turn's end stamps it into the transcript (decided 2026-10-20).
+Where the live rows go is `live-place`, one setting for all of them.
+
+```jsonc
+{
+  "live-place": "footer",            // "footer" | "above"
+  "rows": {
+    //   live:       "never"   — the mod never draws it
+    //               "running" — drawn while a turn runs, gone at its end
+    //               "always"  — drawn while a turn runs, and kept after
+    //   transcript: stamped into the transcript when the turn ends
+    "turn":    { "live": "always", "transcript": true  },
+    "agent":   { "live": "always", "transcript": false },
+    "session": { "live": "always", "transcript": false },
+    // The 🔻🔖 line under the prompt and the receipt's 🔺🔖 line.
+    "tag":     { "live": "never",  "transcript": true  },
+    // The 💳 account row; `transcript` is always false for it.
+    "account": { "live": "always", "transcript": false }
+  }
+}
+```
+
+Those are the defaults. `live` is one enum, not two booleans, so "drawn
+after the turn but not during it" cannot be written. A row that is
+`"never"` and `false` is not drawn at all, which retires the hide paths
+that drop a whole row (`turn`, `agent`, `session` as scopes, `name.tag`
+and `account.*`'s row as a whole); `hide` keeps its other job, hiding
+cells. Keeping a row live and stamping it are independent: a row can
+stay under the footer line and still leave each turn's figures in the
+transcript.
+
+| `live` | `transcript` | The row |
+|---|---|---|
+| `"running"` | `true` | live while the turn runs, then moved into the transcript |
+| `"always"` | `false` | kept live, never stamped |
+| `"always"` | `true` | kept live, and each turn leaves a copy in the transcript |
+| `"running"` | `false` | live while the turn runs, leaving nothing behind |
+| `"never"` | `true` | in the transcript only, as a receipt |
+| `"never"` | `false` | not drawn anywhere |
+
 ### Merge semantics
 
 - **Scalars** take the highest layer's value.
-- **Lists replace.** A layer that sets `hide` or `sticky` sets the whole
-  list, so the project's `"sticky": []` means none, whatever the user file
-  says. Appending reads well for `hide` but leaves no way to take a path
+- **Lists replace.** A layer that sets `hide` sets the whole list, so the
+  project's `"hide": []` means none, whatever the user file says. Appending reads well for `hide` but leaves no way to take a path
   back out, and a list that is the union of three files is hard to see
   whole. A repeated flag (`--hide a --hide b`) makes one list, which then
   replaces the files' as any flag does.
 - **The merge is per option**, never per file: a project file that sets
-  only `sticky` leaves every other option to the layers under it.
+  only `rows` leaves every other option to the layers under it.
+- **Tables merge per field.** `rows` is a table of records, and a layer
+  that sets `rows.agent.transcript` leaves `rows.agent.live` and every
+  other row to the layers under it, so a project says only what differs.
 - **Derived values are worked out after the merge.** `right-edge`, unset in
-  every layer, follows `band-place` (0 for `"hint"`, 5 for `"above"`, as
+  every layer, follows `live-place` (2 for `"footer"`, 5 for `"above"`, as
   `BAND_EDGE` does today), so one setting moves the band and the panel
   together.
 
@@ -195,11 +240,11 @@ the smallest unit that can be, and said where the person will see it:
 | What | Effect |
 |---|---|
 | a file that is not valid JSON(C) or not an object | the whole file is skipped |
-| an unknown key | skipped; the warning names the nearest known key, so `stiky` says `sticky` |
+| an unknown key | skipped; the warning names the nearest known key, so `rwos` says `rows` |
 | a key the spec knows but says `"file": false` (`mode`, `cols`) | skipped |
 | a value of the wrong type, out of range, or not among the enum's | that key is skipped, and the layer under it supplies the value |
 | a list with one bad item | the whole list is skipped, not the item: half a `hide` list draws something nobody asked for |
-| a key for the other port only (`sticky` in the Python) | no warning: the spec knows it |
+| a key for the other port only (`rows` in the Python) | no warning: the spec knows it |
 
 A bad flag stays an error, exit 2, as today: a flag is typed in a command
 and checked before stdin is read.
@@ -230,7 +275,7 @@ the files' modification times, and read again:
 - **when the root moves**: `$.session.root()` is read on each tick, and a
   new root walks again.
 
-An option that drawing reads (`hide`, `sticky`, `band-place`,
+An option that drawing reads (`hide`, `rows`, `live-place`,
 `account-place`, `mark-spacing`) applies on the next draw: a changed config
 writes `$.state`, as a new status document does, so the band redraws. An
 option a timer was started with (`tick-ms`, `clock-ms`, `fold-save-ms`)
@@ -247,10 +292,10 @@ applies when its timer is next set, and its record says
 | `account` | `account` | both | `--account` | |
 | `period` | `account-period` | both | `--account-period` | renamed to the flag's name |
 | `hide` | `hide` | both | `--hide`, repeatable | one list for the band and the panel; the comment telling the user to keep them in step goes |
-| `sticky` | `sticky` | mod | none | the first user, see [Acceptance](#acceptance) |
-| `bandPlace` | `band-place` | mod, and the panel through `right-edge` | none | |
-| (`BAND_EDGE`) | `right-edge` | both | `--right-edge` | derived from `band-place` when unset |
-| `accountPlace` | `account-place` | mod | none | |
+| `sticky` | `rows.<row>.live` | mod | none | `"always"` for a row once sticky; see [The rows table](#the-rows-table) |
+| `bandPlace` | `live-place` | mod, and the panel through `right-edge` | none | `"hint"` becomes `"footer"` |
+| (`BAND_EDGE`) | `right-edge` | both | `--right-edge` | derived from `live-place` when unset |
+| `accountPlace` | `account-place` | mod | none | where the 💳 row goes when `rows.account.live` draws it |
 | `hintTuck` | `hint-tuck` | mod | none | |
 | `hintInset` | `hint-inset` | mod | none | |
 | `footerRuler` | `footer-ruler` | mod | none | a debugging aid; documented as such |
@@ -346,8 +391,8 @@ for the mod and not taken:
   user's for a plugin's options is the engine's rule, not ours, and is not
   stated in the types; it would need a live test.
 - **The types are narrow.** A field is a string, number, boolean or list of
-  strings, with `options` only on a string; `sticky` and `hide` fit, the
-  derived `right-edge` does not.
+  strings, with `options` only on a string; `hide` fits, but the `rows`
+  table and the derived `right-edge` do not.
 
 What it would give is the `/config` menu. That can come later on top of this
 design: the mod could declare a few `userConfig` fields and treat them as one
@@ -395,8 +440,8 @@ result. Together they cover:
   case's files.
 - `mod/test/options_spec.test.ts`: the generated `Options` type and records
   agree with `spec/options.jsonc` (as `spec.test.ts` does for the layout).
-- `mod/mod-tests/band.test.ts`: the band's rows after a turn for `sticky`
-  none, one and all three, read through `options()`, and a config change on
+- `mod/mod-tests/band.test.ts`: the band's rows during and after a turn,
+  and the receipt's, for each `live` and `transcript` value of each row, read through `options()`, and a config change on
   the tick redrawing the band without a reload.
 
 ## The build order
@@ -437,34 +482,39 @@ and `npm test`.
 
 ## Acceptance
 
-`sticky` set in this project only:
+The rows table set in this project only:
 
-1. The user-global file has no `sticky`, so the default, none, holds
-   everywhere else.
+1. The user-global file has no `rows`, so the defaults hold everywhere
+   else: every row live `"always"`, and only 🎤 `turn` and the tag lines
+   stamped into the transcript.
 2. This repository gets `.config/coding-agent-usage-line/config.local.jsonc`
-   (see [Decided](#decided-2026-10-20), 8):
+   (see [Decided](#decided-2026-10-20), 8 and 9):
 
    ```jsonc
    {
-     // Keep 🎤, 🤖💬 and 🎮 drawn between turns in this project.
-     "sticky": ["turn", "agent", "session"]
+     // 🎤, 🤖 and 🎮 kept under the footer line between turns, and every
+     // turn's three stamped into the transcript too.
+     "rows": {
+       "turn":    { "live": "always", "transcript": true },
+       "agent":   { "live": "always", "transcript": true },
+       "session": { "live": "always", "transcript": true }
+     }
    }
    ```
 
 3. With no `/reload-plugins`: within one tick (30 s) the mod's log shows the
-   new table with `sticky` from the project-local layer, and
+   new table with `rows` from the project-local layer, and
    `coding-agent-usage-line.py --show-config` run here says the same.
-4. A turn in a session started in this repository ends, and the band keeps
-   all three rows, 🎤, 🤖💬 and 🎮, where it drew them; the receipt on the
-   closing line stamps none of them.
-5. A turn in a session started in another repository (or in `/tmp`) ends,
-   and the band is empty between turns, the receipt stamping all three, as
-   today.
+4. A turn in a session started in this repository ends: the mod keeps all
+   three rows, 🎤, 🤖 and 🎮, where it drew them, and the receipt on the
+   closing line stamps all three.
+5. A turn in a session started in another repository (or in `/tmp`) ends:
+   the mod keeps all three rows, and the receipt stamps 🎤 alone.
 6. `/cd` from this repository to the other moves the session's root, and
-   the next tick takes the other project's (empty) layer: the next turn
-   there keeps none.
-7. Making the file invalid (`"sticky": ["turns"]`) leaves the band drawing
-   with the default, logs one warning naming `"turn"`, and shows one notice.
+   the next tick takes the other project's layer: the next turn there
+   stamps 🎤 alone.
+7. Making the file invalid (`"live": "allways"`) leaves that row at its
+   default, logs one warning naming `"always"`, and shows one notice.
 
 ## Decided (2026-10-20)
 
@@ -491,6 +541,9 @@ and `npm test`.
    files' step: `/.config/**/*.local.*`, any tool's local file under the
    root `.config/` (mise's `.config/mise.local.toml` included), and no
    `.config/` deeper in the tree.
-8. **`sticky` here** goes in this repository's
+8. **This repository's rows** go in its
    `.config/coding-agent-usage-line/config.local.jsonc`: the user's own
-   preference, not one for everyone who clones it.
+   preference, not one for everyone who clones it. All five there are
+   live `"always"`, and the three cost rows are stamped too.
+9. **The rows table** replaces `sticky`, `bandPlace` and the hide paths
+   that drop a whole row; see [The rows table](#the-rows-table).
