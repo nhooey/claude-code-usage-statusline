@@ -1,7 +1,7 @@
 """Usage source selection and the versioned, safe custom-command contract."""
 import json, os, re, subprocess, time, math, selectors, signal, hashlib, plistlib
 from . import state
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from xml.parsers.expat import ExpatError
 
 VALID_SOURCES = ("auto", "native", "none", "off", "claude-usage-tracker",
@@ -15,6 +15,84 @@ def _safe_text(value, maximum=128):
 
 MIN_EPOCH, MAX_EPOCH = 0.0, 4102444800.0  # 1970 through 2100: reject nonsense
 
+def _hh_mm_ss_ff(buf, p, end):
+    """3.9's parse_hh_mm_ss_ff over UTF-8 bytes with a NUL past the last:
+    [HH[:MM[:SS]]][.fff[fff]] between p and end.  (status, [h, m, s, us])
+    with status 0, 1 for something left after it, or None where it fails."""
+    at = lambda k: buf[k] if k < len(buf) else 0
+    def digits(k, n):
+        v = 0
+        for j in range(n):
+            d = at(k + j) - 48
+            if not 0 <= d <= 9: return None
+            v = v * 10 + d
+        return v
+    out = [0, 0, 0, 0]
+    for i in range(3):
+        v = digits(p, 2)
+        if v is None: return None
+        out[i] = v
+        c = at(p + 2)
+        p += 3
+        if p >= end: return (1 if c else 0), out
+        if c == 0x3a: continue
+        if c == 0x2e: break
+        return None
+    if end - p not in (3, 6): return None
+    us = digits(p, end - p)
+    if us is None: return None
+    out[3] = us * 1000 if end - p == 3 else us
+    return 0, out
+
+def fromisoformat(text):
+    """datetime.fromisoformat as Python 3.9's C implementation parses it,
+    on every Python: YYYY-MM-DD, any one separator, HH[:MM[:SS[.fff[fff]]]],
+    and an offset of +HH:MM[:SS[.ffffff]], quirks included.  3.11 widened
+    the real one (a bare "Z", basic formats, any fraction length, 24:00),
+    so a reading that leant on it would be one thing under /usr/bin/python3
+    and another under a newer Python; mod/src/sources.ts parses the same
+    way.  Raises ValueError where 3.9 does."""
+    if len(text) > 10 and 0xd800 <= ord(text[10]) <= 0xdfff:
+        text = text[:10] + "T" + text[11:]
+    buf = text.encode("utf-8")  # a surrogate elsewhere: UnicodeEncodeError
+    at = lambda k: buf[k] if k < len(buf) else 0
+    def digits(k, n):
+        v = 0
+        for j in range(n):
+            d = at(k + j) - 48
+            if not 0 <= d <= 9: raise ValueError("Invalid isoformat string")
+            v = v * 10 + d
+        return v
+    year = digits(0, 4)
+    if at(4) != 0x2d: raise ValueError("Invalid isoformat string")
+    month = digits(5, 2)
+    if at(7) != 0x2d: raise ValueError("Invalid isoformat string")
+    day = digits(8, 2)
+    hms, tz = [0, 0, 0, 0], None
+    if len(buf) > 10:
+        lead = buf[10]
+        p = 11 if lead < 0x80 else {0xe0: 13, 0xf0: 14}.get(lead & 0xf0, 12)
+        end = len(buf)
+        z = p
+        while True:
+            if at(z) in (0x2b, 0x2d): break
+            z += 1
+            if z >= end: break
+        got = _hh_mm_ss_ff(buf, p, z)
+        if got is None: raise ValueError("Invalid isoformat string")
+        rv, hms = got
+        if z == end:
+            if rv == 1: raise ValueError("Invalid isoformat string")
+        else:
+            if end - z not in (6, 9, 16): raise ValueError("Invalid isoformat string")
+            sign = -1 if at(z) == 0x2d else 1
+            got = _hh_mm_ss_ff(buf, z + 1, end)
+            if got is None or got[0]: raise ValueError("Invalid isoformat string")
+            zh, zm, zs, zus = got[1]
+            tz = timezone(timedelta(seconds=sign * (zh * 3600 + zm * 60 + zs),
+                                    microseconds=sign * zus))
+    return datetime(year, month, day, *hms, tzinfo=tz)
+
 def epoch(value):
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         try: value = float(value)
@@ -22,7 +100,7 @@ def epoch(value):
         return value if math.isfinite(value) and MIN_EPOCH <= value <= MAX_EPOCH else None
     if isinstance(value, str):
         try:
-            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            dt = fromisoformat(value.replace("Z", "+00:00"))
             stamp = (dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)).timestamp()
             return stamp if MIN_EPOCH <= stamp <= MAX_EPOCH else None
         except (ValueError, OverflowError, OSError): pass

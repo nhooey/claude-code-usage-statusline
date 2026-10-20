@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Write tests/fixtures/sources/: the usage-source reader's shared cases.
 
-    /usr/bin/python3 tests/fixtures/gen/sources.py
+    python3 tests/fixtures/gen/sources.py
 
 Each file is a list of inputs and the reading Python makes of them, and
 mod/test/sources.test.ts runs every one through the TypeScript port in
-mod/src/sources.ts and claude_sources.ts and compares.  Run it under
-/usr/bin/python3: the status line runs there, and 3.9's fromisoformat is
-narrower than a newer Python's, so the expected epochs are 3.9's.
+mod/src/sources.ts and claude_sources.ts and compares.  Any Python from
+3.9 writes the same files: sources.fromisoformat parses as 3.9's does on
+every version, so the expected epochs are 3.9's wherever they are made.
 
 What the files hold:
 

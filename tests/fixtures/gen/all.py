@@ -51,6 +51,5 @@ claude.main()
 records.main()
 # After records.main(), which writes the hand-made transcripts it saves.
 state.main()
-# Last, since it sets TZ for the process.  Under /usr/bin/python3: its
-# expected epochs are 3.9's fromisoformat, quirks included.
+# Last, since it sets TZ for the process.
 sources.main()

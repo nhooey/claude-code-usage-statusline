@@ -12,6 +12,7 @@ import time
 from datetime import datetime, timezone
 
 from .models import TokenUsage, UsageRequest
+from .sources import fromisoformat
 
 
 def _number(value):
@@ -33,7 +34,7 @@ def _stamp(value):
             return None
     if not isinstance(value, str): return None
     try:
-        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        dt = fromisoformat(value.replace("Z", "+00:00"))
         value = (dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)).timestamp()
         datetime.fromtimestamp(value, timezone.utc)
         return value if math.isfinite(value) else None
