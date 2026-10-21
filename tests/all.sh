@@ -12,6 +12,12 @@
 # is the number of suites that failed.  The manual checks of docs/tests.md
 # are not here.
 #
+# Last, once the suites are done, `generated` reruns the fixture
+# generators and fails if `git status` then shows any changed or untracked
+# file: a generator's output left uncommitted, which GitHub's run would
+# miss.  It runs alone because it rewrites the suites' inputs, and it
+# fails on uncommitted work too, so it is the check to run before a push.
+#
 # --repeat N, first, runs the whole selection again, round after round, and
 # stops at the first round with a failure, whose status is the exit status:
 # for a flaky suite, the way to catch it failing.
@@ -104,15 +110,35 @@ done <<EOF
 $SUITES
 EOF
 wait
+if wanted generated "$@"; then
+  names+=(generated)
+  (
+    cd "$ROOT" || exit 1
+    start=$(now)
+    {
+      python3 tests/fixtures/gen/all.py >/dev/null &&
+        dirty="$(git status --porcelain --untracked-files=all)" &&
+        if [ -n "$dirty" ]; then
+          echo "$dirty"
+          echo "FAIL: the tree is not clean after the generators"
+          false
+        else
+          echo "ok the tree is clean after the generators"
+        fi
+    } >"$work/generated.out" 2>&1
+    rc=$?
+    echo "$rc $start $(now)" >"$work/generated.rc"
+  )
+fi
 t1=$(now)
 if [ ${#names[@]} -eq 0 ]; then
-  echo "no suite named $*; the names are the first column of SUITES" >&2
+  echo "no suite named $*; the names are the first column of SUITES, and generated" >&2
   exit 2
 fi
 
 # The line a suite sums itself up in: its last that counts or says ok.
 result() {
-  grep -E 'pass [0-9]+ +fail|^ℹ (pass|fail) |files differ|^ok |^OK|^Ran [0-9]|[0-9]+ pass|Validation (passed|failed)' "$1" \
+  grep -E 'pass [0-9]+ +fail|^ℹ (pass|fail) |files differ|^ok |^OK|^Ran [0-9]|[0-9]+ pass|Validation (passed|failed)|^FAIL: ' "$1" \
     | grep -v '^  ok ' | tail -2 | tr '\n' ' ' | sed 's/  */ /g'
 }
 

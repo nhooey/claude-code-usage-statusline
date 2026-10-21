@@ -5,12 +5,14 @@ Run the whole deterministic set from the repository root, the mod's included,
 side by side, with one line per suite on how it went:
 
 ```sh
-bash tests/all.sh                  # every suite, about 17 s
+bash tests/all.sh                  # every suite, then generated, about 45 s
 bash tests/all.sh status node      # the ones named
 bash tests/all.sh --repeat 20 node # again, until a round fails
 ```
 
-It exits with the number of suites that failed and prints the end of each
+Last comes `generated`: it reruns the fixture generators and fails if
+`git status` then shows any changed or untracked file, so a generator's output
+left uncommitted shows here before GitHub's run would miss it. It exits with the number of suites that failed and prints the end of each
 failing one's output. `--repeat N` is for a flaky suite: it stops at the first
 round with a failure and exits with that round's status. A flake that comes
 only under load wants `bash tools/stress-suites.sh --runs 30 --jobs 5
