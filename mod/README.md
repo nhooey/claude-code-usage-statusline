@@ -237,10 +237,6 @@ usage, calib, git)`, each followed by its figure; `pieces` counts the
 shell reads, and `foldPieces` the pieces the mod folded itself where the
 worker could not run.
 
-In the debug log, `classic.SessionStart bypassed by cc-plugin-sec-default`
-is expected: Claude Code's security plugin passes the classic events by a
-mod a user loads, so the mod finds the transcript by the session's id.
-
 ### Its tests
 
 `mod-tests/` runs in Claude Code's own test runner, which loads the mod as

@@ -255,7 +255,6 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', () => ({ text: '' }))
-  on('classic.SessionStart', () => ({}))
   // The lines `$.ui.log` sends: the debug log's, `{ to: 'debug' }`, and
   // the transcript's.
   const debug: string[] = []
@@ -375,12 +374,35 @@ const STATUS = '/fixtures/transcripts/status/agents.jsonl'
 const COST = '/fixtures/transcripts/cost/09-agents.jsonl'
 const MAIN = '/fixtures/transcripts/status/main.jsonl'
 
-async function start($: any, surface: 'terminal' | 'desktop',
-  transcript: string) {
-  await $.classic.SessionStart({ source: 'startup', session_id: SESSION,
-    transcript_path: transcript })
+/** The session's transcript where a live one is: named for the session's
+ * id in `dir`, a folder of the projects directory, where the mod looks for
+ * it.  A folder of a test's own keeps a path no other test reads. */
+const sessionFile = (dir: string) => `/claude/projects/${dir}/${SESSION}.jsonl`
+
+/** Copies the fixture transcript `from`, and the agents' files in the
+ * folder beside it, to the transcript `to` and the folder beside that. */
+function place(w: World, from: string, to: string) {
+  const [a, b] = [from, to].map((p) => p.slice(0, -'.jsonl'.length) + '/')
+  w.files.set(to, w.files.get(from)!)
+  for (const [p, bytes] of [...w.files]) {
+    if (p.startsWith(a)) w.files.set(b + p.slice(a.length), bytes)
+  }
+}
+
+/** Starts the session on `transcript`, and gives the path the mod reads
+ * it at: a fixture is first placed where the session's id puts it
+ * (sessionFile), since the mod finds the transcript only there; a
+ * transcript already there is read where it is. */
+async function start($: any, w: World, surface: 'terminal' | 'desktop',
+  transcript: string): Promise<string> {
+  let path = transcript
+  if (!transcript.startsWith('/claude/projects/')) {
+    path = sessionFile('-work')
+    place(w, transcript, path)
+  }
   await $.session.start({ cwd: CWD, surface, isInteractive: true })
   await settle()
+  return path
 }
 
 // The test's environment has timers, which the hooks' types leave out.
@@ -396,11 +418,11 @@ for (const surface of ['terminal', 'desktop'] as const) {
   test(`the band is bandLines over the status document (${surface})`,
     async ($, on) => {
       const w = world(on)
-      await start($, surface, STATUS)
+      const path = await start($, w, surface, STATUS)
       const doc = lastDoc(w)
       // The edges read the fixture as its bytes are: the document is the
       // one made straight from them.
-      const want = await statusOf(w, STATUS, doc.rate as number | null)
+      const want = await statusOf(w, path, doc.rate as number | null)
       expect(JSON.parse(JSON.stringify(doc)))
         .toEqual(JSON.parse(JSON.stringify(want)))
       const ui = await mountBand($, surface, BAND)
@@ -414,7 +436,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
 
 test('a turn running draws the running phase', async ($, on) => {
   const w = world(on)
-  await start($, 'terminal', STATUS)
+  await start($, w, 'terminal', STATUS)
   const doc = lastDoc(w)
   const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
   const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
@@ -428,7 +450,7 @@ test('where Claude Code draws true colour the band draws the true set',
   async ($, on) => {
     const w = world(on, undefined, false, true,
       { TERM: 'xterm-256color', COLORTERM: 'truecolor' })
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     const doc = lastDoc(w)
     const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
     const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
@@ -444,7 +466,7 @@ for (const tmux of [
 ]) test('under tmux the band draws the 256 set: ' + tmux.TERM,
   async ($, on) => {
     const w = world(on, undefined, false, true, tmux)
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     const doc = lastDoc(w)
     const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
     // tmux's own profile, which pads its marks.
@@ -458,8 +480,8 @@ for (const tmux of [
 
 test('a survey above the prompt leaves the band to the engine',
   async ($, on) => {
-    world(on)
-    await start($, 'terminal', STATUS)
+    const w = world(on)
+    await start($, w, 'terminal', STATUS)
     const ui = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
       component: 'AbovePrompt', props: { ...BAND, hasSurvey: true } })
     expect(await ui.find({ type: 'Text' })).toBeUndefined()
@@ -481,8 +503,8 @@ async function blankClosing($: any, word: string, durationMs: number) {
 }
 
 test('a turn ends on a blank closing line', async ($, on) => {
-  world(on)
-  await start($, 'terminal', COST)
+  const w = world(on)
+  await start($, w, 'terminal', COST)
   await $.turn.complete({ answer: '', durationMs: 65_000,
     isAborted: false, turnId: 't1', reason: 'answer' })
   await settle()
@@ -492,7 +514,7 @@ test('a turn ends on a blank closing line', async ($, on) => {
 test('pressing 🎤 under the footer scrolls to the prompt the turn opened ' +
   'with, and logs the call and its answer', async ($, on) => {
     const w = world(on)
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     // Two prompts drawn; the turn opened with the second.
     for (const [text, requestId] of [['Earlier.', 'prompt-0'],
       ['Go on.', 'prompt-1']]) {
@@ -529,7 +551,7 @@ test('pressing 🎤 under the footer scrolls to the prompt the turn opened ' +
 test('pressing 🎤 with no prompt drawn says so and scrolls nowhere',
   async ($, on) => {
     const w = world(on)
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     const hint = await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'PromptHint', props: { isDraft: false,
         isWorking: true, hint: '-- INSERT --' } })
@@ -576,7 +598,7 @@ async function footer($: any) {
 test('pressing 🤖 under the footer scrolls to the reply block the turn ' +
   'drew last, and logs the call', async ($, on) => {
     const w = world(on)
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     // Drawn between turns: a reload's, no turn's last reply.
     await drawReply($, 'reply-0')
     await drawPrompt($, 'Go on.', 'prompt-1')
@@ -594,7 +616,7 @@ test('pressing 🤖 under the footer scrolls to the reply block the turn ' +
 test('pressing 🤖 with no reply drawn says so once and scrolls nowhere',
   async ($, on) => {
     const w = world(on)
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     await drawReply($, 'reply-0')
     await drawPrompt($, 'Go on.', 'prompt-1')
     await $.turn.start({ text: 'Go on.', turnId: 't3' })
@@ -613,7 +635,7 @@ test('above the prompt, 🎤 and 🤖 press as under the footer, and the ' +
     // The trial's setting (row-placement.md, RP1), in a project file.
     w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',
       encoder.encode('{"live-place": "above"}'))
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     await drawPrompt($, 'Go on.', 'prompt-1')
     await $.turn.start({ text: 'Go on.', turnId: 't3' })
     await settle()
@@ -651,17 +673,17 @@ test('above the prompt, 🎤 and 🤖 press as under the footer, and the ' +
 test('a prompt from the composer gets its turn tag under it, at no indent',
   async ($, on) => {
     const w = world(on)
-    await start($, 'terminal', STATUS)
+    const path = await start($, w, 'terminal', STATUS)
     // The prompt's record reaches the transcript as the turn opens.
     const prompt = JSON.stringify({ message: { content: 'Go on.' },
       promptId: 'p-next', promptSource: 'typed',
       timestamp: '2026-08-16T08:20:00Z', type: 'user',
       userType: 'external' }) + '\n'
-    const before = w.files.get(STATUS)!
+    const before = w.files.get(path)!
     const grown = new Uint8Array(before.length + prompt.length)
     grown.set(before)
     grown.set(encoder.encode(prompt), before.length)
-    w.files.set(STATUS, grown)
+    w.files.set(path, grown)
     await $.turn.start({ text: 'Go on.', turnId: 't3' })
     await settle()
     const doc = lastDoc(w)
@@ -707,10 +729,10 @@ test('a transcript over 4 MiB is read in pieces through the shell',
     const big = new Uint8Array(one.length * copies)
     for (let i = 0; i < copies; i++) big.set(one, i * one.length)
     w.files.set(MAIN, big)
-    await start($, 'terminal', MAIN)
+    const path = await start($, w, 'terminal', MAIN)
     expect(ranged.length).toBeGreaterThan(1)
     const doc = lastDoc(w)
-    const want = await statusOf(w, MAIN, doc.rate as number | null)
+    const want = await statusOf(w, path, doc.rate as number | null)
     expect(JSON.parse(JSON.stringify(doc)))
       .toEqual(JSON.parse(JSON.stringify(want)))
   })
@@ -733,7 +755,7 @@ test('a scan writes the shared window-cost cache through a rename',
     const path = '/claude/projects/-work/scanned.jsonl'
     const bytes = w.files.get(MAIN)!
     w.files.set(path, bytes)
-    await start($, 'terminal', MAIN)
+    await start($, w, 'terminal', MAIN)
     for (let i = 0; i < 20 && !w.files.has(costs); i++) await settle()
     expect(viaShell).toEqual([costs])
     const text = new TextDecoder().decode(w.files.get(costs)!)
@@ -783,10 +805,10 @@ async function statusOver(w: World, path: string, bytes: Uint8Array,
 // on from it folds only the lines after it, which the document shows.
 test('a reload reads on from the saved fold, not the whole transcript',
   async ($, on) => {
-    const path = '/claude/projects/-work/saved-fold.jsonl'
+    const path = sessionFile('-saved-fold')
     const { w, bytes, half, dir } = savedWorld(on, path)
     plant(w, dir, newMainFold(), foldMeta(bytes, half))
-    await start($, 'terminal', path)
+    await start($, w, 'terminal', path)
     const doc = JSON.parse(JSON.stringify(lastDoc(w)))
     const rate = doc.rate as number | null
     expect(doc).toEqual(await statusOver(w, path, bytes.subarray(half), rate))
@@ -797,12 +819,12 @@ test('a reload reads on from the saved fold, not the whole transcript',
 // passed over, the transcript folded from the start, and saved afresh.
 test('a saved fold of other bytes is not read, and is saved over',
   async ($, on) => {
-    const path = '/claude/projects/-work/saved-other.jsonl'
+    const path = sessionFile('-saved-other')
     const { w, bytes, half, dir } = savedWorld(on, path)
     const other = bytes.slice()
     other[0] = 0x20
     plant(w, dir, newMainFold(), foldMeta(other, half))
-    await start($, 'terminal', path)
+    await start($, w, 'terminal', path)
     const doc = JSON.parse(JSON.stringify(lastDoc(w)))
     expect(doc).toEqual(await statusOver(w, path, bytes,
       doc.rate as number | null))
@@ -824,7 +846,7 @@ test('a saved fold of other bytes is not read, and is saved over',
 // passed.  test/main_fold.test.ts checks that the worker writes what the
 // mod writes.
 test('a reload reads on from the state the worker saved', async ($, on) => {
-  const path = '/claude/projects/-work/worker-fold.jsonl'
+  const path = sessionFile('-worker-fold')
   const ran: string[] = []
   const w: World = world(on, (e) => {
     const [, , script, mode, file, end, dir] = e.argv
@@ -848,7 +870,7 @@ test('a reload reads on from the state the worker saved', async ($, on) => {
   const half = one.indexOf(10, one.length >> 1) + 1
   const dir = statePath(STATE, 'main-fold', path)
   plant(w, dir, newMainFold(), foldMeta(bytes, half))
-  await start($, 'terminal', path)
+  await start($, w, 'terminal', path)
   expect(ran).toEqual(['fold'])
   const doc = JSON.parse(JSON.stringify(lastDoc(w)))
   const rate = doc.rate as number | null
@@ -865,7 +887,7 @@ test('a reload reads on from the state the worker saved', async ($, on) => {
 // It folds 17 MiB twice, some 11 s on an idle machine: three budgets.
 test('with no package for the worker, the mod folds the bytes in pieces',
   { timeoutMs: 3 * BUDGET_MS }, async ($, on) => {
-    const path = '/claude/projects/-work/no-worker.jsonl'
+    const path = sessionFile('-no-worker')
     const ran: string[] = []
     let widest = 0
     // Where each shell read starts: read whole, every one is a multiple of
@@ -898,7 +920,7 @@ test('with no package for the worker, the mod folds the bytes in pieces',
     const bytes = new Uint8Array(one.length * copies)
     for (let i = 0; i < copies; i++) bytes.set(one, i * one.length)
     w.files.set(path, bytes)
-    await start($, 'terminal', path)
+    await start($, w, 'terminal', path)
     expect(ran).toEqual(['fold'])
     expect(widest).toBeLessThanOrEqual(2 * 1024 * 1024)
     const starts = froms.filter((at) => at % (2 * 1024 * 1024) !== 0 &&
@@ -939,7 +961,7 @@ test('the old saved cuts are removed, by their names alone', async ($, on) => {
     cuts + '/stray.json']) {
     w.files.set(p, encoder.encode('{}'))
   }
-  await start($, 'terminal', MAIN)
+  await start($, w, 'terminal', MAIN)
   expect(ran).toEqual([
     ['/bin/rm', '-f', '--', a + '/head.json', a + '/part-0.jsonl',
       a + '/part-12.jsonl', b + '/head.json'],
@@ -956,8 +978,9 @@ test('the old saved cuts are removed, by their names alone', async ($, on) => {
  * the line end halfway through those, and the agent's two slots. */
 function agentWorld(on: On, name: string) {
   const w = world(on)
-  const path = `/claude/projects/-work/${name}.jsonl`
-  const agent = `/claude/projects/-work/${name}/subagents/agent-fork1.jsonl`
+  const path = sessionFile('-' + name)
+  const agent = path.slice(0, -'.jsonl'.length) +
+    '/subagents/agent-fork1.jsonl'
   w.files.set(path, w.files.get(STATUS)!)
   const bytes = w.files.get(
     '/fixtures/transcripts/status/agents/subagents/agent-fork1.jsonl')!
@@ -991,7 +1014,7 @@ test('a reload reads an agent on from its saved fold, and saves it to ' +
   empty.pos = half
   w.files.set(slots[1], encoder.encode(
     agentFoldText(empty, 1, tailAt(bytes, half))))
-  await start($, 'terminal', path)
+  await start($, w, 'terminal', path)
   const end = bytes.lastIndexOf(10) + 1
   expect(new TextDecoder().decode(w.files.get(slots[0])!)).toBe(
     agentFoldText(readOn(bytes, half), 2, tailAt(bytes, end)))
@@ -1006,7 +1029,7 @@ test('a torn agent fold falls back to the other slot', async ($, on) => {
     agentFoldText(sound, 3, tailAt(bytes, half))))
   const torn = agentFoldText(sound, 4, tailAt(bytes, half))
   w.files.set(slots[0], encoder.encode(torn.slice(0, torn.length >> 1)))
-  await start($, 'terminal', path)
+  await start($, w, 'terminal', path)
   const end = bytes.lastIndexOf(10) + 1
   expect(new TextDecoder().decode(w.files.get(slots[0])!)).toBe(
     agentFoldText(readOn(bytes, 0), 4, tailAt(bytes, end)))
@@ -1018,7 +1041,7 @@ test('an agent fold of other bytes is not read', async ($, on) => {
   const { w, path, bytes, half, slots } = agentWorld(on, 'agent-other')
   w.files.set(slots[0], encoder.encode(
     agentFoldText(readOn(bytes.subarray(0, half), 0), 6, 'f'.repeat(64))))
-  await start($, 'terminal', path)
+  await start($, w, 'terminal', path)
   const end = bytes.lastIndexOf(10) + 1
   expect(new TextDecoder().decode(w.files.get(slots[1])!)).toBe(
     agentFoldText(readOn(bytes, 0), 7, tailAt(bytes, end)))
@@ -1041,7 +1064,7 @@ test('the old agent folds are removed, by their names alone',
     for (const p of [a + '/' + f, a + '/notes.txt', old + '/stray.json']) {
       w.files.set(p, encoder.encode('{}'))
     }
-    await start($, 'terminal', STATUS)
+    await start($, w, 'terminal', STATUS)
     expect(ran.filter((r) => r.some((x) => x.startsWith(old)))).toEqual([
       ['/bin/rm', '-f', '--', a + '/' + f],
       ['/bin/rmdir', '--', a, old],
@@ -1050,13 +1073,9 @@ test('the old agent folds are removed, by their names alone',
 
 // ════════════════════════════════════════════════════════════════════════════
 // A resumed session, and the events a live one sends in another order.
-//
-// In a live session Claude Code's security plugin passes the classic
-// events by a user's mod, so these send none: the mod finds the transcript
-// by the session's id under the projects directory, as it must there.
 // ════════════════════════════════════════════════════════════════════════════
 
-const RESUMED = `/claude/projects/-work/${SESSION}.jsonl`
+const RESUMED = sessionFile('-work')
 const ASKED = 'Say done.'
 const ASKED_MS = 5_000
 

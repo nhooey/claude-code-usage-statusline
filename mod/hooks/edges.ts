@@ -201,14 +201,16 @@ type AgentKept = {
   stamp: string; fold: AgentFold; reading: AgentReading; seq: number
 }
 
-/** What the session tells the mod that the status line's payload carries,
- * as handlers learn it: the transcript from a classic event, the model's
- * effort from a turn's step.  `session` is the id the transcript is the
- * one for, where that is known: a /clear or a /resume in the same process
- * moves the session on, and the transcript with it. */
-export type Seen = { transcript: string; session: string; effort: string }
+/** What the session tells the mod that the status line's payload carries
+ * and `$.session` does not, as handlers learn it: the model's effort, from
+ * a turn's step. */
+export type Seen = { effort: string }
 
-export const seen: Seen = { transcript: '', session: '', effort: '' }
+export const seen: Seen = { effort: '' }
+// The transcript transcriptPath last found, and the session id it found
+// it for: a /clear or a /resume in the same process moves the session on,
+// and the transcript with it.
+const found = { session: '', path: '' }
 const agentKept = new Map<string, AgentKept>()
 const agentLabels = new Map<string, [string, string]>()
 const costs = new Map<string, CostKept>()
@@ -1558,26 +1560,19 @@ export async function payloadOf($: $, transcript: string): Promise<{
   return { raw, payload: readPayload(JSON.stringify(raw)) }
 }
 
-/** The transcript's path: the one a classic event named, else the file
- * named for the session's id under the projects directory.
- *
- * The classic events are the lesser source: Claude Code's own security
- * plugin passes them by a user's mod (its debug log says "classic.
- * SessionStart bypassed by cc-plugin-sec-default"), so in a live session
- * the path is found by the session's id, and found again when the id
- * moves on. */
+/** The transcript's path: the file named for the session's id in one of
+ * the projects directory's folders, '' where there is none.  The path is
+ * kept for that id, and looked for again once the id moves on. */
 export async function transcriptPath($: $, places: Places):
   Promise<string> {
   const id = await $.session.id()
-  if (seen.transcript && (!seen.session || seen.session === id)) {
-    return seen.transcript
-  }
+  if (found.path && found.session === id) return found.path
   for (const p of await listDir($, places.projectsDir)) {
     if (p.kind !== 'dir') continue
     const path = pyJoin(pyJoin(places.projectsDir, p.name), id + '.jsonl')
     if (await fileSize($, path) !== null) {
-      seen.transcript = path
-      seen.session = id
+      found.session = id
+      found.path = path
       return path
     }
   }

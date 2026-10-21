@@ -217,8 +217,7 @@ async function refresh($: $): Promise<void> {
       } catch (err) {
         await log($, 'refresh: no start line', err)
       }
-      // The classic hook events that carry the mode were seen not to
-      // reach the mod (2026-10-20), so it is read off the transcript.
+      // The permission mode, off the transcript's newest prompt.
       try {
         const places = await placesFor($)
         noteMode($, 'transcript', await permissionModeOf($,
@@ -356,17 +355,18 @@ let hintSeen = ''
 // what the trial above the prompt reads back (row-placement.md, RP1).
 let bandSeen = ''
 let surveyHeld = false
-// The session's permission mode, as the last classic hook event gave it:
-// the footer's `hint` leaves its pill out, so footerTail counts it apart.
+// The session's permission mode, as the transcript's newest prompt record
+// names it (permissionModeOf, read on each refresh): the footer's `hint`
+// leaves its pill out, so footerTail counts it apart.
 let permissionMode: string | undefined
 // The mode the footer's hint last named, which outranks the transcript's.
 let hintMode: string | undefined
 
-// The events seen carrying no mode, logged once each.
+// The sources seen giving no mode, logged once each.
 const modeless = new Set<string>()
 
-/** Records the permission mode an event carries, logging each change, and
- * each kind of event that carries none, once. */
+/** Records the permission mode `from` gave, logging each change, and each
+ * source that gave none, once. */
 function noteMode($: $, from: string, mode: string | undefined): void {
   if (mode === undefined && !modeless.has(from)) {
     modeless.add(from)
@@ -642,16 +642,6 @@ async function bandNow($: $, isWorking: boolean, inset = 0):
       live: liveOf(o), inset })
 }
 
-/** The transcript's path, from a classic event's envelope, and the session
- * it is the one for. */
-async function learn($: $, e: { transcript_path?: string;
-  session_id?: string }) {
-  if (e.transcript_path) {
-    seen.transcript = e.transcript_path
-    seen.session = e.session_id ?? ''
-  }
-}
-
 async function home($: $): Promise<string> {
   return (await placesFor($)).home
 }
@@ -822,24 +812,6 @@ async function senderOf($: $, from: string, text: string,
 }
 
 export const register: Register = on => {
-  // Where the transcript is: every classic event names it, when it comes
-  // (transcriptPath says why it may not).  Only the envelope is read, and
-  // nothing here can refuse the event.
-  on('classic.SessionStart', async ($, e, next) => {
-    await learn($, e).catch(() => {})
-    return next(e)
-  })
-  on('classic.UserPromptSubmit', async ($, e, next) => {
-    noteMode($, 'UserPromptSubmit', e.permission_mode)
-    await learn($, e).catch(() => {})
-    return next(e)
-  })
-  on('classic.Stop', async ($, e, next) => {
-    noteMode($, 'Stop', e.permission_mode)
-    await learn($, e).catch(() => {})
-    return next(e)
-  })
-
   // The main thread's effort, which the payload carries and `$.session`
   // does not: off each of its model requests.
   on('turn.step', async function* ($, e, next) {
@@ -847,14 +819,6 @@ export const register: Register = on => {
       seen.effort = String(e.effort)
     }
     return yield* next(e)
-  })
-
-  // The permission mode, from the events that carry it: a prompt and a
-  // turn's end, above, and each tool call, so a mode cycled with shift+tab
-  // is known by the next one.
-  on('classic.PostToolUse', async ($, e, next) => {
-    noteMode($, 'PostToolUse', e.permission_mode)
-    return next(e)
   })
 
   // Each event below starts this load's tick if no event has yet (start).
