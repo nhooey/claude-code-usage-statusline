@@ -1,8 +1,7 @@
 # Row placement: each row where it reads best
 
-Approved to build (2026-10-21); this plan waits for the user's approval
-before any code. Its steps are `RP1` … `RP8` in
-[the schedule](_schedule.md).
+Approved to build, its nine decisions taken (see [Decided](#decided)).
+Its steps are `RP1` … `RP8` in [the schedule](_schedule.md).
 
 ## Why
 
@@ -20,9 +19,9 @@ best:
 - 🤖, the main thread, as the lowest row the mod can draw, just over
   Claude Code's agent panel, whose rows it is compared with.
 
-It also takes the prompt's text off 🎤 and the reply's text off 🤖, and
-leaves 🤖 and 🎮 out of the receipt by default, since both are live on
-screen.
+It also removes the prompt's text from 🎤 and the reply's text from 🤖,
+the code that draws them included, and leaves 🤖 and 🎮 out of the
+receipt by default, since both are live on screen.
 
 ## The layout
 
@@ -95,7 +94,7 @@ Every row ends 2 columns short of the edge (`right-edge`, derived from
 ### The shape
 
 A third field in each row of the `rows` table, `place`, and `live-place`
-retired (see [To decide](#to-decide), 1). The defaults, in
+retired ([Decided](#decided), 1). The defaults, in
 `mod/defaults/config.jsonc`:
 
 ```jsonc
@@ -136,8 +135,8 @@ retired (see [To decide](#to-decide), 1). The defaults, in
 - **`live-place`** leaves the spec and the defaults file. A user or project
   file that still sets it gets the unknown-key warning, as any unknown key
   does.
-- **`account-place`** keeps both values; its default becomes `"row"` (see
-  [To decide](#to-decide), 4). `"tail"` ignores `rows.account.place`.
+- **`account-place`** keeps both values; its default becomes `"row"`
+  ([Decided](#decided), 4). `"tail"` ignores `rows.account.place`.
 - **`right-edge`** is derived from the rows, not from one option: `"above"`
   when any row whose `live` is not `"never"` has `place` `"above"`, else
   `"footer"`, through the same map, `{"footer": 2, "above": 5}`. The spec's
@@ -181,8 +180,7 @@ columns of `[-]`, so it needs `right-edge` 5; under the footer line it is 2
 today. With 🎮 at 5 and 🤖 at 2 every figure would stand three columns
 apart. So once any row is above, every row, the receipt and the agent
 panel take 5 (the derivation above). The cost is three blank columns at
-the right of the footer's rows and the panel (see [To decide](#to-decide),
-2).
+the right of the footer's rows and the panel ([Decided](#decided), 2).
 
 **The left indent.** Claude Code draws the footer line's container
 `hint-inset` (2) columns in, and the mod draws its rows there that much
@@ -191,8 +189,9 @@ laid out from the right, the cells already land on one column either way;
 only the labels start 2 columns apart. The rows above the prompt take
 `indent: hint-inset` (`BandOpts.indent`, blanks before the label), and the
 receipt always takes `hint-inset` (today it takes none under `"above"`),
-so 🎤, 🎮, 💳, 🤖 and the receipt's 🎤 start at one column. `RP1` checks
-live that the band's left edge is column 0.
+so 🎤, 🎮, 💳, 🤖 and the receipt's 🎤 start at one column
+([Decided](#decided), 3). `RP1` checks live that the band's left edge is
+column 0.
 
 ## The labels without their text
 
@@ -201,24 +200,38 @@ column.
 
 - **What the rows lose.** 🎤's label is `🎤 `; 🤖's is `🤖 ` and its 📨
   count; 🎮's is `🎮 `, its workspace moving to 💳. The receipt's 🎤 loses
-  its prompt too.
+  its prompt too, and its 🎮, when `rows.session.transcript` stamps it,
+  is as bare as the live one ([Decided](#decided), 6).
+- **The code goes with it** ([Decided](#decided), 9). `turnLabel` and
+  `mainLabel` in `mod/src/cells.ts` lose their `chat.prompt` and
+  `chat.reply` pieces and the text they took; `band.ts` and `receipt.ts`
+  stop reading the prompt and the reply for them; `chat` in
+  `HIDE_GROUPS` keeps only `doing`. 🎮's live label is its mark alone;
+  the workspace's pieces become `workspacePieces` in `cells.ts`, which
+  only 💳 draws, so the receipt no longer takes a workspace. The Python
+  draws none of these labels. What the retired status line draws (its
+  👤💬 and 🤖 chat rows, from `user_text` and `asst_text`) stays, as do
+  the transcript's prompt and reply in the folds, which it reads.
 - **What the grid keeps.** Which columns drop on a narrow terminal is
   worked out once for every row the band, the receipt and the panel can
-  draw (`fixedKeys`, `LABEL_MIN` 20 in `spec/layout.jsonc`): a column
-  drops while the label would keep fewer than 20 columns. The panel's
-  agent rows still have names and tasks to show, so the rule does not
-  change, and with it no column drops at another width (see
-  [To decide](#to-decide), 8). The band's labels leave their room blank:
-  each row is as wide as before, its mark at the left and its figures
-  where they were.
-- **Where the text could come back.** `turnLabel` and `mainLabel` in
-  `mod/src/cells.ts` keep their `chat.prompt` and `chat.reply` pieces for
-  any caller; `band.ts` and `receipt.ts` stop passing the text. Putting it
-  back is one change to two callers.
+  draw (`fixedKeys`, `LABEL_MIN` in `spec/layout.jsonc`): a column drops
+  while the label would keep fewer than `LABEL_MIN` columns. It goes from
+  20 to 12 for every row ([Decided](#decided), 8): an agent row's head on
+  the panel, its spinner, kind and state marks and a blank, is 7
+  columns, and 5 more show the first letters of its name, enough to tell
+  two agents apart; the band's widest label, 🤖 with a 📨 count, is about
+  7. So one more column, 💰 or 🔋, stays on screen at widths where it
+  dropped, and the panel's names and tasks are cut harder there. The
+  band's labels leave the rest of their room blank: each row is as wide
+  as before, its mark at the left and its figures where they were.
 - **Pressing still works.** `scopedRow` keys the press on the row's scope,
-  `turn` or `main`, not on its label, so 🎤 and 🤖 press to their prompt
-  and reply as today, under the footer line, above the prompt (new, see
-  `RP1`) and in the receipt.
+  `turn` or `main`, not on its label, and the press scrolls to the
+  `requestId` the prompt's `UserMessage` and the reply's
+  `AssistantMessage` were drawn with (`promptIds`, `replyIds` in
+  `register.tsx`), never to the label's text. So 🎤 and 🤖 press to their
+  prompt and reply as today, under the footer line, above the prompt
+  (new, see `RP1`) and in the receipt, and the receipt's 🔺🔖 tag line
+  still ties it to its prompt's 🔻🔖.
 
 ## The 💳 row
 
@@ -228,16 +241,16 @@ cut a column short of the row's end, and padded with U+2800 to a guessed
 width. With the workspace's 📦 🌿 📁 🔀 🎨 joining the windows and 📅 🕐,
 it no longer fits after the footer's pills on most widths, so it becomes a
 row of its own under the footer line (`account-place` `"row"`, which
-`accountLine` draws today), in its colours (see [To decide](#to-decide),
-4).
+`accountLine` draws today), in its colours ([Decided](#decided), 4).
 
-- **What it holds** (verified in `sessionLabel`, `mod/src/cells.ts`): 🎮's
-  label today is 📦 project, 🌿 branch (🍂 and ✱ when dirty), 📁 directory,
-  🔀 PR and 🎨 output style. `accountPieces` (`mod/src/band.ts`) already
-  takes 📦 🌿 📁; it gains 🔀 and 🎨, each hidden by its own
-  `account.workspace.*` path.
-- **The order** the user wrote: 💳 and its windows, then 📦 🌿 📁 🔀 🎨,
-  then 📅 🕐 at the row's right end (see [To decide](#to-decide), 5).
+- **What it holds** (`workspacePieces`, `mod/src/cells.ts`, after `RP4`):
+  📦 project, 🌿 branch (🍂 and ✱ when dirty), 📁 directory, 🔀 PR and 🎨
+  output style. `accountPieces` (`mod/src/band.ts`) already takes 📦 🌿
+  📁; it gains 🔀 and 🎨, each hidden by its own `account.workspace.*`
+  path.
+- **The order** the user wrote, a new layout in `accountLine`: 💳 and its
+  windows from the label column, then 📦 🌿 📁 🔀 🎨, then 📅 🕐 flush
+  right ([Decided](#decided), 5).
 - **Fitting.** Today the row is not cut and Claude Code cuts it at the
   edge. As a row with more in it, it sheds by the ranks the pieces already
   carry: 🎨, then 🔀, then 📁, then 📅, then 🕐, and then the windows' 🔜,
@@ -256,7 +269,8 @@ are gone while the picker is open, and come back when it is answered:
 - the receipt is not touched: it is stamped at the turn's end, and a
   survey is answered before that.
 
-The plan takes that as it is (see [To decide](#to-decide), 7).
+The plan takes that as it is, with no code for it
+([Decided](#decided), 7).
 
 ## What changes, file by file
 
@@ -270,9 +284,11 @@ The plan takes that as it is (see [To decide](#to-decide), 7).
 | `coding_agent_usage_line/config.py` | nothing beyond the spec: table fields and `fixed` are already generic | `RP2` |
 | `mod/src/config.ts` | the same derivation, `optionsOf` without `livePlace` | `RP2` |
 | `mod/hooks/register.tsx` | `AbovePrompt` draws the rows whose `place` is `"above"`, through `scopedRow` (pressable); `PromptHint` the ones whose `place` is `"footer"`; `insetOf` gone (one inset); the above rows indented `hint-inset` | `RP1`, `RP2`, `RP3` |
-| `mod/src/band.ts` | `bandScoped` takes the place to draw (rows filtered by `place`) and the order with 💳; `sessionRow`'s label bare; `turnRow`, `mainRow` without text; `accountPieces` with 🔀 🎨, the user's order, shedding | `RP2`, `RP4`, `RP5` |
-| `mod/src/receipt.ts` | `turnRow` without its prompt; `sessionRow`'s label per [To decide](#to-decide), 6 | `RP4` |
-| `mod/src/cells.ts` | none (the label builders keep their text pieces) | — |
+| `mod/src/band.ts` | `bandScoped` takes the place to draw (rows filtered by `place`) and the order with 💳; `sessionRow`'s label bare; `turnRow`, `mainRow` without text; `accountPieces` on `workspacePieces`, then with 🔀 🎨, the user's order, shedding | `RP2`, `RP4`, `RP5` |
+| `mod/src/receipt.ts` | `turnRow` without its prompt; `sessionRow`'s label bare; no workspace taken | `RP4` |
+| `mod/src/cells.ts` | `turnLabel` and `mainLabel` without their text pieces; `sessionLabel` the mark alone; `workspacePieces` for 💳 | `RP4` |
+| `spec/layout.jsonc`, `spec.{py,ts}` | `HIDE_GROUPS.chat` without `prompt` and `reply`; `LABEL_MIN` 12 | `RP4` |
+| `mod/hooks/register.tsx`, `mod/tools/*.ts`, `mod/mod-tests/` | the receipt's callers without a workspace | `RP4` |
 | `mod/tools/draw-figures.ts` | `--part above` and `--part footer` draw by place; `--sticky` becomes `--rows` reading a rows table | `RP2` |
 | `mod/README.md`, `docs/layout.md`, `docs/options.md` prose | see [Docs](#docs) | `RP6` |
 
@@ -304,10 +320,10 @@ Each step leaves `bash tests/all.sh` and `npm test` (in `mod/`) passing.
 | The defaults cases | `tests/fixtures/config/defaults-cases.json`: a defaults file still holding `live-place`, or lacking `place`, is a `DefaultsError` | `RP2` |
 | The mod's fixtures module | `node mod/tools/gen-mod-fixtures.ts` (it carries the defaults file's text) | `RP2`, `RP5` |
 | The row cases | `node mod/tools/gen-row-cases.ts`: band cases by place, labels without text, the 💳 row with 🔀 🎨 and its shedding | `RP2`, `RP4`, `RP5` |
+| The grid cases and the panel goldens | regenerated in both ports for `LABEL_MIN` 12 | `RP4` |
 | The mod harness | `mod/mod-tests/band.test.ts`: 🎤 and 🎮 in `AbovePrompt`, 💳 and 🤖 in `PromptHint`; 🎤 gone and 🎮 kept after the stamp; nothing above under `hasSurvey`; a press on 🎤 above the prompt logs its `$.ui.scroll`; 🎮's and 🤖's cells on the same columns (`RP3`); the receipt without 🤖 🎮 by default and with them under `transcript` `true` | `RP1` … `RP5` |
 | `mod/mod-tests/config.test.ts` | the options with no file match the defaults file, `place` included | `RP2` |
-| The panel goldens | unchanged: `tests/run-cases.py` writes `"right-edge": 5` in its scratch user file | — |
-| The grid cases | unchanged: `LABEL_MIN` does not move | — |
+| The panel goldens' edge | unchanged by `RP2`: `tests/run-cases.py` writes `"right-edge": 5` in its scratch user file | — |
 
 ## Docs
 
@@ -380,10 +396,12 @@ Each step is one commit and leaves both ports' tests passing; the first is
 a trial, the last two are the user's.
 
 1. **`RP1`, the trial above the prompt.** With `live-place` `"above"` (set
-   in this repository's `config.local.jsonc`), the band's 🎤 and 🤖 rows
-   are drawn through `scopedRow`, so they press as under the footer line;
-   the `AbovePrompt` and `PromptHint` hooks log, once per change,
-   `bodyColumns`, `viewport.columns` and `hasSurvey`. A mod test presses
+   by the user in their own file for the trial, and taken out after it),
+   the band's 🎤 and 🤖 rows are drawn through `scopedRow`, so they press
+   as under the footer line; the `AbovePrompt` and `PromptHint` hooks log,
+   once per change, `bodyColumns`, `viewport.columns`,
+   `viewport.isFullscreen` and `hasSurvey`. Under `live-place` `"footer"`
+   nothing drawn changes; only the log lines are new. A mod test presses
    🎤 above the prompt. The user clicks 🎤 and 🤖 above the prompt, opens
    a question picker, and opens a docked pane, and reports what moved and
    what the log said. Settles: a click presses (not only focuses); the
@@ -398,9 +416,12 @@ a trial, the last two are the user's.
    the receipt always at `hint-inset`; a harness test that 🎮 above and 🤖
    below put each cell on the same terminal column at 80, 120 and 160
    columns.
-4. **`RP4`, the labels without text.** 🎤 and 🤖 without the prompt and
-   the reply, in the band and the receipt; 🎮 without its workspace live
-   (the receipt's per [To decide](#to-decide), 6); row cases regenerated.
+4. **`RP4`, the labels without text.** The code that draws 🎤's prompt
+   and 🤖's reply removed, in the band and the receipt; 🎮 without its
+   workspace, live and in the receipt, which no longer takes one;
+   `HIDE_GROUPS.chat` down to `doing`; `LABEL_MIN` 12 for every row, its
+   grid cases and panel goldens regenerated in both ports; row cases and
+   fixtures regenerated; the docs that describe the removed text.
 5. **`RP5`, the 💳 row.** `account-place` `"row"` by default; 🔀 and 🎨
    on it; its order and shedding; fixtures module and row cases
    regenerated.
@@ -439,76 +460,54 @@ and no `config.local.jsonc` setting `rows`:
    in this repository's `config.local.jsonc` puts 🤖 and 🎮 back in the
    next receipt, within one tick and no `/reload-plugins`.
 
-## To decide
+## Decided
 
-Each with its options, the recommended first.
+The user's answers to the plan's nine questions; the steps above follow
+them.
 
-1. **The configuration's shape.**
-   - **A. A `place` field in each row of `rows`; `live-place` retired.**
-     Any arrangement can be written, and a project sets one row's place
-     alone (tables merge per field). Costs the table form of `derived` in
-     `gen-spec.py` and both ports, and a warning in any file that still
-     sets `live-place`.
-   - **B. A third `live-place` value, `"split"`,** fixed to this layout.
-     One enum value and one map entry; no other arrangement without
-     another value.
-   - **C. A `places` option apart from `rows`,** row to place. As
-     flexible as A, but one row's settings live in two options.
-2. **The right edge with rows in both places.**
-   - **A. 5 everywhere once any row is above,** the footer's rows and the
-     panel included. One grid; costs three blank columns at the right of
-     the rows under the footer line and of the panel.
-   - **B. Each place its own,** 5 above and 2 under the footer line. No
-     columns lost; 🎮's figures and 🤖's stand three columns apart, which
-     the user's first note rules out.
-3. **The left indent above the prompt.**
-   - **A. `hint-inset` (2) columns,** so every mark and the receipt's
-     start at one column. Costs two columns of label room, now blank.
-   - **B. None, as today.** The cells still stack; the marks above start
-     two columns left of those below.
-4. **💳 as a row or a tail.**
-   - **A. A row of its own under the footer line** (`account-place`
-     `"row"` by default). Colours, its own width, shedding by rank; costs
-     one more row of height, and the footer line goes back to Claude
-     Code's own.
-   - **B. The dim tail, as today.** No extra row; with 📦 … 🎨 added it
-     no longer fits after the pills at most widths, and it is dim and cut
-     at the edge.
-5. **The 💳 row's order and alignment.**
-   - **A. The user's order, from the label column:** 💳 and its windows,
-     📦 🌿 📁 🔀 🎨, then 📅 🕐 flush right. Reads like the other rows,
-     mark first; a new layout in `accountLine`.
-   - **B. Today's, flush right:** 📦 🌿 📁 🔀 🎨, then 💳, then 📅 🕐.
-     Nothing to build beyond 🔀 🎨; the mark is in the middle of the row.
-6. **The receipt's 🎮, when it is stamped again.**
-   - **A. It keeps 📦 and 🌿:** a receipt scrolled back to still says
-     where the turn ran, which no 💳 row says in the transcript. Its label
-     then differs from the live 🎮's.
-   - **B. Bare, like the live 🎮.** One look; a receipt no longer says
-     the branch.
-7. **While a survey holds the band.**
-   - **A. Let 🎤 and 🎮 go until it is answered.** No code; the turn's
-     and the session's figures are not on screen while the user answers.
-   - **B. Draw them under the footer line while a survey holds the band,**
-     if `RP1` shows the footer line still draws then. The figures stay;
-     the rows jump between places, and it is more code and tests.
-8. **`LABEL_MIN` now that the band's labels are short.**
-   - **A. Keep 20, shared with the panel.** No column drops at a new
-     width, no fixtures regenerated; the band's labels leave their room
-     blank.
-   - **B. Lower it for every row** (say 12). One more column kept at a
-     given width; the panel's agent names and tasks cut harder; the grid
-     cases, the panel goldens and the row cases regenerated in both
-     ports.
-   - **C. A smaller minimum for the band's rows alone.** Breaks the
-     shared column layout, so the band's columns no longer stand over the
-     panel's; not recommended.
-9. **How the prompt and reply text leave.**
-   - **A. Dropped in the two callers,** `band.ts` and `receipt.ts`. Small;
-     coming back is a code change.
-   - **B. A new option, `row-text`, default `false`.** The text comes back
-     from a file; costs a spec option, its docs and both ports' generated
-     files, for a setting the user called temporary.
+1. **The configuration's shape: a `place` field in each row of `rows`;
+   `live-place` retired.** Any arrangement can be written, and a project
+   sets one row's place alone, since tables merge per field. It costs the
+   table form of `derived` in `gen-spec.py` and both ports, and a warning
+   in any file that still sets `live-place`. Not taken: a third
+   `live-place` value fixed to this layout, or a `places` option apart
+   from `rows`.
+2. **The right edge: 5 everywhere once any row is above,** the footer's
+   rows and the agent panel included. One grid; three blank columns at
+   the right of the rows under the footer line and of the panel. Not
+   taken: 5 above and 2 below, which would set 🎮's figures and 🤖's
+   three columns apart.
+3. **The left indent above the prompt: `hint-inset` (2) columns,** so
+   every mark and the receipt's start at one column, at the cost of two
+   columns of label room, now blank.
+4. **💳: a row of its own under the footer line** (`account-place`
+   `"row"` by default): its colours, its own width and shedding by rank,
+   for one more row of height; the footer line goes back to Claude
+   Code's own. The dim tail stays as the other value.
+5. **The 💳 row's order: 💳 and its windows from the label column, then
+   📦 🌿 📁 🔀 🎨, then 📅 🕐 flush right,** mark first as on the other
+   rows; a new layout in `accountLine`.
+6. **The receipt's 🎮, when `rows.session.transcript` stamps it: bare,
+   like the live 🎮.** One look for the row; a receipt no longer says
+   the branch it ran on.
+7. **While a survey holds the band, 🎤 and 🎮 go until it is answered.**
+   No code; the turn's and the session's figures are off screen while the
+   user answers.
+8. **`LABEL_MIN` lowered for every row, to 12.** An agent row's head on
+   the panel (spinner, kind and state marks, and a blank) is 7 columns;
+   5 more keep the first letters of its name, enough to tell two agents
+   apart, while the band's widest label, 🤖 with a 📨 count, is about 7.
+   Below 12 a panel row could show its marks and no name at all. One more
+   column stays at a given width; the panel's names and tasks are cut
+   harder; the grid cases, the panel goldens and the row cases are
+   regenerated in both ports. Not taken: a smaller minimum for the band's
+   rows alone, which would break the shared column layout.
+9. **The prompt and the reply text: the code is removed,** not only left
+   uncalled: `turnLabel`'s and `mainLabel`'s text pieces, the callers'
+   reading of the text for them, `HIDE_GROUPS`' `chat.prompt` and
+   `chat.reply`, and their tests and fixtures, in each port that has them
+   (only the mod does). What a press on 🎤 or 🤖 needs, the `requestId`s
+   of the prompt and the reply, and the receipt's 🔖 tag line, stay.
 
 ## Files
 
