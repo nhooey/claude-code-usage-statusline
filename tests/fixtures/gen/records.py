@@ -509,6 +509,49 @@ def handmade():
         {"type": "progress", "timestamp": stamp(20)},
         asst(21, "q1", "x", stop="end_turn"),
     ])
+    # Session 36be113b at 08:28:39Z on 2026-10-21, its text made up: a
+    # prompt; a peer's hand-back delivered into its turn before the first
+    # request, numbered with it; the prompt sent again from the queue, its
+    # dequeue with no content; then wakes after the answer ended, one with
+    # the ended turn's number and one with a frame and no origin.
+    frame = ("Another Claude session sent a message:\n<agent-message "
+             "from=\"a1\">\n[Subagent hand-back] Preamble. The report "
+             "follows:\n  Rule added.\n  Line two.\n</agent-message>\n\nAct.")
+
+    def numbered(sec, idx, pid, text, **kw):
+        return prompt(sec, text, promptId=pid,
+                      turnPosition={"promptIndex": 23, "turnIndex": idx},
+                      **kw)
+    put("handback.jsonl", [
+        numbered(0, 26, "H1", "make it work"),
+        queue(15, "enqueue"),
+        queue(15.01, "dequeue"),
+        queue(15.03, "enqueue", "<task-notification>t</task-notification>"),
+        numbered(15.02, 26, "H2", frame, promptSource="system", isMeta=True,
+                 origin={"kind": "peer", "from": "a1", "handback": True,
+                         "body": "[Subagent hand-back] Preamble. The report "
+                                 "follows:\n  Rule added.\n  Line two.\n"}),
+        asst(17, "h1", tools=[("t1", "Bash")], usage=(1, 0, 10, 2)),
+        dict(queue(21, "remove", "<task-notification>t</task-notification>"),
+             reason="absorbed_mid_turn"),
+        result(21, "t1", promptId="H2"),
+        queue(27, "enqueue", "make it work"),
+        asst(42, "h2", "Turn 26's reply.", usage=(1, 0, 20, 3),
+             stop="end_turn"),
+        {"type": "system", "subtype": "turn_duration",
+         "timestamp": stamp(43)},
+        queue(43, "dequeue"),
+        numbered(43.01, 27, "H3", "make it work", promptSource="queued"),
+        asst(50, "h3", "Added the rule.", usage=(1, 0, 30, 4),
+             stop="end_turn"),
+        numbered(60, 27, "H4", "Another Claude session sent a message:\n"
+                 "<cross-session-message from=\"x\">\npush it\n"
+                 "</cross-session-message>", promptSource="system",
+                 isMeta=True, origin={"kind": "peer", "body": "push it"}),
+        asst(61, "h4", "Pushed.", usage=(1, 0, 40, 5), stop="end_turn"),
+        numbered(70, 28, "H5", frame, promptSource="system", isMeta=True),
+        asst(71, "h5", "Read it.", usage=(1, 0, 50, 6), stop="end_turn"),
+    ])
     files.update(session())
     files.update(inbox_now())
     return files

@@ -99,11 +99,23 @@ same turn. A turn opens on any of these:
   another session, a cross-session idle notice, and a usage-limit reset. The
   session answers each as it would a prompt and bills the answer the same
   way.
-* **A prompt typed while the assistant was busy**: it goes through a queue
-  and has no `type: user` record. The turn opens on the `queue-operation`
-  record that delivered it (`remove`, `dequeue` or `popAll`), stamped when the
-  model received it rather than when it was typed. Queue entries starting with
-  `<` are machinery and open nothing.
+* **A prompt typed while the assistant was busy**: it goes through a queue.
+  Current Claude Code hands it over with a `dequeue` that carries no text,
+  then writes it as a `type: user` record with `promptSource: "queued"`,
+  which opens the turn as a typed prompt does. Older transcripts have no such
+  record, and the turn opens on the `queue-operation` record that delivered
+  it (`remove`, `dequeue` or `popAll`), stamped when the model received it
+  rather than when it was typed. Queue entries starting with `<` are
+  machinery and open nothing.
+
+A message delivered into a turn that is still running opens nothing: a
+`promptSource: "system"` record whose `turnPosition.turnIndex` is the open
+turn's, before that turn's answer has ended. Claude Code numbers a batch of
+messages delivered together, or a subagent's report that lands between a
+prompt and the first request of its answer, into the turn already open, and
+the answer is that turn's. A wake after the answer ended can carry the same
+number, and opens a turn of its own. Transcripts without `turnPosition`
+segment as before.
 
 The summary `/compact` injects (`isCompactSummary`), tool results and system
 reminders never open a turn. A prompt recorded both as queued and as typed

@@ -1,6 +1,6 @@
 {
- "format": 1,
+ "format": 2,
  "transcript": "tests/fixtures/records/inputs/badutf8.jsonl",
  "parts": [],
- "head": "{\"format\":1,\"seq\":1,\"offset\":23,\"first\":\"1e1da557e10026047948b25854eae3d915217e226bcbc0a6641909d2a340c226\",\"tail\":\"1e1da557e10026047948b25854eae3d915217e226bcbc0a6641909d2a340c226\",\"counts\":[],\"tr\":{\"fresh\":0,\"cwrite\":0,\"cread\":0,\"down\":0,\"parts\":[],\"compacting\":null,\"opener\":null,\"own_est\":false,\"ctx\":0,\"first_ctx\":0,\"ctx_est\":false,\"user_ts\":\"\",\"user_text\":\"\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":null,\"open_at\":null,\"prev\":null,\"eta\":[[],false,null,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":0,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":null}}"
+ "head": "{\"format\":2,\"seq\":1,\"offset\":23,\"first\":\"1e1da557e10026047948b25854eae3d915217e226bcbc0a6641909d2a340c226\",\"tail\":\"1e1da557e10026047948b25854eae3d915217e226bcbc0a6641909d2a340c226\",\"counts\":[],\"tr\":{\"fresh\":0,\"cwrite\":0,\"cread\":0,\"down\":0,\"parts\":[],\"compacting\":null,\"opener\":null,\"own_est\":false,\"ctx\":0,\"first_ctx\":0,\"ctx_est\":false,\"user_ts\":\"\",\"user_text\":\"\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":null,\"open_at\":null,\"prev\":null,\"eta\":[[],false,null,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":0,\"opened\":[\"\",null],\"added\":0,\"removed\":0,\"gate\":[null,true]},\"tu\":{\"settled\":0,\"last_stop\":null,\"gate\":[null,true],\"pending\":[],\"open\":null}}"
 }

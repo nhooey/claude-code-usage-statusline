@@ -1475,9 +1475,10 @@ def new_eta_state() -> list:
     return [(), False, None, None]
 
 
-def live_eta(r: dict, state: list) -> None:
+def live_eta(r: dict, state: list, opens: Optional[bool] = None) -> None:
     """Fold one record into `state`, [eta, done, last epoch, report's
-    message id], for one thread.
+    message id], for one thread.  `opens`, whether `r` opens a turn, is the
+    caller's where it keeps a turn_opens gate; else turn_start_text's.
 
     The ETA belongs to the answer it was written in: a new prompt clears it,
     and so does the answer finishing — an assistant record that ends its
@@ -1496,7 +1497,9 @@ def live_eta(r: dict, state: list) -> None:
     message is split over several records, one per block, so the test is on
     the message id and not on the record.
     """
-    if turn_start_text(r) is not None:
+    if opens is None:
+        opens = turn_start_text(r) is not None
+    if opens:
         state[0], state[1], state[3] = (), False, None
     elif is_work(r):
         report = eta_report([r])
@@ -1672,7 +1675,7 @@ class TranscriptFold:
                  "spans", "tools", "blocked", "pending", "first", "open_at",
                  "prev", "eta_state", "queued", "compactions", "background",
                  "idle_at", "last_seen", "opened", "wrote", "added",
-                 "removed", "ends")
+                 "removed", "ends", "gate")
 
     def __init__(self):
         self.reqs = OSet()          # request ids _dedupe_usage has kept
@@ -1698,6 +1701,7 @@ class TranscriptFold:
         self.wrote = OSet()         # tool-use ids diff_lines has counted
         self.added = self.removed = 0
         self.ends = {}              # scan_agent_end's, for the agents' ETAs
+        self.gate = new_turn_gate()  # turn_opens', for every walk below
 
 
 def fold_transcript_all(records, f: Optional[TranscriptFold] = None
@@ -1729,13 +1733,16 @@ def fold_transcript(f: TranscriptFold, r: dict) -> None:
             f.reqs.add(k)
             kept = True
     scan_agent_end(r, f.ends)
-    _fold_own_parts(f, r, kept)
+    # Whether `r` opens a turn, asked once: the gate moves as it answers.
+    text = turn_opens(r, f.gate)
+    _fold_own_parts(f, r, kept, text)
     _fold_context(f, r, kept)
     _fold_last_texts(f, r)
-    _fold_clock(f, r)
+    _fold_clock(f, r, text is not None)
 
 
-def _fold_own_parts(f: TranscriptFold, r: dict, kept: bool) -> None:
+def _fold_own_parts(f: TranscriptFold, r: dict, kept: bool,
+                    text: Optional[str]) -> None:
     """The main thread's own parts, its requests and its compactions, in
     one walk over the records so each compaction falls in its place.  A
     compaction is priced as read_turns prices its turn: preTokens at the
@@ -1743,8 +1750,8 @@ def _fold_own_parts(f: TranscriptFold, r: dict, kept: bool) -> None:
     arrives, while no turn has opened since.  Its part is stamped where
     read_turns stamps that turn, so turn_cost_since and the own shares put
     it in the same window: at the /compact prompt that asked for it, where
-    one is open with no calls yet, else at the boundary."""
-    text = turn_start_text(r)
+    one is open with no calls yet, else at the boundary.  `text` is the
+    prompt `r` opens a turn with, or None."""
     if text is not None:
         f.opener = [r.get("timestamp") or "", text, 0]
         f.compacting = None
@@ -1837,7 +1844,7 @@ def _fold_last_texts(f: TranscriptFold, r: dict) -> None:
                 f.asst_ts = r.get("timestamp") or ""
 
 
-def _fold_clock(f: TranscriptFold, r: dict) -> None:
+def _fold_clock(f: TranscriptFold, r: dict, opens: bool) -> None:
     """Time spent ANSWERING, which is not the time the session has existed.
     A turn runs from the prompt that opens it to the last record before the
     next prompt, so summing those spans counts the working time and skips
@@ -1857,11 +1864,11 @@ def _fold_clock(f: TranscriptFold, r: dict) -> None:
     f.removed += d
     # The tag the start line prints: the promptId and turnIndex of the
     # turn opened last, read as read_turns reads a turn's.
-    if turn_start_text(r) is not None:
+    if opens:
         f.opened = {"pid": "", "tidx": None}
     _stamp_turn_id(f.opened, r)
     if r.get("isSidechain") is not True:
-        live_eta(r, f.eta_state)
+        live_eta(r, f.eta_state, opens)
         scan_background(r, f.background)
     t = ts_epoch(r.get("timestamp") or "")
     if t is None:
@@ -1876,11 +1883,11 @@ def _fold_clock(f: TranscriptFold, r: dict) -> None:
         # the assistant answering.
         if ends_turn(r):
             f.idle_at = t
-        elif (r.get("type") == "assistant" or turn_start_text(r) is not None
+        elif (r.get("type") == "assistant" or opens
               or (r.get("type") == "user" and isinstance(
                   (r.get("message") or {}).get("content"), list))):
             f.idle_at = 0.0
-    if turn_start_text(r) is not None:
+    if opens:
         if f.open_at is not None and f.prev > f.open_at:
             f.spans.append((f.open_at, f.prev))
         f.open_at = f.prev = t
@@ -2013,10 +2020,18 @@ def opens_turn(r: dict) -> bool:
         the character, and `promptSource` is what tells the two apart.
       * isMeta on a TYPED record.  A wake message is usually marked isMeta as
         well, so the flag cannot be the test on that branch.
-      * promptSource "queued" — a typed prompt handed over from the queue.
-        Its turn boundary is the queue's own removal record, which carries the
-        text and a timestamp of when the model actually got it; see
-        `queued_text`.  Reading both would open the turn twice.
+
+    A prompt with promptSource "queued" — one typed while the assistant was
+    busy, handed over from the queue — opens a turn on the typed branch's
+    terms.  Older transcripts write no such record, and their queue removal
+    carries the text and opens the turn instead (see `queued_text`).  Newer
+    ones write the removal as a bare `dequeue` with NO content: 697 of the
+    716 queued records here have no removal with their text anywhere in the
+    file, and refused, each one's answer was filed under the prompt before
+    it (2026-10-21: 🎤 printed an agent report over the reply to the prompt
+    typed after it).  Where one prompt is written both ways, a few records
+    apart with nothing answered between, read_turns keeps one turn, as for
+    a prompt recorded typed and queued.
 
     The exclusion this replaces was written against a mid-turn injection —
     "four in a row landed inside one turn" — and that shape does not exist in
@@ -2025,9 +2040,13 @@ def opens_turn(r: dict) -> bool:
     after a queue dequeue, a turn_duration, or another wake record delivered
     in the same batch.  A peer message that genuinely arrives mid-turn gets no
     `type: user` record at all — only a queue `remove`, whose content opens
-    with '<' and is refused by `queued_text`.  A batch delivered together
-    opens one turn each, the earlier ones with no requests under them, which
-    is the queue-drain case `render_cost_line` already skips past.
+    with '<' and is refused by `queued_text`.
+
+    What a wake record cannot say alone is whether the turn it would open
+    is already open: a batch delivered together, or a wake landing between
+    a typed prompt and the first request of its answer.  Claude Code
+    numbers its turns, and gives each of those records the open turn's
+    number; `turn_opens` is the stateful test that reads it.
 
     promptSource is checked permissively on the typed branch (absent counts as
     typed) so that transcripts written before the field existed still segment
@@ -2041,7 +2060,7 @@ def opens_turn(r: dict) -> bool:
     if r.get("promptSource") == "system":
         return True
     return (not r.get("isMeta")
-            and r.get("promptSource", "typed") == "typed"
+            and r.get("promptSource", "typed") in ("typed", "queued")
             and not c.startswith("<"))
 
 
@@ -2055,11 +2074,12 @@ QUEUE_DELIVERED = ("remove", "dequeue", "popAll")
 def queued_text(r: dict) -> Optional[str]:
     """The prompt a `queue-operation` record delivered, or None.
 
-    A message typed while the assistant is working does NOT get a `type: user`
-    record.  It goes into a queue, and the only trace in the transcript is a
-    pair of `queue-operation` records — an enqueue when it was typed and a
-    removal when it was handed to the model.  Nothing else is written: the
-    text reaches the model inside the turn already in flight.
+    A message typed while the assistant is working went into a queue, and in
+    older transcripts the only trace of it is a pair of `queue-operation`
+    records — an enqueue when it was typed and a removal, with the text,
+    when it was handed to the model.  Newer ones write the removal as a bare
+    `dequeue` and the prompt as a `type: user` record with promptSource
+    "queued", which `opens_turn` takes; this function then finds nothing.
 
     Left unread, every queued prompt is invisible as a turn boundary and its
     work is filed under whichever message the user last typed while the
@@ -2312,6 +2332,119 @@ def turn_start_text(r: dict) -> Optional[str]:
     return queued_text(r)
 
 
+def turn_index(r: dict) -> Optional[int]:
+    """The number Claude Code gives the turn a user record belongs to
+    (`turnPosition.turnIndex`), or None for a record without one."""
+    if r.get("type") != "user":
+        return None
+    tp = r.get("turnPosition")
+    idx = tp.get("turnIndex") if isinstance(tp, dict) else None
+    return idx if isinstance(idx, int) and not isinstance(idx, bool) else None
+
+
+def new_turn_gate() -> list:
+    """A fresh `gate` for turn_opens: no turn open, so no number, and none
+    running."""
+    return [None, True]
+
+
+def turn_opens(r: dict, gate: list) -> Optional[str]:
+    """turn_start_text, less a message delivered into the turn still
+    running.  `gate` is [the open turn's turnIndex, whether its answer has
+    ended]: each opener sets the number, None where it has none, and the
+    end of an answer — an assistant record that ends its turn, or the
+    turn_duration Claude Code writes after one — sets the second.
+
+    turn_start_text reads one record at a time, so it cannot tell a wake
+    message (promptSource "system") that opens a turn from one delivered
+    into a turn already running, and nothing in the record's shape does
+    either.  Claude Code's numbering does, read with the answer's end: of
+    the 738 wake records here that carry a turnIndex, 15 share the open
+    turn's, and 12 of those come before its answer has ended — a batch of
+    peer messages delivered together, or a peer's hand-back landing 16
+    seconds after a typed prompt and before the first request of its
+    answer (2026-10-21).  Each opened a turn of its own, the answer went
+    under the last of them, and 🎤 printed the hand-back over the reply to
+    the prompt typed with it.  The other three wake an idle session after
+    the turn ended, and Claude Code numbers them with the turn before all
+    the same, so the number alone is not enough.
+
+    A prompt the user sent still opens a turn on a number already open: a
+    prompt rewound before any reply and sent again takes its slot, and is a
+    turn of its own to the hooks, whose turn.complete has already come for
+    the first (see receipt.ts's billedNothing).  Records without the field,
+    all of them before it existed and every queue removal, open as
+    turn_start_text says, and leave no number to compare the next one with.
+    """
+    text = turn_start_text(r)
+    if text is None:
+        if r.get("isSidechain") is not True and (
+                ends_turn(r) or (r.get("type") == "system"
+                                 and r.get("subtype") == "turn_duration")):
+            gate[1] = True
+        return None
+    idx = turn_index(r)
+    if (idx is not None and idx == gate[0] and not gate[1]
+            and r.get("promptSource") == "system"):
+        return None
+    gate[0], gate[1] = idx, False
+    return text
+
+
+# The framing Claude Code wraps around a message from another session or a
+# subagent, when it delivers one as a turn of its own.
+PEER_LEAD = "Another Claude session sent a message:"
+HANDBACK_LEAD = "[Subagent hand-back]"
+HANDBACK_FOLLOWS = "The report follows:"
+
+
+def _handback_report(body: str) -> str:
+    """A hand-back's report out of its frame: the preamble cut off, and the
+    indent Claude Code puts on each of its lines taken off."""
+    if body.startswith(HANDBACK_LEAD):
+        at = body.find(HANDBACK_FOLLOWS)
+        body = (body[at + len(HANDBACK_FOLLOWS):] if at >= 0
+                else body[len(HANDBACK_LEAD):])
+    return "\n".join(line.strip() for line in body.split("\n")).strip()
+
+
+def opener_label(r: dict, text: str) -> str:
+    """What 🎤 prints for the turn `r` opens with `text`.
+
+    The prompt itself, except for a message from another session or a
+    subagent.  Delivered as a turn, its text is Claude Code's framing —
+    "Another Claude session sent a message:", an <agent-message> tag, and
+    for a subagent's hand-back a paragraph of preamble — so the row read
+    the same few words whatever the message said.  It reads "agent report:"
+    and the report instead, or "agent message:" and the message: from the
+    record's `origin` (`handbackReportText`, else `body` out of its frame),
+    and where that is missing, from the text out of its frame.
+    """
+    o = r.get("origin")
+    handback, said = False, None
+    if isinstance(o, dict) and o.get("kind") == "peer":
+        handback = bool(o.get("handback"))
+        rep, body = o.get("handbackReportText"), o.get("body")
+        if isinstance(rep, str) and rep.strip():
+            said = rep.strip()
+        elif isinstance(body, str) and body.strip():
+            said = _handback_report(body.strip())
+    if not said and text.startswith(PEER_LEAD):
+        rest = text[len(PEER_LEAD):].strip()
+        if rest.startswith("<") and ">" in rest:
+            name = re.split(r"[\s>]", rest[1:], 1)[0]
+            rest = rest[rest.index(">") + 1:]
+            close = rest.find("</" + name + ">") if name else -1
+            if close >= 0:
+                rest = rest[:close]
+        rest = rest.strip()
+        handback = handback or rest.startswith(HANDBACK_LEAD)
+        said = _handback_report(rest)
+    if not said:
+        return text
+    return ("agent report: " if handback else "agent message: ") + said
+
+
 def is_work(r: dict) -> bool:
     """True for a record written while the assistant was answering.
 
@@ -2546,7 +2679,7 @@ class TurnsFold:
     the fold can go on."""
 
     __slots__ = ("turns", "settled", "seen", "by_pid", "last_stop",
-                 "pending", "ends", "wrote")
+                 "pending", "ends", "wrote", "gate")
 
     def __init__(self):
         self.turns = []         # built mutably, frozen into Turns by the finish
@@ -2558,6 +2691,7 @@ class TurnsFold:
         self.pending = {}       # tool calls asked for, not yet answered
         self.ends = {}          # agent id → when it last finished
         self.wrote = OSet()     # tool-use ids diff_lines has counted
+        self.gate = new_turn_gate()  # turn_opens'
 
 
 def fold_turns_all(records, f: Optional[TurnsFold] = None) -> TurnsFold:
@@ -2592,8 +2726,9 @@ def fold_turns(f: TurnsFold, r: dict) -> None:
     scan_tool_spans(r, f.pending, cur["tools"] if cur else [],
                     cur["waits"] if cur else [])
     pid = r.get("promptId")
-    text = turn_start_text(r)
+    text = turn_opens(r, f.gate)
     if text is not None:
+        text = opener_label(r, text)
         # A queued message can be recorded BOTH ways — once typed, once
         # delivered — in the one case in 859 where the queue drained while
         # the assistant was already idle.  The earlier of the two has no

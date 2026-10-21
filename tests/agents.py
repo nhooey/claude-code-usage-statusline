@@ -634,6 +634,76 @@ def run(tmp):
            sl.read_transcript(mid, ()).turn_s),
           ([("typed", 2)], sl.ts_epoch(ts(10))))
 
+    # The record sequence of session 36be113b at 08:28:39Z on 2026-10-21,
+    # its text made up: a prompt, a peer's hand-back delivered into its turn
+    # before the answer's first request, then the prompt sent again from
+    # the queue, whose dequeue carries no content.
+    def at(minute, second, idx, pid, text, **kw):
+        return dict({"type": "user", "userType": "external",
+                     "timestamp": ts(minute, second), "promptId": pid,
+                     "turnPosition": {"promptIndex": 23, "turnIndex": idx},
+                     "message": {"content": text}}, **kw)
+    frame = ("Another Claude session sent a message:\n"
+             "<agent-message from=\"a1\">\n[Subagent hand-back] The text "
+             "below is the final report. The report follows:\n"
+             "  Rule added in PR 42.\n  Second line.\n</agent-message>\n\n"
+             "Act on it.")
+    peer = {"kind": "peer", "from": "a1", "handback": True,
+            "handbackReportText": "Rule added in PR 42.\nSecond line."}
+    seq = [
+        at(40, 0, 26, "p1", "make it work", promptSource="typed"),
+        {"type": "queue-operation", "operation": "enqueue",
+         "timestamp": ts(40, 15)},
+        {"type": "queue-operation", "operation": "dequeue",
+         "timestamp": ts(40, 15)},
+        at(40, 15, 26, "p2", frame, promptSource="system", isMeta=True,
+           origin=peer),
+        calls(40, "m1", "t1", second=17),
+        dict(result(40, "t1", second=21), promptId="p2"),
+        answer(40, "m2", 10, 0, 100, 5, second=40),
+        {"type": "queue-operation", "operation": "enqueue",
+         "timestamp": ts(40, 27), "content": "make it work"},
+        {"type": "system", "subtype": "turn_duration",
+         "timestamp": ts(40, 43)},
+        {"type": "queue-operation", "operation": "dequeue",
+         "timestamp": ts(40, 43)},
+        at(40, 43, 27, "p3", "make it work", promptSource="queued"),
+        answer(40, "m3", 10, 0, 100, 5, second=50),
+        dict(answer(40, "m3b", 10, 0, 100, 5, second=51),
+             message={"id": "m3b", "stop_reason": "end_turn",
+                      "content": [{"type": "text", "text": "Done."}],
+                      "usage": {"input_tokens": 1}}),
+        # A wake after that answer ended, numbered with its turn all the
+        # same, and framed with no origin to read: a turn of its own.
+        at(45, 0, 27, "p4", frame.replace("a1", "a2"),
+           promptSource="system", isMeta=True),
+        answer(45, "m4", 10, 0, 100, 5, second=5),
+    ]
+    tr = session(tmp, "handback", seq)
+    got = sl.read_turns(tr)
+    check("a hand-back delivered into a running turn stays in it, and the "
+          "prompt sent again from a content-less dequeue opens its own",
+          [(t.text, t.prompt_id, t.turn_index, t.calls) for t in got],
+          [("make it work", "p1", 26, 2), ("make it work", "p3", 27, 2),
+           ("agent report: Rule added in PR 42.\nSecond line.", "p4", 27,
+            1)])
+    fold = sl.read_transcript(tr, ())
+    check("the start line's tag is the turn's, as read_turns reads it",
+          (fold.prompt_id, fold.turn_index), ("p4", 27))
+    check("🎤 reads an agent report out of its frame, and a peer's message "
+          "out of its origin",
+          [sl.opener_label({}, frame),
+           sl.opener_label({"origin": {"kind": "peer", "body": "push it"}},
+                           "Another Claude session sent a message:\n"
+                           "<cross-session-message from=\"x\">\npush it\n"
+                           "</cross-session-message>"),
+           sl.opener_label({"origin": {"kind": "peer", "handback": True,
+                                       "body": "[Subagent hand-back] Pre. "
+                                       "The report follows:\n  Ok.\n"}}, "x"),
+           sl.opener_label({}, "plain prompt")],
+          ["agent report: Rule added in PR 42.\nSecond line.",
+           "agent message: push it", "agent report: Ok.", "plain prompt"])
+
     print("--- the late row ---")
     # One agent under the first prompt that keeps billing after that
     # prompt's Stop.  Three Stops read the same session, each at the cut the

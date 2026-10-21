@@ -1057,9 +1057,12 @@ export function newEtaState(): EtaState {
  * long it expects the rest to take.  A 0s in the message that ends the
  * turn is finishing, not parking; and one that ends without a line in its
  * last message reads as finished too.  A message is split over several
- * records, one per block, so the test is on the message id. */
-export function liveEta(r: Rec, state: EtaState): void {
-  if (turnStartText(r) !== null) {
+ * records, one per block, so the test is on the message id.  `opens`,
+ * whether `r` opens a turn, is the caller's where it keeps a turnOpens
+ * gate; else turnStartText's. */
+export function liveEta(r: Rec, state: EtaState,
+  opens: boolean | null = null): void {
+  if (opens ?? (turnStartText(r) !== null)) {
     state[0] = [];
     state[1] = false;
     state[3] = null;
@@ -1125,11 +1128,13 @@ export function closeAgentSpan(state: SpanState, spans: Span[]): void {
  * them as it answers a typed prompt, and bills it the same way.
  *
  * Excluded: isCompactSummary; strings opening with '<' on the typed
- * branch (tool results, system reminders); isMeta on a typed record; and
- * promptSource "queued", whose boundary is the queue's own removal record —
- * see queuedText.  An absent promptSource counts as typed, so transcripts
- * from before the field still segment.  The Python's docstring has the
- * measurements. */
+ * branch (tool results, system reminders); and isMeta on a typed record.
+ * promptSource "queued", a prompt typed while the assistant was busy, opens
+ * one on the typed branch's terms: newer Claude Code writes its queue
+ * removal with no content, so queuedText finds nothing there.  An absent
+ * promptSource counts as typed, so transcripts from before the field still
+ * segment.  Whether the turn is already open is turnOpens's to say.  The
+ * Python's docstring has the measurements. */
 export function opensTurn(r: Rec): boolean {
   const c = pyDig(r, "message", "content");
   if (pyGet(r, "type") !== "user" || pyGet(r, "userType") !== "external" ||
@@ -1139,8 +1144,8 @@ export function opensTurn(r: Rec): boolean {
   }
   if (pyGet(r, "promptSource") === "system") return true;
   const source = pyHas(r, "promptSource") ? pyGet(r, "promptSource") : "typed";
-  return !pyTruthy(pyGet(r, "isMeta")) && source === "typed" &&
-    !c.startsWith("<");
+  return !pyTruthy(pyGet(r, "isMeta")) &&
+    (source === "typed" || source === "queued") && !c.startsWith("<");
 }
 
 // Every enqueue is matched by exactly one of these, so a removal is a
@@ -1151,9 +1156,11 @@ export const QUEUE_DELIVERED: readonly unknown[] =
 
 /** The prompt a `queue-operation` record delivered, or null.
  *
- * A message typed while the assistant is working gets no `type: user`
- * record, only an enqueue when it was typed and a removal when it was
- * handed to the model.  The removal is the boundary: the enqueue is stamped
+ * A message typed while the assistant is working left, in older
+ * transcripts, no `type: user` record, only an enqueue when it was typed
+ * and a removal, with the text, when it was handed to the model; newer ones
+ * write a bare `dequeue` and a promptSource "queued" record, which
+ * opensTurn takes.  The removal is the boundary: the enqueue is stamped
  * when the message was TYPED, which can be minutes before the assistant was
  * free to read it.  Typed-only: machinery riding the same queue opens with
  * '<', and is refused. */
@@ -1193,6 +1200,104 @@ export function isCompaction(r: Rec): boolean {
 export function turnStartText(r: Rec): string | null {
   if (opensTurn(r)) return pyDig(r, "message", "content") as string;
   return queuedText(r);
+}
+
+/** The number Claude Code gives the turn a user record belongs to
+ * (`turnPosition.turnIndex`), or null for a record without one. */
+export function turnIndex(r: Rec): number | null {
+  if (pyGet(r, "type") !== "user") return null;
+  const idx = pyDig(r, "turnPosition", "turnIndex");
+  return typeof idx === "number" && Number.isInteger(idx) ? idx : null;
+}
+
+/** turnOpens's state: the open turn's turnIndex, null where it has none,
+ * and whether its answer has ended. */
+export type TurnGate = [number | null, boolean];
+
+/** A fresh `gate` for turnOpens: no turn open, so no number, and none
+ * running. */
+export function newTurnGate(): TurnGate {
+  return [null, true];
+}
+
+/** turnStartText, less a message delivered (promptSource "system") into
+ * the turn still running: one with the open turn's number, before its
+ * answer has ended — an assistant record that ends its turn, or the
+ * turn_duration written after one.  A batch of peer messages delivered
+ * together, or a hand-back landing between a typed prompt and the first
+ * request of its answer, opened a turn of its own, the answer filed under
+ * the last.  A wake after the turn ended can carry its number too, so the
+ * number alone is not enough.  A prompt the user sent still opens one on a
+ * number already open: rewound and sent again, it is a turn of its own to
+ * the hooks (billedNothing).  Records without the field open as
+ * turnStartText says, and leave no number to compare the next with.  The
+ * Python's docstring has the measurements. */
+export function turnOpens(r: Rec, gate: TurnGate): string | null {
+  const text = turnStartText(r);
+  if (text === null) {
+    if (pyGet(r, "isSidechain") !== true && (endsTurn(r) ||
+      (pyGet(r, "type") === "system" &&
+        pyGet(r, "subtype") === "turn_duration"))) gate[1] = true;
+    return null;
+  }
+  const idx = turnIndex(r);
+  if (idx !== null && idx === gate[0] && !gate[1] &&
+    pyGet(r, "promptSource") === "system") return null;
+  gate[0] = idx;
+  gate[1] = false;
+  return text;
+}
+
+// The framing Claude Code wraps around a message from another session or a
+// subagent, when it delivers one as a turn of its own.
+export const PEER_LEAD = "Another Claude session sent a message:";
+export const HANDBACK_LEAD = "[Subagent hand-back]";
+export const HANDBACK_FOLLOWS = "The report follows:";
+const TAG_NAME_END = new RegExp(`[${PY_SPACE}>]`, "u");
+
+/** A hand-back's report out of its frame: the preamble cut off, and the
+ * indent Claude Code puts on each of its lines taken off. */
+function handbackReport(body: string): string {
+  if (body.startsWith(HANDBACK_LEAD)) {
+    const at = body.indexOf(HANDBACK_FOLLOWS);
+    body = at >= 0 ? body.slice(at + HANDBACK_FOLLOWS.length)
+      : body.slice(HANDBACK_LEAD.length);
+  }
+  return pyStrip(body.split("\n").map(pyStrip).join("\n"));
+}
+
+/** What 🎤 prints for the turn `r` opens with `text`: the prompt, except
+ * for a message from another session or a subagent, whose text is Claude
+ * Code's framing.  That reads "agent report:" and the report, or "agent
+ * message:" and the message, from the record's `origin`
+ * (`handbackReportText`, else `body` out of its frame), and where that is
+ * missing, from the text out of its frame. */
+export function openerLabel(r: Rec, text: string): string {
+  const o = pyGet(r, "origin");
+  let handback = false;
+  let said = "";
+  if (isDict(o) && pyGet(o, "kind") === "peer") {
+    handback = pyTruthy(pyGet(o, "handback"));
+    const rep = pyGet(o, "handbackReportText"), body = pyGet(o, "body");
+    if (typeof rep === "string" && pyStrip(rep)) said = pyStrip(rep);
+    else if (typeof body === "string" && pyStrip(body)) {
+      said = handbackReport(pyStrip(body));
+    }
+  }
+  if (!said && text.startsWith(PEER_LEAD)) {
+    let rest = pyStrip(text.slice(PEER_LEAD.length));
+    if (rest.startsWith("<") && rest.includes(">")) {
+      const name = rest.slice(1).split(TAG_NAME_END, 1)[0];
+      rest = rest.slice(rest.indexOf(">") + 1);
+      const close = name ? rest.indexOf("</" + name + ">") : -1;
+      if (close >= 0) rest = rest.slice(0, close);
+    }
+    rest = pyStrip(rest);
+    handback = handback || rest.startsWith(HANDBACK_LEAD);
+    said = handbackReport(rest);
+  }
+  if (!said) return text;
+  return (handback ? "agent report: " : "agent message: ") + said;
 }
 
 /** True for a record written while the assistant was answering.
@@ -1851,6 +1956,8 @@ export interface TranscriptFold {
   removed: number;
   /** scanAgentEnd's, for liveAgentEtasOf. */
   ends: Map<string, number>;
+  /** turnOpens's, for every walk foldTranscript makes. */
+  gate: TurnGate;
 }
 
 export function newTranscriptFold(): TranscriptFold {
@@ -1861,7 +1968,7 @@ export function newTranscriptFold(): TranscriptFold {
     first: null, openAt: null, prev: null, etaState: newEtaState(),
     queued: 0, compactions: 0, background: new Map(), idleAt: 0.0,
     lastSeen: 0.0, opened: { pid: "", tidx: null }, wrote: new Set(),
-    added: 0, removed: 0, ends: new Map() };
+    added: 0, removed: 0, ends: new Map(), gate: newTurnGate() };
 }
 
 /** `records` folded into `f`, a fresh fold by default. */
@@ -1882,7 +1989,8 @@ export function copyTranscriptFold(f: TranscriptFold): TranscriptFold {
     etaState: [f.etaState[0].slice(), f.etaState[1], f.etaState[2],
       f.etaState[3]],
     background: new Map(f.background), opened: { ...f.opened },
-    wrote: new Set(f.wrote), ends: new Map(f.ends) };
+    wrote: new Set(f.wrote), ends: new Map(f.ends),
+    gate: [f.gate[0], f.gate[1]] };
 }
 
 /** `f` with `tail` folded in, on a copy where there is a tail: the records
@@ -1908,10 +2016,12 @@ export function foldTranscript(f: TranscriptFold, r: Rec): void {
     }
   }
   scanAgentEnd(r, f.ends);
-  foldOwnParts(f, r, kept);
+  // Whether `r` opens a turn, asked once: the gate moves as it answers.
+  const text = turnOpens(r, f.gate);
+  foldOwnParts(f, r, kept, text);
   foldContext(f, r, kept);
   foldLastTexts(f, r);
-  foldClock(f, r);
+  foldClock(f, r, text !== null);
 }
 
 /** The main thread's own parts, its requests and its compactions, in one
@@ -1920,9 +2030,9 @@ export function foldTranscript(f: TranscriptFold, r: Rec): void {
  * summary's estimated output once it arrives while no turn has opened
  * since, and stamped where readTurns stamps that turn: at the /compact
  * prompt that asked for it, where one is open with no calls, else at the
- * boundary. */
-function foldOwnParts(f: TranscriptFold, r: Rec, kept: boolean): void {
-  const text = turnStartText(r);
+ * boundary.  `text` is the prompt `r` opens a turn with, or null. */
+function foldOwnParts(f: TranscriptFold, r: Rec, kept: boolean,
+  text: string | null): void {
   if (text !== null) {
     f.opener = [pyOr(pyGet(r, "timestamp"), ""), text, 0];
     f.compacting = null;
@@ -2024,7 +2134,7 @@ function foldLastTexts(f: TranscriptFold, r: Rec): void {
  * every gap where the session sat waiting for someone to type.  With the
  * queue, the ETA (see liveEta), the background tasks, the idle and what
  * the tool results wrote. */
-function foldClock(f: TranscriptFold, r: Rec): void {
+function foldClock(f: TranscriptFold, r: Rec, opens: boolean): void {
   f.queued = Math.max(0, f.queued + queueStep(r));
   f.compactions += isCompaction(r) ? 1 : 0;
   scanToolSpans(r, f.pending, f.tools, f.blocked);
@@ -2033,10 +2143,10 @@ function foldClock(f: TranscriptFold, r: Rec): void {
   f.removed += d;
   // The tag the start line prints: the promptId and turnIndex of the
   // turn opened last, read as readTurns reads a turn's.
-  if (turnStartText(r) !== null) f.opened = { pid: "", tidx: null };
+  if (opens) f.opened = { pid: "", tidx: null };
   _stampTurnId(f.opened, r);
   if (pyGet(r, "isSidechain") !== true) {
-    liveEta(r, f.etaState);
+    liveEta(r, f.etaState, opens);
     scanBackground(r, f.background);
   }
   const t = tsEpoch(pyOr(pyGet(r, "timestamp"), ""));
@@ -2048,13 +2158,13 @@ function foldClock(f: TranscriptFold, r: Rec): void {
     // result, or a prompt, closes it.  Not any work record: Claude Code
     // writes system records after the end.
     if (endsTurn(r)) f.idleAt = t;
-    else if (pyGet(r, "type") === "assistant" || turnStartText(r) !== null ||
+    else if (pyGet(r, "type") === "assistant" || opens ||
       (pyGet(r, "type") === "user" &&
         Array.isArray(pyDig(r, "message", "content")))) {
       f.idleAt = 0.0;
     }
   }
-  if (turnStartText(r) !== null) {
+  if (opens) {
     if (f.openAt !== null && f.prev! > f.openAt) {
       f.spans.push([f.openAt, f.prev!]);
     }
@@ -2349,11 +2459,14 @@ export interface TurnsFold {
   ends: Map<string, number>;
   /** The tool-use ids diffLines has counted. */
   wrote: Set<string>;
+  /** turnOpens's. */
+  gate: TurnGate;
 }
 
 export function newTurnsFold(): TurnsFold {
   return { turns: [], settled: 0, seen: new Set(), byPid: new Map(),
-    lastStop: null, pending: new Map(), ends: new Map(), wrote: new Set() };
+    lastStop: null, pending: new Map(), ends: new Map(), wrote: new Set(),
+    gate: newTurnGate() };
 }
 
 /** `records` folded into `f`, a fresh fold by default. */
@@ -2369,7 +2482,8 @@ export function copyTurnsFold(f: TurnsFold): TurnsFold {
     tools: t.tools.slice(), waits: t.waits.slice(), eta: t.eta.slice() })),
     settled: f.settled, seen: new Set(f.seen), byPid: new Map(f.byPid),
     lastStop: f.lastStop, pending: new Map(f.pending),
-    ends: new Map(f.ends), wrote: new Set(f.wrote) };
+    ends: new Map(f.ends), wrote: new Set(f.wrote),
+    gate: [f.gate[0], f.gate[1]] };
 }
 
 /** `f` with `tail` folded in, on a copy where there is a tail; see
@@ -2393,7 +2507,8 @@ export function foldTurns(f: TurnsFold, r: Rec): void {
   // prompt is still scanned, and its own spans go nowhere.
   scanToolSpans(r, f.pending, cur ? cur.tools : [], cur ? cur.waits : []);
   const pid = pyGet(r, "promptId");
-  const text = turnStartText(r);
+  const opened = turnOpens(r, f.gate);
+  const text = opened === null ? null : openerLabel(r, opened);
   if (text !== null) {
     // A queued message can be recorded BOTH ways — once typed, once
     // delivered.  The earlier of the two has no records under it yet, so

@@ -1,8 +1,8 @@
 {
- "format": 1,
+ "format": 2,
  "transcript": "tests/fixtures/records/inputs/session/subagents/workflows/wf_1/journal.jsonl",
  "parts": [
   "[\"r\",\"req-j\"]\n[\"p\",1787000041,0.0000405]\n"
  ],
- "head": "{\"format\":1,\"seq\":1,\"offset\":264,\"first\":\"b461bb35f37a090c13b667393a6b865ea00a57e1903a021eb180dc79947845f1\",\"tail\":\"b461bb35f37a090c13b667393a6b865ea00a57e1903a021eb180dc79947845f1\",\"counts\":[2],\"tr\":{\"fresh\":1,\"cwrite\":1,\"cread\":1,\"down\":1,\"parts\":[],\"compacting\":null,\"opener\":null,\"own_est\":false,\"ctx\":3,\"first_ctx\":3,\"ctx_est\":false,\"user_ts\":\"\",\"user_text\":\"\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1787000041,\"open_at\":null,\"prev\":null,\"eta\":[[],false,1787000041,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1787000041,\"opened\":[\"\",null],\"added\":0,\"removed\":0},\"tu\":{\"settled\":0,\"last_stop\":null,\"pending\":[],\"open\":null}}"
+ "head": "{\"format\":2,\"seq\":1,\"offset\":264,\"first\":\"b461bb35f37a090c13b667393a6b865ea00a57e1903a021eb180dc79947845f1\",\"tail\":\"b461bb35f37a090c13b667393a6b865ea00a57e1903a021eb180dc79947845f1\",\"counts\":[2],\"tr\":{\"fresh\":1,\"cwrite\":1,\"cread\":1,\"down\":1,\"parts\":[],\"compacting\":null,\"opener\":null,\"own_est\":false,\"ctx\":3,\"first_ctx\":3,\"ctx_est\":false,\"user_ts\":\"\",\"user_text\":\"\",\"asst_ts\":\"\",\"asst_text\":\"\",\"pending\":[],\"first\":1787000041,\"open_at\":null,\"prev\":null,\"eta\":[[],false,1787000041,null],\"queued\":0,\"compactions\":0,\"background\":[],\"idle_at\":0,\"last_seen\":1787000041,\"opened\":[\"\",null],\"added\":0,\"removed\":0,\"gate\":[null,true]},\"tu\":{\"settled\":0,\"last_stop\":null,\"gate\":[null,true],\"pending\":[],\"open\":null}}"
 }

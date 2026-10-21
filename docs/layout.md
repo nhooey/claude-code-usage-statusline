@@ -214,7 +214,10 @@ context and no ⛳ of its own.
 
 - **💳**: see [The rows](#the-rows).
 - **🎤** and the prompt that opened the turn, a queued message or a
-  notification included, on one line.
+  notification included, on one line. A turn opened by a subagent's report
+  reads `agent report:` and the report, and one opened by a message from
+  another session `agent message:` and the message, without the frame
+  Claude Code wraps around them.
 - **🤖** and the main thread's last reply, on one line. While messages
   wait for its next turn (typed while it works, an agent's SendMessage,
   a task notification), 📨 and how many come before the reply, as an

@@ -217,6 +217,23 @@ for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))
   }
 }
 
+// Session 36be113b on 2026-10-21 (records.py's handback.jsonl): a peer's
+// hand-back delivered into a running turn stays in it, the prompt sent
+// again from a dequeue with no content opens its own turn, and 🎤 reads an
+// agent's message out of Claude Code's frame.
+test("a hand-back stays in its turn, and a queued prompt opens one", () => {
+  const p = path.join(DIR, "inputs/handback.jsonl");
+  const turns = cr.readTurns(p, []);
+  assert.deepEqual(
+    turns.map((t) => [t.text, t.prompt_id, t.turn_index, t.calls]), [
+      ["make it work", "H1", 26, 2],
+      ["make it work", "H3", 27, 1],
+      ["agent message: push it", "H4", 27, 1],
+      ["agent report: Rule added.\nLine two.", "H5", 28, 1]]);
+  const tr = cr.readTranscript(p, []);
+  assert.deepEqual([tr.prompt_id, tr.turn_index], ["H5", 28]);
+});
+
 // The mod reads an agent's file as it grows, folding only what was appended
 // since its last read: cut anywhere, mid-line included, the file folded
 // piece by piece reads as the Python reads it whole.
