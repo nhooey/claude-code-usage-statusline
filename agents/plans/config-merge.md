@@ -821,3 +821,52 @@ The rows table set in this project only:
     an empty `hide`); the user's `claude-usage-tracker` and hide list move
     to their files in step 7. `--show-config` joins the spec in step 4,
     where it starts working.
+
+## Decided (2026-10-21, by the user)
+
+18. **The defaults are a file, and it governs.** Every option a file may
+    set has its default in `mod/defaults/config.jsonc`, in exactly the
+    shape of a user's `config.jsonc`, with a short comment per option, so
+    a user copies it to `~/.config/coding-agent-usage-line/config.jsonc`
+    (or a project's `.config/coding-agent-usage-line/`), edits the copy,
+    and a `diff` against the repository's file shows only their changes.
+    The format stays JSONC (Decided 11; TOML was considered and dropped).
+    - **Where:** in `mod/`, because the marketplace installs the plugin
+      from `./mod` alone, and the mod reaches its own files through
+      `$.fs` under `$.plugin.root`; the Python, which runs from the
+      checkout, reads the same file beside its package
+      (`config.DEFAULTS_FILE`).
+    - **One source of truth:** `spec/options.jsonc` keeps each option's
+      type, allowed values and docs, and no default for an option a file
+      may set (`rows` names a table's rows instead); an option no file
+      sets (`mode`, `cols`, …) keeps its default there, as no file can
+      hold it. `tools/gen-spec.py` holds the defaults file to the spec
+      (every file option, in the spec's order, each value of its type)
+      and writes the docs' Default cells from it; the generated
+      `options_spec.{py,ts}` carry no file option's default. A derived
+      option (`right-edge`, `label`) is `null` there, "follow the option
+      it is derived from", and its map names every value that option can
+      take.
+    - **Strict at run time:** both ports read the file at every run
+      (`config.load_defaults`, `readDefaults` in the mod), and a key
+      missing, a key that is no option or describes one run, a value of
+      the wrong type, `null` for an option that is not derived, or a
+      file unreadable or not JSONC is a `DefaultsError` naming the file
+      and each key, never a value made up in its place. The two ports
+      give the same words, held by the shared
+      `tests/fixtures/config/defaults-cases.json`.
+    - **Where the error shows:** the Python prints it as the status
+      line's line, the Stop hook's `systemMessage` and each agent-panel
+      row, exiting 0 so Claude Code shows it, and on stderr; by hand
+      (`--show-config`, `--help`, `--mode cost --all`) on stderr with
+      exit 2. The mod has no options while it is wrong: each drawing
+      leaves Claude Code's own, the footer line draws the error in red
+      under it, the log and one transcript line say it once, and no
+      figures are read or receipts stamped until the file reads whole
+      (the tick looks at its `mtimeMs` with the other files').
+    - **Users' and projects' files stay lenient** (the user's call on
+      this was pending; this is the default taken): a key they leave out
+      falls through to the layers under them and the defaults file, an
+      unknown or ill-typed key is skipped with a warning, as before, and
+      a derived option's `null`, copied from the defaults file, is not a
+      setting and says nothing.

@@ -42,34 +42,31 @@ export const OPTIONS = {
   "usage-source": {
     "type": "string",
     "metavar": "SPEC",
-    "default": "auto",
     "ports": ["py", "mod"],
     "file": true,
     "flag": "--usage-source",
     "doc-table": "shared",
-    "usage": "auto, native, none/off, claude-usage-tracker, codex-app-server, anthropic-admin, openai-admin, experimental-claude-oauth, experimental-codex-api, or cmd:PATH (default: auto).",
+    "usage": "auto, native, none/off, claude-usage-tracker, codex-app-server, anthropic-admin, openai-admin, experimental-claude-oauth, experimental-codex-api, or cmd:PATH.",
     "doc": "Where plan/quota figures come from. See [Usage sources](usage-sources.md).",
   },
   "account": {
     "type": "string",
     "metavar": "NAME",
-    "default": "default",
     "ports": ["py", "mod"],
     "file": true,
     "flag": "--account",
     "doc-table": "shared",
-    "usage": "Non-secret account cache namespace (default: default).",
+    "usage": "Non-secret account cache namespace.",
     "doc": "A non-secret label that keeps cached readings for different accounts apart. Never put a token here.",
   },
   "account-period": {
     "type": "enum",
     "items": ["day", "week", "month"],
-    "default": "day",
     "ports": ["py", "mod"],
     "file": true,
     "flag": "--account-period",
     "doc-table": "shared",
-    "usage": "The organization reports' UTC period (default: day).",
+    "usage": "The organization reports' UTC period.",
     "doc": "The UTC calendar period for organization reports (`anthropic-admin`, `openai-admin`). Weeks start on Monday.",
   },
   "all": {
@@ -123,15 +120,14 @@ export const OPTIONS = {
   "right-edge": {
     "type": "int",
     "metavar": "N",
-    "default": 5,
     "derived": {"from": "live-place", "map": {"footer": 2, "above": 5}},
     "minimum": 0,
     "ports": ["py", "mod"],
     "file": true,
     "flag": "--right-edge",
     "doc-table": "shared",
-    "doc-default": "`2`, or `5` under `live-place` `above`",
-    "usage": "Columns every agent-panel row leaves blank at the terminal's right edge (default: 2 with the mod's rows under the footer line, its live-place's default; 5, the band's [-] room, with them above the prompt).",
+    "doc-default": "`2` under `live-place` `footer`, `5` under `above`",
+    "usage": "Columns every agent-panel row leaves blank at the terminal's right edge (default: 2 with the mod's rows under the footer line; 5, the band's [-] room, with them above the prompt).",
     "doc": "The columns every agent-panel row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `live-place` from the files, so the panel and the band end in one column; a panel run without the mod sets it where it wants another. Claude only.",
   },
   // One list for the band and the panel.  The rows table, not hide,
@@ -139,7 +135,6 @@ export const OPTIONS = {
   "hide": {
     "type": "list",
     "metavar": "PATH",
-    "default": [],
     "ports": ["py", "mod"],
     "file": true,
     "flag": "--hide",
@@ -151,7 +146,6 @@ export const OPTIONS = {
   // ── Claude display options ───────────────────────────────────────────
   "column-rules": {
     "type": "bool",
-    "default": false,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -164,7 +158,6 @@ export const OPTIONS = {
   },
   "mark-spacing": {
     "type": "bool",
-    "default": true,
     "ports": ["py", "mod"],
     "agents": ["claude"],
     "file": true,
@@ -177,7 +170,6 @@ export const OPTIONS = {
   },
   "subscript-decimals": {
     "type": "bool",
-    "default": false,
     "ports": ["py", "mod"],
     "agents": ["claude"],
     "file": true,
@@ -190,7 +182,6 @@ export const OPTIONS = {
   },
   "color": {
     "type": "bool",
-    "default": false,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -198,11 +189,10 @@ export const OPTIONS = {
     "modes": ["cost"],
     "doc-table": "display",
     "usage": "Colour the rows.",
-    "doc": "Colour the rows. Off by default because the Stop hook's message is shown as plain text.",
+    "doc": "Colour the rows. The Stop hook's message is shown as plain text, so leave it off there.",
   },
   "totals": {
     "type": "bool",
-    "default": true,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -215,7 +205,6 @@ export const OPTIONS = {
   },
   "right-align": {
     "type": "bool",
-    "default": true,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -228,7 +217,6 @@ export const OPTIONS = {
   },
   "account-totals": {
     "type": "bool",
-    "default": true,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -241,7 +229,6 @@ export const OPTIONS = {
   },
   "datetime": {
     "type": "bool",
-    "default": true,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -254,7 +241,6 @@ export const OPTIONS = {
   },
   "usage-text": {
     "type": "bool",
-    "default": true,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -267,7 +253,6 @@ export const OPTIONS = {
   },
   "force-newline": {
     "type": "bool",
-    "default": false,
     "ports": ["py"],
     "agents": ["claude"],
     "file": true,
@@ -280,19 +265,17 @@ export const OPTIONS = {
   "prefix": {
     "type": "string",
     "metavar": "TEXT",
-    "default": "📊",
     "ports": ["py"],
     "file": true,
     "flag": "--prefix",
     "modes": ["cost"],
     "doc-table": "display",
     "usage": "The mark at the start of each row.",
-    "doc": "The mark at the start of each row. Default `📊`.",
+    "doc": "The mark at the start of each row.",
   },
   "label": {
     "type": "string",
     "metavar": "TEXT",
-    "default": null,
     // The words padded to the widest row label's ("Usage: Session
     // (total)"), as formatting.C_LABEL is, so the rows' labels end in one
     // column.
@@ -349,7 +332,6 @@ export const OPTIONS = {
   "live-place": {
     "type": "enum",
     "items": ["footer", "above"],
-    "default": "footer",
     "ports": ["mod"],
     "file": true,
     "flag": null,
@@ -371,17 +353,9 @@ export const OPTIONS = {
       // file says; a file that sets another is warned about (Decided 16).
       "transcript": {"type": "bool", "fixed": ["account"]},
     },
-    "default": {
-      // 🎤 shown while a turn runs, then left to the transcript's
-      // stamped copy (config-merge.md, Decided 12).
-      "turn": {"live": "running", "transcript": true},
-      "agent": {"live": "always", "transcript": false},
-      "session": {"live": "always", "transcript": false},
-      // The 🔻🔖 line under the prompt and the receipt's 🔺🔖 line.
-      "tag": {"live": "never", "transcript": true},
-      // The 💳 account row; `transcript` is always false for it.
-      "account": {"live": "always", "transcript": false},
-    },
+    // 🎤 turn, 🤖 agent, 🎮 session, the 🔻🔖 line under the prompt and
+    // the receipt's 🔺🔖 line, and the 💳 account row.
+    "rows": ["turn", "agent", "session", "tag", "account"],
     "ports": ["mod"],
     "file": true,
     "flag": null,
@@ -391,7 +365,6 @@ export const OPTIONS = {
   "account-place": {
     "type": "enum",
     "items": ["row", "tail"],
-    "default": "tail",
     "ports": ["mod"],
     "file": true,
     "flag": null,
@@ -400,7 +373,6 @@ export const OPTIONS = {
   },
   "hint-tuck": {
     "type": "bool",
-    "default": false,
     "ports": ["mod"],
     "file": true,
     "flag": null,
@@ -409,7 +381,6 @@ export const OPTIONS = {
   },
   "hint-inset": {
     "type": "int",
-    "default": 2,
     "minimum": 0,
     "ports": ["mod"],
     "file": true,
@@ -420,7 +391,6 @@ export const OPTIONS = {
   // A debugging aid.
   "footer-ruler": {
     "type": "bool",
-    "default": false,
     "ports": ["mod"],
     "file": true,
     "flag": null,
@@ -429,18 +399,14 @@ export const OPTIONS = {
   },
   "agent-message-row": {
     "type": "bool",
-    "default": true,
     "ports": ["mod"],
     "file": true,
     "flag": null,
     "doc-table": null,
     "doc": "Draw the folded row of a message another agent sent as the sending agent's task and the message's first line, `› 🤖📨 <task>: <line>…`, instead of Claude Code's own row.",
   },
-  // Off: a toast takes the footer's line and hides
-  // the 💳 at its right end (seen live 2026-10-20).
   "slow-toast": {
     "type": "bool",
-    "default": false,
     "ports": ["mod"],
     "file": true,
     "flag": null,
@@ -450,7 +416,6 @@ export const OPTIONS = {
   // A store size, not a timing.
   "starts-kept": {
     "type": "int",
-    "default": 400,
     "minimum": 1,
     "ports": ["mod"],
     "file": true,

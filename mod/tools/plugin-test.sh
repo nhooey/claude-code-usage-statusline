@@ -18,7 +18,8 @@ trap 'rm -rf "$work"' EXIT
 
 mkdir -p "$work/.claude-plugin"
 cp "$mod/.claude-plugin/plugin.json" "$work/.claude-plugin/"
-cp -R "$mod/hooks" "$mod/src" "$mod/types" "$mod/mod-tests" "$work/"
+cp -R "$mod/hooks" "$mod/src" "$mod/types" "$mod/defaults" "$mod/mod-tests" \
+  "$work/"
 
 claude plugin validate "$work"
 claude plugin test "$work"

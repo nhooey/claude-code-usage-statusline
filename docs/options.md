@@ -63,7 +63,7 @@ These work for both agents.
 | `--from-figures PATH` | none | Claude: draw a saved figures document instead of reading any input. The test suite saves one per case; useful for redrawing a captured layout. See [the tests' README](../tests/README.md#figures). |
 | `--diagnose` | off | Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Claude's status line adds the session's cost and lines two ways, as a check on each other: `cost_usd` and `lines`, this program's own over the transcript and the agent files, as the cost line totals them, and `claude_cost_usd` and `claude_lines`, the totals Claude Code's payload gave; each is blank where its side has none. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses. |
 | `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
-| `--right-edge N` | `2`, or `5` under `live-place` `above` | The columns every agent-panel row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `live-place` from the files, so the panel and the band end in one column; a panel run without the mod sets it where it wants another. Claude only. |
+| `--right-edge N` | `2` under `live-place` `footer`, `5` under `above` | The columns every agent-panel row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `live-place` from the files, so the panel and the band end in one column; a panel run without the mod sets it where it wants another. Claude only. |
 | `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). Only the agent panel draws on the grid so far; the other modes, and Codex, accept it and ignore it. |
 <!-- options:end shared -->
 
@@ -94,14 +94,14 @@ gives both spellings, the `--no-` one wins.
 | `--column-rules` | status | Draw faint `\|` rules between the columns. Nothing moves. |
 | `--no-mark-spacing` | all | Close the blank between a mark and its value. |
 | `--subscript-decimals` | all | Write fractions as subscript digits: `1.2٪` becomes `1₂٪`. |
-| `--color` | cost | Colour the rows. Off by default because the Stop hook's message is shown as plain text. |
+| `--color` | cost | Colour the rows. The Stop hook's message is shown as plain text, so leave it off there. |
 | `--no-totals` | cost | Drop the 🎮 session-totals row. |
 | `--no-right-align` | cost | Print the rows flush left. |
 | `--no-account-totals` | cost | Drop the second half of each 🔋 and 🪫 cell: `💳 41٪` on the totals row, `📖`/`📝` on the prompt row. |
 | `--no-datetime` | cost | Drop the 📅 date and 🕐 time cells. |
 | `--no-usage-text` | cost | Drop the `Usage: …` words from the row labels, keeping each row's glyph. |
 | `--force-newline` | cost | Always start the message with a blank line. |
-| `--prefix TEXT` | cost | The mark at the start of each row. Default `📊`. |
+| `--prefix TEXT` | cost | The mark at the start of each row. |
 | `--label TEXT` | cost | The label of the prompt row. Default `🎤 Usage: Prompt (last)`, or `🎤` with `--no-usage-text`. |
 <!-- options:end display -->
 
@@ -250,10 +250,48 @@ On an agent row:
 
 ## Configuration files
 
-Every option a file may set is in the tables above or in
-`spec/options.jsonc`, by its long flag's name without the `--`:
-`usage-source`, `hide`, `mark-spacing`, and `totals` for `--no-totals`. The
-mod reads the same files, so one `hide` list serves the band and the panel.
+Every option a file may set is in
+[`mod/defaults/config.jsonc`](../mod/defaults/config.jsonc), with its
+default and a line on what it does, by its long flag's name without the
+`--`: `usage-source`, `hide`, `mark-spacing`, and `totals` for
+`--no-totals`. The mod reads the same files, so one `hide` list serves the
+band and the panel.
+
+### Starting from the defaults
+
+That file is the defaults: both the Python program and the mod read it at
+every run, and no default is written anywhere else. To change settings,
+copy it to your user file, or to a project's, and edit the copy:
+
+```sh
+mkdir -p ~/.config/coding-agent-usage-line
+cp mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
+# or, for one project:
+cp mod/defaults/config.jsonc <root>/.config/coding-agent-usage-line/config.jsonc
+```
+
+A diff of the two is then exactly what you changed from the defaults:
+
+```sh
+diff mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
+```
+
+A full copy sets every option, so a later change to a default in the
+repository does not reach it; delete the lines you have not changed to
+follow the defaults instead. `right-edge` and `label` are `null` in the
+defaults file, which means "follow `live-place`" and "follow
+`usage-text`"; `null` in your copy means the same, and is not a setting.
+
+The defaults file is read strictly. A key missing from it, a key that is no
+option, or a value of the wrong type is an error naming the file and the
+key, never a value made up in its place: the status line prints it as its
+line, the Stop hook as its message and the agent panel as each row (each
+exiting 0, so Claude Code shows it), `--show-config` and `--help` print it
+on stderr and exit 2, and the mod draws it in red under the footer line in
+place of its rows, with one line in the transcript. Your own files stay
+lenient, as below.
+
+### What a file holds
 
 A file is JSON with `//` comments and trailing commas allowed, an object of
 `name: value`:
@@ -274,7 +312,7 @@ A setting comes from the first of these that has it:
 | `project-local` | `<root>/.config/coding-agent-usage-line/config.local.jsonc`: one person's, not committed |
 | `project` | `<root>/.config/coding-agent-usage-line/config.jsonc`: committed, for everyone |
 | `user` | `$CODING_AGENT_USAGE_LINE_CONFIG_DIR/config.jsonc`, else `$XDG_CONFIG_HOME/coding-agent-usage-line/config.jsonc`, else `~/.config/coding-agent-usage-line/config.jsonc` |
-| `default` | the program's own |
+| `default` | `mod/defaults/config.jsonc` in the repository, which the plugin carries |
 
 The project `<root>` is found by walking up from the session's directory
 (the payload's `cwd`; the status line's `workspace.project_dir`; a Codex
@@ -288,8 +326,9 @@ Lists replace and tables merge per field: a project that sets
 `rows.agent.transcript` keeps every other row from the layers under it.
 `label` follows `usage-text` when no layer sets it.
 
-Nothing in a file stops a run. A file that is not valid JSONC or not an
-object is skipped whole; an unknown key, a key that describes one run
+Nothing in your own files stops a run. A key a file leaves out comes from
+the layer under it, and in the end from the defaults file. A file that is
+not valid JSONC or not an object is skipped whole; an unknown key, a key that describes one run
 (`mode`, `cols`, …) and a value of the wrong type or out of range are
 skipped alone, the layer under them supplying the value. Each is one line
 on stderr naming the file, and an unknown key's names the nearest known one.
@@ -330,7 +369,7 @@ Configuration, read from /Users/me/src/project:
   project-local  /Users/me/src/project/.config/coding-agent-usage-line/config.local.jsonc
   project        /Users/me/src/project/.config/coding-agent-usage-line/config.jsonc (none)
   user           /Users/me/.config/coding-agent-usage-line/config.jsonc
-  default        spec/options.jsonc
+  default        /Users/me/src/claude-code-usage-statusline/mod/defaults/config.jsonc
 
 option                         layer          value
 usage-source                   user           "claude-usage-tracker"

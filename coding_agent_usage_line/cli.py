@@ -49,11 +49,11 @@ _WIDTH = 79
 _GUTTER = 25
 
 
-def _usage_entry(option):
-    """One flag's lines of USAGE: its spellings, the default's opposite
+def _usage_entry(option, default):
+    """One flag's lines of the usage: its spellings, the default's opposite
     first for a negatable bool, and its usage text with its modes."""
     names = _spellings(option)
-    if option.get("negatable") and option["default"] is True:
+    if option.get("negatable") and default is True:
         names = [names[-1]] + names[:-1]
     names = [n for n in names if n.startswith("--")]
     names = [n for n in option.get("aliases", ()) if not n.startswith("--")] + names
@@ -61,6 +61,12 @@ def _usage_entry(option):
     if option["type"] != "bool":
         head += " " + (option.get("metavar") or "|".join(option["items"]))
     text = option["usage"]
+    # A file's string or enum option says its default, from the defaults
+    # file; a bool's is in which spelling comes first, and the plain ASCII
+    # the usage keeps to leaves out a default that is not.
+    if (option["file"] and option["type"] in ("string", "enum")
+            and isinstance(default, str) and default.isascii()):
+        text = text[:-1] + " (default: %s)." % default
     modes = option.get("modes")
     if modes and len(modes) < 3:
         text += " [%s]" % ", ".join(modes)
@@ -72,14 +78,24 @@ def _usage_entry(option):
             + [" " * _GUTTER + line for line in body[1:]])
 
 
-def _usage_section(title, options):
+def _usage_section(title, table, defaults):
     lines = [title + ":"]
-    for option in options:
-        lines += _usage_entry(option)
+    for name, option in _FLAGGED_BY_NAME:
+        if option["doc-table"] == table:
+            lines += _usage_entry(option, defaults[name])
     return "\n".join(lines) + "\n"
 
 
-USAGE = ("""usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|subagent] [options]
+_FLAGGED_BY_NAME = [(n, o) for n, o in OPTIONS.items()
+                    if o["flag"] and "py" in o["ports"]]
+
+
+def usage():
+    """--help's text, which writes each negatable switch the way that
+    changes the default: from the defaults file, so it raises
+    config.DefaultsError while that file is wrong."""
+    defaults = config.load_defaults()
+    return ("""usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|subagent] [options]
 
 One-shot coding-agent usage status and Stop-hook reports. --agent is required
 except for --help and --selftest.
@@ -89,14 +105,12 @@ Modes:
   cost                   Print Stop-hook JSON; --all prints plain history.
   subagent               Claude panel output; Codex suggests --mode cost --all.
 
-""" + _usage_section("Shared options",
-                     [o for o in _FLAGGED if o["doc-table"] == "shared"])
-    + "\n" + _usage_section(
-        "Claude display options, in the modes in brackets",
-        [o for o in _FLAGGED if o["doc-table"] == "display"])
-    + "\n" + _usage_section(
-        "Other", [o for o in _FLAGGED if o["doc-table"] is None])
-    + """
+""" + _usage_section("Shared options", "shared", defaults)
+        + "\n" + _usage_section(
+            "Claude display options, in the modes in brackets", "display",
+            defaults)
+        + "\n" + _usage_section("Other", None, defaults)
+        + """
 Codex uses its built-in /statusline for a live footer; this command provides
 one-shot status, Stop warnings and historical reports. Use --help with no
 vendor credentials or transcript required.
@@ -287,7 +301,7 @@ def _show_config(found, options):
     """--show-config's text: where each layer is, every option a file may
     set with its value and layer, and the files' warnings."""
     out = ["Configuration, read from %s:" % found.start]
-    where = {"flag": "the command line", "default": "spec/options.jsonc"}
+    where = {"flag": "the command line", "default": config.DEFAULTS_FILE}
     for layer in LAYERS:
         path = where.get(layer) or found.paths.get(layer)
         if path is None:
@@ -317,10 +331,46 @@ def _show_config(found, options):
     return "\n".join(out) + "\n"
 
 
+def _tasks(raw):
+    """The ids of the agent panel payload's tasks."""
+    tasks = _safe_payload(raw).get("tasks")
+    return [str(t["id"]) for t in tasks if isinstance(t, dict) and "id" in t] \
+        if isinstance(tasks, list) else []
+
+
+def _defaults_failed(error, agent, mode, written):
+    """The defaults file is wrong, so nothing is drawn from it: the error
+    goes to stderr, and where a hook's output is shown, in its place: the
+    status line's line, the Stop hook's message, each agent-panel row.
+    Those exit 0, since a host may hide a failed hook's output; a run by
+    hand exits 2."""
+    text = "coding-agent-usage-line: the defaults file is wrong: %s" % error
+    sys.stderr.write(text + "\n")
+    shown = "⚠ " + text
+    if agent not in ("claude", "codex") or "--show-config" in written:
+        return 2
+    if mode == "status":
+        print(shown); return 0
+    if mode == "cost" and "--all" not in written:
+        print(json.dumps({"systemMessage": shown}, ensure_ascii=False))
+        return 0
+    if mode == "subagent" and agent == "claude":
+        try: raw = sys.stdin.read()
+        except Exception: raw = ""
+        for task in _tasks(raw):
+            print(json.dumps({"id": task, "content": shown},
+                             ensure_ascii=False))
+        return 0
+    return 2
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if "-h" in argv or "--help" in argv:
-        sys.stdout.write(USAGE); return 0
+        try:
+            sys.stdout.write(usage()); return 0
+        except config.DefaultsError as exc:
+            return _defaults_failed(exc, None, None, {})
     if "--selftest" in argv:
         from . import claude
         return claude.selftest()
@@ -334,6 +384,13 @@ def main(argv=None):
     # The last of each value flag, as written, for the checks below.
     written = dict(parsed)
     agent = written.get("--agent")
+    # Every option's default is the defaults file's: until it reads whole
+    # there is nothing to draw with (config-merge.md, Decided 18).
+    try:
+        config.load_defaults()
+    except config.DefaultsError as exc:
+        return _defaults_failed(exc, agent, written.get("--mode", "status"),
+                                written)
     if "--show-config" in written:
         # No payload: the walk starts where the command runs.
         found = config.load(os.getcwd())

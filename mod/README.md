@@ -59,9 +59,15 @@ files keep their reads in `src/*_node.ts`, which only Node imports, and
 
 The mod draws from the options the agent panel reads too, merged from the
 [configuration files](../docs/options.md#configuration-files): the
-project's local file, the project's, the user's, then the defaults, with
-`right-edge` following `live-place` where no file sets it. Every option the
-mod reads is listed in `spec/options.jsonc`, `"mod"` among its ports: the
+project's local file, the project's, the user's, then the defaults file,
+`defaults/config.jsonc` here, which the plugin carries and the Python
+program reads too, with `right-edge` following `live-place` where no file
+sets it. The defaults file is read strictly: while anything in it is
+wrong, the mod draws nothing from it, and shows the error in red under the
+footer line in place of its rows (see
+[Starting from the defaults](../docs/options.md#starting-from-the-defaults)).
+Every option the mod reads is listed in `spec/options.jsonc`, `"mod"`
+among its ports: the
 usage source, the account and period, the `hide` paths, `mark-spacing`
 and `subscript-decimals`, `live-place`, the `rows` table (when each of 🎤,
 🤖, 🎮, the 🔖 tag lines and 💳 is drawn, and which a turn's end stamps

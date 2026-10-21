@@ -3,12 +3,14 @@ its value, and the layer it came from.
 
 The adapters read options from here, never from argv: a flag, a config file
 and a default then reach them as one answer per option, whichever spelling
-or layer gave it.  Imports nothing of the package but the spec; config.py
-reads the files whose layers `merge` takes.
+or layer gave it.  Imports nothing of the package but the spec and
+config.py, which reads the files whose layers `merge` takes and the
+defaults file under them.
 """
 from collections.abc import Mapping
 from types import MappingProxyType
 
+from .config import load_defaults
 from .options_spec import OPTIONS
 
 # The layers, highest first (config-merge.md, "Precedence"), and "derived"
@@ -124,17 +126,21 @@ def _table(name, default, files):
     return value, layer, fields
 
 
-def merge(flags, files=(), ports=("py",), warnings=()):
+def merge(flags, files=(), ports=("py",), warnings=(), defaults=None):
     """Options from the flags' layer over the files' (config.Layer, highest
-    first) and the defaults: every option the `ports` read, with its layer.
-    Lists replace and tables merge per field (Decided 3 and 10); a derived
-    value is worked out after, from the merged one it follows."""
+    first) and `defaults`, the defaults file's (config.load_defaults, which
+    raises config.DefaultsError while that file is wrong, when None):
+    every option the `ports` read, with its layer.  Lists replace and
+    tables merge per field (Decided 3 and 10); a derived value is worked
+    out after, from the merged one it follows."""
+    if defaults is None:
+        defaults = load_defaults()
     values, layers, fields = {}, {}, {}
     for name, option in OPTIONS.items():
         if not set(ports) & set(option["ports"]):
             continue
         if option["type"] == "table":
-            values[name], layers[name], got = _table(name, option["default"],
+            values[name], layers[name], got = _table(name, defaults[name],
                                                      files)
             fields.update(got)
             continue
@@ -146,18 +152,19 @@ def merge(flags, files=(), ports=("py",), warnings=()):
                 values[name], layers[name] = f.values[name], f.name
                 break
         else:
-            values[name], layers[name] = option["default"], "default"
+            values[name], layers[name] = defaults[name], "default"
     for name, option in OPTIONS.items():
         derived = option.get("derived")
         if derived and layers.get(name) == "default":
+            # The map names every value the option followed can take
+            # (tools/gen-spec.py holds it to that).
             key = _derive_key(_merged_value(derived["from"], values, flags,
-                                            files))
-            if key in derived["map"]:
-                values[name], layers[name] = derived["map"][key], "derived"
+                                            files, defaults))
+            values[name], layers[name] = derived["map"][key], "derived"
     return Options(values, layers, fields, warnings)
 
 
-def _merged_value(name, values, flags, files):
+def _merged_value(name, values, flags, files, defaults):
     """The merged value of `name`, which a derived option follows: as the
     merge gave it, or for an option of the other port only, which these
     Options leave out (right-edge follows the mod's live-place, Decided
@@ -169,7 +176,7 @@ def _merged_value(name, values, flags, files):
     for f in files:
         if name in f.values:
             return f.values[name]
-    return OPTIONS[name]["default"]
+    return defaults[name]
 
 
 def from_flags(parsed, files=()):

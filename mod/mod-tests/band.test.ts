@@ -25,6 +25,7 @@ import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
 import { fromBase64 } from '../hooks/edges.ts'
 import { merge as mergeConfig, optionsOf } from '../src/config.ts'
+import { DEFAULTS, DEFAULTS_TEXT, isDefaults } from './defaults.ts'
 import { startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
 import { CONFIG } from '../hooks/config.ts'
@@ -86,7 +87,7 @@ const USER_SETTINGS = {
 }
 // The options the mod draws with here: the user file over the defaults.
 const OPTIONS = optionsOf(mergeConfig([{ name: 'user', path: USER_FILE,
-  mtimeMs: 0, values: USER_SETTINGS }], []))
+  mtimeMs: 0, values: USER_SETTINGS }], [], DEFAULTS))
 const HIDE = OPTIONS.hide
 // When the band draws each row, and the rows the receipt stamps.
 const LIVE = { turn: OPTIONS.rows.turn.live, agent: OPTIONS.rows.agent.live,
@@ -195,7 +196,8 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   const planted = (p: string) => calib &&
     /\/claude-calibration-[0-9a-f]{64}\.cache$/.test(p)
     ? encoder.encode(JSON.stringify(CALIB)) : undefined
-  const fileAt = (p: string) => files.get(p) ?? planted(p)
+  const fileAt = (p: string) => files.get(p) ?? planted(p) ??
+    (isDefaults(p) ? encoder.encode(DEFAULTS_TEXT) : undefined)
   const isDir = (p: string) => [...files.keys()].some((f) =>
     f.startsWith(p.endsWith('/') ? p : p + '/'))
   on('fs.stat', ($, e) => {

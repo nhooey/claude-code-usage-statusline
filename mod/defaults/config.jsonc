@@ -1,0 +1,97 @@
+// The defaults of coding-agent-usage-line and its usage-band mod: every
+// option a configuration file may set, with the value both ports use when
+// no file sets it.
+//
+// Both ports read this file at every run, and nothing else holds these
+// values: a key missing here, one that is no option, or a value of the
+// wrong type is an error, drawn where the status line or the band would be.
+// The options' types, allowed values and documentation are in
+// spec/options.jsonc and docs/options.md.
+//
+// To change a setting, copy this file to your own and edit the copy:
+//
+//   cp mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
+//   diff mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
+//
+// (or to a project's .config/coding-agent-usage-line/config.jsonc).  The
+// diff is then exactly what you changed.  Your file may leave keys out: a
+// key it does not set comes from here, and follows this file as it changes.
+{
+  // ── Both ports ─────────────────────────────────────────────────────────
+  // Where plan and quota figures come from: auto, native, none, off,
+  // claude-usage-tracker, codex-app-server, anthropic-admin, openai-admin,
+  // experimental-claude-oauth, experimental-codex-api, or cmd:PATH.
+  "usage-source": "auto",
+  // A non-secret label that keeps cached readings for accounts apart.
+  "account": "default",
+  // The UTC period of the organization reports: day, week or month.
+  "account-period": "day",
+  // Columns each agent-panel row leaves blank at the right edge.  null
+  // follows live-place: 2 under "footer", 5 under "above".
+  "right-edge": null,
+  // Columns and label parts left out, scope[.group[.metric]] with * for
+  // any one part (docs/options.md, "Hiding").
+  "hide": [],
+
+  // ── Claude's display ───────────────────────────────────────────────────
+  // Faint | rules between the columns.
+  "column-rules": false,
+  // A blank between a mark and its value.
+  "mark-spacing": true,
+  // The digits after a decimal point as subscripts.
+  "subscript-decimals": false,
+  // Colour the cost rows.
+  "color": false,
+  // The cost line's 🎮 session-totals row.
+  "totals": true,
+  // The cost rows flush right.
+  "right-align": true,
+  // The account half of each 🔋 and 🪫 cell.
+  "account-totals": true,
+  // The cost rows' 📅 date and 🕐 time cells.
+  "datetime": true,
+  // The "Usage: …" words in the cost rows' labels.
+  "usage-text": true,
+  // Always start the cost message with a blank line.
+  "force-newline": false,
+  // The mark at the start of each cost row.
+  "prefix": "📊",
+  // The label of the cost line's prompt row.  null follows usage-text:
+  // "🎤 Usage: Prompt (last)  " when it is on, "🎤" when it is off.
+  "label": null,
+
+  // ── The mod's ──────────────────────────────────────────────────────────
+  // Where the mod draws its live rows: "footer", under Claude Code's
+  // footer line, or "above", above the prompt.
+  "live-place": "footer",
+  // Each row the mod draws.  live: "never", "running" (while a turn runs)
+  // or "always"; transcript: whether a turn's end stamps it into the
+  // transcript.  A file may set any one field; the rest stay.
+  "rows": {
+    // 🎤 drawn while a turn runs, then left to the transcript's stamped
+    // copy (agents/plans/config-merge.md, Decided 12).
+    "turn": {"live": "running", "transcript": true},
+    "agent": {"live": "always", "transcript": false},
+    "session": {"live": "always", "transcript": false},
+    // The 🔻🔖 line under the prompt and the receipt's 🔺🔖 line.
+    "tag": {"live": "never", "transcript": true},
+    // The 💳 account; its transcript is always false.
+    "account": {"live": "always", "transcript": false}
+  },
+  // Where the 💳 account is drawn: "row", a row of its own under the
+  // footer line, or "tail", at the footer line's right end.
+  "account-place": "tail",
+  // Draw the rows under the footer line into the blank row below it.
+  "hint-tuck": false,
+  // How many columns in Claude Code draws the footer line's container.
+  "hint-inset": 2,
+  // A debugging aid: the footer's tail as a ruler of column digits.
+  "footer-ruler": false,
+  // Draw a folded message from another agent as its task and first line.
+  "agent-message-row": true,
+  // Show a slow read as a toast as well as in the mod's log.  Off: a toast
+  // takes the footer's line and hides the 💳 at its right end.
+  "slow-toast": false,
+  // How many start lines and receipts the mod's store keeps.
+  "starts-kept": 400
+}

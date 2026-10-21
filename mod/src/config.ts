@@ -10,6 +10,11 @@
 // command line, so there is no flags layer here, and the cases with flags
 // are the Python's alone.
 //
+// Under the files is the defaults file, defaults/config.jsonc in the mod's
+// folder, every option a file may set with its default, read strictly by
+// parseDefaults: anything wrong with it is a DefaultsError, never a value
+// made up in its place (config-merge.md, Decided 18).
+//
 // Pure: the files are reached through a ConfigFs the caller hands in, `$.fs`
 // in the mod (hooks/edges.ts, configVia), a fake built from a case's files
 // in the tests; the environment is a plain object.  Paths are POSIX, and the
@@ -69,9 +74,12 @@ export const CONFIG_ENV = ["HOME", "XDG_CONFIG_HOME", CONFIG_DIR_ENV] as const;
 type Scalar = { type: string; items?: readonly string[];
   minimum?: number; fixed?: readonly string[] };
 type OptionRec = Scalar & {
-  default: unknown;
+  // An option no file sets has its default here; one a file may set has
+  // it in the defaults file alone (Defaults).
+  default?: unknown;
   file: boolean;
   fields?: { readonly [field: string]: Scalar };
+  rows?: readonly string[];
   derived?: { from: string; map: { readonly [key: string]: unknown } };
 };
 const SPEC = OPTIONS as unknown as { readonly [name: string]: OptionRec };
@@ -532,20 +540,21 @@ function scalar(kind: string, value: Json, spec: Scalar, where: string):
 }
 
 /** A table's value checked field by field: the rows and fields that
- * passed, and why for each that did not. */
-function table(name: string, option: OptionRec, value: Json):
-    { kept: Rows; why: string[] } {
+ * passed, and why for each that did not.  `fixed` is the table's default,
+ * which a fixed field may not move from; null while the defaults are what
+ * is being read. */
+function table(name: string, option: OptionRec, value: Json,
+    fixed: Rows | null): { kept: Rows; why: string[] } {
   if (!(value instanceof Map)) {
     return { kept: {}, why: [`${dumps(name)} must be an object`] };
   }
-  const defaults = option.default as { readonly [row: string]: Row };
   const fields = option.fields ?? {};
-  const rows = Object.keys(defaults);
+  const rows = option.rows ?? [];
   const kept: Rows = {};
   const why: string[] = [];
   for (const [row, rec] of value) {
     let where = dumps(`${name}.${row}`);
-    if (!Object.hasOwn(defaults, row)) {
+    if (!rows.includes(row)) {
       why.push(`${where} is no row${hint(row, rows)}`);
       continue;
     }
@@ -561,9 +570,9 @@ function table(name: string, option: OptionRec, value: Json):
       }
       const spec = fields[field];
       let { got, bad } = scalar(spec.type, v, spec, where);
-      if (bad === null && (spec.fixed ?? []).includes(row) &&
-          got !== defaults[row][field]) {
-        bad = `${where} is always ${dumpsUnicode(defaults[row][field])}`;
+      if (bad === null && fixed !== null && (spec.fixed ?? []).includes(row) &&
+          got !== fixed[row][field]) {
+        bad = `${where} is always ${dumpsUnicode(fixed[row][field])}`;
       }
       if (bad !== null) why.push(bad);
       else (kept[row] ??= {})[field] = got as string | boolean;
@@ -572,20 +581,30 @@ function table(name: string, option: OptionRec, value: Json):
   return { kept, why };
 }
 
-/** One key of a file: the value to merge, or null to skip it, and why for
- * each part skipped. */
-export function check(name: string, value: Json):
-    { got: Value; why: string[] } {
+/** The option a file may set by `name`, or why not. */
+function known(name: string): { option: OptionRec; why: null } |
+    { option: null; why: string } {
   if (!Object.hasOwn(SPEC, name)) {
-    return { got: null, why: [`${dumps(name)} is no option${hint(name, NAMES)}`] };
+    return { option: null, why: `${dumps(name)} is no option${hint(name, NAMES)}` };
   }
   const option = SPEC[name];
   if (!option.file) {
-    return { got: null,
-      why: [`${dumps(name)} describes one run, so no file sets it`] };
+    return { option: null,
+      why: `${dumps(name)} describes one run, so no file sets it` };
   }
+  return { option, why: null };
+}
+
+/** One key of a file: the value to merge, or null to skip it, and why for
+ * each part skipped.  A derived option's null is the defaults file's own
+ * spelling of "not set", so a copy of that file says nothing. */
+export function check(name: string, value: Json, defaults: Defaults):
+    { got: Value; why: string[] } {
+  const { option, why: unknown } = known(name);
+  if (option === null) return { got: null, why: [unknown] };
+  if (value === null && option.derived) return { got: null, why: [] };
   if (option.type === "table") {
-    const { kept, why } = table(name, option, value);
+    const { kept, why } = table(name, option, value, defaults[name] as Rows);
     return { got: Object.keys(kept).length ? kept : null, why };
   }
   const { got, bad } = scalar(option.type, value, option, dumps(name));
@@ -607,43 +626,173 @@ export type ModLayer = typeof MOD_LAYER;
 type Read = { values: Layer["values"]; warnings: string[];
   mtimeMs: number | null };
 
-/** One file's checked values, by option name, its warnings, each "PATH:
- * what", and its modification time; nothing when there is no file. */
-export async function readFile(path: string, fs: ConfigFs): Promise<Read> {
-  const st = await fs.stat(path);
-  if (st === null || st.kind !== "file") {
-    return { values: {}, warnings: [], mtimeMs: null };
-  }
-  const skipped = (why: string): Read =>
-    ({ values: {}, warnings: [`${path}: ${why}`], mtimeMs: st.mtimeMs });
+/** The file's text, or why it cannot be read; null when there is no
+ * file.  `st` is its stat. */
+async function textOf(path: string, fs: ConfigFs, st: FileStat | null):
+    Promise<{ text: string; why: null } | { text: null; why: string | null }> {
+  if (st === null || st.kind !== "file") return { text: null, why: null };
   if (st.size > MAX_BYTES) {
-    return skipped(`over ${MAX_BYTES / 1024} KiB, so the file is skipped`);
+    return { text: null, why: `over ${MAX_BYTES / 1024} KiB` };
   }
   const text = await fs.read(path);
-  if (text === null) return skipped("unreadable, so the file is skipped");
+  return text === null ? { text: null, why: "unreadable" } : { text, why: null };
+}
+
+/** The JSONC object `text` holds, or why not. */
+function objectOf(text: string):
+    { data: Map<string, Json>; why: null } | { data: null; why: string } {
   let data: Json;
   try {
     data = jsonLoads(stripJsonc(text));
   } catch {
-    return skipped("not valid JSONC, so the file is skipped");
+    return { data: null, why: "not valid JSONC" };
   }
-  if (!(data instanceof Map)) {
-    return skipped("not an object, so the file is skipped");
+  if (!(data instanceof Map)) return { data: null, why: "not an object" };
+  return { data, why: null };
+}
+
+/** Why a file's "version" is not one this program reads, or null.  The
+ * key is reserved for a later change of shape. */
+function versionFault(value: Json): string | null {
+  if (value === 1n || value === 1) return null;
+  return `"version" ${dumpsUnicode(value)} is not one this program reads`;
+}
+
+/** One file's checked values, by option name, its warnings, each "PATH:
+ * what", and its modification time; nothing when there is no file. */
+export async function readFile(path: string, fs: ConfigFs,
+    defaults: Defaults): Promise<Read> {
+  const st = await fs.stat(path);
+  const skipped = (why: string): Read => ({ values: {},
+    warnings: [`${path}: ${why}, so the file is skipped`],
+    mtimeMs: st?.mtimeMs ?? null });
+  const got = await textOf(path, fs, st);
+  if (got.text === null) {
+    return got.why === null ? { values: {}, warnings: [], mtimeMs: null }
+      : skipped(got.why);
   }
+  const { data, why } = objectOf(got.text);
+  if (data === null) return skipped(why);
   const values: Layer["values"] = {};
   const warnings: string[] = [];
   for (const [name, value] of data) {
     if (name === "version") {
-      // Reserved for a later change of shape.
-      if (value === 1n || value === 1) continue;
-      return skipped(`"version" ${dumpsUnicode(value)} is not one this ` +
-        "program reads, so the file is skipped");
+      const fault = versionFault(value);
+      if (fault === null) continue;
+      return skipped(fault);
     }
-    const { got, why } = check(name, value);
+    const { got, why } = check(name, value, defaults);
     warnings.push(...why.map((w) => `${path}: ${w}; skipped`));
     if (got !== null) values[name] = got;
   }
-  return { values, warnings, mtimeMs: st.mtimeMs };
+  return { values, warnings, mtimeMs: st?.mtimeMs ?? null };
+}
+
+// ── The defaults file ─────────────────────────────────────────────────────
+
+/** The defaults file's path under the mod's folder (`$.plugin.root`): the
+ * plugin carries it wherever it is installed, and the Python reads the
+ * same file beside it in the checkout. */
+export const DEFAULTS_REL = "defaults/config.jsonc";
+
+/** Every option's default, by name: those a file may set from the
+ * defaults file, null where derived, and those no file sets from the
+ * spec. */
+export type Defaults = { readonly [option: string]: Value };
+
+/** The defaults file cannot be used: its path and every fault found,
+ * "PATH: what; what". */
+export class DefaultsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DefaultsError";
+  }
+}
+
+/** The defaults file's text strictly read: every option, by name, with its
+ * default.  Throws a DefaultsError naming the file and each key at fault:
+ * a key missing, one that is no option or describes one run, or a value
+ * not of its option's type (null only for a derived option, whose default
+ * it follows).  config.parse_defaults' words, held to them by
+ * tests/fixtures/config/defaults-cases.json. */
+export function parseDefaults(path: string, text: string): Defaults {
+  const { data, why } = objectOf(text);
+  if (data === null) throw new DefaultsError(`${path}: ${why}`);
+  const faults: string[] = [];
+  const values: { [name: string]: Value } = {};
+  for (const [name, value] of data) {
+    if (name === "version") {
+      const fault = versionFault(value);
+      if (fault !== null) faults.push(fault);
+      continue;
+    }
+    const { option, why: unknown } = known(name);
+    if (option === null) {
+      faults.push(unknown);
+      continue;
+    }
+    const where = dumps(name);
+    if (option.derived) {
+      if (value !== null) {
+        faults.push(`${where} must be null, to follow ` +
+          dumps(option.derived.from));
+      }
+      values[name] = null;
+      continue;
+    }
+    if (option.type === "table") {
+      const got = defaultsTable(name, option, value);
+      faults.push(...got.faults);
+      values[name] = got.rows;
+      continue;
+    }
+    const { got, bad } = scalar(option.type, value, option, where);
+    if (bad !== null) faults.push(bad);
+    values[name] = got;
+  }
+  for (const [name, option] of Object.entries(SPEC)) {
+    if (option.file && !data.has(name)) faults.push(`${dumps(name)} is missing`);
+  }
+  if (faults.length) throw new DefaultsError(`${path}: ${faults.join("; ")}`);
+  const out: { [name: string]: Value } = {};
+  for (const [name, option] of Object.entries(SPEC)) {
+    out[name] = option.file ? values[name] : option.default as Value;
+  }
+  return out;
+}
+
+/** A table's default, and each fault: every row and every field must be
+ * there. */
+function defaultsTable(name: string, option: OptionRec, value: Json):
+    { rows: Rows | null; faults: string[] } {
+  const { kept, why: faults } = table(name, option, value, null);
+  if (!(value instanceof Map)) return { rows: null, faults };
+  const rows: Rows = {};
+  for (const row of option.rows ?? []) {
+    rows[row] = { ...kept[row] };
+    const rec = value.get(row);
+    if (!value.has(row)) {
+      faults.push(`${dumps(`${name}.${row}`)} is missing`);
+      continue;
+    }
+    if (!(rec instanceof Map)) continue;
+    for (const field of Object.keys(option.fields ?? {})) {
+      if (!rec.has(field)) {
+        faults.push(`${dumps(`${name}.${row}.${field}`)} is missing`);
+      }
+    }
+  }
+  return { rows, faults };
+}
+
+/** The defaults file at `path`, strictly read (parseDefaults). */
+export async function readDefaults(path: string, fs: ConfigFs):
+    Promise<Defaults> {
+  const got = await textOf(path, fs, await fs.stat(path));
+  if (got.text === null) {
+    throw new DefaultsError(`${path}: ${got.why ?? "missing"}`);
+  }
+  return parseDefaults(path, got.text);
 }
 
 // ── The merge ─────────────────────────────────────────────────────────────
@@ -666,18 +815,18 @@ function deriveKey(value: Value): string {
     : String(value);
 }
 
-/** The files' layers (highest first) over the defaults, every option of
- * the spec: lists replace and tables merge per field (Decided 3 and 10);
- * a derived value is worked out after, from the merged one it follows. */
-export function merge(files: readonly Layer[], warnings: readonly string[]):
-    Merged {
+/** The files' layers (highest first) over `defaults`, every option of the
+ * spec: lists replace and tables merge per field (Decided 3 and 10); a
+ * derived value is worked out after, from the merged one it follows. */
+export function merge(files: readonly Layer[], warnings: readonly string[],
+    defaults: Defaults): Merged {
   const values: Merged["values"] = {};
   const layers: Merged["layers"] = {};
   const fields: Merged["fields"] = {};
   for (const [name, option] of Object.entries(SPEC)) {
     if (option.type === "table") {
       const rows: Rows = {};
-      for (const [row, rec] of Object.entries(option.default as Rows)) {
+      for (const [row, rec] of Object.entries(defaults[name] as Rows)) {
         rows[row] = { ...rec };
       }
       let layer: LayerName = "default";
@@ -696,18 +845,16 @@ export function merge(files: readonly Layer[], warnings: readonly string[]):
       continue;
     }
     const f = files.find((l) => Object.hasOwn(l.values, name));
-    values[name] = f ? f.values[name] : option.default as Value;
+    values[name] = f ? f.values[name] : defaults[name];
     layers[name] = f ? f.name : "default";
   }
   for (const [name, option] of Object.entries(SPEC)) {
     const derived = option.derived;
-    if (derived && layers[name] === "default" &&
-        Object.hasOwn(values, derived.from)) {
-      const key = deriveKey(values[derived.from]);
-      if (Object.hasOwn(derived.map, key)) {
-        values[name] = derived.map[key] as Value;
-        layers[name] = "derived";
-      }
+    if (derived && layers[name] === "default") {
+      // The map names every value the option followed can take
+      // (tools/gen-spec.py holds it to that).
+      values[name] = derived.map[deriveKey(values[derived.from])] as Value;
+      layers[name] = "derived";
     }
   }
   return { values, layers, fields, warnings: [...warnings] };
@@ -743,25 +890,26 @@ export type Found = {
 };
 
 /** Every file layer from `start`'s project and the user, highest first,
- * read, checked and merged over the defaults.  A usage-source a file gives
- * that `agent` (any agent, for null) cannot read is skipped, as any bad
- * value is, and the layer under it supplies one (cli._merged). */
+ * read, checked and merged over `defaults` (readDefaults).  A usage-source
+ * a file gives that `agent` (any agent, for null) cannot read is skipped,
+ * as any bad value is, and the layer under it supplies one
+ * (cli._merged). */
 export async function load(start: string, env: ConfigEnv, fs: ConfigFs,
-    agent: string | null = null): Promise<Found> {
+    defaults: Defaults, agent: string | null = null): Promise<Found> {
   const { root, paths } = await find(start, env, fs);
   let files: Layer[] = [];
   const warnings: string[] = [];
   for (const name of FILE_LAYERS) {
     const path = paths[name];
     if (path === null) continue;
-    const got = await readFile(path, fs);
+    const got = await readFile(path, fs, defaults);
     warnings.push(...got.warnings);
     if (Object.keys(got.values).length && got.mtimeMs !== null) {
       files.push({ name, path, mtimeMs: got.mtimeMs, values: got.values });
     }
   }
   for (;;) {
-    const options = merge(files, warnings);
+    const options = merge(files, warnings, defaults);
     const layer = options.layers["usage-source"];
     const bad = files.find((f) => f.name === layer);
     if (bad === undefined) break;
@@ -777,5 +925,5 @@ export async function load(start: string, env: ConfigEnv, fs: ConfigFs,
     }
   }
   return { start: abspath(start), root, paths, layers: files,
-    options: merge(files, warnings) };
+    options: merge(files, warnings, defaults) };
 }

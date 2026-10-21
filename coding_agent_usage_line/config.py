@@ -11,9 +11,14 @@ Three files, highest first:
 
 `load` finds and reads them and hands back each one's checked values, by
 option name, with a warning for whatever it skipped.  options.merge lays
-them between the flags and the defaults.  Nothing here stops a run: a file
-read by a hook never breaks a session, so what is wrong is skipped at the
-smallest unit it can be, and said.
+them between the flags and the defaults.  Nothing in those files stops a
+run: a file read by a hook never breaks a session, so what is wrong is
+skipped at the smallest unit it can be, and said.
+
+Under them is the defaults file, mod/defaults/config.jsonc, every option a
+file may set with its default, which `defaults` reads strictly: it governs,
+so anything wrong with it is a DefaultsError, never a value made up in its
+place (config-merge.md, Decided 18).
 
 Imports nothing of the package but the spec, and only the stdlib.
 """
@@ -37,6 +42,12 @@ PROJECT_DIR_ENV = "CODING_AGENT_USAGE_LINE_PROJECT_DIR"
 
 # The file layers, highest first.
 FILE_LAYERS = ("project-local", "project", "user")
+
+# The defaults file, in the mod's folder so the plugin carries it when it
+# is installed on its own; the Python runs from the checkout beside it.
+DEFAULTS_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "mod", "defaults", "config.jsonc")
 
 # One file's part in the merge: its layer, its path, and the values it gave
 # that passed their checks, by option name.  A table's value holds only the
@@ -276,16 +287,17 @@ def _scalar(kind, value, spec, where):
     raise ValueError(kind)
 
 
-def _table(name, option, value):
+def _table(name, option, value, fixed):
     """A table's value checked field by field: (the rows and fields that
-    passed, [why for each that did not])."""
+    passed, [why for each that did not]).  `fixed` is the table's
+    default, which a fixed field may not move from."""
     if not isinstance(value, dict):
         return {}, ["%s must be an object" % json.dumps(name)]
     kept, why = {}, []
-    rows = list(option["default"])
+    rows = option["rows"]
     for row, rec in value.items():
         where = json.dumps("%s.%s" % (name, row))
-        if row not in option["default"]:
+        if row not in rows:
             why.append("%s is no row%s" % (where, _hint(row, rows)))
             continue
         if not isinstance(rec, dict):
@@ -299,10 +311,9 @@ def _table(name, option, value):
                            % (where, _hint(field, list(option["fields"]))))
                 continue
             got, bad = _scalar(spec["type"], v, spec, where)
-            if bad is None and row in spec.get("fixed", ()) and (
-                    got != option["default"][row][field]):
-                bad = "%s is always %s" % (
-                    where, json.dumps(option["default"][row][field]))
+            if bad is None and fixed is not None and row in spec.get(
+                    "fixed", ()) and got != fixed[row][field]:
+                bad = "%s is always %s" % (where, json.dumps(fixed[row][field]))
             if bad is not None:
                 why.append(bad)
             else:
@@ -310,61 +321,191 @@ def _table(name, option, value):
     return kept, why
 
 
-def check(name, value):
-    """One key of a file: (the value to merge, or None to skip it, [why
-    for each part skipped])."""
+def _known(name):
+    """(the option a file may set by `name`, or None, why not)."""
     option = OPTIONS.get(name)
     if option is None:
-        return None, ["%s is no option%s" % (json.dumps(name),
-                                             _hint(name, list(OPTIONS)))]
+        return None, "%s is no option%s" % (json.dumps(name),
+                                            _hint(name, list(OPTIONS)))
     if not option["file"]:
-        return None, ["%s describes one run, so no file sets it"
-                      % json.dumps(name)]
+        return None, ("%s describes one run, so no file sets it"
+                      % json.dumps(name))
+    return option, None
+
+
+def check(name, value, defaults=None):
+    """One key of a file: (the value to merge, or None to skip it, [why
+    for each part skipped]).  A derived option's null is the defaults
+    file's own spelling of "not set", so a copy of it says nothing."""
+    option, why = _known(name)
+    if option is None:
+        return None, [why]
+    if value is None and "derived" in option:
+        return None, []
     if option["type"] == "table":
-        kept, why = _table(name, option, value)
+        table = (defaults if defaults is not None else load_defaults())[name]
+        kept, why = _table(name, option, value, table)
         return (kept or None), why
     got, bad = _scalar(option["type"], value, option, json.dumps(name))
     return got, ([] if bad is None else [bad])
 
 
-def read(path):
-    """One file's checked values, by option name, and its warnings, each
-    "PATH: what"; ({}, []) when there is no file."""
+def _text(path):
+    """(the file's text, None) or (None, why it could not be read); (None,
+    None) when there is no file."""
     try:
         if not os.path.isfile(path):
-            return {}, []
+            return None, None
         if os.path.getsize(path) > MAX_BYTES:
-            return {}, ["%s: over %d KiB, so the file is skipped"
-                        % (path, MAX_BYTES // 1024)]
+            return None, "over %d KiB" % (MAX_BYTES // 1024)
         with open(path, encoding="utf-8") as fh:
-            text = fh.read()
+            return fh.read(), None
     except (OSError, UnicodeDecodeError):
-        return {}, ["%s: unreadable, so the file is skipped" % path]
+        return None, "unreadable"
+
+
+def _object(text):
+    """(the JSONC object `text` holds, None) or (None, why not)."""
     try:
         data = json.loads(strip_jsonc(text))
     except ValueError:
-        return {}, ["%s: not valid JSONC, so the file is skipped" % path]
+        return None, "not valid JSONC"
     if not isinstance(data, dict):
-        return {}, ["%s: not an object, so the file is skipped" % path]
+        return None, "not an object"
+    return data, None
+
+
+def _version(value):
+    """Why a file's "version" is not one this program reads, or None.
+    The key is reserved for a later change of shape."""
+    if value == 1 and not isinstance(value, bool):
+        return None
+    return ("\"version\" %s is not one this program reads"
+            % json.dumps(value, ensure_ascii=False))
+
+
+def read(path, defaults=None):
+    """One file's checked values, by option name, and its warnings, each
+    "PATH: what"; ({}, []) when there is no file."""
+    text, why = _text(path)
+    if text is None:
+        return {}, ([] if why is None
+                    else ["%s: %s, so the file is skipped" % (path, why)])
+    data, why = _object(text)
+    if data is None:
+        return {}, ["%s: %s, so the file is skipped" % (path, why)]
     values, warnings = {}, []
     for name, value in data.items():
         if name == "version":
-            # Reserved for a later change of shape.
-            if value == 1 and not isinstance(value, bool):
+            why = _version(value)
+            if why is None:
                 continue
-            return {}, ["%s: \"version\" %s is not one this program reads, "
-                        "so the file is skipped"
-                        % (path, json.dumps(value, ensure_ascii=False))]
-        got, why = check(name, value)
+            return {}, ["%s: %s, so the file is skipped" % (path, why)]
+        got, why = check(name, value, defaults)
         warnings += ["%s: %s; skipped" % (path, w) for w in why]
         if got is not None:
             values[name] = got
     return values, warnings
 
 
-def load(start, environ=None):
+# ── The defaults file ─────────────────────────────────────────────────────
+
+
+class DefaultsError(Exception):
+    """The defaults file cannot be used: its path and every fault found,
+    "PATH: what; what"."""
+
+
+def parse_defaults(path, text):
+    """The defaults file's text strictly read: every option, by name, with
+    its default, those no file sets from the spec.  Raises DefaultsError
+    naming the file and each key at fault: a key missing, one that is no
+    option or describes one run, or a value not of its option's type
+    (null only for a derived option, whose default it follows).  The
+    mod's parseDefaults gives the same words."""
+    data, why = _object(text)
+    if data is None:
+        raise DefaultsError("%s: %s" % (path, why))
+    faults, values = [], {}
+    for name, value in data.items():
+        if name == "version":
+            why = _version(value)
+            if why is not None:
+                faults.append(why)
+            continue
+        option, why = _known(name)
+        if option is None:
+            faults.append(why)
+            continue
+        where = json.dumps(name)
+        if "derived" in option:
+            if value is not None:
+                faults.append("%s must be null, to follow %s" % (
+                    where, json.dumps(option["derived"]["from"])))
+            values[name] = None
+            continue
+        if option["type"] == "table":
+            got, why = _defaults_table(name, option, value)
+            faults += why
+        else:
+            got, why = _scalar(option["type"], value, option, where)
+            if why is not None:
+                faults.append(why)
+        values[name] = got
+    for name, option in OPTIONS.items():
+        if option["file"] and name not in data:
+            faults.append("%s is missing" % json.dumps(name))
+    if faults:
+        raise DefaultsError("%s: %s" % (path, "; ".join(faults)))
+    return {name: values[name] if option["file"] else option["default"]
+            for name, option in OPTIONS.items()}
+
+
+def _defaults_table(name, option, value):
+    """A table's default: (its rows, [each fault]); every row and every
+    field must be there."""
+    kept, faults = _table(name, option, value, None)
+    if not isinstance(value, dict):
+        return None, faults
+    for row in option["rows"]:
+        rec = value.get(row)
+        if row not in value:
+            faults.append("%s is missing" % json.dumps("%s.%s" % (name, row)))
+            continue
+        if not isinstance(rec, dict):
+            continue
+        for field in option["fields"]:
+            if field not in rec:
+                faults.append("%s is missing" % json.dumps(
+                    "%s.%s.%s" % (name, row, field)))
+    return {row: dict(kept.get(row, {})) for row in option["rows"]}, faults
+
+
+def read_defaults(path):
+    """The defaults file at `path`, strictly read (parse_defaults)."""
+    text, why = _text(path)
+    if text is None:
+        raise DefaultsError("%s: %s" % (path, why or "missing"))
+    return parse_defaults(path, text)
+
+
+_DEFAULTS = {}
+
+
+def load_defaults(path=None):
+    """The shipped defaults file's values (DEFAULTS_FILE), read once per
+    process; raises DefaultsError, every time it is asked, while it is
+    wrong."""
+    path = path or DEFAULTS_FILE
+    if path not in _DEFAULTS:
+        _DEFAULTS[path] = read_defaults(path)
+    return _DEFAULTS[path]
+
+
+def load(start, environ=None, defaults=None):
     """Every file layer from `start`'s project and the user, highest
-    first, read and checked."""
+    first, read and checked against `defaults` (the shipped file's when
+    None)."""
     environ = os.environ if environ is None else environ
     start = environ.get(PROJECT_DIR_ENV) or start
     root, paths = find(start, environ)
@@ -372,7 +513,7 @@ def load(start, environ=None):
     for name in FILE_LAYERS:
         if paths[name] is None:
             continue
-        values, why = read(paths[name])
+        values, why = read(paths[name], defaults)
         warnings += why
         if values:
             layers.append(Layer(name, paths[name], values))

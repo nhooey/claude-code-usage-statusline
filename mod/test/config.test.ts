@@ -16,12 +16,19 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import {
-  CONFIG_ENV, dumpsUnicode, jsonLoads, load, nearest, stripJsonc,
+  CONFIG_ENV, DEFAULTS_REL, DefaultsError, dumpsUnicode, jsonLoads, load,
+  merge, nearest, parseDefaults, readDefaults, readFile, stripJsonc,
 } from "../src/config.ts";
 import type { ConfigEnv, ConfigFs, FileStat, Rows } from "../src/config.ts";
 
 const CASES = path.join(import.meta.dirname, "..", "..", "tests", "fixtures",
   "config", "cases.json");
+const DEFAULTS_CASES = path.join(import.meta.dirname, "..", "..", "tests",
+  "fixtures", "config", "defaults-cases.json");
+// The shipped defaults file, read as the mod reads it, under its folder.
+const SHIPPED_PATH = path.join(import.meta.dirname, "..", DEFAULTS_REL);
+const SHIPPED = fs.readFileSync(SHIPPED_PATH, "utf8");
+const DEFAULTS = parseDefaults(SHIPPED_PATH, SHIPPED);
 // The case's scratch directory, which the Python's ${ROOT} stands for.
 const ROOT = "/config-case";
 
@@ -90,8 +97,8 @@ function caseEnv(c: Case): ConfigEnv {
 
 const filled = (v: unknown): unknown => JSON.parse(fill(JSON.stringify(v)));
 
-test("the shared cases are the Python's, 38 of them", () => {
-  assert.equal(cases.length, 38);
+test("the shared cases are the Python's, 40 of them", () => {
+  assert.equal(cases.length, 40);
   assert.deepEqual(cases.filter((c) => c.flags.length).map((c) => c.id),
     ["flag-over-local", "list-flag-repeated"]);
 });
@@ -105,7 +112,7 @@ for (const c of cases) {
         `the case sets ${name}, which the mod does not read`);
     }
     const { fs: fake, asked } = fakeFs(c.tree);
-    const found = await load(fill(c.start), env, fake);
+    const found = await load(fill(c.start), env, fake, DEFAULTS);
     const options: Case["expected"]["options"] = {};
     const fields: Case["expected"]["fields"] = {};
     for (const [name, value] of Object.entries(found.options.values)) {
@@ -129,6 +136,75 @@ for (const c of cases) {
     assert.deepEqual(outside, [], "the walk asked outside the case's tree");
   });
 }
+
+// The defaults file read strictly: the shipped one passes, and each change
+// in tests/fixtures/config/defaults-cases.json fails with the Python's
+// words, naming the file and the key.
+type DefaultsCase = { id: string; about: string; path: string; text: string;
+  expected: string | null };
+const defaultsCases = JSON.parse(fs.readFileSync(DEFAULTS_CASES, "utf8")) as
+  DefaultsCase[];
+
+test("the defaults cases include a missing key, an extra key and a wrong type",
+  () => {
+    const ids = defaultsCases.map((c) => c.id);
+    for (const id of ["shipped", "missing-key", "unknown-key", "wrong-type"]) {
+      assert.ok(ids.includes(id), id);
+    }
+    assert.equal(defaultsCases.find((c) => c.id === "shipped")?.text, SHIPPED,
+      "defaults-cases.json is stale: run tests/fixtures/gen/config.py");
+  });
+
+for (const c of defaultsCases) {
+  test(`defaults case ${c.id}: ${c.about}`, () => {
+    let got: string | null = null;
+    try {
+      parseDefaults(c.path, c.text);
+    } catch (err) {
+      assert.ok(err instanceof DefaultsError);
+      got = err.message;
+    }
+    assert.equal(got, c.expected);
+  });
+}
+
+test("the shipped defaults hold every option, a derived one null", () => {
+  assert.equal(DEFAULTS["usage-source"], "auto");
+  assert.equal(DEFAULTS["right-edge"], null);
+  assert.equal(DEFAULTS.mode, "status");
+  const merged = merge([], [], DEFAULTS);
+  assert.equal(merged.values["right-edge"], 2);
+  assert.equal(merged.layers["right-edge"], "derived");
+});
+
+test("a missing or unreadable defaults file is an error", async () => {
+  const none: ConfigFs = { stat: async () => null, read: async () => null,
+    realPath: async () => null };
+  await assert.rejects(readDefaults("/m/defaults/config.jsonc", none),
+    new DefaultsError("/m/defaults/config.jsonc: missing"));
+  const unreadable: ConfigFs = { ...none,
+    stat: async () => ({ kind: "file", size: 1, mtimeMs: 1 }) };
+  await assert.rejects(readDefaults("/m/defaults/config.jsonc", unreadable),
+    new DefaultsError("/m/defaults/config.jsonc: unreadable"));
+});
+
+test("a user file copied from the defaults with one change differs by that " +
+  "change alone", async () => {
+    const text = SHIPPED.replace('"hint-inset": 2', '"hint-inset": 3');
+    const fake: ConfigFs = {
+      stat: async () => ({ kind: "file", size: text.length, mtimeMs: 1 }),
+      read: async () => text, realPath: async (p) => p };
+    const got = await readFile("/u/config.jsonc", fake, DEFAULTS);
+    assert.deepEqual(got.warnings, []);
+    const mine = merge([{ name: "user", path: "/u/config.jsonc", mtimeMs: 1,
+      values: got.values }], [], DEFAULTS);
+    const plain = merge([], [], DEFAULTS);
+    const changed = Object.keys(plain.values).filter((k) =>
+      JSON.stringify(mine.values[k]) !== JSON.stringify(plain.values[k]));
+    assert.deepEqual(changed, ["hint-inset"]);
+    assert.equal(mine.values["hint-inset"], 3);
+    assert.equal(mine.layers["right-edge"], "derived");
+  });
 
 test("the reader reaches no file and no variable but those it is handed",
   () => {

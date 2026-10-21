@@ -19,9 +19,10 @@ import { settings } from '../src/formatting.ts'
 import { messageSpans, senderLabel } from '../src/agent_message.ts'
 import { CONFIG } from '../hooks/config.ts'
 import { unconfigured } from '../hooks/edges.ts'
+import { DEFAULTS, DEFAULTS_TEXT, isDefaults } from './defaults.ts'
 
 // The options the mod draws with here, with no configuration file.
-const OPTIONS = unconfigured()
+const OPTIONS = unconfigured(DEFAULTS)
 
 const NOW = 1_790_000_000_000
 const COLS = 60
@@ -54,14 +55,20 @@ function world(on: On): World {
     store: new Map(), fileReads: [] }
   mock.env(on, { HOME: '/home/fixture' })
   on('session.id', () => ({ value: SESSION }))
+  // Where the configuration walk starts; no file is there, so the options
+  // are the defaults file's.
+  on('session.root', () => ({ value: '/work' }))
+  on('session.cwd', () => ({ value: '/work' }))
   on('store.get', ($, e) => ({ value: w.store.get(e.key) }))
   on('store.set', ($, e) => {
     w.store.set(e.key, JSON.parse(JSON.stringify(e.value)))
     return { value: undefined }
   })
   const under = (p: string) => p.endsWith('/') ? p : p + '/'
+  const fileAt = (p: string) =>
+    w.files.get(p) ?? (isDefaults(p) ? DEFAULTS_TEXT : undefined)
   on('fs.stat', ($, e) => {
-    const f = w.files.get(e.path)
+    const f = fileAt(e.path)
     if (f !== undefined) {
       return { value: { kind: 'file' as const,
         size: new TextEncoder().encode(f).length, mtimeMs: NOW,
@@ -74,9 +81,9 @@ function world(on: On): World {
     return { deny: 'no such file: ' + e.path }
   })
   on('fs.read', ($, e) => {
-    const f = w.files.get(e.path)
+    const f = fileAt(e.path)
     if (f === undefined) return { deny: 'no such file: ' + e.path }
-    w.fileReads.push(e.path)
+    if (!isDefaults(e.path)) w.fileReads.push(e.path)
     if (e.as === 'bytes') {
       let s = ''
       for (const b of new TextEncoder().encode(f)) s += String.fromCharCode(b)

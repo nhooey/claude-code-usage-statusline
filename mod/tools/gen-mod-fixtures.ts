@@ -8,7 +8,8 @@
 // answers with are carried in a module: each one's path under /fixtures,
 // as the documents name it, and its bytes as base64.  The tracker store
 // and the planted calibration are the app-41-63 environment's, written as
-// tests/run-cases.py writes them.  --check fails if the module is stale;
+// tests/run-cases.py writes them, and the defaults file's text.  --check
+// fails if the module is stale;
 // test/mod-fixtures.test.ts runs it.
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -62,6 +63,11 @@ export function render(): string {
     `export const NOW = ${JSON.stringify(env.now)}`,
     `export const CALIB = ${JSON.stringify(env.calib)}`,
     `export const TRACKER = ${JSON.stringify(tracker)}`,
+    "",
+    "/** The defaults file, mod/defaults/config.jsonc, as the harness's",
+    " * `$.fs` answers the mod's read of it. */",
+    `export const DEFAULTS_TEXT = ${JSON.stringify(fs.readFileSync(
+      path.join(MOD, "defaults", "config.jsonc"), "utf-8"))}`,
     "",
   ].join("\n");
 }

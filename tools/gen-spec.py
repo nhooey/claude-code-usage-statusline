@@ -13,8 +13,11 @@ be read on its own.  spec/state.jsonc, the files both ports keep in the state
 directory, goes the same way, to state_spec.py and state_spec.ts, and so
 does spec/options.jsonc, every option either port takes, to options_spec.py
 and options_spec.ts, with an Options type for the mod's and the option
-tables of docs/options.md, between their markers.  tests/formatting.py
-runs --check.
+tables of docs/options.md, between their markers.  The options' defaults
+are not in it: they are mod/defaults/config.jsonc's, which both ports read
+at run time, and which this refuses unless it holds every option a file
+may set, each with a value of its type, and takes the docs' Default cells
+from.  tests/formatting.py runs --check.
 
 Each JSONC is one object of NAME: value, in the order the values are written
 out.  Three forms are read specially:
@@ -592,12 +595,16 @@ def render(lang, root, source):
 # literal types.
 AS_CONST = {"OPTIONS"}
 TYPES = ("bool", "int", "string", "enum", "list", "table")
-FIELDS = ("type", "items", "fields", "metavar", "default", "derived",
+FIELDS = ("type", "items", "fields", "rows", "metavar", "default", "derived",
           "minimum", "ports", "agents", "file", "flag", "aliases",
           "negatable", "modes", "doc-table", "doc-default", "usage", "doc")
-REQUIRED = ("type", "default", "ports", "file", "flag", "doc-table", "doc")
+REQUIRED = ("type", "ports", "file", "flag", "doc-table", "doc")
 MODES = ["status", "cost", "subagent"]
 DOC = os.path.join("docs", "options.md")
+# The defaults of every option a file may set, which both ports read at
+# run time; this holds it to the spec, and writes the docs' Default cells
+# from it.
+DEFAULTS = os.path.join("mod", "defaults", "config.jsonc")
 # The tables of docs/options.md, by the name their markers give, and the
 # column between the option and its effect.
 DOC_TABLES = {"shared": "Default", "display": "Modes"}
@@ -663,26 +670,23 @@ def check_options(opts):
             bad(name, "unknown type %r" % t)
         if (t == "enum") != ("items" in o):
             bad(name, "items go with an enum, and only with one")
-        if (t == "table") != ("fields" in o):
-            bad(name, "fields go with a table, and only with one")
+        if (t == "table") != ("fields" in o) or ("fields" in o) != (
+                "rows" in o):
+            bad(name, "fields and rows go with a table, and only with one")
+        if o["file"] == ("default" in o):
+            bad(name, "a default goes with an option no file sets; a file's "
+                "option has its default in %s" % DEFAULTS)
         if t == "table":
-            if not isinstance(o["default"], dict) or not o["default"]:
-                bad(name, "a table's default names its rows")
+            if (not isinstance(o["rows"], list) or not o["rows"]
+                    or len(set(o["rows"])) != len(o["rows"])):
+                bad(name, "a table's rows are a list of distinct names")
             for k, ft in o["fields"].items():
                 if set(ft) - {"type", "items", "fixed"}:
                     bad(name, "field %r has more than type, items, fixed"
                         % k)
-                if set(ft.get("fixed", ())) - set(o["default"]):
+                if set(ft.get("fixed", ())) - set(o["rows"]):
                     bad(name, "field %r fixes a row the table has not" % k)
-            for row, rec in o["default"].items():
-                if set(rec) != set(o["fields"]):
-                    bad(name, "row %r has other fields than the table's"
-                        % row)
-                for k, v in rec.items():
-                    ft = o["fields"][k]
-                    if not fits(ft["type"], v, ft.get("items")):
-                        bad(name, "%s.%s is not a %s" % (row, k, ft["type"]))
-        elif not fits(t, o["default"], o.get("items")):
+        elif "default" in o and not fits(t, o["default"], o.get("items")):
             bad(name, "default %r is not a %s" % (o["default"], t))
         if not o["ports"] or set(o["ports"]) - {"py", "mod"}:
             bad(name, "ports are \"py\", \"mod\" or both")
@@ -706,6 +710,15 @@ def check_options(opts):
             for v in o["derived"]["map"].values():
                 if not fits(t, v, o.get("items")):
                     bad(name, "derives %r, not a %s" % (v, t))
+            # Every value the option it follows can take, so a default of
+            # null always has a value to stand for.
+            if src in opts:
+                f = opts[src]
+                can = (["true", "false"] if f["type"] == "bool"
+                       else f.get("items"))
+                if can is None or set(o["derived"]["map"]) != set(can):
+                    bad(name, "the derived map is not keyed by every value "
+                        "of %r" % src)
         if o["doc-table"] is not None:
             if o["doc-table"] not in DOC_TABLES:
                 bad(name, "no doc table %r" % o["doc-table"])
@@ -715,6 +728,64 @@ def check_options(opts):
             bad(name, "a display option says its modes")
         if set(o.get("modes", [])) - set(MODES):
             bad(name, "modes are %s" % ", ".join(MODES))
+
+
+def read_defaults(path):
+    """mod/defaults/config.jsonc as json.loads gives it, its comments and
+    trailing commas dropped."""
+    global NAME
+    NAME = os.path.basename(path)
+    with open(path, encoding="utf-8") as fh:
+        toks = [t for t in tokens(fh.read()) if t[0] not in ("comment", "eof")]
+    kept = [t for i, t in enumerate(toks)
+            if not (t[1] == "," and i + 1 < len(toks)
+                    and toks[i + 1][1] in ("}", "]"))]
+    return json.loads(" ".join(t[1] for t in kept))
+
+
+def check_defaults(opts, defaults):
+    """Refuse a defaults file that is not every option a file may set, in
+    the spec's order, each with a value of its type: the same holding the
+    ports do at run time, at the time the spec is written."""
+    def bad(why):
+        raise SystemExit("%s: %s" % (DEFAULTS, why))
+    want = [n for n, o in opts.items() if o["file"]]
+    if list(defaults) != want:
+        missing = [n for n in want if n not in defaults]
+        extra = [n for n in defaults if n not in want]
+        bad("the keys are not every option a file may set, in the spec's "
+            "order (missing %s; not file options %s)" % (missing, extra))
+    for name, value in defaults.items():
+        o = opts[name]
+        if "derived" in o:
+            if value is not None:
+                bad("%r follows %r, so its default is null"
+                    % (name, o["derived"]["from"]))
+            continue
+        if value is None:
+            bad("%r has no default" % name)
+        if o["type"] == "table":
+            if not isinstance(value, dict) or list(value) != o["rows"]:
+                bad("%r's rows are not %s, in that order" % (name, o["rows"]))
+            for row, rec in value.items():
+                if not isinstance(rec, dict) or list(rec) != list(o["fields"]):
+                    bad("%s.%s's fields are not %s, in that order"
+                        % (name, row, list(o["fields"])))
+                for k, v in rec.items():
+                    ft = o["fields"][k]
+                    if v is None or not fits(ft["type"], v, ft.get("items")):
+                        bad("%s.%s.%s is not a %s" % (name, row, k, ft["type"]))
+            continue
+        if not fits(o["type"], value, o.get("items")):
+            bad("%r's default %r is not a %s" % (name, value, o["type"]))
+        if "minimum" in o and value < o["minimum"]:
+            bad("%r's default is under its minimum, %d" % (name, o["minimum"]))
+
+
+def default_of(o, name, defaults):
+    """An option's default: the spec's for one no file sets, else the
+    defaults file's."""
+    return defaults[name] if o["file"] else o["default"]
 
 
 def camel(name):
@@ -739,7 +810,7 @@ def options_type(opts):
             continue
         if o["type"] == "table":
             lines.append("  readonly %s: {" % camel(name))
-            for row in o["default"]:
+            for row in o["rows"]:
                 lines.append("    readonly %s: {" % camel(row))
                 lines += ["      readonly %s: %s;"
                           % (camel(k), ts_type(f["type"], f.get("items")))
@@ -748,7 +819,9 @@ def options_type(opts):
             lines.append("  };")
             continue
         t = ts_type(o["type"], o.get("items"))
-        if o["default"] is None and "derived" not in o:
+        # A file's option always has a value: the defaults file's is null
+        # only where it is derived.
+        if not o["file"] and o["default"] is None:
             t += " | null"
         lines.append("  readonly %s: %s;" % (camel(name), t))
     lines.append("};")
@@ -759,15 +832,18 @@ def cell(text):
     return text.replace("|", "\\|")
 
 
-def doc_table(opts, which):
-    """One table of docs/options.md, a row per option it lists."""
+def doc_table(opts, which, defaults):
+    """One table of docs/options.md, a row per option it lists, each
+    default from the defaults file or, for an option no file sets, the
+    spec."""
     second = DOC_TABLES[which]
     rows = ["| Option | %s | Effect |" % second, "|---|---|---|"]
     for name, o in opts.items():
         if o["doc-table"] != which:
             continue
+        default = default_of(o, name, defaults)
         flag = o["flag"]
-        if o.get("negatable") and o["default"] is True:
+        if o.get("negatable") and default is True:
             flag = "--no-" + flag[2:]
         if o["type"] != "bool":
             flag += " " + (o.get("metavar") or "|".join(o["items"]))
@@ -776,18 +852,18 @@ def doc_table(opts, which):
             mid = "all" if sorted(modes) == sorted(MODES) else ", ".join(modes)
         elif "doc-default" in o:
             mid = o["doc-default"]
-        elif o["default"] in (None, []):
+        elif default in (None, []):
             mid = "none"
-        elif o["default"] is False:
+        elif default is False:
             mid = "off"
         else:
-            mid = "`%s`" % o["default"]
+            mid = "`%s`" % default
         rows.append("| %s | %s | %s |" % (cell("`%s`" % flag), cell(mid),
                                           cell(o["doc"])))
     return rows
 
 
-def with_doc_tables(text, opts):
+def with_doc_tables(text, opts, defaults):
     """docs/options.md with each table between its markers written anew."""
     for which in DOC_TABLES:
         begin = "<!-- options:begin %s -->" % which
@@ -796,7 +872,7 @@ def with_doc_tables(text, opts):
                       text, re.M | re.S)
         if not m:
             raise SystemExit("%s: no %s ... %s" % (DOC, begin, end))
-        body = "\n".join([begin] + doc_table(opts, which) + [end])
+        body = "\n".join([begin] + doc_table(opts, which, defaults) + [end])
         text = text[:m.start()] + body + text[m.end():]
     return text
 
@@ -810,9 +886,11 @@ def main():
             join_docs(root)
             opts = plain(root.value[0])
             check_options(opts)
+            defaults = read_defaults(os.path.join(REPO, DEFAULTS))
+            check_defaults(opts, defaults)
             doc = os.path.join(REPO, DOC)
             with open(doc, encoding="utf-8") as fh:
-                outs[doc] = with_doc_tables(fh.read(), opts)
+                outs[doc] = with_doc_tables(fh.read(), opts, defaults)
         outs[os.path.join(REPO, py_out)] = render(PY, root, src)
         outs[os.path.join(REPO, ts_out)] = render(TS, root, src)
     if sys.argv[1:] == ["--check"]:

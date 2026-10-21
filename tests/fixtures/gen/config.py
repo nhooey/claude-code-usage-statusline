@@ -26,6 +26,10 @@ made of them, recorded under "expected":
             warnings  in order, each "PATH: what"
 
 tests/config.py runs every case again and compares it with this file.
+
+It writes tests/fixtures/config/defaults-cases.json too: the shipped
+defaults file and changes to it, each with the error the strict reading
+gives, or null; see DEFAULTS_CASES.
 """
 import json
 import os
@@ -41,6 +45,10 @@ sys.path.insert(0, REPO)
 
 from coding_agent_usage_line import cli, config  # noqa: E402
 from coding_agent_usage_line.options import flag_values, parse  # noqa: E402
+
+with open(config.DEFAULTS_FILE, encoding="utf-8") as _fh:
+    # The shipped defaults file, which the cases below copy and change.
+    SHIPPED = _fh.read()
 
 D = ".config/coding-agent-usage-line/"
 USER = "home/" + D + "config.jsonc"
@@ -218,7 +226,97 @@ CASES = [
     case("right-edge-set", "a right-edge a layer sets is not derived",
          {USER: '{"right-edge": 0}', PROJECT: '{"live-place": "above"}',
           "home/p/.git/": None}),
+    case("derived-null", "a derived option's null, the defaults file's own,"
+         " is not set: no warning, and the value derived",
+         {USER: '{"right-edge": null, "label": null}',
+          PROJECT: '{"live-place": "above"}', "home/p/.git/": None}),
+
+    # ── The defaults file, copied ───────────────────────────────────────
+    case("copied-defaults", "the defaults file copied as the user's with"
+         " one value changed: every key is the user's, at the default's"
+         " value but that one, and nothing warns",
+         {USER: SHIPPED.replace('"account": "default"', '"account": "work"'),
+          "home/p/.git/": None}),
 ]
+
+
+# ── The defaults file's strict reading ──────────────────────────────────
+#
+# tests/fixtures/config/defaults-cases.json: the shipped defaults file and
+# changes to it, each read by config.parse_defaults as if at DEFAULTS_PATH,
+# with the error it raised ("PATH: what; what") or null for none.  The mod's
+# parseDefaults must give the same.
+
+DEFAULTS_OUT = os.path.join(FIXTURES, "config", "defaults-cases.json")
+DEFAULTS_PATH = "/plugin/defaults/config.jsonc"
+
+
+def _without(text, line):
+    """`text` without the one line holding `line`."""
+    lines = text.split("\n")
+    hits = [i for i, l in enumerate(lines) if line in l]
+    assert len(hits) == 1, (line, hits)
+    del lines[hits[0]]
+    return "\n".join(lines)
+
+
+def _swap(text, old, new):
+    assert text.count(old) == 1, old
+    return text.replace(old, new)
+
+
+DEFAULTS_CASES = [
+    ("shipped", "the shipped file reads whole", SHIPPED),
+    ("missing-key", "a key left out is missing",
+     _without(SHIPPED, '"account": "default"')),
+    ("unknown-key", "a key that is no option, with the nearest",
+     _swap(SHIPPED, '"hide": [],', '"hide": [],\n  "acount": "x",')),
+    ("run-only-key", "a key no file sets",
+     _swap(SHIPPED, '"hide": [],', '"hide": [],\n  "mode": "cost",')),
+    ("wrong-type", "a value of another type",
+     _swap(SHIPPED, '"totals": true', '"totals": "yes"')),
+    ("under-minimum", "an int under its minimum",
+     _swap(SHIPPED, '"starts-kept": 400', '"starts-kept": 0')),
+    ("not-in-enum", "an enum's value it has not",
+     _swap(SHIPPED, '"live-place": "footer"', '"live-place": "footr"')),
+    ("null-default", "null for an option that is not derived",
+     _swap(SHIPPED, '"account": "default"', '"account": null')),
+    ("derived-set", "a value for a derived option, which follows another",
+     _swap(SHIPPED, '"right-edge": null', '"right-edge": 5')),
+    ("table-missing-row", "a table's row left out",
+     _without(SHIPPED, '"tag": {"live"')),
+    ("table-missing-field", "a row's field left out",
+     _swap(SHIPPED, '"agent": {"live": "always", "transcript": false}',
+           '"agent": {"live": "always"}')),
+    ("table-bad-field", "a row's field of another type, and one unknown",
+     _swap(SHIPPED, '"session": {"live": "always", "transcript": false}',
+           '"session": {"live": "sometimes", "transcript": false, "x": 1}')),
+    ("table-not-object", "a table that is not an object",
+     _swap(SHIPPED, '"rows": {', '"rows": 3, "_": {')),
+    ("several", "every fault named, in the file's order, the missing last",
+     _swap(_without(SHIPPED, '"prefix": "📊"'), '"color": false',
+           '"color": 1')),
+    ("version", "a version this program does not read",
+     _swap(SHIPPED, '"usage-source": "auto"',
+           '"version": 2, "usage-source": "auto"')),
+    ("not-jsonc", "text that is not JSONC", SHIPPED + "}"),
+    ("not-object", "JSONC that is not an object", "[1, 2]"),
+]
+
+
+def run_defaults(text):
+    """What config.parse_defaults makes of `text`: the error, or None."""
+    try:
+        config.parse_defaults(DEFAULTS_PATH, text)
+    except config.DefaultsError as exc:
+        return str(exc)
+    return None
+
+
+def defaults_cases():
+    return [{"id": id, "about": about, "path": DEFAULTS_PATH, "text": text,
+             "expected": run_defaults(text)}
+            for id, about, text in DEFAULTS_CASES]
 
 
 def fill(text, root):
@@ -282,6 +380,11 @@ def main():
         fh.write("[\n" + ",\n".join(json.dumps(c, ensure_ascii=False)
                                     for c in cases) + "\n]\n")
     print("config: %d cases" % len(cases))
+    cases = defaults_cases()
+    with open(DEFAULTS_OUT, "w", encoding="utf-8") as fh:
+        fh.write("[\n" + ",\n".join(json.dumps(c, ensure_ascii=False)
+                                    for c in cases) + "\n]\n")
+    print("config: %d defaults cases" % len(cases))
 
 
 if __name__ == "__main__":

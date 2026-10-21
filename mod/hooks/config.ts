@@ -2,7 +2,8 @@
 // configuration file holds them.
 //
 // What the mod draws is set by the options (spec/options.jsonc), merged
-// from the configuration files the way the Python merges them
+// from the configuration files over the defaults file
+// (defaults/config.jsonc) the way the Python merges them
 // (docs/options.md, "Configuration files"; edges.ts, options()).  What
 // stays here are the constants no file may set: the version the caches are
 // keyed by, and the timings (agents/plans/config-merge.md, Decided 5 and

@@ -46,7 +46,8 @@ import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import { costDoc, folderAgents, folderReplies, options, permissionModeOf,
+import { costDoc, defaultsError, folderAgents, folderReplies, options,
+  optionsFor, permissionModeOf,
   placesOf, readConfig, seen, statusDoc, steps, transcriptPath, turnsNow }
   from './edges.ts'
 import type { Places } from './edges.ts'
@@ -80,10 +81,9 @@ async function placesFor($: $): Promise<Places> {
   return places
 }
 
-/** The settings the rows are drawn under, made again when the options
- * they take have changed. */
-async function settingsOf($: $): Promise<Settings> {
-  const o = options()
+/** The settings the rows are drawn under `o`, made again when the
+ * options they take have changed. */
+async function settingsOf($: $, o: Options): Promise<Settings> {
   // right-edge: derived from live-place, 2 under the footer line, where
   // there is no [-], and 5 above the prompt, where the band's [-] stands.
   const key = JSON.stringify([o.markSpacing, o.subscriptDecimals,
@@ -115,10 +115,15 @@ function liveOf(o: Options): RowsLive {
 }
 
 /** Whether the turn's tag lines are drawn, 🔻🔖 under the prompt and the
- * receipt's 🔺🔖: rows.tag.transcript, and not the hide path `name.tag`. */
-function tagsShown(o: Options): boolean {
-  return o.rows.tag.transcript && !tagsHidden(o.hide)
+ * receipt's 🔺🔖: rows.tag.transcript, and not the hide path `name.tag`;
+ * never with no options. */
+function tagsShown(o: Options | null): boolean {
+  return o !== null && o.rows.tag.transcript && !tagsHidden(o.hide)
 }
+
+/** How many start lines, receipts and pressable rows are kept: the option
+ * starts-kept, and with no options every one, until they come. */
+const keptMost = (): number => options()?.startsKept ?? Infinity
 
 /** How far in the band's rows' container stands: hint-inset under the
  * footer line, none above the prompt. */
@@ -156,7 +161,7 @@ async function slow($: $, ms: number): Promise<void> {
   const text = `slow read: ${Math.round(ms)}ms (${parts.join(', ')})`
   await log($, text)
   const now = await $.clock.now()
-  if (options().slowToast && now - toastAt >= CONFIG.slowToastMs) {
+  if (options()?.slowToast && now - toastAt >= CONFIG.slowToastMs) {
     toastAt = now
     $.ui.toast(text)
   }
@@ -182,6 +187,12 @@ async function refresh($: $): Promise<void> {
   refreshing = (async () => {
     do {
       again = false
+      // The figures are read under the options: until the configuration
+      // is read, and while the defaults file is wrong, there are none.
+      if (options() === null) {
+        await readConfig($).catch((err) => log($, 'config', err))
+        if (options() === null) continue
+      }
       let doc: Dict
       const began = await $.clock.now()
       try {
@@ -328,7 +339,7 @@ async function remember($: $, index: string, key: string, value: unknown) {
   const keys = ((await $.store.get(index)) as string[] | undefined) ?? []
   const kept = [...keys.filter((k) => k !== key), key]
   for (const old of kept.splice(0, Math.max(0,
-    kept.length - options().startsKept))) {
+    kept.length - keptMost()))) {
     await $.store.delete(old)
   }
   await $.store.set(index, kept)
@@ -425,6 +436,13 @@ async function stamp($: $, durationMs: number, prompt: string, turn: string,
   }
   const key = receiptKey(await $.session.id(), turnKey(got!.turns))
   if (stamping.has(key) || await $.store.get(key) !== undefined) return
+  // With no options, nothing to lay the receipt out under: the defaults
+  // file is wrong, and the footer says so.
+  const o = options()
+  if (o === null) {
+    await log($, 'no receipt: no options')
+    return
+  }
   stamping.add(key)
   try {
     const doc = await read($, status)
@@ -434,7 +452,7 @@ async function stamp($: $, durationMs: number, prompt: string, turn: string,
     // 📦 🌿 from the band's last status document (decision 7).
     const ws = doc ? workspaceOf(doc as Dict, where.home) : null
     // 🤖 as the band drew it once the turn ended, from the same document.
-    const st = await settingsOf($)
+    const st = await settingsOf($, o)
     const main = doc ? bandRows(st, doc as Dict,
       { home: where.home, rate: null, phase: 'done' }).main : null
     // Laid out as the band is, at its width, edge and inset, so the rows
@@ -442,7 +460,6 @@ async function stamp($: $, durationMs: number, prompt: string, turn: string,
     // hint-inset columns in, and so are the receipt's (asked 2026-10-20).
     // The rows whose rows.<row>.transcript is true, and the tag line
     // under rows.tag.transcript.
-    const o = options()
     const stamped = ROW_NAMES.filter((r) => o.rows[r].transcript)
     const rows = receiptScoped(st, fig, bandCols || 80, o.hide, ws,
       true, main, stamped, insetOf(o), tagsShown(o))
@@ -510,7 +527,7 @@ function notePrompt(text: string, requestId: string): void {
   if (promptIds.get(key) === requestId) return
   promptIds.delete(key)
   promptIds.set(key, requestId)
-  while (promptIds.size > options().startsKept) {
+  while (promptIds.size > keptMost()) {
     promptIds.delete(promptIds.keys().next().value!)
   }
 }
@@ -546,7 +563,7 @@ function noteReply(requestId: string): void {
   if (!repliesTurn) return
   replyIds.delete(repliesTurn)
   replyIds.set(repliesTurn, requestId)
-  while (replyIds.size > options().startsKept) {
+  while (replyIds.size > keptMost()) {
     replyIds.delete(replyIds.keys().next().value!)
   }
 }
@@ -611,10 +628,10 @@ function scopedRow($: $, Button: any, Text: any, scope: string,
 async function bandNow($: $, isWorking: boolean, inset = 0):
   Promise<{ scope: string; spans: Span[] }[]> {
   const doc = await read($, status)
-  if (doc === null) return []
   const o = options()
+  if (doc === null || o === null) return []
   // At no indent, as the receipt's rows are (asked 2026-10-19).
-  return bandScoped(await settingsOf($),
+  return bandScoped(await settingsOf($, o),
     at(doc as Dict, await read($, clockNow)), bandCols || 80, o.hide,
     { home: await home($), rate: await read($, rate),
       phase: isWorking || await read($, held) ? 'running' : 'done',
@@ -936,7 +953,9 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     bandCols = e.props.bodyColumns + 5
     await read($, configured)
-    if (options().livePlace !== 'above' || e.props.hasSurvey) return next(e)
+    if ((await optionsFor($))?.livePlace !== 'above' || e.props.hasSurvey) {
+      return next(e)
+    }
     const lines = await bandNow($, e.props.isWorking)
     // Between turns the receipt carries the rows, and the band has none.
     if (!lines.length) return next(e)
@@ -997,11 +1016,26 @@ export const register: Register = on => {
     // turned off, so the one now on is known before the transcript has it.
     hintMode = modeOfHint(e.props.hint) ?? hintMode
     const mode = hintMode ?? permissionMode
-    const doc = await read($, status)
-    if (doc === null) return next(e)
     await read($, configured)
-    const o = options()
-    const st = await settingsOf($)
+    const o = await optionsFor($)
+    // A wrong defaults file: Claude Code's own line, and the error in red
+    // under it in place of every row, so it cannot be missed.
+    const fault = defaultsError()
+    if (fault !== null) {
+      const row = await next(e)
+      const { Box, Text } = $.ui.resolve(e)
+      return (
+        <Box flexDirection="column">
+          {row}
+          <Text color="#ff5f5f" wrap="truncate-end">
+            {`⚠ usage-band: the defaults file is wrong: ${fault}`}
+          </Text>
+        </Box>
+      )
+    }
+    const doc = await read($, status)
+    if (doc === null || o === null) return next(e)
+    const st = await settingsOf($, o)
     // The band's width before the viewport's: the viewport read 10 columns
     // wider than the terminal drew, pushing the 🕐 off the row (seen live
     // 2026-10-20), and the band's is where its rows end.
@@ -1106,7 +1140,8 @@ export const register: Register = on => {
     const from = e.props.from
     if (!from) return next(e)
     await read($, configured)
-    if (!options().agentMessageRow) return next(e)
+    const o = await optionsFor($)
+    if (!o?.agentMessageRow) return next(e)
     const sender = await senderOf($, from.name, e.props.text,
       await agentsNow($))
     const label = taskOf(sender, from.name)
@@ -1116,9 +1151,8 @@ export const register: Register = on => {
     // right-edge short of the edge (asked 2026-10-20: it ran to the edge).
     // Should the row stand in from the edge, the Text's truncate-end cuts
     // what the ellipsis did not.
-    const cols = (bandCols || (e.viewport?.columns ?? 80)) -
-      options().rightEdge
-    const st = await settingsOf($)
+    const cols = (bandCols || (e.viewport?.columns ?? 80)) - o.rightEdge
+    const st = await settingsOf($, o)
     const { Box, Text } = $.ui.resolve(e)
     if (e.props.isExpanded) {
       return (

@@ -12,6 +12,7 @@ import contextlib
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PROGRAM = str(ROOT / "coding-agent-usage-line.py")
 CASES = HERE / "fixtures" / "config" / "cases.json"
+DEFAULTS_CASES = HERE / "fixtures" / "config" / "defaults-cases.json"
 D = Path(".config") / "coding-agent-usage-line"
 # The floor the goldens are recorded under, as run-cases.py runs them.
 PYTHON = "/usr/bin/python3" if os.path.exists("/usr/bin/python3") else sys.executable
@@ -29,7 +31,8 @@ PYTHON = "/usr/bin/python3" if os.path.exists("/usr/bin/python3") else sys.execu
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE / "fixtures" / "gen"))
 from coding_agent_usage_line import config, formatting  # noqa: E402
-from coding_agent_usage_line.options import from_argv  # noqa: E402
+from coding_agent_usage_line.options import from_argv, merge  # noqa: E402
+from coding_agent_usage_line.options_spec import OPTIONS  # noqa: E402
 import config as gen  # noqa: E402  (tests/fixtures/gen/config.py)
 
 
@@ -75,6 +78,62 @@ class SharedCases(unittest.TestCase):
     def test_the_derived_label_is_the_one_the_rows_draw(self):
         self.assertEqual(from_argv([])["label"], formatting.C_LABEL)
         self.assertEqual(from_argv(["--no-usage-text"])["label"], formatting.E_ROW_PROMPT)
+
+
+class DefaultsFile(unittest.TestCase):
+    """mod/defaults/config.jsonc, read strictly: the shared cases in
+    tests/fixtures/config/defaults-cases.json, which the mod runs too, and
+    what is the Python's alone."""
+
+    def test_every_defaults_case_as_recorded(self):
+        cases = json.loads(DEFAULTS_CASES.read_text(encoding="utf-8"))
+        self.assertEqual(cases, gen.defaults_cases(),
+                         "defaults-cases.json is stale: run tests/fixtures/gen/config.py")
+        by_id = {c["id"]: c["expected"] for c in cases}
+        # The shipped file passes; a missing key, an extra key and a wrong
+        # type each fail, naming the key and the file.
+        self.assertIsNone(by_id["shipped"])
+        path = gen.DEFAULTS_PATH
+        self.assertEqual(by_id["missing-key"], '%s: "account" is missing' % path)
+        self.assertTrue(by_id["unknown-key"].startswith('%s: "acount" is no option' % path))
+        self.assertEqual(by_id["wrong-type"], '%s: "totals" must be true or false' % path)
+
+    def test_the_shipped_file_holds_every_option_a_file_may_set(self):
+        values = config.read_defaults(config.DEFAULTS_FILE)
+        self.assertEqual(set(values), set(OPTIONS))
+        self.assertEqual(values["usage-source"], "auto")
+        self.assertIsNone(values["right-edge"])
+        # An option no file sets keeps the spec's default.
+        self.assertEqual(values["mode"], "status")
+
+    def test_a_missing_or_unreadable_file_is_an_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.jsonc"
+            with self.assertRaises(config.DefaultsError) as got:
+                config.read_defaults(str(path))
+            self.assertEqual(str(got.exception), "%s: missing" % path)
+            path.write_bytes(b"\xff")
+            with self.assertRaises(config.DefaultsError) as got:
+                config.read_defaults(str(path))
+            self.assertEqual(str(got.exception), "%s: unreadable" % path)
+
+    def test_a_copy_with_one_change_differs_by_that_change_alone(self):
+        shipped = config.DEFAULTS_FILE
+        text = Path(shipped).read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            user = Path(tmp) / "config.jsonc"
+            write(user, text.replace('"hint-inset": 2', '"hint-inset": 3'))
+            values, warnings = config.read(str(user))
+        self.assertEqual(warnings, [])
+        files = [config.Layer("user", str(user), values)]
+        mine = merge({}, files, ("py", "mod"))
+        plain = merge({}, (), ("py", "mod"))
+        changed = {k for k in plain if mine[k] != plain[k]}
+        self.assertEqual(changed, {"hint-inset"})
+        self.assertEqual(mine["hint-inset"], 3)
+        # Derived still: the copy's null is no setting.
+        self.assertEqual((mine.layer("right-edge"), mine.layer("label")),
+                         ("derived", "derived"))
 
 
 class Program(unittest.TestCase):
@@ -148,7 +207,7 @@ class Program(unittest.TestCase):
             "  project-local  %s" % local,
             "  project        %s (none)" % (self.project / D / "config.jsonc"),
             "  user           %s" % (self.tmp / "user" / "config.jsonc"),
-            "  default        spec/options.jsonc"])
+            "  default        %s" % config.DEFAULTS_FILE])
         rows = {line.split()[0]: line.split(None, 2)[1:] for line in lines[7:]
                 if line and not line.startswith(" ") and line != "Warnings:"}
         self.assertEqual(rows["account"], ["user", '"u"'])
@@ -176,6 +235,45 @@ class Program(unittest.TestCase):
         self.assertEqual([r["id"] for r in rows], ["a1"])
         self.assertEqual(result.stderr, "%s: not valid JSONC, so the file is skipped\n"
                          % (self.project / D / "config.jsonc"))
+
+    def test_a_broken_defaults_file_is_drawn_in_place_of_every_output(self):
+        # A copy of the program whose defaults file leaves out "account":
+        # the checkout's own file is never touched.
+        app = self.tmp / "app"
+        app.mkdir()
+        shutil.copy(PROGRAM, str(app))
+        shutil.copytree(str(ROOT / "coding_agent_usage_line"),
+                        str(app / "coding_agent_usage_line"),
+                        ignore=shutil.ignore_patterns("__pycache__"))
+        text = Path(config.DEFAULTS_FILE).read_text(encoding="utf-8")
+        broken = app / "mod" / "defaults" / "config.jsonc"
+        write(broken, text.replace('  "account": "default",\n', ""))
+        error = ("coding-agent-usage-line: the defaults file is wrong: "
+                 '%s: "account" is missing' % broken)
+        program = str(app / "coding-agent-usage-line.py")
+
+        def run(*args, stdin=""):
+            return subprocess.run([sys.executable, program] + list(args), input=stdin,
+                                  text=True, capture_output=True, env=self.env,
+                                  cwd=str(self.project), timeout=20)
+        status = run("--agent", "claude", stdin="{}")
+        self.assertEqual((status.returncode, status.stdout, status.stderr),
+                         (0, "⚠ " + error + "\n", error + "\n"))
+        cost = run("--agent", "claude", "--mode", "cost", stdin="{}")
+        self.assertEqual((cost.returncode, json.loads(cost.stdout)),
+                         (0, {"systemMessage": "⚠ " + error}))
+        panel = run("--agent", "claude", "--mode", "subagent",
+                    stdin=json.dumps({"tasks": [{"id": "a1"}, {"id": "a2"}]}))
+        self.assertEqual([json.loads(l) for l in panel.stdout.splitlines()],
+                         [{"id": "a1", "content": "⚠ " + error},
+                          {"id": "a2", "content": "⚠ " + error}])
+        for by_hand in (("--show-config",), ("--help",),
+                        ("--agent", "claude", "--mode", "cost", "--all",
+                         "--transcript", str(self.transcript))):
+            with self.subTest(by_hand[0]):
+                result = run(*by_hand)
+                self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                 (2, "", error + "\n"))
 
     def test_the_panel_reads_hide_from_the_payloads_project(self):
         payload = {"session_id": "s", "cwd": str(self.project), "columns": 160, "tasks": [

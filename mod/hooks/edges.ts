@@ -69,10 +69,11 @@ import { sha256Hex } from '../src/sha256.ts'
 import { isDict, pyGet, utf8 } from '../src/py.ts'
 import type { Dict } from '../src/py.ts'
 import {
-  FILE_LAYERS, MOD_LAYER, abspath, find as findConfig, load as loadConfig,
-  merge as mergeConfig, optionsOf,
+  DEFAULTS_REL, DefaultsError, FILE_LAYERS, MOD_LAYER, abspath,
+  find as findConfig, load as loadConfig, merge as mergeConfig, optionsOf,
+  readDefaults,
 } from '../src/config.ts'
-import type { ConfigEnv, ConfigFs, Found, Layer, Merged, Rows }
+import type { ConfigEnv, ConfigFs, Defaults, Found, Layer, Merged, Rows }
   from '../src/config.ts'
 import { OPTIONS } from '../src/options_spec.ts'
 import type { Options } from '../src/options_spec.ts'
@@ -984,7 +985,9 @@ async function storeFind($: $, dir: string, agent: string, account: string,
 async function preparedVia($: $, places: Places, raw: Dict,
   sessionId: string, model: string, now: number):
   Promise<PreparedClaudeReading> {
-  const { usageSource: spec, account, accountPeriod } = options()
+  const o = options()
+  if (o === null) throw new Error('no options: ' + (defaultsFault ?? 'unread'))
+  const { usageSource: spec, account, accountPeriod } = o
   const context = statusSourceContext(spec, sessionId, model, now, raw)
   const dir = places.stateDir
   const store: Store = {
@@ -1309,7 +1312,17 @@ function configFs($: $): ConfigFs {
  * file names is checked as Claude's panel checks it. */
 export async function configVia($: $): Promise<Found> {
   const [start, env] = await configWhere($)
-  return loadConfig(start, env, configFs($), 'claude')
+  return loadConfig(start, env, configFs($), await defaultsVia($), 'claude')
+}
+
+/** The defaults file in the mod's folder, where the plugin carries it. */
+function defaultsPath($: $): string {
+  return $.plugin.root + '/' + DEFAULTS_REL
+}
+
+/** The defaults file, strictly read: a DefaultsError while it is wrong. */
+export async function defaultsVia($: $): Promise<Defaults> {
+  return readDefaults(defaultsPath($), configFs($))
 }
 
 /** Where the walk starts, the session's root, and the variables it
@@ -1328,22 +1341,27 @@ async function configWhere($: $): Promise<[string, ConfigEnv]> {
 const MOD_SETTINGS: Layer = { name: MOD_LAYER, path: 'mod/hooks/config.ts',
   mtimeMs: 0, values: SETTINGS }
 
-/** The files `found` gave over the mod's settings and the defaults; the
- * mod's settings over the defaults before any read. */
-export function mergedOf(found: Found | null): Merged {
+/** The files `found` gave over the mod's settings and `defaults`; with no
+ * files, the mod's settings over the defaults. */
+export function mergedOf(found: Found | null, defaults: Defaults): Merged {
   return mergeConfig([...found?.layers ?? [], MOD_SETTINGS],
-    found?.options.warnings ?? [])
+    found?.options.warnings ?? [], defaults)
 }
 
-/** The options with no configuration file: the mod's settings over the
- * defaults, what it draws with before the first read. */
-export const unconfigured = (): Options => optionsOf(mergedOf(null))
+/** The options with no configuration file: the mod's settings over
+ * `defaults`. */
+export const unconfigured = (defaults: Defaults): Options =>
+  optionsOf(mergedOf(null, defaults))
 
 // What the last read of the configuration files found; null before one.
 let configFound: Found | null = null
-// The options merged from it, and what the files were when it was read.
-let merged: Merged = mergedOf(null)
-let current: Options = optionsOf(merged)
+// The options merged from it, and what the files were when it was read;
+// null before the first read, and while the defaults file is wrong.
+let merged: Merged | null = null
+let current: Options | null = null
+// Why the defaults file cannot be used, as the last read found; null when
+// it read whole.
+let defaultsFault: string | null = null
 let configStamp = ''
 // The read under way, which a second caller waits on rather than reading
 // again beside it.
@@ -1356,19 +1374,36 @@ export const configNow = (): Found | null => configFound
 
 /** The options the mod draws with, as the last read merged them: the
  * files, then the mod's settings (hooks/config.ts, SETTINGS), then the
- * defaults, with right-edge derived from live-place where none set it.
- * Before the first read, the mod's settings and the defaults. */
-export const options = (): Options => current
+ * defaults file, with right-edge derived from live-place where none set
+ * it.  Null before the first read, and while the defaults file is wrong:
+ * there is nothing to draw with then, and each drawing leaves Claude
+ * Code's own (config-merge.md, Decided 18). */
+export const options = (): Options | null => current
 
-/** What the files are, as one string: where the walk starts, then each
- * layer's path and its modification time, "-" for none.  The walk's
- * stats alone, no read: a new root, a file come, gone or written each
- * change it. */
+/** The options, read first where no read has been made yet: a drawing can
+ * come before any event that reads them.  Null while the defaults file is
+ * wrong. */
+export async function optionsFor($: $): Promise<Options | null> {
+  if (current === null && defaultsFault === null) {
+    await readConfig($).catch((err) => log($, 'config', err))
+  }
+  return current
+}
+
+/** Why the defaults file cannot be used, which the footer draws in place
+ * of the rows; null while it reads whole. */
+export const defaultsError = (): string | null => defaultsFault
+
+/** What the files are, as one string: the defaults file's modification
+ * time, where the walk starts, then each layer's path and its
+ * modification time, "-" for none.  The walk's stats alone, no read: a
+ * new root, a file come, gone or written each change it. */
 async function stampOf($: $, start: string, env: ConfigEnv):
   Promise<string> {
   const fs = configFs($)
   const { paths } = await findConfig(start, env, fs)
-  const parts = [abspath(start)]
+  const parts = [`${(await fs.stat(defaultsPath($)))?.mtimeMs ?? '-'}`,
+    abspath(start)]
   for (const name of FILE_LAYERS) {
     const path = paths[name]
     const st = path === null ? null : await fs.stat(path)
@@ -1396,9 +1431,34 @@ async function reread($: $): Promise<boolean> {
   // Taken before the read: a file written between the two is read again
   // next time, rather than missed.
   const stamp = await stampOf($, start, env)
-  const first = configFound === null
+  const first = configStamp === ''
   if (!first && stamp === configStamp) return false
-  const found = await loadConfig(start, env, configFs($), 'claude')
+  let defaults: Defaults
+  try {
+    defaults = await defaultsVia($)
+  } catch (err) {
+    if (!(err instanceof DefaultsError)) throw err
+    configStamp = stamp
+    // Nothing is drawn from a wrong defaults file: the footer draws the
+    // error, and the log and the transcript say it once.
+    const changed = defaultsFault !== err.message || current !== null
+    if (defaultsFault !== err.message) {
+      await log($, 'config: the defaults file is wrong: ' + err.message)
+      try {
+        $.ui.log(`usage-band: the defaults file is wrong: ${err.message}`)
+      } catch (e) {
+        await log($, 'config: no notice', e)
+      }
+    }
+    defaultsFault = err.message
+    configFound = null
+    merged = null
+    current = null
+    return changed
+  }
+  const found = await loadConfig(start, env, configFs($), defaults, 'claude')
+  const was = defaultsFault
+  defaultsFault = null
   configStamp = stamp
   configFound = found
   const files = found.layers.map((l) =>
@@ -1407,12 +1467,13 @@ async function reread($: $): Promise<boolean> {
     (files.length ? files.join('; ') : 'no files'))
   for (const w of found.options.warnings) await log($, 'config: ' + w)
   await notice($, found)
-  const next = mergedOf(found)
-  const changed = JSON.stringify([next.values, next.layers, next.fields]) !==
+  const next = mergedOf(found, defaults)
+  const changed = was !== null || merged === null ||
+    JSON.stringify([next.values, next.layers, next.fields]) !==
     JSON.stringify([merged.values, merged.layers, merged.fields])
   merged = next
   current = optionsOf(next)
-  if (changed || first) await log($, 'config options: ' + optionsTable(next))
+  if (changed) await log($, 'config options: ' + optionsTable(next))
   return changed
 }
 

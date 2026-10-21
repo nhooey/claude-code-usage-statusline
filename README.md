@@ -97,6 +97,21 @@ Its settings, such as the usage source and what it hides, are in the
 [configuration files](docs/options.md#configuration-files) the panel reads
 too; [`mod/README.md`](mod/README.md) has the rest.
 
+Every setting's default is in one file,
+[`mod/defaults/config.jsonc`](mod/defaults/config.jsonc), which both the
+Python program and the mod read at every run. To change settings, copy it
+and edit the copy; a diff against the repository's file then shows exactly
+what you changed:
+
+```sh
+mkdir -p ~/.config/coding-agent-usage-line
+cp mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
+diff mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
+```
+
+A project's settings go in its own `.config/coding-agent-usage-line/`
+instead; see [Configuration files](docs/options.md#configuration-files).
+
 The agent panel is the Python program's. Merge
 [`examples/claude/settings.json`](examples/claude/settings.json) into
 `~/.claude/settings.json`: its `subagentStatusLine` runs with `--right-edge 2`,

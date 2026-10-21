@@ -11,11 +11,12 @@
 // ~/.claude.json can reach a result.
 import { expect, mock } from 'claude-code/testing'
 import { test } from './budget.ts'
-import type { On } from 'claude-code'
+import type { On, RenderElement } from 'claude-code'
 
 import { LOG_NAME } from '../hooks/log.ts'
 import { optionsTable, unconfigured } from '../hooks/edges.ts'
 import { MOD_LAYER, merge as mergeConfig, optionsOf } from '../src/config.ts'
+import { DEFAULTS, DEFAULTS_TEXT, isDefaults } from './defaults.ts'
 
 const HOME = '/home/fixture'
 const STATE = '/state'
@@ -30,11 +31,13 @@ const ENV: { [name: string]: string } = {
   HOME, CODING_AGENT_USAGE_LINE_STATE_DIR: STATE, CLAUDE_CONFIG_DIR: CLAUDE,
 }
 
-type World = { files: Map<string, string>; asked: string[]; names: string[] }
+type World = { files: Map<string, string>; asked: string[]; names: string[];
+  logged: string[] }
 
 /** The engine beneath the mod: a user file with a typo, a project file
- * with a source Claude cannot read, and the project's `.git`. */
-function world(on: On): World {
+ * with a source Claude cannot read, the project's `.git`, and the
+ * defaults file where the mod looks for it, `defaults` its text. */
+function world(on: On, defaults = DEFAULTS_TEXT): World {
   const files = new Map<string, string>([
     [USER_FILE, '{"rwos": {}, "account": "u"}'],
     [PROJECT_FILE, '{"hide": [], "usage-source": "codex-app-server"}'],
@@ -42,6 +45,8 @@ function world(on: On): World {
   const dirs = new Set([PROJECT + '/.git'])
   const asked: string[] = []
   const names: string[] = []
+  const fileAt = (p: string) => files.get(p) ??
+    (isDefaults(p) ? defaults : undefined)
   const isDir = (p: string) => dirs.has(p) ||
     [...files.keys(), ...dirs].some((f) => f.startsWith(p + '/'))
   mock.clock(on, { now: 1_800_000_000_000 })
@@ -51,7 +56,7 @@ function world(on: On): World {
   })
   on('fs.stat', ($, e) => {
     asked.push(e.path)
-    const f = files.get(e.path)
+    const f = fileAt(e.path)
     if (f === undefined && !isDir(e.path)) {
       return { deny: 'no such file: ' + e.path }
     }
@@ -61,7 +66,7 @@ function world(on: On): World {
   })
   on('fs.read', ($, e) => {
     asked.push(e.path)
-    const f = files.get(e.path)
+    const f = fileAt(e.path)
     if (f === undefined) return { deny: 'no such file: ' + e.path }
     if (e.as === 'bytes') {
       let s = ''
@@ -99,8 +104,15 @@ function world(on: On): World {
   on('session.model', () => ({ value: 'claude-opus-5' }))
   on('session.usage', () => ({ deny: 'usage unavailable' }) as any)
   on('session.start', ($, e) => ({ cwd: e.cwd }))
-  on('ui.log', () => ({ value: undefined }))
-  return { files, asked, names }
+  // Claude Code's own drawing of a row, beneath the mod.
+  on('ui.render', () => h('Box', null) as RenderElement)
+  // The lines the mod writes into the transcript.
+  const logged: string[] = []
+  on('ui.log', ($, e) => {
+    if (e.to !== 'debug') logged.push(e.text)
+    return { value: undefined }
+  })
+  return { files, asked, names, logged }
 }
 
 // The test's environment has timers, which the hooks' types leave out.
@@ -132,11 +144,11 @@ test('a session start reads the config files and logs every warning once',
     }
   })
 
-// The options with no file, field by field: the spec's defaults
-// (spec/options.jsonc), the mod's own layer (hooks/config.ts, SETTINGS)
-// being empty; right-edge is derived from live-place.
+// The options with no file, field by field: the defaults file's
+// (mod/defaults/config.jsonc), the mod's own layer (hooks/config.ts,
+// SETTINGS) being empty; right-edge is derived from live-place.
 test('with no configuration file the options are the defaults', () => {
-  expect(unconfigured()).toEqual({
+  expect(unconfigured(DEFAULTS)).toEqual({
     usageSource: 'auto',
     account: 'default',
     accountPeriod: 'day',
@@ -184,7 +196,7 @@ test('a non-empty mod layer merges under the files and is named in the log',
         values: { 'usage-source': 'claude-usage-tracker',
           'hide': ['*.context.share'],
           'rows': { agent: { live: 'running', transcript: true } } } },
-    ], [])
+    ], [], DEFAULTS)
     const o = optionsOf(m)
     expect(o.usageSource).toBe('claude-usage-tracker')
     expect(o.hide).toEqual([])
@@ -208,7 +220,32 @@ test('the mod asks for no path outside the world it is handed',
       'CODING_AGENT_USAGE_LINE_CONFIG_DIR']) {
       expect(w.names).toContain(name)
     }
-    const outside = w.asked.filter((p) =>
+    // And the defaults file, in the mod's own folder.
+    expect(w.asked.filter(isDefaults).length).toBeGreaterThan(0)
+    const outside = w.asked.filter((p) => !isDefaults(p) &&
       !PLACES.some((d) => p === d || p.startsWith(d + '/')))
     expect(outside).toEqual([])
+  })
+
+// A defaults file with a key left out: no options, so nothing is drawn
+// from it, and the footer draws the error, which the log and the
+// transcript say once.
+test('a wrong defaults file is drawn in the footer and logged once',
+  async ($, on) => {
+    const w = world(on, DEFAULTS_TEXT.replace('  "account": "default",\n', ''))
+    await $.session.start({ cwd: PROJECT, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    const log = w.files.get(STATE + '/' + LOG_NAME) ?? ''
+    expect(log).toContain('config: the defaults file is wrong: ')
+    expect(log).toContain('"account" is missing')
+    expect(log).not.toContain('config options: ')
+    expect(w.logged.filter((n) => n.includes('"account" is missing')).length)
+      .toBe(1)
+    const hint = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'PromptHint', props: { isDraft: false,
+        isWorking: false, hint: '-- INSERT --' } })
+    const drawn = JSON.stringify(await hint.drawn())
+    expect(drawn).toContain('⚠ usage-band: the defaults file is wrong: ')
+    expect(drawn).toContain('\\"account\\" is missing')
   })
