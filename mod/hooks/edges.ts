@@ -615,13 +615,23 @@ async function folderReply($: $, transcript: string, id: string):
   try {
     const size = await fileSize($, path)
     if (!size) return ''
+    const kept = folderReplyKept.get(path)
+    if (kept && kept.size === size) return kept.reply
     const from = Math.max(0, size - REPLY_TAIL)
     const tail = await readRange($, path, from, size, size)
-    return lastReply(repliesOfLines(new TextDecoder().decode(tail), from > 0))
+    const reply = lastReply(repliesOfLines(new TextDecoder().decode(tail),
+      from > 0))
+    folderReplyKept.set(path, { size, reply })
+    return reply
   } catch {
     return ''
   }
 }
+
+// Each agent transcript's last reply (folderReply), by its path, with the
+// size it was read at: a finished agent's file no longer grows, so each
+// message row's lookup reads it once per load, not once per message.
+const folderReplyKept = new Map<string, { size: number; reply: string }>()
 
 // How far back from an agent transcript's end folderReply looks.
 const REPLY_TAIL = 256 * 1024
