@@ -942,10 +942,12 @@ export const register: Register = on => {
     if (!lines.length) return row
     const { Box, Button, Text } = $.ui.resolve(e)
     // 🎤 is pressable: it scrolls to the prompt that opened the turn
-    // (pressTurn; clickable-rows.md, a trial).
+    // (pressTurn; clickable-rows.md, a trial).  A blank row parts them
+    // from the footer line (asked 2026-10-21).
     return (
       <Box flexDirection="column" marginBottom={o.hintTuck ? -1 : 0}>
         {row}
+        <Box height={1}><Text> </Text></Box>
         {lines.map((l, i) => l.scope === 'turn'
           ? pressable(Button, Text, l.spans, 'band' + i, () => pressTurn($))
           : line(Text, l.spans, 'band' + i))}
