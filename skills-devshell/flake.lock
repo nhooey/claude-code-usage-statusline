@@ -189,11 +189,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1792416508,
-        "narHash": "sha256-69DWaW8InPLYXSQEQhB66MuMDtHI6S6ofaOC31vfEdQ=",
+        "lastModified": 1792575193,
+        "narHash": "sha256-oY49H5UEAW+QjcNbrskXF6LvfVEdCJOqSLgtsmHLJMo=",
         "owner": "nhooey",
         "repo": "git-skills",
-        "rev": "4a6c5e0503d85dbc42585816135a832f03181ac1",
+        "rev": "8841a94364b6524573a653ed84dc278db3d0fc10",
         "type": "github"
       },
       "original": {

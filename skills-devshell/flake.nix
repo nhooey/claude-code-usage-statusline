@@ -77,7 +77,7 @@
             "git-hygiene-branch-naming"
             "git-hygiene-commit-message-format"
             "git-hygiene-gitignore"
-            "git-hygiene-no-history-in-code"
+            "git-hygiene-no-history-in-tracked-files"
             "git-hygiene-push-force-safely"
             "git-hygiene-ssh-remotes"
             "git-workflow-curate-unpushed"
