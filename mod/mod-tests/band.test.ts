@@ -607,6 +607,47 @@ test('pressing 🤖 with no reply drawn says so once and scrolls nowhere',
     expect(logOf(w)).not.toContain('$.ui.scroll')
   })
 
+test('above the prompt, 🎤 and 🤖 press as under the footer, and the ' +
+  'band logs its widths and its survey', async ($, on) => {
+    const w = world(on)
+    // The trial's setting (row-placement.md, RP1), in a project file.
+    w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',
+      encoder.encode('{"live-place": "above"}'))
+    await start($, 'terminal', STATUS)
+    await drawPrompt($, 'Go on.', 'prompt-1')
+    await $.turn.start({ text: 'Go on.', turnId: 't3' })
+    await settle()
+    await drawReply($, 'reply-1')
+    const viewport = { columns: COLS, rows: 40, isFullscreen: false }
+    const band = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'AbovePrompt', viewport,
+      props: { ...BAND, isWorking: true } })
+    // 🎤 and 🤖 press: not 🎮.
+    expect((await band.findAll({ type: 'Button' })).length).toBe(2)
+    await pressRow(band, spec.E_TURN)
+    await pressRow(band, spec.E_BOT)
+    const scrolled = (id: string) => '$.ui.scroll({"to":{"requestId":"' +
+      id + '"},"block":"start"}) threw: no implementation for ui.scroll'
+    expect(logOf(w)).toContain('press 🎤: ' + scrolled('prompt-1'))
+    expect(logOf(w)).toContain('press 🤖: ' + scrolled('reply-1'))
+    expect(logOf(w)).toContain('band: {"bodyColumns":' + (COLS - 5) +
+      ',"viewportColumns":' + COLS + ',"isFullscreen":false,' +
+      '"hasSurvey":false}')
+    // A survey: the band is the engine's, the log says so once, and the
+    // footer drawn under it says so too.
+    for (let i = 0; i < 2; i++) {
+      const held = await $.ui.mount({ plugin: 'usage-band',
+        surface: 'terminal', component: 'AbovePrompt', viewport,
+        props: { ...BAND, isWorking: true, hasSurvey: true } })
+      expect(await held.find({ type: 'Text' })).toBeUndefined()
+    }
+    expect(logOf(w).split('"hasSurvey":true}').length).toBe(2)
+    await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'PromptHint', viewport, props: { isDraft: false,
+        isWorking: true, hint: '-- INSERT --' } })
+    expect(logOf(w)).toMatch(/footer: \[.*,false,true\]/)
+  })
+
 test('a prompt from the composer gets its turn tag under it, at no indent',
   async ($, on) => {
     const w = world(on)

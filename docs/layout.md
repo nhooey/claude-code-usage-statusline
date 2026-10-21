@@ -109,8 +109,8 @@ be pressed. A press with nowhere to go says so once in the mod's log
 scroll to`, and does nothing; every other press logs the call it made and
 its answer. Rows Claude Code gives a click of its own are never pressable:
 a prompt, and a [message from an agent](#messages-from-agents), which a
-click expands and folds again. Nor are the rows [above the
-prompt](#above-the-prompt).
+click expands and folds again. [Above the prompt](#above-the-prompt), 🎤
+and 🤖 press as they do under the footer line.
 
 Claude Code draws the footer's container two columns in from each edge, so
 every row the mod draws there starts two columns in (`hint-inset`)
@@ -819,7 +819,15 @@ of the edge (`RIGHT_EDGE`), at no inset (`--part band`):
 
 The receipt is then stamped at no inset, and the panel's `right-edge`
 follows `live-place` to five, so its rows stack on these. The 💳 row stays
-under the footer line.
+under the footer line. 🎤 and 🤖 press here as under it
+([Pressing a row](#pressing-a-row)), though a click in the band may also
+focus it, which Esc gives back. While a survey (a question picker) holds
+the band, the mod draws nothing there, and Claude Code draws the picker.
+
+Each change of the band's widths or of a survey goes to the mod's log,
+`band: {"bodyColumns":…,"viewportColumns":…,"isFullscreen":…,"hasSurvey":…}`,
+and the footer's own log line ends with the same `isFullscreen` and
+whether a survey held the band when it was drawn.
 
 ### The footer's tail
 

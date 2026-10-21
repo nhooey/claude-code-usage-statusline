@@ -351,6 +351,11 @@ async function remember($: $, index: string, key: string, value: unknown) {
 let bandCols = 0
 // The footer's hint and widths last logged.
 let hintSeen = ''
+// The band's widths and survey state last logged, and whether a survey
+// held the band at its last draw, which the footer's log line repeats:
+// what the trial above the prompt reads back (row-placement.md, RP1).
+let bandSeen = ''
+let surveyHeld = false
 // The session's permission mode, as the last classic hook event gave it:
 // the footer's `hint` leaves its pill out, so footerTail counts it apart.
 let permissionMode: string | undefined
@@ -952,6 +957,19 @@ export const register: Register = on => {
   // it.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     bandCols = e.props.bodyColumns + 5
+    surveyHeld = e.props.hasSurvey
+    // The band's width, the terminal's, whether a pane can dock beside
+    // the transcript, and whether a survey holds the band, each time one
+    // changes: beside a docked pane bodyColumns is the transcript's
+    // column, and under a survey the band is the engine's.
+    const seen = JSON.stringify({ bodyColumns: e.props.bodyColumns,
+      viewportColumns: e.viewport?.columns ?? null,
+      isFullscreen: e.viewport?.isFullscreen ?? null,
+      hasSurvey: e.props.hasSurvey })
+    if (seen !== bandSeen) {
+      bandSeen = seen
+      void log($, 'band: ' + seen)
+    }
     await read($, configured)
     if ((await optionsFor($))?.livePlace !== 'above' || e.props.hasSurvey) {
       return next(e)
@@ -959,14 +977,17 @@ export const register: Register = on => {
     const lines = await bandNow($, e.props.isWorking)
     // Between turns the receipt carries the rows, and the band has none.
     if (!lines.length) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
     // No margin: Claude Code draws its `[-]` on the band's first row, and
     // on a blank top row it stood alone.  A bottom margin of -1, into the
     // blank row above the prompt's border, hid the band's last row under
-    // the border instead (tried live 2026-10-19).
+    // the border instead (tried live 2026-10-19).  🎤 and 🤖 press to the
+    // turn's prompt and its last reply, as under the footer line
+    // (scopedRow).
     return (
       <Box flexDirection="column">
-        {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
+        {lines.map((l, i) => scopedRow($, Button, Text, l.scope, l.spans,
+          'band' + i, bandTurn))}
       </Box>
     )
   })
@@ -1052,8 +1073,11 @@ export const register: Register = on => {
       : text
     // What the padding was worked out from, each time it changes, so a
     // tail drawn too wide can be checked against the line it was given.
+    // And whether a survey held the band at its last draw, so a footer
+    // drawn under a survey says so (row-placement.md, RP1).
     const seen = JSON.stringify([e.props.hint, mode ?? null, bandCols,
-      e.viewport?.columns ?? null, tail.length])
+      e.viewport?.columns ?? null, tail.length,
+      e.viewport?.isFullscreen ?? null, surveyHeld])
     if (seen !== hintSeen) {
       hintSeen = seen
       void log($, 'footer: ' + seen)
