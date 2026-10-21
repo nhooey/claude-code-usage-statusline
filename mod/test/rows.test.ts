@@ -376,6 +376,31 @@ test("🎤's ⛳ is the turn's own report alone; 🤖's takes a live agent's", (
   assert.match(text(own.main.cells.eta), /^⛳ +10m$/);
 });
 
+test("⛳ stops at the turn's end, and a sign-off at zero is not drawn idle",
+  () => {
+    const st = settings({});
+    const fig = document("status/01-baseline@196");
+    const opts = { home: HOME, rate: null, phase: "done" as const };
+    const now = ((fig.clock as Dict).now as number);
+    const text = (spans: readonly Span[] | undefined) =>
+      (spans ?? []).map((s) => s.text).join("");
+    const at = (eta: number[], idle_at: number) => {
+      const f = { ...fig, transcript: { ...(fig.transcript as Dict), eta,
+        agent_etas: [], idle_at } };
+      return inZone(f, () => bandRows(st, f, opts));
+    };
+    // Estimated 2m at now-10m, idle since now-5m: 3m over, not 8m.
+    const over = at([now - 600, 120], now - 300);
+    assert.match(text(over.turn.cells.eta), /^⛳ +\+3m$/);
+    assert.match(text(over.main.cells.eta), /^⛳ +\+3m$/);
+    const signed = at([now - 600, 0], now - 590);
+    assert.equal(text(signed.turn.cells.eta), "");
+    assert.equal(text(signed.main.cells.eta), "");
+    // Still answering, a sign-off's overrun counts on.
+    const busy = at([now - 600, 0], 0);
+    assert.match(text(busy.turn.cells.eta), /^⛳ +\+10m$/);
+  });
+
 test("🎤 carries the model and 🛫, and a running tool's time in 🛫's column", () => {
   const st = settings({});
   const fig = document("status/01-baseline@196");

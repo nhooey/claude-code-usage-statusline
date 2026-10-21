@@ -216,7 +216,8 @@ function planPct(plan: unknown, key: string): string {
  * `accounting.turns[i]`.  🧠 its growth, `dctx` over `context_window`;
  * 🧩 🎯 weighed from its tokens; ⌛ its `dur_s`; ⛳ the last ETA it
  * reported, `eta` (decision 6), read at `clock.now`, when it ended, so a
- * turn that ran past its estimate reads late. */
+ * turn that ran past its estimate reads late; none for one signed off
+ * at zero. */
 function turnRow(st: Settings, t: Turn, acc: Accounting, win: number,
   now: number, sessPct: string, weekPct: string): Row {
   const [up, down] = turnTokens(t);
@@ -226,8 +227,10 @@ function turnRow(st: Settings, t: Turn, acc: Accounting, win: number,
     tok: CELLS.tok(st, up, down),
     cache: CELLS.cache(st, turnCache(t)),
     clock: CELLS.clock(st, t.dur_s),
-    eta: CELLS.eta(st, t.eta, null, now,
-      t.eta.length > 0 && t.eta[1] === 0),
+    // A turn signed off at zero ended on time: its overrun is only the
+    // seconds between the sign-off and the turn's last record, so no ⛳.
+    eta: t.eta.length > 0 && t.eta[1] === 0 ? []
+      : CELLS.eta(st, t.eta, null, now),
     split: accountingSplit(acc),
     ...shareCells(st, acc, sessPct, weekPct),
     diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),

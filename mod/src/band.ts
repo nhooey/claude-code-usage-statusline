@@ -186,6 +186,7 @@ export function shareCells(st: Settings, a: Accounting, sessPct: string,
  * prompt; nothing with no transcript. */
 function threadEta(st: Settings, tr: Transcript, now: number): Span[] {
   if (!tr.start_s) return [];
+  now = etaNow(tr, now);
   const live = tr.agent_etas
     .filter(([, last]) => last !== null && now - last <= ETA_LIVE_S)
     .map(([f]) => f);
@@ -194,6 +195,7 @@ function threadEta(st: Settings, tr: Transcript, now: number): Span[] {
   // finish past it.
   const signedOff = tr.eta.length > 0 && tr.eta[1] === 0 &&
     shown.length > 0 && etaFinish(shown)! <= etaFinish(tr.eta)! + 1e-6;
+  if (signedOff && tr.idle_at) return [];
   return CELLS.eta(st, shown, tr.turn_s || null, now, signedOff);
 }
 
@@ -202,7 +204,18 @@ function threadEta(st: Settings, tr: Transcript, now: number): Span[] {
  * 2026-10-19). */
 function turnEta(st: Settings, tr: Transcript, now: number): Span[] {
   if (!tr.start_s || !tr.eta.length) return [];
-  return CELLS.eta(st, tr.eta, tr.turn_s || null, now, tr.eta[1] === 0);
+  if (tr.eta[1] === 0 && tr.idle_at) return [];
+  return CELLS.eta(st, tr.eta, tr.turn_s || null, etaNow(tr, now),
+    tr.eta[1] === 0);
+}
+
+/** The time a ⛳ is counted to: `now` while the thread answers, and the
+ * end of its last answer once it is idle, so a turn's ⛳ stops with the
+ * turn rather than counting on between turns (asked 2026-10-21).  A ⛳
+ * signed off at zero is not drawn once idle: its overrun is only the
+ * seconds between the sign-off and the turn's last record. */
+function etaNow(tr: Transcript, now: number): number {
+  return tr.idle_at ? Math.min(now, tr.idle_at) : now;
 }
 
 /** The working directory under `home` as "~", as render_status shows it. */
