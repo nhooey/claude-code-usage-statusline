@@ -38,6 +38,9 @@ import {
   foldDir as agentFoldDir, slotNames, tailDigest,
 } from '../src/agent_fold.ts'
 import { statePath } from '../src/state.ts'
+import { agentOfMeta, lastReply, repliesOfLines }
+  from '../src/agent_message.ts'
+import type { AgentLike } from '../src/agent_message.ts'
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
   _pricedRecord, _windowCostsFiles, _windowCostsOf, _windowCostsText,
@@ -566,6 +569,72 @@ export async function agentFiles($: $, transcript: string):
   const d = _agentDir(transcript)
   if (d) await agentWalk($, d, out)
   return out.sort((a, b) => cmpStr(a.path, b.path))
+}
+
+const META_NAME = /^agent-(.+)\.meta\.json$/
+
+// Each meta file's agent, by its path, once read: Claude Code writes an
+// agent's task there at its start and keeps it.  null for one that would
+// not read.
+const metas = new Map<string, AgentLike | null>()
+
+/** The session's agents as its `subagents/` folder holds them, the
+ * session's transcript being `transcript`: one for each meta file
+ * (agentOfMeta), finished or not, each file read once per load. */
+export async function folderAgents($: $, transcript: string):
+  Promise<AgentLike[]> {
+  const dir = _agentDir(transcript)
+  if (!dir) return []
+  const out: AgentLike[] = []
+  for (const e of await listDir($, dir)) {
+    const id = META_NAME.exec(e.name)?.[1]
+    if (e.kind !== 'file' || !id) continue
+    const path = pyJoin(dir, e.name)
+    if (!metas.has(path)) {
+      const text = await readText($, path)
+      let meta: unknown = null
+      try {
+        meta = text === null ? null : JSON.parse(text)
+      } catch {
+        meta = null
+      }
+      metas.set(path, agentOfMeta(id, meta))
+    }
+    const agent = metas.get(path)
+    if (agent) out.push(agent)
+  }
+  return out.sort((a, b) => cmpStr(a.id ?? '', b.id ?? ''))
+}
+
+/** The agent's last reply (lastReply) as the end of its transcript beside
+ * its meta file holds it, the last REPLY_TAIL bytes of it; '' where it
+ * will not read.  A reply is written last, so its end holds it. */
+async function folderReply($: $, transcript: string, id: string):
+  Promise<string> {
+  const path = pyJoin(_agentDir(transcript), 'agent-' + id + '.jsonl')
+  try {
+    const size = await fileSize($, path)
+    if (!size) return ''
+    const from = Math.max(0, size - REPLY_TAIL)
+    const tail = await readRange($, path, from, size, size)
+    return lastReply(repliesOfLines(new TextDecoder().decode(tail), from > 0))
+  } catch {
+    return ''
+  }
+}
+
+// How far back from an agent transcript's end folderReply looks.
+const REPLY_TAIL = 256 * 1024
+
+/** Each of `agents`, of the folder folderAgents read, with its last reply
+ * (folderReply), AGENT_READS_AT_ONCE read at a time. */
+export async function folderReplies($: $, transcript: string,
+  agents: readonly AgentLike[]): Promise<[AgentLike, string][]> {
+  const out = new Map<AgentLike, string>()
+  await atOnce(agents, AGENT_READS_AT_ONCE, async (a) => {
+    out.set(a, a.id ? await folderReply($, transcript, a.id) : '')
+  })
+  return agents.map((a) => [a, out.get(a)!])
 }
 
 /** Each agent file's reading, each read from where the last read of it

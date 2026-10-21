@@ -30,17 +30,74 @@ const TEXT = 'The right edge is now a setting in both ports, from one ' +
 
 type World = { agents: AgentInfo[]; listed: number;
   replies: Record<string, string>; read: string[];
-  clock: ReturnType<typeof mock.clock>; views: unknown[] }
+  clock: ReturnType<typeof mock.clock>; views: unknown[];
+  files: Map<string, string>; store: Map<string, unknown>;
+  fileReads: string[] }
+
+const SESSION = 'session-1'
+// The session's transcript, where transcriptPath looks for it under HOME,
+// and the `subagents/` folder beside it.
+const PROJECT = '/home/fixture/.claude/projects/-work'
+const SUBAGENTS = PROJECT + '/' + SESSION + '/subagents'
 
 /** The engine beneath the mod: its agents as `world.agents` holds them,
  * each list counted; each agent's conversation one user message and the
  * reply `world.replies` holds for it, or a deny where it holds none, each
  * read noted; its own drawing of every row a Box; and each `$.ui.view`
- * noted, so a view the row should not open shows. */
+ * noted, so a view the row should not open shows.  Its files, the
+ * session's transcript and nothing else to begin with, and its store are
+ * in memory, each file read noted. */
 function world(on: On): World {
   const w: World = { agents: [], listed: 0, replies: {}, read: [],
-    clock: mock.clock(on, { now: NOW }), views: [] }
+    clock: mock.clock(on, { now: NOW }), views: [],
+    files: new Map([[PROJECT + '/' + SESSION + '.jsonl', '{}\n']]),
+    store: new Map(), fileReads: [] }
   mock.env(on, { HOME: '/home/fixture' })
+  on('session.id', () => ({ value: SESSION }))
+  on('store.get', ($, e) => ({ value: w.store.get(e.key) }))
+  on('store.set', ($, e) => {
+    w.store.set(e.key, JSON.parse(JSON.stringify(e.value)))
+    return { value: undefined }
+  })
+  const under = (p: string) => p.endsWith('/') ? p : p + '/'
+  on('fs.stat', ($, e) => {
+    const f = w.files.get(e.path)
+    if (f !== undefined) {
+      return { value: { kind: 'file' as const,
+        size: new TextEncoder().encode(f).length, mtimeMs: NOW,
+        isLink: false } }
+    }
+    if ([...w.files.keys()].some((p) => p.startsWith(under(e.path)))) {
+      return { value: { kind: 'dir' as const, size: 0, mtimeMs: NOW,
+        isLink: false } }
+    }
+    return { deny: 'no such file: ' + e.path }
+  })
+  on('fs.read', ($, e) => {
+    const f = w.files.get(e.path)
+    if (f === undefined) return { deny: 'no such file: ' + e.path }
+    w.fileReads.push(e.path)
+    if (e.as === 'bytes') {
+      let s = ''
+      for (const b of new TextEncoder().encode(f)) s += String.fromCharCode(b)
+      return { value: { base64: btoa(s) } }
+    }
+    return { value: f }
+  })
+  on('fs.list', ($, e) => {
+    const dir = under(e.path)
+    const names = new Map<string, 'file' | 'dir'>()
+    for (const p of w.files.keys()) {
+      if (!p.startsWith(dir)) continue
+      const rest = p.slice(dir.length)
+      const cut = rest.indexOf('/')
+      names.set(cut < 0 ? rest : rest.slice(0, cut), cut < 0 ? 'file' : 'dir')
+    }
+    if (!names.size) return { deny: 'no such directory: ' + e.path }
+    return { value: [...names].map(([name, kind]) => ({ name, kind,
+      size: kind === 'file' ? w.files.get(dir + name)!.length : 0,
+      mtimeMs: NOW, isLink: false })) }
+  })
   on('agent.list', () => {
     w.listed++
     return { value: w.agents }
@@ -280,3 +337,93 @@ for (const isExpanded of [false, true]) {
       expect(w.views).toEqual([])
     })
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Agents gone from the list: the session's `subagents/` folder, and what a
+// reload keeps.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** A finished agent in the session's `subagents/` folder, as Claude Code
+ * leaves it: its meta file, and its transcript, whose last message hands
+ * `reply` back with a tool, after `pad` bytes of earlier work. */
+function finished(w: World, id: string, type: string, description: string,
+  reply: string, pad = 0) {
+  w.files.set(SUBAGENTS + '/agent-' + id + '.meta.json', JSON.stringify({
+    agentType: type, description, toolUseId: 'toolu_' + id,
+    finished: true }))
+  const rec = (role: string, mid: string, content: unknown) =>
+    JSON.stringify({ type: role, agentId: id,
+      message: { id: mid, role, content } })
+  w.files.set(SUBAGENTS + '/agent-' + id + '.jsonl', [
+    rec('user', '', 'Go.'),
+    rec('assistant', 'm0', [{ type: 'text', text: 'x'.repeat(pad) }]),
+    rec('assistant', 'm1', [{ type: 'text', text: 'Done.' }]),
+    rec('assistant', 'm1', [{ type: 'tool_use', name: 'SubagentHandback',
+      input: { message: reply } }]),
+  ].join('\n') + '\n')
+}
+
+/** The message as the main session receives a hand-back: framed. */
+const HANDED = { ...FROM, text: '[Subagent hand-back] The text below is ' +
+  'the final report of a subagent. The report follows:\n' +
+  TEXT.split('\n').map((l) => '  ' + l).join('\n') }
+
+test('agents gone from the list: the one of the folder whose last reply ' +
+  'holds the message, from the end of its transcript', async ($, on) => {
+    const w = world(on)
+    // A long transcript, read from its end: its first line is cut.
+    finished(w, 'f1', 'general-purpose', 'PL2: palette docs note', TEXT,
+      400 * 1024)
+    finished(w, 'f2', 'general-purpose', 'Count the transcript',
+      'Still counting.')
+    finished(w, 'f3', 'Explore', 'Look', TEXT)
+    const tree = await drawn($, HANDED)
+    expect(pieces(tree)[1]).toEqual(['PL2: palette docs note', false, true])
+    expect(String(pieces(tree)[2][0]).startsWith(': The right edge'))
+      .toBe(true)
+    // Once per message: a second draw reads no file again.
+    const reads = w.fileReads.length
+    await drawn($, HANDED)
+    expect(w.fileReads.length).toBe(reads)
+    // And the sender kept for a reload.
+    expect(JSON.stringify(w.store.get('agent-senders')))
+      .toContain('PL2: palette docs note')
+  })
+
+test('agents gone from the list, two of the folder holding the message: ' +
+  'the sender named as Claude Code names it, and nothing kept',
+  async ($, on) => {
+    const w = world(on)
+    finished(w, 'f1', 'general-purpose', 'One', TEXT)
+    finished(w, 'f2', 'general-purpose', 'Two', TEXT)
+    const tree = await drawn($, FROM)
+    expect(pieces(tree)).toEqual(expected(w, FROM))
+    expect(pieces(tree)[1][0]).toBe('general-purpose')
+    expect(w.store.get('agent-senders')).toBe(undefined)
+  })
+
+// What the load of the test below left in its store, for the load of the
+// one after it: each test loads the mod afresh, as a reload does, so its
+// module's memo starts over and only the store is carried across.
+let leftInStore: Map<string, unknown> | null = null
+
+test('a reload keeps a sender found (the load before)', async ($, on) => {
+  const w = world(on)
+  finished(w, 'f1', 'general-purpose', 'PL2: palette docs note', TEXT)
+  finished(w, 'f2', 'general-purpose', 'Count', 'Still counting.')
+  expect(pieces(await drawn($, FROM))[1][0]).toBe('PL2: palette docs note')
+  leftInStore = new Map(w.store)
+})
+
+test('a reload keeps a sender found (the load after): no agent listed, ' +
+  'no folder, the task from the store', async ($, on) => {
+    expect(leftInStore).not.toBe(null)
+    const w = world(on)
+    w.store = new Map(leftInStore!)
+    const tree = await drawn($, FROM)
+    expect(pieces(tree)[1]).toEqual(['PL2: palette docs note', false, true])
+    expect(w.fileReads).toEqual([])
+    // Another message of the same session is not found by it.
+    const other = { ...FROM, text: 'Another report.' }
+    expect(pieces(await drawn($, other))[1][0]).toBe('general-purpose')
+  })

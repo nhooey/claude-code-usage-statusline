@@ -656,8 +656,13 @@ live ones before the rest. Where that finds several, the message's words
 pick one: the agent whose last reply, its text or what it sent with a tool,
 holds the message's first line, whitespace folded on both sides. Each
 candidate's conversation is read once per message, and the sender found is
-kept for the message's later draws. Where no reply holds it, or more than
-one does, the row names the sender as Claude Code did, as in the second
+kept for the message's later draws, and in the mod's store for its loads
+after a reload. An agent that has finished drops out of the session's
+agents in time, so where they settle nothing the session's `subagents/`
+folder is read instead: each agent's meta file for its type and task, and
+the last 256 KiB of its transcript for its last reply. Where no reply
+holds it, or more than one does, the row names the sender as Claude Code
+did, as in the second
 row: a guess between two agents' tasks would put one agent's words under
 the other's. ctrl+o shows the whole message either way, and
 `agent-message-row` turns the row off. No figures document holds a

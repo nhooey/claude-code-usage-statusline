@@ -5,8 +5,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { settings, visWidth } from "../src/formatting.ts";
 import {
-  candidates, firstLine, lastReply, messageBlock, messageSpans, reportOf,
-  saidBy, senderLabel, unframe, wrapCols,
+  agentOfMeta, candidates, firstLine, lastReply, messageBlock, messageSpans,
+  repliesOfLines, reportOf, saidBy, senderLabel, unframe, wrapCols,
 } from "../src/agent_message.ts";
 import type { AgentLike, MessageLike } from "../src/agent_message.ts";
 import { text as spansText } from "../src/spans.ts";
@@ -176,6 +176,41 @@ test("the last reply: the last assistant message's text and its tool " +
   assert.equal(lastReply([]), "");
   // A message with no tool calls listed at all.
   assert.equal(lastReply([{ role: "assistant", text: "Bare." }]), "Bare.");
+});
+
+test("a finished agent's meta file: its type, task and name", () => {
+  assert.deepEqual(agentOfMeta("a1", { agentType: "general-purpose",
+    description: "PL2: palette docs note", toolUseId: "t", finished: true }),
+  { id: "a1", type: "general-purpose", description: "PL2: palette docs note",
+    status: "completed" });
+  assert.equal(agentOfMeta("a2", { name: "reviewer", agentType: "Explore",
+    description: "Look" })?.name, "reviewer");
+  for (const bad of [null, "text", {}, { agentType: 3 }]) {
+    assert.equal(agentOfMeta("a3", bad), null);
+  }
+});
+
+test("the replies of a transcript's tail: one message from its blocks' " +
+  "records, a cut first line and a torn one passed over", () => {
+  const rec = (role: string, id: string, content: unknown) =>
+    JSON.stringify({ type: role, message: { id, role, content } });
+  const tail = [
+    '"cut": "mid-line"}',
+    rec("assistant", "m1", [{ type: "text", text: "Earlier." }]),
+    rec("user", "", [{ type: "tool_result", content: "ok" }]),
+    rec("assistant", "m2", [{ type: "text", text: "The edge is set." }]),
+    rec("assistant", "m2", [{ type: "tool_use", name: "SubagentHandback",
+      input: { message: "Both commits\nare pushed." } }]),
+    '{"torn',
+  ].join("\n");
+  const replies = repliesOfLines(tail, true);
+  assert.equal(replies.length, 2);
+  assert.equal(lastReply(replies),
+    "The edge is set. Both commits are pushed.");
+  // Read whole, the first line is one too, and here not one that parses.
+  assert.equal(repliesOfLines(tail, false).length, 2);
+  assert.deepEqual(repliesOfLines(rec("assistant", "m3", "Plain."), false),
+    [{ role: "assistant", text: "Plain.", toolUses: [] }]);
 });
 
 test("the message's words pick its sender out of several", () => {

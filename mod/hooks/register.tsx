@@ -46,8 +46,9 @@ import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import { costDoc, options, permissionModeOf, placesOf, readConfig, seen,
-  statusDoc, steps, transcriptPath, turnsNow } from './edges.ts'
+import { costDoc, folderAgents, folderReplies, options, permissionModeOf,
+  placesOf, readConfig, seen, statusDoc, steps, transcriptPath, turnsNow }
+  from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
 
@@ -596,11 +597,97 @@ const senders = new Map<string, AgentLike | null>()
 // The lookups out, so draws that come while one is out wait on it.
 const sending = new Map<string, Promise<AgentLike | null>>()
 
+// The senders found, as the store keeps them for a reload, which starts
+// `senders` over: a finished agent may be gone from the list and its
+// reply from the folder's tail by then.  Under SENDERS_KEY, each keyed by
+// keptKey, the oldest dropped past CONFIG.agentSenderMemo.  A sender not
+// found is not kept, so a later load may find it.  `$.store`, not
+// `$.state`: a render hook may not write state.
+const SENDERS_KEY = 'agent-senders'
+let kept: Promise<Record<string, AgentLike>> | null = null
+
+/** The store's key for the sender of `text` in session `session`. */
+const keptKey = (session: string, text: string) =>
+  sha256Hex(session + '\n' + text).slice(0, 32)
+
+/** The senders the store keeps, read once per load; none where it will
+ * not read. */
+function keptSenders($: $): Promise<Record<string, AgentLike>> {
+  kept ??= $.store.get(SENDERS_KEY).then(
+    (got) => got && typeof got === 'object'
+      ? { ...got as Record<string, AgentLike> } : {},
+    async (err) => {
+      await log($, 'no kept senders', err)
+      return {}
+    })
+  return kept
+}
+
+/** Keep `agent` as the sender under `key`, for a reload to find; only what
+ * the row reads of it. */
+async function keepSender($: $, key: string, agent: AgentLike) {
+  const all = await keptSenders($)
+  delete all[key]
+  all[key] = { id: agent.id, type: agent.type,
+    description: agent.description, status: agent.status,
+    ...agent.name !== undefined ? { name: agent.name } : {} }
+  const keys = Object.keys(all)
+  for (const old of keys.slice(0, Math.max(0,
+    keys.length - CONFIG.agentSenderMemo))) {
+    delete all[old]
+  }
+  await $.store.set(SENDERS_KEY, all)
+    .catch((err) => log($, 'sender not kept', err))
+}
+
+/** The one agent of the session's `subagents/` folder named or typed
+ * `from` whose last reply there holds `head` (edges.ts folderAgents,
+ * folderReplies); null where none or several do.  For a sender gone from
+ * the agent list: an agent finished a while, or one the list did not
+ * settle. */
+async function folderSender($: $, from: string, head: string):
+  Promise<AgentLike | null> {
+  if (!head) return null
+  const path = await transcriptPath($, await placesFor($))
+  if (!path) return null
+  const among = (await folderAgents($, path))
+    .filter((a) => a.name === from || a.type === from)
+  return saidBy(head, await folderReplies($, path, among))
+}
+
+/** The sender of `text` as `from` by the words of its message, kept under
+ * `key` where found: the one of `agents` whose conversation's last reply
+ * holds its first line, else folderSender's. */
+async function lookFor($: $, from: string, text: string,
+  agents: readonly AgentLike[], key: string): Promise<AgentLike | null> {
+  const among = candidates(from, agents).filter((a) => a.id)
+  const replies = await Promise.all(among.map(async (a) => {
+    try {
+      const got = await $.session.messages({ agentId: a.id! })
+      return [a, Array.isArray(got)
+        ? lastReply(got as readonly MessageLike[]) : ''] as const
+    } catch (err) {
+      await log($, 'no messages for ' + a.id, err)
+      return [a, ''] as const
+    }
+  }))
+  const head = firstLine(text)
+  const found = saidBy(head, replies) ??
+    await folderSender($, from, head).catch(async (err) => {
+      await log($, 'no folder sender', err)
+      return null
+    })
+  if (found) await keepSender($, key, found)
+  return found
+}
+
 /** The agent that sent `text` as `from`: the one agent of that name or
- * type, with no read; else the one of them whose last reply holds the
+ * type, with no read; else the one a load before this one found, as the
+ * store keeps it; else the one of them whose last reply holds the
  * message's first line (agent_message.ts), each candidate's conversation
- * read once per message; null where neither finds one.  A read that fails
- * is logged and counts as no reply. */
+ * read once per message; else the one of the session's `subagents/`
+ * folder whose reply there holds it (folderSender); null where none finds
+ * one.  A read that fails is logged and counts as no reply. */
 async function senderOf($: $, from: string, text: string,
   agents: readonly AgentLike[]): Promise<AgentLike | null> {
   const sole = soleSender(from, agents)
@@ -609,18 +696,9 @@ async function senderOf($: $, from: string, text: string,
   let lookup = sending.get(text)
   if (!lookup) {
     lookup = (async () => {
-      const among = candidates(from, agents).filter((a) => a.id)
-      const replies = await Promise.all(among.map(async (a) => {
-        try {
-          const got = await $.session.messages({ agentId: a.id! })
-          return [a, Array.isArray(got)
-            ? lastReply(got as readonly MessageLike[]) : ''] as const
-        } catch (err) {
-          await log($, 'no messages for ' + a.id, err)
-          return [a, ''] as const
-        }
-      }))
-      const found = saidBy(firstLine(text), replies)
+      const key = keptKey(await $.session.id().catch(() => ''), text)
+      const found = (await keptSenders($))[key] ??
+        await lookFor($, from, text, agents, key)
       senders.set(text, found)
       while (senders.size > CONFIG.agentSenderMemo) {
         senders.delete(senders.keys().next().value!)

@@ -22,6 +22,14 @@
 // to begin with, the row names the sender as Claude Code did: a guess
 // between two agents' tasks would put one agent's words under the other's.
 //
+// An agent that has finished leaves `$.agent.list()` in time, and a reload
+// of the mod forgets what was found; so where the list does not settle
+// it, the session's `subagents/` folder does, as Claude Code keeps it:
+// each agent's meta file (agentOfMeta) and the end of its transcript
+// (repliesOfLines), its last reply read as the list's is (asked
+// 2026-10-21: a reload turned every finished agent's row back into
+// `general-purpose`).
+//
 // Pure: the caller lists the agents, reads their replies and measures the
 // row.
 import { E_BOT, E_INBOX } from "./spec.ts";
@@ -171,6 +179,56 @@ export function lastReply(messages: readonly MessageLike[]): string {
     }
   }
   return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+/** An agent as its meta file in the session's `subagents/` folder holds
+ * it, `agent-<id>.meta.json` read as `meta`: a finished agent stays there
+ * after `$.agent.list()` has let it go.  null for a meta of no type. */
+export function agentOfMeta(id: string, meta: unknown): AgentLike | null {
+  if (!meta || typeof meta !== "object") return null;
+  const m = meta as Record<string, unknown>;
+  if (typeof m.agentType !== "string") return null;
+  return { id, type: m.agentType,
+    description: typeof m.description === "string" ? m.description : "",
+    status: m.finished === true ? "completed" : "",
+    ...typeof m.name === "string" ? { name: m.name } : {} };
+}
+
+/** The assistant's messages of an agent's transcript, from `tail`, the
+ * last bytes of its `agent-<id>.jsonl` (its first line left out where
+ * `cut`, as a piece of one).  Claude Code writes each block of a message
+ * as a record of its own under the message's id, so the records of one id
+ * in a row are one message again.  A line that will not parse is passed
+ * over. */
+export function repliesOfLines(tail: string, cut: boolean): MessageLike[] {
+  const out: { id: unknown; text: string[];
+    toolUses: { input?: unknown }[] }[] = [];
+  const lines = tail.split("\n");
+  for (const line of cut ? lines.slice(1) : lines) {
+    let rec: unknown;
+    try {
+      rec = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const msg = (rec as { message?: unknown } | null)?.message as
+      Record<string, unknown> | undefined;
+    if (!msg || msg.role !== "assistant") continue;
+    const last = out[out.length - 1];
+    const at = last && msg.id !== undefined && last.id === msg.id ? last
+      : out[out.push({ id: msg.id, text: [], toolUses: [] }) - 1];
+    const content = msg.content;
+    if (typeof content === "string") at.text.push(content);
+    for (const block of Array.isArray(content) ? content : []) {
+      if (block?.type === "text" && typeof block.text === "string") {
+        at.text.push(block.text);
+      } else if (block?.type === "tool_use") {
+        at.toolUses.push({ input: block.input });
+      }
+    }
+  }
+  return out.map((m) => ({ role: "assistant", text: m.text.join("\n"),
+    toolUses: m.toolUses }));
 }
 
 /** The one agent whose reply holds `head`, a message's first line as
