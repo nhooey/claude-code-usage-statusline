@@ -24,6 +24,7 @@ Colour and brightness carry meaning of their own — see
 
 - [Under the footer line](#under-the-footer-line)
   - [The rows](#the-rows)
+  - [Pressing a row](#pressing-a-row)
   - [The grid](#the-grid)
   - [Column by column](#column-by-column)
   - [Labels](#labels)
@@ -84,6 +85,32 @@ scope alone.
 The 🎤, 🤖 and 🎮 rows stand in the order the receipt stamps them in, so when
 the turn ends they become [its rows](#the-receipt), frozen, in the
 transcript just above.
+
+### Pressing a row
+
+🎤 and 🤖 can be pressed, by a click (tmux's mouse mode passes it on) or
+by Enter under the focus, here and in [the receipt](#the-receipt); they
+look as the other rows do. A press scrolls the transcript to put a row at
+the top of its window:
+
+| Row | Under the footer line | In a receipt |
+|---|---|---|
+| 🎤 | the prompt that opened the turn running, or the last one | the prompt that opened the receipt's own turn |
+| 🤖 | the last reply block that turn has drawn so far | the last reply block of the receipt's own turn |
+| 💳, 🎮, the tag line | nothing: not pressable | nothing: not pressable |
+
+The mod learns each target as Claude Code draws it: a prompt typed at the
+composer, and a reply block the first time it is drawn while a turn runs,
+until the turn's receipt is stamped. A reply drawn only after a reload has
+no turn, so 🤖 of a turn from before the reload goes nowhere; nor does a
+target dropped past `starts-kept`, or a receipt stamped before rows could
+be pressed. A press with nowhere to go says so once in the mod's log
+([mod/README.md](../mod/README.md#its-log)), `press 🤖: no reply drawn to
+scroll to`, and does nothing; every other press logs the call it made and
+its answer. Rows Claude Code gives a click of its own are never pressable:
+a prompt, and a [message from an agent](#messages-from-agents), which a
+click expands and folds again. Nor are the rows [above the
+prompt](#above-the-prompt).
 
 Claude Code draws the footer's container two columns in from each edge, so
 every row the mod draws there starts two columns in (`hint-inset`)
@@ -352,6 +379,9 @@ above the receipt, one before its tag line and one after it.
 - **🤖** is the main thread as the mod's 🤖 row last drew it.
 - **🎮** is the session as it stood when the turn ended, its label from the
   mod's last status reading; it includes every row above it.
+
+A receipt's 🎤 and 🤖 press to its own turn's prompt and last reply, however
+many turns have run since ([Pressing a row](#pressing-a-row)).
 
 Claude Code writes a turn's records to the transcript only after its Stop
 hooks have run, so the mod waits for them: it reads the transcript every

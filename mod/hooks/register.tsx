@@ -472,7 +472,7 @@ function line(Text: any, spans: readonly Span[], key: string,
 
 /** A row drawn as a Button around its Text, pressable by a click or Enter
  * under the focus, and looking as the row did: `plain`, so no `[ ]`
- * chrome, and no hotkey (clickable-rows.md). */
+ * chrome, and no hotkey (agents/plans/_implemented/clickable-rows.md). */
 function pressable(Button: any, Text: any, spans: readonly Span[],
   key: string, onPress: () => Promise<void>): RenderElement {
   return (
@@ -576,7 +576,7 @@ const pressReply = ($: $, turn: string) =>
 
 /** A row of the band's or a receipt's, of `scope`, for the turn `turn()`
  * names as a press comes: 🎤 and 🤖 pressable, to that turn's prompt and
- * reply (clickable-rows.md), the rest plain. */
+ * reply (docs/layout.md, "Pressing a row"), the rest plain. */
 function scopedRow($: $, Button: any, Text: any, scope: string,
   spans: readonly Span[], key: string, turn: () => string): RenderElement {
   if (scope === 'turn') {
