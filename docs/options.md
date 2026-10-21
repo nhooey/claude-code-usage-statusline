@@ -207,7 +207,7 @@ nesting whether any agent runs or not, so no column moves when an agent
 starts; a deeper row cuts its own label instead. On a narrow terminal whole
 columns drop from every row at once, 🛫 first and 💰 last. At an unknown
 width (`--cols 0` and no payload width) every column is drawn and the label
-keeps 20 columns.
+keeps 12 columns.
 
 `--cols`, `--hide`, `--right-edge`, `--usage-source`, `--account`,
 `--account-period`, `--diagnose` and `--subscript-decimals` apply in this

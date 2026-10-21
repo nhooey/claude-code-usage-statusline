@@ -31,26 +31,3 @@ test("a shorter or missing engine duration leaves the document alone", () => {
   assert.equal(withEngineDuration(doc, (dur - 1) * 1000), doc);
   assert.equal(withEngineDuration(doc, 0), doc);
 });
-
-test("a many-line opener draws on one row in the band and the receipt", async () => {
-  const { bandRows } = await import("../src/band.ts");
-  const { receiptRows } = await import("../src/receipt.ts");
-  const { settings } = await import("../src/formatting.ts");
-  const st = settings({}, true, false);
-  const text = "Another session sent a message:\n<message>\nhello\n</message>";
-  const cost = structuredClone(doc);
-  (cost.turns as Dict[])[i] = { ...turn(doc), text };
-  const flat = (r: { label: readonly { spans: readonly { text: string }[] }[] }) =>
-    r.label.flatMap((p) => p.spans.map((s) => s.text)).join("");
-  assert.doesNotMatch(flat(receiptRows(st, cost, null).turn!), /\n/);
-  const sdir = path.join(DIR, "..", "status");
-  const name = fs.readdirSync(sdir).find((f) => {
-    const d = JSON.parse(fs.readFileSync(path.join(sdir, f), "utf8"));
-    return d.open_turn;
-  })!;
-  const status = JSON.parse(fs.readFileSync(path.join(sdir, name), "utf8"));
-  status.open_turn = { ...status.open_turn, text };
-  const rows = bandRows(st, status, { home: "/", rate: null,
-    phase: "running" });
-  assert.doesNotMatch(flat(rows.turn), /\n/);
-});

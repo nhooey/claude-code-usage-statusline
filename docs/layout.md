@@ -59,9 +59,9 @@ tests/fixtures/figures/status/01-baseline@196.json --cols 160 --part footer
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed row…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-  🤖 Two figures, because one…          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-  🎮 📦repo 🌿golden-clean                       💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  🎤                            🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  🤖                                    🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  🎮                                             💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
 The first line is Claude Code's, drawn by Claude Code, so its pills stay
@@ -213,28 +213,27 @@ context and no ⛳ of its own.
 ### Labels
 
 - **💳**: see [The rows](#the-rows).
-- **🎤** and the prompt that opened the turn, a queued message or a
-  notification included, on one line. A turn opened by a subagent's report
-  reads `agent report:` and the report, and one opened by a message from
-  another session `agent message:` and the message, without the frame
-  Claude Code wraps around them.
-- **🤖** and the main thread's last reply, on one line. While messages
-  wait for its next turn (typed while it works, an agent's SendMessage,
-  a task notification), 📨 and how many come before the reply, as an
-  agent row's [📨](#inbox) does; the reply is cut first. The receipt's
-  🤖 row leaves it out.
-- **🎮** and where the session works: 📦 the project (in a linked git
+- **🎤**, the turn, its mark alone. A press on it scrolls to its prompt
+  ([Pressing a row](#pressing-a-row)), and the turn tags tie it to the
+  prompt (🔻🔖) and the receipt (🔺🔖).
+- **🤖**, the main thread. While messages wait for its next turn (typed
+  while it works, an agent's SendMessage, a task notification), 📨 and
+  how many, as an agent row's [📨](#inbox) does. A press on it scrolls to
+  its last reply. The receipt's 🤖 row leaves the 📨 out.
+- **🎮**, the session, its mark alone.
+- **💳** carries where the session works: 📦 the project (in a linked git
   worktree, the main repository, since 🌿 already names the worktree's
-  branch), 🌿 the branch, 📁 the current directory, 🔀 an open PR, 🎨 a
-  non-default output style. A dirty working tree turns 🌿 into 🍂 and adds
-  `✱`. 📁 draws the project's root as 📦 under its parent, so
-  `📁~/git/📦/mod` is the project's `mod/` folder.
+  branch), 🌿 the branch and 📁 the current directory. A dirty working
+  tree turns 🌿 into 🍂 and adds `✱`. 📁 draws the project's root as 📦
+  under its parent, so `📁~/git/📦/mod` is the project's `mod/` folder.
 
-A label shrinks first, down to 20 columns. It sheds its ranked parts whole
-before anything is cut, least important first: 🎨, then 🔀, then 📁 on the
-🎮 row. A part leaves whole rather than showing as `📁~/sr…`. What is left
-is cut with `…`. Which columns drop on a narrow terminal is worked out
-without a label's spill, so a long prompt never changes the grid.
+A label keeps at least 12 columns before columns drop: an agent row's head
+on the [panel](#the-agent-panel) and the first letters of its name. It
+sheds its ranked parts whole before anything is cut, least important
+first: 🎨, then 🔀, then 📁 on a label that has them. A part leaves whole
+rather than showing as `📁~/sr…`. What is left is cut with `…`. Which
+columns drop on a narrow terminal is worked out without a label's spill,
+so a long agent name never changes the grid.
 
 ### Fixed widths
 
@@ -257,7 +256,7 @@ screen is drawn in the same profile, so they still stack.
 
 ### Narrow terminals
 
-Past a label's 20 columns, whole columns drop, from every row at once, so
+Past a label's 12 columns, whole columns drop, from every row at once, so
 the grid never breaks. Least important first:
 
 ```
@@ -269,9 +268,9 @@ At 100 columns:
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed row report tw…  💰6.4   🧠-42k  -4٪  ⌛  5m          🔋 1.2٪   🪫 1.56٪
-  🤖 Two figures, because one of them i…  💰 35   🧠115k  11٪  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
-  🎮 📦repo 🌿golden-clean                💰 35                ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+  🎤                       💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
+  🤖                       💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+  🎮                       💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
 ```
 
 At 80:
@@ -279,9 +278,9 @@ At 80:
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed r…  💰6.4   🧠-42k  -4٪  ⌛  5m  🔋 1.2٪   🪫 1.56٪
-  🤖 Two figures, because o…  💰 35   🧠115k  11٪  ⌛9.3h  🔋 3.8٪   🪫 8.45٪
-  🎮 📦repo 🌿golden-clean    💰 35                ⌛9.3h  🔋 3.8٪   🪫 8.45٪
+  🎤                  💰6.4   🧠-42k  -4٪  ⌛  5m          🔋 1.2٪   🪫 1.56٪
+  🤖                  💰 35   🧠115k  11٪  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+  🎮                  💰 35                ⌛9.3h          🔋 3.8٪   🪫 8.45٪
 ```
 
 The 💳 row keeps its width, and Claude Code cuts it at the edge.
@@ -306,7 +305,7 @@ kept and not stamped (`--sticky agent`):
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🤖 Two figures, because one…                   💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  🤖                                             💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
 The rows are read again every 5 seconds while a turn runs, never more often
@@ -324,13 +323,13 @@ flags too.
 | Part | Values |
 |---|---|
 | scope | `account`, `turn`, `main` (the 🤖 row), `session`, `agent` |
-| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫; on agent rows also `kids`, `compact`, `shells`, `monitors`, `inbox`: 👶🏻 🤏 💻 📡 📨; on the 🤖 row `inbox`), `chat` (`prompt`, `reply`, `doing`), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `tag`: the row's name, an agent's kind, the turn's tag lines) |
+| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫; on agent rows also `kids`, `compact`, `shells`, `monitors`, `inbox`: 👶🏻 🤏 💻 📡 📨; on the 🤖 row `inbox`), `chat` (`doing`, on agent rows), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `tag`: the row's name, an agent's kind, the turn's tag lines) |
 
 ```
 --hide account              the 💳 row
 --hide '*.work'             💾 on every row
 --hide turn.time.eta        ⛳ on the 🎤 row only
---hide session.workspace    📦 🌿 📁 🔀 🎨 on the 🎮 row
+--hide account.workspace    📦 🌿 📁 on the 💳 row
 --hide '*.state.rate'       🛫 everywhere
 ```
 
@@ -338,17 +337,15 @@ A column hidden on every row it could show on is removed, and the others
 close up; hidden on some rows, it is left blank there. Keep the panel's
 flags the same as the mod's, so the columns stack.
 
-The mod ships hiding 🔋 (`*.plan.five_hour`), 🧠's share of
-the window (`*.context.share`), 🎯 (`*.tokens.cache`), and the 💳 row's 📦
-and 🌿 (`account.workspace.project`, `account.workspace.branch`), which 🎮
-draws under it:
+Hiding 🔋 (`*.plan.five_hour`), 🧠's share of the window
+(`*.context.share`) and 🎯 (`*.tokens.cache`):
 
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-                                                                       📁~/src/statusline-fixture/deep/tree    💳 🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed row report two durations…  🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
-  🤖 Two figures, because one of them is not a dur…          🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
-  🎮 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree      💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
+                                                📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  🎤                                                 🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
+  🤖                                                         🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
+  🎮                                                                  💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
 ```
 
 ## The receipt
@@ -356,36 +353,36 @@ draws under it:
 As a turn ends, the mod stamps its receipt as the turn's closing line, in
 place of Claude Code's `✻ <word> for <duration>`: the 🎤, 🤖 and 🎮 rows as
 they stood when it ended, frozen and dim, in their colours, then the turn's
-tag. At 160 columns, from a cost document, with 🤖 and the workspace from a
-status document (`node mod/tools/draw-figures.ts
+tag. At 160 columns, from a cost document, with 🤖 from a status document
+(`node mod/tools/draw-figures.ts
 tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part receipt
---workspace tests/fixtures/figures/status/18-agents@196.json --inset 2
+--status tests/fixtures/figures/status/18-agents@196.json --inset 2
 --right-edge 2 --plain`):
 
 ```
-  🎤 And this one?                               💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
-  🤖 Done.                                       💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
-  🎮 📦repo 🌿golden-clean                       💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
+  🎤                                             💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
+  🤖                                             💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
+  🎮                                             💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
 
 🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
 ```
 
 No fixture pairs a cost document with a status document of the same
-session, so here the 🤖 row and 📦 🌿 come from another one's.
+session, so here the 🤖 row comes from another one's.
 
 The rows are laid out at the width the mod's rows last drew at, two columns
 in and two short of the edge, so each column is under theirs, and every
 turn's receipt stays in the transcript to scroll back to. A blank row stands
 above the receipt, one before its tag line and one after it.
 
-- **🎤** is the turn just answered: its prompt, and what it cost, its
+- **🎤** is the turn just answered: what it cost, its
   context's growth, its tokens, how long it ran, the last ETA it reported
   (kept after the turn ends, to compare with when it did end) and its share
   of each window. The model and 🛫 are not drawn: they were the turn's
   state.
 - **🤖** is the main thread as the mod's 🤖 row last drew it.
-- **🎮** is the session as it stood when the turn ended, its label from the
-  mod's last status reading; it includes every row above it.
+- **🎮** is the session as it stood when the turn ended; it includes every
+  row above it.
 
 A receipt's 🎤 and 🤖 press to its own turn's prompt and last reply, however
 many turns have run since ([Pressing a row](#pressing-a-row)).
@@ -812,9 +809,9 @@ columns of the band's first row, so every row there ends five columns short
 of the edge (`RIGHT_EDGE`), at no inset (`--part band`):
 
 ```
-🎤 Why does the elapsed ro…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-🤖 Two figures, because on…          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-🎮 📦repo 🌿golden-clean                      💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+🎤                           🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+🤖                                   🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+🎮                                            💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
 The receipt is then stamped at no inset, and the panel's `right-edge`

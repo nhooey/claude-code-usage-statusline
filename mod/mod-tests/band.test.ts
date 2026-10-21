@@ -56,7 +56,7 @@ import {
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings } from '../src/formatting.ts'
-import { ROW_NAMES, bandLines, bandRows, workspaceOf } from '../src/band.ts'
+import { ROW_NAMES, bandLines, bandRows } from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
 } from '../src/receipt.ts'
@@ -405,7 +405,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
         .toEqual(JSON.parse(JSON.stringify(want)))
       const ui = await mountBand($, surface, BAND)
       // Between turns the band draws nothing: the receipt has the rows.
-      const lines = bandLines(BAND_ST, doc, COLS, HIDE, { home: HOME,
+      const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
         rate: null, phase: 'done', live: LIVE, inset: INSET })
       expect(lines).toEqual([])
       expect(await drawnRows(ui)).toEqual([])
@@ -417,7 +417,7 @@ test('a turn running draws the running phase', async ($, on) => {
   await start($, 'terminal', STATUS)
   const doc = lastDoc(w)
   const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
-  const lines = bandLines(BAND_ST, doc, COLS, HIDE, { home: HOME,
+  const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
     rate: null, phase: 'running', live: LIVE, inset: INSET })
   expect(await drawnRows(ui)).toEqual(expected(lines))
   // No blank top row, where Claude Code's `[-]` would stand alone.
@@ -431,7 +431,7 @@ test('where Claude Code draws true colour the band draws the true set',
     await start($, 'terminal', STATUS)
     const doc = lastDoc(w)
     const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
-    const lines = bandLines(BAND_ST, doc, COLS, HIDE, { home: HOME,
+    const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
       rate: null, phase: 'running', live: LIVE, inset: INSET })
     const rows = await drawnRows(ui)
     expect(rows).toEqual(expected(lines, true))
@@ -451,7 +451,7 @@ for (const tmux of [
     const st = settings(tmux, OPTIONS.markSpacing, OPTIONS.subscriptDecimals,
       OPTIONS.rightEdge)
     expect(st.truecolor).toBe(false)
-    const lines = bandLines(st, doc, COLS, HIDE, { home: HOME,
+    const lines = bandLines(st, doc, COLS, HIDE, {
       rate: null, phase: 'running', live: LIVE, inset: INSET })
     expect(await drawnRows(ui)).toEqual(expected(lines))
   })
@@ -1141,9 +1141,8 @@ async function receiptOf(w: World, now: number): Promise<Span[][]> {
     Number(doc.context_window)), CALIB, snap, prepared, now,
   Intl.DateTimeFormat().resolvedOptions().timeZone), ASKED_MS)
   const main = bandRows(BAND_ST, doc,
-    { home: HOME, rate: null, phase: 'done' }).main
-  return receiptLines(BAND_ST, fig, COLS, HIDE,
-    workspaceOf(doc, HOME), true, main, STAMPED, INSET)
+    { rate: null, phase: 'done' }).main
+  return receiptLines(BAND_ST, fig, COLS, HIDE, true, main, STAMPED, INSET)
 }
 
 /** The closing line of a turn that took `durationMs`, as drawn. */
@@ -1380,8 +1379,8 @@ test('a turn the context was compacted in gets its receipt and tag',
     await until(w, 5_000)
     expect(stamped(w)).toBe(true)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 🎤 is the turn, its prompt and tag, the compaction billed in it.
-    expect(text(want[0])).toContain(ASKED)
+    // 🎤 is the turn, by its tag, the compaction billed in it.
+    expect(text(want[0]).trimStart()).toMatch(/^🎤/)
     expect(text(want.at(-1)!)).toContain('p-resume'.slice(0, 8))
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
     await w.clock.advance(5_000)
@@ -1506,7 +1505,7 @@ async function drewAll($: any, w: World) {
     const now = Math.max(Number((doc.clock as Dict).now),
       w.clock.now() / 1000)
     return bandLines(st, { ...doc, clock: { ...(doc.clock as Dict), now } },
-      COLS, HIDE, { home: HOME, rate: null, phase, live: LIVE,
+      COLS, HIDE, { rate: null, phase, live: LIVE,
         inset: INSET })
   }
   // The turn has ended, but until its receipt is stamped, and a second
@@ -1587,7 +1586,7 @@ test('a project file found on the tick keeps the rows and stamps them, ' +
   const doc = lastDoc(w)
   const now = Math.max(Number((doc.clock as Dict).now), w.clock.now() / 1000)
   const kept = bandLines(BAND_ST, { ...doc, clock: { ...(doc.clock as Dict),
-    now } }, COLS, HIDE, { home: HOME, rate: null, phase: 'done',
+    now } }, COLS, HIDE, { rate: null, phase: 'done',
     live: { turn: 'always', agent: 'always', session: 'always' },
     inset: INSET })
   expect(kept.length).toBe(3)

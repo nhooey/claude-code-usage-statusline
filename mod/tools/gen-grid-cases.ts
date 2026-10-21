@@ -56,8 +56,8 @@ const COLS = [300, 240, 200, 160, 150, 125, 100, 80, 60, 40, 20, 11, 6];
 // metric on one row, label pieces, a column hidden on some rows only.
 const HIDES: readonly (readonly string[])[] = [
   [], ["account"], ["*.work"], ["turn.time.eta"],
-  ["session.workspace", "*.clock.time"], ["*.state.rate"],
-  ["*.plan", "main", "agent.chat"], ["session", "turn.chat", "agent.time"],
+  ["account.clock.date", "*.clock.time"], ["*.state.rate"],
+  ["*.plan", "main", "agent.chat"], ["session", "turn.name", "agent.time"],
   // 🧠's share on every row, which narrows its column, and on one row only.
   ["*.context.share", "*.plan.five_hour"], ["agent.context.share"],
 ];

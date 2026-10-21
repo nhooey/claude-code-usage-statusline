@@ -252,26 +252,17 @@ export function accountLabel(st: Settings, sess: number | null,
     piece("clock.time", "  " + E_TIME + " " + time, null, 3, true)];
 }
 
-/** 🎤 and the turn's prompt, or today's placeholder, dim, for none. */
-export function turnLabel(prompt: string): Piece[] {
-  return [piece("name.label", E_TURN + " "), prompt
-    ? piece("chat.prompt", prompt, "F_CHAT_B")
-    : piece("chat.prompt", "(no prompt yet)", "F_CHAT_B", 0, true)];
+/** 🎤, the turn's mark. */
+export function turnLabel(): Piece[] {
+  return [piece("name.label", E_TURN + " ")];
 }
 
-/** 🤖💬 and the main thread's reply, or today's placeholder for none;
- * `doing`, what it is doing, goes before the reply, and before that 📨
- * and `inbox`, the messages waiting for the main thread's next turn, as
- * an agent row's 📨 counts its own (agentLabel).  It never leaves the
- * label whole: the reply after it is cut first. */
-export function mainLabel(reply: string, doing: Piece | null = null,
-  inbox = 0): Piece[] {
+/** 🤖, and after it 📨 and `inbox`, the messages waiting for the main
+ * thread's next turn, as an agent row's 📨 counts its own (agentLabel). */
+export function mainLabel(inbox = 0): Piece[] {
   return [piece("name.label", E_BOT + " "),
     ...(inbox ? [{ path: "state.inbox",
-      spans: [...renderInbox(inbox), span(" ")], drop: 0 }] : []),
-    ...(doing ? [doing] : []),
-    reply ? piece("chat.reply", reply, "F_CHAT_B")
-      : piece("chat.reply", "(no reply yet)", "F_CHAT_B", 0, true)];
+      spans: [...renderInbox(inbox), span(" ")], drop: 0 }] : [])];
 }
 
 /** Where the session works.  Each part is "" where there is none. */
@@ -284,12 +275,18 @@ export type Workspace = {
   readonly style: string;
 };
 
-/** 🎮 session and its workspace: 📦 the project, 🌿 the branch (🍂 and ✱ on
- * a dirty tree, as today's line 3 draws one), 📁 the directory, 🔀 the PR and
- * 🎨 the output style, the last three leaving first, 🎨 before 🔀 before
- * 📁. */
-export function sessionLabel(ws: Workspace | null): Piece[] {
-  const out = [piece("name.label", E_SESSION + " ")];
+/** 🎮, the session's mark: where it works is the 💳 row's
+ * (workspacePieces). */
+export function sessionLabel(): Piece[] {
+  return [piece("name.label", E_SESSION + " ")];
+}
+
+/** Where the session works, under the path `workspace`: 📦 the project,
+ * 🌿 the branch (🍂 and ✱ on a dirty tree, as today's line 3 draws one),
+ * 📁 the directory, 🔀 the PR and 🎨 the output style, the last three
+ * leaving first, 🎨 before 🔀 before 📁; none for no workspace. */
+export function workspacePieces(ws: Workspace | null): Piece[] {
+  const out: Piece[] = [];
   if (!ws) return out;
   if (ws.project) {
     out.push(piece("workspace.project", E_PROJ + ws.project + " ", "F_PROJ"));

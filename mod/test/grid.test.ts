@@ -65,8 +65,8 @@ test("a hide path names itself and every path under it", () => {
   assert.ok(hidden(["account"], "account"));
   assert.ok(!hidden(["turn.time.eta"], "turn.time"));
   assert.ok(!hidden(["*.work"], "session"));
-  assert.ok(hidden(["t?rn.[a-c]*"], "turn.chat.prompt"));
-  assert.ok(!hidden(["t?rn.[!a-c]*"], "turn.chat.prompt"));
+  assert.ok(hidden(["t?rn.[a-c]*"], "turn.cost.cost"));
+  assert.ok(!hidden(["t?rn.[!a-c]*"], "turn.cost.cost"));
 });
 
 test("at a right edge of 0 a row ends at the terminal's edge", () => {

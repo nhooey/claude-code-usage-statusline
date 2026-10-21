@@ -12,14 +12,11 @@
 // on the band's fixed grid (band.ts), so the receipt's columns are the
 // band's and the panel's.
 //
-// Pure, as band.ts is: the 📦 🌿 on the 🎮 row are the caller's, since
-// cost_figures runs no git (the mod takes the band's), and the clock is
-// drawn in the TZ the edge sets.
+// Pure, as band.ts is: the clock is drawn in the TZ the edge sets.
 import { E_TURN_AHEAD, E_TURN_PAST } from "./spec.ts";
 import type { Settings } from "./formatting.ts";
 import { span } from "./spans.ts";
 import type { Span } from "./spans.ts";
-import { squash } from "./claude_records.ts";
 import type { Turn } from "./claude_records.ts";
 import { turnShares } from "./claude_calib.ts";
 import type { Accounting } from "./claude_calib.ts";
@@ -28,7 +25,6 @@ import { _readAccounting, decodeTurn } from "./claude_cost.ts";
 import {
   CELLS, cacheRate, hms, sessionLabel, turnHead, turnLabel, ymd,
 } from "./cells.ts";
-import type { Workspace } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
 import type { Row } from "./grid.ts";
 import {
@@ -235,7 +231,7 @@ function turnRow(st: Settings, t: Turn, acc: Accounting, win: number,
     ...shareCells(st, acc, sessPct, weekPct),
     diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),
   };
-  return { scope: "turn", label: turnLabel(squash(t.text)), cells };
+  return { scope: "turn", label: turnLabel(), cells };
 }
 
 /** sum() of floats, left to right, as the receipt's totals add up. */
@@ -247,10 +243,9 @@ function addUp(values: readonly number[]): number {
 
 /** 🎮: the session, `accounting.session`, its 🧩 🎯 every turn summed
  * as cost_totals_group sums them, ⌛ its age from `start_s` (decision 5),
- * and on the label the caller's 📦 🌿. */
+ * and its mark alone on the label, as the band's 🎮 is. */
 function sessionRow(st: Settings, turns: readonly Turn[], acc: Accounting,
-  now: number, sessPct: string, weekPct: string,
-  ws: Workspace | null): Row {
+  now: number, sessPct: string, weekPct: string): Row {
   const tokens = turns.map(turnTokens);
   const cells: Cells = {
     cost: CELLS.cost(st, acc.cost_usd),
@@ -265,18 +260,15 @@ function sessionRow(st: Settings, turns: readonly Turn[], acc: Accounting,
   if (acc.start_s !== null && acc.start_s !== undefined) {
     cells.clock = CELLS.clock(st, now - acc.start_s);
   }
-  // Only the project and the branch: the receipt is about what was spent
-  // where, not where the shell stood.
-  const where = ws ? { ...ws, dir: "", pr: "", style: "" } : null;
-  return { scope: "session", label: sessionLabel(where), cells };
+  return { scope: "session", label: sessionLabel(), cells };
 }
 
 /** The receipt's rows from a cost figures document: 🎤, or null with no
  * turn to bill, and 🎮.  They have no 📊 of their own (decided
  * 2026-10-19): the band has no 🎤 or 🎮 once a turn ends, so they read
  * apart by being dim. */
-export function receiptRows(st: Settings, all: Dict,
-  ws: Workspace | null): { turn: Row | null; session: Row } {
+export function receiptRows(st: Settings, all: Dict):
+  { turn: Row | null; session: Row } {
   const fig = billedFig(all);
   const now = (fig.clock as Dict).now as number;
   const turns = (fig.turns as Dict[]).map(decodeTurn);
@@ -289,7 +281,7 @@ export function receiptRows(st: Settings, all: Dict,
     turn: i < 0 ? null : turnRow(st, turns[i],
       _readAccounting((acc.turns as Dict[])[i]), win, now, sp, wp),
     session: sessionRow(st, turns, _readAccounting(acc.session as Dict),
-      now, sp, wp, ws),
+      now, sp, wp),
   };
 }
 
@@ -341,10 +333,10 @@ export function receiptHead(all: Dict, hide: readonly string[]): Span[] {
  * (`rows.tag.transcript`).  `dim` draws every span dim, as the stamped
  * receipt is drawn, its colours kept. */
 export function receiptLines(st: Settings, fig: Dict, cols: number,
-  hide: readonly string[], ws: Workspace | null, dim = false,
-  main: Row | null = null, stamped: readonly RowName[] = ROW_NAMES,
-  inset = 0, tags = true): Span[][] {
-  return receiptScoped(st, fig, cols, hide, ws, dim, main, stamped, inset,
+  hide: readonly string[], dim = false, main: Row | null = null,
+  stamped: readonly RowName[] = ROW_NAMES, inset = 0, tags = true):
+  Span[][] {
+  return receiptScoped(st, fig, cols, hide, dim, main, stamped, inset,
     tags).map((l) => l.spans);
 }
 
@@ -352,10 +344,10 @@ export function receiptLines(st: Settings, fig: Dict, cols: number,
  * `session` for 🎮, `blank` and `tag` for the tag line and the row above
  * it), so a caller can tell the rows apart. */
 export function receiptScoped(st: Settings, fig: Dict, cols: number,
-  hide: readonly string[], ws: Workspace | null, dim = false,
-  main: Row | null = null, stamped: readonly RowName[] = ROW_NAMES,
-  inset = 0, tags = true): { scope: string; spans: Span[] }[] {
-  const { turn, session } = receiptRows(st, fig, ws);
+  hide: readonly string[], dim = false, main: Row | null = null,
+  stamped: readonly RowName[] = ROW_NAMES, inset = 0, tags = true):
+  { scope: string; spans: Span[] }[] {
+  const { turn, session } = receiptRows(st, fig);
   // 🤖 between 🎤 and 🎮, as the band stacks them, where the caller has
   // the band's row for it (asked 2026-10-20).
   const kept = scopesOf(stamped);

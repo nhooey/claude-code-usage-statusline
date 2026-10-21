@@ -17,9 +17,9 @@ main thread and the session, one scope a row.
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed row…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-  🤖 Two figures, because one…          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-  🎮 📦repo 🌿golden-clean                       💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  🎤                            🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  🤖                                    🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  🎮                                             💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
 Read these three first:
@@ -140,10 +140,10 @@ table says so.
 
 | Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| 💳 | Account | the plan's own figures for the whole account, on every device | ✓ | | |
-| 🎤 | Turn | the turn, labelled with the prompt that opened it | ✓ | | ✓ |
-| 🤖 | Main thread | the main thread alone, labelled with its last reply | ✓ | | ✓ |
-| 🎮 | Session | the main thread and every agent, labelled with where it works | ✓ | | ✓ |
+| 💳 | Account | the plan's own figures for the whole account, on every device, and where the session works | ✓ | | |
+| 🎤 | Turn | the turn; a press scrolls to the prompt that opened it | ✓ | | ✓ |
+| 🤖 | Main thread | the main thread alone; a press scrolls to its last reply | ✓ | | ✓ |
+| 🎮 | Session | the main thread and every agent | ✓ | | ✓ |
 
 ### Chat and project
 

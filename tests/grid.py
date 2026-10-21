@@ -143,8 +143,8 @@ for pats, path, want in (
         (["account"], "account", True),
         (["turn.time.eta"], "turn.time", False),
         (["*.work"], "session", False),
-        (["t?rn.[a-c]*"], "turn.chat.prompt", True),
-        (["t?rn.[!a-c]*"], "turn.chat.prompt", False)):
+        (["t?rn.[a-c]*"], "turn.cost.cost", True),
+        (["t?rn.[!a-c]*"], "turn.cost.cost", False)):
     got = grid.hidden(pats, path)
     check(got == want, "hidden(%r, %r)" % (pats, path), got, want)
 

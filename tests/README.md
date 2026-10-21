@@ -406,7 +406,7 @@ from what is committed. To look at the rows in a terminal:
 ```sh
 node mod/tools/draw-figures.ts tests/fixtures/figures/status/<id>.json --cols 160
 node mod/tools/draw-figures.ts tests/fixtures/figures/cost/<id>.json \
-    --workspace tests/fixtures/figures/status/<id>.json
+    --status tests/fixtures/figures/status/<id>.json
 ```
 
 ## Assertion suites

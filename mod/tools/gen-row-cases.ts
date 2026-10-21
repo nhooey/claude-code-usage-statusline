@@ -21,15 +21,12 @@
 //             `rows`, each row's spans top to bottom, and `lines`, the
 //             same joined with their escape codes
 //   receipt   one case a line: a cost document drawn at `cols` under
-//             `hide`, its 📦 🌿 from the status document `workspace` (or
-//             none); its two lines as spans, `rows`, and joined,
-//             `lines`
+//             `hide`; its lines as spans, `rows`, and joined, `lines`
 //   start     one case a line: a status document's start line, as `spans`
 //             and as `line`
 //
-// HOME is "${HOME}", the placeholder the documents' paths are written
-// under, and each document's clock is drawn in its own `clock.tz`.  A span
-// is written as the grid's cases write one.
+// Each document's clock is drawn in its own `clock.tz`.  A span is written
+// as the grid's cases write one.
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync }
   from "node:fs";
 import { dirname, join as pathJoin } from "node:path";
@@ -39,7 +36,7 @@ import type { Settings } from "../src/formatting.ts";
 import { join } from "../src/spans.ts";
 import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
-import { bandLines, workspaceOf } from "../src/band.ts";
+import { bandLines } from "../src/band.ts";
 import type { Phase } from "../src/band.ts";
 import { receiptLines, startLine } from "../src/receipt.ts";
 import { PROFILES, spanJson } from "./gen-grid-cases.ts";
@@ -48,23 +45,18 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 export const OUT = pathJoin(HERE, "..", "..", "tests", "fixtures", "rows");
 export const FIGURES = pathJoin(HERE, "..", "..", "tests", "fixtures",
   "figures");
-
-export const HOME = "${HOME}";
 const COLS = [200, 155, 120, 80];
-// Each scope's figures hidden, a group on every row, label pieces, and a
+// Each scope's figures hidden, a group on every row, a label piece, and a
 // whole scope with a label part of another, at one width.
 const HIDES: readonly (readonly string[])[] = [
   ["*.work", "*.state.rate", "main.state.inbox"],
-  ["session.workspace", "*.clock.time"],
-  ["turn", "main.chat", "*.plan"],
+  ["session.tokens", "*.clock.time"],
+  ["turn", "main.name", "*.plan"],
 ];
 const HIDE_COLS = 155;
 // The 🛫 the mod would pass, at one width: the documents carry the counts
 // it works one out from, never the rate itself.
 const RATE = 220, RATE_COLS = 200;
-// The status document standing for the band's last, whose 📦 🌿 the receipt
-// draws.
-export const WORKSPACE = "status/01-baseline@196";
 
 /** The documents of `suite`, by id, deduplicated by text: [id, the ids
  * with the same text, the document]. */
@@ -100,21 +92,18 @@ export function inZone<T>(fig: Dict, f: () => T): T {
 
 export type BandCase = { doc: string; cols: number; hide: string[];
   phase: Phase; rate: number | null };
-export type ReceiptCase = { doc: string; cols: number; hide: string[];
-  workspace: string | null };
+export type ReceiptCase = { doc: string; cols: number; hide: string[] };
 
 /** The band case's rows. */
 export function drawBand(st: Settings, fig: Dict, c: BandCase): Span[][] {
   return inZone(fig, () => bandLines(st, fig, c.cols, c.hide,
-    { home: HOME, rate: c.rate, phase: c.phase }));
+    { rate: c.rate, phase: c.phase }));
 }
 
 /** The receipt case's lines. */
 export function drawReceipt(st: Settings, fig: Dict, c: ReceiptCase):
   Span[][] {
-  const ws = c.workspace === null ? null
-    : workspaceOf(document(c.workspace), HOME);
-  return inZone(fig, () => receiptLines(st, fig, c.cols, c.hide, ws));
+  return inZone(fig, () => receiptLines(st, fig, c.cols, c.hide));
 }
 
 /** The start line. */
@@ -140,12 +129,10 @@ function bandCases(doc: string): BandCase[] {
 
 /** Every receipt case of one document. */
 function receiptCases(doc: string): ReceiptCase[] {
-  const out: ReceiptCase[] = COLS.map((cols) =>
-    ({ doc, cols, hide: [], workspace: WORKSPACE }));
+  const out: ReceiptCase[] = COLS.map((cols) => ({ doc, cols, hide: [] }));
   for (const hide of HIDES) {
-    out.push({ doc, cols: HIDE_COLS, hide: [...hide], workspace: WORKSPACE });
+    out.push({ doc, cols: HIDE_COLS, hide: [...hide] });
   }
-  out.push({ doc, cols: HIDE_COLS, hide: [], workspace: null });
   return out;
 }
 

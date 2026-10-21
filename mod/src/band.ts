@@ -24,7 +24,7 @@ import type { Span } from "./spans.ts";
 import { pyLen, pyRstrip, pySlice } from "./py.ts";
 import { pyFloat } from "./sources.ts";
 import {
-  W_CACHE_READ, W_CACHE_WRITE, etaFinish, squash,
+  W_CACHE_READ, W_CACHE_WRITE, etaFinish,
 } from "./claude_records.ts";
 import type { Git, Payload, Transcript, Turn } from "./claude_records.ts";
 import type { Accounting } from "./claude_calib.ts";
@@ -37,7 +37,7 @@ import {
 import { decodeTurn } from "./claude_cost.ts";
 import {
   CELLS, accountLabel, cacheRate, hms, mainLabel, sessionLabel, turnLabel,
-  untilReset, ymd,
+  untilReset, workspacePieces, ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
 import { draw, hidden, layout } from "./grid.ts";
@@ -47,11 +47,10 @@ import type { Dict } from "./py.ts";
 /** Whether a turn is running, which draws all four rows, or done. */
 export type Phase = "running" | "done";
 
-/** What the band is drawn with besides the document: HOME, the main
- * thread's 🛫 (tokens a second, or null for no reading yet) and the
- * phase, which picks what the 🤖💬 label says. */
+/** What the band is drawn with besides the document: the main thread's
+ * 🛫 (tokens a second, or null for no reading yet) and the phase, which
+ * picks what 🤖's 🛫 column and 📨 say. */
 export type BandOpts = {
-  readonly home: string;
   readonly rate: number | null;
   readonly phase: Phase;
   /** Blank columns before each row's label (`indented`). */
@@ -281,10 +280,9 @@ function accountRow(st: Settings, fig: Dict, now: number): Row {
 }
 
 /** 🎤: the turn opened last, `open_turn`, with `accounting.open_turn`
- * (decision 8), so a fresh turn reads zeros; its prompt is the turn's
- * opener.  🧠 is how much the context grew in it, ⌛ how long it has run,
- * ⛳ the main thread's.  With no open turn, the prompt's placeholder and
- * the ⛳ alone. */
+ * (decision 8), so a fresh turn reads zeros.  🧠 is how much the context
+ * grew in it, ⌛ how long it has run, ⛳ the main thread's.  With no open
+ * turn, the model, 🛫 and ⛳ alone. */
 function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   sessPct: string, weekPct: string, opts: BandOpts): Row {
   const raw = fig.open_turn as Dict | null;
@@ -299,7 +297,7 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
       CELLS.rate(st, opts.phase === "running" ? opts.rate : null),
     eta: turnEta(st, tr, now),
   };
-  if (!raw) return { scope: "turn", label: turnLabel(""), cells };
+  if (!raw) return { scope: "turn", label: turnLabel(), cells };
   const t = decodeTurn(raw);
   const [up, down] = turnTokens(t);
   Object.assign(cells, {
@@ -316,10 +314,7 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
       diff: CELLS.diff(st, acc.lines_added, acc.lines_removed),
     });
   }
-  // The opener as the transcript holds it, newlines and all: a queued or
-  // pasted prompt, or a message from another session, runs to many lines.
-  // squash folds it to one, as the status line's 🎤 text is.
-  return { scope: "turn", label: turnLabel(squash(t.text)), cells };
+  return { scope: "turn", label: turnLabel(), cells };
 }
 
 /** 🔧 and how long the main thread's tool has run, in 🛫's column, padded
@@ -352,12 +347,11 @@ function doingCell(st: Settings, tr: Transcript, now: number):
  * `own_est` (decision 2); 🧠 its context, `ctx_est` marking an estimate;
  * 🧩 🎯 `own_tok_*` and `own_cache_pct`; ⌛ its age from `start_s` and the
  * split off `busy_s`, `tool_s` and `blocked_s`, as today's ⌛ row
- * partitions it; 💾 its own lines.  Running, the label says what it is
- * doing before its last reply; its 📨 counts the messages queued for its
- * next turn, `queued`. */
+ * partitions it; 💾 its own lines.  Running, 🛫's column says what it is
+ * doing, and its label's 📨 counts the messages queued for its next turn,
+ * `queued`. */
 function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   sessPct: string, weekPct: string, opts: BandOpts): Row {
-  const pay = decodePayload(fig.payload);
   const own = (fig.accounting as Dict).own as Accounting | null;
   const win = Math.trunc(fig.context_window as number);
   const cells: Cells = { eta: threadEta(st, tr, now) };
@@ -383,23 +377,22 @@ function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
     });
   }
   // Running, what it is doing and for how long in 🛫's column, as 🎤 draws
-  // a running tool's (asked 2026-10-19); the model's column left blank, so
-  // the reply ends where 🎤's model starts.
+  // a running tool's (asked 2026-10-19); the model's column left blank.
   const doing = opts.phase === "running" ? doingCell(st, tr, now) : null;
   Object.assign(cells, { model: [], rate: doing ?? [] });
   // 📨 only while it runs too: the receipt stamps this row once the turn
   // has ended, and a count frozen there would be gone by the next turn.
   const inbox = opts.phase === "running" ? tr.queued : 0;
-  return { scope: "main", label: mainLabel(tr.asst_text, null, inbox),
-    cells };
+  return { scope: "main", label: mainLabel(inbox), cells };
 }
 
 /** 🎮: the main thread and every agent, summed.  💰 💾 the accounting's
  * (decision 4); ⌛ the session's age from `accounting.session.start_s`
  * and 🤖 🔧 🚦 its agent-seconds (decision 5); 🧩 🎯 the transcript's
- * session totals; the workspace on the label. */
+ * session totals; its mark alone on the label, the workspace being the
+ * 💳 row's. */
 function sessionRow(st: Settings, fig: Dict, tr: Transcript, now: number,
-  sessPct: string, weekPct: string, home: string): Row {
+  sessPct: string, weekPct: string): Row {
   const acc = (fig.accounting as Dict).session as Accounting | null;
   const cells: Cells = {};
   if (tr.start_s) {
@@ -419,8 +412,7 @@ function sessionRow(st: Settings, fig: Dict, tr: Transcript, now: number,
       cells.clock = CELLS.clock(st, now - acc.start_s);
     }
   }
-  return { scope: "session", label: sessionLabel(workspaceOf(fig, home)),
-    cells };
+  return { scope: "session", label: sessionLabel(), cells };
 }
 
 /** The band's four rows from a status figures document. */
@@ -434,7 +426,7 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
     account: accountRow(st, fig, now),
     turn: turnRow(st, fig, tr, now, sp, wp, opts),
     main: mainRow(st, fig, tr, now, sp, wp, opts),
-    session: sessionRow(st, fig, tr, now, sp, wp, opts.home),
+    session: sessionRow(st, fig, tr, now, sp, wp),
   };
 }
 
@@ -473,9 +465,9 @@ function accountPieces(st: Settings, fig: Dict, hide: readonly string[],
   home: string): Piece[] {
   if (hidden(hide, "account")) return [];
   const now = (fig.clock as Dict).now as number;
-  // 📦 the project, 🌿 the branch and 📁 the directory first, as 🎮's
-  // label draws them (asked 2026-10-20), each hidden by its own path.
-  const shown: Piece[] = sessionLabel(workspaceOf(fig, home)).filter((p) =>
+  // 📦 the project, 🌿 the branch and 📁 the directory first (asked
+  // 2026-10-20), each hidden by its own path.
+  const shown: Piece[] = workspacePieces(workspaceOf(fig, home)).filter((p) =>
     ["workspace.project", "workspace.branch", "workspace.dir"]
       .includes(p.path) && !hidden(hide, "account." + p.path));
   let dropped = false;

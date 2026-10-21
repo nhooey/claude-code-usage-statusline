@@ -1350,8 +1350,11 @@ export const MODEL_FAMILIES = ["Opus", "Sonnet", "Haiku", "Fable", "Mythos"];
 // mod's rows there end at the terminal's edge, the panel's too under
 // --right-edge 0 (Settings.rightEdge, formatting.RIGHT_EDGE_COLS).
 export const RIGHT_EDGE = 5;
-// The fewest columns a row's label keeps before columns start to drop.
-export const LABEL_MIN = 20;
+// The fewest columns a row's label keeps before columns start to drop: an
+// agent row's head on the panel (spinner, kind and state marks and a
+// blank, 7) and the first 5 of its name, so two agents still read apart.
+// The band's labels are their marks, 🤖's with its 📨 count, 7 at most.
+export const LABEL_MIN = 12;
 // The panel's chrome before a row of the session's own, drawn by Claude
 // Code: two blanks, its pointer and one blank, "  ◯ ", measured with the
 // align-probe mod on 2026-10-19.  A nested row's is a guess: two more blanks
@@ -1386,9 +1389,7 @@ export const HIDE_GROUPS = {
   "state": ["model", "rate", "kids", "compact", "shells", "monitors", "inbox"],  // model, 🛫, and an
                                                                                  //  agent's 👶🏻 🤏 💻
                                                                                  //  📡 📨
-  "chat": ["prompt", "reply", "doing"],                 // the 🎤 row's prompt,
-                                                        //  the 🤖💬 row's reply,
-                                                        //  what a thread does
+  "chat": ["doing"],                                    // what an agent does
   "workspace": ["project", "branch", "dir", "pr", "style"],  // 📦 🌿 📁 🔀 🎨
   "clock": ["date", "time"],                            // 📅 🕐
   "name": ["label", "kind", "receipt", "tag"],          // the row's name, an

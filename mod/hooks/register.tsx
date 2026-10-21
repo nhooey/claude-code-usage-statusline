@@ -31,7 +31,7 @@ import { hexOf } from '../src/spans.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
 import { ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler,
-  footerTail, modeOfHint, workspaceOf }
+  footerTail, modeOfHint }
   from '../src/band.ts'
 import type { RowsLive } from '../src/band.ts'
 import {
@@ -454,19 +454,18 @@ async function stamp($: $, durationMs: number, prompt: string, turn: string,
     const published = doc ? Number(doc.context_window) || 0 : 0
     const fig = withEngineDuration(await costDoc($, where, got!.path,
       got!.turns, published), durationMs)
-    // 📦 🌿 from the band's last status document (decision 7).
-    const ws = doc ? workspaceOf(doc as Dict, where.home) : null
-    // 🤖 as the band drew it once the turn ended, from the same document.
+    // 🤖 as the band drew it once the turn ended, from the band's last
+    // status document.
     const st = await settingsOf($, o)
     const main = doc ? bandRows(st, doc as Dict,
-      { home: where.home, rate: null, phase: 'done' }).main : null
+      { rate: null, phase: 'done' }).main : null
     // Laid out as the band is, at its width, edge and inset, so the rows
     // stack on the band's: under the footer line, the band's rows are
     // hint-inset columns in, and so are the receipt's (asked 2026-10-20).
     // The rows whose rows.<row>.transcript is true, and the tag line
     // under rows.tag.transcript.
     const stamped = ROW_NAMES.filter((r) => o.rows[r].transcript)
-    const rows = receiptScoped(st, fig, bandCols || 80, o.hide, ws,
+    const rows = receiptScoped(st, fig, bandCols || 80, o.hide,
       true, main, stamped, insetOf(o), tagsShown(o))
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs),
@@ -638,7 +637,7 @@ async function bandNow($: $, isWorking: boolean, inset = 0):
   // At no indent, as the receipt's rows are (asked 2026-10-19).
   return bandScoped(await settingsOf($, o),
     at(doc as Dict, await read($, clockNow)), bandCols || 80, o.hide,
-    { home: await home($), rate: await read($, rate),
+    { rate: await read($, rate),
       phase: isWorking || await read($, held) ? 'running' : 'done',
       live: liveOf(o), inset })
 }

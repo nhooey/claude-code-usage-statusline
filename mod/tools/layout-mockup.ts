@@ -115,23 +115,18 @@ export function sample(st: Settings): Sample {
   const account: Row = { scope: "account", label: accountLabel(st, 15.0,
     87.0, durFmt(st, 6.7 * 60), durFmt(st, 1.8 * 86400), "2026-10-19",
     "13:06:02"), cells: {} };
-  const turn: Row = { scope: "turn",
-    label: turnLabel("Why is the build slow?"),
+  const turn: Row = { scope: "turn", label: turnLabel(),
   cells: cells(st, { model: ["claude-opus-5-5", "high"], cost: 0.21,
     ctx: ["+", 34_000, 3], tok: [28_000, 7_100], cache: 95,
     clock: TURN_START, eta: [TURN_START, 120], split: [240, 150, 60],
     five: 0.03, week: 0.05, diff: [12, 3], rate: 220 }) };
-  const main: Row = { scope: "main",
-    label: mainLabel(
-      "The test step takes 80٪ of the build: Jest runs serially"),
+  const main: Row = { scope: "main", label: mainLabel(),
   cells: cells(st, { cost: 92.0,
     ctx: [115_000, 1_000_000], tok: [2_100_000, 640_000], cache: 98,
     clock: SESSION_START, eta: [TURN_START, 120],
     split: [9 * 3600, 4 * 3600, 3 * 3600], five: 0.9, week: 2.1,
     diff: [3100, 180] }) };
-  const session: Row = { scope: "session", label: sessionLabel({
-    project: "app", branch: "main", dirty: false, dir: "~/src/app/web",
-    pr: "418", style: "Explanatory" }),
+  const session: Row = { scope: "session", label: sessionLabel(),
   cells: cells(st, { cost: 115.0, tok: [2_700_000, 841_000], cache: 98,
     clock: SESSION_START, split: [9 * 3600, 4 * 3600, 3 * 3600], five: 1.2,
     week: 3.8, diff: [3400, 214] }) };
@@ -166,11 +161,10 @@ export function sample(st: Settings): Sample {
   return { account, turn, main, session, receipt, agents };
 }
 
-/** The 🤖💬 row mid-turn: it says what the thread is doing, not its
- * reply. */
+/** The 🤖 row mid-turn: its 📨 counts two messages queued for its next
+ * turn. */
 export function runningMain(main: Row): Row {
-  return { ...main, label: [main.label[0],
-    piece("chat.doing", "Reading jest.config.js", "F_CHAT_B")] };
+  return { ...main, label: mainLabel(2) };
 }
 
 type Readouts = {

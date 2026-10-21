@@ -24,7 +24,7 @@ import { receiptLines, receiptTurn, startLine } from "../src/receipt.ts";
 import { decodeTurn } from "../src/claude_cost.ts";
 import { spanFrom, spanJson } from "../tools/gen-grid-cases.ts";
 import {
-  FIGURES, HOME, OUT, document, drawBand, drawReceipt, drawStart, generate,
+  FIGURES, OUT, document, drawBand, drawReceipt, drawStart, generate,
   inZone,
 } from "../tools/gen-row-cases.ts";
 import type { BandCase, ReceiptCase } from "../tools/gen-row-cases.ts";
@@ -73,7 +73,7 @@ for (const f of files) {
     });
     test(`${f} under ${profile}: receipt`, () => {
       for (const c of data.receipt) {
-        const where = JSON.stringify([c.doc, c.cols, c.hide, c.workspace]);
+        const where = JSON.stringify([c.doc, c.cols, c.hide]);
         const got = drawReceipt(st, document(c.doc), c);
         assert.equal(got.length, c.rows.length, where);
         got.forEach((r, i) => same(r, c.rows[i], c.lines[i], where));
@@ -103,7 +103,7 @@ test("the band's columns do not move with the phase or the figures", () => {
     const fig = document(id);
     for (const phase of ["running", "done"] as const) {
       const rows = inZone(fig, () => phaseRows(bandRows(st, fig,
-        { home: HOME, rate: null, phase }), phase));
+        { rate: null, phase }), phase));
       for (const r of rows) {
         // Every row is drawn on the same keys to the same right edge, so
         // each column starts where the others' do.
@@ -119,7 +119,7 @@ test("each row's live and transcript pick the band's rows and the receipt's",
     const st = settings({});
     const status = document("status/01-baseline@196");
     const cost = document("cost/09-agents@196");
-    const opts = { home: HOME, rate: null, phase: "done" as const };
+    const opts = { rate: null, phase: "done" as const };
     const main = inZone(status, () => bandRows(st, status, opts).main);
     const marks = (lines: Span[][]) => lines.map((l) =>
       Array.from(stripAnsi(join(l)))[0]);
@@ -145,7 +145,7 @@ test("each row's live and transcript pick the band's rows and the receipt's",
     ] as const) {
       const name = JSON.stringify([live, stamped]);
       const receipt = inZone(cost, () => receiptLines(st, cost, 196, [],
-        null, false, main, stamped));
+        false, main, stamped));
       // The rows, then a blank row and the 🔺🔖 tag line.
       assert.deepEqual(marks(receipt).slice(0, -2), stamp, name);
       assert.equal(marks(receipt).at(-2), " ", name);
@@ -158,7 +158,7 @@ test("each row's live and transcript pick the band's rows and the receipt's",
     }
     // The tag line, its blank row with it, left out without `tags`.
     const untagged = inZone(cost, () => receiptLines(st, cost, 196, [],
-      null, false, main, ["turn"], 0, false));
+      false, main, ["turn"], 0, false));
     assert.deepEqual(marks(untagged), ["🎤"]);
   });
 
@@ -168,9 +168,8 @@ test("name.tag hides both tag lines and the receipt's blank row", () => {
   const cost = document("cost/09-agents@196");
   assert.ok(startLine(status).length > 0);
   assert.deepEqual(startLine(status, ["name.tag"]), []);
-  const all = inZone(cost, () => receiptLines(st, cost, 196, [], null));
-  const less = inZone(cost, () => receiptLines(st, cost, 196, ["name.tag"],
-    null));
+  const all = inZone(cost, () => receiptLines(st, cost, 196, []));
+  const less = inZone(cost, () => receiptLines(st, cost, 196, ["name.tag"]));
   // The blank row and the 🔺🔖 line go; the rows stay.
   assert.deepEqual(less, all.slice(0, -2));
 });
@@ -219,7 +218,7 @@ test("rows inset under the footer line stack on the agent panel's columns", () =
         return visWidth(line.slice(0, i), st.widths);
       });
     for (const cols of [120, 160, 196]) {
-      const opts = { home: HOME, rate: null, phase: "running" as const };
+      const opts = { rate: null, phase: "running" as const };
       const [pcols, keys] = panelLayout(st, cols, hide);
       assert.deepEqual(keys, fixedKeys(st, cols, hide), String(cols));
       // The agent panel's row, `  ◯ ` chrome and all, at no indent.
@@ -324,7 +323,7 @@ test("the footer's tail ends on the 💳 account details where the band's rows e
 test("a hidden context.share leaves 🧠's size and drops its ٪", () => {
   const st = settings({});
   const fig = document("status/01-baseline@196");
-  const opts = { home: HOME, rate: null, phase: "running" as const };
+  const opts = { rate: null, phase: "running" as const };
   const ctx = (hide: string[]) => inZone(fig, () =>
     bandLines(st, fig, 196, hide, opts)).map((l) => join(l));
   const all = ctx([]);
@@ -359,7 +358,7 @@ test("📁 draws the project's root as 📦", () => {
 test("🎤's ⛳ is the turn's own report alone; 🤖's takes a live agent's", () => {
   const st = settings({});
   const fig = document("status/01-baseline@196");
-  const opts = { home: HOME, rate: null, phase: "running" as const };
+  const opts = { rate: null, phase: "running" as const };
   const now = ((fig.clock as Dict).now as number);
   const text = (spans: readonly Span[] | undefined) =>
     (spans ?? []).map((s) => s.text).join("");
@@ -380,7 +379,7 @@ test("⛳ stops at the turn's end, and a sign-off at zero is not drawn idle",
   () => {
     const st = settings({});
     const fig = document("status/01-baseline@196");
-    const opts = { home: HOME, rate: null, phase: "done" as const };
+    const opts = { rate: null, phase: "done" as const };
     const now = ((fig.clock as Dict).now as number);
     const text = (spans: readonly Span[] | undefined) =>
       (spans ?? []).map((s) => s.text).join("");
@@ -404,7 +403,7 @@ test("⛳ stops at the turn's end, and a sign-off at zero is not drawn idle",
 test("🎤 carries the model and 🛫, and a running tool's time in 🛫's column", () => {
   const st = settings({});
   const fig = document("status/01-baseline@196");
-  const opts = { home: HOME, rate: 1500, phase: "running" as const };
+  const opts = { rate: 1500, phase: "running" as const };
   const text = (spans: readonly Span[] | undefined) =>
     (spans ?? []).map((s) => s.text).join("");
   const rows = inZone(fig, () => bandRows(st, fig, opts));
