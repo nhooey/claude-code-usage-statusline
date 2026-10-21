@@ -97,6 +97,36 @@ its 🔻🔖 tag; it records the instance's `requestId` beside it, and an
    mod's own that Claude Code gives no click of its own: never a
    transcript row Claude Code expands on a click (an agent's message, a
    prompt), where a Button would take that click.
+
+   **Built 2026-10-21** (started before the user's live click on 🎤, as
+   they asked):
+   - 🎤 and 🤖 are `plain` Buttons with no hotkey in the band under the
+     footer line and in the receipt the closing line (`TurnDuration`)
+     draws; 🎮, 💳 and the tag line stay plain.  🎤 scrolls to its
+     turn's composer prompt, 🤖 to its turn's last reply block, each
+     `$.ui.scroll({ to: { requestId }, block: 'start' })`.
+   - 🤖's target: an `AssistantMessage` hook passes every block through
+     unchanged and notes its `requestId` the first time it is drawn,
+     from the main turn's `turn.start` until its receipt is stamped or
+     given up on; the last so noted is the turn's.  A block drawn again
+     (a scroll) or between turns (a reload drawing the transcript back)
+     moves nothing, so after a reload 🤖 of a turn before it has no
+     target.  The render envelope names no agent: a block of an agent's
+     transcript first drawn in the main view while a main turn runs
+     would be taken for the turn's.
+   - The receipt is filed with its rows' scopes and startKey of its
+     turn's prompt (taken at `turn.complete`), so an older turn's receipt
+     presses to that turn's prompt and reply; a receipt filed before this
+     (bare lines) draws with nothing pressable.
+   - A press with no target recorded (never drawn since the load, or
+     dropped past `starts-kept`) logs `press 🎤: no prompt drawn to scroll
+     to` or `press 🤖: no reply drawn to scroll to` once per row and turn;
+     a target recorded but gone answers `$.ui.scroll`'s own `deny`, logged
+     with the call.
+   - Mod tests press 🤖 in the band (the last block first drawn, not one
+     drawn again or before the turn), 🤖 with none (said once), and an
+     older turn's receipt (its own prompt and reply, while the band's 🎤
+     goes to the turn now running).
 3. **Docs.** `docs/layout.md` says which rows press and where to.
 
 Step 1 decides whether steps 2 and 3 go ahead as written.

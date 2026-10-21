@@ -344,21 +344,37 @@ export function receiptLines(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], ws: Workspace | null, dim = false,
   main: Row | null = null, stamped: readonly RowName[] = ROW_NAMES,
   inset = 0, tags = true): Span[][] {
+  return receiptScoped(st, fig, cols, hide, ws, dim, main, stamped, inset,
+    tags).map((l) => l.spans);
+}
+
+/** receiptLines, each line with its scope (`turn` for 🎤, `main` for 🤖,
+ * `session` for 🎮, `blank` and `tag` for the tag line and the row above
+ * it), so a caller can tell the rows apart. */
+export function receiptScoped(st: Settings, fig: Dict, cols: number,
+  hide: readonly string[], ws: Workspace | null, dim = false,
+  main: Row | null = null, stamped: readonly RowName[] = ROW_NAMES,
+  inset = 0, tags = true): { scope: string; spans: Span[] }[] {
   const { turn, session } = receiptRows(st, fig, ws);
   // 🤖 between 🎤 and 🎮, as the band stacks them, where the caller has
   // the band's row for it (asked 2026-10-20).
   const kept = scopesOf(stamped);
+  const rows = [turn, main, session].filter((r): r is Row =>
+    r !== null && kept.includes(r.scope) && !hidden(hide, r.scope));
   // `inset` columns in, led by as many blanks and that much narrower, so
   // they stack on the band's rows where those are drawn inset (asked
   // 2026-10-20); the tag line stays at no indent, under the prompt's.
-  const lines = drawRows(st, [turn, main, session].filter((r): r is Row =>
-    r !== null && kept.includes(r.scope)), cols - inset, hide)
-    .map((l) => inset ? [span(" ".repeat(inset)), ...l] : l);
+  const lines = drawRows(st, rows, cols - inset, hide)
+    .map((l, i) => ({ scope: rows[i].scope,
+      spans: inset ? [span(" ".repeat(inset)), ...l] : l }));
   // A blank row before the tag line (asked 2026-10-20): a space, since Ink
   // measures an empty Text as no row at all.
   const head = tags ? receiptHead(fig, hide) : [];
-  if (head.length) lines.push([span(" ")], head);
-  return dim ? lines.map(dimmed) : lines;
+  if (head.length) {
+    lines.push({ scope: "blank", spans: [span(" ")] },
+      { scope: "tag", spans: head });
+  }
+  return dim ? lines.map((l) => ({ ...l, spans: dimmed(l.spans) })) : lines;
 }
 
 /** `spans`, each drawn dim. */

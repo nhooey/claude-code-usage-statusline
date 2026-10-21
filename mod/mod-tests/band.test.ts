@@ -504,8 +504,8 @@ test('pressing 🎤 under the footer scrolls to the prompt the turn opened ' +
       surface: 'terminal', component: 'PromptHint', props: { isDraft: false,
         isWorking: true, hint: '-- INSERT --' } })
     const buttons = await hint.findAll({ type: 'Button' })
-    // 🎤 alone presses: not 🤖, 🎮 or 💳.
-    expect(buttons.length).toBe(1)
+    // 🎤 and 🤖 press: not 🎮 or 💳.
+    expect(buttons.length).toBe(2)
     const tree = await hint.drawn() as Drawn
     const pressed = (tree.children ?? []).find((c) =>
       typeof c !== 'string' && c.type === 'Button') as Drawn
@@ -534,6 +534,74 @@ test('pressing 🎤 with no prompt drawn says so and scrolls nowhere',
     const [button] = await hint.findAll({ type: 'Button' })
     await hint.press({ key: String(button.key) })
     expect(logOf(w)).toContain('press 🎤: no prompt drawn to scroll to')
+    expect(logOf(w)).not.toContain('$.ui.scroll')
+  })
+
+/** Presses the row of a drawing that is a Button whose text leads with
+ * `emoji`, past any inset blanks. */
+async function pressRow(ui: any, emoji: string) {
+  const tree = await ui.drawn() as Drawn
+  const button = (tree.children ?? []).find((c): c is Drawn =>
+    typeof c !== 'string' && c.type === 'Button' &&
+    (((c.children ?? [])[0] as Drawn).children ?? []).map((s) =>
+      ((s as Drawn).children ?? []).join('')).join('').trimStart()
+      .startsWith(emoji))
+  expect(button).toBeDefined()
+  await ui.press({ key: String(button!.props?.key) })
+}
+
+/** A composer prompt's row drawn, as its instance `requestId`. */
+async function drawPrompt($: any, text: string, requestId: string) {
+  await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'UserMessage', requestId, props: { text,
+      isExpanded: false, origin: { kind: 'composer' } } })
+}
+
+/** A reply block's row drawn, as its instance `requestId`. */
+async function drawReply($: any, requestId: string) {
+  return $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'AssistantMessage', requestId,
+    props: { text: 'Done.', isFirstOfReply: true } })
+}
+
+/** The footer line as drawn while a turn runs. */
+async function footer($: any) {
+  return $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'PromptHint', props: { isDraft: false, isWorking: true,
+      hint: '-- INSERT --' } })
+}
+
+test('pressing 🤖 under the footer scrolls to the reply block the turn ' +
+  'drew last, and logs the call', async ($, on) => {
+    const w = world(on)
+    await start($, 'terminal', STATUS)
+    // Drawn between turns: a reload's, no turn's last reply.
+    await drawReply($, 'reply-0')
+    await drawPrompt($, 'Go on.', 'prompt-1')
+    await $.turn.start({ text: 'Go on.', turnId: 't3' })
+    await settle()
+    const first = await drawReply($, 'reply-1')
+    await drawReply($, 'reply-2')
+    // A block drawn again (a scroll) is not the turn's last.
+    await first.redraw()
+    await pressRow(await footer($), spec.E_BOT)
+    expect(logOf(w)).toContain('press 🤖: $.ui.scroll({"to":{"requestId":' +
+      '"reply-2"},"block":"start"}) threw: no implementation for ui.scroll')
+  })
+
+test('pressing 🤖 with no reply drawn says so once and scrolls nowhere',
+  async ($, on) => {
+    const w = world(on)
+    await start($, 'terminal', STATUS)
+    await drawReply($, 'reply-0')
+    await drawPrompt($, 'Go on.', 'prompt-1')
+    await $.turn.start({ text: 'Go on.', turnId: 't3' })
+    await settle()
+    const hint = await footer($)
+    await pressRow(hint, spec.E_BOT)
+    await pressRow(hint, spec.E_BOT)
+    expect(logOf(w).split('press 🤖: no reply drawn to scroll to').length)
+      .toBe(2)
     expect(logOf(w)).not.toContain('$.ui.scroll')
   })
 
@@ -1084,6 +1152,53 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await w.clock.advance(5_000)
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
     expect(logOf(w)).not.toContain('no receipt')
+  })
+
+test('a receipt of an older turn presses to that turn\'s prompt and reply, ' +
+  'not the latest turn\'s', async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'AbovePrompt', props: BAND })
+    await drawPrompt($, ASKED, 'prompt-old')
+    grow(w, { message: { content: ASKED }, promptId: 'p-resume',
+      promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z', type: 'user',
+      userType: 'external' })
+    await $.turn.start({ text: ASKED, turnId: 't-resume' })
+    await settle()
+    await drawReply($, 'reply-old')
+    await $.turn.complete(COMPLETE)
+    await settle()
+    grow(w, ANSWER)
+    await until(w, 5_000)
+    expect(stamped(w)).toBe(true)
+    // A later turn opens, with a prompt and a reply of its own.
+    await drawPrompt($, 'Next.', 'prompt-new')
+    await $.turn.start({ text: 'Next.', turnId: 't-next' })
+    await settle()
+    await drawReply($, 'reply-new')
+    const receipt = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'TurnDuration',
+      props: { word: 'Worked', durationMs: ASKED_MS },
+      viewport: { columns: COLS, rows: 40 } })
+    // 🎤 and 🤖 press; 🎮 and the tag line do not.
+    expect((await receipt.findAll({ type: 'Button' })).length).toBe(2)
+    await pressRow(receipt, spec.E_TURN)
+    await pressRow(receipt, spec.E_BOT)
+    const scrolled = (id: string) => '$.ui.scroll({"to":{"requestId":"' +
+      id + '"},"block":"start"})'
+    expect(logOf(w)).toContain('press 🎤: ' + scrolled('prompt-old'))
+    expect(logOf(w)).toContain('press 🤖: ' + scrolled('reply-old'))
+    // The band's own go to the turn now running.
+    await pressRow(await footer($), spec.E_TURN)
+    expect(logOf(w)).toContain('press 🎤: ' + scrolled('prompt-new'))
+    expect(logOf(w)).not.toContain(scrolled('reply-new'))
+    // On past the band's hold, which the stamp's handler sleeps through.
+    await w.clock.advance(5_000)
+    await settle()
   })
 
 test('a turn a task notification follows still gets its receipt and tag',
