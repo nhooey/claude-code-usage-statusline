@@ -59,9 +59,9 @@ tests/fixtures/figures/status/01-baseline@196.json --cols 160 --part footer
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed row rep…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋1.2٪  🪫1.56٪
-  🤖 Two figures, because one of …          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋3.8٪  🪫8.45٪
-  🎮 📦repo 🌿golden-clean                           💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋3.8٪  🪫8.45٪
+  🎤 Why does the elapsed row…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  🤖 Two figures, because one…          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  🎮 📦repo 🌿golden-clean                       💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
 The first line is Claude Code's, drawn by Claude Code, so its pills stay
@@ -197,12 +197,16 @@ context and no ⛳ of its own.
   read by the same rule as each agent's (see [time](accounting.md#time)).
   The 🎤 and 🎮 rows sum agent-seconds, which can outrun the wall clock, so
   their gauges are proportions of themselves and need not add up to ⌛.
-- **🔋** and **🪫**, `🔋3.8٪  🪫8.45٪`: the scope's share of the 5-hour and
+- **🔋** and **🪫**, `🔋 3.8٪   🪫 8.45٪`: the scope's share of the 5-hour and
   the weekly window. These are estimates: the program prices the requests
   and divides by a calibrated dollars-per-percent figure (see
   [Accounting](accounting.md)). `?` means no calibration exists yet; with no
-  plan reading at all the cells are blank. 🪫 takes one decimal more. A full
-  window draws `💯٪`.
+  plan reading at all the cells are blank. 🪫 takes one decimal more. Each
+  holds its point in one column, two integer columns before it and room for
+  every decimal after, so rows stack units over units: `🔋  .38٪`,
+  `🔋 1.2٪ `, `🔋12٪   `, and `🪫  .380٪`, `🪫 1.23٪ `, `🪫12.3٪  `. A whole
+  figure puts its ٪ in the point's column, and so does a full window,
+  `🔋💯٪   `; a `?` stands in the units column.
 - **💾**, `💾 +3.4k - 214`: lines added and removed by the scope's own edits
   and writes. Blank where none were: none changed, or none counted.
 
@@ -262,9 +266,9 @@ At 100 columns:
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed ro…  💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋1.2٪  🪫1.56٪
-  🤖 Two figures, because on…  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋3.8٪  🪫8.45٪
-  🎮 📦repo 🌿golden-clean     💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋3.8٪  🪫8.45٪
+  🎤 Why does the elapsed row report tw…  💰6.4   🧠-42k  -4٪  ⌛  5m          🔋 1.2٪   🪫 1.56٪
+  🤖 Two figures, because one of them i…  💰 35   🧠115k  11٪  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+  🎮 📦repo 🌿golden-clean                💰 35                ⌛9.3h          🔋 3.8٪   🪫 8.45٪
 ```
 
 At 80:
@@ -272,9 +276,9 @@ At 80:
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed row r…  💰6.4   🧠-42k  -4٪  ⌛  5m  🔋1.2٪  🪫1.56٪
-  🤖 Two figures, because one o…  💰 35   🧠115k  11٪  ⌛9.3h  🔋3.8٪  🪫8.45٪
-  🎮 📦repo 🌿golden-clean        💰 35                ⌛9.3h  🔋3.8٪  🪫8.45٪
+  🎤 Why does the elapsed r…  💰6.4   🧠-42k  -4٪  ⌛  5m  🔋 1.2٪   🪫 1.56٪
+  🤖 Two figures, because o…  💰 35   🧠115k  11٪  ⌛9.3h  🔋 3.8٪   🪫 8.45٪
+  🎮 📦repo 🌿golden-clean    💰 35                ⌛9.3h  🔋 3.8٪   🪫 8.45٪
 ```
 
 The 💳 row keeps its width, and Claude Code cuts it at the edge.
@@ -299,7 +303,7 @@ kept and not stamped (`--sticky agent`):
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🤖 Two figures, because one of …                   💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋3.8٪  🪫8.45٪
+  🤖 Two figures, because one…                   💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
 The rows are read again every 5 seconds while a turn runs, never more often
@@ -339,9 +343,9 @@ draws under it:
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                                                        📁~/src/statusline-fixture/deep/tree    💳 🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤 Why does the elapsed row report two durations w…  🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫1.56٪
-  🤖 Two figures, because one of them is not a durat…          🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫8.45٪
-  🎮 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree        💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫8.45٪
+  🎤 Why does the elapsed row report two durations…  🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
+  🤖 Two figures, because one of them is not a dur…          🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
+  🎮 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree      💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
 ```
 
 ## The receipt
@@ -356,9 +360,9 @@ tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part receipt
 --right-edge 2 --plain`):
 
 ```
-  🎤 And this one?                                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋.03٪  🪫.043٪
-  🤖 Done.                                           💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋.01٪  🪫.012٪
-  🎮 📦repo 🌿golden-clean                           💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋.04٪  🪫.059٪
+  🎤 And this one?                               💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
+  🤖 Done.                                       💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
+  🎮 📦repo 🌿golden-clean                       💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
 
 🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
 ```
@@ -418,17 +422,17 @@ panel. At 160 columns (`python3 tools/draw-panel.py 01-mixed.json 160
 started, a shell and a teammate:
 
 ```
-✳🔍🟢 Marigold  Running the s…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋.02٪  🪫.022٪  💾 +  9  -  4
-✳🔩🟢 Bluebell                  🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.01٪  🪫.016٪
-✢📐🟢 Thistle                   🤖O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋.01٪  🪫.011٪
-✢🎩🟢 Clover                    🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-🔍⚫ Daisy                      🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋.02٪  🪫.022٪
-🔩⚫ Fern                       🤖O⁵🏃  ❌  32m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-🔩⚫ Kale                       🤖O⁵🏃  🛑  23m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-🔍⚫ Elm                        🤖O⁵🏃  💥  18m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 50s         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-👥🟡 Quince                     🤖O⁵🏃  🥚  30s
-🐚🟢 sleep 300 && make test                                                                 ⌛  2m
-✢👥🟢 Willow                    🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.00٪  🪫.000٪
+✳🔍🟢 Marigold  Running t…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+✳🔩🟢 Bluebell              🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
+✢📐🟢 Thistle               🤖O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+✢🎩🟢 Clover                🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🔍⚫ Daisy                  🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .02٪  🪫  .022٪
+🔩⚫ Fern                   🤖O⁵🏃  ❌  32m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🔩⚫ Kale                   🤖O⁵🏃  🛑  23m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🔍⚫ Elm                    🤖O⁵🏃  💥  18m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 50s         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+👥🟡 Quince                 🤖O⁵🏃  🥚  30s
+🐚🟢 sleep 300 && make test                                                             ⌛  2m
+✢👥🟢 Willow                🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
 ```
 
 Claude Code draws its panel's chrome before each row, `  ◯ ` at the top
@@ -557,14 +561,14 @@ own, a worktree agent and finished ones (`python3 tools/draw-panel.py
 03-tree.json 160 --right-edge 2`):
 
 ```
-✳🎩🟢 👶🏻2 🤏2     Trunk       🤖O⁵🏃  🚦  23m  💰0.2   🧠 32k  16٪  🧩▴ 33k ▾2.4k  🎯91٪  ⌛ 33m         🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋.04٪  🪫.054٪
-✢🔍🟢           📨1 Twig      🤖O⁵🏃  🔧  50s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-✢🔩🟢 👶🏻1     📨2 Thorn     🤖O⁵🏃  🚦  22m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋.01٪  🪫.011٪
-✢🔩🟢 Tendril  🌿golden-d…  🤖O⁵🏃  🚦  20m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 22m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋.01٪  🪫.011٪
-✢🔍🟢               Tip   🤖O⁵🏃  🤖  10s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 20m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-🎩⚫               Gourd        🤖O⁵🏃  ✅ 1.1h  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-🔍⚫               Garlic       🤖O⁵🏃  ✅ 1.1h  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛2.5m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋.01٪  🪫.011٪
-✢🔍🟢               Moss        🤖O⁵🏃  🔧 6.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛8.3m         🤖⠆⠀ 🔧⠶⠆ 🚦⠀⠀  🔋.01٪  🪫.011٪
+✳🎩🟢 👶🏻2 Trunk           🤖O⁵🏃  🚦  23m  💰0.2   🧠 32k  16٪  🧩▴ 33k ▾2.4k  🎯91٪  ⌛ 33m         🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋  .04٪  🪫  .054٪
+✢🔍🟢       Twig          🤖O⁵🏃  🔧  50s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+✢🔩🟢 👶🏻1 Thorn         🤖O⁵🏃  🚦  22m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+✢🔩🟢 👶🏻1 Tendril  …  🤖O⁵🏃  🚦  20m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 22m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+✢🔍🟢       Tip       🤖O⁵🏃  🤖  10s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 20m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🎩⚫       Gourd            🤖O⁵🏃  ✅ 1.1h  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🔍⚫       Garlic           🤖O⁵🏃  ✅ 1.1h  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛2.5m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+✢🔍🟢       Moss            🤖O⁵🏃  🔧 6.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛8.3m         🤖⠆⠀ 🔧⠶⠆ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 ```
 
 An agent spawned by another agent is drawn by the panel under its parent,
@@ -805,9 +809,9 @@ columns of the band's first row, so every row there ends five columns short
 of the edge (`RIGHT_EDGE`), at no inset (`--part band`):
 
 ```
-🎤 Why does the elapsed row re…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋1.2٪  🪫1.56٪
-🤖 Two figures, because one of…          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋3.8٪  🪫8.45٪
-🎮 📦repo 🌿golden-clean                          💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋3.8٪  🪫8.45٪
+🎤 Why does the elapsed ro…  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+🤖 Two figures, because on…          🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+🎮 📦repo 🌿golden-clean                      💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
 The receipt is then stamped at no inset, and the panel's `right-edge`

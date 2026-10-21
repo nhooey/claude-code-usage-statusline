@@ -24,12 +24,12 @@ import {
   E_MODE_AGENTS, E_MODE_API_ERROR, E_MODE_DONE, E_MODE_ETA, E_MODE_FAILED,
   E_MODE_KILLED, E_MODE_MONITOR, E_MODE_QUEUED, E_MODE_SHELL, E_PCT,
   E_PHASE_END, E_PHASE_PAUSE, E_PHASE_RUN, E_RATE, E_ROW_AGENTS,
-  E_ROW_COMPACT, E_SESS, E_SPIN, E_TOOL, E_WAIT, E_WEEK, E_WORK, GAUGE_W, LIM_FIG_W,
+  E_ROW_COMPACT, E_SESS, E_SPIN, E_TOOL, E_WAIT, E_WEEK, E_WORK, GAUGE_W,
   MAG_DUR_S, MAG_RATE, MAG_SHARE_AGENT, MAG_TOK, QUIET_S, QUIET_WARN_S,
   E_CACHE, E_DIFF, CHROME_DEPTH, GRID_CELLS, LABEL_MIN,
 } from "./spec.ts";
 import {
-  cacheColor, durFmt, fitCols, humanize, limitPct, magDim, padVal,
+  cacheColor, decAlign, durFmt, fitCols, humanize, limitPct, magDim, padVal,
   seg, visWidth,
 } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -59,8 +59,12 @@ import type { Piece, Row } from "./grid.ts";
 export const A_STATE_W = 2, A_CLOCK_W = 6, A_RATE_W = 7, A_TICK_S = 5.0;
 // 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 export const A_SPLIT_W = 3 * (2 + GAUGE_W) + 2;
-export const A_LIMIT_W = 2 + LIM_FIG_W;
-// 🪫 one column wider than 🔋, for the decimal limitPct adds at digits=4.
+// 🔋 and 🪫 hold the share's point in one column (renderAgentLimit):
+// LIMIT_IP integer columns, the point, limitPct's widest fraction (two at
+// digits=3, three at 4) and ٪, after the two-column mark.  Below 100 the
+// integer part is never wider than two, 💯 standing in from 99.5.
+export const LIMIT_IP = 2;
+export const A_LIMIT_W = 2 + LIMIT_IP + 1 + 2 + 1;
 export const A_LIMIT_WEEK_W = A_LIMIT_W + 1;
 // ⛳ and five for the figure: durFmt's widest is four, and an overrun
 // spends one more on its "+".
@@ -190,14 +194,18 @@ export function renderAgentLimit(st: Settings, emoji: string, pctS: string,
   digits = 3): Span[] {
   if (!pctS || pyFloat(pctS) === null || !billed) return [];
   const style = ink(colour, dim);
-  const w = LIM_FIG_W + digits - 3;
+  const fp = digits - 1;
+  // The point holds one column on every row (see decAlign); 💯 takes the
+  // integer columns and its ٪ the point's, and "?" the units column.
   let fig: Span;
   if (share === null || share === undefined) {
-    fig = span(padVal(st, w, "?"), "F_CRM", true);
+    fig = span(padVal(st, LIMIT_IP, "?") + " ".repeat(fp + 2), "F_CRM", true);
   } else if (share >= 99.5) {
-    fig = paint(style, padVal(st, w, E_HUNDRED + E_PCT));
+    fig = paint(style, padVal(st, LIMIT_IP, E_HUNDRED)
+      + padVal(st, fp + 2, E_PCT, true));
   } else {
-    fig = paint(style, padVal(st, w, limitPct(st, share, digits) + E_PCT));
+    fig = paint(style,
+      decAlign(st, limitPct(st, share, digits), LIMIT_IP, fp, E_PCT));
   }
   return [span(emoji), fig];
 }

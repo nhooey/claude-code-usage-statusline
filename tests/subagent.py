@@ -812,7 +812,6 @@ def run(tmp):
     rc, rows = render(sl, pay)
     check("exit 0, one row per task", (rc, sorted(rows)),
           (0, ["a1", "a2", "bash-1"]))
-    pct = lambda v: sl.limit_pct(v) + sl.E_PCT
     right = "  ".join((
         "\U0001F916O\u2075\U0001F3C3",  # model and effort, before 💰, open it
         sl.seg(sl.vis_width(sl.S_COST) + 4,
@@ -829,9 +828,10 @@ def run(tmp):
         "\u231B1.2h " + " " * sr.grid.cell_width("A_ETA_W")
         + " \U0001F916\u2836\u2836 "
         "\U0001F527\u2800\u2800 \U0001F6A6\u2800\u2800",
-        "\U0001F50B" + sl.pad_val(4, pct(want)),
-        # 🪫 a column wider, for limit_pct's fourth digit.
-        "\U0001FAAB" + sl.pad_val(5, sl.limit_pct(want / 10.0, 4) + sl.E_PCT),
+        # Each share's point in one column: two integer columns, then
+        # room for 🔋's two decimals and 🪫's three.
+        "\U0001F50B" + sl.dec_align(sl.limit_pct(want), 2, 2, sl.E_PCT),
+        "\U0001FAAB" + sl.dec_align(sl.limit_pct(want / 10.0, 4), 2, 3, sl.E_PCT),
         unpainted(sl.render_diff("12", "4"))))
     # The spinner's first frame, for a transcript with no text or tool call
     # in it; then 🟢 running, and the name.  The Doing field is the grid's

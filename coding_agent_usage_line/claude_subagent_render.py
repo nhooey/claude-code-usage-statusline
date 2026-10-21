@@ -23,8 +23,12 @@ from .spec import CHROME_DEPTH, GRID_CELLS, LABEL_MIN
 A_STATE_W, A_CLOCK_W, A_RATE_W, A_TICK_S = 2, 6, 7, 5.0
 # 🤖 🔧 🚦, each two columns of mark and GAUGE_W of gauge, one space apart.
 A_SPLIT_W = 3 * (2 + GAUGE_W) + 2
-A_LIMIT_W = 2 + LIM_FIG_W
-# 🪫 one column wider than 🔋, for the decimal limit_pct adds at digits=4.
+# 🔋 and 🪫 hold the share's point in one column (render_agent_limit):
+# LIMIT_IP integer columns, the point, limit_pct's widest fraction (two at
+# digits=3, three at 4) and ٪, after the two-column mark.  Below 100 the
+# integer part is never wider than two, 💯 standing in from 99.5.
+LIMIT_IP = 2
+A_LIMIT_W = 2 + LIMIT_IP + 1 + 2 + 1
 A_LIMIT_WEEK_W = A_LIMIT_W + 1
 # ⛳ and five for the figure: dur_fmt's widest is four, and an overrun
 # spends one more on its "+".  The cell's whole width, ⛳ measured on this
@@ -62,10 +66,17 @@ def render_agent_limit(emoji, pct_s, share, colour, billed=True, dim=False, digi
     F_* constant, as render_limit's does."""
     if not pct_s or fmt._pct_num(pct_s) is None or not billed: return []
     style = ink(colour, dim)
-    w = LIM_FIG_W + digits - 3
-    if share is None: fig = Span(pad_val(w, "?"), "F_CRM", True)
-    elif share >= 99.5: fig = paint(style, pad_val(w, E_HUNDRED + E_PCT))
-    else: fig = paint(style, pad_val(w, limit_pct(share, digits) + E_PCT))
+    fp = digits - 1
+    # The point holds one column on every row (see dec_align), so 🔋 "1.2٪"
+    # stacks its units over 🔋 "12٪" and ".38٪" its tenths under 1.2's.  💯
+    # takes the integer columns and its ٪ the point's, as a whole figure's
+    # does; "?" stands in the units column with nothing after it.
+    if share is None:
+        fig = Span(pad_val(LIMIT_IP, "?") + " " * (fp + 2), "F_CRM", True)
+    elif share >= 99.5:
+        fig = paint(style, pad_val(LIMIT_IP, E_HUNDRED) + pad_val(fp + 2, E_PCT, left=True))
+    else:
+        fig = paint(style, dec_align(limit_pct(share, digits), LIMIT_IP, fp, E_PCT))
     return [Span(emoji), fig]
 
 def render_kind(agent_type, task_kind): return KIND_MARK.get(agent_type or task_kind, E_ROW_AGENTS)
