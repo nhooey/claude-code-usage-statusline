@@ -1263,6 +1263,48 @@ test('a task notification written before turn.complete does not take the receipt
     expect(logOf(w)).not.toContain('no receipt')
   })
 
+test('a notification written just before the prompt takes neither its tag nor its receipt',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'AbovePrompt', props: BAND })
+    // A task notification queued while idle, written with no turnPosition
+    // before the prompt that opens the turn, which a read sees first (seen
+    // live 2026-10-21, 1f2a3772 then abfeacea #366).
+    grow(w, { message: { content: '<task-notification>\n' +
+      '<task-id>a1</task-id>\n<status>completed</status>\n' +
+      '</task-notification>' }, origin: { kind: 'task-notification' },
+    promptId: 'p-notice', promptSource: 'system',
+    timestamp: '2026-08-16T02:19:58Z', type: 'user', userType: 'external' })
+    await $.turn.start({ text: ASKED, turnId: 't-resume' })
+    await settle()
+    expect((lastDoc(w).transcript as Dict).prompt_id).toBe('p-notice')
+    grow(w, { message: { content: ASKED }, promptId: 'p-resume',
+      promptSource: 'typed', timestamp: '2026-08-16T02:20:00Z',
+      turnPosition: { promptIndex: 278, turnIndex: 366 }, type: 'user',
+      userType: 'external' })
+    await w.clock.advance(10_000)
+    await settle()
+    expect((lastDoc(w).transcript as Dict).prompt_id).toBe('p-resume')
+    const typed = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'UserMessage',
+      props: { text: ASKED, isExpanded: false, origin: { kind: 'composer' } } })
+    expect((await tagDrawn(typed)).text).toContain('#366')
+    grow(w, ANSWER)
+    await $.turn.complete(COMPLETE)
+    await settle()
+    await until(w, 5_000)
+    expect(stamped(w)).toBe(true)
+    const want = await receiptOf(w, w.clock.now() / 1000)
+    expect(text(want.at(-1)!)).toContain('p-resume'.slice(0, 8))
+    await w.clock.advance(5_000)
+    expect(logOf(w)).not.toContain('no receipt')
+  })
+
 test('a turn the context was compacted in gets its receipt and tag',
   async ($, on) => {
     const w = world(on)

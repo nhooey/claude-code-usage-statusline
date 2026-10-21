@@ -164,7 +164,8 @@ async function slow($: $, ms: number): Promise<void> {
 // The prompt a turn opened with, until the transcript holds its record:
 // its text, which the start line is filed under, and the tag that stood
 // before it, which the new one must differ from.
-let pending: { text: string; before: unknown } | null = null
+let pending: { text: string; before: unknown; filed?: string } | null =
+  null
 // The promptId the running turn opened with, once a document showed its
 // record (fileStart); "" until then.  The receipt bills this turn: read
 // after turn.complete instead, the newest prompt can be one written as the
@@ -224,16 +225,29 @@ async function refresh($: $): Promise<void> {
 }
 
 /** The start line, once a document shows the pending prompt's record:
- * filed under the prompt's text for its UserMessage to find. */
+ * filed under the prompt's text for its UserMessage to find.  A record
+ * with no turn index is filed and the prompt kept pending, so a later
+ * record that has one files over it: a task notification queued while
+ * idle is written just before the prompt that opens the turn, with no
+ * turnPosition of its own, and the turn bills the prompt (seen live
+ * 2026-10-21: the tag read `1f2a3772` with no #, and the receipt waited
+ * on that id while the turn billed `abfeacea #366`). */
 async function fileStart($: $, doc: Dict): Promise<void> {
   const tr = doc.transcript as Dict | undefined
   if (!pending || !tr?.prompt_id || tr.prompt_id === pending.before) return
-  if (typeof tr.prompt_id === 'string') opened = tr.prompt_id
+  if (typeof tr.prompt_id !== 'string' || tr.prompt_id === pending.filed) {
+    return
+  }
+  opened = tr.prompt_id
   // Filed whether or not the tag lines are drawn: the UserMessage that
   // draws it asks the options (tagsShown), so a change shows or hides it.
   const spans = startLine(doc)
   const text = pending.text
-  pending = null
+  if (tr.turn_index === null || tr.turn_index === undefined) {
+    pending = { ...pending, filed: tr.prompt_id }
+  } else {
+    pending = null
+  }
   if (spans.length) await remember($, 'starts', startKey(text), spans)
 }
 
