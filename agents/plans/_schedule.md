@@ -12,6 +12,9 @@ files they both change. Written 2026-10-20 from:
   `CK3` (added 2026-10-20); every node is now done (2026-10-21).
 - [Colours on the 256-colour palette](_implemented/palette-256.md), steps 1–2: `PL1`,
   `PL2` (added 2026-10-20).
+- [Row placement](row-placement.md), steps 1–8: `RP1` … `RP8` (added
+  2026-10-21; waiting for the user's approval of the plan before any
+  code).
 - Work in flight outside the plans: `CA`, the calibration cache keyed by
   account id (asked 2026-10-20, Blocked.1.A).
 
@@ -55,6 +58,14 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CK3` | **Done 2026-10-21.** Docs for the pressable rows | `CK2` | none | `docs/layout.md` |
 | `PL1` | **Done 2026-10-20.** Every default colour snapped to a 256-palette entry, reviewed by eye; gen-spec's check | none | `RT9` | `spec/layout.jsonc`, `tools/gen-spec.py`, `spec.{py,ts}`, every colour fixture and golden |
 | `PL2` | **Done 2026-10-20.** The doc note on themes and `CLAUDE_CODE_TMUX_TRUECOLOR` | `PL1` | none | `docs/` |
+| `RP1` | The trial above the prompt: 🎤 and 🤖 pressable in the band, the widths and `hasSurvey` logged, tried live | the plan's approval | none | `mod/hooks/register.tsx` (`AbovePrompt`), `mod/mod-tests/band.test.ts` |
+| `RP2` | Placement per row: `rows.*.place`, `live-place` retired, `right-edge` derived from the places, in both ports | `RP1` (and the user's live report) | none | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `tools/gen-spec.py`, `options.py`, `mod/src/config.ts`, `register.tsx`, `band.ts` (`bandScoped`), `draw-figures.ts`, config cases |
+| `RP3` | One grid: the rows above indented `hint-inset`, the receipt always at it | `RP2` | none | `register.tsx`, `mod/mod-tests/band.test.ts` |
+| `RP4` | The labels without the prompt, the reply and 🎮's workspace | the plan's approval | none | `band.ts` (`turnRow`, `mainRow`, `sessionRow`), `receipt.ts`, row cases |
+| `RP5` | The 💳 row: a row by default, 🔀 🎨 on it, its order and shedding | `RP2` | `RP4` | `band.ts` (`accountPieces`, `accountLine`), `mod/defaults/config.jsonc`, row cases, fixtures module |
+| `RP6` | Docs for the new layout | `RP3`, `RP4`, `RP5` | none | `docs/layout.md`, `docs/options.md`, `mod/README.md` |
+| `RP7` | The user's file, by hand | `RP5` | none | `~/.config/coding-agent-usage-line/config.jsonc` |
+| `RP8` | The acceptance check, live | `RP6`, `RP7` | none | none |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
@@ -86,6 +97,15 @@ flowchart LR
   end
   CK2 -.-> CM6
   RT9 -.-> PL1
+  subgraph row-placement
+    RP1 --> RP2 --> RP3 --> RP6
+    RP2 --> RP5 --> RP6
+    RP4 --> RP6
+    RP5 --> RP7
+    RP6 --> RP8
+    RP7 --> RP8
+  end
+  RP4 -.-> RP5
 ```
 
 Solid arrows are logical edges, dotted ones file edges.
@@ -105,6 +125,23 @@ Solid arrows are logical edges, dotted ones file edges.
 
 At most four agents run at once (wave 4), and no two of a wave change the
 same part of a file.
+
+The row-placement plan's waves, once the user approves it (none of its
+nodes waits on the configuration plan's `CM8`, which changes no file):
+
+| Wave | Nodes, in parallel | Starts when |
+|---|---|---|
+| R0 | `RP1`, `RP4` | the plan is approved; `RP4` touches none of `RP1`'s code |
+| R1 | `RP2` | `RP1` lands and the user reports its live trial |
+| R2 | `RP3`, `RP5` | `RP2` lands, and `RP4` for `RP5` |
+| R3 | `RP6`, `RP7` | `RP3`, `RP4` and `RP5` land; `RP7` by hand |
+| R4 | `RP8` | `RP6` lands and `RP7` is done; by hand with the user |
+
+- **`RP4 ⇢ RP5`:** both change the 🎮 label's workspace and the 💳 row's
+  pieces in `band.ts`; the labels go first.
+- `RP2` and `RP4` both regenerate the row cases (`tests/fixtures/rows/`),
+  generated files: whichever lands second regenerates them after its
+  rebase rather than merging them by hand.
 
 - **`CK2 ⇢ CM6`:** both change how `register.tsx` draws rows; the
   clickable rows go first, so `CM6` rewrites `CONFIG.x` over them.
