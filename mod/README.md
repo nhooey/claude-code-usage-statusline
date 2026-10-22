@@ -45,8 +45,9 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   the turn's 🔺🔖 tag and when it was stamped, so every turn's receipt
   stays in the transcript to scroll back to. 📁 draws the project's root
   as 📦 under its parent, so `📁~/git/📦/mod` is the project's `mod/`
-  folder. While a turn runs, 🤖's answering or waiting time is in 🛫's
-  column, and its reply ends where 🎤's model starts.
+  folder. 🤖 draws the model and effort its next turn runs on, between
+  turns too, and while a turn runs, its answering or waiting time is in
+  🛫's column.
 - **The start tag,** under a prompt typed at the composer, at no indent:
   🔻🔖, the turn's tag and when it started, dim.
 

@@ -342,7 +342,8 @@ function doingCell(st: Settings, tr: Transcript, now: number):
 }
 
 /** 🤖: the main thread alone, before its agents' figures are added.  The
- * model and effort and 🛫 are on 🎤 (turnRow), not here; 💰 🔋 🪫
+ * model and effort its next turn will run on, drawn between turns too, the
+ * effort the last model request's; 🛫 is on 🎤 (turnRow); 💰 🔋 🪫
  * `accounting.own`, its compactions in, the 💰 marked an estimate by
  * `own_est` (decision 2); 🧠 its context, `ctx_est` marking an estimate;
  * 🧩 🎯 `own_tok_*` and `own_cache_pct`; ⌛ its age from `start_s` and the
@@ -377,9 +378,13 @@ function mainRow(st: Settings, fig: Dict, tr: Transcript, now: number,
     });
   }
   // Running, what it is doing and for how long in 🛫's column, as 🎤 draws
-  // a running tool's (asked 2026-10-19); the model's column left blank.
+  // a running tool's.
+  const pay = decodePayload(fig.payload);
   const doing = opts.phase === "running" ? doingCell(st, tr, now) : null;
-  Object.assign(cells, { model: [], rate: doing ?? [] });
+  Object.assign(cells, {
+    model: CELLS.model(st, pay.model_id || pay.model, pay.effort),
+    rate: doing ?? [],
+  });
   // 📨 only while it runs too: the receipt stamps this row once the turn
   // has ended, and a count frozen there would be gone by the next turn.
   const inbox = opts.phase === "running" ? tr.queued : 0;

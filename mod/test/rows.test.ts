@@ -410,9 +410,12 @@ test("🎤 carries the model and 🛫, and a running tool's time in 🛫's colum
   assert.ok(text(rows.turn.cells.model).length > 0);
   // Three columns of figure, its decimal among them, then the unit.
   assert.match(text(rows.turn.cells.rate), /^🛫 [ \d.]{3}[kM ]$/);
-  // 🤖 has blank model and 🛫 columns, so its reply ends at the model's,
-  // and while it answers, 🤖 and how long in 🛫's.
-  assert.equal(text(rows.main.cells.model), "");
+  // 🤖 has the model its next turn runs on, the same as 🎤's, and while
+  // it answers, 🤖 and how long in 🛫's.
+  assert.equal(text(rows.main.cells.model), text(rows.turn.cells.model));
+  const idle = inZone(fig, () => bandRows(st, fig, { ...opts,
+    phase: "done" as const }));
+  assert.equal(text(idle.main.cells.model), text(rows.turn.cells.model));
   assert.match(text(rows.main.cells.rate), /^(🤖 +\S+)?$/);
   assert.ok(!rows.main.label.some((p) => p.path === "chat.doing"));
   // A tool running for 90 seconds: 🔧 and its time where the rate was, and
