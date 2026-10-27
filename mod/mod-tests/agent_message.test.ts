@@ -55,9 +55,6 @@ function world(on: On): World {
     store: new Map(), fileReads: [] }
   mock.env(on, { HOME: '/home/fixture' })
   on('session.id', () => ({ value: SESSION }))
-  // No credential and no network: the usage probe sends nothing.
-  on('session.authorize', () => ({ value: null }))
-  on('http.fetch', () => ({ deny: 'no network in tests' }) as any)
   // Where the configuration walk starts; no file is there, so the options
   // are the defaults file's.
   on('session.root', () => ({ value: '/work' }))

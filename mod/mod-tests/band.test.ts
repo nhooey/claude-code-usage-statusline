@@ -245,9 +245,6 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   on('session.root', () => ({ value: CWD }))
   on('session.model', () => ({ value: MODEL }))
   on('session.id', () => ({ value: SESSION }))
-  // No credential and no network: the usage probe sends nothing.
-  on('session.authorize', () => ({ value: null }))
-  on('http.fetch', () => ({ deny: 'no network in tests' }) as any)
   const usage = { down: usageDown }
   on('session.usage', () => usage.down
     ? { deny: 'usage unavailable' } as any

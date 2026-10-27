@@ -836,8 +836,12 @@ export const register: Register = on => {
     await start($, 'session.start')
     void reconfigure($).catch((err) => log($, 'config', err))
     void refresh($).catch((err) => log($, 'refresh', err))
-    void probeUsage($).catch((err) => log($, 'usage probe', err))
     return result
+  })
+
+  on('session.measure', async ($, e, next) => {
+    void probeUsage($, e.rateLimits).catch((err) => log($, 'usage probe', err))
+    return next(e)
   })
 
   on('tool.call', async ($, e, next) => {
