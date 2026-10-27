@@ -101,6 +101,9 @@ function world(on: On, defaults = DEFAULTS_TEXT): World {
   on('session.cwd', () => ({ value: PROJECT + '/sub' }))
   on('session.root', () => ({ value: PROJECT }))
   on('session.id', () => ({ value: 'config-session' }))
+  // No credential and no network: the usage probe sends nothing.
+  on('session.authorize', () => ({ value: null }))
+  on('http.fetch', () => ({ deny: 'no network in tests' }) as any)
   on('session.model', () => ({ value: 'claude-opus-5' }))
   on('session.usage', () => ({ deny: 'usage unavailable' }) as any)
   on('session.start', ($, e) => ({ cwd: e.cwd }))

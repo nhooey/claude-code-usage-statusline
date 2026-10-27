@@ -52,6 +52,7 @@ import { costDoc, defaultsError, folderAgents, folderReplies, options,
   from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
+import { probeUsage } from './usage_probe.ts'
 
 type $ = EngineInterface
 
@@ -835,6 +836,7 @@ export const register: Register = on => {
     await start($, 'session.start')
     void reconfigure($).catch((err) => log($, 'config', err))
     void refresh($).catch((err) => log($, 'refresh', err))
+    void probeUsage($).catch((err) => log($, 'usage probe', err))
     return result
   })
 
