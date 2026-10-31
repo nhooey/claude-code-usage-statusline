@@ -24,7 +24,6 @@ Colour and brightness carry meaning of their own — see
 
 - [Under the footer line](#under-the-footer-line)
   - [The rows](#the-rows)
-  - [Pressing a row](#pressing-a-row)
   - [The grid](#the-grid)
   - [Column by column](#column-by-column)
   - [Labels](#labels)
@@ -59,9 +58,9 @@ tests/fixtures/figures/status/01-baseline@196.json --cols 160 --part footer
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤                            🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-  🤖                                    🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-  🎮                                             💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+                            🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+                            🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+                            🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
 The first line is Claude Code's, drawn by Claude Code, so its pills stay
@@ -85,32 +84,6 @@ scope alone.
 The 🎤, 🤖 and 🎮 rows stand in the order the receipt stamps them in, so when
 the turn ends they become [its rows](#the-receipt), frozen, in the
 transcript just above.
-
-### Pressing a row
-
-🎤 and 🤖 can be pressed, by a click (tmux's mouse mode passes it on) or
-by Enter under the focus, here and in [the receipt](#the-receipt); they
-look as the other rows do. A press scrolls the transcript to put a row at
-the top of its window:
-
-| Row | Under the footer line | In a receipt |
-|---|---|---|
-| 🎤 | the prompt that opened the turn running, or the last one | the prompt that opened the receipt's own turn |
-| 🤖 | the last reply block that turn has drawn so far | the last reply block of the receipt's own turn |
-| 💳, 🎮, the tag line | nothing: not pressable | nothing: not pressable |
-
-The mod learns each target as Claude Code draws it: a prompt typed at the
-composer, and a reply block the first time it is drawn while a turn runs,
-until the turn's receipt is stamped. A reply drawn only after a reload has
-no turn, so 🤖 of a turn from before the reload goes nowhere; nor does a
-target dropped past `starts-kept`, or a receipt stamped before rows could
-be pressed. A press with nowhere to go says so once in the mod's log
-([mod/README.md](../mod/README.md#its-log)), `press 🤖: no reply drawn to
-scroll to`, and does nothing; every other press logs the call it made and
-its answer. Rows Claude Code gives a click of its own are never pressable:
-a prompt, and a [message from an agent](#messages-from-agents), which a
-click expands and folds again. [Above the prompt](#above-the-prompt), 🎤
-and 🤖 press as they do under the footer line.
 
 Claude Code draws the footer's container two columns in from each edge, so
 every row the mod draws there starts two columns in (`hint-inset`)
@@ -212,14 +185,17 @@ context and no ⛳ of its own.
 
 ### Labels
 
+🎤, 🤖 and 🎮 draw their label flush right, ending where the first column
+starts, so each mark and its 📨 sit beside the model they name, at one
+column on every row. An agent row's label is drawn flush left.
+
 - **💳**: see [The rows](#the-rows).
-- **🎤**, the turn, its mark alone. A press on it scrolls to its prompt
-  ([Pressing a row](#pressing-a-row)), and the turn tags tie it to the
-  prompt (🔻🔖) and the receipt (🔺🔖).
+- **🎤**, the turn, its mark alone. The turn tags tie it to the prompt
+  (🔻🔖) and the receipt (🔺🔖).
 - **🤖**, the main thread. While messages wait for its next turn (typed
   while it works, an agent's SendMessage, a task notification), 📨 and
-  how many, as an agent row's [📨](#inbox) does. A press on it scrolls to
-  its last reply. The receipt's 🤖 row leaves the 📨 out.
+  how many, as an agent row's [📨](#inbox) does. The receipt's 🤖 row
+  leaves the 📨 out.
 - **🎮**, the session, its mark alone.
 - **💳** carries where the session works: 📦 the project (in a linked git
   worktree, the main repository, since 🌿 already names the worktree's
@@ -268,9 +244,9 @@ At 100 columns:
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤                       💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
-  🤖                       💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
-  🎮                       💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+                       🎤  💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
+                       🤖  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+                       🎮  💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
 ```
 
 At 80:
@@ -278,9 +254,9 @@ At 80:
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤                  💰6.4   🧠-42k  -4٪  ⌛  5m          🔋 1.2٪   🪫 1.56٪
-  🤖                  💰 35   🧠115k  11٪  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
-  🎮                  💰 35                ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+                  🎤  💰6.4   🧠-42k  -4٪  ⌛  5m          🔋 1.2٪   🪫 1.56٪
+                  🤖  💰 35   🧠115k  11٪  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+                  🎮  💰 35                ⌛9.3h          🔋 3.8٪   🪫 8.45٪
 ```
 
 The 💳 row keeps its width, and Claude Code cuts it at the edge.
@@ -305,7 +281,7 @@ kept and not stamped (`--sticky agent`):
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🤖                                             💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+                            🤖  🤖O⁵🏃           💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
 The rows are read again every 5 seconds while a turn runs, never more often
@@ -343,9 +319,9 @@ Hiding 🔋 (`*.plan.five_hour`), 🧠's share of the window
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                                                 📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-  🎤                                                 🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
-  🤖                                                         🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
-  🎮                                                                  💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
+                                                 🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
+                                                 🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
+                                                 🎮                   💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
 ```
 
 ## The receipt
@@ -360,9 +336,9 @@ tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part receipt
 --right-edge 2 --plain`):
 
 ```
-  🎤                                             💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
-  🤖                                             💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
-  🎮                                             💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
+                                             🎤  💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
+                                             🤖  💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
+                                             🎮  💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
 
 🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
 ```
@@ -383,9 +359,6 @@ above the receipt, one before its tag line and one after it.
 - **🤖** is the main thread as the mod's 🤖 row last drew it.
 - **🎮** is the session as it stood when the turn ended; it includes every
   row above it.
-
-A receipt's 🎤 and 🤖 press to its own turn's prompt and last reply, however
-many turns have run since ([Pressing a row](#pressing-a-row)).
 
 Claude Code writes a turn's records to the transcript only after its Stop
 hooks have run, so the mod waits for them: it reads the transcript every
@@ -809,16 +782,14 @@ columns of the band's first row, so every row there ends five columns short
 of the edge (`RIGHT_EDGE`), at no inset (`--part band`):
 
 ```
-🎤                           🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-🤖                                   🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-🎮                                            💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+                         🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+                         🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+                         🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
 The receipt is then stamped at no inset, and the panel's `right-edge`
 follows `live-place` to five, so its rows stack on these. The 💳 row stays
-under the footer line. 🎤 and 🤖 press here as under it
-([Pressing a row](#pressing-a-row)), though a click in the band may also
-focus it, which Esc gives back. While a survey (a question picker) holds
+under the footer line. While a survey (a question picker) holds
 the band, the mod draws nothing there, and Claude Code draws the picker.
 
 Each change of the band's widths or of a survey goes to the mod's log,

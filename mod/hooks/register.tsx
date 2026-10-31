@@ -122,7 +122,7 @@ function tagsShown(o: Options | null): boolean {
   return o !== null && o.rows.tag.transcript && !tagsHidden(o.hide)
 }
 
-/** How many start lines, receipts and pressable rows are kept: the option
+/** How many start lines and receipts are kept: the option
  * starts-kept, and with no options every one, until they come. */
 const keptMost = (): number => options()?.startsKept ?? Infinity
 
@@ -390,15 +390,12 @@ const stamping = new Set<string>()
  * duration, which the line is drawn with and turn.complete carries. */
 const receiptAt = (durationMs: number) => 'receipt-at:' + durationMs
 
-/** A receipt as filed under receiptAt: its lines, each with its scope, and
- * `turn`, startKey of the prompt its turn opened with, so a press on its
- * 🎤 or 🤖 goes to that turn's prompt or reply and not the latest's.  A
- * receipt filed as bare lines draws with no row pressable. */
-type FiledReceipt = { rows: { scope: string; spans: Span[] }[]; turn: string }
+/** A receipt as filed under receiptAt: its lines, each with its scope.
+ * One filed as bare lines draws the same. */
+type FiledReceipt = { rows: { scope: string; spans: Span[] }[] }
 
 /** Stamps the receipt of the turn that opened with `prompt` (its id, ""
- * for any) into the transcript, its presses going to `turn`'s targets
- * (FiledReceipt).  Claude Code writes a turn's assistant
+ * for any) into the transcript.  Claude Code writes a turn's assistant
  * records only after its Stop hooks have run, after turn.complete, so the
  * transcript is read every CONFIG.receiptPollMs until the newest prompt's
  * turn is billed and two reads agree on what it billed, for up to
@@ -408,7 +405,7 @@ type FiledReceipt = { rows: { scope: string; spans: Span[] }[]; turn: string }
  * nothing, as `end` (how turn.complete says it ended) or the transcript
  * tells (billedNothing), is logged in a line as soon as that is known, and
  * nothing stamped. */
-async function stamp($: $, durationMs: number, prompt: string, turn: string,
+async function stamp($: $, durationMs: number, prompt: string,
   end: TurnEnd | null = null): Promise<void> {
   const where = await placesFor($)
   const deadline = (await $.clock.now()) + CONFIG.receiptWaitMs
@@ -470,7 +467,7 @@ async function stamp($: $, durationMs: number, prompt: string, turn: string,
       true, main, stamped, insetOf(o), tagsShown(o))
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs),
-      { rows, turn } satisfies FiledReceipt)
+      { rows } satisfies FiledReceipt)
   } finally {
     stamping.delete(key)
   }
@@ -505,125 +502,6 @@ function line(Text: any, spans: readonly Span[], key: string,
     </Text>
   )
 }
-
-/** A row drawn as a Button around its Text, pressable by a click or Enter
- * under the focus, and looking as the row did: `plain`, so no `[ ]`
- * chrome, and no hotkey (agents/plans/_implemented/clickable-rows.md). */
-function pressable(Button: any, Text: any, spans: readonly Span[],
-  key: string, onPress: () => Promise<void>): RenderElement {
-  return (
-    <Button key={key} plain onPress={() => onPress()}>
-      {line(Text, spans, key + '.text')}
-    </Button>
-  )
-}
-
-// The composer prompts' render instances, by startKey of the prompt's
-// text: the `requestId` each UserMessage draw saw, so a press on 🎤 can
-// scroll to it.  The oldest dropped past starts-kept, as the start
-// lines are.  A module variable: a render hook may not write state.
-const promptIds = new Map<string, string>()
-// startKey of the prompt the last main-thread turn opened with: whose
-// row 🎤 stands for.
-let turnPrompt = ''
-
-function notePrompt(text: string, requestId: string): void {
-  const key = startKey(text)
-  if (promptIds.get(key) === requestId) return
-  promptIds.delete(key)
-  promptIds.set(key, requestId)
-  while (promptIds.size > keptMost()) {
-    promptIds.delete(promptIds.keys().next().value!)
-  }
-}
-
-/** startKey of the prompt the band's 🎤 and 🤖 stand for: the last
- * main-thread turn's, or where no turn has opened since the module loaded,
- * the prompt drawn last. */
-const bandTurn = () => turnPrompt || ([...promptIds.keys()].pop() ?? '')
-
-// The main thread's replies, by startKey of the prompt their turn opened
-// with: the `requestId` of the reply block drawn last while that turn ran,
-// so a press on 🤖 can scroll to it.  A block counts the first time it is
-// drawn, and only from the turn's start until its receipt is stamped (or
-// given up on): one drawn again (a scroll, a resize) or between turns (a
-// reload drawing the transcript back) says nothing of which turn it
-// ended.  The render envelope names no agent, so a block of an agent's
-// transcript first drawn in the main view while a main turn runs would be
-// taken for the turn's.  Bounded as promptIds is.
-const replyIds = new Map<string, string>()
-// startKey of the turn whose replies are being drawn, "" between turns.
-let repliesTurn = ''
-// The reply blocks drawn since the load, so a second drawing is known; the
-// oldest dropped past repliesKept.
-const repliesSeen = new Set<string>()
-const repliesKept = 2000
-
-function noteReply(requestId: string): void {
-  if (repliesSeen.has(requestId)) return
-  repliesSeen.add(requestId)
-  if (repliesSeen.size > repliesKept) {
-    repliesSeen.delete(repliesSeen.values().next().value!)
-  }
-  if (!repliesTurn) return
-  replyIds.delete(repliesTurn)
-  replyIds.set(repliesTurn, requestId)
-  while (replyIds.size > keptMost()) {
-    replyIds.delete(replyIds.keys().next().value!)
-  }
-}
-
-// The presses that found no target, by row and turn: each said once.
-const missed = new Set<string>()
-
-/** A press on 🎤 (`what` the prompt) or 🤖 (the reply) of the turn that
- * opened with `turn`: its target, `requestId`, scrolled to the top of the
- * transcript's window.  With none recorded, never drawn since the load or
- * dropped past starts-kept, it says so in the log once per row and turn
- * and does nothing.  What it did and what came back goes to the log, so a
- * live click can be read back. */
-async function pressTo($: $, row: '🎤' | '🤖', what: string, turn: string,
-  requestId: string | undefined): Promise<void> {
-  if (!requestId) {
-    const seen = row + turn
-    if (missed.has(seen)) return
-    if (missed.size > repliesKept) missed.clear()
-    missed.add(seen)
-    await log($, `press ${row}: no ${what} drawn to scroll to`)
-    return
-  }
-  const args = { to: { requestId }, block: 'start' } as const
-  const call = '$.ui.scroll(' + JSON.stringify(args) + ')'
-  try {
-    await log($, `press ${row}: ${call} -> ` +
-      JSON.stringify(await $.ui.scroll(args)))
-  } catch (err) {
-    await log($, `press ${row}: ${call} threw`, err)
-  }
-}
-
-/** A press on 🎤 of the turn that opened with `turn`: its prompt. */
-const pressTurn = ($: $, turn: string) =>
-  pressTo($, '🎤', 'prompt', turn, promptIds.get(turn))
-
-/** A press on 🤖 of the turn that opened with `turn`: its last reply. */
-const pressReply = ($: $, turn: string) =>
-  pressTo($, '🤖', 'reply', turn, replyIds.get(turn))
-
-/** A row of the band's or a receipt's, of `scope`, for the turn `turn()`
- * names as a press comes: 🎤 and 🤖 pressable, to that turn's prompt and
- * reply (docs/layout.md, "Pressing a row"), the rest plain. */
-function scopedRow($: $, Button: any, Text: any, scope: string,
-  spans: readonly Span[], key: string, turn: () => string): RenderElement {
-  if (scope === 'turn') {
-    return pressable(Button, Text, spans, key, () => pressTurn($, turn()))
-  }
-  if (scope === 'main') {
-    return pressable(Button, Text, spans, key, () => pressReply($, turn()))
-  }
-  return line(Text, spans, key)
-}
-
 
 /** The band's rows as they stand, at bandCols, each with its scope: of 🎤,
  * 🤖 and 🎮, those rows.<row>.live draws while a turn runs, and those it
@@ -865,8 +743,6 @@ export const register: Register = on => {
     const tr = (await read($, status))?.transcript as Dict | undefined
     pending = { text: e.text, before: tr?.prompt_id ?? '' }
     opened = ''
-    turnPrompt = startKey(e.text)
-    repliesTurn = turnPrompt
     void refresh($).catch((err) => log($, 'refresh', err))
     return result
   })
@@ -896,22 +772,17 @@ export const register: Register = on => {
     }
     const seen = opened
     opened = ''
-    // The turn its receipt's 🎤 and 🤖 press to, as the band's did.
-    const turn = bandTurn()
     void (async () => {
       await refresh($)
       const tr = (await read($, status))?.transcript as Dict | undefined
       const prompt = seen ||
         (typeof tr?.prompt_id === 'string' ? tr.prompt_id : '')
-      await stamp($, e.durationMs, prompt, turn,
+      await stamp($, e.durationMs, prompt,
         { reason: e.isAborted ? 'aborted' : e.reason,
           usage: e.usage !== undefined })
     })()
       .catch((err) => log($, 'no receipt', err))
       .finally(async () => {
-        // Its last reply is drawn by the time its records are in the
-        // transcript: a block first drawn after that is another's.
-        if (repliesTurn === turn) repliesTurn = ''
         await $.clock.sleep(CONFIG.receiptHoldMs)
         await update($, held, () => false)
       })
@@ -946,17 +817,14 @@ export const register: Register = on => {
     const lines = await bandNow($, e.props.isWorking)
     // Between turns the receipt carries the rows, and the band has none.
     if (!lines.length) return next(e)
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const { Box, Text } = $.ui.resolve(e)
     // No margin: Claude Code draws its `[-]` on the band's first row, and
     // on a blank top row it stood alone.  A bottom margin of -1, into the
     // blank row above the prompt's border, hid the band's last row under
-    // the border instead (tried live 2026-10-19).  🎤 and 🤖 press to the
-    // turn's prompt and its last reply, as under the footer line
-    // (scopedRow).
+    // the border instead.
     return (
       <Box flexDirection="column">
-        {lines.map((l, i) => scopedRow($, Button, Text, l.scope, l.spans,
-          'band' + i, bandTurn))}
+        {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
       </Box>
     )
   })
@@ -967,18 +835,14 @@ export const register: Register = on => {
   // Claude Code's `⏺ usage-band:` before it and a blank row after).  Until
   // then one blank row: a Box one row high around a space, rather than an
   // empty Text, which Ink measures as no row at all.
-  //
-  // Its 🎤 and 🤖 press to its own turn's prompt and last reply, which
-  // the receipt was filed with (FiledReceipt), not the latest turn's.
   on('ui.render', { component: 'TurnDuration' }, async ($, e) => {
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const { Box, Text } = $.ui.resolve(e)
     await read($, filed)
     await read($, configured)
     const got = (await $.store.get(receiptAt(e.props.durationMs))) as
       FiledReceipt | Span[][] | undefined
     const rows = Array.isArray(got)
       ? got.map((spans) => ({ scope: '', spans })) : got?.rows ?? []
-    const turn = Array.isArray(got) ? '' : got?.turn ?? ''
     if (rows.length) {
       // A blank row above, so the receipt stands apart from the answer,
       // and one under its tag line (asked 2026-10-19), which goes with the
@@ -986,8 +850,7 @@ export const register: Register = on => {
       return (
         <Box flexDirection="column" marginTop={1}
           marginBottom={tagsShown(options()) ? 1 : 0}>
-          {rows.map((l, i) => scopedRow($, Button, Text, l.scope, l.spans,
-            'receipt' + i, () => turn))}
+          {rows.map((l, i) => line(Text, l.spans, 'receipt' + i))}
         </Box>
       )
     }
@@ -1068,32 +931,20 @@ export const register: Register = on => {
       : [], ...o.livePlace === 'footer'
       ? await bandNow($, e.props.isWorking, inset) : []]
     if (!lines.length) return row
-    const { Box, Button, Text } = $.ui.resolve(e)
-    // 🎤 and 🤖 are pressable: they scroll to the prompt that opened the
-    // turn and to its last reply (scopedRow).  A blank row parts them
-    // from the footer line (asked 2026-10-21).
+    const { Box, Text } = $.ui.resolve(e)
+    // A blank row parts the rows from the footer line.
     return (
       <Box flexDirection="column" marginBottom={o.hintTuck ? -1 : 0}>
         {row}
         <Box height={1}><Text> </Text></Box>
-        {lines.map((l, i) => scopedRow($, Button, Text, l.scope, l.spans,
-          'band' + i, bandTurn))}
+        {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
       </Box>
     )
-  })
-
-  // A reply block, drawn as Claude Code draws it: its instance noted for a
-  // press on 🤖 to scroll to (noteReply).
-  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    noteReply(e.requestId)
-    return next(e)
   })
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const row = await next(e)
     if (e.props.origin.kind !== 'composer') return row
-    // Its instance, for a press on 🎤 to scroll to (pressTurn).
-    notePrompt(e.props.text, e.requestId)
     await read($, configured)
     if (!tagsShown(options())) return row
     await read($, filed)

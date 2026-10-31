@@ -121,8 +121,9 @@ test("each row's live and transcript pick the band's rows and the receipt's",
     const cost = document("cost/09-agents@196");
     const opts = { rate: null, phase: "done" as const };
     const main = inZone(status, () => bandRows(st, status, opts).main);
+    // Each row's mark, its label being flush right; a blank row's " ".
     const marks = (lines: Span[][]) => lines.map((l) =>
-      Array.from(stripAnsi(join(l)))[0]);
+      Array.from(stripAnsi(join(l)).trimStart())[0] ?? " ");
     // live by row, the rows stamped, then what the receipt, the band
     // while a turn runs and the band once it ends draw.
     for (const [live, stamped, stamp, running, done] of [

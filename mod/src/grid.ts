@@ -216,11 +216,17 @@ export function layout(st: Settings, rows: readonly Row[], cols: number,
   return keys;
 }
 
+/** The scopes whose label is drawn flush right, against the model's
+ * column, with no spill: 🎤, 🤖 and 🎮, whose marks then sit beside the
+ * figures they name, ending at one column on every row. */
+const FLUSH_RIGHT: ReadonlySet<string> = new Set(["turn", "main", "session"]);
+
 /** The columns `draw` gives the row's label on the columns `keys`: what
  * the chrome and the cells leave of the width, and with `spill` the row's
- * own leading blank columns too. */
+ * own leading blank columns too, unless its label is FLUSH_RIGHT. */
 export function labelRoom(st: Settings, row: Row, keys: readonly string[],
   cols: number, patterns: readonly string[], spill = true): number {
+  spill = spill && !FLUSH_RIGHT.has(row.scope);
   const ws = GRID_CELLS.filter((c) => keys.includes(c.key)).map((c) =>
     [c.gap + colWidth(st, c, patterns), shows(row, c.key, c.hide, patterns)] as
       const);
@@ -235,7 +241,8 @@ export function labelRoom(st: Settings, row: Row, keys: readonly string[],
 
 /** One row on the columns `keys`.  With `spill`, the label runs on over
  * the row's own leading blank columns, up to its first figure, instead of
- * stopping where the first column starts.  Every row ends st.rightEdge
+ * stopping where the first column starts; a FLUSH_RIGHT label never
+ * spills, and ends where the first column starts.  Every row ends st.rightEdge
  * columns short of the terminal's edge (RIGHT_EDGE unless --right-edge
  * says), and never runs past that: a label with no room draws nothing, not
  * even a `…`, and a row whose chrome and cells are wider than the terminal
@@ -254,10 +261,12 @@ export function draw(st: Settings, row: Row, keys: readonly string[],
   }
   const head = chrome(row.depth);
   const end = cols - st.rightEdge;
+  const flush = FLUSH_RIGHT.has(row.scope);
+  spill = spill && !flush;
   const room = labelRoom(st, row, keys, cols, patterns, spill);
   while (spill && cells.length && cells[0][1] === null) cells.shift();
   const right = cells.flatMap(([w, c]) => c ?? [span(" ".repeat(w))]);
-  const out = [...head, ...seg(st, room, labelText(st, row, patterns, room)),
-    ...right];
+  const out = [...head,
+    ...seg(st, room, labelText(st, row, patterns, room), !flush), ...right];
   return width(out, st.widths) > end ? cut(out, end, st.widths) : out;
 }

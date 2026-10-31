@@ -254,15 +254,15 @@ export function accountLabel(st: Settings, sess: number | null,
 
 /** 🎤, the turn's mark. */
 export function turnLabel(): Piece[] {
-  return [piece("name.label", E_TURN + " ")];
+  return [piece("name.label", E_TURN)];
 }
 
 /** 🤖, and after it 📨 and `inbox`, the messages waiting for the main
  * thread's next turn, as an agent row's 📨 counts its own (agentLabel). */
 export function mainLabel(inbox = 0): Piece[] {
-  return [piece("name.label", E_BOT + " "),
+  return [piece("name.label", E_BOT),
     ...(inbox ? [{ path: "state.inbox",
-      spans: [...renderInbox(inbox), span(" ")], drop: 0 }] : [])];
+      spans: [span(" "), ...renderInbox(inbox)], drop: 0 }] : [])];
 }
 
 /** Where the session works.  Each part is "" where there is none. */
@@ -278,7 +278,7 @@ export type Workspace = {
 /** 🎮, the session's mark: where it works is the 💳 row's
  * (workspacePieces). */
 export function sessionLabel(): Piece[] {
-  return [piece("name.label", E_SESSION + " ")];
+  return [piece("name.label", E_SESSION)];
 }
 
 /** Where the session works, under the path `workspace`: 📦 the project,

@@ -200,11 +200,18 @@ def layout(rows: Sequence[Row], cols: int, patterns: Sequence[str],
     return keys
 
 
+# The scopes whose label is drawn flush right, against the model's column,
+# with no spill: 🎤, 🤖 and 🎮, whose marks then sit beside the figures
+# they name, ending at one column on every row.
+FLUSH_RIGHT = frozenset(("turn", "main", "session"))
+
+
 def label_room(row: Row, keys: Sequence[str], cols: int,
                patterns: Sequence[str], spill: bool = True) -> int:
     """The columns `draw` gives the row's label on the columns `keys`: what
     the chrome and the cells leave of the width, and with `spill` the row's
-    own leading blank columns too."""
+    own leading blank columns too, unless its label is FLUSH_RIGHT."""
+    spill = spill and row.scope not in FLUSH_RIGHT
     ws = [(c["gap"] + _col_width(c, patterns),
            _shows(row, c["key"], c["hide"], patterns))
           for c in GRID_CELLS if c["key"] in keys]
@@ -221,7 +228,8 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
          spill: bool = True) -> List[Span]:
     """One row on the columns `keys`.  With `spill`, the label runs on over
     the row's own leading blank columns, up to its first figure, instead of
-    stopping where the first column starts.  Every row ends
+    stopping where the first column starts; a FLUSH_RIGHT label never
+    spills, and ends where the first column starts.  Every row ends
     fmt.RIGHT_EDGE_COLS columns short of the terminal's edge (RIGHT_EDGE
     unless --right-edge says), and never runs past that: a label with no
     room draws nothing, not even a `…`, and a row whose chrome and cells are
@@ -239,11 +247,14 @@ def draw(row: Row, keys: Sequence[str], cols: int, patterns: Sequence[str],
                       else None])
     head = chrome(row.depth)
     end = cols - fmt.RIGHT_EDGE_COLS
+    flush = row.scope in FLUSH_RIGHT
+    spill = spill and not flush
     room = label_room(row, keys, cols, patterns, spill)
     while spill and cells and cells[0][1] is None:
         cells.pop(0)
     right = []
     for w, c in cells:
         right.extend(c if c is not None else [Span(" " * w)])
-    out = head + fmt.seg(room, label_text(row, patterns, room)) + right
+    out = (head + fmt.seg(room, label_text(row, patterns, room), not flush)
+           + right)
     return cut(out, end) if width(out) > end else out

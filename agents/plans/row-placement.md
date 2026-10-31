@@ -84,10 +84,9 @@ Every row ends 2 columns short of the edge (`right-edge`, derived from
 - Every row, above and below the prompt, and the receipt, starts at one
   column and ends at one column, so a figure on 🎮 stands over the same
   figure on 🤖 and on the panel's rows (see [One grid](#one-grid-above-and-below)).
-- 🎤's and 🤖's labels are their marks alone (🤖 keeps its 📨 count). A
-  press on either still scrolls to the prompt or the reply
-  ([Pressing a row](../../docs/layout.md#pressing-a-row)); the receipt's
-  🔖 tag line ties it to its prompt's 🔻🔖.
+- 🎤's, 🤖's and 🎮's labels are their marks alone (🤖 keeps its 📨
+  count), drawn flush right against the first column, and no row takes a
+  press; the receipt's 🔖 tag line ties it to its prompt's 🔻🔖.
 
 ## The configuration
 
@@ -222,16 +221,12 @@ column.
   two agents apart; the band's widest label, 🤖 with a 📨 count, is about
   7. So one more column, 💰 or 🔋, stays on screen at widths where it
   dropped, and the panel's names and tasks are cut harder there. The
-  band's labels leave the rest of their room blank: each row is as wide
-  as before, its mark at the left and its figures where they were.
-- **Pressing still works.** `scopedRow` keys the press on the row's scope,
-  `turn` or `main`, not on its label, and the press scrolls to the
-  `requestId` the prompt's `UserMessage` and the reply's
-  `AssistantMessage` were drawn with (`promptIds`, `replyIds` in
-  `register.tsx`), never to the label's text. So 🎤 and 🤖 press to their
-  prompt and reply as today, under the footer line, above the prompt
-  (new, see `RP1`) and in the receipt, and the receipt's 🔺🔖 tag line
-  still ties it to its prompt's 🔻🔖.
+  band's labels leave the rest of their room blank, on the left: each row
+  is as wide as before, its mark flush right against the first column
+  (`FLUSH_RIGHT` in `grid.ts` and `grid.py`) and its figures where they
+  were.
+- **No row is pressable.** The rows are plain Text, above the prompt,
+  under the footer line and in the receipt.
 
 ## The 💳 row
 
@@ -283,7 +278,7 @@ The plan takes that as it is, with no code for it
 | `coding_agent_usage_line/options.py` | `_merged_value` and the derivation read `rows` (a mod-only option, as `live-place` was) to give `right-edge` | `RP2` |
 | `coding_agent_usage_line/config.py` | nothing beyond the spec: table fields and `fixed` are already generic | `RP2` |
 | `mod/src/config.ts` | the same derivation, `optionsOf` without `livePlace` | `RP2` |
-| `mod/hooks/register.tsx` | `AbovePrompt` draws the rows whose `place` is `"above"`, through `scopedRow` (pressable); `PromptHint` the ones whose `place` is `"footer"`; `insetOf` gone (one inset); the above rows indented `hint-inset` | `RP1`, `RP2`, `RP3` |
+| `mod/hooks/register.tsx` | `AbovePrompt` draws the rows whose `place` is `"above"`,; `PromptHint` the ones whose `place` is `"footer"`; `insetOf` gone (one inset); the above rows indented `hint-inset` | `RP1`, `RP2`, `RP3` |
 | `mod/src/band.ts` | `bandScoped` takes the place to draw (rows filtered by `place`) and the order with 💳; `sessionRow`'s label bare; `turnRow`, `mainRow` without text; `accountPieces` on `workspacePieces`, then with 🔀 🎨, the user's order, shedding | `RP2`, `RP4`, `RP5` |
 | `mod/src/receipt.ts` | `turnRow` without its prompt; `sessionRow`'s label bare; no workspace taken | `RP4` |
 | `mod/src/cells.ts` | `turnLabel` and `mainLabel` without their text pieces; `sessionLabel` the mark alone; `workspacePieces` for 💳 | `RP4` |
@@ -321,7 +316,7 @@ Each step leaves `bash tests/all.sh` and `npm test` (in `mod/`) passing.
 | The mod's fixtures module | `node mod/tools/gen-mod-fixtures.ts` (it carries the defaults file's text) | `RP2`, `RP5` |
 | The row cases | `node mod/tools/gen-row-cases.ts`: band cases by place, labels without text, the 💳 row with 🔀 🎨 and its shedding | `RP2`, `RP4`, `RP5` |
 | The grid cases and the panel goldens | regenerated in both ports for `LABEL_MIN` 12 | `RP4` |
-| The mod harness | `mod/mod-tests/band.test.ts`: 🎤 and 🎮 in `AbovePrompt`, 💳 and 🤖 in `PromptHint`; 🎤 gone and 🎮 kept after the stamp; nothing above under `hasSurvey`; a press on 🎤 above the prompt logs its `$.ui.scroll`; 🎮's and 🤖's cells on the same columns (`RP3`); the receipt without 🤖 🎮 by default and with them under `transcript` `true` | `RP1` … `RP5` |
+| The mod harness | `mod/mod-tests/band.test.ts`: 🎤 and 🎮 in `AbovePrompt`, 💳 and 🤖 in `PromptHint`; 🎤 gone and 🎮 kept after the stamp; nothing above under `hasSurvey`; no row a Button; 🎮's and 🤖's cells on the same columns (`RP3`); the receipt without 🤖 🎮 by default and with them under `transcript` `true` | `RP1` … `RP5` |
 | `mod/mod-tests/config.test.ts` | the options with no file match the defaults file, `place` included | `RP2` |
 | The panel goldens' edge | unchanged by `RP2`: `tests/run-cases.py` writes `"right-edge": 5` in its scratch user file | — |
 
@@ -368,11 +363,6 @@ The user's own, by hand, as `CM7` was; the plan only reads it. After
 
 ## Risks
 
-- **A press in the band.** `clickable-rows.md` tried Buttons under the
-  footer line and in the receipt, never above the prompt. A click in the
-  band also focuses it (ctrl+x tab's focus), which may take the click
-  before the Button does, or leave the band holding the keyboard until
-  Esc. `RP1` tries it live before anything else is built on it.
 - **The band's left edge and a docked pane.** That the band starts at
   column 0 is read from the docs' render, not the types. Beside a docked
   `Pane` (fullscreen, 110 columns and wider) `bodyColumns` is the
@@ -397,15 +387,12 @@ a trial, the last two are the user's.
 
 1. **`RP1`, the trial above the prompt.** With `live-place` `"above"` (set
    by the user in their own file for the trial, and taken out after it),
-   the band's 🎤 and 🤖 rows are drawn through `scopedRow`, so they press
-   as under the footer line; the `AbovePrompt` and `PromptHint` hooks log,
+   the `AbovePrompt` and `PromptHint` hooks log,
    once per change, `bodyColumns`, `viewport.columns`,
    `viewport.isFullscreen` and `hasSurvey`. Under `live-place` `"footer"`
-   nothing drawn changes; only the log lines are new. A mod test presses
-   🎤 above the prompt. The user clicks 🎤 and 🤖 above the prompt, opens
-   a question picker, and opens a docked pane, and reports what moved and
-   what the log said. Settles: a click presses (not only focuses); the
-   band's left column; whether the footer line and its rows still draw
+   nothing drawn changes; only the log lines are new. The user opens a
+   question picker and a docked pane, and reports what moved and what the
+   log said. Settles: the band's left column; whether the footer line and its rows still draw
    under a survey; the widths beside a docked pane.
 2. **`RP2`, placement per row.** `rows.*.place` in the spec, the defaults
    file and both ports; `live-place` gone; `right-edge` derived from the
@@ -506,8 +493,10 @@ them.
    uncalled: `turnLabel`'s and `mainLabel`'s text pieces, the callers'
    reading of the text for them, `HIDE_GROUPS`' `chat.prompt` and
    `chat.reply`, and their tests and fixtures, in each port that has them
-   (only the mod does). What a press on 🎤 or 🤖 needs, the `requestId`s
-   of the prompt and the reply, and the receipt's 🔖 tag line, stay.
+   (only the mod does). The receipt's 🔖 tag line stays.
+10. **No row is pressable,** and the press code is removed: a press on 🎤
+    or 🤖 did nothing live. The three rows' labels are drawn flush right,
+    their marks and 📨 beside the model, two columns from it.
 
 ## Files
 
