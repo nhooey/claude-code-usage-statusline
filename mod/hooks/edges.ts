@@ -43,6 +43,7 @@ import { agentOfMeta, lastReply, repliesOfLines }
 import type { AgentLike } from '../src/agent_message.ts'
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
+  _readingMoved, nextTicks,
   _pricedRecord, _windowCostsFiles, _windowCostsOf, _windowCostsText,
   _windowsKey, _windowStarts, CALIB_SWEEP_EVERY_S, CALIB_SWEPT, CALIB_TTL,
   COST_TAIL_BYTES, FOLD_DIR, OLD_COSTS_DONE, oldWindowCosts,
@@ -1041,13 +1042,22 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
   const path = pyJoin(places.stateDir, _calibrationCacheName(snap))
   let cached: Dict | null = null
   let fresh = false
+  // The cache whatever its windows, and its age: what a scan's steps are
+  // carried from.
+  let prev: Dict | null = null
+  let prevAge: number | null = null
   try {
     const st = await $.fs.stat(path)
     const d = pyJsonLoads(await $.fs.read(path))
+    if (isDict(d)) {
+      prev = d
+      prevAge = now - st.mtimeMs / 1000
+    }
     if (isDict(d) && (!('windows' in d) ||
         (d.windows === windows && 'sess_pct' in d))) {
       cached = d
-      fresh = st.mtimeMs / 1000 > now - CALIB_TTL
+      // A reading that moved since the scan is a step to note: due now.
+      fresh = st.mtimeMs / 1000 > now - CALIB_TTL && !_readingMoved(snap, d)
     }
   } catch {
     // No scan for these windows yet.
@@ -1062,7 +1072,8 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
   }
   if (!fresh && !scanning && (ss !== null || ws !== null)) {
     scanning = true
-    void scanWindows($, places, snap, windows, path).catch(() => {})
+    void scanWindows($, places, snap, windows, path, prev, prevAge)
+      .catch(() => {})
       .finally(() => {
         scanning = false
       })
@@ -1146,7 +1157,8 @@ async function writeAtomicVia($: $, path: string, text: string):
  * writes it.  The files are listed with their mtimes first, so only the
  * ones _windowCostsOf would open are read. */
 async function scanWindows($: $, places: Places, snap: Snapshot,
-  windows: string, path: string): Promise<void> {
+  windows: string, path: string, prev: Dict | null,
+  prevAge: number | null): Promise<void> {
   const [ss, ws] = _windowStarts(snap)
   const files = await projectFiles($, places.projectsDir)
   const mtime = new Map(files.map((f) => [f.path, f.mtimeMs / 1000]))
@@ -1162,8 +1174,9 @@ async function scanWindows($: $, places: Places, snap: Snapshot,
   const [sc, wc] = _windowCostsOf(ss, ws, paths,
     (p) => mtime.get(p) ?? null, (p) => recs.get(p) ?? [])
   await saveCosts($, places, new Set(wanted))
-  await writeText($, path, _calibCacheText(windows, sc, wc,
-    pyGet(snap, 'session_pct'), pyGet(snap, 'weekly_pct')))
+  const sp = pyGet(snap, 'session_pct'), wp = pyGet(snap, 'weekly_pct')
+  await writeText($, path, _calibCacheText(windows, sc, wc, sp, wp,
+    nextTicks(prev, windows, sc, wc, sp, wp, prevAge)))
 }
 
 /** The cost cache, once a load: each file's offset, the digest of the

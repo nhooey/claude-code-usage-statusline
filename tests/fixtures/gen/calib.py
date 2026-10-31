@@ -281,6 +281,68 @@ def values():
                   "out": claude.calib_cache_text("None|None", 0.0, 0.0, 0.0,
                                                  0.0)})
 
+    ticks = {"sess": [[3.0, 9.5]], "week": [[20, 100], [22.0, 130.25]]}
+    cases.append({"fn": "calib_cache_text",
+                  "args": enc([w, 8.0, 60.0, 4.0, 30.0, ticks]),
+                  "out": out(run(claude.calib_cache_text, w, 8.0, 60.0, 4.0,
+                                 30.0, ticks))})
+    cases.append({"fn": "calib_cache_text",
+                  "args": enc([w, 8.0, 60.0, 4.0, 30.0,
+                               {"sess": [], "week": []}]),
+                  "out": out(run(claude.calib_cache_text, w, 8.0, 60.0, 4.0,
+                                 30.0, {"sess": [], "week": []}))})
+
+    # The steps: carried for the same window, one more where the reading
+    # rose since a cache young enough, and the rate between the first and
+    # the last.
+    def cache(windows=w, sp=4.0, wp=20.0, st=None, wt=None):
+        d = {"windows": windows, "sess_cost": 8.0, "week_cost": 60.0,
+             "sess_pct": sp, "week_pct": wp}
+        if st is not None or wt is not None:
+            d["sess_ticks"], d["week_ticks"] = st or [], wt or []
+        return d
+    later = "2026-08-16 06:31:00|2026-08-11 01:00:00"
+    for prev, windows, costs, pcts, age in (
+            (None, w, (8.0, 61.0), (4.0, 21.0), 30.0),
+            ({"sess": 1.0, "week": 2.0}, w, (8.0, 61.0), (4.0, 21.0), 30.0),
+            (cache(wt=[[19.0, 50.0]]), w, (9.0, 61.0), (5.0, 21.0), 30.0),
+            (cache(wt=[[19.0, 50.0]]), w, (9.0, 61.0), (5.0, 21.0), 600.0),
+            (cache(wt=[[19.0, 50.0]]), w, (9.0, 61.0), (5.0, 21.0), 601.0),
+            (cache(wt=[[19.0, 50.0]]), w, (9.0, 61.0), (5.0, 21.0), None),
+            (cache(wt=[[19.0, 50.0]]), w, (9.0, 61.0), (4.0, 20.0), 30.0),
+            (cache(wt=[[19.0, 50.0]]), w, (9.0, 61.0), (4.0, 23.0), 30.0),
+            (cache(wt=[[19.0, 50.0]]), w, (9.0, None), (4.0, 21.0), 30.0),
+            (cache(st=[[3.0, 2.0]], wt=[[19.0, 50.0]]), later, (1.0, 61.0),
+             (1.0, 21.0), 30.0),
+            (cache(wt=[[19.0, 50.0]]),
+             "2026-08-16 01:31:00|2026-08-11 01:10:00", (9.0, 61.0),
+             (4.0, 21.0), 30.0),
+            (cache(wt=[[19.0, 50.0]]),
+             "2026-08-16 01:31:00|2026-08-11 01:11:00", (9.0, 61.0),
+             (4.0, 21.0), 30.0),
+            (cache(windows="None|None", wt=[[19.0, 50.0]]), "None|None",
+             (0.0, 61.0), (0.0, 21.0), 30.0),
+            (cache(wt=[[19.0, 50.0], [True, 1.0], ["20", 1.0], [1.0],
+                       [20.0, 55.0, 1.0], None, [20.0, 55.0]]), w,
+             (9.0, 61.0), (4.0, 21.0), 30.0),
+            (cache(wt=[[float(p), float(p * 3)] for p in range(1, 18)],
+                   wp=17.0), w, (9.0, 61.0), (4.0, 18.0), 30.0),
+            (cache(wp="20"), w, (9.0, 61.0), (4.0, "21"), 30.0),
+            (cache(windows="garbage"), w, (9.0, 61.0), (4.0, 21.0), 30.0)):
+        cases.append({"fn": "next_ticks",
+                      "args": enc([prev, windows, costs[0], costs[1],
+                                   pcts[0], pcts[1], age]),
+                      "out": out(run(claude.next_ticks, prev, windows,
+                                     costs[0], costs[1], pcts[0], pcts[1],
+                                     age))})
+    for t in ([], [[20.0, 100.0]], [[20.0, 100.0], [21.0, 120.0]],
+              [[20.0, 100.0], [22.0, 130.0]],
+              [[20.0, 100.0], [21.0, 105.0], [24.0, 160.0]],
+              [[20.0, 100.0], [22.0, 100.0]], [[20.0, 100.0], [22.0, 90.0]],
+              [[20.0, 100.0], [True, 1.0], [23.0, 145.0]], None, "x"):
+        cases.append({"fn": "tick_rate", "args": enc([t]),
+                      "out": out(run(claude.tick_rate, t))})
+
     for line in priced_lines():
         cases.append({"fn": "_priced_record", "args": [bytes_arg(line)],
                       "out": out(run(claude._priced_record, line))})
@@ -780,6 +842,32 @@ def scan():
     sc.step("window_costs", ss=None, ws=None)
     sc.step("replace", path="p/b.jsonl", text=line("ok2"))
     sc.step("calibration", snap=snap)
+    cases.append(sc.done())
+
+    # The steps, end to end: a reading that rises a point is scanned at
+    # once and noted with the spending then, one seen after too long a gap
+    # is not, the rate comes from the steps once they span two points, a
+    # source's minute of rounding keeps the week, and a new week drops them.
+    def snap_at(wp, week_reset="2026-08-18 01:00"):
+        return {"_scope": "cmd\0\0", "session_pct": 5.0,
+                "session_resets_at": "2026-08-16 04:00", "weekly_pct": wp,
+                "weekly_resets_at": week_reset}
+    sc = Scenario("steps", "UTC", [
+        {"path": "p/s.jsonl", "text": line("t0", "2026-08-16T01:40:00Z"),
+         "mtime": RECENT}])
+    sc.step("calibration", snap=snap_at(20.0))
+    for i, (wp, age) in enumerate(((21.0, 0), (22.0, 700), (23.0, 0))):
+        sc.step("append", path="p/s.jsonl", mtime=RECENT, text=line(
+            "t%d" % (i + 1), "2026-08-16T01:4%d:00Z" % (i + 1),
+            tokens=1000 * (i + 2)))
+        if age:
+            sc.step("age", snap=snap_at(wp), age=age)
+        sc.step("calibration", snap=snap_at(wp))
+    sc.step("calibration", snap=snap_at(23.0), scan=False)
+    sc.step("append", path="p/s.jsonl", mtime=RECENT,
+            text=line("t4", "2026-08-16T01:45:00Z", tokens=5000))
+    sc.step("calibration", snap=snap_at(24.0, "2026-08-18 01:01"))
+    sc.step("calibration", snap=snap_at(25.0, "2026-08-25 01:00"))
     cases.append(sc.done())
 
     # The calibration cache: planted, live, stale, foreign, and none.

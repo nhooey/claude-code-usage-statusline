@@ -15,11 +15,12 @@ import { writeAtomic } from "./claude_records_node.ts";
 import { statePath } from "./state.ts";
 import {
   _calibCacheText, _calibrationCacheName, _calibrationOf, _idKey,
+  _readingMoved, nextTicks,
   _pricedRecord, _windowCostsFiles, _windowCostsOf, _windowCostsText,
   _windowsKey, _windowStarts, CALIB_TTL, COST_SAVE_EVERY_S, COST_TAIL_BYTES,
 } from "./claude_calib.ts";
 import type {
-  Calib, CostKept, Naive, Priced, Snapshot,
+  Calib, CostKept, Naive, Priced, Snapshot, Ticks,
 } from "./claude_calib.ts";
 import type { Dict } from "./py.ts";
 
@@ -341,12 +342,29 @@ export function _readCalibCache(windows: string, snap: Snapshot,
   return pyHas(d, "sess_pct") ? d : null;
 }
 
+/** _read_prev_calib: the calibration cache whatever its windows and age,
+ * and its age in seconds. */
+export function _readPrevCalib(snap: Snapshot, env: CalibEnv):
+  [Dict | null, number | null] {
+  const path = calibrationCachePath(snap, env);
+  try {
+    const mt = _mtime(path);
+    if (mt === null) return [null, null];
+    const d = pyJsonLoads(new TextDecoder("utf-8",
+      { fatal: true, ignoreBOM: true }).decode(fs.readFileSync(path)));
+    return isDict(d) ? [d, env.now - mt] : [null, null];
+  } catch {
+    return [null, null];
+  }
+}
+
 /** The scan, and the two readings it was SIMULTANEOUS with. */
 export function _writeCalibCache(windows: string, snap: Snapshot,
-  env: CalibEnv, sc: number, wc: number, sp: unknown, wp: unknown): void {
+  env: CalibEnv, sc: number, wc: number, sp: unknown, wp: unknown,
+  ticks: Ticks | null = null): void {
   let text: string;
   try {
-    text = _calibCacheText(windows, sc, wc, sp, wp);
+    text = _calibCacheText(windows, sc, wc, sp, wp, ticks);
   } catch {
     return;
   }
@@ -368,14 +386,18 @@ export function calibration(snap: Snapshot, env: CalibEnv,
   const [ss, ws] = _windowStarts(snap);
   const windows = _windowsKey(ss, ws);
   let cached = _readCalibCache(windows, snap, env);
+  // A reading that moved since the scan is a step to note: scanned now.
+  if (scan && cached !== null && _readingMoved(snap, cached)) cached = null;
   if (cached === null && !scan) {
     cached = _readCalibCache(windows, snap, env, null);
   }
   const run = (ss === null && ws === null) || !scan ? null : () => {
+    const [prev, prevAge] = _readPrevCalib(snap, env);
     const [sc, wc] = _windowCosts(ss, ws, env);
-    _writeCalibCache(windows, snap, env, sc, wc,
-      pyGet(snap, "session_pct"), pyGet(snap, "weekly_pct"));
-    return [sc, wc] as [number, number];
+    const sp = pyGet(snap, "session_pct"), wp = pyGet(snap, "weekly_pct");
+    const ticks = nextTicks(prev, windows, sc, wc, sp, wp, prevAge);
+    _writeCalibCache(windows, snap, env, sc, wc, sp, wp, ticks);
+    return [sc, wc, ticks] as [number, number, Ticks];
   };
   return _calibrationOf(snap, cached, run);
 }

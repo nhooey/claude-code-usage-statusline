@@ -114,6 +114,84 @@ PROJECTS_DIR = os.environ.get("CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR",
 # for all but the first hours of a week, so it pays almost nothing.
 CALIB_MIN_PCT = 2.0
 
+# THE STEPS.  A whole-point reading says only that the truth is within half a
+# point of it, but the moment it STEPS from n to n+1 the truth is at one place
+# in that band, the same place at every step.  So the window's spending noted
+# at two steps, a and b points, gives the cost of b-a points with the
+# rounding gone from both ends, and with it whatever was used before the first
+# step, here or elsewhere.  A step is noted only when the reading before it
+# was seen at most CALIB_TICK_GAP_S earlier: past that, the step happened at
+# some unknown moment in between, and so did the spending.  The rate is taken
+# from the steps once they span CALIB_TICK_SPAN points, from the last
+# CALIB_TICKS_KEPT of them; a window's steps are carried while it is the same
+# window, its start within CALIB_TICK_START_S, since the sources round a reset
+# to different minutes.
+CALIB_TICK_GAP_S = 600.0
+CALIB_TICK_SPAN = 2.0
+CALIB_TICKS_KEPT = 16
+CALIB_TICK_START_S = 600.0
+
+
+def _tick_list(v) -> list:
+    """A cache's steps as [points, cost] pairs, dropping any that is not."""
+    out = []
+    for t in v if isinstance(v, list) else []:
+        if (isinstance(t, list) and len(t) == 2 and
+                all(isinstance(x, (int, float)) and not isinstance(x, bool)
+                    for x in t)):
+            out.append([float(t[0]), float(t[1])])
+    return out
+
+
+def _same_start(a: str, b: str) -> bool:
+    """Two halves of a windows key name the same window: both a start,
+    within CALIB_TICK_START_S of each other.  A window with no start has no
+    steps."""
+    if a == "None" or b == "None":
+        return False
+    try:
+        da = datetime.strptime(a, "%Y-%m-%d %H:%M:%S")
+        db = datetime.strptime(b, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return False
+    return abs((da - db).total_seconds()) <= CALIB_TICK_START_S
+
+
+def next_ticks(prev, windows: str, sc, wc, sp, wp,
+               prev_age: Optional[float]) -> Dict[str, list]:
+    """Each window's steps after a scan of `windows` that read sc and wc
+    against the readings sp and wp: the steps `prev`, the cache before it,
+    carried for the same window, and one more where the reading rose since
+    a cache at most CALIB_TICK_GAP_S old (`prev_age`)."""
+    old = prev if isinstance(prev, dict) and "windows" in prev else {}
+    halves = windows.split("|")
+    was = str(old.get("windows", "")).split("|")
+    out = {}
+    for i, (key, cost, pct) in enumerate((("sess", sc, sp),
+                                          ("week", wc, wp))):
+        same = len(was) == 2 and len(halves) == 2 and _same_start(
+            was[i], halves[i])
+        kept = _tick_list(old.get(key + "_ticks")) if same else []
+        p = _pct_num(pct)
+        q = _pct_num(old.get(key + "_pct")) if same else None
+        if (p is not None and q is not None and p > q and cost is not None
+                and prev_age is not None and prev_age <= CALIB_TICK_GAP_S):
+            kept.append([float(p), float(cost)])
+        out[key] = kept[-CALIB_TICKS_KEPT:]
+    return out
+
+
+def tick_rate(ticks) -> Optional[float]:
+    """Dollars per point between the first and the last step, or None
+    while they span under CALIB_TICK_SPAN points or no spending."""
+    t = _tick_list(ticks)
+    if len(t) < 2:
+        return None
+    (p0, c0), (p1, c1) = t[0], t[-1]
+    if p1 - p0 < CALIB_TICK_SPAN or c1 <= c0:
+        return None
+    return (c1 - c0) / (p1 - p0)
+
 
 def frozen_now() -> Optional[float]:
     """The wall clock, pinned, or None to read the real one.
@@ -1541,6 +1619,12 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     out = {"sess": None, "week": None}
     sp, wp = snap.get("session_pct"), snap.get("weekly_pct")
     cached = _read_calib_cache("%s|%s" % (ss, ws))
+    # A reading that moved since the scan is a step to note (see
+    # CALIB_TICK_GAP_S), so it is scanned again now, not CALIB_TTL later.
+    if (scan and cached is not None and "windows" in cached and
+            (_pct_num(cached.get("sess_pct")), _pct_num(cached.get("week_pct")))
+            != (_pct_num(sp), _pct_num(wp))):
+        cached = None
     if cached is None and not scan:
         cached = _read_calib_cache("%s|%s" % (ss, ws), ttl=None)
     if cached is not None and "windows" not in cached:
@@ -1573,23 +1657,48 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
         # window key still holds them to this window.
         sc, wc = cached.get("sess_cost"), cached.get("week_cost")
         sp, wp = cached.get("sess_pct"), cached.get("week_pct")
+        ticks = {"sess": cached.get("sess_ticks"),
+                 "week": cached.get("week_ticks")}
     elif (ss is None and ws is None) or not scan:
         return out
     else:
+        prev, prev_age = _read_prev_calib()
         sc, wc = _window_costs(ss, ws)
-        _write_calib_cache("%s|%s" % (ss, ws), sc, wc, sp, wp)
+        ticks = next_ticks(prev, "%s|%s" % (ss, ws), sc, wc, sp, wp,
+                           prev_age)
+        _write_calib_cache("%s|%s" % (ss, ws), sc, wc, sp, wp, ticks)
     # See CALIB_MIN_PCT: below it the reading's own quantisation is worth
     # more than the figure, and "?" is the honest reading of a scale that
     # cannot be drawn yet.
     # Through _pct_num whichever branch supplied them: a cache entry written
     # while the snapshot still carried strings would otherwise poison every
     # render for CALIB_TTL after the fix that stopped writing them.
+    # The steps' rate where they span enough points (see CALIB_TICK_GAP_S),
+    # else the one reading's.
     sp, wp = _pct_num(sp), _pct_num(wp)
-    if sp and sp >= CALIB_MIN_PCT and sc is not None:
+    sr, wr = tick_rate(ticks["sess"]), tick_rate(ticks["week"])
+    if sr is not None:
+        out["sess"] = sr
+    elif sp and sp >= CALIB_MIN_PCT and sc is not None:
         out["sess"] = sc / sp
-    if wp and wp >= CALIB_MIN_PCT and wc is not None:
+    if wr is not None:
+        out["week"] = wr
+    elif wp and wp >= CALIB_MIN_PCT and wc is not None:
         out["week"] = wc / wp
     return out
+
+
+def _read_prev_calib() -> Tuple[Optional[dict], Optional[float]]:
+    """The calibration cache whatever its windows and age, and its age in
+    seconds: what a new scan's steps are carried from."""
+    path = calibration_cache_path()
+    try:
+        age = time.time() - os.path.getmtime(path)
+        with open(path) as fh:
+            d = json.load(fh)
+    except Exception:
+        return None, None
+    return (d, age) if isinstance(d, dict) else (None, None)
 
 
 def _read_calib_cache(windows: str, ttl: Optional[float] = CALIB_TTL
@@ -1623,24 +1732,30 @@ def _read_calib_cache(windows: str, ttl: Optional[float] = CALIB_TTL
     return d if "sess_pct" in d else None
 
 
-def calib_cache_text(windows: str, sc, wc, sp, wp) -> str:
+def calib_cache_text(windows: str, sc, wc, sp, wp,
+                     ticks: Optional[Dict[str, list]] = None) -> str:
     """The calibration cache's text, byte for byte as the mod writes it.
 
     Compact separators, the keys in this order, and every number a float, as
     pyJsonDumps writes the four it is told are floats: an int would come out
-    without its ".0" here and with it there.
+    without its ".0" here and with it there.  The steps follow, where either
+    window has any, as [points, cost] pairs of floats.
     """
     def num(v):
         if isinstance(v, int) and not isinstance(v, bool):
             return float(v)
         return v
-    return json.dumps({"windows": windows, "sess_cost": num(sc),
-                       "week_cost": num(wc), "sess_pct": num(sp),
-                       "week_pct": num(wp)}, separators=(",", ":"))
+    d = {"windows": windows, "sess_cost": num(sc), "week_cost": num(wc),
+         "sess_pct": num(sp), "week_pct": num(wp)}
+    if ticks and (ticks.get("sess") or ticks.get("week")):
+        d["sess_ticks"] = _tick_list(ticks.get("sess"))
+        d["week_ticks"] = _tick_list(ticks.get("week"))
+    return json.dumps(d, separators=(",", ":"))
 
 
 def _write_calib_cache(windows: str, sc: float, wc: float,
-                       sp: Optional[float], wp: Optional[float]) -> None:
+                       sp: Optional[float], wp: Optional[float],
+                       ticks: Optional[Dict[str, list]] = None) -> None:
     """The scan, and the two readings it was SIMULTANEOUS with.
 
     The readings are stored because the division happens later — possibly in
@@ -1649,7 +1764,7 @@ def _write_calib_cache(windows: str, sc: float, wc: float,
     """
     path = calibration_cache_path()
     try:
-        text = calib_cache_text(windows, sc, wc, sp, wp)
+        text = calib_cache_text(windows, sc, wc, sp, wp, ticks)
         directory = os.path.dirname(path)
         if directory:
             os.makedirs(directory, mode=0o700, exist_ok=True)

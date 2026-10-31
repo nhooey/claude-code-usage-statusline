@@ -121,7 +121,10 @@ suite("values", {
   _priced_record: (c) => attempt(() => cc._pricedRecord(bytesOf(c.args[0]))),
   state_name: (c) => attempt(() => stateName(c.args[0], ...c.args.slice(1))),
   calib_cache_text: (c) => cc._calibCacheText(c.args[0], c.args[1],
-    c.args[2], c.args[3], c.args[4]),
+    c.args[2], c.args[3], c.args[4], c.args[5] ?? null),
+  next_ticks: (c) => cc.nextTicks(c.args[0], c.args[1], c.args[2],
+    c.args[3], c.args[4], c.args[5], c.args[6]),
+  tick_rate: (c) => cc.tickRate(c.args[0]),
 }, load("values"));
 
 // ════════════════════════════════════════════════════════════════════════════

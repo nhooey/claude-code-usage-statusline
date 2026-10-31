@@ -65,6 +65,16 @@ export const CALIB_TTL = 300;  // the scan walks transcripts; five minutes is
 // at 1 and ±25٪ at 2; see the Python's note for what that cost and bought.
 export const CALIB_MIN_PCT = 2.0;
 
+// The steps: each window's spending noted where its reading rose a point,
+// whose differences carry no rounding; see the Python's note.
+export const CALIB_TICK_GAP_S = 600.0;
+export const CALIB_TICK_SPAN = 2.0;
+export const CALIB_TICKS_KEPT = 16;
+export const CALIB_TICK_START_S = 600.0;
+
+/** Each window's steps, as [points, cost] pairs. */
+export type Ticks = { sess: [number, number][]; week: [number, number][] };
+
 // How much of a file, ending where the last scan stopped, has to read the
 // same for the scan to trust that the file was only appended to since.
 export const COST_TAIL_BYTES = 4096;
@@ -572,6 +582,71 @@ export function _windowCostsOf(sessStart: Naive | null,
   return [sess, week];
 }
 
+/** _tick_list: a cache's steps as [points, cost] pairs, dropping any that
+ * is not. */
+export function _tickList(v: unknown): [number, number][] {
+  const out: [number, number][] = [];
+  for (const t of Array.isArray(v) ? v : []) {
+    if (Array.isArray(t) && t.length === 2 &&
+        t.every((x) => typeof x === "number")) {
+      out.push([t[0], t[1]]);
+    }
+  }
+  return out;
+}
+
+const KEY_HALF = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/;
+
+/** _same_start: two halves of a windows key name the same window, both
+ * starts within CALIB_TICK_START_S; a window with no start has no steps. */
+export function _sameStart(a: string, b: string): boolean {
+  if (a === "None" || b === "None") return false;
+  const at = (v: string): number | null => {
+    const m = KEY_HALF.exec(v);
+    if (!m) return null;
+    const [y, mo, d, h, mi, se] = m.slice(1).map(Number);
+    if (mo < 1 || mo > 12 || d < 1 || d > daysIn(y, mo) || h > 23 ||
+        mi > 59 || se > 59) return null;
+    return naive(y, mo, d, h, mi, se);
+  };
+  const x = at(a), y = at(b);
+  return x !== null && y !== null && Math.abs(x - y) <= CALIB_TICK_START_S;
+}
+
+/** next_ticks: each window's steps after a scan of `windows` that read
+ * sc and wc against sp and wp, carried from `prev` for the same window,
+ * with one more where the reading rose since a cache at most
+ * CALIB_TICK_GAP_S old (`prevAge`). */
+export function nextTicks(prev: unknown, windows: string, sc: unknown,
+  wc: unknown, sp: unknown, wp: unknown, prevAge: number | null): Ticks {
+  const old: Dict = isDict(prev) && pyHas(prev, "windows") ? prev : {};
+  const halves = windows.split("|");
+  const was = pyStr(pyGet(old, "windows", "")).split("|");
+  const one = (i: number, key: string, cost: unknown, pct: unknown) => {
+    const same = was.length === 2 && halves.length === 2 &&
+      _sameStart(was[i], halves[i]);
+    const kept = same ? _tickList(pyGet(old, key + "_ticks")) : [];
+    const p = _pctNum(pct);
+    const q = same ? _pctNum(pyGet(old, key + "_pct")) : null;
+    if (p !== null && q !== null && p > q && typeof cost === "number" &&
+        prevAge !== null && prevAge <= CALIB_TICK_GAP_S) {
+      kept.push([p, cost]);
+    }
+    return kept.slice(-CALIB_TICKS_KEPT);
+  };
+  return { sess: one(0, "sess", sc, sp), week: one(1, "week", wc, wp) };
+}
+
+/** tick_rate: dollars per point between the first and the last step, or
+ * null while they span under CALIB_TICK_SPAN points or no spending. */
+export function tickRate(ticks: unknown): number | null {
+  const t = _tickList(ticks);
+  if (t.length < 2) return null;
+  const [p0, c0] = t[0], [p1, c1] = t[t.length - 1];
+  if (p1 - p0 < CALIB_TICK_SPAN || c1 <= c0) return null;
+  return (c1 - c0) / (p1 - p0);
+}
+
 /** Dollars per one percent of each plan window, from a scan and the
  * readings it was taken with.
  *
@@ -581,28 +656,38 @@ export function _windowCostsOf(sessStart: Naive | null,
  * halves of the ratio come off one moment, the cache's or the scan's, and
  * no unit is derived from a reading under CALIB_MIN_PCT. */
 export function _calibrationOf(snap: Snapshot, cached: Dict | null,
-  scan: (() => [number, number]) | null): Calib {
+  scan: (() => [number, number, Ticks]) | null): Calib {
   const out: { sess: unknown; week: unknown } = { sess: null, week: null };
   if (cached !== null && !pyHas(cached, "windows")) {
     return { sess: pyGet(cached, "sess"), week: pyGet(cached, "week") };
   }
   let sc: unknown, wc: unknown;
   let sp = pyGet(snap, "session_pct"), wp = pyGet(snap, "weekly_pct");
+  let st: unknown = null, wt: unknown = null;
   if (cached !== null) {
     sc = pyGet(cached, "sess_cost");
     wc = pyGet(cached, "week_cost");
     sp = pyGet(cached, "sess_pct");
     wp = pyGet(cached, "week_pct");
+    st = pyGet(cached, "sess_ticks");
+    wt = pyGet(cached, "week_ticks");
   } else if (scan === null) {
     return out;
   } else {
-    [sc, wc] = scan();
+    let t: Ticks;
+    [sc, wc, t] = scan();
+    st = t.sess;
+    wt = t.week;
   }
+  // The steps' rate where they span enough points, else the one reading's.
   const spn = _pctNum(sp), wpn = _pctNum(wp);
-  if (pyTruthy(spn) && spn! >= CALIB_MIN_PCT && sc !== null) {
+  const sr = tickRate(st), wr = tickRate(wt);
+  if (sr !== null) out.sess = sr;
+  else if (pyTruthy(spn) && spn! >= CALIB_MIN_PCT && sc !== null) {
     out.sess = pyDiv(sc, spn);
   }
-  if (pyTruthy(wpn) && wpn! >= CALIB_MIN_PCT && wc !== null) {
+  if (wr !== null) out.week = wr;
+  else if (pyTruthy(wpn) && wpn! >= CALIB_MIN_PCT && wc !== null) {
     out.week = pyDiv(wc, wpn);
   }
   return out;
@@ -706,8 +791,23 @@ export function _windowCostsFiles(text: string):
 /** The calibration cache's text, byte for byte as calib_cache_text writes
  * it: compact, in this key order, every number a float. */
 export function _calibCacheText(windows: string, sc: unknown, wc: unknown,
-  sp: unknown, wp: unknown): string {
-  return pyJsonDumps({ windows, sess_cost: sc, week_cost: wc,
-    sess_pct: sp, week_pct: wp }, false,
-  ["sess_cost", "week_cost", "sess_pct", "week_pct"]);
+  sp: unknown, wp: unknown, ticks: Ticks | null = null): string {
+  const d: Dict = { windows, sess_cost: sc, week_cost: wc,
+    sess_pct: sp, week_pct: wp };
+  // The steps, where either window has any; "" floats an array's numbers.
+  if (ticks && (ticks.sess.length || ticks.week.length)) {
+    d.sess_ticks = _tickList(ticks.sess);
+    d.week_ticks = _tickList(ticks.week);
+  }
+  return pyJsonDumps(d, false,
+    ["sess_cost", "week_cost", "sess_pct", "week_pct", ""]);
+}
+
+/** The cached readings no longer the snapshot's: the reading has moved,
+ * which is a step to note, so the scan is due now. */
+export function _readingMoved(snap: Snapshot, cached: Dict): boolean {
+  if (!pyHas(cached, "windows")) return false;
+  return _pctNum(pyGet(cached, "sess_pct")) !==
+      _pctNum(pyGet(snap, "session_pct")) ||
+    _pctNum(pyGet(cached, "week_pct")) !== _pctNum(pyGet(snap, "weekly_pct"));
 }

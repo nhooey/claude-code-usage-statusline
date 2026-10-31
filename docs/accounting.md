@@ -364,6 +364,21 @@ of 1% means anywhere from 0.5% to 1.5%. Below 2% (`CALIB_MIN_PCT`) no rate is
 derived and the shares print `?`. This affects the first minutes of each
 5-hour window and the first hours of each week.
 
+**The steps.** Rounding to whole points is half a point either way, about 8٪
+of a reading of 6. But at the moment a reading steps up a point, the true
+figure is at the same place in its band every time. So each scan where a
+window's reading has risen since the last one notes that reading and the
+window's spending then. Once the steps span 2 points (`CALIB_TICK_SPAN`), the
+rate is the spending between the first and the last step divided by the
+points between them. The rounding cancels out of that, and so does anything
+used before the first step, here or elsewhere. A reading that moves is
+scanned at once, not after `CALIB_TTL`. A step counts only when the reading
+before it was seen at most 10 minutes earlier (`CALIB_TICK_GAP_S`): after a
+longer gap, the step happened at some unknown moment in it. The last 16 steps
+of each window are kept in the calibration cache (`sess_ticks` and
+`week_ticks`). The week's steps last across its 5-hour windows, and survive a
+source rounding the reset to a different minute, up to 10 minutes.
+
 **Splitting at the boundary.** A turn can straddle a reset. Its cost is summed
 per request by timestamp, so only the part billed after the window opened
 counts. A request whose timestamp does not parse is counted in. A compaction

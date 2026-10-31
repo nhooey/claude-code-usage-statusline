@@ -83,7 +83,7 @@ for c in shared:
     except TypeError:
         got = {"raises": True}
     assert got == c["out"], (c, got)
-assert len(shared) == 13, len(shared)
+assert len(shared) == 15, len(shared)
 
 # ... and each port reads the other's: the text the mod writes, under the
 # name it gives, read by the panel's scan=False at any age.
