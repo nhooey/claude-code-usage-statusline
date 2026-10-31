@@ -469,10 +469,13 @@ test('a /resume in the running process starts the tick again for the ' +
   })
 
 test('under auto, with no native reading, the plan comes from the usage ' +
-  'endpoint, asked as the session, once per 5 minutes', async ($, on) => {
+  'endpoint, asked as the session, once per 5 minutes for every session ' +
+  'on the account', async ($, on) => {
     const w = world(on)
     w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',
       encoder.encode('{"usage-source": "auto"}'))
+    w.files.set('/claude/.claude.json', encoder.encode(
+      '{"oauthAccount": {"accountUuid": "0f0f0f0f-test-account"}}'))
     w.oauth.body = JSON.stringify({
       five_hour: { utilization: 18.0, resets_at: '2026-08-16T05:00:00+00:00' },
       seven_day: { utilization: 24.0, resets_at: '2026-08-18T01:00:00+00:00' },
@@ -486,6 +489,17 @@ test('under auto, with no native reading, the plan comes from the usage ' +
     await w.clock.advance(31_000)
     await settle()
     expect(w.oauth.asked.length).toBe(asked)
+    // Saved under the account, not the session.
+    const saved = [...w.files.values()].map((b) => new TextDecoder().decode(b))
+      .filter((t) => t.includes('"experimental-claude-oauth"'))
+    expect(saved.length).toBe(1)
+    expect(saved[0]).toContain('"account_name":"account:')
+    // Another session on the account: the same reading, nothing asked.
+    w.session.id = 'f1xture0-0000-4000-8000-00000000beef'
+    await w.clock.advance(1_000)
+    await settle()
+    expect(w.oauth.asked.length).toBe(asked)
+    expect(String((lastDoc(w).limits as Dict).weekly_pct)).toMatch(/^24/)
   })
 
 test('a turn running draws the running phase', async ($, on) => {

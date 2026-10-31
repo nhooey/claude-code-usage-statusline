@@ -976,12 +976,18 @@ export async function collect(agent: string, spec: string | null,
     selected = agent === "codex" ? "codex-app-server" : claudeFallback;
   }
   const ttl = HTTP_SOURCES.includes(selected) ? 300 : 60;
-  const rawCache = await store.load(agent, selected, namespace, periodKey);
+  // An HTTP source asked with the session's own credential, not one in the
+  // environment, answers for the signed-in account: every session on it
+  // shares the reading, so the machine asks once per ttl, not each session.
+  const shared = HTTP_SOURCES.includes(selected) &&
+    namespace.startsWith("session:") ? await configAccount() : "";
+  const ns = shared || namespace;
+  const rawCache = await store.load(agent, selected, ns, periodKey);
   // cachedReading whitelists the source fields, dropping the identity;
   // every return carries it again, since the calibration cache is named
   // from it and a cached reading must name the same file as a fresh one.
   const cached = tagIdentity(cachedReading(rawCache, selected, now, ttl),
-                             agent, selected, namespace, periodKey);
+                             agent, selected, ns, periodKey);
   if (!refreshDue(rawCache, now, ttl)) return newest(cached);
   const failure: Dict = {};
   let fresh: unknown = await fetch(selected, ctx, start, end, failure);
@@ -994,21 +1000,21 @@ export async function collect(agent: string, spec: string | null,
     // A source as_of is evidence: never relabel a stale reading fresh.
     f.as_of = pyGet(f, "as_of") !== null ? f.as_of : now;
     const done = cachedReading(f, selected, now, ttl);
-    Object.assign(done, { agent, account_name: namespace,
+    Object.assign(done, { agent, account_name: ns,
                           period_start: periodKey, fetched_at: now,
                           attempted_at: now, fail_count: 0 });
-    await store.save(agent, selected, namespace, periodKey, done);
+    await store.save(agent, selected, ns, periodKey, done);
     return newest(done);
   }
   const retryAfter = pyGet(failure, "retry_after");
   const failed = failureCache(rawCache, now, ttl,
     typeof retryAfter === "number" ? retryAfter : null);
-  Object.assign(failed, { agent, account_name: namespace,
+  Object.assign(failed, { agent, account_name: ns,
                           period_start: periodKey });
-  await store.save(agent, selected, namespace, periodKey, failed);
+  await store.save(agent, selected, ns, periodKey, failed);
   return newest(tagIdentity(pyTruthy(cached) ? cached : staleNative, agent,
-                            pyTruthy(cached) ? selected : "native", namespace,
-                            periodKey));
+                            pyTruthy(cached) ? selected : "native",
+                            pyTruthy(cached) ? ns : namespace, periodKey));
 }
 
 export function identity(values: unknown[]): string[] {

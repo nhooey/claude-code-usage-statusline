@@ -181,8 +181,9 @@ engine adds the session's own credential and sends it only to Anthropic's
 host. It is the mod's `auto` fallback for Claude, so the plan stays current
 while no session is making requests, as use on another machine or on
 claude.ai moves it. A reading is kept for five minutes in the shared state
-directory, so the machine asks once per five minutes, whatever the number of
-sessions.
+directory, under the account Claude Code is signed in to (`oauthAccount` in
+its `.claude.json`), so the machine asks once per five minutes, whatever the
+number of sessions.
 
 ## Claude Usage Tracker
 
