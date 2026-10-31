@@ -53,7 +53,7 @@ import type {
 } from '../src/claude_calib.ts'
 import {
   cacheName, commandInput, commandOutput, identity, isCacheName, pyFloat,
-  pyJsonDumps, pyJsonLoads, pyStr, trackerV1,
+  claudeOauthReading, pyJsonDumps, pyJsonLoads, pyStr, trackerV1,
 } from '../src/sources.ts'
 import type { Env, Fetch, Store } from '../src/sources.ts'
 import {
@@ -903,8 +903,26 @@ async function fetchOne($: $, home: string, selected: string,
       return {}
     }
   }
+  if (selected === 'experimental-claude-oauth') {
+    // With the session's own credential, which the engine sets and sends
+    // only to a first-party host; none under a third-party provider.
+    try {
+      const auth = await $.session.authorize()
+      if (!auth) return {}
+      const r = await $.http.fetch(OAUTH_USAGE_URL, { auth: auth.handle,
+        headers: { 'anthropic-beta': 'oauth-2025-04-20' } })
+      if (!r.ok) return {}
+      return claudeOauthReading(pyJsonLoads(r.text),
+        (await $.clock.now()) / 1000)
+    } catch {
+      return {}
+    }
+  }
   return {}
 }
+
+// Claude's plan windows, as the account's own usage page reads them.
+const OAUTH_USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 
 let configAccount: { path: string; stamp: string; id: string } | null = null
 
@@ -1000,8 +1018,11 @@ async function preparedVia($: $, places: Places, raw: Dict,
   const fetch: Fetch = (selected, ctx) =>
     fetchOne($, places.home, selected, ctx)
   const env: Env = {}
+  // Under auto, the account's own usage endpoint in place of the tracker
+  // app, which need not be running: the mod can ask it as the session.
   return prepareClaudeReading(spec, account, accountPeriod, context,
-    now, env, store, fetch, () => configAccountVia($, places.home))
+    now, env, store, fetch, () => configAccountVia($, places.home),
+    'experimental-claude-oauth')
 }
 
 // ════════════════════════════════════════════════════════════════════════════

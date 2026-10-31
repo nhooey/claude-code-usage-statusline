@@ -41,11 +41,16 @@ A source for the other agent is rejected with exit 2 — `--agent claude
 1. Use native data if this invocation has fresh native data.
 2. Otherwise use a native reading cached by an earlier invocation in the last
    60 seconds.
-3. Otherwise ask the local fallback: the Claude Usage Tracker for Claude, the
-   Codex app-server for Codex.
+3. Otherwise ask the fallback: for Claude, the Claude Usage Tracker under
+   the status line and the agent panel, and the account's own usage
+   endpoint (`experimental-claude-oauth`) under the mod, asked as the
+   session; the Codex app-server for Codex.
+4. Whichever the fallback gives, a native reading taken later wins over it,
+   stale or not: a tracker that stopped polling keeps its last reading.
 
-`auto` never picks an admin or experimental source just because its
-credential is set; you have to name those.
+Under the status line and the agent panel, `auto` never picks an admin or
+experimental source just because its credential is set; you have to name
+those.
 
 For Claude, only the status line receives plan windows from Claude Code. The
 Stop hook and the agent panel get none, so they use the reading the status
@@ -170,6 +175,14 @@ browser cookies, and doesn't refresh tokens.
 
 `experimental-claude-oauth` reads the five-hour and seven-day windows, plus
 the Opus and Sonnet weekly sub-limits when present.
+
+The mod asks it as the session, with no token in the environment: the
+engine adds the session's own credential and sends it only to Anthropic's
+host. It is the mod's `auto` fallback for Claude, so the plan stays current
+while no session is making requests, as use on another machine or on
+claude.ai moves it. A reading is kept for five minutes in the shared state
+directory, so the machine asks once per five minutes, whatever the number of
+sessions.
 
 ## Claude Usage Tracker
 

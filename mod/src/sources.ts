@@ -8,12 +8,13 @@
 // function keeps its Python name in camelCase, so a change to one names the
 // place to change in the other.
 //
-// NOT PORTED: the HTTP sources (anthropic-admin, openai-admin,
-// experimental-claude-oauth, experimental-codex-api, with request_json,
-// request_pages and _retry_after) and the Codex app-server collector.  The
-// band is Claude's and reads the tracker; validateSource still accepts their
-// names, so a spec that names one fails the way an unavailable source does
-// (no reading) rather than as an unknown source.
+// NOT PORTED: the HTTP sources' requests (anthropic-admin, openai-admin,
+// experimental-codex-api, with request_json, request_pages and
+// _retry_after) and the Codex app-server collector; validateSource still
+// accepts their names, so a spec that names one fails the way an
+// unavailable source does (no reading) rather than as an unknown source.
+// experimental-claude-oauth's answer is read here (claudeOauthReading); the
+// mod makes its request with the session's own credential.
 //
 // What Python gives for free and this file spells out, because the shared
 // cases would otherwise drift on it: float() on strings, str() on JSON
@@ -857,6 +858,26 @@ export interface Store {
 
 // Runs one collector.  `failure` may be given a retry_after, as the HTTP
 // sources do; none of the ported ones sets it.
+/** experimental_claude_oauth's reading of /api/oauth/usage's answer `raw`,
+ * taken at `now`: each window with a utilization, the 5-hour one and the
+ * three 7-day ones. */
+export function claudeOauthReading(raw: unknown, now: number): Reading {
+  if (!isDict(raw)) return {};
+  const windows: Dict[] = [];
+  for (const name of ["five_hour", "seven_day", "seven_day_opus",
+                      "seven_day_sonnet"]) {
+    const item = pyGet(raw, name, {});
+    if (isDict(item) && pyGet(item, "utilization") !== null) {
+      windows.push({ id: name,
+                     duration_seconds: name === "five_hour" ? 18000 : 604800,
+                     used_percent: pyGet(item, "utilization"),
+                     resets_at: pyGet(item, "resets_at") });
+    }
+  }
+  return normalise({ schema_version: 1, as_of: now, windows },
+                   "experimental-claude-oauth");
+}
+
 export type Fetch = (selected: string, context: Dict, start: number,
                      end: number, failure: Dict) => Promise<unknown>;
 
@@ -870,6 +891,9 @@ const HTTP_SOURCES = ["anthropic-admin", "openai-admin",
                       "experimental-claude-oauth", "experimental-codex-api"];
 
 // Collect one selected reading with source/account/UTC-period isolation.
+// Under auto, Claude's fallback is `claudeFallback`: the tracker, as the
+// Python has it, or for the mod, which can ask with the session's own
+// credential, experimental-claude-oauth.
 //
 // The cache and the collectors are arguments, so this decides and they do.
 // Python takes a non-blocking flock around the refresh, so two renders do
@@ -880,7 +904,8 @@ export async function collect(agent: string, spec: string | null,
                               account: string, period: string,
                               context: unknown, now: number, store: Store,
                               fetch: Fetch, env: Env = {},
-                              configAccount: AccountOf = () => ""):
+                              configAccount: AccountOf = () => "",
+                              claudeFallback = "claude-usage-tracker"):
     Promise<Reading> {
   spec = validateSource(agent, spec);
   const [start, end] = periodBounds(period, now);
@@ -948,7 +973,7 @@ export async function collect(agent: string, spec: string | null,
     if (pyTruthy(cachedNative) && !pyTruthy(cachedNative.stale)) {
       return tagIdentity(cachedNative, agent, "native", namespace, periodKey);
     }
-    selected = agent === "codex" ? "codex-app-server" : "claude-usage-tracker";
+    selected = agent === "codex" ? "codex-app-server" : claudeFallback;
   }
   const ttl = HTTP_SOURCES.includes(selected) ? 300 : 60;
   const rawCache = await store.load(agent, selected, namespace, periodKey);

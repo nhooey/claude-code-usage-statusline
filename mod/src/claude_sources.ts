@@ -145,11 +145,13 @@ export function legacyLimits(reading: unknown): Limits {
 export async function prepareClaudeReading(
     spec: string | null, account: string, period: string, context: unknown,
     now: number, env: Env, store: Store,
-    fetch: Fetch, configAccount: AccountOf = () => ""):
+    fetch: Fetch, configAccount: AccountOf = () => "",
+    claudeFallback = "claude-usage-tracker"):
     Promise<PreparedClaudeReading> {
   const safe = isDict(context) ? context : {};
   const reading = await collect("claude", spec, account, period, safe, now,
-                                store, fetch, env, configAccount);
+                                store, fetch, env, configAccount,
+                                claudeFallback);
   return { reading, limits: legacyLimits(reading) };
 }
 

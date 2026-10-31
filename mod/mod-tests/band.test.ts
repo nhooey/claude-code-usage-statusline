@@ -147,6 +147,9 @@ type World = {
   clock: MockClock
   // The session `$.session.id` answers, which a /resume switches.
   session: { id: string }
+  // The usage endpoint's answer, and the requests made of it; with no
+  // answer there is no credential, and nothing is asked.
+  oauth: { body: string | null; asked: { url: string; auth?: string }[] }
 }
 
 type Run = { argv: readonly string[]; init?: { stdin?: string } }
@@ -248,6 +251,14 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   on('session.model', () => ({ value: MODEL }))
   const session = { id: SESSION }
   on('session.id', () => ({ value: session.id }))
+  const oauth: World['oauth'] = { body: null, asked: [] }
+  on('session.authorize', () => ({ value: oauth.body === null ? null
+    : { handle: 'test-handle', kind: 'bearer' as const } }))
+  on('http.fetch', ($, e: any) => {
+    oauth.asked.push({ url: e.url, auth: e.init?.auth })
+    return oauth.body === null ? { deny: 'no network in tests' } as any
+      : { value: { status: 200, ok: true, headers: {}, text: oauth.body } }
+  })
   const usage = { down: usageDown }
   on('session.usage', () => usage.down
     ? { deny: 'usage unavailable' } as any
@@ -266,7 +277,8 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     ;(e.to === 'debug' ? debug : logged).push(e.text)
     return { value: undefined }
   })
-  return { files, store, docs, usage, debug, logged, clock, session }
+  return { files, store, docs, usage, debug, logged, clock, session,
+    oauth }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -454,6 +466,26 @@ test('a /resume in the running process starts the tick again for the ' +
     await settle()
     expect(w.docs.length).toBeGreaterThan(read)
     expect(JSON.stringify(lastDoc(w))).toContain(resumed)
+  })
+
+test('under auto, with no native reading, the plan comes from the usage ' +
+  'endpoint, asked as the session, once per 5 minutes', async ($, on) => {
+    const w = world(on)
+    w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',
+      encoder.encode('{"usage-source": "auto"}'))
+    w.oauth.body = JSON.stringify({
+      five_hour: { utilization: 18.0, resets_at: '2026-08-16T05:00:00+00:00' },
+      seven_day: { utilization: 24.0, resets_at: '2026-08-18T01:00:00+00:00' },
+      seven_day_opus: null })
+    await start($, w, 'terminal', STATUS)
+    expect(w.oauth.asked[0]).toEqual({
+      url: 'https://api.anthropic.com/api/oauth/usage', auth: 'test-handle' })
+    expect(String((lastDoc(w).limits as Dict).weekly_pct)).toMatch(/^24/)
+    // Read again within the 5 minutes: the cached reading, nothing asked.
+    const asked = w.oauth.asked.length
+    await w.clock.advance(31_000)
+    await settle()
+    expect(w.oauth.asked.length).toBe(asked)
   })
 
 test('a turn running draws the running phase', async ($, on) => {
