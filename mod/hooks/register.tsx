@@ -52,7 +52,6 @@ import { costDoc, defaultsError, folderAgents, folderReplies, options,
   from './edges.ts'
 import type { Places } from './edges.ts'
 import { log } from './log.ts'
-import { probeUsage } from './usage_probe.ts'
 
 type $ = EngineInterface
 
@@ -743,11 +742,6 @@ export const register: Register = on => {
     void reconfigure($).catch((err) => log($, 'config', err))
     void refresh($).catch((err) => log($, 'refresh', err))
     return result
-  })
-
-  on('session.measure', async ($, e, next) => {
-    void probeUsage($, e.rateLimits).catch((err) => log($, 'usage probe', err))
-    return next(e)
   })
 
   on('tool.call', async ($, e, next) => {
