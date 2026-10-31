@@ -932,6 +932,18 @@ export async function collect(agent: string, spec: string | null,
                        agent, source, namespace, periodKey);
   }
   let selected = spec;
+  // Under auto, the fallback's reading, or the newest native one where that
+  // was taken later: a tracker that stopped polling keeps its last reading
+  // in its store, which must not stand in for a newer native one, stale or
+  // not.
+  const nativeBest = pyTruthy(staleNative) ? staleNative : cachedNative;
+  const newest = (r: Reading): Reading => {
+    if (spec !== "auto" || !hasReading(nativeBest)) return r;
+    const mine = hasReading(r) ? epoch(pyGet(r, "as_of")) : null;
+    const theirs = epoch(pyGet(nativeBest, "as_of"));
+    if (theirs === null || (mine !== null && mine >= theirs)) return r;
+    return tagIdentity(nativeBest, agent, "native", namespace, periodKey);
+  };
   if (spec === "auto") {
     if (pyTruthy(cachedNative) && !pyTruthy(cachedNative.stale)) {
       return tagIdentity(cachedNative, agent, "native", namespace, periodKey);
@@ -945,7 +957,7 @@ export async function collect(agent: string, spec: string | null,
   // from it and a cached reading must name the same file as a fresh one.
   const cached = tagIdentity(cachedReading(rawCache, selected, now, ttl),
                              agent, selected, namespace, periodKey);
-  if (!refreshDue(rawCache, now, ttl)) return cached;
+  if (!refreshDue(rawCache, now, ttl)) return newest(cached);
   const failure: Dict = {};
   let fresh: unknown = await fetch(selected, ctx, start, end, failure);
   // All built-in/command collectors return the validated v1 form.  Do
@@ -961,7 +973,7 @@ export async function collect(agent: string, spec: string | null,
                           period_start: periodKey, fetched_at: now,
                           attempted_at: now, fail_count: 0 });
     await store.save(agent, selected, namespace, periodKey, done);
-    return done;
+    return newest(done);
   }
   const retryAfter = pyGet(failure, "retry_after");
   const failed = failureCache(rawCache, now, ttl,
@@ -969,9 +981,9 @@ export async function collect(agent: string, spec: string | null,
   Object.assign(failed, { agent, account_name: namespace,
                           period_start: periodKey });
   await store.save(agent, selected, namespace, periodKey, failed);
-  return tagIdentity(pyTruthy(cached) ? cached : staleNative, agent,
-                     pyTruthy(cached) ? selected : "native", namespace,
-                     periodKey);
+  return newest(tagIdentity(pyTruthy(cached) ? cached : staleNative, agent,
+                            pyTruthy(cached) ? selected : "native", namespace,
+                            periodKey));
 }
 
 export function identity(values: unknown[]): string[] {

@@ -690,6 +690,21 @@ def collect(agent, spec="auto", account="default", period="day", context=None, n
                               _cached_reading(cached_any, source, now, 300)),
                              agent, source, namespace, period_key)
     selected = spec
+    # Under auto, the fallback's reading, or the newest native one where that
+    # was taken later: a tracker that stopped polling keeps its last reading
+    # in its store, which must not stand in for a newer native one, stale or
+    # not.
+    native_best = stale_native or cached_native
+
+    def newest(reading):
+        if spec != "auto" or not has_reading(native_best):
+            return reading
+        mine = epoch(reading.get("as_of")) if has_reading(reading) else None
+        theirs = epoch(native_best.get("as_of"))
+        if theirs is None or (mine is not None and mine >= theirs):
+            return reading
+        return _tag_identity(native_best, agent, "native", namespace, period_key)
+
     if spec == "auto":
         if cached_native and not cached_native.get("stale"):
             return _tag_identity(cached_native, agent, "native", namespace, period_key)
@@ -703,12 +718,12 @@ def collect(agent, spec="auto", account="default", period="day", context=None, n
                              selected, namespace, period_key)
     raw_cache = state.load(agent, selected, namespace, period_key)
     cached = cached_of(raw_cache)
-    if not _refresh_due(raw_cache, now, ttl): return cached
+    if not _refresh_due(raw_cache, now, ttl): return newest(cached)
     with state.refresh_lock(agent, selected, namespace, period_key) as acquired:
-        if not acquired: return cached
+        if not acquired: return newest(cached)
         raw_cache = state.load(agent, selected, namespace, period_key)
         cached = cached_of(raw_cache)
-        if not _refresh_due(raw_cache, now, ttl): return cached
+        if not _refresh_due(raw_cache, now, ttl): return newest(cached)
         failure = {}
         if selected.startswith("cmd:"): fresh = command_reading(selected[4:], context)
         elif selected == "native": fresh = native
@@ -729,12 +744,13 @@ def collect(agent, spec="auto", account="default", period="day", context=None, n
             fresh.update({"agent": agent, "account_name": namespace, "period_start": period_key,
                           "fetched_at": now, "attempted_at": now, "fail_count": 0})
             state.save(agent, selected, namespace, period_key, fresh)
-            return fresh
+            return newest(fresh)
         failed = _failure_cache(raw_cache, now, ttl, failure.get("retry_after"))
         failed.update({"agent": agent, "account_name": namespace, "period_start": period_key})
         state.save(agent, selected, namespace, period_key, failed)
-    return _tag_identity(cached or stale_native, agent,
-                         selected if cached else "native", namespace, period_key)
+    return newest(_tag_identity(cached or stale_native, agent,
+                                selected if cached else "native", namespace,
+                                period_key))
 
 def codex_app_server(executable="codex", timeout=5):
     """Read the one safe app-server endpoint with a byte-buffered deadline.

@@ -617,6 +617,11 @@ GOLDEN = golden_store(TRACKER_USAGE)
 STALE_TRACKER = golden_store(dict(TRACKER_USAGE,
                                   lastUpdated=TRACKER_USAGE["lastUpdated"]
                                   - 3600))
+# The tracker's reading 300 seconds on: newer than a native one taken at
+# PIN_NOW, so auto falls back to it once the native cache is stale.
+NEWER_TRACKER = golden_store(dict(TRACKER_USAGE,
+                                  lastUpdated=TRACKER_USAGE["lastUpdated"]
+                                  + 300))
 PAYLOAD = {"session_id": "s1", "rate_limits": CLAUDE_LIMITS}
 EMPTY_LIMITS = {"session_id": "s1", "rate_limits": {
     "five_hour": {"used_percentage": None}}}
@@ -652,17 +657,24 @@ SCENARIOS = [
         step(N, payload=PAYLOAD),
         step(N + 30),
         step(N + 59),
-        step(N + 120),
-        step(N + 150),
+        step(N + 120, tracker=NEWER_TRACKER),
+        step(N + 150, tracker=NEWER_TRACKER),
         step(N + 200, tracker=None),
         step(N + 201, tracker=None),
         step(N + 300, tracker=None),
-        step(N + 600),
+        step(N + 600, tracker=NEWER_TRACKER),
     ]),
     ("auto: no payload, the tracker straight away", [
         step(N, payload={"session_id": "s1"}),
         step(N + 10, tracker=STALE_TRACKER),
         step(N + 70, tracker=STALE_TRACKER),
+    ]),
+    # A tracker that stopped polling keeps its last reading in its store:
+    # the native one a session cached since is newer, stale or not.
+    ("auto: a native reading newer than a tracker that stopped", [
+        step(N, payload=PAYLOAD, tracker=STALE_TRACKER),
+        step(N + 120, tracker=STALE_TRACKER),
+        step(N + 7200, tracker=STALE_TRACKER),
     ]),
     ("auto: a payload with no figures is no reading", [
         step(N, payload=EMPTY_LIMITS),
