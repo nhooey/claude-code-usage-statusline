@@ -10,7 +10,7 @@ import { join as pathJoin } from "node:path";
 import { settings, stripAnsi, visWidth } from "../src/formatting.ts";
 import type { Env } from "../src/formatting.ts";
 import { join, width } from "../src/spans.ts";
-import { RIGHT_EDGE } from "../src/spec.ts";
+import { RIGHT_EDGE, STALE_MARK_S } from "../src/spec.ts";
 import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { draw } from "../src/grid.ts";
@@ -427,4 +427,22 @@ test("🎤 carries the model and 🛫, and a running tool's time in 🛫's colum
   const t = inZone(tooled, () => bandRows(st, tooled, opts));
   assert.match(text(t.turn.cells.rate), /^🔧 +1\.5m$/);
   assert.ok(!t.main.label.some((p) => p.path === "chat.doing"));
+});
+
+test("a plan reading STALE_MARK_S old marks each 💳 figure with 🧊 and " +
+  "its age, in the text", () => {
+  const st = settings({});
+  const fig = document("status/01-baseline@196");
+  const now = (fig.clock as Dict).now as number;
+  const read = (asOf: number) => {
+    const usage = fig.usage as Dict;
+    const doc = { ...fig, usage: { ...usage,
+      reading: { ...(usage.reading as Dict), as_of: asOf } } };
+    return stripAnsi(join(inZone(doc, () => accountLine(st, doc, [], 196))));
+  };
+  assert.doesNotMatch(read(now - 60), /🧊/);
+  assert.doesNotMatch(read(now - STALE_MARK_S + 1), /🧊/);
+  // Three hours old: after each window's figure, before its 🔜.
+  assert.match(read(now - 3 * 3600), /🔋 +\S+٪ 🧊3h 🔜/);
+  assert.match(read(now - 3 * 3600), /🪫 +\S+٪ 🧊3h 🔜/);
 });

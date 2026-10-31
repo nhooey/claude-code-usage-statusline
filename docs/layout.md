@@ -98,7 +98,9 @@ bottom margin of -1 instead, taking it up.
 where the session works, 📦 project, 🌿 branch and 📁 directory, as 🎮's
 label draws them; then 💳 and each window's share, 🔋 the 5-hour and 🪫 the
 weekly, each with 🔜 and the time until it resets; then 📅 and 🕐, the date
-and time now. It draws nothing in the columns: its figures are the plan's
+and time now. A reading 10 minutes old or more has each share followed by
+🧊 and its age, `🪫 87٪ 🧊3h 🔜 1.9d`, in the text rather than a colour,
+since the footer's tail draws in Claude Code's one style. It draws nothing in the columns: its figures are the plan's
 own, read from the configured [usage source](usage-sources.md), and can
 include use from other machines, the web and the phone. Both shares take
 three digits, so 🪫 reads `87٪` as 🔋 does. The row is not cut to the

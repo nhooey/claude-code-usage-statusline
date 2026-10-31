@@ -18,7 +18,8 @@
 // `clock.tz`, as claude_cost.ts's do.
 import {
   E_ACCT, E_BOT, E_COST, E_DATE, E_DIR, E_DIRTY, E_GIT_BAD,
-  E_GIT_OK, E_IDLE, E_PCT, E_PR, E_PROJ, E_RESET, E_SESS, E_SESSION, E_STY,
+  E_GIT_OK, E_IDLE, E_PCT, E_PR, E_PROJ, E_RESET, E_SESS, E_SESSION, E_STALE,
+  E_STY,
   E_TIME, E_TURN, E_TURN_ID, E_WEEK, K, MAG_COST, MAG_DUR_S, TURN_ID_HEX,
 } from "./spec.ts";
 import {
@@ -212,10 +213,12 @@ export function untilReset(st: Settings, epoch: number | null,
 }
 
 /** 💳 account, then each window's 🔜 reset where it has one, then 📅 and 🕐
- * at the end, which leave first on a narrow terminal. */
+ * at the end, which leave first on a narrow terminal.  With `stale`, how
+ * long ago the reading was taken, each figure is followed by 🧊 and that:
+ * the footer's tail draws in one style, so the mark is in the text. */
 export function accountLabel(st: Settings, sess: number | null,
   week: number | null, sessReset: string | null, weekReset: string | null,
-  date: string, time: string): Piece[] {
+  date: string, time: string, stale: string | null = null): Piece[] {
   // Each window whole on the label, its share then its reset, since the
   // row has no figure in the plan columns to sit under: 🔋 15٪ 🔜 6.7m.
   // Three digits for both, so 🪫 reads 87٪ as 🔋 does, not the 87.0٪ the
@@ -225,7 +228,9 @@ export function accountLabel(st: Settings, sess: number | null,
     if (v === null && reset === null) return [];
     const out: Piece[] = [];
     out.push({ path, spans: [span(mark + " "), ...(v === null ? [] :
-      [span(limitPct(st, v, 3) + E_PCT, colour)]), span(" ")], drop: 0 });
+      [span(limitPct(st, v, 3) + E_PCT, colour),
+        ...(stale === null ? [] : [span(" " + E_STALE + stale)])]),
+      span(" ")], drop: 0 });
     if (reset !== null) {
       out.push(piece("plan.reset", E_RESET + " " + reset + "  ", null, 0,
         true));

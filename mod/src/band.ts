@@ -16,6 +16,7 @@
 // as for claude_cost.ts.
 import {
   CHROME_DEPTH, E_ACCT, E_DATE, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
+  STALE_MARK_S,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -262,7 +263,9 @@ export function workspaceOf(fig: Dict, home: string): Workspace {
 
 /** 💳: the plan's two windows, `limits.session_pct` and `weekly_pct` as the
  * source gave them, and on the label the time to each reset,
- * `limits.session_reset` and `weekly_reset`, then 📅 🕐 off `clock.now`. */
+ * `limits.session_reset` and `weekly_reset`, then 📅 🕐 off `clock.now`.
+ * A reading STALE_MARK_S or more old, by `usage.reading.as_of`, has each
+ * figure marked with 🧊 and its age. */
 function accountRow(st: Settings, fig: Dict, now: number): Row {
   const lim = decodeLimits(fig.limits);
   // The resets as the epochs the document carries, not the minute stamps
@@ -274,9 +277,13 @@ function accountRow(st: Settings, fig: Dict, now: number): Row {
     const v = pyFloat(s);
     return v === null || Number.isNaN(v) ? null : v;
   };
+  const reading = (fig.usage as Dict | undefined)?.reading as Dict | null;
+  const asOf = Number(reading?.as_of);
+  const age = Number.isFinite(asOf) ? now - asOf : NaN;
+  const stale = age >= STALE_MARK_S ? durFmt(st, age).trim() : null;
   return { scope: "account", label: accountLabel(st,
     pct(lim.session_pct), pct(lim.weekly_pct), reset("session_reset"),
-    reset("weekly_reset"), ymd(now), hms(now)), cells: {} };
+    reset("weekly_reset"), ymd(now), hms(now), stale), cells: {} };
 }
 
 /** 🎤: the turn opened last, `open_turn`, with `accounting.open_turn`

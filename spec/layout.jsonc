@@ -116,6 +116,13 @@
   // (U+1FA9F) and 🪣 (U+1FAA3) both read better and both come from the Unicode
   // 13 block this terminal carries loose metrics for — painting past the two
   // columns they advance and leaving debris on redraw.
+  "E_STALE": "🧊",         // a plan reading gone cold: the 💳 row's window figure
+                           // and, beside it, how long ago it was read, once that
+                           // is STALE_MARK_S or more.  U+1F9CA, Emoji_Presentation
+                           // =Yes, above the U+1F90C split noted beside EAW_WIDE.
+  "STALE_MARK_S": 600,     // seconds a plan reading may be old before 🧊 marks it:
+                           // a source refreshes within five minutes, so one past
+                           // ten has stopped.
   "E_RESET": "🔜",         // marks a duration as time UNTIL: the figure beside it
                            // is a deadline, not a cycle.  A rotation glyph (🔄, ⟳
                            // before it) said only "something recurs here"; this one
