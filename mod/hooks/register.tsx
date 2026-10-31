@@ -305,18 +305,26 @@ function at(doc: Dict, now: number): Dict {
   return clock && now > then ? { ...doc, clock: { ...clock, now } } : doc
 }
 
-// Whether this load of the module has started its tick.
-let started = false
+// The session this load of the module last started its tick for.
+let startedFor: string | null = null
 
-/** Starts this load's tick, once, from whichever event comes first: the
- * engine sends session.start at a process's start and at a reload, but a
- * mod must not lean on its coming before a turn's events.  The log's line
+/** Starts this load's tick, once per session, from whichever event comes
+ * first: the engine sends session.start at a process's start and at a
+ * reload, but a mod must not lean on its coming before a turn's events,
+ * and a /resume in a running process switches the session under the
+ * module with none.  The new session's state is its own, so the old
+ * tick's generation reads stale and it stops, and what this module kept
+ * for the old session is let go.  The render hooks call it too, since
+ * after a /resume they may be the only events for a while.  The log's line
  * says which load ran in which session, so a live test can tell a mod that
  * failed from one that was never loaded (a `claude --resume` without
  * `--plugin-dir`). */
 async function start($: $, by: string): Promise<void> {
-  if (started) return
-  started = true
+  const id = await $.session.id().catch(() => '')
+  if (id === startedFor) return
+  const switched = startedFor !== null
+  startedFor = id
+  if (switched) forgetSession()
   try {
     const cwd = await $.session.cwd().catch(() => '?')
     await log($, `started by ${by} in ${cwd}`)
@@ -327,9 +335,29 @@ async function start($: $, by: string): Promise<void> {
     await update($, generation, () => mine)
     void tick($, mine).catch((err) => log($, 'tick stopped', err))
     void clock($, mine).catch((err) => log($, 'clock stopped', err))
+    // The figures now, not a tick from now: a switched session has none.
+    void refresh($).catch((err) => log($, 'refresh', err))
   } catch (err) {
     await log($, 'no tick', err)
   }
+}
+
+/** Lets go of what this module kept for the session it last drew: the
+ * places and settings read for it, its turn under way, its permission
+ * mode and the effort its requests asked for. */
+function forgetSession(): void {
+  places = null
+  st = null
+  stKey = ''
+  readAt = 0
+  readMs = 0
+  turnRunning = false
+  pending = null
+  opened = ''
+  permissionMode = undefined
+  hintMode = undefined
+  modeless.clear()
+  seen.effort = ''
 }
 
 /** Keep `key` in the store under `index`, the newest last, dropping the
@@ -796,6 +824,7 @@ export const register: Register = on => {
   // width is taken either way: the footer and the receipt are laid out at
   // it.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    void start($, 'ui.render').catch((err) => log($, 'no start', err))
     bandCols = e.props.bodyColumns + 5
     surveyHeld = e.props.hasSurvey
     // The band's width, the terminal's, whether a pane can dock beside
@@ -865,6 +894,7 @@ export const register: Register = on => {
   // the 💳 row at its right end (decided 2026-10-19): a dim tail after
   // Claude Code's own line, which keeps its pills live (footerTail).
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
+    void start($, 'ui.render').catch((err) => log($, 'no start', err))
     // A change of mode draws the line first with the words of the mode it
     // turned off, so the one now on is known before the transcript has it.
     hintMode = modeOfHint(e.props.hint) ?? hintMode

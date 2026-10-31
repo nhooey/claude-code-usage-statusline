@@ -145,6 +145,8 @@ type World = {
   // Each line the mod wrote into the transcript, `$.ui.log`'s default.
   logged: string[]
   clock: MockClock
+  // The session `$.session.id` answers, which a /resume switches.
+  session: { id: string }
 }
 
 type Run = { argv: readonly string[]; init?: { stdin?: string } }
@@ -244,7 +246,8 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   on('session.cwd', () => ({ value: CWD }))
   on('session.root', () => ({ value: CWD }))
   on('session.model', () => ({ value: MODEL }))
-  on('session.id', () => ({ value: SESSION }))
+  const session = { id: SESSION }
+  on('session.id', () => ({ value: session.id }))
   const usage = { down: usageDown }
   on('session.usage', () => usage.down
     ? { deny: 'usage unavailable' } as any
@@ -263,7 +266,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     ;(e.to === 'debug' ? debug : logged).push(e.text)
     return { value: undefined }
   })
-  return { files, store, docs, usage, debug, logged, clock }
+  return { files, store, docs, usage, debug, logged, clock, session }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -431,6 +434,27 @@ for (const surface of ['terminal', 'desktop'] as const) {
       expect(await drawnRows(ui)).toEqual([])
     })
 }
+
+test('a /resume in the running process starts the tick again for the ' +
+  'resumed session', async ($, on) => {
+    const w = world(on)
+    await start($, w, 'terminal', STATUS)
+    // The process switches sessions, with no session.start: the next
+    // drawing of the band is the first the mod hears of it.
+    const resumed = '/claude/projects/-work/resumed-session.jsonl'
+    place(w, sessionFile('-work'), resumed)
+    w.session.id = 'resumed-session'
+    await mountBand($, 'terminal', BAND)
+    await settle()
+    expect(logOf(w)).toContain('started by ui.render')
+    expect(JSON.stringify(lastDoc(w))).toContain(resumed)
+    // And the tick reads on for it.
+    const read = w.docs.length
+    await w.clock.advance(31_000)
+    await settle()
+    expect(w.docs.length).toBeGreaterThan(read)
+    expect(JSON.stringify(lastDoc(w))).toContain(resumed)
+  })
 
 test('a turn running draws the running phase', async ($, on) => {
   const w = world(on)
