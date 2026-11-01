@@ -613,10 +613,23 @@ export function _sameStart(a: string, b: string): boolean {
   return x !== null && y !== null && Math.abs(x - y) <= CALIB_TICK_START_S;
 }
 
+/** _climbing: the steps that each stand above the one kept before them.
+ * Two sessions whose readings differ by a point write the shared cache in
+ * turn, so each sees the other's lower reading as a rise; a step that does
+ * not climb past the last one kept is that, not a step. */
+function _climbing(ticks: [number, number][]): [number, number][] {
+  const out: [number, number][] = [];
+  for (const t of ticks) {
+    if (!out.length || t[0] > out[out.length - 1][0]) out.push(t);
+  }
+  return out;
+}
+
 /** next_ticks: each window's steps after a scan of `windows` that read
  * sc and wc against sp and wp, carried from `prev` for the same window,
  * with one more where the reading rose since a cache at most
- * CALIB_TICK_GAP_S old (`prevAge`). */
+ * CALIB_TICK_GAP_S old (`prevAge`) and stands above the last step kept
+ * (see _climbing). */
 export function nextTicks(prev: unknown, windows: string, sc: unknown,
   wc: unknown, sp: unknown, wp: unknown, prevAge: number | null): Ticks {
   const old: Dict = isDict(prev) && pyHas(prev, "windows") ? prev : {};
@@ -625,10 +638,11 @@ export function nextTicks(prev: unknown, windows: string, sc: unknown,
   const one = (i: number, key: string, cost: unknown, pct: unknown) => {
     const same = was.length === 2 && halves.length === 2 &&
       _sameStart(was[i], halves[i]);
-    const kept = same ? _tickList(pyGet(old, key + "_ticks")) : [];
+    const kept = same ? _climbing(_tickList(pyGet(old, key + "_ticks"))) : [];
     const p = _pctNum(pct);
     const q = same ? _pctNum(pyGet(old, key + "_pct")) : null;
     if (p !== null && q !== null && p > q && typeof cost === "number" &&
+        (!kept.length || p > kept[kept.length - 1][0]) &&
         prevAge !== null && prevAge <= CALIB_TICK_GAP_S) {
       kept.push([p, cost]);
     }

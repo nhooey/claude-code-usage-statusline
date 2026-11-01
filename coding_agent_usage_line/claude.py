@@ -143,6 +143,18 @@ def _tick_list(v) -> list:
     return out
 
 
+def _climbing(ticks: list) -> list:
+    """The steps that each stand above the one kept before them.  Two
+    sessions whose readings differ by a point write the shared cache in
+    turn, so each sees the other's lower reading as a rise; a step that
+    does not climb past the last one kept is that, not a step."""
+    out = []
+    for t in ticks:
+        if not out or t[0] > out[-1][0]:
+            out.append(t)
+    return out
+
+
 def _same_start(a: str, b: str) -> bool:
     """Two halves of a windows key name the same window: both a start,
     within CALIB_TICK_START_S of each other.  A window with no start has no
@@ -162,7 +174,8 @@ def next_ticks(prev, windows: str, sc, wc, sp, wp,
     """Each window's steps after a scan of `windows` that read sc and wc
     against the readings sp and wp: the steps `prev`, the cache before it,
     carried for the same window, and one more where the reading rose since
-    a cache at most CALIB_TICK_GAP_S old (`prev_age`)."""
+    a cache at most CALIB_TICK_GAP_S old (`prev_age`) and stands above the
+    last step kept (see _climbing)."""
     old = prev if isinstance(prev, dict) and "windows" in prev else {}
     halves = windows.split("|")
     was = str(old.get("windows", "")).split("|")
@@ -171,10 +184,11 @@ def next_ticks(prev, windows: str, sc, wc, sp, wp,
                                           ("week", wc, wp))):
         same = len(was) == 2 and len(halves) == 2 and _same_start(
             was[i], halves[i])
-        kept = _tick_list(old.get(key + "_ticks")) if same else []
+        kept = _climbing(_tick_list(old.get(key + "_ticks"))) if same else []
         p = _pct_num(pct)
         q = _pct_num(old.get(key + "_pct")) if same else None
         if (p is not None and q is not None and p > q and cost is not None
+                and (not kept or p > kept[-1][0])
                 and prev_age is not None and prev_age <= CALIB_TICK_GAP_S):
             kept.append([float(p), float(cost)])
         out[key] = kept[-CALIB_TICKS_KEPT:]

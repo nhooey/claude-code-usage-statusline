@@ -328,7 +328,14 @@ def values():
             (cache(wt=[[float(p), float(p * 3)] for p in range(1, 18)],
                    wp=17.0), w, (9.0, 61.0), (4.0, 18.0), 30.0),
             (cache(wp="20"), w, (9.0, 61.0), (4.0, "21"), 30.0),
-            (cache(windows="garbage"), w, (9.0, 61.0), (4.0, 21.0), 30.0)):
+            (cache(windows="garbage"), w, (9.0, 61.0), (4.0, 21.0), 30.0),
+            # Two sessions a point apart writing the cache in turn: the
+            # other's 20 is no rise past the 21 already stepped.
+            (cache(wt=[[21.0, 60.0]]), w, (9.0, 61.0), (4.0, 21.0), 30.0),
+            # Steps written that way before: only the climbing ones kept.
+            (cache(wt=[[19.0, 50.0], [19.0, 51.0], [20.0, 55.0],
+                       [20.0, 56.0], [18.0, 57.0]]), w, (9.0, 61.0),
+             (4.0, 21.0), 30.0)):
         cases.append({"fn": "next_ticks",
                       "args": enc([prev, windows, costs[0], costs[1],
                                    pcts[0], pcts[1], age]),
