@@ -27,9 +27,7 @@
       }
     ]
   },
-  "terminal": {
-    "TERMINAL_EMULATOR": "JetBrains-JediTerm"
-  },
+  "terminal": {},
   "tracker": {
     "lastUpdated": 808539600,
     "sessionPercentage": 41,

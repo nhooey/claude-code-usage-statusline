@@ -43,7 +43,6 @@ export const OUT = pathJoin(dirname(fileURLToPath(import.meta.url)), "..",
 /** Each profile, by the environment it is read from. */
 export const PROFILES: { readonly [name: string]: Env } = {
   unknown: {},
-  jediterm: { TERMINAL_EMULATOR: "JetBrains-JediTerm" },
   iterm: { TERM_PROGRAM: "iTerm.app" },
   tmux: { TMUX: "/tmp/tmux-501/default,1,0" },
 };

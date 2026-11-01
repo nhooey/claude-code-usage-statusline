@@ -223,7 +223,6 @@ def run(tmp):
     pin_colour()
     os.environ.pop("TMUX", None)
     os.environ.pop("TERM_PROGRAM", None)
-    os.environ["TERMINAL_EMULATOR"] = "JetBrains-JediTerm"
     with open(os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE"], "w") as fh:
         json.dump({"sess": 1.0, "week": 10.0}, fh)   # $1 and $10 per point
 

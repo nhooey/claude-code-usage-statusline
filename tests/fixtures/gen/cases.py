@@ -66,11 +66,10 @@ def env(source=None, calib=CALIB_UNITS, repo="clean", terminal=None):
         "now": PIN_NOW,
         "tz": "UTC",
         "locale": "en_US.UTF-8",
-        # Pinned to JediTerm's profile, not left to whichever terminal runs
-        # the suite.  TMUX and TERM_PROGRAM are unset.
+        # Pinned to the unknown profile, not left to whichever terminal
+        # runs the suite: TMUX and TERM_PROGRAM are unset.
         # The agent panel's cases name others; see ENVS.
-        "terminal": ({"TERMINAL_EMULATOR": "JetBrains-JediTerm"}
-                     if terminal is None else terminal),
+        "terminal": {} if terminal is None else terminal,
         # The Claude Usage Tracker store `auto` falls back to, in its own
         # CFDate epoch: as_of 200 seconds before PIN_NOW.
         "tracker": {"sessionPercentage": 41, "sessionResetTime": 808545600,
@@ -123,7 +122,7 @@ ENVS.update({
 # other environment is at its 256 level (run-cases.py sets TERM to
 # xterm-256color and clears the other colour variables).  The second under
 # tmux with CLAUDE_CODE_TMUX_TRUECOLOR, the one way tmux draws true colour.
-_TRUE = {"TERMINAL_EMULATOR": "JetBrains-JediTerm", "COLORTERM": "truecolor"}
+_TRUE = {"COLORTERM": "truecolor"}
 ENVS.update({
     "true-colour": env(terminal=_TRUE),
     "true-colour-panel": env(_APP_41_63, terminal=_TRUE),

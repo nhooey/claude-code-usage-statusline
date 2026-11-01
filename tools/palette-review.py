@@ -124,7 +124,7 @@ def name_of(item):
 
 def run(argv, env):
     full = {k: v for k, v in os.environ.items()
-            if k not in ("TMUX", "TERM_PROGRAM", "TERMINAL_EMULATOR",
+            if k not in ("TMUX", "TERM_PROGRAM",
                          "FORCE_COLOR", "NO_COLOR", "COLORTERM",
                          "TERM_PROGRAM_VERSION",
                          "CLAUDE_CODE_TMUX_TRUECOLOR")}

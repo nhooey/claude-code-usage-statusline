@@ -403,8 +403,7 @@ def write_jsonl(path, records):
 
 # The settings of a group: the terminal's environment (see PROFILE_RULES),
 # and the two switches the CLI sets before anything renders.
-JEDITERM = {"TERMINAL_EMULATOR": "JetBrains-JediTerm"}
-DEFAULT = {"terminal": JEDITERM, "mark_spacing": True,
+DEFAULT = {"terminal": {}, "mark_spacing": True,
            "subscript_decimals": False}
 
 
@@ -913,7 +912,7 @@ def handmade():
 
 def child_env(terminal):
     env = {k: v for k, v in os.environ.items()
-           if k not in ("TMUX", "TERM_PROGRAM", "TERMINAL_EMULATOR")
+           if k not in ("TMUX", "TERM_PROGRAM")
            and k not in COLOUR_VARS
            and not k.startswith("CODING_AGENT_USAGE_LINE_")}
     # The 256-colour level unless the group's terminal names its own.
@@ -1064,8 +1063,8 @@ def corpus(python=PYTHON):
             # The profile's variables, and the colour level's where the
             # case's environment names its own.
             named = suite.envs[case["env"]]["terminal"]
-            terminal = {k: env[k] for k in ("TMUX", "TERM_PROGRAM",
-                                            "TERMINAL_EMULATOR") if k in env}
+            terminal = {k: env[k] for k in ("TMUX", "TERM_PROGRAM")
+                        if k in env}
             terminal.update({k: named[k] for k in COLOUR_VARS if k in named})
             sets = settings(
                 terminal=terminal,

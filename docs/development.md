@@ -147,7 +147,7 @@ them. `--selftest` and `tests/probe-advance.sh` need a real terminal tab.
 ## Open issues
 
 **Glyph widths not yet measured in a real terminal.** Each needs a run of
-`tests/probe-advance.sh` in JediTerm and in Ghostty, with the result recorded
+`tests/probe-advance.sh` in Ghostty and in iTerm2, with the result recorded
 in [Glyphs and terminals](glyphs-and-terminals.md).
 
 - The agent-panel type marks in `KIND_MARK` (`claude_subagent_render.py`):
@@ -158,9 +158,9 @@ in [Glyphs and terminals](glyphs-and-terminals.md).
   🟢 🟡 ⚫, 💤 💻 📡 🥚 ✅ ❌ 🛑 and 👶🏻. They are `E_*` constants, so the next
   probe run covers them. 🟢 and 🟡 are Unicode 12, newer than any other glyph
   on either readout. 👶🏻 is a base and a skin-tone modifier, two codepoints:
-  two columns where the terminal folds clusters and four in JediTerm, which
-  `vis_width` already counts; an unprobed terminal that folds them is off by
-  two.
+  two columns where the terminal folds clusters and four where it does not,
+  which `vis_width` already counts; an unprobed terminal that folds them is
+  off by two.
 - 🛫 `E_RATE` and the superscript digits `E_SUP_DIGITS` (the `⁵` in `O⁵`).
   Both are `E_*` constants, so the next probe run covers them. ¹ ² ³ ⁴ are
   East Asian Width Ambiguous; ⁴ appears on every Haiku 4.x row. A two-column
@@ -173,11 +173,6 @@ in [Glyphs and terminals](glyphs-and-terminals.md).
   looked right there by eye: every row's columns met and the band ended
   before `[-]`. `--selftest` has not been run there, and only its drawn rows
   show a single glyph's width.
-- tmux over JediTerm gets the `tmux` profile, since `term_profile` checks
-  `TMUX` first. The redesign's alignment test looked right there by eye
-  too. Running `coding-agent-usage-line.py --agent claude --selftest` in tmux
-  inside Rider still settles it per glyph: a non-zero delta on any row means
-  the combination needs its own branch.
 
 **Column 1 is usually empty.** It shows the output style or the PR number,
 and on a default-style session with no open PR it is eleven columns of

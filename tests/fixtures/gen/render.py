@@ -48,7 +48,7 @@ OUT = os.path.join(FIXTURES, "render")
 
 CFGS = (
     ("unknown", True, False), ("unknown", False, True),
-    ("jediterm", True, False), ("jediterm", False, False),
+    ("unknown", False, False),
     ("iterm", True, True), ("tmux", False, False),
 )
 ZONES = ("UTC", "America/New_York", "Asia/Kolkata")
@@ -299,7 +299,7 @@ def cells(cfg):
 
 # render_status draws whole readouts, so it runs under fewer of CFGS: one
 # per profile, both spacings and the subscripts among them.
-STATUS_CFGS = (("unknown", True, False), ("jediterm", False, False),
+STATUS_CFGS = (("unknown", True, False), ("unknown", False, False),
                ("iterm", True, True), ("tmux", False, False))
 
 

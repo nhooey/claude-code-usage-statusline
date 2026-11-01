@@ -165,7 +165,7 @@ both forms, and it is the widest reading, so **no field gets narrower**: a
 shorter figure just gets another column of padding and nothing on the row
 moves. The option changes how figures look, not how much room they take.
 
-Both JediTerm and Ghostty draw the subscript digits one column wide, which is
+Ghostty draws the subscript digits one column wide, which is
 what the program assumes.
 
 ## Agent panel rows (`--mode subagent`)

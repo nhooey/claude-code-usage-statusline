@@ -42,7 +42,6 @@ def main():
     pin_colour()
     os.environ.pop("TMUX", None)
     os.environ.pop("TERM_PROGRAM", None)
-    os.environ["TERMINAL_EMULATOR"] = "JetBrains-JediTerm"
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if root not in sys.path:
         sys.path.insert(0, root)
@@ -244,7 +243,7 @@ def run(sl, sr, scratch):
     # profile is read at import, so it is a process of its own.
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     env = {k: v for k, v in os.environ.items()
-           if k not in ("TMUX", "TERMINAL_EMULATOR")}
+           if k != "TMUX"}
     env["TERM_PROGRAM"] = "iTerm.app"
     padded = subprocess.run([sys.executable, "-c", (
         "import re, sys; sys.path.insert(0, %r)\n"

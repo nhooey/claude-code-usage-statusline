@@ -1,4 +1,4 @@
-{"settings": {"mark_spacing":true,"profile":"jediterm","subscript_decimals":false,"terminal":{"TERMINAL_EMULATOR":"JetBrains-JediTerm"}},
+{"settings": {"mark_spacing":true,"profile":"unknown","subscript_decimals":false,"terminal":{}},
  "cases": [
   {"id": "usage-none",
    "input": {"cols":160,"limits":{"session_pct":"41","session_reset":"2026-08-16 04:00","session_share":"","session_turn":"","weekly_pct":"63","weekly_reset":"2026-08-18 01:00","weekly_share":"","weekly_turn":""},"now":1786847000.0,"tasks":[{"meta":{},"shares":{"sess":1.5,"week":12.25},"task":{"contextWindowSize":200000,"cwd":"/x","description":"Review the plan","effort":"high","id":"a1","label":"","model":"claude-opus-5","name":"Marigold","startTime":1786846280000,"status":"running","tokenCount":0,"tokenSamples":[],"type":"local_agent"},"usage":null}]},

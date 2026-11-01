@@ -92,7 +92,6 @@ async function settingsOf($: $, o: Options): Promise<Settings> {
   const env: { [k: string]: string | undefined } = {}
   // The variables formatting.settings reads for the terminal's profile.
   env.TMUX = await $.env.get('TMUX')
-  env.TERMINAL_EMULATOR = await $.env.get('TERMINAL_EMULATOR')
   env.TERM_PROGRAM = await $.env.get('TERM_PROGRAM')
   // And the ones it reads for the colour level Claude Code draws at, from
   // the same process environment Claude Code read it from

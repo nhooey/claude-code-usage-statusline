@@ -60,7 +60,7 @@ that is not the payload; a golden is only as reproducible as this list.
 | `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST`, a fixture Claude Usage Tracker store | `auto` could read the tracker app installed on this machine |
 | `CODING_AGENT_USAGE_LINE_CONFIG_DIR`, a scratch directory whose `config.jsonc` gives the environment's usage source, and `CODING_AGENT_USAGE_LINE_PROJECT_DIR`, the case's repository | your own config files, user-global or above a payload's directory, would change what every case draws |
 | an environment's `source`, served as a `cmd:` usage source with a fixed `as_of`, one command per environment | the plan percentages come from whatever source the host has |
-| `TERMINAL_EMULATOR=JetBrains-JediTerm`, `TMUX` and `TERM_PROGRAM` unset | the width profile depends on the terminal that ran the suite |
+| `TMUX` and `TERM_PROGRAM` unset, so the `unknown` profile | the width profile depends on the terminal that ran the suite |
 | a clean fixture repo (branch `golden-clean`) and a dirty one (`golden-dirty`) as the working directory | 🌿, 💾 and the project name record your checkout |
 
 The pinned instant is 6.7 minutes before `01-baseline`'s 5-hour reset and 1.9
@@ -359,8 +359,9 @@ makes of it as spans and as the joined line. The matrix is 300 to 6
 columns, from a wide terminal (240 and 300) down
 to where a label has no room and the chrome alone runs past the right edge, eight hide sets, both grids, agents to each depth and both phases'
 rows, deduplicated. A file is one terminal profile's, and profiles whose
-cases come out the same share one: `unknown-jediterm.json` and
-`iterm-tmux.json`, since `_PAD` widens 🧩, 🧠 and 💰 on the second pair. The
+cases come out the same share one: `iterm` and `tmux` share
+`iterm-tmux.json`, where `_PAD` widens 🧩, 🧠 and 💰, and `unknown.json` is
+the third. The
 shapes are in the generator's header.
 
 `mod/test/grid.test.ts` replays every case under each of its file's profiles

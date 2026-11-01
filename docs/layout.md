@@ -15,7 +15,7 @@ stands on the same screen column wherever it is drawn. Why it is laid out
 this way is in [the plan it was built from](../agents/plans/_implemented/redesign.md).
 
 All examples below are the programs' own output against the test fixtures
-(clock pinned to 2026-08-16 02:23:20 UTC, the `jediterm` terminal profile),
+(clock pinned to 2026-08-16 02:23:20 UTC, the `unknown` terminal profile),
 with colour stripped: `node mod/tools/draw-figures.ts` for the mod's rows,
 from `tests/fixtures/figures/`, and `tools/draw-panel.py` (`draw-panel` in
 the dev shell) for the panel, from `tests/fixtures/payloads/subagent/`.

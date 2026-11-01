@@ -6,7 +6,7 @@
 #
 #   * --selftest and probe-advance.sh need a controlling tty, and more than
 #     that they need the TERMINAL whose widths are in question. A runner's
-#     pty would report a runner's answers about a layout tuned for JediTerm,
+#     pty would report a runner's answers about a layout tuned for other terminals,
 #     which is worse than not asking: it would go green while the thing the
 #     check exists to catch stayed uncaught.
 #   * compaction-once.py and agents-once.py read real transcripts under

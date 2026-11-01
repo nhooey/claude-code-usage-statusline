@@ -267,11 +267,9 @@ test("the row: `› 🤖📨 `, the label bold, the first line, none dim", () =>
 });
 
 test("📨 is two columns in every profile, as 🤖 is", () => {
-  const envs = [{}, { TMUX: "1" },
-    { TERMINAL_EMULATOR: "JetBrains-JediTerm" },
-    { TERM_PROGRAM: "iTerm.app" }];
+  const envs = [{}, { TMUX: "1" }, { TERM_PROGRAM: "iTerm.app" }];
   assert.deepEqual(envs.map((env) => settings(env).profile),
-    ["unknown", "tmux", "jediterm", "iterm"]);
+    ["unknown", "tmux", "iterm"]);
   for (const env of envs) {
     const w = settings(env).widths;
     assert.equal(visWidth("📨", w), 2, JSON.stringify(env));

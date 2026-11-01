@@ -26,7 +26,7 @@ from coding_agent_usage_line.spans import COLOUR_VARS, Span, join  # noqa: E402
 # A profile's environment sets these in full, the colour level's included,
 # so the 256 set is drawn whatever the developer's terminal draws.
 PROFILE_VARS = tuple(dict.fromkeys(
-    ("TMUX", "TERMINAL_EMULATOR", "TERM_PROGRAM") + COLOUR_VARS))
+    ("TMUX", "TERM_PROGRAM") + COLOUR_VARS))
 
 
 def configure(env):

@@ -15,5 +15,5 @@ test("colours are hex, and an alias is its target's value", () => {
 
 test("tables are arrays", () => {
   assert.deepEqual(spec.EAW_WIDE[0], [4352, 4447]);
-  assert.deepEqual(spec.WIDTH_PROFILES[1].profiles, ["tmux", "iterm"]);
+  assert.deepEqual(spec.WIDTH_PROFILES[0].profiles, ["tmux", "iterm"]);
 });

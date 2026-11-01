@@ -20,7 +20,7 @@ const RAISES = { raises: true };
 
 test("spans: the helpers and join over every list", () => {
   const widths = {
-    unknown: fm.widthsFor("unknown"), jediterm: fm.widthsFor("jediterm"),
+    unknown: fm.widthsFor("unknown"),
     tmux: fm.widthsFor("tmux"),
   };
   for (const c of DATA.cases) {

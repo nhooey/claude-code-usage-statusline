@@ -110,7 +110,7 @@ class Suite:
             with open(os.path.join(FIXTURES, "env", name + ".json")) as fh:
                 e = self.envs[name] = json.load(fh)
         env = {k: v for k, v in os.environ.items()
-               if k not in ("TMUX", "TERM_PROGRAM", "TERMINAL_EMULATOR")
+               if k not in ("TMUX", "TERM_PROGRAM")
                and k not in COLOUR_VARS
                and not k.startswith("CODING_AGENT_USAGE_LINE_")}
         # Claude Code's 256-colour level, whatever the developer's terminal

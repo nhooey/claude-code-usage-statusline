@@ -21,9 +21,8 @@ f.set_subscript_decimals(True)
 assert f.sub_dec("1.2") == "1₂"
 f.set_subscript_decimals(False)
 # The profile rules, first match wins, read as data since 2026-10-19.
-assert f.term_profile({"TMUX": "/tmp/s", "TERMINAL_EMULATOR": "JetBrains-JediTerm"}) == "tmux"
+assert f.term_profile({"TMUX": "/tmp/s", "TERM_PROGRAM": "iTerm.app"}) == "tmux"
 assert f.term_profile({"TMUX": ""}) == "unknown"
-assert f.term_profile({"TERMINAL_EMULATOR": "JetBrains-JediTerm"}) == "jediterm"
 assert f.term_profile({"TERM_PROGRAM": "iTerm.app"}) == "iterm"
 assert f.term_profile({"TERM_PROGRAM": "ghostty"}) == "unknown"
 # The colour level, as Claude Code 2.1.304 decides it: true colour lowered

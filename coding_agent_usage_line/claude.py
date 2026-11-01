@@ -26,8 +26,8 @@ opening this file, rather than while standing at one line of it.  Four
 things in particular, each of which has cost time to relearn and each of
 which is short there:
 
-  * docs/glyphs-and-terminals.md — JediTerm disagrees with every
-    published width table AND with itself, so widths are MEASURED, never
+  * docs/glyphs-and-terminals.md — terminals disagree with every
+    published width table AND with each other, so widths are MEASURED, never
     inferred from which row looks wrong.  Also how to tell a layout bug from
     a paint bug, which is the first question to settle, not the last.
   * The same file, "Why vis_width is not a correct Unicode implementation" —
@@ -2251,7 +2251,6 @@ def selftest() -> int:
     # was perfect.  Redirecting the report must not cost that.
     print("--- claude-code-usage-statusline --selftest ---")
     print("profile:           %s" % PROFILE)
-    print("TERMINAL_EMULATOR: %s" % os.environ.get("TERMINAL_EMULATOR", "unset"))
     print("TERM_PROGRAM:      %s" % os.environ.get("TERM_PROGRAM", "unset"))
     print("TERM:              %s" % os.environ.get("TERM", "unset"))
     print("TMUX:              %s" % ("set" if os.environ.get("TMUX") else "unset"))

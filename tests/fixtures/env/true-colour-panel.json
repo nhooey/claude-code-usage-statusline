@@ -25,8 +25,7 @@
     ]
   },
   "terminal": {
-    "COLORTERM": "truecolor",
-    "TERMINAL_EMULATOR": "JetBrains-JediTerm"
+    "COLORTERM": "truecolor"
   },
   "tracker": {
     "lastUpdated": 808539600,

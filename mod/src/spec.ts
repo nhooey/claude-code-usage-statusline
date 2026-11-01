@@ -36,7 +36,7 @@ export const E_DOWN = "▾";           // output tokens, likewise.  U+25BE BLACK
                                      // class that is one column on some terminals and two on
                                      // others -- the same property that keeps the em dash out
                                      // of this file's prose.  They are absent from EAW_WIDE,
-                                     // so vis_width called them one and JediTerm agreed;
+                                     // so vis_width called them one and the terminals agreed;
                                      // nothing was ever observed to be wrong.  But they sit
                                      // in the token field, which is on EVERY row of both
                                      // readouts, so an Ambiguous character resolving the
@@ -77,8 +77,8 @@ export const E_RATE = "🛫";          // 🛫  the token RATE — how fast 🧩
                                      // transcript's.  Was Δ, then 🚀 — which is
                                      // E_EFF_XHIGH, two cells along — then ✈️ U+2708
                                      // U+FE0F for a quarter of an hour, during which a
-                                     // digit was seen painted over the cell's slash in
-                                     // JediTerm.  That is the glyph rules' warning made
+                                     // digit was seen painted over the cell's slash.
+                                     // That is the glyph rules' warning made
                                      // flesh: a text-presentation character plus a
                                      // variation selector, counted two here and advanced
                                      // otherwise there.  🛫 is the same picture, single
@@ -149,7 +149,7 @@ export const E_TIME = "🕐";          // wall clock.
                                      //
                                      // It was 🕰 (U+1F570), which reads better at terminal
                                      // size, until the colons of the time beside it stopped
-                                     // drawing in JediTerm — while the same bytes rendered
+                                     // drawing in one terminal — while the same bytes rendered
                                      // correctly in iTerm and a hexdump confirmed the colons
                                      // were in the buffer.  The mechanism is font-run
                                      // shaping: the renderer picks one face for a run, and
@@ -185,7 +185,7 @@ export const E_WEEK = "🪫";         // weekly window consumed — a drained ba
                                     // could not be drawn reliably: U+1F6E2 has no default
                                     // emoji presentation, so whether it advances one column
                                     // or two is decided by whichever font the terminal
-                                    // happens to reach for, and Rider's kept tearing the
+                                    // happens to reach for, and one terminal's kept tearing the
                                     // grid to the right of it.  U+1FAAB is
                                     // Emoji_Presentation=Yes — two columns everywhere, no
                                     // width-table entry on any profile, no compensating
@@ -1064,10 +1064,10 @@ export const E_KIDS = "👶🏻";                  // 👶🏻  how many agents 
                                                //    is TWO codepoints, against rule 2 in
                                                //    docs/glyphs-and-terminals.md: a terminal that
                                                //    folds clusters (tmux, iTerm2, Ghostty) draws one
-                                               //    baby in two columns; JediTerm draws 👶 and a
-                                               //    swatch in four.  vis_width counts each by its
-                                               //    profile, so the columns hold on both; an
-                                               //    unprobed terminal is counted as four.
+                                               //    baby in two columns; a terminal that does not
+                                               //    draws 👶 and a swatch in four.  vis_width counts
+                                               //    each by its profile, so the columns hold on
+                                               //    both; an unprobed terminal is counted as four.
 export const E_ETA = "⛳";             // ⛳  how long an agent says it has LEFT, off the
                                        //    last report the coding-agent-usage-line-report-eta
                                        //    skill had it write.  The readout draws the golf
@@ -1106,8 +1106,8 @@ export const E_ROW_AGENTS = "👥";           // 👥  agent spend the 🎤 row 
                                             // Emoji_Presentation=Yes and a single code
                                             // point, chosen for that.  Measured 2026-09-12
                                             // by tests/probe-advance.sh: advance=2 in
-                                            // JediTerm and in bare Ghostty, neither under
-                                            // tmux -- a reading, like the other three.
+                                            // bare Ghostty, not under tmux -- a reading,
+                                            // like the other three.
 export const E_TURN_ID = "🔖";              // 🔖  the receipt's turn tag: which turn the
                                             // rows below it bill.  Wide, one code point,
                                             // Unicode 6.
@@ -1150,17 +1150,12 @@ export const TURN_ID_HEX = 8;              // how much of the promptId 🔖 prin
 //
 // Second known imprecision, and the one that shows what "corrected against the
 // probe" is worth.  U+1F300-U+1FBFF is one range, so this table calls U+1F900
-// wide.  MEASURED 2026-09-08, the same codepoint, two terminals:
-//
-//     Ghostty under tmux    advance 1        (agrees with the standard: the
-//     Rider / JediTerm      advance 2         block is Neutral to U+1F90B and
-//                                             Wide from U+1F90C)
-//
-// So there is no table entry that is right for both, and this one is right for
-// the terminal the layout is tuned to.  It costs nothing TODAY because no
-// glyph here lives in U+1F900-U+1F90B — 🤏 U+1F90F is above the split and
-// measured two in both — and it is written down so that the next glyph chosen
-// out of that band is chosen knowing it would be a column wrong under Ghostty.
+// wide.  MEASURED 2026-09-08: Ghostty under tmux advances it ONE, agreeing
+// with the standard (the block is Neutral to U+1F90B and Wide from U+1F90C).
+// It costs nothing because no glyph here lives in U+1F900-U+1F90B — 🤏
+// U+1F90F is above the split and measures two — and it is written down so
+// that the next glyph chosen out of that band is chosen knowing it would be a
+// column wrong under Ghostty.
 // The band is unremarkable ornaments (⯑-ish crosses and circles), so avoiding
 // it costs nothing either.
 export const EAW_WIDE = [
@@ -1182,9 +1177,7 @@ export const EAW_WIDE = [
 // term_profile's rules, first match wins: a variable, the value it must hold
 // (null for any non-empty one), and the profile it selects.
 export const PROFILE_RULES = [
-  ["TMUX", null, "tmux"],
-  ["TERMINAL_EMULATOR", "JetBrains-JediTerm", "jediterm"],
-  ["TERM_PROGRAM", "iTerm.app", "iterm"],
+  ["TMUX", null, "tmux"], ["TERM_PROGRAM", "iTerm.app", "iterm"],
 ];
 
 // widths_for's corrections to EAW_WIDE, per profile, first match wins: the
@@ -1194,30 +1187,6 @@ export const PROFILE_RULES = [
 // entry, "unknown", corrects nothing.  See widths_for for why the entries
 // stay although none of the glyphs they name is drawn any more.
 export const WIDTH_PROFILES = [
-  {
-    "profiles": ["jediterm"],         // probed 2026-08-16, Rider 2025.x
-    "narrow": [9201],                 // ⏱ U+23F1, though EAW says Wide.
-                                      //  U+1F6E2 🛢 was here too, on the
-                                      //  reasoning that a codepoint with
-                                      //  no default emoji presentation
-                                      //  falls back to a text font and
-                                      //  draws in ONE cell.  It tore the
-                                      //  grid in Rider, and 🕰 below is
-                                      //  the same class of codepoint
-                                      //  going the OTHER way — which is
-                                      //  the lesson: for these, what
-                                      //  decides the advance is which
-                                      //  font happens to cover the
-                                      //  glyph, so it cannot be reasoned
-                                      //  out, only measured.  The glyph
-                                      //  was swapped for one that needs
-                                      //  no entry instead.
-    "icons": [128368],                // 🕰 U+1F570, though the generated
-                                      //  table calls it narrow
-    "clusters": false,                // measured: skin tone 4, ZWJ 5,
-                                      //  flag 4, keycap 3, VS16 +1 —
-                                      //  no folding at all
-  },
   {
     "profiles": ["tmux", "iterm"],    // probed 2026-08-16, iTerm2 +
                                       //  tmux; again 2026-09-08,
@@ -1251,7 +1220,7 @@ export const WIDTH_PROFILES = [
 // Paint room, per terminal.  Width and ink are separate questions: a glyph can
 // advance the two columns everyone agrees on and still draw past them, and
 // where it does, the ink lands on the digit beside it.  iTerm needs a column of
-// air after the icons that carry a value directly; JediTerm does not.
+// air after the icons that carry a value directly.
 //
 // 🤖 and 💰 lost the pad for an hour on 2026-09-14 and have it back: the
 // value against the icon was asked for and then unasked.  The agent rows'
@@ -1267,11 +1236,12 @@ export const PAD_PROFILES = ["iterm", "tmux"];
 // decimal point costs nothing.  Off unless --subscript-decimals says otherwise.
 //
 // WHY IT IS A SWITCH AND NOT THE FORMAT.  Not the width, which is settled.
-// MEASURED 2026-09-08, all ten digits, JediTerm and Ghostty: one column each,
+// MEASURED 2026-09-08, all ten digits, in Ghostty: one column each,
 // which is what East Asian Width says of the block and what vis_width has
 // always returned.  Worth measuring anyway -- there is a known trap of exactly
 // that shape one plane up (see the U+1F900 note beside EAW_WIDE), where the
-// standard says Neutral, one terminal agrees and another draws two columns.
+// standard says Neutral and the table, which says Wide, is a column off
+// under Ghostty.
 //
 // What is left is a question no probe can answer: the glyphs are SMALL, these
 // are the figures on the row a reader acts on, and whether a subscript 6 still

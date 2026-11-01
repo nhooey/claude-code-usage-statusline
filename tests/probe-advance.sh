@@ -43,8 +43,8 @@ trap 'stty "$old" <&3' EXIT
 # ends each one with a "\r" of its own; every multi-line block — the two
 # headers and the whole paste-ready block at the end — stepped.
 #
-# Reported from a run in Ghostty and in Rider on 2026-09-08, identically, which
-# is what said it was this script and not a terminal.
+# Reported from runs in two terminals on 2026-09-08, identically, which is what
+# said it was this script and not a terminal.
 #
 # Two stty calls per glyph rather than two per run, deliberately: the alternative
 # is remembering to leave and re-enter raw around every line this script prints,
@@ -220,7 +220,6 @@ printf '#   TERM_PROGRAM=%s TERM=%s TMUX=%s%s\n' \
   "${TERM_PROGRAM:-unset}" "${TERM:-unset}" \
   "${TMUX:+set}${TMUX:-unset}" \
   "${TMUX:+ ($(tmux -V 2>/dev/null || echo 'tmux -V failed'))}"
-printf '#   TERMINAL_EMULATOR=%s\n' "${TERMINAL_EMULATOR:-unset}"
 printf 'EAW_NARROW="%s"\n' "${narrow# }"
 printf 'EAW_ICONS="%s"\n'  "${icons# }"
 printf '# TERM_CLUSTERS=1 if the sequences above measured 2 columns or fewer\n'

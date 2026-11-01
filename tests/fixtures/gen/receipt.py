@@ -34,20 +34,18 @@ PROGRAM = os.path.join(REPO, "coding-agent-usage-line.py")
 FIGURES = os.path.join(FIXTURES, "figures", "cost")
 OUT = os.path.join(FIXTURES, "receipt")
 
-JEDITERM = {"TERMINAL_EMULATOR": "JetBrains-JediTerm"}
-
 # (cols, flags, terminal, tz): widths that cut the labels and put the turn
 # tag on a line of its own, each layout switch, and zones either side of
 # UTC.  A cols of 0 is a width that is unknown.
 VARIANTS = (
-    (196, ["--color"], JEDITERM, "UTC"),
-    (72, ["--color"], JEDITERM, "UTC"),
+    (196, ["--color"], {}, "UTC"),
+    (72, ["--color"], {}, "UTC"),
     (40, ["--color"], {}, "UTC"),
     (196, ["--color", "--no-right-align"], {"TERM_PROGRAM": "iTerm.app"},
      "UTC"),
-    (150, ["--no-totals", "--prefix", "»", "--label", "Last"], JEDITERM,
+    (150, ["--no-totals", "--prefix", "»", "--label", "Last"], {},
      "UTC"),
-    (0, ["--color", "--no-mark-spacing", "--subscript-decimals"], JEDITERM,
+    (0, ["--color", "--no-mark-spacing", "--subscript-decimals"], {},
      "Asia/Kolkata"),
     (60, ["--force-newline", "--no-usage-text"], {"TMUX": "/tmp/t,1,0"},
      "America/New_York"),
@@ -79,7 +77,7 @@ def documents():
 
 def environ(terminal):
     env = {k: v for k, v in os.environ.items()
-           if k not in ("TMUX", "TERM_PROGRAM", "TERMINAL_EMULATOR")
+           if k not in ("TMUX", "TERM_PROGRAM")
            and not k.startswith("CODING_AGENT_USAGE_LINE_")}
     env.update(terminal)
     return env

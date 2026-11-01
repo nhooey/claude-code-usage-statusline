@@ -164,14 +164,9 @@ def term_profile(env: Optional[Dict[str, str]] = None) -> str:
     TMUX is checked first, on the reasoning that when the row renders inside
     tmux it is tmux doing the laying out and the host terminal is beside the
     point.  Two probes support that: tmux 3.5a over iTerm2 measured identically
-    to bare iTerm2 on every glyph but a keycap.
-
-    BUT THAT EVIDENCE IS FROM ONE HOST.  tmux over JediTerm has never been
-    measured, and JediTerm is the terminal that disagrees with iTerm in the
-    opposite direction.  So the tmux branch is measurement over iTerm and
-    inference everywhere else — which matters, because a Rider user running
-    tmux hits exactly that gap.  Settling it takes one command in a tmux
-    session inside Rider:
+    to bare iTerm2 on every glyph but a keycap, and Ghostty under tmux agreed
+    on all four sequences.  For another host terminal, one command in a tmux
+    session inside it settles it:
 
         coding-agent-usage-line.py --agent claude --selftest
 
@@ -193,9 +188,7 @@ def widths_for(profile: str) -> Widths:
     layout — ⏱ for ⌛, and 🕰 for 🕐 over the font-run fault described at
     E_TIME — so a probe run against the current glyph set emits empty tables in
     all three profiles.  The 2026-09-08 run also measured every specimen row
-    in --selftest at delta 0 in both, which is the first time the layout itself
-    has been checked against a terminal that is not JediTerm.  Deleting them would
-    change no output.
+    in --selftest at delta 0 in both.  Deleting them would change no output.
 
     They stay because they record measured behaviour of the TERMINALS rather
     than a fix for this layout, and the next glyph choice may want exactly
@@ -220,7 +213,7 @@ WIDTHS = widths_for(PROFILE)
 _PAD = " " if PROFILE in PAD_PROFILES else ""
 
 # Status-mode glyph forms.  The ones written with a literal " " carry it in
-# EVERY profile, where _PAD is empty on JediTerm: the countdown field and the
+# EVERY profile, where _PAD may be empty: the countdown field and the
 # elapsed field have to begin on the same column for column 4's three rows to
 # stack, and the grid's outer columns space their icons as a matter of layout
 # — see S_STY.
@@ -505,13 +498,11 @@ def vis_width(s: str, w: Widths = WIDTHS) -> int:
     enough that several glyphs carry a trailing space purely so their overspill
     lands somewhere harmless.
 
-    Confirmed 2026-09-08 on both sides of the switch: JediTerm still measures
-    4/5/4/3 for those four, and Ghostty under tmux measures 2 for every one of
-    them.  The parenthesised column above is no longer an inference about what
-    a clustering terminal would do.
+    Ghostty under tmux measured 2 for every one of those four on 2026-09-08,
+    so the parenthesised column above is measured, not inferred.
 
-    Rerun probe-advance.sh after a Rider update: these numbers describe one
-    build of JediTerm, not a standard.
+    Rerun probe-advance.sh after a terminal update: these numbers describe one
+    build of a terminal, not a standard.
     """
     total = 0
     skip = False
@@ -522,7 +513,7 @@ def vis_width(s: str, w: Widths = WIDTHS) -> int:
             total += 1
             continue
         if w.clusters:
-            # Cluster folding, for terminals that do it.  Off for JediTerm.
+            # Cluster folding, for terminals that do it.
             if cp == 0x200D:                        # ZWJ
                 skip = True
                 continue

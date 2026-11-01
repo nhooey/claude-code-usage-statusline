@@ -159,8 +159,8 @@ export type Settings = {
                                      // colour_level)
 };
 
-/** The settings for a terminal described by `env` (TMUX,
- * TERMINAL_EMULATOR and TERM_PROGRAM are what is read for the profile,
+/** The settings for a terminal described by `env` (TMUX and
+ * TERM_PROGRAM are what is read for the profile,
  * and spans.COLOUR_VARS for the colour level), with the blank
  * between a column-4 mark and its value on or off (--no-mark-spacing), the
  * subscript fraction form on or off (--subscript-decimals), and the

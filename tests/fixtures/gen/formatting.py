@@ -52,22 +52,17 @@ from coding_agent_usage_line import spec  # noqa: E402
 # What an environment here sets in full: the profile's variables and the
 # colour level's, so neither comes from the developer's terminal.
 PROFILE_VARS = tuple(dict.fromkeys(
-    ("TMUX", "TERMINAL_EMULATOR", "TERM_PROGRAM") + sp.COLOUR_VARS))
+    ("TMUX", "TERM_PROGRAM") + sp.COLOUR_VARS))
 
 # The environments a profile is read from: one per profile, and the ones
 # that test the rules' order and their values.
 ENVS = {
     "unknown": {},
-    "jediterm": {"TERMINAL_EMULATOR": "JetBrains-JediTerm"},
     "iterm": {"TERM_PROGRAM": "iTerm.app"},
     "tmux": {"TMUX": "/tmp/tmux-501/default,1,0"},
-    "tmux-over-jediterm": {"TMUX": "/tmp/t,1,0",
-                           "TERMINAL_EMULATOR": "JetBrains-JediTerm"},
-    "jediterm-over-iterm": {"TERMINAL_EMULATOR": "JetBrains-JediTerm",
-                            "TERM_PROGRAM": "iTerm.app"},
+    "tmux-over-iterm": {"TMUX": "/tmp/t,1,0", "TERM_PROGRAM": "iTerm.app"},
     "empty-tmux": {"TMUX": "", "TERM_PROGRAM": "iTerm.app"},
     "ghostty": {"TERM_PROGRAM": "ghostty"},
-    "other-emulator": {"TERMINAL_EMULATOR": "JetBrains-JediTerm2"},
     "true-colour": {"TERM": "xterm-256color", "COLORTERM": "truecolor"},
 }
 
@@ -97,7 +92,6 @@ COLOUR_ENVS = {
 # table, both mark spacings and both subscript settings.
 CFGS = (
     ("unknown", True, False), ("unknown", False, True),
-    ("jediterm", True, False), ("jediterm", False, True),
     ("iterm", True, True), ("tmux", False, False),
 )
 
@@ -344,7 +338,7 @@ def values():
         add("term_profile", None, [ENVS[env]], fm.term_profile)
     for env in COLOUR_ENVS:
         add("colour_level", None, [COLOUR_ENVS[env]], sp.colour_level)
-    for prof in ("unknown", "jediterm", "iterm", "tmux", "ghostty", ""):
+    for prof in ("unknown", "iterm", "tmux", "ghostty", ""):
         w = fm.widths_for(prof)
         cases.append({"fn": "widths_for", "cfg": None, "args": [prof],
                       "out": [enc(w.narrow), enc(w.icons), w.clusters,
@@ -527,7 +521,7 @@ def spans_cases():
         c["join"] = [enc(run(sp.join, x, close, runs))
                      for close in (False, True) for runs in (False, True)]
         c["width"] = {}
-        for prof in ("unknown", "jediterm", "tmux"):
+        for prof in ("unknown", "tmux"):
             configure(prof, True, False)
             c["width"][prof] = sp.width(x)
         cases.append(c)
