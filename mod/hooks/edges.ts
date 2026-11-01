@@ -1596,20 +1596,29 @@ export async function payloadOf($: $, transcript: string): Promise<{
 
 /** The transcript's path: the file named for the session's id in one of
  * the projects directory's folders, '' where there is none.  The path is
- * kept for that id, and looked for again once the id moves on. */
+ * kept for that id, and looked for again once the id moves on or the file
+ * is gone from there: a session that leaves a worktree has its transcript
+ * moved to the main checkout's folder. */
 export async function transcriptPath($: $, places: Places):
   Promise<string> {
   const id = await $.session.id()
-  if (found.path && found.session === id) return found.path
+  let moved = ''
+  if (found.path && found.session === id) {
+    if (await fileSize($, found.path) !== null) return found.path
+    moved = found.path
+    found.path = ''
+  }
   for (const p of await listDir($, places.projectsDir)) {
     if (p.kind !== 'dir') continue
     const path = pyJoin(pyJoin(places.projectsDir, p.name), id + '.jsonl')
     if (await fileSize($, path) !== null) {
       found.session = id
       found.path = path
+      if (moved) await log($, 'transcript moved: ' + moved + ' -> ' + path)
       return path
     }
   }
+  if (moved) await log($, 'transcript moved: ' + moved + ' -> none')
   return ''
 }
 

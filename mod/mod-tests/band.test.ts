@@ -1235,6 +1235,30 @@ test('a task notification written before turn.complete does not take the receipt
     expect(logOf(w)).not.toContain('no receipt')
   })
 
+test('a transcript moved while its turn is billed still gets the receipt',
+  async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+      component: 'AbovePrompt', props: BAND })
+    await askLive($, w, true)
+    // As leaving a worktree moves the session's transcript to the main
+    // checkout's projects folder, between two of the stamp's reads.
+    const moved = sessionFile('-main')
+    w.files.set(moved, w.files.get(RESUMED)!)
+    w.files.delete(RESUMED)
+    await until(w, 5_000)
+    expect(stamped(w)).toBe(true)
+    // On past the band's hold, which the stamp's handler sleeps through.
+    await w.clock.advance(5_000)
+    expect(logOf(w)).toContain('transcript moved: ' + RESUMED + ' -> ' +
+      moved)
+    expect(logOf(w)).not.toContain('no receipt')
+  })
+
 test('a notification written just before the prompt takes neither its tag nor its receipt',
   async ($, on) => {
     const w = world(on)
