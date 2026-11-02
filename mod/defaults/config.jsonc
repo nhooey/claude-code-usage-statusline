@@ -27,7 +27,8 @@
   // The UTC period of the organization reports: day, week or month.
   "account-period": "day",
   // Columns each agent-panel row leaves blank at the right edge.  null
-  // follows live-place: 2 under "footer", 5 under "above".
+  // follows rows.*.place: 5 when any row drawn live is "above", where
+  // Claude Code's [-] stands, else 2.
   "right-edge": null,
   // Columns and label parts left out, scope[.group[.metric]] with * for
   // any one part (docs/options.md, "Hiding").
@@ -61,25 +62,28 @@
   "label": null,
 
   // ── The mod's ──────────────────────────────────────────────────────────
-  // Where the mod draws its live rows: "footer", under Claude Code's
-  // footer line, or "above", above the prompt.
-  "live-place": "footer",
-  // Each row the mod draws.  live: "never", "running" (while a turn runs)
-  // or "always"; transcript: whether a turn's end stamps it into the
-  // transcript.  A file may set any one field; the rest stay.
+  // Each row the mod draws.  place: "above", in the band above the
+  // prompt, or "footer", under Claude Code's footer line; live: "never",
+  // "running" (while a turn runs) or "always"; transcript: whether a
+  // turn's end stamps it into the transcript.  A file may set any one
+  // field; the rest stay.
   "rows": {
-    // 🎤 drawn while a turn runs, then left to the transcript's stamped
-    // copy (agents/plans/config-merge.md, Decided 12).
-    "turn": {"live": "running", "transcript": true},
-    "agent": {"live": "always", "transcript": false},
-    "session": {"live": "always", "transcript": false},
-    // The 🔻🔖 line under the prompt and the receipt's 🔺🔖 line.
-    "tag": {"live": "never", "transcript": true},
+    // 🎤 drawn above the prompt while a turn runs, then left to the
+    // receipt stamped in the transcript just above it.
+    "turn":    {"place": "above",  "live": "running", "transcript": true},
+    // 🤖 under the footer line, just over the agent panel, kept.
+    "agent":   {"place": "footer", "live": "always",  "transcript": false},
+    // 🎮 above the prompt, under 🎤, kept.
+    "session": {"place": "above",  "live": "always",  "transcript": false},
+    // The 🔻🔖 line under the prompt and the receipt's 🔺🔖 line; its
+    // place is always "footer" (it has no live row).
+    "tag":     {"place": "footer", "live": "never",   "transcript": true},
     // The 💳 account; its transcript is always false.
-    "account": {"live": "always", "transcript": false}
+    "account": {"place": "footer", "live": "always",  "transcript": false}
   },
-  // Where the 💳 account is drawn: "row", a row of its own under the
-  // footer line, or "tail", at the footer line's right end.
+  // Where the 💳 account is drawn: "row", a row of its own where
+  // rows.account.place puts it, or "tail", at the footer line's right
+  // end, plain and dim, whatever rows.account.place says.
   "account-place": "tail",
   // Draw the rows under the footer line into the blank row below it.
   "hint-tuck": false,

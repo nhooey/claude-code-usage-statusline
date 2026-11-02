@@ -158,19 +158,35 @@ def merge(flags, files=(), ports=("py",), warnings=(), defaults=None):
         if derived and layers.get(name) == "default":
             # The map names every value the option followed can take
             # (tools/gen-spec.py holds it to that).
-            key = _derive_key(_merged_value(derived["from"], values, flags,
-                                            files, defaults))
+            got = _merged_value(derived["from"], values, flags, files,
+                                defaults)
+            key = (_any_key(OPTIONS[derived["from"]], derived, got)
+                   if "field" in derived else _derive_key(got))
             values[name], layers[name] = derived["map"][key], "derived"
     return Options(values, layers, fields, warnings)
+
+
+def _any_key(table, derived, rows):
+    """The key a table's `derived` looks its map up by: its `any` item when
+    any row the mod draws (its `live` not "never") has that item in the
+    field, else the field's other item (tools/gen-spec.py holds the field
+    to two)."""
+    field, want = derived["field"], derived["any"]
+    if any(rec[field] == want and rec["live"] != "never"
+           for rec in rows.values()):
+        return want
+    return next(i for i in table["fields"][field]["items"] if i != want)
 
 
 def _merged_value(name, values, flags, files, defaults):
     """The merged value of `name`, which a derived option follows: as the
     merge gave it, or for an option of the other port only, which these
-    Options leave out (right-edge follows the mod's live-place, Decided
-    13), from the highest layer that sets it."""
+    Options leave out (right-edge follows the mod's rows.*.place, Decided
+    13), from the highest layer that sets it, a table field by field."""
     if name in values:
         return values[name]
+    if OPTIONS[name]["type"] == "table":
+        return _table(name, defaults[name], files)[0]
     if name in flags:
         return flags[name]
     for f in files:

@@ -10,7 +10,7 @@ import { OPTIONS, type Options } from "../src/options_spec.ts";
 import { DEFAULTS_REL, merge, optionsOf, parseDefaults } from "../src/config.ts";
 
 test("the records keep their literal values", () => {
-  assert.deepEqual(OPTIONS["live-place"].items, ["footer", "above"]);
+  assert.deepEqual(OPTIONS.rows.fields.place.items, ["above", "footer"]);
   assert.equal(OPTIONS["usage-source"].flag, "--usage-source");
   assert.deepEqual(OPTIONS.rows.rows,
     ["turn", "agent", "session", "tag", "account"]);
@@ -31,6 +31,7 @@ test("the defaults file, merged, fills every option the mod reads", () => {
     .filter(([, o]) => (o.ports as readonly string[]).includes("mod"))
     .map(([name]) => name.replace(/-(\w)/g, (_, c: string) => c.toUpperCase()));
   assert.deepEqual(Object.keys(options).sort(), mod.sort());
-  assert.equal(options.rightEdge, 2);
+  assert.equal(options.rightEdge, 5);
   assert.equal(options.rows.turn.live, "running");
+  assert.equal(options.rows.turn.place, "above");
 });

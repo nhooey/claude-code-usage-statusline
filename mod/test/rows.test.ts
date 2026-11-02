@@ -65,7 +65,8 @@ for (const f of files) {
     const st = settings(env);
     test(`${f} under ${profile}: band`, () => {
       for (const c of data.band) {
-        const where = JSON.stringify([c.doc, c.cols, c.hide, c.phase]);
+        const where = JSON.stringify([c.doc, c.cols, c.hide, c.phase,
+          c.place ?? null]);
         const rows = drawBand(st, document(c.doc), c);
         assert.equal(rows.length, c.rows.length, where);
         rows.forEach((r, i) => same(r, c.rows[i], c.lines[i], where));

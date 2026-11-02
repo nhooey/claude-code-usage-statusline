@@ -149,23 +149,23 @@ test('a session start reads the config files and logs every warning once',
 
 // The options with no file, field by field: the defaults file's
 // (mod/defaults/config.jsonc), the mod's own layer (hooks/config.ts,
-// SETTINGS) being empty; right-edge is derived from live-place.
+// SETTINGS) being empty; right-edge is derived from rows.*.place, 5 with
+// 🎤 and 🎮 above the prompt.
 test('with no configuration file the options are the defaults', () => {
   expect(unconfigured(DEFAULTS)).toEqual({
     usageSource: 'auto',
     account: 'default',
     accountPeriod: 'day',
-    rightEdge: 2,
+    rightEdge: 5,
     hide: [],
     markSpacing: true,
     subscriptDecimals: false,
-    livePlace: 'footer',
     rows: {
-      turn: { live: 'running', transcript: true },
-      agent: { live: 'always', transcript: false },
-      session: { live: 'always', transcript: false },
-      tag: { live: 'never', transcript: true },
-      account: { live: 'always', transcript: false },
+      turn: { place: 'above', live: 'running', transcript: true },
+      agent: { place: 'footer', live: 'always', transcript: false },
+      session: { place: 'above', live: 'always', transcript: false },
+      tag: { place: 'footer', live: 'never', transcript: true },
+      account: { place: 'footer', live: 'always', transcript: false },
     },
     accountPlace: 'tail',
     hintTuck: false,
@@ -185,7 +185,7 @@ test('a session start logs the options the files gave',
     await settle()
     const log = w.files.get(STATE + '/' + LOG_NAME) ?? ''
     expect(log).toContain('config options: ' +
-      'account "u" (user); right-edge 2 (derived); hide [] (project)\n')
+      'account "u" (user); right-edge 5 (derived); hide [] (project)\n')
   })
 
 // The mod's own layer, were SETTINGS to hold any: under every file, over
@@ -203,9 +203,10 @@ test('a non-empty mod layer merges under the files and is named in the log',
     const o = optionsOf(m)
     expect(o.usageSource).toBe('claude-usage-tracker')
     expect(o.hide).toEqual([])
-    expect(o.rows.agent).toEqual({ live: 'never', transcript: true })
+    expect(o.rows.agent).toEqual({ place: 'footer', live: 'never',
+      transcript: true })
     expect(optionsTable(m)).toBe(
-      'usage-source "claude-usage-tracker" (mod); right-edge 2 (derived); ' +
+      'usage-source "claude-usage-tracker" (mod); right-edge 5 (derived); ' +
       'hide [] (user); rows.agent.live "never" (user); ' +
       'rows.agent.transcript true (mod)')
   })

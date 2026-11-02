@@ -65,6 +65,12 @@ export type BandOpts = {
   /** When each row is drawn, by its name (RowsLive); "running" for a row
    * absent, so none stays once a turn ends. */
   readonly live?: RowsLive;
+  /** The place being drawn: only the rows `places` puts there.  Every
+   * row, wherever its place, where absent. */
+  readonly place?: Place;
+  /** Where each row is drawn, by its name (RowsPlace); "footer" for a row
+   * absent. */
+  readonly places?: RowsPlace;
 };
 
 /** A row of the band as the configuration's `rows` table names it: 🎤
@@ -78,6 +84,13 @@ export type Live = "never" | "running" | "always";
 
 /** Each row's Live, by its name. */
 export type RowsLive = { readonly [row in RowName]?: Live };
+
+/** Where the mod draws a row, its `rows.<row>.place`: "above", in the band
+ * above the prompt, or "footer", under Claude Code's footer line. */
+export type Place = "above" | "footer";
+
+/** Each row's Place, by its name. */
+export type RowsPlace = { readonly [row in RowName]?: Place };
 
 export const ROW_NAMES: readonly RowName[] = ["turn", "agent", "session"];
 
@@ -445,14 +458,18 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
 /** The rows a phase draws, top to bottom, of 🎤, 🤖💬 and 🎮, the order
  * the receipt stamps them in (asked 2026-10-20): while a turn runs, each
  * whose `live` is not "never", and once it ends, each whose `live` is
- * "always".  A row absent from `live` is "running".  💳 is not among
- * them: it is drawn on the footer under the prompt, right-aligned, as
- * `accountText` gives it (decided 2026-10-19). */
+ * "always".  A row absent from `live` is "running".  Given a `place`,
+ * only the rows `places` puts there, a row absent being "footer".  💳 is
+ * not among them: the caller draws it first in its place, as
+ * `accountLine` gives it, or on the footer line, as `accountText` does. */
 export function phaseRows(rows: BandRows, phase: Phase,
-  live: RowsLive = {}): Row[] {
+  live: RowsLive = {}, place?: Place, places: RowsPlace = {}): Row[] {
   const named: [RowName, Row][] = [["turn", rows.turn], ["agent", rows.main],
     ["session", rows.session]];
   return named.filter(([name]) => {
+    if (place !== undefined && (places[name] ?? "footer") !== place) {
+      return false;
+    }
     const when = live[name] ?? "running";
     return phase === "running" ? when !== "never" : when === "always";
   }).map(([, row]) => row);
@@ -662,13 +679,15 @@ export function bandLines(st: Settings, fig: Dict, cols: number,
 }
 
 /** bandLines, each row with its scope (`turn` for 🎤, `main` for 🤖,
- * `session` for 🎮), so a caller can tell the rows apart. */
+ * `session` for 🎮), so a caller can tell the rows apart: the rows of
+ * `opts.place` alone where it is given. */
 export function bandScoped(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], opts: BandOpts):
   { scope: string; spans: Span[] }[] {
   const keys = fixedKeys(st, cols, hide);
   const drawn = cols - (opts.inset ?? 0);
-  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.live)
+  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.live,
+    opts.place, opts.places)
     .filter((r) => !hidden(hide, r.scope))
     .map((r) => ({ scope: r.scope,
       spans: draw(st, indented(r, opts.indent ?? 0), keys, drawn, hide) }));

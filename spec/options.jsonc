@@ -191,30 +191,35 @@
               "fallback layout. Claude only; Codex accepts and ignores it."]
     },
     // The panel's rows end where the band's do: 2 short of the edge with
-    // the mod's rows under the footer line, 5 with them above the prompt.
-    // Unset in every layer, it follows live-place, in both ports.
+    // the mod's rows all under the footer line, 5 with any above the
+    // prompt, where the band's [-] stands.  Unset in every layer, it
+    // follows rows.*.place, in both ports: "above" when any row the mod
+    // draws live (its `live` not "never") has place "above", else the
+    // field's other item, "footer".
     "right-edge": {
       "type": "int",
       "metavar": "N",
-      "derived": {"from": "live-place", "map": {"footer": 2, "above": 5}},
+      "derived": {"from": "rows", "field": "place", "any": "above",
+                  "map": {"footer": 2, "above": 5}},
       "minimum": 0,
       "ports": ["py", "mod"],
       "file": true,
       "flag": "--right-edge",
       "doc-table": "shared",
-      "doc-default": "`2` under `live-place` `footer`, `5` under `above`",
+      "doc-default": "`5` with any of the mod's rows above the prompt (`rows.*.place`), else `2`",
       "usage": ["Columns every agent-panel row leaves blank at the",
-                "terminal's right edge (default: 2 with the mod's rows",
-                "under the footer line; 5, the band's [-] room, with",
-                "them above the prompt)."],
+                "terminal's right edge (default: 5, the band's [-] room,",
+                "with any of the mod's rows above the prompt; 2 with",
+                "them all under the footer line)."],
       "doc": ["The columns every agent-panel row leaves blank at the",
               "terminal's right edge. `2` matches the mod with its rows",
               "under the footer line, whose container stops two columns",
               "short of the edge; `5` is the room Claude Code keeps for the",
               "mod's band `[-]` above the prompt. Unset, it follows the",
-              "mod's `live-place` from the files, so the panel and the band",
-              "end in one column; a panel run without the mod sets it",
-              "where it wants another. Claude only."]
+              "mod's `rows.*.place` from the files: `5` when any row the",
+              "mod draws live is placed `above`, else `2`, so the panel and",
+              "the band end in one column; a panel run without the mod",
+              "sets it where it wants another. Claude only."]
     },
     // One list for the band and the panel.  The rows table, not hide,
     // drops a whole row (config-merge.md, Decided 9).
@@ -424,25 +429,20 @@
     },
 
     // ── The mod's, set in files only ─────────────────────────────────────
-    // Where the mod draws its live rows: under Claude Code's footer line
-    // (`-- INSERT -- ⏵⏵ auto mode on …`), or above the prompt, where the
-    // band can be collapsed with its [-] and scrolled.
-    "live-place": {
-      "type": "enum",
-      "items": ["footer", "above"],
-      "ports": ["mod"],
-      "file": true,
-      "flag": null,
-      "doc-table": null,
-      "doc": ["Where the mod draws its live rows: under Claude Code's",
-              "footer line, or above the prompt."]
-    },
-    // Each row the mod can draw, by when the mod draws it and whether a
-    // turn's end stamps it into the transcript (config-merge.md, "The rows
-    // table").  Tables merge per field across layers.
+    // Each row the mod can draw, by where it is drawn, when the mod draws
+    // it and whether a turn's end stamps it into the transcript
+    // (config-merge.md, "The rows table"; row-placement.md, "The shape").
+    // Tables merge per field across layers.
     "rows": {
       "type": "table",
       "fields": {
+        //   "above"  — in the band above the prompt, which Claude Code
+        //              can collapse with its [-]
+        //   "footer" — under Claude Code's footer line
+        //              (`-- INSERT -- ⏵⏵ auto mode on …`)
+        // The tag lines have no live row: theirs is always "footer".
+        "place": {"type": "enum", "items": ["above", "footer"],
+                  "fixed": ["tag"]},
         //   "never"   — the mod never draws it
         //   "running" — drawn while a turn runs, gone at its end
         //   "always"  — drawn while a turn runs, and kept after
@@ -460,10 +460,12 @@
       "flag": null,
       "doc-table": null,
       "doc": ["Each row the mod draws, 🎤 `turn`, 🤖 `agent`, 🎮 `session`,",
-              "the 🔖 `tag` lines and the 💳 `account` row: `live`, whether",
-              "it is drawn `never`, while a turn is `running` or `always`,",
-              "and `transcript`, whether a turn's end stamps it into the",
-              "transcript."]
+              "the 🔖 `tag` lines and the 💳 `account` row: `place`, whether",
+              "it is drawn `above` the prompt or under Claude Code's",
+              "`footer` line; `live`, whether it is drawn `never`, while a",
+              "turn is `running` or `always`; and `transcript`, whether a",
+              "turn's end stamps it into the transcript. In each place the",
+              "rows go in one order: 💳, 🎤, 🤖, 🎮."]
     },
     "account-place": {
       "type": "enum",
@@ -473,9 +475,10 @@
       "flag": null,
       "doc-table": null,
       "doc": ["Where the 💳 account is drawn when `rows.account.live` draws",
-              "it: `row`, a row of its own under Claude Code's footer line,",
-              "in that line's container and colours, or `tail`, in plain",
-              "text at the right end of the footer line."]
+              "it: `row`, a row of its own where `rows.account.place` puts",
+              "it, in its colours, or `tail`, in plain text at the right",
+              "end of Claude Code's footer line, whatever",
+              "`rows.account.place` says."]
     },
     "hint-tuck": {
       "type": "bool",

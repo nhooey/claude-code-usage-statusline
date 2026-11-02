@@ -97,8 +97,8 @@ function caseEnv(c: Case): ConfigEnv {
 
 const filled = (v: unknown): unknown => JSON.parse(fill(JSON.stringify(v)));
 
-test("the shared cases are the Python's, 40 of them", () => {
-  assert.equal(cases.length, 40);
+test("the shared cases are the Python's, 45 of them", () => {
+  assert.equal(cases.length, 45);
   assert.deepEqual(cases.filter((c) => c.flags.length).map((c) => c.id),
     ["flag-over-local", "list-flag-repeated"]);
 });
@@ -173,7 +173,7 @@ test("the shipped defaults hold every option, a derived one null", () => {
   assert.equal(DEFAULTS["right-edge"], null);
   assert.equal(DEFAULTS.mode, "status");
   const merged = merge([], [], DEFAULTS);
-  assert.equal(merged.values["right-edge"], 2);
+  assert.equal(merged.values["right-edge"], 5);
   assert.equal(merged.layers["right-edge"], "derived");
 });
 

@@ -80,8 +80,13 @@ type OptionRec = Scalar & {
   file: boolean;
   fields?: { readonly [field: string]: Scalar };
   rows?: readonly string[];
-  derived?: { from: string; map: { readonly [key: string]: unknown } };
+  derived?: Derived;
 };
+// How a derived option follows another (tools/gen-spec.py, check_derived):
+// by its value, or, with `field` and `any`, by whether any drawn row of a
+// table has `any` in that field.
+type Derived = { from: string; field?: string; any?: string;
+  map: { readonly [key: string]: unknown } };
 const SPEC = OPTIONS as unknown as { readonly [name: string]: OptionRec };
 const NAMES = Object.keys(SPEC);
 
@@ -815,6 +820,19 @@ function deriveKey(value: Value): string {
     : String(value);
 }
 
+/** The key a table's `derived` looks its map up by: its `any` item when
+ * any row the mod draws (its `live` not "never") has that item in the
+ * field, else the field's other item (tools/gen-spec.py holds the field
+ * to two). */
+function anyKey(table: OptionRec, derived: Derived, rows: Rows): string {
+  const field = derived.field!, want = derived.any!;
+  if (Object.values(rows).some((rec) => rec[field] === want &&
+      rec.live !== "never")) {
+    return want;
+  }
+  return table.fields![field].items!.find((i) => i !== want)!;
+}
+
 /** The files' layers (highest first) over `defaults`, every option of the
  * spec: lists replace and tables merge per field (Decided 3 and 10); a
  * derived value is worked out after, from the merged one it follows. */
@@ -853,7 +871,10 @@ export function merge(files: readonly Layer[], warnings: readonly string[],
     if (derived && layers[name] === "default") {
       // The map names every value the option followed can take
       // (tools/gen-spec.py holds it to that).
-      values[name] = derived.map[deriveKey(values[derived.from])] as Value;
+      const key = derived.field === undefined
+        ? deriveKey(values[derived.from])
+        : anyKey(SPEC[derived.from], derived, values[derived.from] as Rows);
+      values[name] = derived.map[key] as Value;
       layers[name] = "derived";
     }
   }

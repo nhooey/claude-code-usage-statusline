@@ -204,7 +204,7 @@ test('two agents of the type, neither reply the message\'s: the sender ' +
     w.replies = { a1: 'Something else.' }
     const tree = await drawn($, FROM)
     expect(textOf(tree)).toBe('› 🤖📨 general-purpose: The right edge is ' +
-      'now a setting i…')
+      'now a settin…')
     expect(pieces(tree)).toEqual(expected(w, FROM))
     expect(w.read.sort()).toEqual(['a1', 'a2'])
   })

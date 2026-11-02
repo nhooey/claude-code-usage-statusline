@@ -93,35 +93,51 @@ const HIDE = OPTIONS.hide
 const LIVE = { turn: OPTIONS.rows.turn.live, agent: OPTIONS.rows.agent.live,
   session: OPTIONS.rows.session.live }
 const STAMPED = ROW_NAMES.filter((r) => OPTIONS.rows[r].transcript)
-// How far in the band's rows' container stands, where live-place draws
-// them: under the footer line, hint-inset columns.
-const INSET = OPTIONS.livePlace === 'footer' ? OPTIONS.hintInset : 0
+// Where the band draws each row.
+const PLACES = { turn: OPTIONS.rows.turn.place,
+  agent: OPTIONS.rows.agent.place, session: OPTIONS.rows.session.place }
+// How far in the receipt's rows stand: as 🎤's, hint-inset columns under
+// the footer line and none above the prompt.
+const INSET = OPTIONS.rows.turn.place === 'footer' ? OPTIONS.hintInset : 0
 // The settings the band is drawn under: its right edge, right-edge,
-// derived from live-place, and the receipt's, which stacks on the band.
+// derived from rows.*.place, and the receipt's, which stacks on the band.
 const BAND_ST = settings({}, OPTIONS.markSpacing, OPTIONS.subscriptDecimals,
   OPTIONS.rightEdge)
 const encoder = new TextEncoder()
 
-/** The band where live-place draws it, mounted: above the prompt,
- * or under the footer line, whose mount the band's own sets the width
- * of first, as Claude Code draws the two.  Under the footer, the drawing
- * leaves out Claude Code's own line, which comes first, and the 💳
- * account's row under it. */
+/** The band's rows as mountBand draws them: those rows.<row>.place puts
+ * above the prompt, then those it puts under the footer line, drawn
+ * hint-inset columns narrower there. */
+function bandWant(st: ReturnType<typeof settings>, fig: Dict,
+  opts: { rate: number | null; phase: 'running' | 'done';
+    live: typeof LIVE }): Span[][] {
+  return [
+    ...bandLines(st, fig, COLS, HIDE, { ...opts, place: 'above',
+      places: PLACES }),
+    ...bandLines(st, fig, COLS, HIDE, { ...opts, place: 'footer',
+      places: PLACES, inset: OPTIONS.hintInset }),
+  ]
+}
+
+/** The band in both its places, mounted: above the prompt, then under the
+ * footer line, whose mount the band's own sets the width of first, as
+ * Claude Code draws the two; drawn as one Box of the rows of both.  Under
+ * the footer, the drawing leaves out Claude Code's own line, which comes
+ * first, and the 💳 account's row under it, where it has one there. */
 async function mountBand($: any, surface: 'terminal' | 'desktop',
   props: RenderPropsOf['AbovePrompt']) {
   const above = await $.ui.mount({ plugin: 'usage-band', surface,
     component: 'AbovePrompt', props })
-  if (OPTIONS.livePlace === 'above') return above
   const hint = await $.ui.mount({ plugin: 'usage-band', surface,
     component: 'PromptHint', props: { isDraft: false,
       isWorking: props.isWorking, hint: '-- INSERT --' } })
-  return { ...hint, drawn: async () => {
-    const tree = await hint.drawn() as Drawn
-    // And the 💳 account's row, under it, where it has one.
-    const skip = OPTIONS.accountPlace === 'row' ? 2 : 1
-    return tree.type === 'Box'
-      ? { ...tree, children: (tree.children ?? []).slice(skip) } : tree
-  } }
+  const rowsOf = (tree: Drawn | null, skip: number) => tree?.type === 'Box'
+    ? (tree.children ?? []).slice(skip) : []
+  const skip = OPTIONS.accountPlace === 'row' &&
+    OPTIONS.rows.account.place === 'footer' ? 2 : 1
+  return { above, hint, drawn: async () => ({ type: 'Box',
+    children: [...rowsOf(await above.drawn() as Drawn, 0),
+      ...rowsOf(await hint.drawn() as Drawn, skip)] }) }
 }
 
 const BAND: RenderPropsOf['AbovePrompt'] = {
@@ -440,8 +456,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
         .toEqual(JSON.parse(JSON.stringify(want)))
       const ui = await mountBand($, surface, BAND)
       // Between turns the band draws nothing: the receipt has the rows.
-      const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
-        rate: null, phase: 'done', live: LIVE, inset: INSET })
+      const lines = bandWant(BAND_ST, doc, {
+        rate: null, phase: 'done', live: LIVE })
       expect(lines).toEqual([])
       expect(await drawnRows(ui)).toEqual([])
     })
@@ -507,11 +523,42 @@ test('a turn running draws the running phase', async ($, on) => {
   await start($, w, 'terminal', STATUS)
   const doc = lastDoc(w)
   const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
-  const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
-    rate: null, phase: 'running', live: LIVE, inset: INSET })
+  const lines = bandWant(BAND_ST, doc, {
+    rate: null, phase: 'running', live: LIVE })
   expect(await drawnRows(ui)).toEqual(expected(lines))
   // No blank top row, where Claude Code's `[-]` would stand alone.
-  expect(((await ui.drawn()) as Drawn).props?.marginTop).toBeUndefined()
+  expect(((await ui.above.drawn()) as Drawn).props?.marginTop).toBeUndefined()
+})
+
+test('each row is drawn in its place: 🎤 and 🎮 above the prompt, 🤖 ' +
+  'under the footer line', async ($, on) => {
+  const w = world(on)
+  await start($, w, 'terminal', STATUS)
+  const doc = lastDoc(w)
+  const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
+  const opts = { rate: null, phase: 'running' as const, live: LIVE,
+    places: PLACES }
+  const above = bandLines(BAND_ST, doc, COLS, HIDE,
+    { ...opts, place: 'above' })
+  const below = bandLines(BAND_ST, doc, COLS, HIDE,
+    { ...opts, place: 'footer', inset: OPTIONS.hintInset })
+  expect([above.length, below.length]).toEqual([2, 1])
+  expect(text(above[0])).toContain('🎤')
+  expect(text(above[1])).toContain('🎮')
+  expect(text(below[0])).toContain('🤖')
+  expect(await drawnRows(ui.above)).toEqual(expected(above))
+  expect((await drawnRows(ui)).slice(2)).toEqual(expected(below))
+  // All of them under the footer line, with every place "footer": the
+  // band above the prompt is the engine's.
+  w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',
+    encoder.encode('{"rows": {"turn": {"place": "footer"}, ' +
+      '"session": {"place": "footer"}}}'))
+  await w.clock.advance(CONFIG.tickMs)
+  await settle()
+  const footed = await mountBand($, 'terminal', { ...BAND, isWorking: true })
+  expect(await footed.above.find({ type: 'Text' })).toBeUndefined()
+  expect((await drawnRows(footed)).length).toBe(3)
+  expect(logOf(w)).toContain('right-edge 2 (derived)')
 })
 
 test('where Claude Code draws true colour the band draws the true set',
@@ -521,8 +568,8 @@ test('where Claude Code draws true colour the band draws the true set',
     await start($, w, 'terminal', STATUS)
     const doc = lastDoc(w)
     const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
-    const lines = bandLines(BAND_ST, doc, COLS, HIDE, {
-      rate: null, phase: 'running', live: LIVE, inset: INSET })
+    const lines = bandWant(BAND_ST, doc, {
+      rate: null, phase: 'running', live: LIVE })
     const rows = await drawnRows(ui)
     expect(rows).toEqual(expected(lines, true))
     expect(rows).not.toEqual(expected(lines))
@@ -541,8 +588,8 @@ for (const tmux of [
     const st = settings(tmux, OPTIONS.markSpacing, OPTIONS.subscriptDecimals,
       OPTIONS.rightEdge)
     expect(st.truecolor).toBe(false)
-    const lines = bandLines(st, doc, COLS, HIDE, {
-      rate: null, phase: 'running', live: LIVE, inset: INSET })
+    const lines = bandWant(st, doc, {
+      rate: null, phase: 'running', live: LIVE })
     expect(await drawnRows(ui)).toEqual(expected(lines))
   })
 
@@ -596,9 +643,6 @@ async function footer($: any) {
 test('above the prompt the rows are plain, and the band logs its widths ' +
   'and its survey', async ($, on) => {
     const w = world(on)
-    // The trial's setting (row-placement.md, RP1), in a project file.
-    w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',
-      encoder.encode('{"live-place": "above"}'))
     await start($, w, 'terminal', STATUS)
     await drawPrompt($, 'Go on.', 'prompt-1')
     await $.turn.start({ text: 'Go on.', turnId: 't3' })
@@ -1458,9 +1502,8 @@ async function drewAll($: any, w: World) {
   const shown = (phase: 'running' | 'done') => {
     const now = Math.max(Number((doc.clock as Dict).now),
       w.clock.now() / 1000)
-    return bandLines(st, { ...doc, clock: { ...(doc.clock as Dict), now } },
-      COLS, HIDE, { rate: null, phase, live: LIVE,
-        inset: INSET })
+    return bandWant(st, { ...doc, clock: { ...(doc.clock as Dict), now } },
+      { rate: null, phase, live: LIVE })
   }
   // The turn has ended, but until its receipt is stamped, and a second
   // more, the band keeps its 🎤 and 🎮 rows.
@@ -1525,7 +1568,7 @@ test('a project file found on the tick keeps the rows and stamps them, ' +
   expect(logOf(w)).toContain(`config from ${CWD}: project-local ${LOCAL}` +
     ` (rows); user ${USER_FILE} (usage-source, hide, rows)`)
   expect(logOf(w)).toContain('config options: ' +
-    'usage-source "claude-usage-tracker" (user); right-edge 2 (derived); ' +
+    'usage-source "claude-usage-tracker" (user); right-edge 5 (derived); ' +
     'hide ' + JSON.stringify(HIDE) + ' (user); rows.turn.live "always" (project-local); ' +
     'rows.turn.transcript true (project-local); ' +
     'rows.agent.live "always" (project-local); ' +
@@ -1539,10 +1582,9 @@ test('a project file found on the tick keeps the rows and stamps them, ' +
   // The turn is done, and the band keeps all three rows.
   const doc = lastDoc(w)
   const now = Math.max(Number((doc.clock as Dict).now), w.clock.now() / 1000)
-  const kept = bandLines(BAND_ST, { ...doc, clock: { ...(doc.clock as Dict),
-    now } }, COLS, HIDE, { rate: null, phase: 'done',
-    live: { turn: 'always', agent: 'always', session: 'always' },
-    inset: INSET })
+  const kept = bandWant(BAND_ST, { ...doc, clock: { ...(doc.clock as Dict),
+    now } }, { rate: null, phase: 'done',
+    live: { turn: 'always', agent: 'always', session: 'always' } })
   expect(kept.length).toBe(3)
   expect(await drawnRows(await mountBand($, 'terminal', BAND)))
     .toEqual(expected(kept))

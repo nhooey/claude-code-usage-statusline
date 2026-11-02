@@ -160,8 +160,9 @@ class Suite:
         # stops it: no golden reads this machine's own config files,
         # whatever the payload's directory or the developer's environment.
         # The right edge too: the panel's goldens are drawn 5 columns short
-        # of the edge, the band's [-] room, which the derived default (2,
-        # under the mod's default live-place) is not (Decided 13).
+        # of the edge, the band's [-] room, set here so they do not move
+        # with the derived default, which follows the mod's rows.*.place
+        # (Decided 13).
         source = "auto" if e["source"] is None else "cmd:" + cmd
         config = os.path.join(self.tmp, "config-" + name)
         if not os.path.exists(config):

@@ -649,6 +649,54 @@ def fits(t, value, items):
     return isinstance(value, dict)
 
 
+def check_derived(name, o, opts, bad):
+    """Refuse a `derived` the ports could not work out.  Two forms:
+
+      {"from": OPTION, "map": {...}}
+          the value the map gives for OPTION's merged value;
+      {"from": TABLE, "field": FIELD, "any": ITEM, "map": {...}}
+          the value the map gives for ITEM when any row of TABLE the mod
+          draws (its `live` not "never") has ITEM in FIELD, and for
+          FIELD's other item when none has.
+
+    Either way the map is keyed by every value it can be looked up by, so
+    a default of null always has a value to stand for."""
+    d = o["derived"]
+    t = o["type"]
+    form = (["from", "map"] if "field" not in d
+            else ["from", "field", "any", "map"])
+    if list(d) != form:
+        bad(name, "derived is {%s}, in that order" % ", ".join(form))
+    src = d["from"]
+    if src not in opts:
+        bad(name, "derived from %r, which is no option" % src)
+    for v in d["map"].values():
+        if not fits(t, v, o.get("items")):
+            bad(name, "derives %r, not a %s" % (v, t))
+    f = opts[src]
+    if "field" in d:
+        if f["type"] != "table":
+            bad(name, "derived from a field of %r, which is no table" % src)
+        ft = f["fields"].get(d["field"])
+        if ft is None or ft["type"] != "enum" or len(ft["items"]) != 2:
+            bad(name, "derived from %s.*.%s, which is no enum of two items"
+                % (src, d["field"]))
+        if d["any"] not in ft["items"]:
+            bad(name, "derived from any %r, which %s.*.%s cannot be"
+                % (d["any"], src, d["field"]))
+        live = f["fields"].get("live")
+        if live is None or "never" not in live.get("items", ()):
+            bad(name, "derived from %r, which has no live field to say "
+                "which rows are drawn" % src)
+        can = ft["items"]
+    else:
+        can = (["true", "false"] if f["type"] == "bool"
+               else f.get("items"))
+    if can is None or set(d["map"]) != set(can):
+        bad(name, "the derived map is not keyed by every value of %r"
+            % (src if "field" not in d else src + ".*." + d["field"]))
+
+
 def check_options(opts):
     """Refuse a record the ports could not read the same way."""
     def bad(name, why):
@@ -704,21 +752,7 @@ def check_options(opts):
         if "minimum" in o and t != "int":
             bad(name, "only an int has a minimum")
         if "derived" in o:
-            src = o["derived"]["from"]
-            if src not in opts:
-                bad(name, "derived from %r, which is no option" % src)
-            for v in o["derived"]["map"].values():
-                if not fits(t, v, o.get("items")):
-                    bad(name, "derives %r, not a %s" % (v, t))
-            # Every value the option it follows can take, so a default of
-            # null always has a value to stand for.
-            if src in opts:
-                f = opts[src]
-                can = (["true", "false"] if f["type"] == "bool"
-                       else f.get("items"))
-                if can is None or set(o["derived"]["map"]) != set(can):
-                    bad(name, "the derived map is not keyed by every value "
-                        "of %r" % src)
+            check_derived(name, o, opts, bad)
         if o["doc-table"] is not None:
             if o["doc-table"] not in DOC_TABLES:
                 bad(name, "no doc table %r" % o["doc-table"])

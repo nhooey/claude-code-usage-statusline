@@ -1410,7 +1410,7 @@ export const configNow = (): Found | null => configFound
 
 /** The options the mod draws with, as the last read merged them: the
  * files, then the mod's settings (hooks/config.ts, SETTINGS), then the
- * defaults file, with right-edge derived from live-place where none set
+ * defaults file, with right-edge derived from rows.*.place where none set
  * it.  Null before the first read, and while the defaults file is wrong:
  * there is nothing to draw with then, and each drawing leaves Claude
  * Code's own (config-merge.md, Decided 18). */

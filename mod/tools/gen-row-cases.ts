@@ -17,9 +17,11 @@
 //
 //   settings  the profiles, each with the environment it is read from
 //   band      one case a line: a status document (`doc`, and `same`) drawn
-//             at `cols` under `hide` in `phase` with the mod's 🛫, `rate`;
-//             `rows`, each row's spans top to bottom, and `lines`, the
-//             same joined with their escape codes
+//             at `cols` under `hide` in `phase` with the mod's 🛫, `rate`,
+//             and, where the case has them, only the rows `places` (the
+//             defaults file's rows.*.place) puts in `place`; `rows`, each
+//             row's spans top to bottom, and `lines`, the same joined
+//             with their escape codes
 //   receipt   one case a line: a cost document drawn at `cols` under
 //             `hide`; its lines as spans, `rows`, and joined, `lines`
 //   start     one case a line: a status document's start line, as `spans`
@@ -37,7 +39,9 @@ import { join } from "../src/spans.ts";
 import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
 import { bandLines } from "../src/band.ts";
-import type { Phase } from "../src/band.ts";
+import type { Phase, Place, RowsPlace } from "../src/band.ts";
+import { DEFAULTS_REL, parseDefaults } from "../src/config.ts";
+import type { Rows } from "../src/config.ts";
 import { receiptLines, startLine } from "../src/receipt.ts";
 import { PROFILES, spanJson } from "./gen-grid-cases.ts";
 
@@ -57,6 +61,14 @@ const HIDE_COLS = 155;
 // The 🛫 the mod would pass, at one width: the documents carry the counts
 // it works one out from, never the rate itself.
 const RATE = 220, RATE_COLS = 200;
+// Where the defaults file puts each of the band's rows, and the width the
+// cases by place are drawn at.
+const DEFAULT_ROWS = parseDefaults(DEFAULTS_REL, readFileSync(
+  pathJoin(HERE, "..", DEFAULTS_REL), "utf8")).rows as Rows;
+export const PLACES: RowsPlace = Object.fromEntries(
+  (["turn", "agent", "session"] as const).map((r) =>
+    [r, DEFAULT_ROWS[r].place as Place]));
+const PLACE_COLS = 155;
 
 /** The documents of `suite`, by id, deduplicated by text: [id, the ids
  * with the same text, the document]. */
@@ -91,13 +103,13 @@ export function inZone<T>(fig: Dict, f: () => T): T {
 }
 
 export type BandCase = { doc: string; cols: number; hide: string[];
-  phase: Phase; rate: number | null };
+  phase: Phase; rate: number | null; place?: Place; places?: RowsPlace };
 export type ReceiptCase = { doc: string; cols: number; hide: string[] };
 
 /** The band case's rows. */
 export function drawBand(st: Settings, fig: Dict, c: BandCase): Span[][] {
   return inZone(fig, () => bandLines(st, fig, c.cols, c.hide,
-    { rate: c.rate, phase: c.phase }));
+    { rate: c.rate, phase: c.phase, place: c.place, places: c.places }));
 }
 
 /** The receipt case's lines. */
@@ -124,6 +136,10 @@ function bandCases(doc: string): BandCase[] {
       rate: null });
   }
   out.push({ doc, cols: RATE_COLS, hide: [], phase: "running", rate: RATE });
+  for (const place of ["above", "footer"] as const) {
+    out.push({ doc, cols: PLACE_COLS, hide: [], phase: "running", rate: null,
+      place, places: PLACES });
+  }
   return out;
 }
 

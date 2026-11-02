@@ -188,10 +188,10 @@ CASES = [
                    ' "account": "kept"}', "home/p/.git/": None}),
     case("bad-values", "each value of the wrong type, out of range or not"
          " the enum's is skipped, and the layer under supplies it",
-         {USER: '{"totals": false, "hint-inset": 4, "live-place": "above",'
+         {USER: '{"totals": false, "hint-inset": 4, "account-place": "row",'
                 ' "account-period": "week", "prefix": "U"}',
           PROJECT: '{"totals": "no", "hint-inset": -1,'
-                   ' "live-place": "abovee", "account-period": "year",'
+                   ' "account-place": "rwo", "account-period": "year",'
                    ' "prefix": 7, "starts-kept": 0, "label": null}',
           "home/p/.git/": None}),
     case("usage-source-unknown", "a usage source no agent reads is"
@@ -214,6 +214,14 @@ CASES = [
     case("table-not-object", "a table that is not an object is skipped",
          {USER: '{"rows": {"tag": {"live": "always"}}}',
           PROJECT: '{"rows": []}', "home/p/.git/": None}),
+    case("table-fixed-place", "the tag lines' place is always footer: a"
+         " file that moves it is warned about, and another row's place is"
+         " kept",
+         {PROJECT: '{"rows": {"tag": {"place": "above"},'
+                   ' "agent": {"place": "above"}}}', "home/p/.git/": None}),
+    case("live-place-unknown", "live-place is no option: a file that still"
+         " sets it is warned about, and the rows keep their places",
+         {USER: '{"live-place": "above"}', "home/p/.git/": None}),
 
     # ── Derived values ──────────────────────────────────────────────────
     case("derived-label", "label follows usage-text from a file",
@@ -221,15 +229,36 @@ CASES = [
     case("derived-label-set", "a label a layer sets is not derived",
          {USER: '{"label": "L"}', PROJECT: '{"usage-text": false}',
           "home/p/.git/": None}),
-    case("right-edge-derived", "right-edge follows live-place from a file",
-         {PROJECT: '{"live-place": "above"}', "home/p/.git/": None}),
+    case("right-edge-derived", "right-edge follows rows.*.place: with no"
+         " file, the defaults' rows above the prompt give 5",
+         {"home/p/.git/": None}),
+    case("right-edge-derived-footer", "right-edge follows rows.*.place:"
+         " every row under the footer line gives 2",
+         {PROJECT: '{"rows": {"turn": {"place": "footer"},'
+                   ' "session": {"place": "footer"}}}',
+          "home/p/.git/": None}),
+    case("right-edge-derived-above", "right-edge follows rows.*.place"
+         " merged across the layers: one row above, from another file than"
+         " the rest, gives 5",
+         {USER: '{"rows": {"turn": {"place": "footer"},'
+                ' "session": {"place": "footer"}}}',
+          PROJECT: '{"rows": {"agent": {"place": "above"}}}',
+          "home/p/.git/": None}),
+    case("right-edge-derived-never", "right-edge follows rows.*.place:"
+         " a row above that is never drawn does not count, so 2",
+         {PROJECT: '{"rows": {"turn": {"place": "footer"},'
+                   ' "session": {"place": "above", "live": "never"}}}',
+          "home/p/.git/": None}),
     case("right-edge-set", "a right-edge a layer sets is not derived",
-         {USER: '{"right-edge": 0}', PROJECT: '{"live-place": "above"}',
+         {USER: '{"right-edge": 0}',
+          PROJECT: '{"rows": {"agent": {"place": "above"}}}',
           "home/p/.git/": None}),
     case("derived-null", "a derived option's null, the defaults file's own,"
          " is not set: no warning, and the value derived",
          {USER: '{"right-edge": null, "label": null}',
-          PROJECT: '{"live-place": "above"}', "home/p/.git/": None}),
+          PROJECT: '{"rows": {"turn": {"place": "footer"},'
+                   ' "session": {"place": "footer"}}}',
+          "home/p/.git/": None}),
 
     # ── The defaults file, copied ───────────────────────────────────────
     case("copied-defaults", "the defaults file copied as the user's with"
@@ -278,19 +307,23 @@ DEFAULTS_CASES = [
     ("under-minimum", "an int under its minimum",
      _swap(SHIPPED, '"starts-kept": 400', '"starts-kept": 0')),
     ("not-in-enum", "an enum's value it has not",
-     _swap(SHIPPED, '"live-place": "footer"', '"live-place": "footr"')),
+     _swap(SHIPPED, '"account-place": "tail"', '"account-place": "tial"')),
+    ("live-place", "a key retired, live-place, is no option",
+     _swap(SHIPPED, '"rows": {', '"live-place": "footer",\n  "rows": {')),
     ("null-default", "null for an option that is not derived",
      _swap(SHIPPED, '"account": "default"', '"account": null')),
     ("derived-set", "a value for a derived option, which follows another",
      _swap(SHIPPED, '"right-edge": null', '"right-edge": 5')),
     ("table-missing-row", "a table's row left out",
-     _without(SHIPPED, '"tag": {"live"')),
+     _without(SHIPPED, '"tag":     {"place"')),
     ("table-missing-field", "a row's field left out",
-     _swap(SHIPPED, '"agent": {"live": "always", "transcript": false}',
-           '"agent": {"live": "always"}')),
+     _swap(SHIPPED, '"agent":   {"place": "footer", "live": "always", ',
+           '"agent":   {"place": "footer", ')),
+    ("table-missing-place", "a row without its place",
+     _swap(SHIPPED, '"turn":    {"place": "above",  "live"', '"turn": {"live"')),
     ("table-bad-field", "a row's field of another type, and one unknown",
-     _swap(SHIPPED, '"session": {"live": "always", "transcript": false}',
-           '"session": {"live": "sometimes", "transcript": false, "x": 1}')),
+     _swap(SHIPPED, '"session": {"place": "above",  "live": "always", ',
+           '"session": {"place": "above", "live": "sometimes", "x": 1, ')),
     ("table-not-object", "a table that is not an object",
      _swap(SHIPPED, '"rows": {', '"rows": 3, "_": {')),
     ("several", "every fault named, in the file's order, the missing last",

@@ -1,41 +1,47 @@
-// Draw a figures document as the band, the account row, the rows under
-// the footer line, the receipt or the start line, to look at the grid's
-// rows from real figures in a terminal.
+// Draw a figures document as the band, the account row, the rows above
+// the prompt or under the footer line, the receipt or the start line, to
+// look at the grid's rows from real figures in a terminal.
 //
 //   node mod/tools/draw-figures.ts FILE [--cols N] [--part PART]
 //        [--phase running|done] [--hide PATH ...] [--rate N]
 //        [--home DIR] [--status STATUS_FILE]
-//        [--sticky ROW,...] [--right-edge N] [--inset N]
+//        [--rows JSON] [--right-edge N] [--inset N]
 //        [--hint TEXT] [--plain]
 //
 // FILE is a figures document, such as one of tests/fixtures/figures/.
-// A status document draws the band (--part band, the default), the 💳
-// account row (--part account), the start line (--part start), or what
-// the mod draws under Claude Code's footer line with live-place
-// "footer" (--part footer): --hint, standing for Claude Code's own line,
-// then the account row and the band's rows, each after --inset blanks,
-// the columns Claude Code's container stands in; or, with
-// account-place "tail" (--part tail), the account as the tail of
-// that line, after Claude Code's " · ".  --inset also draws the
-// band and the account row that much narrower, as the mod does under the
-// footer line, and the receipt's 🎤 🤖 🎮 rows that far in and that much
-// narrower, as the mod stamps them to stack on those; --right-edge is the
-// columns every row ends short of the terminal's edge, RIGHT_EDGE by
-// default.  The mod's own, with live-place "footer", are --inset 2
-// (hint-inset) and --right-edge 2 (right-edge, derived).  A cost document
-// draws the receipt.  --rate is the 🛫 the mod
-// would pass, in tokens a second.  --home stands for HOME, "${HOME}" by
-// default, which is what the fixtures' paths are written under.
-// --sticky names the rows, of turn, agent and session, that stay on the
-// band once a turn ends, as `rows.<row>` `{"live": "always",
-// "transcript": false}` in the mod's options: the band's done phase draws
-// those, and the receipt the rest; 🤖 on the receipt comes from
-// --status, a status document standing for the band's last one, as the
-// mod keeps it.
+// A status document draws the band's 🎤 🤖 🎮 rows wherever they are
+// placed (--part band, the default), the 💳 account row (--part
+// account), the start line (--part start), what the mod draws above the
+// prompt (--part above): the rows whose rows.<row>.place is "above", the
+// account row first where it is one of them; or what it draws under
+// Claude Code's footer line (--part footer): --hint, standing for Claude
+// Code's own line, then the rows whose place is "footer", the account
+// row first where it is one of them, each after --inset blanks, the
+// columns Claude Code's container stands in; or, with account-place
+// "tail" (--part tail), the account as the tail of that line, after
+// Claude Code's " · ".  --inset also draws the band and the account row
+// that much narrower, as the mod does under the footer line, and the
+// receipt's 🎤 🤖 🎮 rows that far in and that much narrower, as the mod
+// stamps them to stack on those; --right-edge is the columns every row
+// ends short of the terminal's edge, RIGHT_EDGE by default.  The mod's
+// own under the footer line are --inset 2 (hint-inset) and --right-edge
+// 5 (right-edge, derived from the default places).  A cost document
+// draws the receipt.  --rate is the 🛫 the mod would pass, in tokens a
+// second.  --home stands for HOME, "${HOME}" by default, which is what
+// the fixtures' paths are written under.
+// --rows is a rows table as a configuration file sets it, such as
+// '{"agent": {"transcript": true}}', merged field by field over the
+// defaults file's (mod/defaults/config.jsonc): each row's place picks the
+// part it is drawn in, its live when the band draws it (the done phase
+// draws those "always"), and its transcript whether the receipt stamps
+// it; 🤖 on the receipt comes from --status, a status document standing
+// for the band's last one, as the mod keeps it.
 //
 // The clock is drawn in the document's `clock.tz`, as the edge would set
 // it, and the terminal's profile is read from the environment.
 import { readFileSync } from "node:fs";
+import { dirname, join as pathJoin } from "node:path";
+import { fileURLToPath } from "node:url";
 import { settings, stripAnsi } from "../src/formatting.ts";
 import { join, span } from "../src/spans.ts";
 import type { Span } from "../src/spans.ts";
@@ -44,15 +50,18 @@ import type { Dict } from "../src/py.ts";
 import {
   FOOTER_JOIN, ROW_NAMES, accountLine, bandLines, bandRows, footerTail,
 } from "../src/band.ts";
-import type { Phase, RowName } from "../src/band.ts";
+import type { Live, Phase, Place } from "../src/band.ts";
 import { receiptLines, startLine } from "../src/receipt.ts";
 import { RIGHT_EDGE } from "../src/spec.ts";
+import { DEFAULTS_REL, parseDefaults } from "../src/config.ts";
+import type { Rows } from "../src/config.ts";
+import { OPTIONS } from "../src/options_spec.ts";
 
 const USAGE = "usage: draw-figures.ts FILE [--cols N] " +
-  "[--part {band,account,footer,tail,receipt,start}] " +
+  "[--part {band,account,above,footer,tail,receipt,start}] " +
   "[--phase {running,done}] " +
   "[--hide PATH] [--rate N] [--home DIR] [--status STATUS_FILE] " +
-  "[--sticky {turn,agent,session},...] [--right-edge N] [--inset N] " +
+  "[--rows JSON] [--right-edge N] [--inset N] " +
   "[--hint TEXT] [--plain]";
 
 function fail(msg: string): never {
@@ -67,7 +76,7 @@ function read(path: string): Dict {
 const argv = process.argv.slice(2);
 let file = "", cols = 160, part = "", phase: Phase = "running";
 let rate: number | null = null, home = "${HOME}", statusFile = "", plain = false;
-let sticky: RowName[] = [];
+let rowsArg = "";
 let rightEdge = RIGHT_EDGE, inset = 0;
 let hint = "-- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)";
 const hide: string[] = [];
@@ -83,7 +92,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === "--part") part = next();
   else if (a === "--phase") phase = next() as Phase;
   else if (a === "--hide") hide.push(next());
-  else if (a === "--sticky") sticky = next().split(",").filter(Boolean) as RowName[];
+  else if (a === "--rows") rowsArg = next();
   else if (a === "--rate") rate = Number(next());
   else if (a === "--home") home = next();
   else if (a === "--status") statusFile = next();
@@ -98,7 +107,41 @@ if (!Number.isInteger(cols) || cols <= 0) fail("--cols takes a width");
 if (!["running", "done"].includes(phase)) fail("--phase: invalid choice");
 if (!Number.isInteger(rightEdge) || rightEdge < 0) fail("--right-edge takes a width");
 if (!Number.isInteger(inset) || inset < 0) fail("--inset takes a width");
-if (!sticky.every((r) => ROW_NAMES.includes(r))) fail("--sticky: invalid choice");
+
+/** The defaults file's rows table with --rows over it, field by field. */
+function rowsOf(arg: string): Rows {
+  const path = pathJoin(dirname(fileURLToPath(import.meta.url)), "..",
+    DEFAULTS_REL);
+  const rows = structuredClone(
+    parseDefaults(path, readFileSync(path, "utf8")).rows as Rows);
+  if (!arg) return rows;
+  let got: unknown;
+  try {
+    got = JSON.parse(arg);
+  } catch {
+    fail("--rows takes a JSON object");
+  }
+  if (typeof got !== "object" || got === null || Array.isArray(got)) {
+    fail("--rows takes a JSON object");
+  }
+  const fields = OPTIONS.rows.fields as { readonly [f: string]:
+    { readonly type: string; readonly items?: readonly string[] } };
+  for (const [row, rec] of Object.entries(got as Dict)) {
+    if (!(row in rows)) fail("--rows: no row " + JSON.stringify(row));
+    for (const [field, v] of Object.entries(rec as Dict)) {
+      const f = fields[field];
+      const ok = f !== undefined && (f.type === "bool"
+        ? typeof v === "boolean" : (f.items ?? []).includes(v as string));
+      if (!ok) {
+        fail("--rows: " + row + "." + field + " cannot be " +
+          JSON.stringify(v));
+      }
+      rows[row][field] = v as string | boolean;
+    }
+  }
+  return rows;
+}
+const rows = rowsOf(rowsArg);
 
 const fig = read(file);
 const mode = fig.mode as string;
@@ -111,22 +154,32 @@ const tz = (fig.clock as Dict).tz as string | null;
 if (tz) process.env.TZ = tz;
 const st = settings(process.env, true, false, rightEdge);
 
-const live = Object.fromEntries(sticky.map((r) => [r, "always"]));
-const stamped = ROW_NAMES.filter((r) => !sticky.includes(r));
-const band = (): Span[][] =>
-  bandLines(st, fig, cols, hide, { rate, phase, live, inset });
+const live = Object.fromEntries(ROW_NAMES.map((r) =>
+  [r, rows[r].live as Live]));
+const places = Object.fromEntries(ROW_NAMES.map((r) =>
+  [r, rows[r].place as Place]));
+const stamped = ROW_NAMES.filter((r) => rows[r].transcript);
+const band = (place?: Place): Span[][] =>
+  bandLines(st, fig, cols, hide, { rate, phase, live, place, places, inset });
 const account = (): Span[][] => {
   const row = accountLine(st, fig, hide, cols - inset, home);
   return row.length ? [row] : [];
 };
+// The account row where `place` is its place and the phase draws it.
+const accountIn = (place: Place): Span[][] =>
+  rows.account.place === place && (rows.account.live === "always" ||
+    (rows.account.live === "running" && phase === "running"))
+    ? account() : [];
 let lines: Span[][];
 if (part === "band") {
   lines = band();
 } else if (part === "account") {
   lines = account();
+} else if (part === "above") {
+  lines = [...accountIn("above"), ...band("above")];
 } else if (part === "footer") {
   const lead = [span(" ".repeat(inset))];
-  lines = [[span(hint)], ...account(), ...band()]
+  lines = [[span(hint)], ...accountIn("footer"), ...band("footer")]
     .map((l) => inset ? [...lead, ...l] : l);
 } else if (part === "tail") {
   // Claude Code's line two blanks in, as footerTail reckons it; --hint
