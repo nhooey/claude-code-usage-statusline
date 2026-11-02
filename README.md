@@ -8,18 +8,20 @@ and what every subagent is doing. They share one grid, so every figure stays on
 the same screen column on every row, and you can switch tabs and compare
 sessions at a glance.
 
-## Under the footer line
+## Above the prompt and under the footer line
 
-Drawn under Claude Code's own footer line while a turn runs, by the
-`usage-band` mod in [`mod/`](mod/README.md): the 💳 account, then the turn, the
-main thread and the session, one scope a row.
+Drawn by the `usage-band` mod in [`mod/`](mod/README.md), one scope a row.
+Above the prompt, the turn while it runs and the session; under Claude
+Code's own footer line, the 💳 account and the main thread, just over the
+agent panel. Here the two places are drawn together, the prompt between
+them left out:
 
 ```
+                         🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+                         🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-                                📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-                            🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-                            🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-                            🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                               💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+                         🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
 Read these three first:
@@ -30,12 +32,16 @@ Read these three first:
 * **🤖 🧠115k 11٪**: the main thread's context holds 115k tokens, 11٪ of the
   window.
 
-| Row | Label | Scope |
-|---|---|---|
-| 💳 | 📦 Project · 🌿 Branch · 📁 Directory · 💳 Account · 🔋 🪫 Windows · 🔜 Resets · 📅 Date · 🕐 Clock | the account |
-| 🎤 | the prompt | the turn |
-| 🤖 | the reply | the main thread alone |
-| 🎮 | 📦 Project · 🌿 Branch · 📁 Directory · 🔀 PR · 🎨 Style | the main thread and every agent |
+| Row | Label | Scope | Place |
+|---|---|---|---|
+| 🎤 | the mark alone | the turn | above the prompt, while a turn runs |
+| 🎮 | the mark alone | the main thread and every agent | above the prompt |
+| 💳 | 📦 Project · 🌿 Branch · 📁 Directory · 🔀 PR · 🎨 Style · 💳 Account · 🔋 🪫 Windows · 🔜 Resets · 📅 Date · 🕐 Clock | the account and where the session works | under the footer line |
+| 🤖 | the mark, and 📨 with the messages waiting for its next turn | the main thread alone | under the footer line |
+
+Each row's place is `rows` in the
+[configuration files](docs/options.md#configuration-files); see
+[Layout](docs/layout.md#the-rows).
 
 Every row's figures, left to right: 🤖 Model · 🛫 Rate or Doing · 💰 Cost ·
 🧠 Context · 🧩 Tokens · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools ·
@@ -47,10 +53,10 @@ One row per subagent or shell in Claude Code's agent panel, on the same
 columns. Installed as `subagentStatusLine`.
 
 ```
-✳🔍🟢 Marigold  Running t…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
-✳🔩🟢 Bluebell              🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
-🔍⚫ Daisy                  🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .02٪  🪫  .022٪
-🐚🟢 sleep 300 && make test                                                             ⌛  2m
+✳🔍🟢 Marigold  Runnin…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+✳🔩🟢 Bluebell           🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
+🔍⚫ Daisy               🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .02٪  🪫  .022٪
+🐚🟢 sleep 300 && make test                                                          ⌛  2m
 ```
 
 The label, left to right: Spinner · Kind · State · 👶🏻 Children ·
@@ -62,13 +68,12 @@ how long it has run.
 ## Prompt receipt
 
 Stamped by the mod as each turn ends, in place of Claude Code's `✻ Worked for
-…` line, and kept in the transcript: the 🎤, 🤖 and 🎮 rows as they stood when
-the turn ended, dim, then the turn's tag.
+…` line, and kept in the transcript: the 🎤 row as it stood when the turn
+ended, dim, then the turn's tag. 🤖 and 🎮 stay live on screen, and
+`rows` can stamp them too.
 
 ```
-                                             🎤  💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
-                                             🤖  💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
-                                             🎮  💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
+                         🎤                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
 
 🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
 ```
@@ -84,7 +89,8 @@ there is nothing to install beyond a clone:
 git clone https://github.com/nhooey/claude-code-usage-statusline.git ~/src/claude-code-usage-statusline
 ```
 
-The rows under the footer line and the receipt are the mod's. Install it from
+The rows above the prompt and under the footer line, and the receipt, are
+the mod's. Install it from
 the clone, which Claude Code then reads in place:
 
 ```sh
@@ -114,10 +120,10 @@ instead; see [Configuration files](docs/options.md#configuration-files).
 
 The agent panel is the Python program's. Merge
 [`examples/claude/settings.json`](examples/claude/settings.json) into
-`~/.claude/settings.json`: its `subagentStatusLine` runs with `--right-edge 2`,
-so the panel's rows end where the mod's do, and the `--hide` paths the mod
-ships with, so the columns stack; change the two together. The path assumes
-the clone above. Keep
+`~/.claude/settings.json`: its `subagentStatusLine` gives no `--right-edge`
+or `--hide`, so the panel takes both from the configuration files the mod
+reads, and its rows end and its columns stack where the mod's do. The path
+assumes the clone above. Keep
 `coding-agent-usage-line.py` and the `coding_agent_usage_line/` directory
 beside it together.
 
@@ -132,30 +138,30 @@ echo 'For any task you expect to take more than about a minute, as the main agen
 ## Legend
 
 The legend has one table per topic. Each glyph has a name, and a ✓ marks each
-readout that draws it: the rows under the footer line, the agent panel and
-the receipt. Where a glyph means something different on one readout, the
-table says so.
+readout that draws it: the mod's rows, above the prompt and under the
+footer line, the agent panel and the receipt. Where a glyph means something
+different on one readout, the table says so.
 
 ### Rows
 
 | Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| 💳 | Account | the plan's own figures for the whole account, on every device, and where the session works | ✓ | | |
-| 🎤 | Turn | the turn; a press scrolls to the prompt that opened it | ✓ | | ✓ |
-| 🤖 | Main thread | the main thread alone; a press scrolls to its last reply | ✓ | | ✓ |
-| 🎮 | Session | the main thread and every agent | ✓ | | ✓ |
+| 💳 | Account | the plan's own figures for the whole account, on every device, and where the session works; under the footer line | ✓ | | |
+| 🎤 | Turn | the turn; above the prompt while it runs | ✓ | | ✓ |
+| 🤖 | Main thread | the main thread alone; under the footer line; on the receipt when `rows` stamps it | ✓ | | ✓ |
+| 🎮 | Session | the main thread and every agent; above the prompt; on the receipt when `rows` stamps it | ✓ | | ✓ |
 
 ### Chat and project
 
 | Glyph | Name | Meaning | Rows | Panel | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| 🎨 | Style | output style, when not the default | ✓ | | ✓ |
-| 🔀 | PR | pull request number | ✓ | | ✓ |
-| 📨 | Queue | messages sent to the agent and not yet delivered, Claude Code's "N queued" | | ✓ | |
-| 📦 | Project | the project; in a worktree, the main repository | ✓ | | ✓ |
-| 📁 | Directory | current directory, the project's root drawn as 📦 | ✓ | | ✓ |
-| 🌿 | Branch | branch, clean tree; on the panel, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | ✓ |
-| 🍂 ✱ | Dirty | branch, uncommitted changes | ✓ | | ✓ |
+| 🎨 | Style | output style, when not the default, on 💳 | ✓ | | |
+| 🔀 | PR | pull request number, on 💳 | ✓ | | |
+| 📨 | Queue | messages sent to the agent and not yet delivered, Claude Code's "N queued"; on the 🤖 row, messages waiting for the main thread's next turn | ✓ | ✓ | |
+| 📦 | Project | the project, on 💳; in a worktree, the main repository | ✓ | | |
+| 📁 | Directory | current directory, on 💳, the project's root drawn as 📦 | ✓ | | |
+| 🌿 | Branch | branch, clean tree, on 💳; on the panel, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | |
+| 🍂 ✱ | Dirty | branch, uncommitted changes, on 💳 | ✓ | | |
 | 💾 | Diff | lines added and removed; blank where none were | ✓ | ✓ | ✓ |
 | 📅 | Date | today's date; on the receipt, when it was stamped | ✓ | | ✓ |
 | 🕐 | Clock | the time; on the receipt, when it was stamped | ✓ | | ✓ |
@@ -317,7 +323,7 @@ to tell the two apart.
   and its 🧠 tells you when *this* context window needs compacting. Each
   row of the agent panel counts its own agent alone.
 
-On a narrow terminal each row's label is shortened first, down to 20
+On a narrow terminal each row's label is shortened first, down to 12
 columns; then whole columns drop from every row at once, least important
 first, so the grid never breaks. [Layout](docs/layout.md) covers every cell
 in detail.
@@ -327,14 +333,13 @@ in detail.
 `--hide scope[.group[.metric]]` hides a row, a group of cells or one cell,
 the same path on every readout: `hide` in a
 [configuration file](docs/options.md#configuration-files) for both, or as
-flags to `subagentStatusLine` for the panel. The mod ships hiding 🔋, 🧠's
-share of the window and 🎯; the renders above hide nothing. See
-[Hiding](docs/layout.md#hiding).
+flags to `subagentStatusLine` for the panel. The defaults hide nothing,
+as in the renders above. See [Hiding](docs/layout.md#hiding).
 
 [Options](docs/options.md) lists every flag.
 
 The 💳 row's figures come from the usage source the mod is configured with
-(`usage-source`, `claude-usage-tracker` as the mod ships),
+(`usage-source`, `auto` by default),
 and the panel's from `--usage-source`. Besides the rate limits Claude Code
 reports, either can take them from:
 

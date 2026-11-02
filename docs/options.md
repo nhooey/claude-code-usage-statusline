@@ -198,10 +198,12 @@ draws the panel's chrome before each row, `  ◯ ` at the top level and two
 more blanks for each level an agent started by another agent sits below it
 (the depth is `spawnDepth` in the agent's `.meta.json` sidecar, or the
 panel's own tree); the row counts it toward the width and does not print it.
-Every row ends two columns short of the terminal's edge, where the mod's
-rows under the footer line end, at Claude Code's footer container; with
-the mod's `live-place` `above`, five short, as the band does above the
-prompt. `--right-edge` (or `right-edge` in a file) sets another.
+Every row ends where the mod's rows end: five columns short of the
+terminal's edge when any row the mod draws live is placed above the prompt
+(`rows.*.place`, as the defaults place 🎤 and 🎮), clear of the band's
+`[-]`, and two short, at Claude Code's footer container, when every row is
+under the footer line. `--right-edge` (or `right-edge` in a file) sets
+another.
 The columns follow from the width and `--hide` alone, kept for two levels of
 nesting whether any agent runs or not, so no column moves when an agent
 starts; a deeper row cuts its own label instead. On a narrow terminal whole
@@ -279,7 +281,7 @@ diff mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
 A full copy sets every option, so a later change to a default in the
 repository does not reach it; delete the lines you have not changed to
 follow the defaults instead. `right-edge` and `label` are `null` in the
-defaults file, which means "follow `live-place`" and "follow
+defaults file, which means "follow `rows.*.place`" and "follow
 `usage-text`"; `null` in your copy means the same, and is not a setting.
 
 The defaults file is read strictly. A key missing from it, a key that is no
@@ -357,9 +359,10 @@ their user file, which the band and the panel both read, and the panel's
 command keeps only `--agent claude --mode subagent`. `--show-config` does
 not know this layer; the mod's log names it.
 
-`right-edge` follows `live-place` when no layer sets it, as `label` follows
-`usage-text`: 2 under the default `"footer"`, 5 under `"above"`, in the
-panel too, so one setting moves the band and the panel together.
+`right-edge` follows the places in `rows` when no layer sets it, as `label`
+follows `usage-text`: 5 when any row whose `live` is not `"never"` has
+`place` `"above"`, as under the defaults, else 2, in the panel too, so the
+rows' places move the band and the panel together.
 
 `--show-config` prints the merged options, each with the layer it came from
 and the layers' files, and the warnings, and exits. It reads no stdin, so

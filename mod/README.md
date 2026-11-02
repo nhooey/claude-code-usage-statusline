@@ -25,29 +25,34 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `hooks/register.tsx` is its hooks module, and `types/index.d.ts` its
 `$.state` contract. It draws four places, and writes one:
 
-- **The band,** under Claude Code's footer line by default
-  (`live-place` `"footer"`), or above the prompt with `"above"`; see
-  [docs/layout.md](../docs/layout.md#under-the-footer-line). It holds the
-  grid's rows for the session, from the last status figures document,
-  redrawn as the
-  session starts, after each tool call, as a turn starts and ends, every
-  5 seconds while a turn runs (never more often than three times as long
-  as the last read took) and every 30 seconds otherwise. Its clocks (🔧 ⌛
-  ⛳ 🕐 🔜) move each second between reads. While a turn runs its 🎤 and
-  🎮 rows are that turn's, live.
+- **The band** above the prompt (`AbovePrompt`), which Claude Code can
+  collapse with its `[-]`: 🎤, the turn, while one runs, and 🎮, the
+  session, kept between turns. Each row of the `rows` table goes where
+  its `place` puts it, `"above"` here or `"footer"` under the footer
+  line; see
+  [docs/layout.md](../docs/layout.md#above-the-prompt-and-under-the-footer-line).
+  The rows in both places are the grid's, for the session, from the last
+  status figures document, redrawn as the session starts, after each tool
+  call, as a turn starts and ends, every 5 seconds while a turn runs
+  (never more often than three times as long as the last read took) and
+  every 30 seconds otherwise. Their clocks (🔧 ⌛ ⛳ 🕐 🔜) move each
+  second between reads. While a turn runs its 🎤 and 🎮 rows are that
+  turn's, live. While a survey (a question picker) holds the band, the mod
+  draws nothing there.
 - **The footer** under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`:
-  Claude Code's own line, whose pills stay live, with the 💳 account
-  details on a row of their own under it, in colour, ending where the
-  band's rows end (`account-place` `"row"`; `"tail"` puts them dim at the
-  line's right end).
+  Claude Code's own line, whose pills stay live, then the rows placed
+  under it, in colour: 💳, the account and where the session works, on a
+  row of its own (`account-place` `"row"`; `"tail"` puts it dim at the
+  line's right end), and 🤖, the main thread, kept between turns, just
+  over the agent panel. 📁 on 💳 draws the project's root as 📦 under its
+  parent, so `📁~/git/📦/mod` is the project's `mod/` folder. 🤖 draws
+  the model and effort its next turn runs on, between turns too, and
+  while a turn runs, its answering or waiting time is in 🛫's column.
 - **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
-  ends, the band's 🎤 and 🎮 rows stamped there, frozen, and under them
-  the turn's 🔺🔖 tag and when it was stamped, so every turn's receipt
-  stays in the transcript to scroll back to. 📁 draws the project's root
-  as 📦 under its parent, so `📁~/git/📦/mod` is the project's `mod/`
-  folder. 🤖 draws the model and effort its next turn runs on, between
-  turns too, and while a turn runs, its answering or waiting time is in
-  🛫's column.
+  ends, the rows the `rows` table stamps (🎤 alone as the mod ships)
+  stamped there, frozen, and under them the turn's 🔺🔖 tag and when it
+  was stamped, so every turn's receipt stays in the transcript to scroll
+  back to.
 - **The start tag,** under a prompt typed at the composer, at no indent:
   🔻🔖, the turn's tag and when it started, dim.
 
@@ -72,9 +77,11 @@ footer line in place of its rows (see
 Every option the mod reads is listed in `spec/options.jsonc`, `"mod"`
 among its ports: the
 usage source, the account and period, the `hide` paths, `mark-spacing`
-and `subscript-decimals`, `live-place`, the `rows` table (when each of 🎤,
-🤖, 🎮, the 🔖 tag lines and 💳 is drawn, and which a turn's end stamps
-into the transcript), and the footer's layout. `hooks/edges.ts` reads the
+and `subscript-decimals`, the `rows` table (for each of 🎤, 🤖, 🎮, the
+🔖 tag lines and 💳, where it is drawn, above the prompt or under the
+footer line, when, and whether a turn's end stamps it into the
+transcript), `account-place`, `right-edge` (following the rows' places),
+and the footer's layout (`hint-inset`, `hint-tuck`, `footer-ruler`). `hooks/edges.ts` reads the
 files at each load, on `session.start`, and every 30 seconds on the tick,
 a stat of each file, reading again only one that has changed, or the
 files of a new root after a `/cd`; a change draws everything again, with
@@ -85,12 +92,9 @@ with a warning gets one notice line in the transcript per change.
 `hooks/config.ts` holds what no file sets: the ticks (idle, running, and
 the clocks'), how long the receipt waits for its turn, and the version the
 mod's caches are keyed by. It also holds `SETTINGS`, the mod's own layer
-under the files: the usage source (`claude-usage-tracker`), the `hide`
-paths (`*.plan.five_hour`, 🔋 in every row, `*.context.share`, 🧠's ٪ of
-the window, `*.tokens.cache`, 🎯, and the 💳 tail's 📦 and 🌿) and the
-rows (🎤, 🤖 and 🎮 drawn while a turn runs and all three stamped), the
-settings the mod drew with that are not the options' defaults. Each goes
-from there once the user's file holds it.
+under the files, for a setting it draws with that is not the option's
+default and that no file gives; it is empty, since a person's own
+settings go in their user file.
 
 The state directory and the projects directory are the status line's:
 `CODING_AGENT_USAGE_LINE_STATE_DIR` (else
@@ -124,42 +128,41 @@ saved.
 ### The receipt
 
 As a turn ends the mod stamps its receipt as the turn's closing line, in
-place of Claude Code's `✻ <word> for <duration>`: the rows the band drew
-live, frozen and dim, in their colours:
+place of Claude Code's `✻ <word> for <duration>`: the rows whose
+`transcript` is set in `rows`, frozen and dim, in their colours. As the
+mod ships that is 🎤 alone, since 🤖 and 🎮 stay live on screen
+(`node tools/draw-figures.ts
+../tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part
+receipt --inset 2 --right-edge 5 --plain`, run from `mod/`):
 
 ```
+                         🎤                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
 
-                                      🎤  💰 0.2   🧠 +34k  +3٪  🧩 ▴ 28k ▾7.1k  …
-                                      🤖           🧠 150k        🧩 ▴ 31M ▾997k  …
-                                      🎮   💰 115                 🧩 ▴2.7M ▾841k  …
-🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02
-
+🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
 ```
 
-A blank row, 🎤, 🤖 and 🎮 laid out at the width the band last drew at,
-at no indent as the band's rows are, so each column is under the band's;
-then the turn's tag line, drawn as the start tag is, so its 🔺🔖 is under
-the 🔻🔖; then a blank row. Until the stamp lands the closing line is a
-blank row, and the band keeps the turn's rows until a second after it
-lands (`receiptHoldMs`), so neither place is ever without them; then the
-band draws none. The option `rows` sets, for each of `turn`, `agent` and
-`session`, whether it stays on the band once the turn ends (`live`
-`"always"`) and whether the receipt stamps it (`transcript`), apart
-(`--sticky` to `tools/draw-figures.ts` keeps a row and does not stamp
-it). As the mod ships, none stays, so the receipt has all three.
-`live-place` draws the band under the footer line (`footer`, the
-default) or above the prompt (`above`). A
-`$.ui.log` line was tried first:
-Claude Code draws each as its own notice, `⏺ usage-band:` before it and a
-blank row after, in plain dim text.
+A blank row, then the stamped rows laid out at the width the band last
+drew at, `hint-inset` columns in as every row is, so each column is under
+the live rows'; then, after a blank row, the turn's tag line, drawn as the start tag is, so
+its 🔺🔖 is under the 🔻🔖; then a blank row. Until the stamp lands the
+closing line is a blank row, and the band keeps 🎤 until a second after it
+lands (`receiptHoldMs`), so the turn's figures are never off screen. The
+option `rows` sets, for each of `turn`, `agent` and `session`, where it
+is drawn (`place`), whether it is drawn while a turn runs, always or
+never (`live`), and whether the receipt stamps it (`transcript`), apart;
+`--rows` to `tools/draw-figures.ts` takes the same table.
+`"rows": {"agent": {"transcript": true}, "session": {"transcript": true}}`
+stamps 🤖 and 🎮 under 🎤. The receipt is Text in the transcript rather
+than a `$.ui.log` line, which Claude Code draws as its own notice,
+`⏺ usage-band:` before it and a blank row after, in plain dim text.
 
 Claude Code writes a turn's records to the transcript only after its Stop
 hooks have run, after the mod hears `turn.complete`, so the stamp waits
 for them: it reads the transcript every half second until the newest
 prompt's turn is billed and two reads agree on it, for up to 30 seconds,
 and goes on after the handler has returned. Then it builds the cost
-document as the band builds its status document, with the 📦 🌿 of the
-band's last one, times the turn by the engine's duration, and logs it.
+document as the band builds its status document, times the turn by the
+engine's duration, and logs it.
 
 Each turn is stamped once: its key, by session, is kept in the mod's
 store, so a second `turn.complete` over it logs nothing. A turn whose

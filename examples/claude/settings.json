@@ -1,6 +1,6 @@
 {
   "subagentStatusLine": {
     "type": "command",
-    "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode subagent --mark-spacing --right-edge 2 --hide '*.plan.five_hour' --hide '*.context.share' --hide '*.tokens.cache'"
+    "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode subagent"
   }
 }
