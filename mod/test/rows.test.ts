@@ -224,19 +224,19 @@ test("the 💳 account's own row ends where the band's rows end, in colour", () 
   const text = join(row.map((s) => ({ ...s, colour: null, dim: false,
     bold: false, bg: null })));
   assert.equal(width(row, st.widths), 196 - RIGHT_EDGE);
-  // The footer tail's parts in the row's order: 💳 and its windows from
-  // the first column, the workspace FOOTER_GAP after them, and 📅 🕐 flush
-  // right.
+  // The footer tail's parts on the row: the project's workspace from the
+  // first column, and the global 💳 and its windows FOOTER_GAP before 📅
+  // 🕐, flush right.
   const plain = inZone(fig, () => accountText(st, fig, []));
   const [ws, acct, clock] = footerParts(plain);
-  assert.ok(text.startsWith(acct + " ".repeat(FOOTER_GAP) + ws + "  "), text);
-  assert.ok(text.endsWith(clock), text);
+  assert.ok(text.startsWith(ws + "  "), text);
+  assert.ok(text.endsWith("  " + acct + " ".repeat(FOOTER_GAP) + clock), text);
   assert.ok(row.some((s) => s.colour), "no colour kept");
   assert.deepEqual(inZone(fig, () => accountLine(st, fig, ["account"], 196)),
     []);
   // Indented, as above the prompt: as many blanks first, and the same end.
   const indented = inZone(fig, () => accountLine(st, fig, [], 196, "", 2));
-  assert.ok(stripAnsi(join(indented)).startsWith("  💳"));
+  assert.ok(stripAnsi(join(indented)).startsWith("  📦"));
   assert.equal(width(indented, st.widths), 196 - RIGHT_EDGE);
 });
 
@@ -250,10 +250,11 @@ test("the 💳 row draws 🔀 and 🎨, each hidden by its path, and sheds in or
     for (const m of ["💳", "📦", "🌿", "📁", "🔀", "🎨", "📅", "🕐", "🔜"]) {
       assert.ok(wide.includes(m), m + " missing from " + wide);
     }
-    assert.ok(wide.indexOf("💳") < wide.indexOf("📦") &&
+    assert.ok(wide.indexOf("📦") < wide.indexOf("📁") &&
       wide.indexOf("📁") < wide.indexOf("🔀") &&
       wide.indexOf("🔀") < wide.indexOf("🎨") &&
-      wide.indexOf("🎨") < wide.indexOf("📅"), wide);
+      wide.indexOf("🎨") < wide.indexOf("💳") &&
+      wide.indexOf("💳") < wide.indexOf("📅"), wide);
     assert.ok(!plain(["account.workspace.pr"], 200).includes("🔀"));
     assert.ok(!plain(["account.workspace.style"], 200).includes("🎨"));
     // Narrower and narrower, the pieces leave one at a time in their

@@ -516,9 +516,10 @@ function accountPieces(st: Settings, fig: Dict, hide: readonly string[],
 export const ACCOUNT_SHED: readonly string[] = ["workspace.style",
   "workspace.pr", "workspace.dir", "clock.date", "clock.time", "plan.reset"];
 
-/** The 💳 account as a row of its own, in its colours: 💳 and its windows
- * from the row's first column, `indent` blanks in, then the workspace, 📦
- * 🌿 📁 🔀 🎨, FOOTER_GAP columns after them, then 📅 🕐 flush right, ending
+/** The 💳 account as a row of its own, in its colours: what is the
+ * project's on the left and what is global on the right.  The workspace,
+ * 📦 🌿 📁 🔀 🎨, from the row's first column, `indent` blanks in; then 💳
+ * and its windows, FOOTER_GAP columns before 📅 🕐, flush right, ending
  * where the band's rows end at `cols`.  Too wide, it sheds ACCOUNT_SHED's
  * paths, then is cut with `…`.  None under the hide path `account`. */
 export function accountLine(st: Settings, fig: Dict, hide: readonly string[],
@@ -534,21 +535,20 @@ export function accountLine(st: Settings, fig: Dict, hide: readonly string[],
   for (;;) {
     const [acct, ws, clock] = [0, 1, 2].map((n) =>
       trimSpans(pieces.filter((p) => part(p) === n).flatMap((p) => p.spans)));
-    const head = [acct, ws].filter((p) => p.length)
+    const tail = [acct, clock].filter((p) => p.length)
       .flatMap((p, i) => i ? [gap, ...p] : p);
-    const headW = width(head, st.widths);
-    const clockW = width(clock, st.widths);
-    const need = headW + (clock.length && head.length ? FOOTER_GAP : 0) +
-      clockW;
+    const wsW = width(ws, st.widths);
+    const tailW = width(tail, st.widths);
+    const need = wsW + (ws.length && tail.length ? FOOTER_GAP : 0) + tailW;
     if (need <= room) {
-      return [...lead, ...head,
-        ...clock.length ? [span(" ".repeat(room - headW - clockW))] : [],
-        ...clock];
+      return [...lead, ...ws,
+        ...tail.length ? [span(" ".repeat(room - wsW - tailW))] : [],
+        ...tail];
     }
     const path = sheds.shift();
     if (path === undefined) {
-      return [...lead, ...cut(clock.length ? [...head, gap, ...clock] : head,
-        room, st.widths)];
+      return [...lead, ...cut(ws.length && tail.length ? [...ws, gap, ...tail]
+        : [...ws, ...tail], room, st.widths)];
     }
     pieces = pieces.filter((p) => p.path !== path);
   }

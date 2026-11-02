@@ -243,9 +243,9 @@ row of its own under the footer line (`account-place` `"row"`, which
   output style. `accountPieces` (`mod/src/band.ts`) already takes 📦 🌿
   📁; it gains 🔀 and 🎨, each hidden by its own `account.workspace.*`
   path.
-- **The order** the user wrote, a new layout in `accountLine`: 💳 and its
-  windows from the label column, then 📦 🌿 📁 🔀 🎨, then 📅 🕐 flush
-  right ([Decided](#decided), 5).
+- **The order** the user wrote, a new layout in `accountLine`: the
+  project's 📦 🌿 📁 🔀 🎨 from the label column, and the global 💳 and
+  its windows, then 📅 🕐, flush right ([Decided](#decided), 5).
 - **Fitting.** Today the row is not cut and Claude Code cuts it at the
   edge. As a row with more in it, it sheds by the ranks the pieces already
   carry: 🎨, then 🔀, then 📁, then 📅, then 🕐, and then the windows' 🔜,
@@ -471,9 +471,9 @@ them.
    `"row"` by default): its colours, its own width and shedding by rank,
    for one more row of height; the footer line goes back to Claude
    Code's own. The dim tail stays as the other value.
-5. **The 💳 row's order: 💳 and its windows from the label column, then
-   📦 🌿 📁 🔀 🎨, then 📅 🕐 flush right,** mark first as on the other
-   rows; a new layout in `accountLine`.
+5. **The 💳 row's order: what is the project's on the left, what is
+   global on the right.** 📦 🌿 📁 🔀 🎨 from the label column; 💳 and its
+   windows, then 📅 🕐, flush right; a new layout in `accountLine`.
 6. **The receipt's 🎮, when `rows.session.transcript` stamps it: bare,
    like the live 🎮.** One look for the row; a receipt no longer says
    the branch it ran on.
