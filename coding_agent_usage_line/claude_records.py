@@ -2050,25 +2050,60 @@ def opens_turn(r: dict) -> bool:
 
     promptSource is checked permissively on the typed branch (absent counts as
     typed) so that transcripts written before the field existed still segment
-    correctly.
+    correctly.  The typed branch takes every source a person's prompt comes
+    from (PROMPT_SOURCES): a prompt sent through the SDK (`claude -p` and the
+    apps built on it, 56 here) and a suggestion accepted with Tab (33) were
+    refused, and each one's answer was filed under the prompt before it.
+
+    A prompt with an image pasted in is a LIST of blocks, text and image,
+    as a tool result is; `prompt_text` reads it (34 here, refused too).
     """
-    c = (r.get("message") or {}).get("content")
     if (r.get("type") != "user" or r.get("userType") != "external"
-            or r.get("isCompactSummary")
-            or not isinstance(c, str) or len(c) == 0):
+            or r.get("isCompactSummary")):
+        return False
+    c = prompt_text(r)
+    if c is None:
         return False
     if r.get("promptSource") == "system":
         return True
     return (not r.get("isMeta")
-            and r.get("promptSource", "typed") in ("typed", "queued")
+            and r.get("promptSource", "typed") in PROMPT_SOURCES
             and not c.startswith("<"))
 
 
+# The promptSource values of a prompt a person sent: typed while idle, typed
+# while busy and handed over from the queue, sent through the SDK, and a
+# suggestion accepted.  "system" is the other value, a message delivered.
+PROMPT_SOURCES = ("typed", "queued", "sdk", "suggestion_accepted")
+
+
+def prompt_text(r: dict) -> Optional[str]:
+    """A user record's prompt text, or None where it has none.
+
+    The content is a string, or for a prompt with an image pasted in a list
+    of text and image blocks, whose text blocks are joined.  A tool result
+    is a list too, of other blocks and with no promptSource, which a prompt
+    always carries where its content is a list, so neither is read as one.
+    """
+    c = (r.get("message") or {}).get("content")
+    if isinstance(c, list):
+        if (r.get("promptSource") is None or not c
+                or not all(isinstance(b, dict)
+                           and b.get("type") in ("text", "image") for b in c)):
+            return None
+        c = "\n".join(b["text"] for b in c if b.get("type") == "text"
+                      and isinstance(b.get("text"), str))
+    return c if isinstance(c, str) and len(c) > 0 else None
+
+
 # Every enqueue is matched by exactly one of these — 1886 of each across 112
-# transcripts — so a removal is a delivery, not a cancellation.  The three
-# spellings are the queue draining one item, draining all of them, and the
-# item being taken off the front; none of them means the message was dropped.
+# transcripts — so each takes one message off the queue.  "remove" and
+# "dequeue" hand it to the model.  "popAll" does not: it is the queue pulled
+# back into the editor (the up arrow while messages wait), and the text
+# comes back, edited or not, as a new enqueue or a typed prompt; QUEUE_HANDED
+# leaves it out.
 QUEUE_DELIVERED = ("remove", "dequeue", "popAll")
+QUEUE_HANDED = ("remove", "dequeue")
 
 
 def queued_text(r: dict) -> Optional[str]:
@@ -2104,7 +2139,10 @@ def queued_text(r: dict) -> Optional[str]:
     """
     if r.get("type") != "queue-operation":
         return None
-    if r.get("operation") not in QUEUE_DELIVERED:
+    # Text pulled back into the editor was never answered: read as a
+    # delivery, it opened a turn holding the old text, and the answer to
+    # what was sent after it went under that (218 of them here).
+    if r.get("operation") not in QUEUE_HANDED:
         return None
     # A message handed over while the answer runs is the same turn: Claude
     # Code stamps it "absorbed_mid_turn", and its tool results carry the
@@ -2328,7 +2366,7 @@ def inbox_tally(sent: Dict[str, List[float]],
 def turn_start_text(r: dict) -> Optional[str]:
     """The text of the prompt this record opens, or None if it opens none."""
     if opens_turn(r):
-        return (r.get("message") or {}).get("content")
+        return prompt_text(r)
     return queued_text(r)
 
 

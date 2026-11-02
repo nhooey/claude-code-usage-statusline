@@ -508,6 +508,18 @@ def handmade():
          "timestamp": stamp(19)},
         {"type": "progress", "timestamp": stamp(20)},
         asst(21, "q1", "x", stop="end_turn"),
+        prompt(22, "sent through the SDK", promptSource="sdk"),
+        prompt(23, "a suggestion", promptSource="suggestion_accepted"),
+        prompt(24, [{"type": "text", "text": "an image"},
+                    {"type": "image", "source": {}}]),
+        prompt(25, [{"type": "text", "text": "two"},
+                    {"type": "text", "text": "texts"}], promptSource="queued"),
+        prompt(26, [{"type": "text", "text": "<system-reminder>"}],
+               promptSource="sdk"),
+        prompt(27, [{"type": "text", "text": "no source"}],
+               promptSource=None),
+        prompt(28, [{"type": "image", "source": {}}]),
+        prompt(29, "an unknown source", promptSource="other"),
     ])
     # Session 36be113b at 08:28:39Z on 2026-10-21, its text made up: a
     # prompt; a peer's hand-back delivered into its turn before the first

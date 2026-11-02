@@ -1133,26 +1133,59 @@ export function closeAgentSpan(state: SpanState, spans: Span[]): void {
  * one on the typed branch's terms: newer Claude Code writes its queue
  * removal with no content, so queuedText finds nothing there.  An absent
  * promptSource counts as typed, so transcripts from before the field still
- * segment.  Whether the turn is already open is turnOpens's to say.  The
+ * segment, and the typed branch takes every source a person's prompt comes
+ * from (PROMPT_SOURCES), the SDK's and an accepted suggestion's among them.
+ * A prompt with an image pasted in is a list of blocks; promptText reads
+ * it.  Whether the turn is already open is turnOpens's to say.  The
  * Python's docstring has the measurements. */
 export function opensTurn(r: Rec): boolean {
-  const c = pyDig(r, "message", "content");
   if (pyGet(r, "type") !== "user" || pyGet(r, "userType") !== "external" ||
-    pyTruthy(pyGet(r, "isCompactSummary")) || typeof c !== "string" ||
-    c.length === 0) {
+    pyTruthy(pyGet(r, "isCompactSummary"))) {
     return false;
   }
+  const c = promptText(r);
+  if (c === null) return false;
   if (pyGet(r, "promptSource") === "system") return true;
   const source = pyHas(r, "promptSource") ? pyGet(r, "promptSource") : "typed";
-  return !pyTruthy(pyGet(r, "isMeta")) &&
-    (source === "typed" || source === "queued") && !c.startsWith("<");
+  return !pyTruthy(pyGet(r, "isMeta")) && PROMPT_SOURCES.includes(source) &&
+    !c.startsWith("<");
 }
 
-// Every enqueue is matched by exactly one of these, so a removal is a
-// delivery, not a cancellation: the queue draining one item, draining all
-// of them, and the item being taken off the front.
+// The promptSource values of a prompt a person sent: typed while idle,
+// typed while busy and handed over from the queue, sent through the SDK,
+// and a suggestion accepted.  "system" is the other value, a message
+// delivered.
+export const PROMPT_SOURCES: readonly unknown[] =
+  ["typed", "queued", "sdk", "suggestion_accepted"];
+
+/** A user record's prompt text, or null where it has none: the content as
+ * a string, or for a prompt with an image pasted in, its text blocks
+ * joined.  A tool result is a list too, of other blocks and with no
+ * promptSource, which a prompt always carries where its content is a
+ * list. */
+export function promptText(r: Rec): string | null {
+  let c = pyDig(r, "message", "content");
+  if (Array.isArray(c)) {
+    if (pyGet(r, "promptSource") === null || c.length === 0 ||
+      !c.every((b) => isDict(b) &&
+        (pyGet(b, "type") === "text" || pyGet(b, "type") === "image"))) {
+      return null;
+    }
+    c = c.filter((b) => pyGet(b, "type") === "text" &&
+      typeof pyGet(b, "text") === "string")
+      .map((b) => pyGet(b, "text") as string).join("\n");
+  }
+  return typeof c === "string" && c.length > 0 ? c : null;
+}
+
+// Every enqueue is matched by exactly one of these, so each takes one
+// message off the queue.  "remove" and "dequeue" hand it to the model;
+// "popAll" is the queue pulled back into the editor, its text sent again
+// later, if at all, as a new enqueue or prompt, so QUEUE_HANDED leaves it
+// out.
 export const QUEUE_DELIVERED: readonly unknown[] =
   ["remove", "dequeue", "popAll"];
+export const QUEUE_HANDED: readonly unknown[] = ["remove", "dequeue"];
 
 /** The prompt a `queue-operation` record delivered, or null.
  *
@@ -1166,7 +1199,9 @@ export const QUEUE_DELIVERED: readonly unknown[] =
  * '<', and is refused. */
 export function queuedText(r: Rec): string | null {
   if (pyGet(r, "type") !== "queue-operation") return null;
-  if (!QUEUE_DELIVERED.includes(pyGet(r, "operation"))) return null;
+  // Text pulled back into the editor was never answered; read as a
+  // delivery, it opened a turn holding the old text.
+  if (!QUEUE_HANDED.includes(pyGet(r, "operation"))) return null;
   // A message handed over while the answer runs is the same turn; the
   // Python's comment has why.
   if (pyGet(r, "reason") === "absorbed_mid_turn") return null;
@@ -1198,7 +1233,7 @@ export function isCompaction(r: Rec): boolean {
 
 /** The text of the prompt this record opens, or null if it opens none. */
 export function turnStartText(r: Rec): string | null {
-  if (opensTurn(r)) return pyDig(r, "message", "content") as string;
+  if (opensTurn(r)) return promptText(r);
   return queuedText(r);
 }
 

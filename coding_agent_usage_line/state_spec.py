@@ -44,7 +44,7 @@ STATE_KINDS = {
         "prefix": "claude-main-fold-",
         "key": ("transcript",),
         "suffix": "",
-        "format": 2,
+        "format": 3,
         "part_bytes": 1000000,
         "check_bytes": 4096,
     },

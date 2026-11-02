@@ -90,9 +90,12 @@ plus a summary of `len(summary) / 4` tokens at the Opus output rate.
 The cost line reports one turn, and the status line's 🎤 figures describe the
 same turn. A turn opens on any of these:
 
-* **A typed prompt**: a `type: user` record from `userType: external`, whose
-  content is a string that does not start with `<`, is not `isMeta`, and has
-  `promptSource` of `typed` or none.
+* **A prompt the user sent**: a `type: user` record from
+  `userType: external` that is not `isMeta`, with `promptSource` of `typed`,
+  `sdk` (sent through the SDK, as `claude -p` does), `suggestion_accepted`
+  or none, and text that does not start with `<`. The text is the content
+  string, or for a prompt with an image pasted in, the text blocks of its
+  list of text and image blocks.
 * **A message delivered to an idle session**: `type: user` with
   `promptSource: "system"`. Claude Code writes four kinds this way — a
   `<task-notification>` from a finished background task, a message from
@@ -104,9 +107,10 @@ same turn. A turn opens on any of these:
   then writes it as a `type: user` record with `promptSource: "queued"`,
   which opens the turn as a typed prompt does. Older transcripts have no such
   record, and the turn opens on the `queue-operation` record that delivered
-  it (`remove`, `dequeue` or `popAll`), stamped when the model received it
-  rather than when it was typed. Queue entries starting with `<` are
-  machinery and open nothing.
+  it (`remove` or `dequeue`), stamped when the model received it rather
+  than when it was typed. Queue entries starting with `<` are machinery and
+  open nothing, and a `popAll` is the queue pulled back into the editor, so
+  its text was never answered and opens nothing either.
 
 A message delivered into a turn that is still running opens nothing: a
 `promptSource: "system"` record whose `turnPosition.turnIndex` is the open

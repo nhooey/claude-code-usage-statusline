@@ -7722,6 +7722,38 @@
     [
      "",
      false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
     ]
    ]
   },
@@ -7940,6 +7972,111 @@
      },
      "timestamp": "2026-08-17T20:53:41.000Z",
      "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "sent through the SDK"
+     },
+     "promptSource": "sdk",
+     "timestamp": "2026-08-17T20:53:42.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "a suggestion"
+     },
+     "promptSource": "suggestion_accepted",
+     "timestamp": "2026-08-17T20:53:43.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "an image",
+        "type": "text"
+       },
+       {
+        "source": {},
+        "type": "image"
+       }
+      ]
+     },
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:44.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "two",
+        "type": "text"
+       },
+       {
+        "text": "texts",
+        "type": "text"
+       }
+      ]
+     },
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:45.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "<system-reminder>",
+        "type": "text"
+       }
+      ]
+     },
+     "promptSource": "sdk",
+     "timestamp": "2026-08-17T20:53:46.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "no source",
+        "type": "text"
+       }
+      ]
+     },
+     "promptSource": null,
+     "timestamp": "2026-08-17T20:53:47.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "source": {},
+        "type": "image"
+       }
+      ]
+     },
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:48.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "an unknown source"
+     },
+     "promptSource": "other",
+     "timestamp": "2026-08-17T20:53:49.000Z",
+     "type": "user",
+     "userType": "external"
     }
    ]
   },
@@ -8115,6 +8252,117 @@
     {
      "timestamp": "2026-08-17T20:53:40.000Z",
      "type": "progress"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "x",
+        "type": "text"
+       }
+      ],
+      "id": "q1",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn"
+     },
+     "timestamp": "2026-08-17T20:53:41.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "sent through the SDK"
+     },
+     "promptSource": "sdk",
+     "timestamp": "2026-08-17T20:53:42.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "a suggestion"
+     },
+     "promptSource": "suggestion_accepted",
+     "timestamp": "2026-08-17T20:53:43.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "an image",
+        "type": "text"
+       },
+       {
+        "source": {},
+        "type": "image"
+       }
+      ]
+     },
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:44.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "two",
+        "type": "text"
+       },
+       {
+        "text": "texts",
+        "type": "text"
+       }
+      ]
+     },
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:45.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "<system-reminder>",
+        "type": "text"
+       }
+      ]
+     },
+     "promptSource": "sdk",
+     "timestamp": "2026-08-17T20:53:46.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "no source",
+        "type": "text"
+       }
+      ]
+     },
+     "promptSource": null,
+     "timestamp": "2026-08-17T20:53:47.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "source": {},
+        "type": "image"
+       }
+      ]
+     },
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:48.000Z",
+     "type": "user",
+     "userType": "external"
     }
    ]
   },
