@@ -1,4 +1,5 @@
-"""What the assertion suites share: agents.py, rate.py and subagent.py.
+"""What the assertion suites share: agents.py, rate.py and subagent.py, and
+the fixture commands of run-cases.py and app-server.py (write_executable).
 
 Each check prints a line, ok or FAIL with what it got and wanted, and is
 counted in `passed` or `failed` for the suite's closing line.
@@ -24,6 +25,29 @@ def pin_colour(env=None):
         env.pop(var, None)
     env["TERM"] = "xterm-256color"
     return env
+
+
+def write_executable(path, text):
+    """Write a fixture command, make it executable, and run it once, with
+    nothing on stdin and no deadline, before the program under test does.
+
+    macOS checks every new executable on its first run, in one daemon
+    shared by the whole machine, and a file it has checked once it lets
+    run.  The check is about a tenth of a second alone, but it queues: with
+    the suites of tests/all.sh writing commands side by side it was
+    measured at 15 seconds a run.  The program gives a usage command five
+    seconds (sources.command_reading) and the Codex app-server two in its
+    test, so a first run that landed in the queue came back as no reading,
+    and a frozen clock then kept the failure's retry time from passing for
+    every later case of that session: the agent rows lost 🔋 and 🪫.  Run
+    here, the check is paid where nothing is timed."""
+    import stat
+    import subprocess
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    os.chmod(path, stat.S_IRWXU)
+    subprocess.run([path], stdin=subprocess.DEVNULL,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def ok(name):

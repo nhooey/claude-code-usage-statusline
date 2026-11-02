@@ -26,7 +26,7 @@ DIR = os.path.dirname(os.path.abspath(__file__))
 PROG = os.path.join(DIR, "..", "coding-agent-usage-line.py")
 
 from _checks import (check, drawn, near, pin_colour, tally,  # noqa: E402
-                     unpainted, write_jsonl)
+                     unpainted, write_executable, write_jsonl)
 
 
 def load_program():
@@ -210,10 +210,10 @@ def run(tmp):
              "used_percent": 41, "resets_at": NOW + 2 * 3600},
             {"id": "week", "duration_seconds": 604800,
              "used_percent": 63, "resets_at": NOW + 3 * 86400}]}]}
-    with open(fixture_source, "w", encoding="utf-8") as fh:
-        fh.write("#!/bin/sh\nprintf '%%s\\n' '%s'\n" %
-                 (json.dumps(fixture, separators=(",", ":"))))
-    os.chmod(fixture_source, 0o700)
+    # Run once as it is written, so macOS's first-run check of it is not
+    # paid inside the program's deadline (write_executable).
+    write_executable(fixture_source, "#!/bin/sh\nprintf '%%s\\n' '%s'\n" %
+                     (json.dumps(fixture, separators=(",", ":"))))
     # Every render reads it, as the panel's --usage-source; render's own
     # argv comes after, so a case may name another.
     global SOURCE

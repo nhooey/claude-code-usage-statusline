@@ -57,6 +57,7 @@ FIGURES = os.path.join(FIXTURES, "figures")
 PROGRAM = os.path.join(os.path.dirname(HERE), "coding-agent-usage-line.py")
 sys.path.insert(0, os.path.dirname(HERE))
 from coding_agent_usage_line.spans import COLOUR_VARS  # noqa: E402
+from _checks import write_executable  # noqa: E402
 
 
 def git(*args):
@@ -146,11 +147,12 @@ class Suite:
             # so two environments sharing a path would read each other's
             # reading.
             cmd = os.path.join(self.tmp, "claude-source-" + name)
+            # Run once as it is written, so macOS's first-run check of it
+            # is not paid inside the program's deadline (write_executable).
             if not os.path.exists(cmd):
-                with open(cmd, "w") as fh:
-                    fh.write("#!/bin/sh\nprintf '%%s\\n' '%s'\n"
-                             % json.dumps(e["source"], separators=(",", ":")))
-                os.chmod(cmd, 0o700)
+                write_executable(cmd, "#!/bin/sh\nprintf '%%s\\n' '%s'\n"
+                                 % json.dumps(e["source"],
+                                              separators=(",", ":")))
         # The usage source goes in the case's user-global config file, and
         # the project walk starts in the case's repository, whose .git
         # stops it: no golden reads this machine's own config files,
