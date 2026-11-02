@@ -164,6 +164,30 @@ test("each row's live and transcript pick the band's rows and the receipt's",
     assert.deepEqual(marks(untagged), ["🎤"]);
   });
 
+test("the receipt's rows inset keep the columns of the rows at none", () => {
+  // The band's rows are laid out at the full width wherever they start,
+  // so the receipt's, inset to stack on them, keep its columns too: no
+  // column drops at a width two columns short of where the band drops it.
+  // Each row's first mark is its label's, which the inset's room can cut.
+  const st = settings({});
+  const cost = document("cost/09-agents@196");
+  const marks = (line: string): [string, number][] => {
+    const out: [string, number][] = [];
+    let col = 0;
+    for (const ch of Array.from(line)) {
+      if (/\p{Extended_Pictographic}/u.test(ch)) out.push([ch, col]);
+      col += visWidth(ch, st.widths);
+    }
+    return out;
+  };
+  for (let cols = 60; cols <= 200; cols++) {
+    const at = (inset: number) => inZone(cost, () => receiptLines(st, cost,
+      cols, ["name.tag"], false, null, undefined, inset))
+      .map((l) => marks(stripAnsi(join(l))).slice(1));
+    assert.deepEqual(at(2), at(0), String(cols));
+  }
+});
+
 test("name.tag hides both tag lines and the receipt's blank row", () => {
   const st = settings({});
   const status = document("status/01-baseline@196");

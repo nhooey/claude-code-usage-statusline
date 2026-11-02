@@ -13,19 +13,21 @@
 // placed (--part band, the default), the 💳 account row (--part
 // account), the start line (--part start), what the mod draws above the
 // prompt (--part above): the rows whose rows.<row>.place is "above", the
-// account row first where it is one of them; or what it draws under
+// account row first where it is one of them, each indented --inset
+// columns; or what it draws under
 // Claude Code's footer line (--part footer): --hint, standing for Claude
 // Code's own line, then the rows whose place is "footer", the account
 // row first where it is one of them, each after --inset blanks, the
 // columns Claude Code's container stands in; or, with account-place
 // "tail" (--part tail), the account as the tail of that line, after
-// Claude Code's " · ".  --inset also draws the band and the account row
-// that much narrower, as the mod does under the footer line, and the
-// receipt's 🎤 🤖 🎮 rows that far in and that much narrower, as the mod
-// stamps them to stack on those; --right-edge is the columns every row
-// ends short of the terminal's edge, RIGHT_EDGE by default.  The mod's
-// own under the footer line are --inset 2 (hint-inset) and --right-edge
-// 5 (right-edge, derived from the default places).  A cost document
+// Claude Code's " · ".  --inset also draws the band (but for the rows
+// above the prompt) and the account row that much narrower, as the mod
+// does under the footer line, and the receipt's 🎤 🤖 🎮 rows that far in
+// and that much narrower, as the mod stamps them to stack on those;
+// --right-edge is the columns every row ends short of the terminal's
+// edge, RIGHT_EDGE by default.  The mod's own are --inset 2 (hint-inset)
+// and --right-edge 5 (right-edge, derived from the default places).  A
+// cost document
 // draws the receipt.  --rate is the 🛫 the mod would pass, in tokens a
 // second.  --home stands for HOME, "${HOME}" by default, which is what
 // the fixtures' paths are written under.
@@ -159,8 +161,12 @@ const live = Object.fromEntries(ROW_NAMES.map((r) =>
 const places = Object.fromEntries(ROW_NAMES.map((r) =>
   [r, rows[r].place as Place]));
 const stamped = ROW_NAMES.filter((r) => rows[r].transcript);
+// Above the prompt the band starts at the terminal's left edge, so its
+// rows are indented --inset columns rather than drawn narrower.
 const band = (place?: Place): Span[][] =>
-  bandLines(st, fig, cols, hide, { rate, phase, live, place, places, inset });
+  bandLines(st, fig, cols, hide, place === "above"
+    ? { rate, phase, live, place, places, indent: inset }
+    : { rate, phase, live, place, places, inset });
 const account = (): Span[][] => {
   const row = accountLine(st, fig, hide, cols - inset, home);
   return row.length ? [row] : [];

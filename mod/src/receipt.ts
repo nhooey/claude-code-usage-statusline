@@ -325,8 +325,9 @@ export function receiptHead(all: Dict, hide: readonly string[]): Span[] {
 }
 
 /** The receipt as drawn at `cols` under `hide`: 🎤, `main`, the band's 🤖
- * row, where there is one, and 🎮 on the band's fixed grid, at no indent,
- * as the band's rows are, then the tag line
+ * row, where there is one, and 🎮 on the band's fixed grid, `inset`
+ * columns in (the mod's is hint-inset, where the band's rows start), then
+ * the tag line
  * (receiptHead) under them (decided 2026-10-19).  A hidden scope's row is
  * left out, and so is a row not `stamped` (RowName: the rows whose
  * `rows.<row>.transcript` is true), and the tag line without `tags`
@@ -353,10 +354,11 @@ export function receiptScoped(st: Settings, fig: Dict, cols: number,
   const kept = scopesOf(stamped);
   const rows = [turn, main, session].filter((r): r is Row =>
     r !== null && kept.includes(r.scope) && !hidden(hide, r.scope));
-  // `inset` columns in, led by as many blanks and that much narrower, so
-  // they stack on the band's rows where those are drawn inset (asked
-  // 2026-10-20); the tag line stays at no indent, under the prompt's.
-  const lines = drawRows(st, rows, cols - inset, hide)
+  // `inset` columns in, led by as many blanks and that much narrower, on
+  // the columns laid out at `cols`, so they stack on the band's rows,
+  // which start that far in and keep the same columns; the tag line stays
+  // at no indent, under the prompt's.
+  const lines = drawRows(st, rows, cols, hide, inset)
     .map((l, i) => ({ scope: rows[i].scope,
       spans: inset ? [span(" ".repeat(inset)), ...l] : l }));
   // A blank row before the tag line (asked 2026-10-20): a space, since Ink
@@ -375,12 +377,13 @@ export function dimmed(spans: readonly Span[]): Span[] {
 }
 
 /** Rows drawn on the band's fixed grid at `cols` under `hide`, a hidden
- * scope's left out. */
+ * scope's left out, each `inset` columns narrower on the columns laid out
+ * at `cols`, as the band's rows under the footer line are. */
 export function drawRows(st: Settings, rows: readonly Row[], cols: number,
-  hide: readonly string[]): Span[][] {
+  hide: readonly string[], inset = 0): Span[][] {
   const keys = fixedKeys(st, cols, hide);
   return rows.filter((r) => !hidden(hide, r.scope))
-    .map((r) => draw(st, r, keys, cols, hide));
+    .map((r) => draw(st, r, keys, cols - inset, hide));
 }
 
 /** Whether `hide` hides the turn's tag lines, the start line's 🔻🔖 and

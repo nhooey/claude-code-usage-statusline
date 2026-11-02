@@ -131,13 +131,6 @@ function tagsShown(o: Options | null): boolean {
  * starts-kept, and with no options every one, until they come. */
 const keptMost = (): number => options()?.startsKept ?? Infinity
 
-/** How far in the receipt's rows stand, so they stack on 🎤's, whose
- * receipt they are: hint-inset with 🎤 under the footer line, none with
- * it above the prompt. */
-function insetOf(o: Options): number {
-  return o.rows.turn.place === 'footer' ? o.hintInset : 0
-}
-
 /** The configuration files read again where they have changed, or the
  * session's root has moved: a change draws everything again under the
  * new options, and reads the figures again, whose source or account may
@@ -491,14 +484,14 @@ async function stamp($: $, durationMs: number, prompt: string,
     const st = await settingsOf($, o)
     const main = doc ? bandRows(st, doc as Dict,
       { rate: null, phase: 'done' }).main : null
-    // Laid out as the band is, at its width, edge and inset, so the rows
-    // stack on the band's: under the footer line, the band's rows are
-    // hint-inset columns in, and so are the receipt's (asked 2026-10-20).
-    // The rows whose rows.<row>.transcript is true, and the tag line
-    // under rows.tag.transcript.
+    // Laid out as the band is, at its width and edge, and hint-inset
+    // columns in, where every row of the band starts, above the prompt
+    // and under the footer line, so the rows stack on the band's.  The
+    // rows whose rows.<row>.transcript is true, and the tag line under
+    // rows.tag.transcript.
     const stamped = ROW_NAMES.filter((r) => o.rows[r].transcript)
     const rows = receiptScoped(st, fig, bandCols || 80, o.hide,
-      true, main, stamped, insetOf(o), tagsShown(o))
+      true, main, stamped, o.hintInset, tagsShown(o))
     await remember($, 'receipts', key, true)
     await remember($, 'receipts', receiptAt(durationMs),
       { rows } satisfies FiledReceipt)
@@ -542,13 +535,18 @@ function line(Text: any, spans: readonly Span[], key: string,
  * now as a row of its own (account-place "row") and rows.account.place
  * puts it here, then of 🎤, 🤖 and 🎮 those rows.<row>.place puts here
  * and rows.<row>.live draws while a turn runs, or keeps once it ends;
- * none without a status document.  `inset` is how far in from the
- * terminal's left edge the container they are drawn in starts. */
-async function bandNow($: $, isWorking: boolean, place: Place, inset = 0):
+ * none without a status document.  Every row starts hint-inset columns
+ * in, wherever it is drawn: under the footer line Claude Code's container
+ * stands that far in, so the rows are drawn that much narrower; above the
+ * prompt, where the band starts at the terminal's left edge, they are
+ * indented that much.  So every mark stands on one column. */
+async function bandNow($: $, isWorking: boolean, place: Place):
   Promise<{ scope: string; spans: Span[] }[]> {
   const doc = await read($, status)
   const o = options()
   if (doc === null || o === null) return []
+  const inset = place === 'footer' ? o.hintInset : 0
+  const indent = place === 'above' ? o.hintInset : 0
   const st = await settingsOf($, o)
   const fig = at(doc as Dict, await read($, clockNow))
   const cols = bandCols || 80
@@ -556,11 +554,10 @@ async function bandNow($: $, isWorking: boolean, place: Place, inset = 0):
   const account = o.accountPlace === 'row' &&
     o.rows.account.place === place && accountedIn(o, running)
     ? accountLine(st, fig, o.hide, cols - inset, await home($)) : []
-  // At no indent, as the receipt's rows are (asked 2026-10-19).
   return [...account.length ? [{ scope: 'account', spans: account }] : [],
     ...bandScoped(st, fig, cols, o.hide,
       { rate: await read($, rate), phase: running ? 'running' : 'done',
-        live: liveOf(o), place, places: rowPlacesOf(o), inset })]
+        live: liveOf(o), place, places: rowPlacesOf(o), inset, indent })]
 }
 
 /** Whether the 💳 account is drawn now, by rows.account.live: "running"
@@ -966,7 +963,7 @@ export const register: Register = on => {
     // the panel's columns: drawn at the full width, each cell stood that
     // many columns right of the agent panel's, and the 💳 row ended past
     // the grid (seen live 2026-10-20).
-    const lines = await bandNow($, e.props.isWorking, 'footer', o.hintInset)
+    const lines = await bandNow($, e.props.isWorking, 'footer')
     if (!lines.length) return row
     const { Box, Text } = $.ui.resolve(e)
     // A blank row parts the rows from the footer line.

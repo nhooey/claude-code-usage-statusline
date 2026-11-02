@@ -55,7 +55,7 @@ import {
   baseLimits, costFigures, statusFigures, windowFor,
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
-import { settings } from '../src/formatting.ts'
+import { settings, visWidth } from '../src/formatting.ts'
 import { ROW_NAMES, bandLines, bandRows } from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
@@ -96,9 +96,9 @@ const STAMPED = ROW_NAMES.filter((r) => OPTIONS.rows[r].transcript)
 // Where the band draws each row.
 const PLACES = { turn: OPTIONS.rows.turn.place,
   agent: OPTIONS.rows.agent.place, session: OPTIONS.rows.session.place }
-// How far in the receipt's rows stand: as 🎤's, hint-inset columns under
-// the footer line and none above the prompt.
-const INSET = OPTIONS.rows.turn.place === 'footer' ? OPTIONS.hintInset : 0
+// How far in every row starts, above the prompt, under the footer line and
+// in the receipt.
+const INSET = OPTIONS.hintInset
 // The settings the band is drawn under: its right edge, right-edge,
 // derived from rows.*.place, and the receipt's, which stacks on the band.
 const BAND_ST = settings({}, OPTIONS.markSpacing, OPTIONS.subscriptDecimals,
@@ -106,16 +106,16 @@ const BAND_ST = settings({}, OPTIONS.markSpacing, OPTIONS.subscriptDecimals,
 const encoder = new TextEncoder()
 
 /** The band's rows as mountBand draws them: those rows.<row>.place puts
- * above the prompt, then those it puts under the footer line, drawn
- * hint-inset columns narrower there. */
+ * above the prompt, indented hint-inset columns, then those it puts under
+ * the footer line, drawn hint-inset columns narrower there. */
 function bandWant(st: ReturnType<typeof settings>, fig: Dict,
   opts: { rate: number | null; phase: 'running' | 'done';
     live: typeof LIVE }): Span[][] {
   return [
     ...bandLines(st, fig, COLS, HIDE, { ...opts, place: 'above',
-      places: PLACES }),
+      places: PLACES, indent: INSET }),
     ...bandLines(st, fig, COLS, HIDE, { ...opts, place: 'footer',
-      places: PLACES, inset: OPTIONS.hintInset }),
+      places: PLACES, inset: INSET }),
   ]
 }
 
@@ -539,9 +539,9 @@ test('each row is drawn in its place: 🎤 and 🎮 above the prompt, 🤖 ' +
   const opts = { rate: null, phase: 'running' as const, live: LIVE,
     places: PLACES }
   const above = bandLines(BAND_ST, doc, COLS, HIDE,
-    { ...opts, place: 'above' })
+    { ...opts, place: 'above', indent: INSET })
   const below = bandLines(BAND_ST, doc, COLS, HIDE,
-    { ...opts, place: 'footer', inset: OPTIONS.hintInset })
+    { ...opts, place: 'footer', inset: INSET })
   expect([above.length, below.length]).toEqual([2, 1])
   expect(text(above[0])).toContain('🎤')
   expect(text(above[1])).toContain('🎮')
@@ -560,6 +560,53 @@ test('each row is drawn in its place: 🎤 and 🎮 above the prompt, 🤖 ' +
   expect((await drawnRows(footed)).length).toBe(3)
   expect(logOf(w)).toContain('right-edge 2 (derived)')
 })
+
+/** Each mark in `row`, a drawn row standing `from` columns in from the
+ * terminal's left edge, by the terminal column it starts on; a mark drawn
+ * twice is left out. */
+function markColumns(row: string, from: number): Map<string, number> {
+  const out = new Map<string, number>()
+  const twice = new Set<string>()
+  let col = from
+  for (const ch of Array.from(row)) {
+    if (/\p{Extended_Pictographic}/u.test(ch)) {
+      if (out.has(ch)) twice.add(ch)
+      out.set(ch, col)
+    }
+    col += visWidth(ch, BAND_ST.widths)
+  }
+  for (const ch of twice) out.delete(ch)
+  return out
+}
+
+for (const cols of [80, 120, 160]) {
+  test(`🎮 above the prompt and 🤖 under the footer line put each cell on ` +
+    `one column (${cols} columns)`, async ($, on) => {
+    const w = world(on)
+    await start($, w, 'terminal', STATUS)
+    const ui = await mountBand($, 'terminal',
+      { ...BAND, isWorking: true, bodyColumns: cols - 5 })
+    const above = await drawnRows(ui.above)
+    const rows = await drawnRows(ui)
+    const below = rows.slice(above.length)
+    const session = above.find((r) => r.text.includes('🎮'))
+    const main = below.find((r) => r.text.includes('🤖'))
+    expect(session).toBeDefined()
+    expect(main).toBeDefined()
+    // The rows above the prompt start at the terminal's left edge, the
+    // ones under the footer line in Claude Code's container, hint-inset
+    // columns in.
+    const up = markColumns(session!.text, 0)
+    const down = markColumns(main!.text, INSET)
+    const shared = [...up.keys()].filter((m) => down.has(m) &&
+      !['🎮', '🤖', '📨'].includes(m))
+    expect(shared.length).toBeGreaterThan(1)
+    for (const m of shared) expect([m, up.get(m)]).toEqual([m, down.get(m)])
+    // Both rows end on one column, the grid's right end.
+    expect(visWidth(session!.text.trimEnd(), BAND_ST.widths))
+      .toBe(INSET + visWidth(main!.text.trimEnd(), BAND_ST.widths))
+  })
+}
 
 test('where Claude Code draws true colour the band draws the true set',
   async ($, on) => {
