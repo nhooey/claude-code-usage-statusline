@@ -56,7 +56,7 @@ import {
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings, visWidth } from '../src/formatting.ts'
-import { ROW_NAMES, bandLines, bandRows } from '../src/band.ts'
+import { ROW_NAMES, accountLine, bandLines, bandRows } from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
 } from '../src/receipt.ts'
@@ -133,8 +133,9 @@ async function mountBand($: any, surface: 'terminal' | 'desktop',
       isWorking: props.isWorking, hint: '-- INSERT --' } })
   const rowsOf = (tree: Drawn | null, skip: number) => tree?.type === 'Box'
     ? (tree.children ?? []).slice(skip) : []
+  // Claude Code's line, the blank row under it, then the 💳 row.
   const skip = OPTIONS.accountPlace === 'row' &&
-    OPTIONS.rows.account.place === 'footer' ? 2 : 1
+    OPTIONS.rows.account.place === 'footer' ? 3 : 1
   return { above, hint, drawn: async () => ({ type: 'Box',
     children: [...rowsOf(await above.drawn() as Drawn, 0),
       ...rowsOf(await hint.drawn() as Drawn, skip)] }) }
@@ -548,6 +549,11 @@ test('each row is drawn in its place: 🎤 and 🎮 above the prompt, 🤖 ' +
   expect(text(below[0])).toContain('🤖')
   expect(await drawnRows(ui.above)).toEqual(expected(above))
   expect((await drawnRows(ui)).slice(2)).toEqual(expected(below))
+  // The 💳 row first under the footer line, a row of its own by default,
+  // then 🤖.
+  const account = accountLine(BAND_ST, doc, HIDE, COLS - INSET, HOME)
+  expect(text(account)).toContain('💳')
+  expect(await drawnRows(ui.hint)).toEqual(expected([account, ...below]))
   // All of them under the footer line, with every place "footer": the
   // band above the prompt is the engine's.
   w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',

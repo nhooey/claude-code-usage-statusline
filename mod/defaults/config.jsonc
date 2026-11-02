@@ -82,9 +82,9 @@
     "account": {"place": "footer", "live": "always",  "transcript": false}
   },
   // Where the 💳 account is drawn: "row", a row of its own where
-  // rows.account.place puts it, or "tail", at the footer line's right
-  // end, plain and dim, whatever rows.account.place says.
-  "account-place": "tail",
+  // rows.account.place puts it, in its colours, or "tail", at the footer
+  // line's right end, plain and dim, whatever rows.account.place says.
+  "account-place": "row",
   // Draw the rows under the footer line into the blank row below it.
   "hint-tuck": false,
   // How many columns in Claude Code draws the footer line's container.
@@ -94,7 +94,8 @@
   // Draw a folded message from another agent as its task and first line.
   "agent-message-row": true,
   // Show a slow read as a toast as well as in the mod's log.  Off: a toast
-  // takes the footer's line and hides the 💳 at its right end.
+  // takes the footer's line, and the 💳 at its right end under
+  // account-place "tail".
   "slow-toast": false,
   // How many start lines and receipts the mod's store keeps.
   "starts-kept": 400

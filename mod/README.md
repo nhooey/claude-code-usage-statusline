@@ -37,9 +37,9 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   🎮 rows are that turn's, live.
 - **The footer** under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`:
   Claude Code's own line, whose pills stay live, with the 💳 account
-  details dim at its right end (`accountPlace: "tail"`; `"row"` puts them
-  on a row of their own under it, in colour, ending where the band's rows
-  end).
+  details on a row of their own under it, in colour, ending where the
+  band's rows end (`account-place` `"row"`; `"tail"` puts them dim at the
+  line's right end).
 - **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
   ends, the band's 🎤 and 🎮 rows stamped there, frozen, and under them
   the turn's 🔺🔖 tag and when it was stamped, so every turn's receipt

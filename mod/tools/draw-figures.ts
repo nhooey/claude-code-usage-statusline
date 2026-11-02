@@ -167,15 +167,17 @@ const band = (place?: Place): Span[][] =>
   bandLines(st, fig, cols, hide, place === "above"
     ? { rate, phase, live, place, places, indent: inset }
     : { rate, phase, live, place, places, inset });
-const account = (): Span[][] => {
-  const row = accountLine(st, fig, hide, cols - inset, home);
+const account = (place?: Place): Span[][] => {
+  const row = place === "above"
+    ? accountLine(st, fig, hide, cols, home, inset)
+    : accountLine(st, fig, hide, cols - inset, home);
   return row.length ? [row] : [];
 };
 // The account row where `place` is its place and the phase draws it.
 const accountIn = (place: Place): Span[][] =>
   rows.account.place === place && (rows.account.live === "always" ||
     (rows.account.live === "running" && phase === "running"))
-    ? account() : [];
+    ? account(place) : [];
 let lines: Span[][];
 if (part === "band") {
   lines = band();

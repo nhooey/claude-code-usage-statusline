@@ -24,17 +24,19 @@ import { receiptLines, receiptTurn, startLine } from "../src/receipt.ts";
 import { decodeTurn } from "../src/claude_cost.ts";
 import { spanFrom, spanJson } from "../tools/gen-grid-cases.ts";
 import {
-  FIGURES, OUT, document, drawBand, drawReceipt, drawStart, generate,
-  inZone,
+  FIGURES, OUT, document, drawAccount, drawBand, drawReceipt, drawStart,
+  generate, inZone,
 } from "../tools/gen-row-cases.ts";
-import type { BandCase, ReceiptCase } from "../tools/gen-row-cases.ts";
+import type { AccountCase, BandCase, ReceiptCase }
+  from "../tools/gen-row-cases.ts";
 
 type Same = { same: string[] };
 type File = { settings: { profiles: { [name: string]: Env } };
   band: (BandCase & Same & { rows: unknown[][][]; lines: string[] })[];
   receipt: (ReceiptCase & Same & { rows: unknown[][][]; lines: string[] })[];
   start: { doc: string; same: string[]; spans: unknown[][];
-    line: string }[] };
+    line: string }[];
+  account: (AccountCase & Same & { row: unknown[][]; line: string })[] };
 
 const files = readdirSync(OUT).filter((f) => f.endsWith(".json")).sort();
 
@@ -85,13 +87,19 @@ for (const f of files) {
         same(drawStart(document(c.doc)), c.spans, c.line, c.doc);
       }
     });
+    test(`${f} under ${profile}: account`, () => {
+      for (const c of data.account) {
+        const where = JSON.stringify([c.doc, c.cols, c.hide, c.indent]);
+        same(drawAccount(st, document(c.doc), c), c.row, c.line, where);
+      }
+    });
   }
 }
 
 test("a case's `same` documents are its document, byte for byte", () => {
   const data = JSON.parse(readFileSync(pathJoin(OUT, files[0]), "utf8")) as
     File;
-  for (const c of [...data.start, ...data.receipt]) {
+  for (const c of [...data.start, ...data.receipt, ...data.account]) {
     for (const id of c.same) assert.equal(text(id), text(c.doc), id);
   }
 });
@@ -216,13 +224,55 @@ test("the 💳 account's own row ends where the band's rows end, in colour", () 
   const text = join(row.map((s) => ({ ...s, colour: null, dim: false,
     bold: false, bg: null })));
   assert.equal(width(row, st.widths), 196 - RIGHT_EDGE);
-  // The same text as the footer's tail, its parts FOOTER_GAP apart.
+  // The footer tail's parts in the row's order: 💳 and its windows from
+  // the first column, the workspace FOOTER_GAP after them, and 📅 🕐 flush
+  // right.
   const plain = inZone(fig, () => accountText(st, fig, []));
-  assert.equal(text.trim(), footerParts(plain).join(" ".repeat(FOOTER_GAP)));
+  const [ws, acct, clock] = footerParts(plain);
+  assert.ok(text.startsWith(acct + " ".repeat(FOOTER_GAP) + ws + "  "), text);
+  assert.ok(text.endsWith(clock), text);
   assert.ok(row.some((s) => s.colour), "no colour kept");
   assert.deepEqual(inZone(fig, () => accountLine(st, fig, ["account"], 196)),
     []);
+  // Indented, as above the prompt: as many blanks first, and the same end.
+  const indented = inZone(fig, () => accountLine(st, fig, [], 196, "", 2));
+  assert.ok(stripAnsi(join(indented)).startsWith("  💳"));
+  assert.equal(width(indented, st.widths), 196 - RIGHT_EDGE);
 });
+
+test("the 💳 row draws 🔀 and 🎨, each hidden by its path, and sheds in order",
+  () => {
+    const st = settings({});
+    const fig = document("status/04-pr-and-style@196");
+    const plain = (hide: string[], cols: number) =>
+      stripAnsi(join(inZone(fig, () => accountLine(st, fig, hide, cols))));
+    const wide = plain([], 200);
+    for (const m of ["💳", "📦", "🌿", "📁", "🔀", "🎨", "📅", "🕐", "🔜"]) {
+      assert.ok(wide.includes(m), m + " missing from " + wide);
+    }
+    assert.ok(wide.indexOf("💳") < wide.indexOf("📦") &&
+      wide.indexOf("📁") < wide.indexOf("🔀") &&
+      wide.indexOf("🔀") < wide.indexOf("🎨") &&
+      wide.indexOf("🎨") < wide.indexOf("📅"), wide);
+    assert.ok(!plain(["account.workspace.pr"], 200).includes("🔀"));
+    assert.ok(!plain(["account.workspace.style"], 200).includes("🎨"));
+    // Narrower and narrower, the pieces leave one at a time in their
+    // order, and only then is the row cut.
+    const order = ["🎨", "🔀", "📁", "📅", "🕐", "🔜"];
+    let gone = 0;
+    for (let cols = 200; cols >= 30; cols--) {
+      const line = plain([], cols);
+      assert.ok(visWidth(line, st.widths) <= cols - RIGHT_EDGE, line);
+      const left = order.filter((m) => !line.includes(m)).length;
+      assert.ok(left >= gone, line);
+      gone = left;
+      assert.deepEqual(order.slice(left).filter((m) => !line.includes(m)),
+        [], line);
+      if (line.includes("…")) assert.equal(left, order.length, line);
+    }
+    assert.equal(gone, order.length);
+    assert.ok(plain([], 30).endsWith("…"));
+  });
 
 test("rows inset under the footer line stack on the agent panel's columns", () => {
   // Claude Code draws the footer line's container hint-inset columns

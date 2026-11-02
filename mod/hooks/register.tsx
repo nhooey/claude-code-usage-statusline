@@ -553,7 +553,7 @@ async function bandNow($: $, isWorking: boolean, place: Place):
   const running = isWorking || await read($, held)
   const account = o.accountPlace === 'row' &&
     o.rows.account.place === place && accountedIn(o, running)
-    ? accountLine(st, fig, o.hide, cols - inset, await home($)) : []
+    ? accountLine(st, fig, o.hide, cols - inset, await home($), indent) : []
   return [...account.length ? [{ scope: 'account', spans: account }] : [],
     ...bandScoped(st, fig, cols, o.hide,
       { rate: await read($, rate), phase: running ? 'running' : 'done',
@@ -901,9 +901,11 @@ export const register: Register = on => {
     )
   })
 
-  // The footer under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`, with
-  // the 💳 row at its right end (decided 2026-10-19): a dim tail after
-  // Claude Code's own line, which keeps its pills live (footerTail).
+  // The footer under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`:
+  // Claude Code's own line, which keeps its pills live, then the rows
+  // placed under it, the 💳 row first under account-place "row"; under
+  // "tail" the 💳 account is a dim tail at the line's right end
+  // (footerTail).
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     void start($, 'ui.render').catch((err) => log($, 'no start', err))
     // A change of mode draws the line first with the words of the mode it

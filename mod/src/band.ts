@@ -20,7 +20,7 @@ import {
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
-import { span } from "./spans.ts";
+import { cut, span, width } from "./spans.ts";
 import type { Span } from "./spans.ts";
 import { pyLen, pyRstrip, pySlice } from "./py.ts";
 import { pyFloat } from "./sources.ts";
@@ -475,7 +475,8 @@ export function phaseRows(rows: BandRows, phase: Phase,
   }).map(([, row]) => row);
 }
 
-/** The 💳 row's label as one line of plain text after the workspace,
+/** The 💳 row's label as one line of plain text after the workspace (📦
+ * 🌿 📁, and 🔀 🎨 where the session has them),
  * "📦claude-code-usage-statusline 🌿master  📁~/git/📦  💳 🔋 1٪ 🔜 4.8h
  * 🪫 49٪ 🔜 9.8h  📅 2026-10-19  🕐 22:12:44", each piece hidden by its own
  * path, the workspace's under `account.workspace`, with `home` shortening
@@ -494,11 +495,10 @@ function accountPieces(st: Settings, fig: Dict, hide: readonly string[],
   home: string): Piece[] {
   if (hidden(hide, "account")) return [];
   const now = (fig.clock as Dict).now as number;
-  // 📦 the project, 🌿 the branch and 📁 the directory first (asked
-  // 2026-10-20), each hidden by its own path.
+  // The workspace first, 📦 the project, 🌿 the branch, 📁 the directory,
+  // 🔀 the PR and 🎨 the output style, each hidden by its own path.
   const shown: Piece[] = workspacePieces(workspaceOf(fig, home)).filter((p) =>
-    ["workspace.project", "workspace.branch", "workspace.dir"]
-      .includes(p.path) && !hidden(hide, "account." + p.path));
+    !hidden(hide, "account." + p.path));
   let dropped = false;
   for (const p of accountRow(st, fig, now).label) {
     // A window's 🔜 goes with its window.
@@ -510,26 +510,48 @@ function accountPieces(st: Settings, fig: Dict, hide: readonly string[],
   return shown;
 }
 
-/** The 💳 account as a row of its own, in its colours, for under the
- * footer line, in its container (asked 2026-10-20): the workspace, 💳 and
- * 📅 🕐, FOOTER_GAP columns apart, after blanks that end it where the
- * band's rows end at `cols`; none under the hide path `account`. */
+/** The paths the 💳 row sheds, one at a time and in this order, while it
+ * is too wide for its row: 🎨, 🔀, 📁, 📅, 🕐, then the windows' 🔜.  What
+ * is left after them all is cut with `…`. */
+export const ACCOUNT_SHED: readonly string[] = ["workspace.style",
+  "workspace.pr", "workspace.dir", "clock.date", "clock.time", "plan.reset"];
+
+/** The 💳 account as a row of its own, in its colours: 💳 and its windows
+ * from the row's first column, `indent` blanks in, then the workspace, 📦
+ * 🌿 📁 🔀 🎨, FOOTER_GAP columns after them, then 📅 🕐 flush right, ending
+ * where the band's rows end at `cols`.  Too wide, it sheds ACCOUNT_SHED's
+ * paths, then is cut with `…`.  None under the hide path `account`. */
 export function accountLine(st: Settings, fig: Dict, hide: readonly string[],
-  cols: number, home = ""): Span[] {
-  const parts: Span[][] = [];
-  for (const p of accountPieces(st, fig, hide, home)) {
-    const lead = p.spans.map((s) => s.text).join("").trimStart();
-    if (!parts.length || lead.startsWith(E_ACCT) || lead.startsWith(E_DATE)) {
-      parts.push([]);
-    }
-    parts[parts.length - 1].push(...p.spans);
-  }
-  const trimmed = parts.map(trimSpans).filter((p) => p.length);
-  if (!trimmed.length) return [];
+  cols: number, home = "", indent = 0): Span[] {
+  let pieces = accountPieces(st, fig, hide, home);
+  if (!pieces.length) return [];
+  const room = Math.max(0, cols - st.rightEdge - indent);
+  const lead = indent ? [span(" ".repeat(indent))] : [];
+  const part = (p: Piece): number => p.path.startsWith("workspace.") ? 1
+    : p.path.startsWith("clock.") ? 2 : 0;
   const gap = span(" ".repeat(FOOTER_GAP));
-  const out = trimmed.flatMap((p, i) => i ? [gap, ...p] : p);
-  const w = visWidth(out.map((s) => s.text).join(""), st.widths);
-  return [span(" ".repeat(Math.max(0, cols - st.rightEdge - w))), ...out];
+  const sheds = [...ACCOUNT_SHED];
+  for (;;) {
+    const [acct, ws, clock] = [0, 1, 2].map((n) =>
+      trimSpans(pieces.filter((p) => part(p) === n).flatMap((p) => p.spans)));
+    const head = [acct, ws].filter((p) => p.length)
+      .flatMap((p, i) => i ? [gap, ...p] : p);
+    const headW = width(head, st.widths);
+    const clockW = width(clock, st.widths);
+    const need = headW + (clock.length && head.length ? FOOTER_GAP : 0) +
+      clockW;
+    if (need <= room) {
+      return [...lead, ...head,
+        ...clock.length ? [span(" ".repeat(room - headW - clockW))] : [],
+        ...clock];
+    }
+    const path = sheds.shift();
+    if (path === undefined) {
+      return [...lead, ...cut(clock.length ? [...head, gap, ...clock] : head,
+        room, st.widths)];
+    }
+    pieces = pieces.filter((p) => p.path !== path);
+  }
 }
 
 /** `spans` without the blanks at either end. */

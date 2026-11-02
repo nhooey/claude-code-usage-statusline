@@ -26,6 +26,9 @@
 //             `hide`; its lines as spans, `rows`, and joined, `lines`
 //   start     one case a line: a status document's start line, as `spans`
 //             and as `line`
+//   account   one case a line: a status document's 💳 row drawn at `cols`
+//             under `hide`, `indent` blanks in, as `row` and as `line`;
+//             the last ones one document at widths that shed its pieces
 //
 // Each document's clock is drawn in its own `clock.tz`.  A span is written
 // as the grid's cases write one.
@@ -38,7 +41,7 @@ import type { Settings } from "../src/formatting.ts";
 import { join } from "../src/spans.ts";
 import type { Span } from "../src/spans.ts";
 import type { Dict } from "../src/py.ts";
-import { bandLines } from "../src/band.ts";
+import { accountLine, bandLines } from "../src/band.ts";
 import type { Phase, Place, RowsPlace } from "../src/band.ts";
 import { DEFAULTS_REL, parseDefaults } from "../src/config.ts";
 import type { Rows } from "../src/config.ts";
@@ -58,6 +61,9 @@ const HIDES: readonly (readonly string[])[] = [
   ["turn", "main.name", "*.plan"],
 ];
 const HIDE_COLS = 155;
+// A document with every piece of the 💳 row, 🔀 and 🎨 among them, drawn at
+// widths that shed them one by one.
+const SHED_DOC = "status/04-pr-and-style@196";
 // The 🛫 the mod would pass, at one width: the documents carry the counts
 // it works one out from, never the rate itself.
 const RATE = 220, RATE_COLS = 200;
@@ -105,6 +111,16 @@ export function inZone<T>(fig: Dict, f: () => T): T {
 export type BandCase = { doc: string; cols: number; hide: string[];
   phase: Phase; rate: number | null; place?: Place; places?: RowsPlace };
 export type ReceiptCase = { doc: string; cols: number; hide: string[] };
+export type AccountCase = { doc: string; cols: number; hide: string[];
+  indent: number };
+
+/** The account case's row, as the 💳 row under the footer line or above
+ * the prompt draws it; none under the hide path `account`. */
+export function drawAccount(st: Settings, fig: Dict, c: AccountCase):
+  Span[] {
+  return inZone(fig, () => accountLine(st, fig, c.hide, c.cols, "",
+    c.indent));
+}
 
 /** The band case's rows. */
 export function drawBand(st: Settings, fig: Dict, c: BandCase): Span[][] {
@@ -143,6 +159,25 @@ function bandCases(doc: string): BandCase[] {
   return out;
 }
 
+/** Every account case of one document: at each width and hiding the band
+ * cases take, and once indented, as above the prompt. */
+function accountCases(doc: string): AccountCase[] {
+  return [...COLS.map((cols) => ({ doc, cols, hide: [], indent: 0 })),
+    ...HIDES.map((hide) => ({ doc, cols: HIDE_COLS, hide: [...hide],
+      indent: 0 })),
+    { doc, cols: HIDE_COLS, hide: [], indent: 2 }];
+}
+
+/** The account cases of SHED_DOC, from wide enough for every piece down
+ * to too narrow for any but the cut 💳, a piece shed at each step. */
+function shedCases(): AccountCase[] {
+  const out: AccountCase[] = [];
+  for (let cols = 200; cols >= 30; cols -= 10) {
+    out.push({ doc: SHED_DOC, cols, hide: [], indent: 0 });
+  }
+  return out;
+}
+
 /** Every receipt case of one document. */
 function receiptCases(doc: string): ReceiptCase[] {
   const out: ReceiptCase[] = COLS.map((cols) => ({ doc, cols, hide: [] }));
@@ -159,15 +194,25 @@ const rowsJson = (rows: Span[][]): unknown[][] =>
  * settings line. */
 function cases(st: Settings): string {
   const band: string[] = [], receipt: string[] = [], start: string[] = [];
+  const account: string[] = [];
+  const accountCase = (c: AccountCase, fig: Dict, same: string[]): string => {
+    const row = drawAccount(st, fig, c);
+    return JSON.stringify({ ...c, same, row: row.map(spanJson),
+      line: join(row) });
+  };
   for (const [id, same, fig] of documents("status")) {
     for (const c of bandCases(id)) {
       const rows = drawBand(st, fig, c);
       band.push(JSON.stringify({ ...c, same, rows: rowsJson(rows),
         lines: rows.map((r) => join(r)) }));
     }
+    for (const c of accountCases(id)) account.push(accountCase(c, fig, same));
     const s = drawStart(fig);
     start.push(JSON.stringify({ doc: id, same, spans: s.map(spanJson),
       line: join(s) }));
+  }
+  for (const c of shedCases()) {
+    account.push(accountCase(c, document(c.doc), []));
   }
   for (const [id, same, fig] of documents("cost")) {
     for (const c of receiptCases(id)) {
@@ -179,8 +224,8 @@ function cases(st: Settings): string {
   const list = (name: string, lines: string[]): string =>
     ' "' + name + '": [\n' + lines.map((l) => "  " + l).join(",\n") +
     "\n ]";
-  return [list("band", band), list("receipt", receipt), list("start", start)]
-    .join(",\n") + "}\n";
+  return [list("band", band), list("receipt", receipt), list("start", start),
+    list("account", account)].join(",\n") + "}\n";
 }
 
 /** Every file, by name; see gen-grid-cases.ts's generate. */
@@ -203,6 +248,7 @@ if (import.meta.main) {
     writeFileSync(pathJoin(OUT, name), text);
     const j = JSON.parse(text);
     process.stdout.write(`rows/${name.padEnd(22)} ${j.band.length} band, ` +
-      `${j.receipt.length} receipt and ${j.start.length} start cases\n`);
+      `${j.receipt.length} receipt, ${j.start.length} start and ` +
+      `${j.account.length} account cases\n`);
   }
 }

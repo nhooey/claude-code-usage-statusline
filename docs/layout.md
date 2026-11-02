@@ -94,17 +94,18 @@ column as the agent panel's under it, whose `right-edge` follows the same
 between the footer and the panel's `⏺ main`; `hint-tuck` draws them with a
 bottom margin of -1 instead, taking it up.
 
-**The 💳 row** is all label, right-aligned to end where the other rows end:
-where the session works, 📦 project, 🌿 branch and 📁 directory, as 🎮's
-label draws them; then 💳 and each window's share, 🔋 the 5-hour and 🪫 the
-weekly, each with 🔜 and the time until it resets; then 📅 and 🕐, the date
-and time now. A reading 10 minutes old or more has each share followed by
+**The 💳 row** is all label, starting where the other rows start: 💳 and
+each window's share, 🔋 the 5-hour and 🪫 the weekly, each with 🔜 and the
+time until it resets; then where the session works, 📦 project, 🌿 branch,
+📁 directory, 🔀 PR and 🎨 output style; then 📅 and 🕐, the date and time
+now, flush right where the other rows end. A reading 10 minutes old or more has each share followed by
 🧊 and its age, `🪫 87٪ 🧊3h 🔜 1.9d`, in the text rather than a colour,
 since the footer's tail draws in Claude Code's one style. It draws nothing in the columns: its figures are the plan's
 own, read from the configured [usage source](usage-sources.md), and can
 include use from other machines, the web and the phone. Both shares take
-three digits, so 🪫 reads `87٪` as 🔋 does. The row is not cut to the
-terminal's width; Claude Code cuts it at the edge.
+three digits, so 🪫 reads `87٪` as 🔋 does. Too wide for its row, it
+sheds 🎨, then 🔀, then 📁, then 📅, then 🕐, then the windows' 🔜, and only
+then is cut with `…`.
 
 ### The grid
 
@@ -261,7 +262,7 @@ At 80:
                   🎮  💰 35                ⌛9.3h          🔋 3.8٪   🪫 8.45٪
 ```
 
-The 💳 row keeps its width, and Claude Code cuts it at the edge.
+The 💳 row sheds its pieces to fit, as [The rows](#the-rows) says.
 
 ### Between turns
 
@@ -307,7 +308,7 @@ flags too.
 --hide account              the 💳 row
 --hide '*.work'             💾 on every row
 --hide turn.time.eta        ⛳ on the 🎤 row only
---hide account.workspace    📦 🌿 📁 on the 💳 row
+--hide account.workspace    📦 🌿 📁 🔀 🎨 on the 💳 row
 --hide '*.state.rate'       🛫 everywhere
 ```
 
@@ -789,7 +790,8 @@ of the edge (`RIGHT_EDGE`), at no inset (`--part band`):
                          🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
-The receipt is then stamped at no inset, and the panel's `right-edge`
+The receipt is stamped `hint-inset` columns in, as every row starts, and the
+panel's `right-edge`
 follows `live-place` to five, so its rows stack on these. The 💳 row stays
 under the footer line. While a survey (a question picker) holds
 the band, the mod draws nothing there, and Claude Code draws the picker.
@@ -801,7 +803,7 @@ whether a survey held the band when it was drawn.
 
 ### The footer's tail
 
-With `account-place` `"tail"`, the default, the 💳 row is not a
+With `account-place` `"tail"` (the default is `"row"`), the 💳 row is not a
 row of its own: its text goes at the right end of Claude Code's footer
 line, plain and dim, after Claude Code's ` · ` (`--part tail`, with the
 hiding the mod ships):

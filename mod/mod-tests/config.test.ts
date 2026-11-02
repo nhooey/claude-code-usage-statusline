@@ -169,7 +169,7 @@ test('with no configuration file the options are the defaults', () => {
       tag: { place: 'footer', live: 'never', transcript: true },
       account: { place: 'footer', live: 'always', transcript: false },
     },
-    accountPlace: 'tail',
+    accountPlace: 'row',
     hintTuck: false,
     hintInset: 2,
     footerRuler: false,

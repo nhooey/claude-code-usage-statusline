@@ -188,7 +188,7 @@ CASES = [
                    ' "account": "kept"}', "home/p/.git/": None}),
     case("bad-values", "each value of the wrong type, out of range or not"
          " the enum's is skipped, and the layer under supplies it",
-         {USER: '{"totals": false, "hint-inset": 4, "account-place": "row",'
+         {USER: '{"totals": false, "hint-inset": 4, "account-place": "tail",'
                 ' "account-period": "week", "prefix": "U"}',
           PROJECT: '{"totals": "no", "hint-inset": -1,'
                    ' "account-place": "rwo", "account-period": "year",'
@@ -307,7 +307,7 @@ DEFAULTS_CASES = [
     ("under-minimum", "an int under its minimum",
      _swap(SHIPPED, '"starts-kept": 400', '"starts-kept": 0')),
     ("not-in-enum", "an enum's value it has not",
-     _swap(SHIPPED, '"account-place": "tail"', '"account-place": "tial"')),
+     _swap(SHIPPED, '"account-place": "row"', '"account-place": "rwo"')),
     ("live-place", "a key retired, live-place, is no option",
      _swap(SHIPPED, '"rows": {', '"live-place": "footer",\n  "rows": {')),
     ("null-default", "null for an option that is not derived",
