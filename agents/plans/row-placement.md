@@ -416,6 +416,14 @@ a trial, the last two are the user's.
    `draw-figures.ts` from the fixtures.
 7. **`RP7`, the user's file.** By hand, as in
    [Migration](#migration-of-the-users-file).
+
+   **Status: done,** with the user's own `rows` kept (the user's call):
+   🎤 live `"running"`, 🤖 `"place": "above"` and live `"always"`, 🎮
+   live `"always"`, all three stamped into the transcript; `hide` keeps
+   🔋, 🧠's ٪ and 🎯 and leaves 📦 and 🌿 shown. So in
+   [Acceptance](#acceptance), 🤖 stands above the prompt with 🎤 and 🎮
+   rather than under the footer line, and the receipt stamps 🎤, 🤖 and
+   🎮 rather than 🎤 alone; every other step reads as written.
 8. **`RP8`, the acceptance check**, live, below.
 
 ## Acceptance
