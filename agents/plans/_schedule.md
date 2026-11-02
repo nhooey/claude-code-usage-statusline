@@ -62,7 +62,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `RP3` | **Done.** One grid: the rows above indented `hint-inset`, the receipt always at it | `RP2` | none | `register.tsx`, `mod/mod-tests/band.test.ts` |
 | `RP4` | **Done 2026-10-21.** The labels without the prompt, the reply and 🎮's workspace, their code removed; `LABEL_MIN` 12 | the plan's approval (given) | none | `cells.ts` (the labels), `band.ts` (`turnRow`, `mainRow`, `sessionRow`), `receipt.ts`, `spec/layout.jsonc`, row cases, grid cases, panel goldens |
 | `RP5` | **Done.** The 💳 row: a row by default, 🔀 🎨 on it, its order and shedding | `RP2` | `RP4` | `band.ts` (`accountPieces`, `accountLine`), `mod/defaults/config.jsonc`, row cases, fixtures module |
-| `RP6` | Docs for the new layout | `RP3`, `RP4`, `RP5` | none | `docs/layout.md`, `docs/options.md`, `mod/README.md` |
+| `RP6` | **Done.** Docs for the new layout | `RP3`, `RP4`, `RP5` | none | `docs/layout.md`, `docs/options.md`, `mod/README.md` |
 | `RP7` | **Done, with the user's own `rows` kept.** The user's file, by hand | `RP5` | none | `~/.config/coding-agent-usage-line/config.jsonc` |
 | `RP8` | The acceptance check, live | `RP6`, `RP7` | none | none |
 
