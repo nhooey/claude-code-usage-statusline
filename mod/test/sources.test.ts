@@ -3,6 +3,7 @@
 // the Python reader; this runs each through the TypeScript and compares.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -48,6 +49,17 @@ function same(actual: unknown, expected: unknown, what: string) {
 
 function scratch(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "sources-test."));
+}
+
+// Run a command just written once, with nothing on stdin and no deadline,
+// before commandReading times it, and drop the "$0.stdin" it may leave.
+// macOS checks a new executable on its first run in one daemon the whole
+// machine shares, and the checks queue: with tests/all.sh's suites writing
+// commands side by side one took 15 seconds, past commandReading's five,
+// and the case read no reading.  See write_executable in tests/_checks.py.
+function warm(file: string) {
+  spawnSync(file, [], { stdio: "ignore" });
+  fs.rmSync(file + ".stdin", { force: true });
 }
 
 // Sorted keys at every level: one text per value, to sort cache files by.
@@ -158,6 +170,9 @@ test("command_reading and what it is sent", async () => {
       if (c.script !== null) {
         fs.writeFileSync(file, c.script);
         fs.chmodSync(file, c.executable ? 0o700 : 0o600);
+        // Not the case that times out on purpose: it reads nothing either
+        // way, and its first run would sleep for its seconds.
+        if (c.executable && c.timeout >= 1) warm(file);
       }
       const run = c.script !== null ? file : path.join(dir, "missing");
       same(await commandReading(run, c.context, c.timeout), c.expected,
@@ -206,6 +221,7 @@ test("collect: scenarios over one state directory", async () => {
         for (const [name, script] of Object.entries(s.commands)) {
           fs.writeFileSync(path.join(dir, name), script as string,
                            { mode: 0o700 });
+          warm(path.join(dir, name));
         }
         if (s.tracker === null) fs.rmSync(tracker, { force: true });
         else fs.writeFileSync(tracker, s.tracker);
