@@ -727,6 +727,14 @@ and `npm test`.
    in `.gitignore`; the panel's command is the user's to cut down.
 8. **The acceptance check**, below.
 
+   **Status 2026-11-02: steps 2, 3 and 7 pass, 4 to 6 to run.** Step 1
+   reads against the user's file as kept in step 7 of the build, with its
+   `rows`: those rows hold everywhere else. Step 3: the mod's log showed
+   the project-local layer 9 s after the file was written, and
+   `--show-config` the same. Step 7: one warning naming `"always"` in the
+   log and in `--show-config`, the row falling through to the user file's
+   `"running"`, and one notice in the transcript.
+
 ## Acceptance
 
 The rows table set in this project only:
