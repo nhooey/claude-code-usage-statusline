@@ -57,6 +57,8 @@ FIGURES = os.path.join(FIXTURES, "figures")
 PROGRAM = os.path.join(os.path.dirname(HERE), "coding-agent-usage-line.py")
 sys.path.insert(0, os.path.dirname(HERE))
 from coding_agent_usage_line.spans import COLOUR_VARS  # noqa: E402
+# tests/, for _checks: fixtures/gen/panel.py loads this file by path.
+sys.path.insert(0, HERE)
 from _checks import write_executable  # noqa: E402
 
 

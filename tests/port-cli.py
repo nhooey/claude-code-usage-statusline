@@ -13,6 +13,9 @@ import tempfile
 import time
 import unittest
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _checks import write_executable  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMAND = [sys.executable, str(ROOT / "coding-agent-usage-line.py")]
@@ -224,11 +227,14 @@ class PublicPortTests(unittest.TestCase):
             "period_start": 1789344000, "period_end": 1789387200,
             "cost_usd": 7.25, "input_tokens": 314, "output_tokens": 27,
             "scope": "organization"}}
-        command.write_text("#!" + sys.executable + "\nimport json,sys\n"
+        # Run once as it is written (write_executable), so macOS's first-run
+        # check is not paid inside the program's deadline.  With nothing on
+        # stdin that run stops at json.load, before it writes the marker.
+        write_executable(str(command), "#!" + sys.executable + "\nimport json,sys\n"
             "context=json.load(sys.stdin)\n"
             "with open(" + repr(str(marker)) + ", 'w') as stream: json.dump(context,stream)\n"
-            "print(" + repr(json.dumps(reading)) + ")\n", encoding="utf-8")
-        command.chmod(0o700)
+            "print(" + repr(json.dumps(reading)) + ")\n")
+        self.assertFalse(marker.exists())
         payload = {"session_id": "claude-review", "cwd": str(self.home),
             "model": {"display_name": "Opus", "id": "claude-opus-4-6"},
             "rate_limits": {"five_hour": {"used_percentage": 11,
