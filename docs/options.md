@@ -288,8 +288,11 @@ key, never a value made up in its place: the status line prints it as its
 line, the Stop hook as its message and the agent panel as each row (each
 exiting 0, so Claude Code shows it), `--show-config` and `--help` print it
 on stderr and exit 2, and the mod draws it in red under the footer line in
-place of its rows, with one line in the transcript. Your own files stay
-lenient, as below.
+place of its rows, with one line in the transcript. The mod reads the
+defaults file once each time it is loaded, once it reads whole: a change
+to it on disk shows after the next `/reload-plugins`, which also loads the
+code written for it, and the mod's log says the change is waiting. Your
+own files stay lenient, as below, and apply within a tick.
 
 ### What a file holds
 

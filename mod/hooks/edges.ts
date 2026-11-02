@@ -1356,9 +1356,32 @@ function defaultsPath($: $): string {
   return $.plugin.root + '/' + DEFAULTS_REL
 }
 
-/** The defaults file, strictly read: a DefaultsError while it is wrong. */
+// The defaults file as this load of the mod first read it whole, and its
+// modification time then; null until it reads whole.
+let loadedDefaults: { defaults: Defaults; mtimeMs: number | null } | null =
+  null
+// The modification time last logged as differing from loadedDefaults'.
+let defaultsMovedAt: number | null = null
+
+/** The defaults file, strictly read: a DefaultsError while it is wrong.
+ * Read once per load of the mod: the code and the defaults it was written
+ * for come from one checkout, so a change on disk, a merge that reshapes
+ * the file among them, waits for the next `/reload-plugins`, and is
+ * logged once per modification time.  Until it first reads whole, it is
+ * read again each time, so a file fixed applies without a reload. */
 export async function defaultsVia($: $): Promise<Defaults> {
-  return readDefaults(defaultsPath($), configFs($))
+  const fs = configFs($)
+  const path = defaultsPath($)
+  const mtimeMs = (await fs.stat(path))?.mtimeMs ?? null
+  if (loadedDefaults === null) {
+    loadedDefaults = { defaults: await readDefaults(path, fs), mtimeMs }
+  } else if (mtimeMs !== loadedDefaults.mtimeMs &&
+             mtimeMs !== defaultsMovedAt) {
+    defaultsMovedAt = mtimeMs
+    await log($, 'config: the defaults file changed on disk; the mod ' +
+      'keeps the one it loaded until /reload-plugins: ' + path)
+  }
+  return loadedDefaults.defaults
 }
 
 /** Where the walk starts, the session's root, and the variables it

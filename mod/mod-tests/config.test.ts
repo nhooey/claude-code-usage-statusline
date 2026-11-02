@@ -32,7 +32,7 @@ const ENV: { [name: string]: string } = {
 }
 
 type World = { files: Map<string, string>; asked: string[]; names: string[];
-  logged: string[] }
+  logged: string[]; mtimes: Map<string, number> }
 
 /** The engine beneath the mod: a user file with a typo, a project file
  * with a source Claude cannot read, the project's `.git`, and the
@@ -45,6 +45,8 @@ function world(on: On, defaults = DEFAULTS_TEXT): World {
   const dirs = new Set([PROJECT + '/.git'])
   const asked: string[] = []
   const names: string[] = []
+  // A file's modification time, 1 where none is set.
+  const mtimes = new Map<string, number>()
   const fileAt = (p: string) => files.get(p) ??
     (isDefaults(p) ? defaults : undefined)
   const isDir = (p: string) => dirs.has(p) ||
@@ -62,7 +64,7 @@ function world(on: On, defaults = DEFAULTS_TEXT): World {
     }
     return { value: { kind: f === undefined ? 'dir' as const : 'file' as const,
       size: f === undefined ? 0 : new TextEncoder().encode(f).length,
-      mtimeMs: 1, isLink: false, realPath: e.path } }
+      mtimeMs: mtimes.get(e.path) ?? 1, isLink: false, realPath: e.path } }
   })
   on('fs.read', ($, e) => {
     asked.push(e.path)
@@ -115,7 +117,7 @@ function world(on: On, defaults = DEFAULTS_TEXT): World {
     if (e.to !== 'debug') logged.push(e.text)
     return { value: undefined }
   })
-  return { files, asked, names, logged }
+  return { files, asked, names, logged, mtimes }
 }
 
 // The test's environment has timers, which the hooks' types leave out.
@@ -252,4 +254,32 @@ test('a wrong defaults file is drawn in the footer and logged once',
     const drawn = JSON.stringify(await hint.drawn())
     expect(drawn).toContain('⚠ usage-band: the defaults file is wrong: ')
     expect(drawn).toContain('\\"account\\" is missing')
+  })
+
+// The defaults file reshaped on disk under a running mod, as a merge on
+// master does to a session started in this repository: the mod keeps the
+// file it loaded, draws with it, and says once that a reload is waiting.
+test('a defaults file changed on disk waits for the next load of the mod',
+  async ($, on) => {
+    const w = world(on)
+    await $.session.start({ cwd: PROJECT, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    const path = w.asked.find(isDefaults)!
+    w.files.set(path, DEFAULTS_TEXT.replace('  "account": "default",\n', ''))
+    w.mtimes.set(path, 2)
+    for (let i = 0; i < 2; i++) {
+      await $.session.start({ cwd: PROJECT, surface: 'terminal',
+        isInteractive: true })
+      await settle()
+    }
+    const log = w.files.get(STATE + '/' + LOG_NAME) ?? ''
+    expect(log).not.toContain('the defaults file is wrong')
+    expect(log.split('the defaults file changed on disk').length - 1)
+      .toBe(1)
+    const hint = await $.ui.mount({ plugin: 'usage-band',
+      surface: 'terminal', component: 'PromptHint', props: { isDraft: false,
+        isWorking: false, hint: '-- INSERT --' } })
+    expect(JSON.stringify(await hint.drawn())).not.toContain(
+      'the defaults file is wrong')
   })
