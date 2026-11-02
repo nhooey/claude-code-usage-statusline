@@ -1565,7 +1565,7 @@ test('a bad value in a file is logged, noticed once, and its default kept',
     const warning = `${LOCAL}: "rows.turn.live" must be one of "never", ` +
       '"running", "always" (did you mean "always"?); skipped'
     expect(logOf(w)).toContain('config: ' + warning)
-    expect(w.logged).toEqual(['usage-band: config ' + warning])
+    expect(w.logged).toEqual(['config ' + warning])
     // Another session's start, and a tick: the file is as it was, so no
     // second read and no second notice.
     await $.session.start({ cwd: CWD, surface: 'terminal',

@@ -1481,7 +1481,8 @@ async function reread($: $): Promise<boolean> {
     if (defaultsFault !== err.message) {
       await log($, 'config: the defaults file is wrong: ' + err.message)
       try {
-        $.ui.log(`usage-band: the defaults file is wrong: ${err.message}`)
+        // Claude Code puts the plugin's name, "usage-band: ", in front.
+        $.ui.log(`the defaults file is wrong: ${err.message}`)
       } catch (e) {
         await log($, 'config: no notice', e)
       }
@@ -1557,7 +1558,8 @@ async function notice($: $, found: Found): Promise<void> {
     const more = said.length > 1
       ? ` (and ${said.length - 1} more in ${LOG_NAME})` : ''
     try {
-      $.ui.log(`usage-band: config ${said[0]}${more}`)
+      // Claude Code puts the plugin's name, "usage-band: ", in front.
+      $.ui.log(`config ${said[0]}${more}`)
     } catch (err) {
       await log($, 'config: no notice', err)
     }
