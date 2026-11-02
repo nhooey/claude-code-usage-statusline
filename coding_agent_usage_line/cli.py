@@ -4,7 +4,7 @@ import os
 import sys
 import textwrap
 
-from . import config
+from . import config, usage_report
 from .codex import native_quota, parse_jsonl, read_request_tree, root_context, rollout_identity
 from .codex import origin_turn, rollout_cwd
 from .options import LAYERS, flag_values, from_flags, merge, parse
@@ -95,7 +95,7 @@ def usage():
     changes the default: from the defaults file, so it raises
     config.DefaultsError while that file is wrong."""
     defaults = config.load_defaults()
-    return ("""usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|subagent] [options]
+    return ("""usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|subagent|usage] [options]
 
 One-shot coding-agent usage status and Stop-hook reports. --agent is required
 except for --help and --selftest.
@@ -104,6 +104,7 @@ Modes:
   status                 Print a human-readable status (default).
   cost                   Print Stop-hook JSON; --all prints plain history.
   subagent               Claude panel output; Codex suggests --mode cost --all.
+  usage                  Plan windows as JSON, without stdin; exit 1 if none.
 
 """ + _usage_section("Shared options", "shared", defaults)
         + "\n" + _usage_section(
@@ -399,7 +400,7 @@ def main(argv=None):
     if agent not in ("claude", "codex"):
         sys.stderr.write("--agent claude|codex is required\n"); return 2
     mode = written.get("--mode", "status")
-    if mode not in ("status", "cost", "subagent"):
+    if mode not in OPTIONS["mode"]["items"]:
         sys.stderr.write("unknown --mode %r\n" % mode); return 2
     try:
         if "--cols" in written:
@@ -420,7 +421,7 @@ def main(argv=None):
     # named transcript or figures document is a complete offline input, so
     # it never waits on a still-open pipe; the panel always has a payload.
     transcript = written.get("--transcript")
-    if agent == "claude" and "--from-figures" in written:
+    if mode == "usage" or (agent == "claude" and "--from-figures" in written):
         offline = True
     else:
         offline = mode != "subagent" and bool(transcript)
@@ -432,6 +433,8 @@ def main(argv=None):
     options = _merged(flag_values(parsed), found, agent)
     for warning in options.warnings:
         sys.stderr.write(warning + "\n")
+    if mode == "usage":
+        return usage_report.main(agent, options)
     if agent == "claude":
         # Do not initialize Claude-specific cache/display state in a Codex
         # invocation; selection was validated above.

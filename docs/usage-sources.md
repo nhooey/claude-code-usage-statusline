@@ -58,6 +58,13 @@ line cached — which is why step 2 exists. Close to a render the status line
 has always just drawn one; if it hasn't redrawn for more than a minute, `auto`
 goes to the tracker, and without the tracker the plan cells are blank.
 
+An agent or a skill that wants these readings runs
+`coding-agent-usage-line.py --agent claude --mode usage` (or `--agent
+codex`), which prints them as JSON through this same chain; see
+[Plan windows as JSON](options.md#plan-windows-as-json---mode-usage). The
+cache files described under [Refresh and storage](#refresh-and-storage) are
+internal and not for other programs to read.
+
 ### An explicit source is final
 
 Naming a source other than `auto`, `native`, `none` or `off` replaces native

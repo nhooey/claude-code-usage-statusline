@@ -1,7 +1,7 @@
 # Options
 
 ```
-coding-agent-usage-line.py --agent claude|codex [--mode status|cost|subagent] [options]
+coding-agent-usage-line.py --agent claude|codex [--mode status|cost|subagent|usage] [options]
 coding-agent-usage-line.py --selftest
 coding-agent-usage-line.py --show-config
 ```
@@ -32,6 +32,7 @@ display switch either removes something or changes spacing, so apart from
 | `status` (default) | the status-line JSON payload | three rows, or four on a narrow terminal (Claude); a summary and quota lines (Codex) | both |
 | `cost` | the Stop-hook JSON payload | `{"systemMessage": "..."}`, or `{}` when there is nothing to report | both |
 | `subagent` | the agent panel's task list | one `{"id": ..., "content": ...}` line per task | Claude only |
+| `usage` | nothing | the plan windows as one JSON object; see [below](#plan-windows-as-json---mode-usage) | both |
 | `--selftest` | nothing | specimen rows drawn on the terminal, and a report of where the cursor landed | — |
 
 Hooks never break a session: a missing transcript or an internal error in
@@ -45,6 +46,56 @@ hook. Use `--mode cost --all` for its child-agent reports. See
 `--selftest` needs a real terminal tab: it draws rows on `/dev/tty` and asks
 the terminal where the cursor ended up. See
 [Glyphs and terminals](glyphs-and-terminals.md).
+
+### Plan windows as JSON (`--mode usage`)
+
+For an agent or a skill that needs the account's plan windows (the
+five-hour, the weekly, and any other the source gives, such as
+`seven_day_opus`), this is the command to run. It reads no stdin.
+
+```sh
+$ coding-agent-usage-line.py --agent claude --mode usage
+{"schema_version":1,"agent":"claude","source":"native","as_of":1793650981.43,"age_seconds":4.2,"stale":false,"windows":[{"id":"five_hour","bucket":"default","label":"default","used_percent":31.0,"left_percent":69.0,"resets_at":1793680000.0,"duration_seconds":18000.0,"expired":false},{"id":"seven_day","bucket":"default","label":"default","used_percent":12.5,"left_percent":87.5,"resets_at":1793900000.0,"duration_seconds":604800.0,"expired":false}]}
+```
+
+The reading comes the way the agent panel and the Stop hook get theirs:
+through the [usage source](usage-sources.md), `auto` by default, so a
+reading the status line cached in the last minute, else the fallback, such
+as the Claude Usage Tracker. `--usage-source`, `--account`,
+`--account-period` and the configuration files apply as in every mode. It
+writes no hook state; a fallback's refresh updates that source's cache, as
+in the other modes.
+
+Under `--account default` a cached reading belongs to one session. The
+session is `--transcript`'s (the file name for Claude, the rollout's
+session for Codex); without one, for Claude, it is
+`$CLAUDE_CODE_SESSION_ID`, which Claude Code sets for the commands it
+runs. For Codex, `--transcript PATH` gives the rollout's own quota reading;
+without it, `auto` asks the Codex app-server.
+
+| Field | Value |
+|---|---|
+| `schema_version` | `1` |
+| `agent` | `claude` or `codex` |
+| `source` | the source the reading came from, such as `native` or `claude-usage-tracker`; `null` without one |
+| `as_of` | when the source took the reading, epoch seconds |
+| `age_seconds` | how long ago that was |
+| `stale` | `true` once the reading is older than its source's refresh interval (see [Refresh and storage](usage-sources.md#refresh-and-storage)) |
+| `windows` | one object per plan window, below |
+| `reason` | only without a reading: `no-reading` |
+
+Each window has `id` (`five_hour`, `seven_day`, `seven_day_opus`, or a
+Codex window's `primary` or `secondary`), `bucket` and `label` (the quota
+it belongs to; `default` for Claude's), `used_percent`, `left_percent`,
+`resets_at` (epoch seconds), `duration_seconds` and `expired` (its reset
+has passed). A figure the source didn't give is `null`. No token, account
+id or session id is printed.
+
+| Exit | Meaning |
+|---|---|
+| 0 | a reading with at least one window |
+| 1 | no reading: `windows` is `[]`, `source`, `as_of`, `age_seconds` and `stale` are `null`, and `reason` says why |
+| 2 | a usage error, such as an unknown flag or a source the agent can't read |
 
 ## Shared options
 

@@ -363,6 +363,116 @@ class PublicPortTests(unittest.TestCase):
         self.assertEqual(attempts.read_text().splitlines(), ["attempt"],
                          "A failed explicit source must not re-enter legacy collection")
 
+    # ── --mode usage ─────────────────────────────────────────────────────
+
+    def usage_mode(self, *args, session=None):
+        """--mode usage with stdin left open, which it must never wait on:
+        (exit status, the JSON it printed)."""
+        env = dict(self.env)
+        if session is not None:
+            env["CLAUDE_CODE_SESSION_ID"] = session
+        proc = subprocess.Popen(COMMAND + ["--mode", "usage"] + list(args),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, env=env, cwd=str(self.home))
+        try:
+            # Its output is far smaller than a pipe's buffer, so it can
+            # finish before anything is read.
+            proc.wait(timeout=8)
+            out = proc.stdout.read()
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+            for stream in (proc.stdin, proc.stdout, proc.stderr):
+                stream.close()
+        return proc.returncode, json.loads(out)
+
+    def seed_native(self, session, account="default"):
+        now = time.time()
+        payload = {"session_id": session, "cwd": str(self.home), "rate_limits": {
+            "five_hour": {"used_percentage": 31, "resets_at": now + 3600},
+            "seven_day": {"used_percentage": 12.5, "resets_at": now + 3 * 86400}}}
+        self.run_cli("--agent", "claude", "--cols", "196", "--account", account,
+                     payload=payload)
+        return now
+
+    def test_usage_mode_without_a_reading_exits_1_with_empty_windows(self):
+        self.env["CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST"] = str(self.home / "absent.plist")
+        status, out = self.usage_mode("--agent", "claude")
+        self.assertEqual(status, 1)
+        self.assertEqual(out, {"schema_version": 1, "agent": "claude", "source": None,
+                               "as_of": None, "age_seconds": None, "stale": None,
+                               "windows": [], "reason": "no-reading"})
+
+    def test_usage_mode_reads_the_status_lines_native_cache_for_its_session(self):
+        self.env["CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST"] = str(self.home / "absent.plist")
+        seeded = self.seed_native("usage-review")
+        before = sorted(p.name for p in (self.home / "state").iterdir())
+        status, out = self.usage_mode("--agent", "claude", session="usage-review")
+        self.assertEqual(status, 0)
+        # A fresh cached reading is all it reads: no state written.
+        self.assertEqual(sorted(p.name for p in (self.home / "state").iterdir()), before)
+        self.assertEqual((out["schema_version"], out["agent"], out["source"], out["stale"]),
+                         (1, "claude", "native", False))
+        self.assertGreaterEqual(out["as_of"], seeded - 1)
+        self.assertGreaterEqual(out["age_seconds"], 0)
+        windows = {w["id"]: w for w in out["windows"]}
+        self.assertEqual(sorted(windows), ["five_hour", "seven_day"])
+        self.assertEqual((windows["five_hour"]["used_percent"], windows["five_hour"]["left_percent"],
+                          windows["five_hour"]["duration_seconds"]), (31.0, 69.0, 18000.0))
+        self.assertEqual((windows["seven_day"]["left_percent"],
+                          windows["seven_day"]["duration_seconds"]), (87.5, 604800.0))
+        self.assertAlmostEqual(windows["five_hour"]["resets_at"], seeded + 3600, delta=2)
+        self.assertEqual(sorted(windows["five_hour"]), ["bucket", "duration_seconds", "expired",
+            "id", "label", "left_percent", "resets_at", "used_percent"])
+        # Another session's, or another account's, reading is not this one.
+        self.assertEqual(self.usage_mode("--agent", "claude", session="other")[0], 1)
+        self.assertEqual(self.usage_mode("--agent", "claude", "--account", "named",
+                                         session="usage-review")[0], 1)
+        # --transcript names the session as the Stop hook does.
+        status, out = self.usage_mode("--agent", "claude", "--transcript",
+                                      str(self.home / "usage-review.jsonl"))
+        self.assertEqual((status, out["source"]), (0, "native"))
+
+    def test_usage_mode_falls_back_to_the_tracker_and_keeps_no_secret(self):
+        now = time.time()
+        canary = "fixture-oauth-credential-must-not-be-printed"
+        tracker = self.home / "tracker.plist"
+        profile = {"id": "fixture", "oauthAccountJSON": canary, "claudeUsage": {
+            "sessionPercentage": 98, "sessionResetTime": now + 18000 - 978307200,
+            "weeklyPercentage": 10, "opusWeeklyPercentage": 4,
+            "weeklyResetTime": now + 604800 - 978307200, "lastUpdated": now - 978307200}}
+        with tracker.open("wb") as stream:
+            plistlib.dump({"activeProfileId": "fixture",
+                          "profiles_v3": json.dumps([profile]).encode()}, stream)
+        self.env["CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST"] = str(tracker)
+        status, out = self.usage_mode("--agent", "claude", session="tracker-review")
+        self.assertEqual((status, out["source"]), (0, "claude-usage-tracker"))
+        self.assertEqual([(w["id"], w["used_percent"]) for w in out["windows"]],
+                         [("five_hour", 98.0), ("seven_day", 10.0), ("seven_day_opus", 4.0)])
+        text = json.dumps(out)
+        self.assertNotIn(canary, text)
+        self.assertNotIn("account", text)
+        # `none` never runs the fallback; the cached reading is still its.
+        status, out = self.usage_mode("--agent", "claude", "--usage-source", "none",
+                                      session="tracker-review")
+        self.assertEqual((status, out["source"]), (0, "claude-usage-tracker"))
+
+    def test_usage_mode_reads_a_codex_rollouts_quota(self):
+        reset = int(time.time()) + 86400
+        quota = {"rateLimitsByLimitId": {"spark": {"limitName": "Spark", "primary": {
+            "usedPercent": 40, "windowDurationMins": 300, "resetsAt": reset}}}}
+        self.write(self.path, [record("event_msg", {"type": "token_count", "rate_limits": quota})],
+                   append=True)
+        status, out = self.usage_mode("--agent", "codex", "--usage-source", "native",
+                                      "--transcript", str(self.path))
+        self.assertEqual((status, out["agent"], out["source"]), (0, "codex", "native"))
+        self.assertEqual([(w["id"], w["bucket"], w["label"], w["left_percent"],
+                           w["duration_seconds"], w["resets_at"]) for w in out["windows"]],
+                         [("primary", "spark", "Spark", 60.0, 18000.0, float(reset))])
+        status, out = self.usage_mode("--agent", "codex", "--usage-source", "none")
+        self.assertEqual((status, out["windows"], out["reason"]), (1, [], "no-reading"))
+
     # ── The flags, from spec/options.jsonc ───────────────────────────────
 
     def run_status(self, *args):

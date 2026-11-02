@@ -17,14 +17,14 @@ export const OPTIONS = {
   },
   "mode": {
     "type": "enum",
-    "items": ["status", "cost", "subagent"],
+    "items": ["status", "cost", "subagent", "usage"],
     "metavar": "MODE",
     "default": "status",
     "ports": ["py"],
     "file": false,
     "flag": "--mode",
     "doc-table": "shared",
-    "usage": "status (the default), cost or subagent; see Modes.",
+    "usage": "status (the default), cost, subagent or usage; see Modes.",
     "doc": "See [Modes](#modes).",
   },
   "transcript": {
