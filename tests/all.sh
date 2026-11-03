@@ -45,6 +45,15 @@ fi
 work="$(mktemp -d "${TMPDIR:-/tmp}/all-suites.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
+# No suite may start this machine's Codex: a `codex` first on PATH that
+# notes each call and fails, so a run that would reach the real one shows
+# under `hermetic` below instead.
+mkdir "$work/bin"
+printf '#!/bin/sh\necho "codex $*" >>"%s/codex-calls"\nexit 1\n' "$work" \
+  >"$work/bin/codex"
+chmod u+x "$work/bin/codex"
+export PATH="$work/bin:$PATH"
+
 # name | directory under ROOT | command.  In the order the table prints.
 SUITES='
 status|.|bash tests/golden.sh
@@ -130,9 +139,21 @@ if wanted generated "$@"; then
     echo "$rc $start $(now)" >"$work/generated.rc"
   )
 fi
+if [ ${#names[@]} -gt 0 ]; then
+  names+=(hermetic)
+  start=$(now)
+  if [ -s "$work/codex-calls" ]; then
+    { cat "$work/codex-calls"
+      echo "FAIL: a suite ran codex off PATH"; } >"$work/hermetic.out"
+    echo "1 $start $(now)" >"$work/hermetic.rc"
+  else
+    echo "ok no suite ran codex" >"$work/hermetic.out"
+    echo "0 $start $(now)" >"$work/hermetic.rc"
+  fi
+fi
 t1=$(now)
 if [ ${#names[@]} -eq 0 ]; then
-  echo "no suite named $*; the names are the first column of SUITES, and generated" >&2
+  echo "no suite named $*; the names are the first column of SUITES, generated and hermetic" >&2
   exit 2
 fi
 

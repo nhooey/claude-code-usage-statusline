@@ -160,6 +160,13 @@ class Program(unittest.TestCase):
             "CLAUDE_CONFIG_DIR": str(self.tmp / "claude"),
             "CODEX_HOME": str(self.tmp / "codex"),
             "TZ": "UTC"})
+        # Under --agent codex, usage-source auto starts `codex app-server`
+        # off PATH: this one fails at once, so no run reaches the real one.
+        stub = self.tmp / "bin" / "codex"
+        stub.parent.mkdir()
+        stub.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+        stub.chmod(0o755)
+        self.env["PATH"] = str(stub.parent) + os.pathsep + self.env.get("PATH", "")
         self.transcript = HERE / "fixtures" / "transcripts" / "cost" / "01-plain.jsonl"
 
     def run_program(self, *args, stdin="", cwd=None):
