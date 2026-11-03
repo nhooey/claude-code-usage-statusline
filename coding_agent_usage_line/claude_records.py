@@ -2015,9 +2015,17 @@ def opens_turn(r: dict) -> bool:
 
       * isCompactSummary — the summary /compact injects.  Prose, and it does
         not begin with '<', so the shape checks alone let it through.
-      * strings opening with '<' — tool results and system reminders.  This
-        does NOT apply to the wake branch: `<task-notification>` opens with
-        the character, and `promptSource` is what tells the two apart.
+      * strings opening with '<' — tool results, system reminders, and the
+        records of a command Claude Code runs itself (`<command-name>`,
+        `<local-command-stdout>`, `<local-command-caveat>`), which the model
+        never answers.  A slash command the model DOES answer, a skill or a
+        prompt command, opens with `<command-message>` (COMMAND_LEAD) and
+        opens a turn: over 400 transcripts here, 209 of them, each followed
+        by the isMeta record of what it expands to and then, but for a few
+        sent again before it, the answer.  Left out, the turn it opened was
+        added to the turn before.  This does NOT apply to the wake branch either:
+        `<task-notification>` opens with the character, and `promptSource`
+        is what tells the two apart.
       * isMeta on a TYPED record.  A wake message is usually marked isMeta as
         well, so the flag cannot be the test on that branch.
 
@@ -2068,7 +2076,15 @@ def opens_turn(r: dict) -> bool:
         return True
     return (not r.get("isMeta")
             and r.get("promptSource", "typed") in PROMPT_SOURCES
-            and not c.startswith("<"))
+            and (not c.startswith("<") or c.startswith(COMMAND_LEAD)))
+
+
+# How a slash command the model answers is written: a typed record opening
+# with this tag, then the command's name and arguments, and an isMeta
+# record after it with what the command expands to.  A command Claude Code
+# runs itself (/login, /config, /reload-plugins, /compact) opens with
+# <command-name> instead, or is a <local-command-stdout>, and gets no reply.
+COMMAND_LEAD = "<command-message>"
 
 
 # The promptSource values of a prompt a person sent: typed while idle, typed
@@ -2381,17 +2397,19 @@ def turn_index(r: dict) -> Optional[int]:
 
 
 def new_turn_gate() -> list:
-    """A fresh `gate` for turn_opens: no turn open, so no number, and none
-    running."""
-    return [None, True]
+    """A fresh `gate` for turn_opens: no turn open, so no number, none
+    running, and no turnPosition seen."""
+    return [None, True, False]
 
 
 def turn_opens(r: dict, gate: list) -> Optional[str]:
     """turn_start_text, less a message delivered into the turn still
     running.  `gate` is [the open turn's turnIndex, whether its answer has
-    ended]: each opener sets the number, None where it has none, and the
-    end of an answer — an assistant record that ends its turn, or the
-    turn_duration Claude Code writes after one — sets the second.
+    ended, whether any record so far has carried a turnPosition]: each
+    opener sets the number, None where it has none; the end of an answer —
+    an assistant record that ends its turn, or the turn_duration Claude
+    Code writes after one — sets the second; and the first turnPosition
+    sets the third.
 
     turn_start_text reads one record at a time, so it cannot tell a wake
     message (promptSource "system") that opens a turn from one delivered
@@ -2413,13 +2431,27 @@ def turn_opens(r: dict, gate: list) -> Optional[str]:
     the first (see receipt.ts's billedNothing).  Records without the field,
     all of them before it existed and every queue removal, open as
     turn_start_text says, and leave no number to compare the next one with.
+
+    A wake record with no turnPosition, in a transcript that has already
+    shown one, opens no turn at all.  Claude Code numbers every message it
+    delivers as a turn; the ones it leaves unnumbered are folded into the
+    next request it sends and never answered alone.  Opened as turns, one
+    20 MB transcript here read 231 turns with no call in them.  Their
+    records stay in the turn before.  A transcript that never shows the
+    field, written before it existed, opens them as turn_start_text says.
     """
+    seen = gate[2]
+    if isinstance(r.get("turnPosition"), dict):
+        gate[2] = True
     text = turn_start_text(r)
     if text is None:
         if r.get("isSidechain") is not True and (
                 ends_turn(r) or (r.get("type") == "system"
                                  and r.get("subtype") == "turn_duration")):
             gate[1] = True
+        return None
+    if (seen and r.get("promptSource") == "system"
+            and not isinstance(r.get("turnPosition"), dict)):
         return None
     idx = turn_index(r)
     if (idx is not None and idx == gate[0] and not gate[1]
@@ -2446,10 +2478,31 @@ def _handback_report(body: str) -> str:
     return "\n".join(line.strip() for line in body.split("\n")).strip()
 
 
+def _tag_body(text: str, name: str) -> Optional[str]:
+    """What the first <name>...</name> in `text` holds, or None."""
+    at = text.find("<" + name + ">")
+    if at < 0:
+        return None
+    at += len(name) + 2
+    end = text.find("</" + name + ">", at)
+    return text[at:end] if end >= 0 else None
+
+
+def command_label(text: str) -> str:
+    """A slash command's record as it was typed: its <command-name>, else
+    "/" and its <command-message>, and its <command-args> after a space."""
+    name = (_tag_body(text, "command-name") or "").strip()
+    if not name:
+        name = "/" + (_tag_body(text, "command-message") or "").strip()
+    args = (_tag_body(text, "command-args") or "").strip()
+    return name + " " + args if args else name
+
+
 def opener_label(r: dict, text: str) -> str:
     """What 🎤 prints for the turn `r` opens with `text`.
 
-    The prompt itself, except for a message from another session or a
+    The prompt itself, except for a slash command, which reads as it was
+    typed (command_label), and a message from another session or a
     subagent.  Delivered as a turn, its text is Claude Code's framing —
     "Another Claude session sent a message:", an <agent-message> tag, and
     for a subagent's hand-back a paragraph of preamble — so the row read
@@ -2458,6 +2511,8 @@ def opener_label(r: dict, text: str) -> str:
     record's `origin` (`handbackReportText`, else `body` out of its frame),
     and where that is missing, from the text out of its frame.
     """
+    if text.startswith(COMMAND_LEAD):
+        return command_label(text)
     o = r.get("origin")
     handback, said = False, None
     if isinstance(o, dict) and o.get("kind") == "peer":

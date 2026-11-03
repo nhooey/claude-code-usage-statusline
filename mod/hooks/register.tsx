@@ -141,6 +141,38 @@ async function reconfigure($: $): Promise<void> {
   void refresh($).catch((err) => log($, 'refresh', err))
 }
 
+/** `p`, or a rejection naming `what` once CONFIG.readLimitMs has passed
+ * with it still running.  The step goes on, and what it gives is dropped:
+ * nothing can stop a read the runtime has started. */
+async function inTime<T>($: $, what: string, p: Promise<T>): Promise<T> {
+  p.catch(() => {})
+  const stop = new AbortController()
+  const limit = $.clock.sleep(CONFIG.readLimitMs, { signal: stop.signal })
+    .then(() => {
+      const done = Object.entries(steps).map(([k, v]) => `${k} ${v}`)
+      throw new Error(`${what} still running after ` +
+        `${CONFIG.readLimitMs / 1000}s, dropped` +
+        (done.length ? ` (done: ${done.join(', ')})` : ''))
+    }, () => new Promise<never>(() => {}))
+  try {
+    return await Promise.race([p, limit])
+  } finally {
+    stop.abort()
+  }
+}
+
+// What the receipts trial has logged, so each shape is logged once
+// (agents/plans/agent-compact-receipts.md, AR1).
+const tried = new Set<string>()
+
+/** `what` and `shape`, logged the first time that pair is seen. */
+async function trial($: $, what: string, shape: Dict): Promise<void> {
+  const line = what + ' ' + JSON.stringify(shape)
+  if (tried.has(line)) return
+  tried.add(line)
+  await log($, 'trial: ' + line)
+}
+
 let refreshing: Promise<void> | null = null
 let again = false
 // When the last read finished and how long it took, in ms, and whether a
@@ -190,13 +222,15 @@ async function refresh($: $): Promise<void> {
       // The figures are read under the options: until the configuration
       // is read, and while the defaults file is wrong, there are none.
       if (options() === null) {
-        await readConfig($).catch((err) => log($, 'config', err))
+        await inTime($, 'the configuration', readConfig($))
+          .catch((err) => log($, 'config', err))
         if (options() === null) continue
       }
       let doc: Dict
       const began = await $.clock.now()
       try {
-        doc = await statusDoc($, await placesFor($))
+        doc = await inTime($, 'the status document',
+          (async () => statusDoc($, await placesFor($)))())
         readAt = await $.clock.now()
         readMs = readAt - began
         if (readMs > CONFIG.slowReadMs) await slow($, readMs)
@@ -219,9 +253,9 @@ async function refresh($: $): Promise<void> {
       }
       // The permission mode, off the transcript's newest prompt.
       try {
-        const places = await placesFor($)
-        noteMode($, 'transcript', await permissionModeOf($,
-          await transcriptPath($, places)))
+        noteMode($, 'transcript', await inTime($, 'the permission mode',
+          (async () => permissionModeOf($,
+            await transcriptPath($, await placesFor($))))()))
       } catch (err) {
         await log($, 'refresh: no permission mode', err)
       }
@@ -799,6 +833,10 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     await start($, 'turn.complete')
+    void trial($, 'turn.complete', { agent: e.agentId ? 'yes' : 'no',
+      reason: e.reason ?? null, aborted: e.isAborted ?? null,
+      usage: e.usage !== undefined, durationMs: e.durationMs ?? null })
+      .catch(() => {})
     if (!e.agentId) {
       turnRunning = false
       // The band keeps the turn's 🎤 and 🎮 until its receipt is stamped,
@@ -828,6 +866,38 @@ export const register: Register = on => {
         await update($, held, () => false)
       })
     return result
+  })
+
+  // The receipts trial: the shapes Claude Code draws a subagent's end and
+  // a /compact with, logged once each, nothing drawn differently.
+  on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
+    const row = await next(e)
+    if (e.props.tool === 'Agent' || e.props.tool === 'Task') {
+      const out = (e.props.output ?? {}) as Dict
+      void trial($, 'ToolResult', { tool: e.props.tool,
+        keys: Object.keys(out).sort(), status: out.status ?? null,
+        agentId: typeof out.agentId === 'string' ? 'yes' : 'no',
+        errored: e.props.isErrored }).catch(() => {})
+    }
+    return row
+  })
+  on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
+    const row = await next(e)
+    if (e.props.origin.kind !== 'composer') {
+      const t = e.props.task
+      void trial($, 'UserMessage', { origin: e.props.origin.kind,
+        task: t ? { id: t.id ? 'yes' : 'no', status: t.status ?? null,
+          type: t.type ?? null, toolUseId: t.toolUseId ? 'yes' : 'no',
+          durationMs: typeof t.durationMs === 'number' } : null,
+        text: e.props.text.slice(0, 40) }).catch(() => {})
+    }
+    return row
+  })
+  on('ui.render', { component: 'CommandOutput' }, async ($, e, next) => {
+    const row = await next(e)
+    void trial($, 'CommandOutput', { command: e.props.command,
+      text: String(e.props.text ?? '').slice(0, 60) }).catch(() => {})
+    return row
   })
 
   // Each drawing below reads `configured`, so a change of the options

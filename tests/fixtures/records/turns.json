@@ -137,6 +137,228 @@
   },
   {
    "args": [
+    "tests/fixtures/records/inputs/commands.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": null
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "five",
+    "asst_ts": "2026-08-17T20:54:22.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 39.0,
+    "cache_pct": 91,
+    "compactions": 1,
+    "ctx_est": false,
+    "ctx_tokens": 161,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 91,
+    "own_est": true,
+    "own_parts": [
+     [
+      1787000002.0,
+      0.00028000000000000003
+     ],
+     [
+      1787000007.0,
+      0.000285
+     ],
+     [
+      1787000012.0,
+      0.00029
+     ],
+     [
+      1787000023.0,
+      0.000295
+     ],
+     [
+      1787000032.0,
+      0.00030000000000000003
+     ],
+     [
+      1787000055.0,
+      0.015025
+     ],
+     [
+      1787000062.0,
+      0.000305
+     ]
+    ],
+    "own_tok_down": 30,
+    "own_tok_up": 201,
+    "own_usd": 0.01678,
+    "prompt_id": "C5",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 30,
+    "tok_up": 201,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": 4,
+    "turn_s": 1787000060.0,
+    "user_text": "after",
+    "user_ts": "2026-08-17T20:54:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787001000.0
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "five",
+    "asst_ts": "2026-08-17T20:54:22.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 39.0,
+    "cache_pct": 91,
+    "compactions": 1,
+    "ctx_est": false,
+    "ctx_tokens": 161,
+    "eta": [],
+    "idle_at": 1787000062.0,
+    "last_seen": 1787000062.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 91,
+    "own_est": true,
+    "own_parts": [
+     [
+      1787000002.0,
+      0.00028000000000000003
+     ],
+     [
+      1787000007.0,
+      0.000285
+     ],
+     [
+      1787000012.0,
+      0.00029
+     ],
+     [
+      1787000023.0,
+      0.000295
+     ],
+     [
+      1787000032.0,
+      0.00030000000000000003
+     ],
+     [
+      1787000055.0,
+      0.015025
+     ],
+     [
+      1787000062.0,
+      0.000305
+     ]
+    ],
+    "own_tok_down": 30,
+    "own_tok_up": 201,
+    "own_usd": 0.01678,
+    "prompt_id": "C5",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 30,
+    "tok_up": 201,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": 4,
+    "turn_s": 1787000060.0,
+    "user_text": "after",
+    "user_ts": "2026-08-17T20:54:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787000116.5
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "five",
+    "asst_ts": "2026-08-17T20:54:22.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 39.0,
+    "cache_pct": 91,
+    "compactions": 1,
+    "ctx_est": false,
+    "ctx_tokens": 161,
+    "eta": [],
+    "idle_at": 1787000062.0,
+    "last_seen": 1787000062.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 91,
+    "own_est": true,
+    "own_parts": [
+     [
+      1787000002.0,
+      0.00028000000000000003
+     ],
+     [
+      1787000007.0,
+      0.000285
+     ],
+     [
+      1787000012.0,
+      0.00029
+     ],
+     [
+      1787000023.0,
+      0.000295
+     ],
+     [
+      1787000032.0,
+      0.00030000000000000003
+     ],
+     [
+      1787000055.0,
+      0.015025
+     ],
+     [
+      1787000062.0,
+      0.000305
+     ]
+    ],
+    "own_tok_down": 30,
+    "own_tok_up": 201,
+    "own_usd": 0.01678,
+    "prompt_id": "C5",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 30,
+    "tok_up": 201,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": 4,
+    "turn_s": 1787000060.0,
+    "user_text": "after",
+    "user_ts": "2026-08-17T20:54:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
     "tests/fixtures/records/inputs/diffs.jsonl"
    ],
    "fn": "read_transcript",
@@ -3331,6 +3553,168 @@
     "user_text": "next",
     "user_ts": "2026-08-17T20:56:40.000Z",
     "wait_at": 1787000205.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": null
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "two",
+    "asst_ts": "2026-08-17T20:53:27.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 4.0,
+    "cache_pct": 90,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 121,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 90,
+    "own_est": false,
+    "own_parts": [
+     [
+      1787000002.0,
+      0.00028000000000000003
+     ],
+     [
+      1787000007.0,
+      0.000285
+     ]
+    ],
+    "own_tok_down": 10,
+    "own_tok_up": 63,
+    "own_usd": 0.000565,
+    "prompt_id": "U2",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 10,
+    "tok_up": 63,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 1787000005.0,
+    "user_text": "first",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787001000.0
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "two",
+    "asst_ts": "2026-08-17T20:53:27.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 4.0,
+    "cache_pct": 90,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 121,
+    "eta": [],
+    "idle_at": 1787000007.0,
+    "last_seen": 1787000007.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 90,
+    "own_est": false,
+    "own_parts": [
+     [
+      1787000002.0,
+      0.00028000000000000003
+     ],
+     [
+      1787000007.0,
+      0.000285
+     ]
+    ],
+    "own_tok_down": 10,
+    "own_tok_up": 63,
+    "own_usd": 0.000565,
+    "prompt_id": "U2",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 10,
+    "tok_up": 63,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 1787000005.0,
+    "user_text": "first",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787000116.5
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "two",
+    "asst_ts": "2026-08-17T20:53:27.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 4.0,
+    "cache_pct": 90,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 121,
+    "eta": [],
+    "idle_at": 1787000007.0,
+    "last_seen": 1787000007.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 90,
+    "own_est": false,
+    "own_parts": [
+     [
+      1787000002.0,
+      0.00028000000000000003
+     ],
+     [
+      1787000007.0,
+      0.000285
+     ]
+    ],
+    "own_tok_down": 10,
+    "own_tok_up": 63,
+    "own_usd": 0.000565,
+    "prompt_id": "U2",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 10,
+    "tok_up": 63,
+    "tool_at": 0.0,
+    "tool_s": 0.0,
+    "turn_index": null,
+    "turn_s": 1787000005.0,
+    "user_text": "first",
+    "user_ts": "2026-08-17T20:53:20.000Z",
+    "wait_at": 0.0
    }
   },
   {
@@ -10673,6 +11057,1548 @@
   },
   {
    "args": [
+    "tests/fixtures/records/inputs/commands.jsonl",
+    null
+   ],
+   "fn": "read_turns",
+   "kw": {},
+   "out": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 210,
+      "cache_write": 20,
+      "calls": 2,
+      "compact": false,
+      "ctx": 121,
+      "dctx": null,
+      "dur_s": 7.0,
+      "eta": [],
+      "fresh": 2,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 10,
+      "parts": [
+       [
+        1787000002.0,
+        0.00028000000000000003
+       ],
+       [
+        1787000007.0,
+        0.000285
+       ]
+      ],
+      "prompt_id": "C1",
+      "reported": false,
+      "text": "first",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 0,
+      "usd_cr": 0.00010499999999999999,
+      "usd_cw": 0.0002,
+      "usd_in": 1e-05,
+      "usd_out": 0.00025
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 120,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 131,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000012.0,
+        0.00029
+       ]
+      ],
+      "prompt_id": "C2",
+      "reported": false,
+      "text": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:30.000Z",
+      "turn_index": 1,
+      "usd_cr": 5.9999999999999995e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 130,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 141,
+      "dctx": 10,
+      "dur_s": 3.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000023.0,
+        0.000295
+       ]
+      ],
+      "prompt_id": "C3",
+      "reported": false,
+      "text": "/skill-a do it",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:40.000Z",
+      "turn_index": 2,
+      "usd_cr": 6.5e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 140,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 151,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000032.0,
+        0.00030000000000000003
+       ]
+      ],
+      "prompt_id": "C4",
+      "reported": false,
+      "text": "/skill-b",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:50.000Z",
+      "turn_index": null,
+      "usd_cr": 7e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 30000,
+      "cache_write": 0,
+      "calls": 1,
+      "compact": true,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 0.0,
+      "eta": [],
+      "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 1,
+      "parts": [],
+      "prompt_id": "",
+      "reported": false,
+      "text": "/compact (manual)",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:15.000Z",
+      "turn_index": null,
+      "usd_cr": 0.015,
+      "usd_cw": 0.0,
+      "usd_in": 0.0,
+      "usd_out": 2.5e-05
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 150,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 161,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000062.0,
+        0.000305
+       ]
+      ],
+      "prompt_id": "C5",
+      "reported": false,
+      "text": "after",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:20.000Z",
+      "turn_index": 4,
+      "usd_cr": 7.5e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     }
+    ],
+    {}
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 210,
+     "cache_write": 20,
+     "calls": 2,
+     "compact": false,
+     "ctx": 121,
+     "dctx": null,
+     "dur_s": 7.0,
+     "eta": [],
+     "fresh": 2,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 10,
+     "parts": [
+      [
+       1787000002.0,
+       0.00028000000000000003
+      ],
+      [
+       1787000007.0,
+       0.000285
+      ]
+     ],
+     "prompt_id": "C1",
+     "reported": false,
+     "text": "first",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 0,
+     "usd_cr": 0.00010499999999999999,
+     "usd_cw": 0.0002,
+     "usd_in": 1e-05,
+     "usd_out": 0.00025
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 7.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 210,
+     "cache_write": 20,
+     "calls": 2,
+     "compact": false,
+     "ctx": 121,
+     "dctx": null,
+     "dur_s": 7.0,
+     "eta": [],
+     "fresh": 2,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 10,
+     "parts": [
+      [
+       1787000002.0,
+       0.00028000000000000003
+      ],
+      [
+       1787000007.0,
+       0.000285
+      ]
+     ],
+     "prompt_id": "C1",
+     "reported": false,
+     "text": "first",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 0,
+     "usd_cr": 0.00010499999999999999,
+     "usd_cw": 0.0002,
+     "usd_in": 1e-05,
+     "usd_out": 0.00025
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    7.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 120,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 131,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000012.0,
+       0.00029
+      ]
+     ],
+     "prompt_id": "C2",
+     "reported": false,
+     "text": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:30.000Z",
+     "turn_index": 1,
+     "usd_cr": 5.9999999999999995e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 2.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 120,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 131,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000012.0,
+       0.00029
+      ]
+     ],
+     "prompt_id": "C2",
+     "reported": false,
+     "text": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:30.000Z",
+     "turn_index": 1,
+     "usd_cr": 5.9999999999999995e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    2.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 130,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 141,
+     "dctx": 10,
+     "dur_s": 3.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000023.0,
+       0.000295
+      ]
+     ],
+     "prompt_id": "C3",
+     "reported": false,
+     "text": "/skill-a do it",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:40.000Z",
+     "turn_index": 2,
+     "usd_cr": 6.5e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 3.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 130,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 141,
+     "dctx": 10,
+     "dur_s": 3.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000023.0,
+       0.000295
+      ]
+     ],
+     "prompt_id": "C3",
+     "reported": false,
+     "text": "/skill-a do it",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:40.000Z",
+     "turn_index": 2,
+     "usd_cr": 6.5e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    3.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 140,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 151,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000032.0,
+       0.00030000000000000003
+      ]
+     ],
+     "prompt_id": "C4",
+     "reported": false,
+     "text": "/skill-b",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:50.000Z",
+     "turn_index": null,
+     "usd_cr": 7e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 2.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 140,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 151,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000032.0,
+       0.00030000000000000003
+      ]
+     ],
+     "prompt_id": "C4",
+     "reported": false,
+     "text": "/skill-b",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:50.000Z",
+     "turn_index": null,
+     "usd_cr": 7e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    2.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 30000,
+     "cache_write": 0,
+     "calls": 1,
+     "compact": true,
+     "ctx": 0,
+     "dctx": null,
+     "dur_s": 0.0,
+     "eta": [],
+     "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 1,
+     "parts": [],
+     "prompt_id": "",
+     "reported": false,
+     "text": "/compact (manual)",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:15.000Z",
+     "turn_index": null,
+     "usd_cr": 0.015,
+     "usd_cw": 0.0,
+     "usd_in": 0.0,
+     "usd_out": 2.5e-05
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 0.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 30000,
+     "cache_write": 0,
+     "calls": 1,
+     "compact": true,
+     "ctx": 0,
+     "dctx": null,
+     "dur_s": 0.0,
+     "eta": [],
+     "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 1,
+     "parts": [],
+     "prompt_id": "",
+     "reported": false,
+     "text": "/compact (manual)",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:15.000Z",
+     "turn_index": null,
+     "usd_cr": 0.015,
+     "usd_cw": 0.0,
+     "usd_in": 0.0,
+     "usd_out": 2.5e-05
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 150,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 161,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000062.0,
+       0.000305
+      ]
+     ],
+     "prompt_id": "C5",
+     "reported": false,
+     "text": "after",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:20.000Z",
+     "turn_index": 4,
+     "usd_cr": 7.5e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 2.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 150,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 161,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000062.0,
+       0.000305
+      ]
+     ],
+     "prompt_id": "C5",
+     "reported": false,
+     "text": "after",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:20.000Z",
+     "turn_index": 4,
+     "usd_cr": 7.5e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    2.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 210,
+      "cache_write": 20,
+      "calls": 2,
+      "compact": false,
+      "ctx": 121,
+      "dctx": null,
+      "dur_s": 7.0,
+      "eta": [],
+      "fresh": 2,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 10,
+      "parts": [
+       [
+        1787000002.0,
+        0.00028000000000000003
+       ],
+       [
+        1787000007.0,
+        0.000285
+       ]
+      ],
+      "prompt_id": "C1",
+      "reported": false,
+      "text": "first",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 0,
+      "usd_cr": 0.00010499999999999999,
+      "usd_cw": 0.0002,
+      "usd_in": 1e-05,
+      "usd_out": 0.00025
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 120,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 131,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000012.0,
+        0.00029
+       ]
+      ],
+      "prompt_id": "C2",
+      "reported": false,
+      "text": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:30.000Z",
+      "turn_index": 1,
+      "usd_cr": 5.9999999999999995e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 130,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 141,
+      "dctx": 10,
+      "dur_s": 3.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000023.0,
+        0.000295
+       ]
+      ],
+      "prompt_id": "C3",
+      "reported": false,
+      "text": "/skill-a do it",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:40.000Z",
+      "turn_index": 2,
+      "usd_cr": 6.5e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 140,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 151,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000032.0,
+        0.00030000000000000003
+       ]
+      ],
+      "prompt_id": "C4",
+      "reported": false,
+      "text": "/skill-b",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:50.000Z",
+      "turn_index": null,
+      "usd_cr": 7e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 30000,
+      "cache_write": 0,
+      "calls": 1,
+      "compact": true,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 0.0,
+      "eta": [],
+      "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 1,
+      "parts": [],
+      "prompt_id": "",
+      "reported": false,
+      "text": "/compact (manual)",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:15.000Z",
+      "turn_index": null,
+      "usd_cr": 0.015,
+      "usd_cw": 0.0,
+      "usd_in": 0.0,
+      "usd_out": 2.5e-05
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 150,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 161,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000062.0,
+        0.000305
+       ]
+      ],
+      "prompt_id": "C5",
+      "reported": false,
+      "text": "after",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:20.000Z",
+      "turn_index": 4,
+      "usd_cr": 7.5e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     }
+    ]
+   ],
+   "fn": "_settled",
+   "kw": {},
+   "out": true
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 210,
+      "cache_write": 20,
+      "calls": 2,
+      "compact": false,
+      "ctx": 121,
+      "dctx": null,
+      "dur_s": 7.0,
+      "eta": [],
+      "fresh": 2,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 10,
+      "parts": [
+       [
+        1787000002.0,
+        0.00028000000000000003
+       ],
+       [
+        1787000007.0,
+        0.000285
+       ]
+      ],
+      "prompt_id": "C1",
+      "reported": false,
+      "text": "first",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 0,
+      "usd_cr": 0.00010499999999999999,
+      "usd_cw": 0.0002,
+      "usd_in": 1e-05,
+      "usd_out": 0.00025
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 120,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 131,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000012.0,
+        0.00029
+       ]
+      ],
+      "prompt_id": "C2",
+      "reported": false,
+      "text": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:30.000Z",
+      "turn_index": 1,
+      "usd_cr": 5.9999999999999995e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 130,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 141,
+      "dctx": 10,
+      "dur_s": 3.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000023.0,
+        0.000295
+       ]
+      ],
+      "prompt_id": "C3",
+      "reported": false,
+      "text": "/skill-a do it",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:40.000Z",
+      "turn_index": 2,
+      "usd_cr": 6.5e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 140,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 151,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000032.0,
+        0.00030000000000000003
+       ]
+      ],
+      "prompt_id": "C4",
+      "reported": false,
+      "text": "/skill-b",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:50.000Z",
+      "turn_index": null,
+      "usd_cr": 7e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 30000,
+      "cache_write": 0,
+      "calls": 1,
+      "compact": true,
+      "ctx": 0,
+      "dctx": null,
+      "dur_s": 0.0,
+      "eta": [],
+      "fresh": 0,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 1,
+      "parts": [],
+      "prompt_id": "",
+      "reported": false,
+      "text": "/compact (manual)",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:15.000Z",
+      "turn_index": null,
+      "usd_cr": 0.015,
+      "usd_cw": 0.0,
+      "usd_in": 0.0,
+      "usd_out": 2.5e-05
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 150,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 161,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000062.0,
+        0.000305
+       ]
+      ],
+      "prompt_id": "C5",
+      "reported": false,
+      "text": "after",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:20.000Z",
+      "turn_index": 4,
+      "usd_cr": 7.5e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     }
+    ]
+   ],
+   "fn": "open_turn",
+   "kw": {},
+   "out": {
+    "agent": false,
+    "agent_calls": 0,
+    "agent_id": "",
+    "agent_ids": [],
+    "agent_model_s": 0.0,
+    "agent_name": "",
+    "agent_tool_s": 0.0,
+    "blocked_s": 0.0,
+    "cache_read": 150,
+    "cache_write": 10,
+    "calls": 1,
+    "compact": false,
+    "ctx": 161,
+    "dctx": 10,
+    "dur_s": 2.0,
+    "eta": [],
+    "fresh": 1,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "out": 5,
+    "parts": [
+     [
+      1787000062.0,
+      0.000305
+     ]
+    ],
+    "prompt_id": "C5",
+    "reported": false,
+    "text": "after",
+    "tool_s": 0.0,
+    "ts": "2026-08-17T20:54:20.000Z",
+    "turn_index": 4,
+    "usd_cr": 7.5e-05,
+    "usd_cw": 0.0001,
+    "usd_in": 5e-06,
+    "usd_out": 0.000125
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl",
+    null
+   ],
+   "fn": "read_turns_settled",
+   "kw": {},
+   "out": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 210,
+     "cache_write": 20,
+     "calls": 2,
+     "compact": false,
+     "ctx": 121,
+     "dctx": null,
+     "dur_s": 7.0,
+     "eta": [],
+     "fresh": 2,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 10,
+     "parts": [
+      [
+       1787000002.0,
+       0.00028000000000000003
+      ],
+      [
+       1787000007.0,
+       0.000285
+      ]
+     ],
+     "prompt_id": "C1",
+     "reported": false,
+     "text": "first",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 0,
+     "usd_cr": 0.00010499999999999999,
+     "usd_cw": 0.0002,
+     "usd_in": 1e-05,
+     "usd_out": 0.00025
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 120,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 131,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000012.0,
+       0.00029
+      ]
+     ],
+     "prompt_id": "C2",
+     "reported": false,
+     "text": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:30.000Z",
+     "turn_index": 1,
+     "usd_cr": 5.9999999999999995e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 130,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 141,
+     "dctx": 10,
+     "dur_s": 3.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000023.0,
+       0.000295
+      ]
+     ],
+     "prompt_id": "C3",
+     "reported": false,
+     "text": "/skill-a do it",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:40.000Z",
+     "turn_index": 2,
+     "usd_cr": 6.5e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 140,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 151,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000032.0,
+       0.00030000000000000003
+      ]
+     ],
+     "prompt_id": "C4",
+     "reported": false,
+     "text": "/skill-b",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:50.000Z",
+     "turn_index": null,
+     "usd_cr": 7e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 30000,
+     "cache_write": 0,
+     "calls": 1,
+     "compact": true,
+     "ctx": 0,
+     "dctx": null,
+     "dur_s": 0.0,
+     "eta": [],
+     "fresh": 0,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 1,
+     "parts": [],
+     "prompt_id": "",
+     "reported": false,
+     "text": "/compact (manual)",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:15.000Z",
+     "turn_index": null,
+     "usd_cr": 0.015,
+     "usd_cw": 0.0,
+     "usd_in": 0.0,
+     "usd_out": 2.5e-05
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 150,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 161,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000062.0,
+       0.000305
+      ]
+     ],
+     "prompt_id": "C5",
+     "reported": false,
+     "text": "after",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:20.000Z",
+     "turn_index": 4,
+     "usd_cr": 7.5e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ]
+  },
+  {
+   "args": [
     "tests/fixtures/records/inputs/diffs.jsonl",
     null
    ],
@@ -17740,7 +19666,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -18412,7 +20338,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -18473,7 +20399,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -19068,7 +20994,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -19471,7 +21397,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -19939,7 +21865,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -20383,7 +22309,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -21142,7 +23068,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -21203,7 +23129,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -21833,7 +23759,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -22271,7 +24197,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -22778,7 +24704,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -23200,7 +25126,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.00785,
       "usd_cw": 0.004,
       "usd_in": 0.00011,
@@ -23834,7 +25760,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.00785,
      "usd_cw": 0.004,
      "usd_in": 0.00011,
@@ -23905,7 +25831,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.00785,
      "usd_cw": 0.004,
      "usd_in": 0.00011,
@@ -24403,7 +26329,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.00785,
       "usd_cw": 0.004,
       "usd_in": 0.00011,
@@ -24771,7 +26697,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.00785,
       "usd_cw": 0.004,
       "usd_in": 0.00011,
@@ -25211,7 +27137,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.00785,
      "usd_cw": 0.004,
      "usd_in": 0.00011,
@@ -25640,7 +27566,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -26484,7 +28410,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -26545,7 +28471,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -27209,7 +29135,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -27681,7 +29607,7 @@
       "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
       "tool_s": 0.0,
       "ts": "2026-08-17T20:54:50.000Z",
-      "turn_index": null,
+      "turn_index": 6,
       "usd_cr": 0.0058,
       "usd_cw": 0.001,
       "usd_in": 9.5e-05,
@@ -28218,7 +30144,7 @@
      "text": "<task-notification><task-id>a1</task-id><status>completed</status></task-notification>",
      "tool_s": 0.0,
      "ts": "2026-08-17T20:54:50.000Z",
-     "turn_index": null,
+     "turn_index": 6,
      "usd_cr": 0.0058,
      "usd_cw": 0.001,
      "usd_in": 9.5e-05,
@@ -29161,6 +31087,574 @@
      "usd_cw": 0.0,
      "usd_in": 0.0,
      "usd_out": 0.0
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl",
+    null
+   ],
+   "fn": "read_turns",
+   "kw": {},
+   "out": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 100,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 111,
+      "dctx": null,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000002.0,
+        0.00028000000000000003
+       ]
+      ],
+      "prompt_id": "U1",
+      "reported": false,
+      "text": "first",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": null,
+      "usd_cr": 4.9999999999999996e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 110,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 121,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000007.0,
+        0.000285
+       ]
+      ],
+      "prompt_id": "U2",
+      "reported": false,
+      "text": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:25.000Z",
+      "turn_index": null,
+      "usd_cr": 5.4999999999999995e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     }
+    ],
+    {}
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 100,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 111,
+     "dctx": null,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000002.0,
+       0.00028000000000000003
+      ]
+     ],
+     "prompt_id": "U1",
+     "reported": false,
+     "text": "first",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": null,
+     "usd_cr": 4.9999999999999996e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 2.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 100,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 111,
+     "dctx": null,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000002.0,
+       0.00028000000000000003
+      ]
+     ],
+     "prompt_id": "U1",
+     "reported": false,
+     "text": "first",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": null,
+     "usd_cr": 4.9999999999999996e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    2.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 110,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 121,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000007.0,
+       0.000285
+      ]
+     ],
+     "prompt_id": "U2",
+     "reported": false,
+     "text": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:25.000Z",
+     "turn_index": null,
+     "usd_cr": 5.4999999999999995e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 2.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 110,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 121,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000007.0,
+       0.000285
+      ]
+     ],
+     "prompt_id": "U2",
+     "reported": false,
+     "text": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:25.000Z",
+     "turn_index": null,
+     "usd_cr": 5.4999999999999995e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    2.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 100,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 111,
+      "dctx": null,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000002.0,
+        0.00028000000000000003
+       ]
+      ],
+      "prompt_id": "U1",
+      "reported": false,
+      "text": "first",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": null,
+      "usd_cr": 4.9999999999999996e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 110,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 121,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000007.0,
+        0.000285
+       ]
+      ],
+      "prompt_id": "U2",
+      "reported": false,
+      "text": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:25.000Z",
+      "turn_index": null,
+      "usd_cr": 5.4999999999999995e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     }
+    ]
+   ],
+   "fn": "_settled",
+   "kw": {},
+   "out": true
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 100,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 111,
+      "dctx": null,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000002.0,
+        0.00028000000000000003
+       ]
+      ],
+      "prompt_id": "U1",
+      "reported": false,
+      "text": "first",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": null,
+      "usd_cr": 4.9999999999999996e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 110,
+      "cache_write": 10,
+      "calls": 1,
+      "compact": false,
+      "ctx": 121,
+      "dctx": 10,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 5,
+      "parts": [
+       [
+        1787000007.0,
+        0.000285
+       ]
+      ],
+      "prompt_id": "U2",
+      "reported": false,
+      "text": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:25.000Z",
+      "turn_index": null,
+      "usd_cr": 5.4999999999999995e-05,
+      "usd_cw": 0.0001,
+      "usd_in": 5e-06,
+      "usd_out": 0.000125
+     }
+    ]
+   ],
+   "fn": "open_turn",
+   "kw": {},
+   "out": {
+    "agent": false,
+    "agent_calls": 0,
+    "agent_id": "",
+    "agent_ids": [],
+    "agent_model_s": 0.0,
+    "agent_name": "",
+    "agent_tool_s": 0.0,
+    "blocked_s": 0.0,
+    "cache_read": 110,
+    "cache_write": 10,
+    "calls": 1,
+    "compact": false,
+    "ctx": 121,
+    "dctx": 10,
+    "dur_s": 2.0,
+    "eta": [],
+    "fresh": 1,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "out": 5,
+    "parts": [
+     [
+      1787000007.0,
+      0.000285
+     ]
+    ],
+    "prompt_id": "U2",
+    "reported": false,
+    "text": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>",
+    "tool_s": 0.0,
+    "ts": "2026-08-17T20:53:25.000Z",
+    "turn_index": null,
+    "usd_cr": 5.4999999999999995e-05,
+    "usd_cw": 0.0001,
+    "usd_in": 5e-06,
+    "usd_out": 0.000125
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl",
+    null
+   ],
+   "fn": "read_turns_settled",
+   "kw": {},
+   "out": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 100,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 111,
+     "dctx": null,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000002.0,
+       0.00028000000000000003
+      ]
+     ],
+     "prompt_id": "U1",
+     "reported": false,
+     "text": "first",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": null,
+     "usd_cr": 4.9999999999999996e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 110,
+     "cache_write": 10,
+     "calls": 1,
+     "compact": false,
+     "ctx": 121,
+     "dctx": 10,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 5,
+     "parts": [
+      [
+       1787000007.0,
+       0.000285
+      ]
+     ],
+     "prompt_id": "U2",
+     "reported": false,
+     "text": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:25.000Z",
+     "turn_index": null,
+     "usd_cr": 5.4999999999999995e-05,
+     "usd_cw": 0.0001,
+     "usd_in": 5e-06,
+     "usd_out": 0.000125
     }
    ]
   },

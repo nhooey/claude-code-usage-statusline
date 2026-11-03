@@ -3976,6 +3976,721 @@
   },
   {
    "args": [
+    "tests/fixtures/records/inputs/commands.jsonl"
+   ],
+   "fn": "inbox_classify",
+   "kw": {},
+   "out": [
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ]
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl"
+   ],
+   "fn": "inbox_sends",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl"
+   ],
+   "fn": "inbox_deliveries",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl",
+    [
+     "queued for delivery to"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl",
+    [
+     "\"coordinator\"",
+     "\"peer\""
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl",
+    [
+     "{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "first"
+     },
+     "promptId": "C1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "turnPosition": {
+      "turnIndex": 0
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "one",
+        "type": "text"
+       }
+      ],
+      "id": "c1",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 100,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c1",
+     "timestamp": "2026-08-17T20:53:22.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "C1",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w2</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "C1",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:26.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "folded",
+        "type": "text"
+       }
+      ],
+      "id": "c1b",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 110,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c1b",
+     "timestamp": "2026-08-17T20:53:27.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "C2",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:30.000Z",
+     "turnPosition": {
+      "turnIndex": 1
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "two",
+        "type": "text"
+       }
+      ],
+      "id": "c2",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 120,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c2",
+     "timestamp": "2026-08-17T20:53:32.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "<command-message>skill-a</command-message>\n<command-name>/skill-a</command-name>\n<command-args>do it</command-args>"
+     },
+     "promptId": "C3",
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "turnPosition": {
+      "turnIndex": 2
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "Base directory for this skill: /s"
+     },
+     "promptId": "C3",
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "three",
+        "type": "text"
+       }
+      ],
+      "id": "c3",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 130,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c3",
+     "timestamp": "2026-08-17T20:53:43.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "<command-message>skill-b</command-message>\n<command-name>/skill-b</command-name>"
+     },
+     "promptId": "C4",
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "Skill b's body."
+     },
+     "promptId": "C4",
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "four",
+        "type": "text"
+       }
+      ],
+      "id": "c4",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 140,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c4",
+     "timestamp": "2026-08-17T20:53:52.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<local-command-caveat>Caveat</local-command-caveat>"
+     },
+     "timestamp": "2026-08-17T20:54:00.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "<command-name>/login</command-name>\n<command-message>login</command-message>\n<command-args></command-args>"
+     },
+     "timestamp": "2026-08-17T20:54:00.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "<local-command-stdout>Login successful</local-command-stdout>"
+     },
+     "timestamp": "2026-08-17T20:54:01.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "<command-name>/compact</command-name>\n<command-message>compact</command-message>\n<command-args></command-args>"
+     },
+     "timestamp": "2026-08-17T20:54:10.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "compactMetadata": {
+      "preTokens": 30000,
+      "trigger": "manual"
+     },
+     "subtype": "compact_boundary",
+     "timestamp": "2026-08-17T20:54:15.000Z",
+     "type": "system"
+    },
+    {
+     "isCompactSummary": true,
+     "message": {
+      "content": "summary"
+     },
+     "timestamp": "2026-08-17T20:54:16.000Z",
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": "after"
+     },
+     "promptId": "C5",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:54:20.000Z",
+     "turnPosition": {
+      "turnIndex": 4
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "five",
+        "type": "text"
+       }
+      ],
+      "id": "c5",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 150,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c5",
+     "timestamp": "2026-08-17T20:54:22.000Z",
+     "type": "assistant"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl",
+    [
+     "zzz"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/commands.jsonl",
+    [
+     "}\n{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "first"
+     },
+     "promptId": "C1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "turnPosition": {
+      "turnIndex": 0
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "one",
+        "type": "text"
+       }
+      ],
+      "id": "c1",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 100,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c1",
+     "timestamp": "2026-08-17T20:53:22.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "C1",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w2</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "C1",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:26.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "folded",
+        "type": "text"
+       }
+      ],
+      "id": "c1b",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 110,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c1b",
+     "timestamp": "2026-08-17T20:53:27.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w3</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "C2",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:30.000Z",
+     "turnPosition": {
+      "turnIndex": 1
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "two",
+        "type": "text"
+       }
+      ],
+      "id": "c2",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 120,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c2",
+     "timestamp": "2026-08-17T20:53:32.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "<command-message>skill-a</command-message>\n<command-name>/skill-a</command-name>\n<command-args>do it</command-args>"
+     },
+     "promptId": "C3",
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "turnPosition": {
+      "turnIndex": 2
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "Base directory for this skill: /s"
+     },
+     "promptId": "C3",
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "three",
+        "type": "text"
+       }
+      ],
+      "id": "c3",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 130,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c3",
+     "timestamp": "2026-08-17T20:53:43.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "<command-message>skill-b</command-message>\n<command-name>/skill-b</command-name>"
+     },
+     "promptId": "C4",
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "Skill b's body."
+     },
+     "promptId": "C4",
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "four",
+        "type": "text"
+       }
+      ],
+      "id": "c4",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 140,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-c4",
+     "timestamp": "2026-08-17T20:53:52.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<local-command-caveat>Caveat</local-command-caveat>"
+     },
+     "timestamp": "2026-08-17T20:54:00.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "<command-name>/login</command-name>\n<command-message>login</command-message>\n<command-args></command-args>"
+     },
+     "timestamp": "2026-08-17T20:54:00.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "<local-command-stdout>Login successful</local-command-stdout>"
+     },
+     "timestamp": "2026-08-17T20:54:01.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "<command-name>/compact</command-name>\n<command-message>compact</command-message>\n<command-args></command-args>"
+     },
+     "timestamp": "2026-08-17T20:54:10.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "compactMetadata": {
+      "preTokens": 30000,
+      "trigger": "manual"
+     },
+     "subtype": "compact_boundary",
+     "timestamp": "2026-08-17T20:54:15.000Z",
+     "type": "system"
+    },
+    {
+     "isCompactSummary": true,
+     "message": {
+      "content": "summary"
+     },
+     "timestamp": "2026-08-17T20:54:16.000Z",
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": "after"
+     },
+     "promptId": "C5",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:54:20.000Z",
+     "turnPosition": {
+      "turnIndex": 4
+     },
+     "type": "user",
+     "userType": "external"
+    }
+   ]
+  },
+  {
+   "args": [
     "tests/fixtures/records/inputs/diffs.jsonl"
    ],
    "fn": "inbox_classify",
@@ -8987,6 +9702,9 @@
      "promptId": "P4",
      "promptSource": "system",
      "timestamp": "2026-08-17T20:54:50.000Z",
+     "turnPosition": {
+      "turnIndex": 6
+     },
      "type": "user",
      "userType": "external"
     },
@@ -9567,6 +10285,9 @@
      "promptId": "P4",
      "promptSource": "system",
      "timestamp": "2026-08-17T20:54:50.000Z",
+     "turnPosition": {
+      "turnIndex": 6
+     },
      "type": "user",
      "userType": "external"
     },
@@ -12146,6 +12867,213 @@
      },
      "timestamp": "2026-08-17T20:56:45.000Z",
      "type": "assistant"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl"
+   ],
+   "fn": "inbox_classify",
+   "kw": {},
+   "out": [
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ]
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl"
+   ],
+   "fn": "inbox_sends",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl"
+   ],
+   "fn": "inbox_deliveries",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl",
+    [
+     "queued for delivery to"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl",
+    [
+     "\"coordinator\"",
+     "\"peer\""
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl",
+    [
+     "{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "first"
+     },
+     "promptId": "U1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "one",
+        "type": "text"
+       }
+      ],
+      "id": "u1",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 100,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-u1",
+     "timestamp": "2026-08-17T20:53:22.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "U2",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "two",
+        "type": "text"
+       }
+      ],
+      "id": "u2",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 110,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-u2",
+     "timestamp": "2026-08-17T20:53:27.000Z",
+     "type": "assistant"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl",
+    [
+     "zzz"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/unnumbered.jsonl",
+    [
+     "}\n{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "first"
+     },
+     "promptId": "U1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "one",
+        "type": "text"
+       }
+      ],
+      "id": "u1",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 10,
+       "cache_read_input_tokens": 100,
+       "input_tokens": 1,
+       "output_tokens": 5
+      }
+     },
+     "requestId": "req-u1",
+     "timestamp": "2026-08-17T20:53:22.000Z",
+     "type": "assistant"
+    },
+    {
+     "isMeta": true,
+     "message": {
+      "content": "<task-notification><task-id>w1</task-id><status>completed</status></task-notification>"
+     },
+     "promptId": "U2",
+     "promptSource": "system",
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "user",
+     "userType": "external"
     }
    ]
   },

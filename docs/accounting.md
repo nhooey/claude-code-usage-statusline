@@ -96,6 +96,14 @@ same turn. A turn opens on any of these:
   or none, and text that does not start with `<`. The text is the content
   string, or for a prompt with an image pasted in, the text blocks of its
   list of text and image blocks.
+* **A slash command the model answers**, a skill or a prompt command: the
+  same record, its text starting with `<command-message>`, followed by an
+  `isMeta` record holding what the command expands to. 🎤 prints it as it
+  was typed, the `<command-name>` and its `<command-args>`. A command Claude
+  Code runs itself, such as `/login`, `/config` or `/reload-plugins`, gets no
+  answer and opens nothing: its record starts with `<command-name>`, and its
+  output is a `<local-command-stdout>`. `/compact` is one of these, and its
+  turn is the compaction's.
 * **A message delivered to an idle session**: `type: user` with
   `promptSource: "system"`. Claude Code writes four kinds this way — a
   `<task-notification>` from a finished background task, a message from
@@ -118,8 +126,15 @@ turn's, before that turn's answer has ended. Claude Code numbers a batch of
 messages delivered together, or a subagent's report that lands between a
 prompt and the first request of its answer, into the turn already open, and
 the answer is that turn's. A wake after the answer ended can carry the same
-number, and opens a turn of its own. Transcripts without `turnPosition`
-segment as before.
+number, and opens a turn of its own.
+
+A `promptSource: "system"` record with no `turnPosition` opens nothing once
+any earlier record in the transcript has carried a `turnPosition`. Claude
+Code numbers every message it delivers as a turn of its own; the ones it
+leaves unnumbered are folded into the next request it sends and never
+answered alone, and their records belong to the turn before. A transcript
+that never shows `turnPosition`, from a Claude Code before the field, opens
+a turn on every such record.
 
 The summary `/compact` injects (`isCompactSummary`), tool results and system
 reminders never open a turn. A prompt recorded both as queued and as typed

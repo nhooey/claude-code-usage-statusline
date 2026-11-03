@@ -37,6 +37,12 @@ export const CONFIG = {
   // slowToastMs.
   slowReadMs: 2_000,
   slowToastMs: 60_000,
+  // How long one step of a refresh may run before it is dropped and
+  // logged: past it the band keeps its last figures and the next event
+  // reads again, so a read that never ends cannot blank the band until a
+  // /reload-plugins.  Over 3 times the slowest first read seen, on a 20 MB
+  // transcript.
+  readLimitMs: 20_000,
   // How often the band and the footer redraw their clocks (🔧 ⌛ ⛳ 🕐 🔜)
   // against the time now, between reads, without reading anything.
   clockMs: 1_000,

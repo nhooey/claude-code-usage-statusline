@@ -14,6 +14,8 @@ files they both change. Written 2026-10-20 from:
   `PL2` (added 2026-10-20).
 - [Row placement](row-placement.md), steps 1–8: `RP1` … `RP8` (added
   2026-10-21; approved and its decisions taken 2026-10-21).
+- [Receipts for a subagent's run and a typed /compact](agent-compact-receipts.md),
+  steps 1–5: `AR1` … `AR5`.
 - Work in flight outside the plans: `CA`, the calibration cache keyed by
   account id (asked 2026-10-20, Blocked.1.A).
 
@@ -65,6 +67,11 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `RP6` | **Done.** Docs for the new layout | `RP3`, `RP4`, `RP5` | none | `docs/layout.md`, `docs/options.md`, `mod/README.md` |
 | `RP7` | **Done, with the user's own `rows` kept.** The user's file, by hand | `RP5` | none | `~/.config/coding-agent-usage-line/config.jsonc` |
 | `RP8` | The acceptance check, live | `RP6`, `RP7` | none | none |
+| `AR1` | **Built; the user's live run pending.** The trial: what a subagent's end and a `/compact` raise, logged | none | none | `mod/hooks/register.tsx` |
+| `AR2` | A subagent's figures, from its own records | `AR1` | none | `mod/src/receipt.ts`, `mod/hooks/edges.ts` |
+| `AR3` | A subagent's receipt, filed and drawn; the options | `AR2` | none | `mod/hooks/register.tsx`, `spec/options.jsonc`, `mod/defaults/config.jsonc` |
+| `AR4` | The `/compact` receipt | `AR1` | `AR3` | `mod/hooks/register.tsx`, `mod/src/receipt.ts` |
+| `AR5` | Docs, and the acceptance check, live | `AR3`, `AR4` | none | `docs/layout.md`, `docs/options.md` |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
@@ -104,6 +111,11 @@ flowchart LR
     RP6 --> RP8
     RP7 --> RP8
   end
+  subgraph agent-compact-receipts
+    AR1 --> AR2 --> AR3 --> AR5
+    AR1 --> AR4 --> AR5
+  end
+  AR3 -.-> AR4
   RP4 -.-> RP5
 ```
 

@@ -1128,7 +1128,11 @@ export function closeAgentSpan(state: SpanState, spans: Span[]): void {
  * them as it answers a typed prompt, and bills it the same way.
  *
  * Excluded: isCompactSummary; strings opening with '<' on the typed
- * branch (tool results, system reminders); and isMeta on a typed record.
+ * branch (tool results, system reminders, and the records of a command
+ * Claude Code runs itself: <command-name>, <local-command-stdout>), but
+ * for a slash command the model answers, which opens with
+ * <command-message> (COMMAND_LEAD) and opens a turn; and isMeta on a typed
+ * record.
  * promptSource "queued", a prompt typed while the assistant was busy, opens
  * one on the typed branch's terms: newer Claude Code writes its queue
  * removal with no content, so queuedText finds nothing there.  An absent
@@ -1148,8 +1152,15 @@ export function opensTurn(r: Rec): boolean {
   if (pyGet(r, "promptSource") === "system") return true;
   const source = pyHas(r, "promptSource") ? pyGet(r, "promptSource") : "typed";
   return !pyTruthy(pyGet(r, "isMeta")) && PROMPT_SOURCES.includes(source) &&
-    !c.startsWith("<");
+    (!c.startsWith("<") || c.startsWith(COMMAND_LEAD));
 }
+
+// How a slash command the model answers is written: a typed record opening
+// with this tag, then the command's name and arguments, and an isMeta
+// record after it with what the command expands to.  A command Claude Code
+// runs itself (/login, /config, /reload-plugins, /compact) opens with
+// <command-name> instead, or is a <local-command-stdout>, and gets no reply.
+export const COMMAND_LEAD = "<command-message>";
 
 // The promptSource values of a prompt a person sent: typed while idle,
 // typed while busy and handed over from the queue, sent through the SDK,
@@ -1246,13 +1257,14 @@ export function turnIndex(r: Rec): number | null {
 }
 
 /** turnOpens's state: the open turn's turnIndex, null where it has none,
- * and whether its answer has ended. */
-export type TurnGate = [number | null, boolean];
+ * whether its answer has ended, and whether any record so far has carried
+ * a turnPosition. */
+export type TurnGate = [number | null, boolean, boolean];
 
-/** A fresh `gate` for turnOpens: no turn open, so no number, and none
- * running. */
+/** A fresh `gate` for turnOpens: no turn open, so no number, none running,
+ * and no turnPosition seen. */
 export function newTurnGate(): TurnGate {
-  return [null, true];
+  return [null, true, false];
 }
 
 /** turnStartText, less a message delivered (promptSource "system") into
@@ -1265,9 +1277,15 @@ export function newTurnGate(): TurnGate {
  * number alone is not enough.  A prompt the user sent still opens one on a
  * number already open: rewound and sent again, it is a turn of its own to
  * the hooks (billedNothing).  Records without the field open as
- * turnStartText says, and leave no number to compare the next with.  The
+ * turnStartText says, and leave no number to compare the next with.  A
+ * wake record with no turnPosition, in a transcript that has already shown
+ * one, opens no turn: Claude Code folds it into the next request and never
+ * answers it alone, and its records stay in the turn before.  A transcript
+ * that never shows the field opens them as turnStartText says.  The
  * Python's docstring has the measurements. */
 export function turnOpens(r: Rec, gate: TurnGate): string | null {
+  const seen = gate[2];
+  if (isDict(pyGet(r, "turnPosition"))) gate[2] = true;
   const text = turnStartText(r);
   if (text === null) {
     if (pyGet(r, "isSidechain") !== true && (endsTurn(r) ||
@@ -1275,6 +1293,8 @@ export function turnOpens(r: Rec, gate: TurnGate): string | null {
         pyGet(r, "subtype") === "turn_duration"))) gate[1] = true;
     return null;
   }
+  if (seen && pyGet(r, "promptSource") === "system" &&
+    !isDict(pyGet(r, "turnPosition"))) return null;
   const idx = turnIndex(r);
   if (idx !== null && idx === gate[0] && !gate[1] &&
     pyGet(r, "promptSource") === "system") return null;
@@ -1301,13 +1321,33 @@ function handbackReport(body: string): string {
   return pyStrip(body.split("\n").map(pyStrip).join("\n"));
 }
 
+/** What the first <name>...</name> in `text` holds, or null. */
+function tagBody(text: string, name: string): string | null {
+  let at = text.indexOf("<" + name + ">");
+  if (at < 0) return null;
+  at += name.length + 2;
+  const end = text.indexOf("</" + name + ">", at);
+  return end >= 0 ? text.slice(at, end) : null;
+}
+
+/** A slash command's record as it was typed: its <command-name>, else "/"
+ * and its <command-message>, and its <command-args> after a space. */
+export function commandLabel(text: string): string {
+  let name = pyStrip(tagBody(text, "command-name") ?? "");
+  if (!name) name = "/" + pyStrip(tagBody(text, "command-message") ?? "");
+  const args = pyStrip(tagBody(text, "command-args") ?? "");
+  return args ? name + " " + args : name;
+}
+
 /** What 🎤 prints for the turn `r` opens with `text`: the prompt, except
+ * for a slash command, which reads as it was typed (commandLabel), and
  * for a message from another session or a subagent, whose text is Claude
  * Code's framing.  That reads "agent report:" and the report, or "agent
  * message:" and the message, from the record's `origin`
  * (`handbackReportText`, else `body` out of its frame), and where that is
  * missing, from the text out of its frame. */
 export function openerLabel(r: Rec, text: string): string {
+  if (text.startsWith(COMMAND_LEAD)) return commandLabel(text);
   const o = pyGet(r, "origin");
   let handback = false;
   let said = "";
@@ -2025,7 +2065,7 @@ export function copyTranscriptFold(f: TranscriptFold): TranscriptFold {
       f.etaState[3]],
     background: new Map(f.background), opened: { ...f.opened },
     wrote: new Set(f.wrote), ends: new Map(f.ends),
-    gate: [f.gate[0], f.gate[1]] };
+    gate: [f.gate[0], f.gate[1], f.gate[2]] };
 }
 
 /** `f` with `tail` folded in, on a copy where there is a tail: the records
@@ -2518,7 +2558,7 @@ export function copyTurnsFold(f: TurnsFold): TurnsFold {
     settled: f.settled, seen: new Set(f.seen), byPid: new Map(f.byPid),
     lastStop: f.lastStop, pending: new Map(f.pending),
     ends: new Map(f.ends), wrote: new Set(f.wrote),
-    gate: [f.gate[0], f.gate[1]] };
+    gate: [f.gate[0], f.gate[1], f.gate[2]] };
 }
 
 /** `f` with `tail` folded in, on a copy where there is a tail; see
