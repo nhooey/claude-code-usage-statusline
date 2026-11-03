@@ -16,8 +16,8 @@
     # Every input below this divider is a skill source.
 
     # Markdown hygiene, for the README, docs/ and the skills this repo ships.
-    document-hygiene-skills = {
-      url = "github:nhooey/document-hygiene-skills";
+    document-skills = {
+      url = "github:nhooey/document-skills";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         agent-skill-flake.follows = "agent-skill-flake";
@@ -56,7 +56,7 @@
     {
       nixpkgs,
       agent-skill-flake,
-      document-hygiene-skills,
+      document-skills,
       git-skills,
       nix-skills,
       writing-skills,
@@ -67,7 +67,7 @@
       systems = import inputs.systems;
       name = "coding-agent-usage-line-skills";
       sources = [
-        { source = document-hygiene-skills; }
+        { source = document-skills; }
         {
           source = git-skills;
           # All but git-hygiene-conventional-commits: this repo's subjects

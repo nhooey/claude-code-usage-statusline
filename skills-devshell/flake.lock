@@ -11,11 +11,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1792227263,
-        "narHash": "sha256-bTc7BgLTmd8A8dVkwvtO/3SP5mk5C1bwWW4oNGtCPjE=",
+        "lastModified": 1793736424,
+        "narHash": "sha256-TVyiDSviPif43y3osDtniKhV9RyHDAPdBTnQi5KxvnQ=",
         "owner": "nhooey",
         "repo": "agent-skill-flake",
-        "rev": "80737fa35420aeaa2b7df3ad54b9eee45aad2580",
+        "rev": "9fe67858ff4a01ecad2105a8b0c9277909a539c3",
         "type": "github"
       },
       "original": {
@@ -45,7 +45,7 @@
         "type": "github"
       }
     },
-    "document-hygiene-skills": {
+    "document-skills": {
       "inputs": {
         "agent-skill-flake": [
           "agent-skill-flake"
@@ -58,16 +58,16 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1792406814,
-        "narHash": "sha256-XZvtPFYTwflmLvudm7hsE+ZcckmJc22ZeO8MnxCGMrc=",
+        "lastModified": 1793736677,
+        "narHash": "sha256-tHmOUCuZyXNdLg9rHTfaOM8ga+mZpaZBK2FKOn8VgMo=",
         "owner": "nhooey",
-        "repo": "document-hygiene-skills",
-        "rev": "d6c2445273308ebd1607e968aa91cc13ee84edd0",
+        "repo": "document-skills",
+        "rev": "6ca7d240e4cf24f961eaef509a6634656d5dcbc9",
         "type": "github"
       },
       "original": {
         "owner": "nhooey",
-        "repo": "document-hygiene-skills",
+        "repo": "document-skills",
         "type": "github"
       }
     },
@@ -95,7 +95,7 @@
     "flake-parts_2": {
       "inputs": {
         "nixpkgs-lib": [
-          "document-hygiene-skills",
+          "document-skills",
           "nixpkgs"
         ]
       },
@@ -189,11 +189,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1792575193,
-        "narHash": "sha256-oY49H5UEAW+QjcNbrskXF6LvfVEdCJOqSLgtsmHLJMo=",
+        "lastModified": 1793736470,
+        "narHash": "sha256-ALGpPmek36T0IwakJTH4NW4G08TE0zXlVwi06WLXoow=",
         "owner": "nhooey",
         "repo": "git-skills",
-        "rev": "8841a94364b6524573a653ed84dc278db3d0fc10",
+        "rev": "aef612addc8ec9469a8b4ef0a2035e46265593e7",
         "type": "github"
       },
       "original": {
@@ -215,11 +215,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1792406839,
-        "narHash": "sha256-ZgZ67J7f7WcmzyaFQaaevslE1rMtLsQ4H1hq5Sjk1No=",
+        "lastModified": 1793736518,
+        "narHash": "sha256-zQkGD8FKRkvSnofKBo/5E4FCwauDT6u9thnFnnD/VnA=",
         "owner": "nhooey",
         "repo": "nix-skills",
-        "rev": "94286409436d4ba17229f2151b600b0432932351",
+        "rev": "78aae9a0465e51e2913749b68297f23235a86aeb",
         "type": "github"
       },
       "original": {
@@ -230,11 +230,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1792210252,
-        "narHash": "sha256-Mh0PUaIv4nFY+8wAGonaEh8iBzwsmdNlwjVHmFg1Biw=",
+        "lastModified": 1793540411,
+        "narHash": "sha256-fiPJ88izTVucjeo2EQ3jk4aWmLg03I1D4vxnX2QjEgE=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "09063bd1f2b36fd9fd793c36dfade7bd40a93dfc",
+        "rev": "0bb2eedc20e4739f29e8045034f2828ad7054f8f",
         "type": "github"
       },
       "original": {
@@ -247,7 +247,7 @@
     "root": {
       "inputs": {
         "agent-skill-flake": "agent-skill-flake",
-        "document-hygiene-skills": "document-hygiene-skills",
+        "document-skills": "document-skills",
         "git-skills": "git-skills",
         "nix-skills": "nix-skills",
         "nixpkgs": "nixpkgs",
@@ -369,7 +369,7 @@
     "treefmt-nix_2": {
       "inputs": {
         "nixpkgs": [
-          "document-hygiene-skills",
+          "document-skills",
           "nixpkgs"
         ]
       },
@@ -463,11 +463,11 @@
         "treefmt-nix": "treefmt-nix_5"
       },
       "locked": {
-        "lastModified": 1792226500,
-        "narHash": "sha256-vprcLWCebX8ooLH7ddBpYAhAjKD4BNWHURaSbmUkWcc=",
+        "lastModified": 1793736545,
+        "narHash": "sha256-MVbpfCR9aCLt2F0xj9QVdm9mS38BtB+0vWm3KWcga5I=",
         "owner": "nhooey",
         "repo": "writing-skills",
-        "rev": "217a2243b51af2d59779053933f1bee2239d811a",
+        "rev": "187c96555ef68ecb16761946a5b667255c9ba4ac",
         "type": "github"
       },
       "original": {
