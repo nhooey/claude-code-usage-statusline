@@ -704,6 +704,54 @@ def run(tmp):
           ["agent report: Rule added in PR 42.\nSecond line.",
            "agent message: push it", "agent report: Ok.", "plain prompt"])
 
+    print("--- slash commands and unnumbered wakes ---")
+    # A slash command the model answers is a typed record opening with
+    # <command-message>; one Claude Code runs itself opens with
+    # <command-name>.  A wake with no turnPosition, once the transcript has
+    # shown one, is folded into the next request and opens no turn.
+    def cmd(minute, text, **kw):
+        return dict({"type": "user", "userType": "external",
+                     "timestamp": ts(minute), "message": {"content": text}},
+                    **kw)
+
+    def wake(minute, **kw):
+        return dict(prompt(minute, "<task-notification><task-id>w"
+                                   "</task-id></task-notification>"),
+                    promptSource="system", isMeta=True, **kw)
+    numbered = dict(prompt(1, "first"), turnPosition={"turnIndex": 0})
+    seq = [
+        numbered,
+        answer(1, "n1", 10, 0, 100, 5, second=5),
+        wake(2),
+        answer(2, "n2", 10, 0, 100, 5, second=5),
+        cmd(3, "<command-message>skill</command-message>\n"
+               "<command-name>/skill</command-name>\n"
+               "<command-args>go</command-args>"),
+        cmd(3, "What the skill expands to.", isMeta=True),
+        answer(3, "n3", 10, 0, 100, 5, second=5),
+        cmd(4, "<command-name>/reload-plugins</command-name>\n"
+               "<command-message>reload-plugins</command-message>\n"
+               "<command-args></command-args>"),
+        cmd(4, "<local-command-stdout>Reloaded</local-command-stdout>"),
+        cmd(5, "<command-name>/compact</command-name>\n"
+               "<command-message>compact</command-message>\n"
+               "<command-args></command-args>"),
+        dict(boundary(5, 30000, 2000),
+             compactMetadata={"trigger": "manual", "preTokens": 30000}),
+    ]
+    got = sl.read_turns(session(tmp, "commands", seq))
+    check("a typed slash command opens a turn, a local one and an "
+          "unnumbered wake do not, and /compact stays its compaction",
+          [(t.text, t.calls, t.compact) for t in got],
+          [("first", 2, False), ("/skill go", 1, False),
+           ("/compact (manual)", 1, True)])
+    got = sl.read_turns(session(tmp, "unnumbered", [
+        prompt(1, "first"), answer(1, "u1", 10, 0, 100, 5, second=5),
+        wake(2), answer(2, "u2", 10, 0, 100, 5, second=5)]))
+    check("a wake in a transcript that never shows turnPosition opens a "
+          "turn", [(t.text[:19], t.calls) for t in got],
+          [("first", 1), ("<task-notification>", 1)])
+
     print("--- the late row ---")
     # One agent under the first prompt that keeps billing after that
     # prompt's Stop.  Three Stops read the same session, each at the cut the

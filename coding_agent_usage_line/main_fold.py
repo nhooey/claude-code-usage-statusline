@@ -274,9 +274,9 @@ def _head_text(f: MainFold, meta: dict, counts, seq: int) -> str:
                "idle_at": tr.idle_at, "last_seen": tr.last_seen,
                "opened": [tr.opened["pid"], tr.opened["tidx"]],
                "added": tr.added, "removed": tr.removed,
-               "gate": [tr.gate[0], tr.gate[1]]},
+               "gate": [tr.gate[0], tr.gate[1], tr.gate[2]]},
         "tu": {"settled": tu.settled, "last_stop": tu.last_stop,
-               "gate": [tu.gate[0], tu.gate[1]],
+               "gate": [tu.gate[0], tu.gate[1], tu.gate[2]],
                "pending": _pending_json(tu.pending),
                "open": _turn_json(tu.turns[-1]) if tu.turns else None}})
 
@@ -433,9 +433,9 @@ def fold_of_saved(got, parts):
         tr.idle_at, tr.last_seen = float(h["idle_at"]), float(h["last_seen"])
         tr.opened = {"pid": h["opened"][0], "tidx": h["opened"][1]}
         tr.added, tr.removed = h["added"], h["removed"]
-        tr.gate = [h["gate"][0], h["gate"][1]]
+        tr.gate = [h["gate"][0], h["gate"][1], h["gate"][2]]
         tu.settled = u["settled"]
-        tu.gate = [u["gate"][0], u["gate"][1]]
+        tu.gate = [u["gate"][0], u["gate"][1], u["gate"][2]]
         tu.last_stop = _fl(u["last_stop"])
         tu.pending = _pending_of(u["pending"])
         if u["open"] is not None:

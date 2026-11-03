@@ -59,7 +59,7 @@
       "prefix": "claude-main-fold-",
       "key": ["transcript"],
       "suffix": "",
-      "format": 3,
+      "format": 4,
       "part_bytes": 1000000,
       "check_bytes": 4096
     },

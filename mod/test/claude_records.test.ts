@@ -234,6 +234,30 @@ test("a hand-back stays in its turn, and a queued prompt opens one", () => {
   assert.deepEqual([tr.prompt_id, tr.turn_index], ["H5", 28]);
 });
 
+// records.py's commands.jsonl and unnumbered.jsonl: a slash command the
+// model answers opens a turn and reads as it was typed; one Claude Code
+// runs itself opens none, and /compact stays its compaction; a wake with
+// no turnPosition opens none once the transcript has shown one, and opens
+// one in a transcript that never does.
+test("a typed slash command opens a turn, an unnumbered wake does not", () => {
+  const turns = cr.readTurns(path.join(DIR, "inputs/commands.jsonl"), []);
+  assert.deepEqual(
+    turns.map((t) => [t.text, t.calls, t.compact]), [
+      ["first", 2, false],
+      ["<task-notification><task-id>w3</task-id><status>completed</status>" +
+        "</task-notification>", 1, false],
+      ["/skill-a do it", 1, false],
+      ["/skill-b", 1, false],
+      ["/compact (manual)", 1, true],
+      ["after", 1, false]]);
+  const old = cr.readTurns(path.join(DIR, "inputs/unnumbered.jsonl"), []);
+  assert.deepEqual(old.map((t) => [t.text, t.calls]), [
+    ["first", 1],
+    ["<task-notification><task-id>w1</task-id><status>completed</status>" +
+      "</task-notification>", 1]]);
+  assert.equal(cr.commandLabel("<command-message>x</command-message>"), "/x");
+});
+
 // The mod reads an agent's file as it grows, folding only what was appended
 // since its last read: cut anywhere, mid-line included, the file folded
 // piece by piece reads as the Python reads it whole.

@@ -564,6 +564,67 @@ def handmade():
         numbered(70, 28, "H5", frame, promptSource="system", isMeta=True),
         asst(71, "h5", "Read it.", usage=(1, 0, 50, 6), stop="end_turn"),
     ])
+    # Slash commands and unnumbered wakes, as Claude Code writes them once
+    # it numbers its turns.  A command the model answers opens with
+    # <command-message> and is followed by the isMeta record of what it
+    # expands to; one Claude Code runs itself opens with <command-name>,
+    # and its output is a <local-command-stdout>.  A wake with no
+    # turnPosition is folded into the next request: it opens no turn.
+    def command(sec, text, **kw):
+        return dict({"type": "user", "userType": "external",
+                     "timestamp": stamp(sec),
+                     "message": {"content": text}}, **kw)
+
+    def wake(sec, tid, **kw):
+        return prompt(sec, "<task-notification><task-id>%s</task-id>"
+                           "<status>completed</status></task-notification>"
+                      % tid, promptSource="system", isMeta=True, **kw)
+    put("commands.jsonl", [
+        prompt(0, "first", promptId="C1", turnPosition={"turnIndex": 0}),
+        asst(2, "c1", "one", usage=(1, 10, 100, 5), stop="end_turn"),
+        wake(5, "w1", promptId="C1"),
+        wake(6, "w2", promptId="C1"),
+        asst(7, "c1b", "folded", usage=(1, 10, 110, 5), stop="end_turn"),
+        wake(10, "w3", promptId="C2", turnPosition={"turnIndex": 1}),
+        asst(12, "c2", "two", usage=(1, 10, 120, 5), stop="end_turn"),
+        command(20, "<command-message>skill-a</command-message>\n"
+                    "<command-name>/skill-a</command-name>\n"
+                    "<command-args>do it</command-args>",
+                promptId="C3", turnPosition={"turnIndex": 2}),
+        command(20, "Base directory for this skill: /s", isMeta=True,
+                promptId="C3"),
+        asst(23, "c3", "three", usage=(1, 10, 130, 5), stop="end_turn"),
+        command(30, "<command-message>skill-b</command-message>\n"
+                    "<command-name>/skill-b</command-name>",
+                promptId="C4"),
+        command(30, "Skill b's body.", isMeta=True, promptId="C4"),
+        asst(32, "c4", "four", usage=(1, 10, 140, 5), stop="end_turn"),
+        command(40, "<local-command-caveat>Caveat</local-command-caveat>",
+                isMeta=True),
+        command(40, "<command-name>/login</command-name>\n"
+                    "<command-message>login</command-message>\n"
+                    "<command-args></command-args>"),
+        command(41, "<local-command-stdout>Login successful"
+                    "</local-command-stdout>"),
+        command(50, "<command-name>/compact</command-name>\n"
+                    "<command-message>compact</command-message>\n"
+                    "<command-args></command-args>"),
+        {"type": "system", "subtype": "compact_boundary",
+         "timestamp": stamp(55), "compactMetadata": {
+             "trigger": "manual", "preTokens": 30000}},
+        {"type": "user", "isCompactSummary": True, "timestamp": stamp(56),
+         "message": {"content": "summary"}},
+        prompt(60, "after", promptId="C5", turnPosition={"turnIndex": 4}),
+        asst(62, "c5", "five", usage=(1, 10, 150, 5), stop="end_turn"),
+    ])
+    # The same wake in a transcript from before turnPosition: it opens a
+    # turn, as every promptSource "system" record there does.
+    put("unnumbered.jsonl", [
+        prompt(0, "first", promptId="U1"),
+        asst(2, "u1", "one", usage=(1, 10, 100, 5), stop="end_turn"),
+        wake(5, "w1", promptId="U2"),
+        asst(7, "u2", "two", usage=(1, 10, 110, 5), stop="end_turn"),
+    ])
     files.update(session())
     files.update(inbox_now())
     return files
@@ -633,7 +694,8 @@ def session():
         asst(85, "r7", "after", usage=(3, 2000, 9000, 60), promptId="P3"),
         prompt(90, "<task-notification><task-id>a1</task-id><status>"
                    "completed</status></task-notification>",
-               promptSource="system", isMeta=True, promptId="P4"),
+               promptSource="system", isMeta=True, promptId="P4",
+               turnPosition={"turnIndex": 6}),
         asst(95, "r8", "noted", usage=(4, 50, 11000, 70), stop="end_turn"),
         {"type": "system", "subtype": "stop_hook_summary",
          "timestamp": stamp(96)},
