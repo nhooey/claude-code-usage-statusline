@@ -155,8 +155,9 @@ type World = {
   store: Map<string, unknown>
   // Each status document the mod filed in `$.state`, oldest first.
   docs: Dict[]
-  // Whether `$.session.usage` is refused.
-  usage: { down: boolean }
+  // Whether `$.session.usage` is refused, and, while `hung` holds a list,
+  // each ask held unanswered until its function is called.
+  usage: { down: boolean; hung?: (() => void)[] }
   // Each line the mod sent the debug log.
   debug: string[]
   // Each line the mod wrote into the transcript, `$.ui.log`'s default.
@@ -276,8 +277,12 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     return oauth.body === null ? { deny: 'no network in tests' } as any
       : { value: { status: 200, ok: true, headers: {}, text: oauth.body } }
   })
-  const usage = { down: usageDown }
-  on('session.usage', () => usage.down
+  const usage: World['usage'] = { down: usageDown }
+  const reading = () => ({ value: { startedAt: NOW * 1000,
+    context: { tokens: 1000, window: WINDOW }, rateLimits: [] } })
+  on('session.usage', () => usage.hung
+    ? new Promise((r) => usage.hung!.push(() => r(reading())))
+    : usage.down
     ? { deny: 'usage unavailable' } as any
     : { value: { startedAt: NOW * 1000,
       context: { tokens: 1000, window: WINDOW }, rateLimits: [] } })
@@ -1686,6 +1691,30 @@ test('a turn before any session.start still draws all three',
     await drewAll($, w)
     // The first event started the load's tick, and said so.
     expect(logOf(w)).toContain('started by turn.start')
+  })
+
+test('a read that never ends is dropped and logged after its limit, and ' +
+  'the next one draws', async ($, on) => {
+    const w = world(on)
+    resumed(w)
+    w.usage.hung = []
+    await $.session.start({ cwd: CWD, surface: 'terminal',
+      isInteractive: true })
+    await settle()
+    expect(w.docs.length).toBe(0)
+    await w.clock.advance(CONFIG.readLimitMs)
+    await settle()
+    expect(logOf(w)).toMatch(new RegExp('refresh: no status document: ' +
+      '.*the status document still running after ' +
+      CONFIG.readLimitMs / 1000 + 's, dropped'))
+    expect(w.docs.length).toBe(0)
+    // The asks held are answered, and the next read draws.
+    const late = w.usage.hung!
+    w.usage.hung = undefined
+    for (const answer of late) answer()
+    await settle()
+    await askAndAnswer($, w)
+    expect((lastDoc(w).transcript as Dict).prompt_id).toBe('p-resume')
   })
 
 test('a refresh that throws is logged, and the next one draws',

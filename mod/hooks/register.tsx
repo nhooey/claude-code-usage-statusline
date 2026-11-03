@@ -141,6 +141,26 @@ async function reconfigure($: $): Promise<void> {
   void refresh($).catch((err) => log($, 'refresh', err))
 }
 
+/** `p`, or a rejection naming `what` once CONFIG.readLimitMs has passed
+ * with it still running.  The step goes on, and what it gives is dropped:
+ * nothing can stop a read the runtime has started. */
+async function inTime<T>($: $, what: string, p: Promise<T>): Promise<T> {
+  p.catch(() => {})
+  const stop = new AbortController()
+  const limit = $.clock.sleep(CONFIG.readLimitMs, { signal: stop.signal })
+    .then(() => {
+      const done = Object.entries(steps).map(([k, v]) => `${k} ${v}`)
+      throw new Error(`${what} still running after ` +
+        `${CONFIG.readLimitMs / 1000}s, dropped` +
+        (done.length ? ` (done: ${done.join(', ')})` : ''))
+    }, () => new Promise<never>(() => {}))
+  try {
+    return await Promise.race([p, limit])
+  } finally {
+    stop.abort()
+  }
+}
+
 let refreshing: Promise<void> | null = null
 let again = false
 // When the last read finished and how long it took, in ms, and whether a
@@ -190,13 +210,15 @@ async function refresh($: $): Promise<void> {
       // The figures are read under the options: until the configuration
       // is read, and while the defaults file is wrong, there are none.
       if (options() === null) {
-        await readConfig($).catch((err) => log($, 'config', err))
+        await inTime($, 'the configuration', readConfig($))
+          .catch((err) => log($, 'config', err))
         if (options() === null) continue
       }
       let doc: Dict
       const began = await $.clock.now()
       try {
-        doc = await statusDoc($, await placesFor($))
+        doc = await inTime($, 'the status document',
+          (async () => statusDoc($, await placesFor($)))())
         readAt = await $.clock.now()
         readMs = readAt - began
         if (readMs > CONFIG.slowReadMs) await slow($, readMs)
@@ -219,9 +241,9 @@ async function refresh($: $): Promise<void> {
       }
       // The permission mode, off the transcript's newest prompt.
       try {
-        const places = await placesFor($)
-        noteMode($, 'transcript', await permissionModeOf($,
-          await transcriptPath($, places)))
+        noteMode($, 'transcript', await inTime($, 'the permission mode',
+          (async () => permissionModeOf($,
+            await transcriptPath($, await placesFor($))))()))
       } catch (err) {
         await log($, 'refresh: no permission mode', err)
       }
