@@ -25,9 +25,17 @@ Both endpoints are undocumented. A public balance API was asked for
 `claude.ai`'s `usage` answer has the shape of
 `api.anthropic.com/api/oauth/usage`, which the mod already reads with the
 session's own credential (`$.session.authorize()`, spent through
-`$.http.fetch`, the secret held by the host). Whether that answer carries
-the dollar window too, and whether the same credential reaches the
-Console, is what `CB1` settles.
+`$.http.fetch`, the secret held by the host). `CB1` found:
+
+- **The cloud session credit is in that answer:** the window
+  `iguana_necktie`, `limit` 250, `used` 245.58, `remaining` 4.42,
+  `resets_at` 2026-11-05T07:59Z, read with the session's credential in
+  two sessions.
+- **The answer has an `extra_usage` key** besides `seven_day`, `limits`
+  and `spend`. `CB1` logged keys and dollar windows only, so its figures
+  are `CB1b`'s to log.
+- **The Console refuses that credential:** its organizations request
+  answers 403. The Console's credits come from `credits-command` alone.
 
 ## The design
 
@@ -37,16 +45,117 @@ Console, is what `CB1` settles.
   codename; one missing a field is dropped, not guessed.
 - **The cloud session credit:** from the OAuth `usage` answer the mod
   already fetches, at its 5-minute pace, with no setup.
-- **The Console credit:** from the session's credential if `CB1` shows it
-  reaches the Console; else from a `credits-command` option, any program
+- **The Console credits:** from the `credits.command` option, any program
   printing the `credits[]` JSON, run at the same pace. The mod needs
   nothing more; a user may wrap theirs in `secretspec run`.
 - **Shared:** the mod writes the reading to the cache in
   `~/.local/state/coding-agent-usage-line/`, so the Python status line
   shows the same figures without fetching.
-- **On the band:** a `rows.credits` row, `true` by default, each grant as
-  what is left of the original and the time to its expiry; one expiring
-  within a day marked as a nearly full plan window is.
+- **On the band:** each credit as its glyph, its balance and 🔜 with the
+  time to its expiry, drawn when its `show` conditions say, as below.
+- **On the rows:** the 🎤 turn, 🤖 agent, 🎮 session and subagent rows
+  say which pool paid for their work and how much, as below.
+
+## The credits
+
+| Credit                     | Glyph | Drawn as          | With `original`       | Drawn by default       |
+| -------------------------- | ----- | ----------------- | --------------------- | ---------------------- |
+| Cloud session credit       | ⛅    | `⛅ $4.4 🔜 15h`  | `⛅ $4.4/250 🔜 15h`  | balance > $0           |
+| Console promotional credit | 🎁    | `🎁 $200 🔜 9.6d` | `🎁 $200/200 🔜 9.6d` | balance > $0           |
+| Console prepaid credit     | 💵    | `💵 $37`          | `💵 $37/100`          | balance ≤ $20, or expiry < 7 days |
+| Extra usage                | 💸    | `💸 $38 🔜 26d`   | `💸 $38/50 🔜 26d`    | spent > $0             |
+| Claude Code guest passes   | 🎫    | `🎫 2`            | `🎫 2/3`              | never                  |
+
+- **The figure:** what is left, in `moneyFmt`'s four characters. Extra
+  usage's is what is left of the month's cap, its 🔜 the month's reset;
+  the guest passes' a count. A prepaid credit's 🔜 is drawn only within
+  the amber expiry.
+- **No figure:** a credit whose source is unset or failing meets no
+  condition; `show-missing` draws it as `?`, as the 💳 row draws a
+  missing total.
+- **Expired:** dropped from the reading, never drawn.
+- **Every glyph draws two columns,** with no variation selector.
+
+## The configuration
+
+`credits` is a table beside `rows`. Every condition is one map of
+`field`, `op`, `value` and `unit`, the same four keys every time; `op` is
+one of `<`, `<=`, `=`, `!=`, `>=`, `>`, and every map names its unit. A
+credit is drawn when any one condition in its `show` list holds, and an
+empty list never draws it. A list in a configuration file replaces the
+lower layers' whole list, as `hide` does.
+
+| `field`   | `unit`                       | Means                                              |
+| --------- | ---------------------------- | -------------------------------------------------- |
+| `balance` | `usd` or `percent`           | what is left, in dollars or as a share of the original |
+| `spent`   | `usd`                        | what it has paid for since its period began        |
+| `expiry`  | `days`, `hours` or `minutes` | the time to its expiry                             |
+
+```jsonc
+"credits": {
+  // Where: "account" on the 💳 row, "row" on a row of their own, or false.
+  "place": "account",
+  // Each credit is drawn when any one condition in its list holds;
+  // an empty list never draws it.  op: "<", "<=", "=", "!=", ">=", ">".
+  "show": {
+    "cloud":   [{"field": "balance", "op": ">", "value": 0, "unit": "usd"}],
+    "promo":   [{"field": "balance", "op": ">", "value": 0, "unit": "usd"}],
+    "prepaid": [{"field": "balance", "op": "<=", "value": 20, "unit": "usd"},
+                {"field": "expiry", "op": "<", "value": 7, "unit": "days"}],
+    "extra":   [{"field": "spent", "op": ">", "value": 0, "unit": "usd"}],
+    "passes":  []
+  },
+  // The colours, by the same conditions, for every credit: red wins.
+  "amber": [{"field": "expiry", "op": "<", "value": 7, "unit": "days"},
+            {"field": "balance", "op": "<", "value": 20, "unit": "percent"}],
+  "red":   [{"field": "expiry", "op": "<", "value": 1, "unit": "days"},
+            {"field": "balance", "op": "=", "value": 0, "unit": "usd"}],
+  // A credit with no figure, its source failing or unset: "?" or nothing.
+  "show-missing": false,
+  // Each credit's original amount after its figure: $4.4/250.
+  "original": false,
+  // A program that prints the credits[] JSON, for the Console's credits.
+  "command": null
+}
+```
+
+To draw a credit always, give it `{"field": "balance", "op": ">=",
+"value": 0, "unit": "usd"}`, which every known figure meets.
+
+## Spending on the rows
+
+One pool pays for a session's work at a time, chosen by its credential
+and its plan windows:
+
+| The session                                    | Pays                                       | 🎤 turn row                            |
+| ---------------------------------------------- | ------------------------------------------ | -------------------------------------- |
+| A plan login, its windows under 100%           | the plan                                   | `💰6.4       🧠-42k`, the column blank |
+| A plan login, a window at 100%, extra usage on | 💸 extra usage                             | `💰6.4  💸2.1  🧠-42k`                 |
+| An API key                                     | 🎁 the promotional credit, then 💵 prepaid | `💰6.4  🎁6.4  🧠-42k`                 |
+| A Claude Code on the web session               | ⛅ the cloud credit, if `CB1b` confirms it | `💰6.4  ⛅6.4  🧠-42k`                 |
+
+- **The column:** after 💰, the payer's glyph and dollars; blank while
+  the plan pays, which 🔋 and 🪫 already show. A turn that crossed into
+  another pool shows the part after the crossing; the 🎮 session row
+  sums its turns, a figure per pool it used.
+- **The amount:** each record's share of 💰, the API-equivalent estimate,
+  billed to the pool paying when it was made, so an agent's row bills its
+  own records. The 🎮 session row takes the measured fall in the pool's
+  balance instead, once two readings bracket the session.
+
+## Decided (2026-11-04, by the user)
+
+1. **The conditions** are `{field, op, value, unit}` maps with the math
+   operators, over `balance`, `spent` and `expiry`, as "The
+   configuration" has them.
+2. **`credits.place`** defaults to `"account"`: the 💳 row, after 🪫.
+3. **The cloud session credit's glyph** is ⛅, the one cloud drawn two
+   columns wide in every terminal.
+4. **The rows' column** follows 💰: the payer's glyph and dollars, blank
+   while the plan pays.
+5. **The rows' amounts** are each record's share of the 💰 estimate,
+   billed to the payer; the 🎮 session row takes the measured fall in the
+   balance once two readings bracket the session.
 
 ## The build order
 
@@ -57,16 +166,24 @@ Console, is what `CB1` settles.
    body. Nothing drawn changes. After `/reload-plugins` the user tells
    the agent, which reads the `trial: credits` lines in
    `~/.local/state/coding-agent-usage-line/usage-band.log`.
-2. **`CB2`, the reading.** `credits[]` in `docs/usage-sources.md`'s format,
+2. **`CB1b`, the second trial.** It logs `extra_usage`'s figures and the
+   cloud credit's `used` at each turn's end, as figures only: extra
+   usage's cap, spend and reset, and whether a local session moves the
+   cloud credit.
+3. **`CB2`, the reading.** `credits[]` in `docs/usage-sources.md`'s format,
    its parser in both ports, with cases.
-3. **`CB3`, the sources.** The cloud credit from the OAuth answer; the
-   Console credit by what `CB1` found, the credential or
-   `credits-command`; the cache shared with the Python port.
-4. **`CB4`, the row.** `rows.credits` in `spec/options.jsonc`, the
-   defaults file and both ports; its cells and row cases.
-5. **`CB5`, docs and the acceptance check, live.** `docs/layout.md`,
+4. **`CB3`, the sources.** The cloud credit and extra usage from the OAuth
+   answer; the Console credits from `credits.command`; the cache shared
+   with the Python port.
+5. **`CB4`, the credits drawn.** `credits` in `spec/options.jsonc`, the
+   defaults file and both ports, its conditions evaluated in both; its
+   cells and row cases.
+6. **`CB6`, the spending column.** The payer of each record, the column on
+   the 🎤, 🤖, 🎮 and subagent rows, and the session row's measured
+   figure; its cases.
+7. **`CB5`, docs and the acceptance check, live.** `docs/layout.md`,
    `docs/options.md`, `docs/usage-sources.md`; then in a session here the
-   row shows both credits as the billing pages do, and turning it off
+   band shows both credits as the billing pages do, and a `show` of `[]`
    draws none.
 
 ## Files
