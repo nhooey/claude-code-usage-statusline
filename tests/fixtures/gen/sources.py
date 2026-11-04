@@ -17,6 +17,8 @@ What the files hold:
                   _cached_reading out.
   native.json     a payload's rate_limits in, native_reading out.
   credits.json    OAuth usage answers in, credits_reading out.
+  conditions.json credits and the credits option's conditions in,
+                  credits.met, shown and colour out.
   tracker.json    tracker stores as plist text in, tracker_reading and
                   claude_usage_tracker out.  A store tracker_reading
                   raises on is marked so; claude_usage_tracker returns no
@@ -382,6 +384,51 @@ def oauth_credits_cases():
     return [{"name": name, "raw": raw, "now": PIN_NOW,
              "expected": sources.credits_reading(raw, PIN_NOW)}
             for name, raw in OAUTH_CREDITS]
+
+
+COND_CREDITS = {
+    "cloud": {"id": "c", "kind": "cloud", "remaining": 4.42, "granted": 250.0,
+              "spent": 245.58, "expires_at": PIN_NOW + 15 * 3600},
+    "promo": {"id": "p", "kind": "promo", "remaining": 200.0, "granted": 200.0,
+              "expires_at": PIN_NOW + 9.6 * 86400},
+    "prepaid": {"id": "pp", "kind": "prepaid", "remaining": 20.0},
+    "empty": {"id": "e", "kind": "promo", "remaining": 0.0, "granted": 0.0},
+    "expired": {"id": "x", "kind": "promo", "remaining": 5.0,
+                "expires_at": PIN_NOW},
+}
+
+def cond(field, op, value, unit):
+    return {"field": field, "op": op, "value": value, "unit": unit}
+
+CONDITIONS = [cond("balance", op, 20, "usd") for op in ("<", "<=", "=", "!=", ">=", ">")] + [
+    cond("balance", "<", 20, "percent"), cond("balance", ">", 0, "usd"),
+    cond("spent", ">", 0, "usd"), cond("expiry", "<", 1, "days"),
+    cond("expiry", "<", 15, "hours"), cond("expiry", "<=", 900, "minutes"),
+    cond("expiry", ">=", 7, "days"),
+    # Malformed: none of these holds of any credit.
+    cond("balance", "<", 20, "days"), cond("spent", ">", 0, "percent"),
+    cond("height", ">", 0, "usd"), cond("balance", "=<", 20, "usd"),
+    cond("balance", ">", "0", "usd"), cond("balance", ">", True, "usd"),
+    {"field": "balance", "op": ">", "value": 0}, ["balance", ">", 0, "usd"], None,
+]
+
+def condition_cases():
+    from coding_agent_usage_line import credits
+    out = []
+    for name, credit in COND_CREDITS.items():
+        out.append({"name": name, "credit": credit, "now": PIN_NOW,
+                    "met": [credits.met(credit, c, PIN_NOW) for c in CONDITIONS]})
+    lists = [[], CONDITIONS[:1], CONDITIONS[7:9], CONDITIONS, "x"]
+    shown = [{"credit": n, "conditions": l,
+              "shown": credits.shown(COND_CREDITS[n], l, PIN_NOW)}
+             for n in COND_CREDITS for l in lists]
+    amber = [cond("expiry", "<", 7, "days"), cond("balance", "<", 20, "percent")]
+    red = [cond("expiry", "<", 1, "days"), cond("balance", "=", 0, "usd")]
+    colours = [{"credit": n, "amber": amber, "red": red,
+                "colour": credits.colour(COND_CREDITS[n], amber, red, PIN_NOW)}
+               for n in COND_CREDITS]
+    return {"conditions": CONDITIONS, "credits": out, "shown": shown,
+            "colours": colours, "now": PIN_NOW}
 
 
 def native_cases():
@@ -910,6 +957,7 @@ def main():
         write("normalise.json", normalise_cases())
         write("native.json", native_cases())
         write("credits.json", oauth_credits_cases())
+        write("conditions.json", condition_cases())
         write("tracker.json", tracker_cases(scratch))
         write("command.json", command_cases(scratch))
         write("limits.json", limits_cases())

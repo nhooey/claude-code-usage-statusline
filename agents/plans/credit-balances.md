@@ -187,14 +187,19 @@ and its plan windows:
 4. **`CB3`, the sources.** The cloud credit and extra usage from the OAuth
    answer, asked every 5 minutes apart from the plan windows, and kept per
    signed-in account in a file the Python port reads without asking.
-5. **`CB4`, the credits drawn.** `credits` in `spec/options.jsonc`, the
-   defaults file and both ports, its conditions evaluated in both; the
-   Console credits from `credits.command`, merged into the kept credits;
-   its cells and row cases.
-6. **`CB6`, the spending column.** The payer of each record, the column on
+5. **`CB4`, the conditions and the cells.** The conditions evaluated in
+   both ports (`coding_agent_usage_line/credits.py`, `mod/src/credits.ts`)
+   with shared cases, the five glyphs in `spec/layout.jsonc`, and each
+   credit's cell in the mod.
+6. **`CB4b`, the credits drawn.** `credits` in `spec/options.jsonc`, the
+   defaults file and both ports' configuration readers, which need a type
+   for its lists of condition maps; the credits on the 💳 row; the Console
+   credits from `credits.command`, merged into the kept credits; its row
+   cases.
+7. **`CB6`, the spending column.** The payer of each record, the column on
    the 🎤, 🤖, 🎮 and subagent rows, and the session row's measured
    figure; its cases.
-7. **`CB5`, docs and the acceptance check, live.** `docs/layout.md`,
+8. **`CB5`, docs and the acceptance check, live.** `docs/layout.md`,
    `docs/options.md`, `docs/usage-sources.md`; then in a session here the
    band shows both credits as the billing pages do, and a `show` of `[]`
    draws none.

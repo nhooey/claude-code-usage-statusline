@@ -1,0 +1,1329 @@
+{
+ "colours": [
+  {
+   "amber": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    }
+   ],
+   "colour": "red",
+   "credit": "cloud",
+   "red": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "amber": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    }
+   ],
+   "colour": null,
+   "credit": "promo",
+   "red": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "amber": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    }
+   ],
+   "colour": null,
+   "credit": "prepaid",
+   "red": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "amber": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    }
+   ],
+   "colour": "red",
+   "credit": "empty",
+   "red": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "amber": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    }
+   ],
+   "colour": "red",
+   "credit": "expired",
+   "red": [
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 0
+    }
+   ]
+  }
+ ],
+ "conditions": [
+  {
+   "field": "balance",
+   "op": "<",
+   "unit": "usd",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": "<=",
+   "unit": "usd",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": "=",
+   "unit": "usd",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": "!=",
+   "unit": "usd",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": ">=",
+   "unit": "usd",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": ">",
+   "unit": "usd",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": "<",
+   "unit": "percent",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": ">",
+   "unit": "usd",
+   "value": 0
+  },
+  {
+   "field": "spent",
+   "op": ">",
+   "unit": "usd",
+   "value": 0
+  },
+  {
+   "field": "expiry",
+   "op": "<",
+   "unit": "days",
+   "value": 1
+  },
+  {
+   "field": "expiry",
+   "op": "<",
+   "unit": "hours",
+   "value": 15
+  },
+  {
+   "field": "expiry",
+   "op": "<=",
+   "unit": "minutes",
+   "value": 900
+  },
+  {
+   "field": "expiry",
+   "op": ">=",
+   "unit": "days",
+   "value": 7
+  },
+  {
+   "field": "balance",
+   "op": "<",
+   "unit": "days",
+   "value": 20
+  },
+  {
+   "field": "spent",
+   "op": ">",
+   "unit": "percent",
+   "value": 0
+  },
+  {
+   "field": "height",
+   "op": ">",
+   "unit": "usd",
+   "value": 0
+  },
+  {
+   "field": "balance",
+   "op": "=<",
+   "unit": "usd",
+   "value": 20
+  },
+  {
+   "field": "balance",
+   "op": ">",
+   "unit": "usd",
+   "value": "0"
+  },
+  {
+   "field": "balance",
+   "op": ">",
+   "unit": "usd",
+   "value": true
+  },
+  {
+   "field": "balance",
+   "op": ">",
+   "value": 0
+  },
+  [
+   "balance",
+   ">",
+   0,
+   "usd"
+  ],
+  null
+ ],
+ "credits": [
+  {
+   "credit": {
+    "expires_at": 1786901000,
+    "granted": 250.0,
+    "id": "c",
+    "kind": "cloud",
+    "remaining": 4.42,
+    "spent": 245.58
+   },
+   "met": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "name": "cloud",
+   "now": 1786847000
+  },
+  {
+   "credit": {
+    "expires_at": 1787676440.0,
+    "granted": 200.0,
+    "id": "p",
+    "kind": "promo",
+    "remaining": 200.0
+   },
+   "met": [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "name": "promo",
+   "now": 1786847000
+  },
+  {
+   "credit": {
+    "id": "pp",
+    "kind": "prepaid",
+    "remaining": 20.0
+   },
+   "met": [
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "name": "prepaid",
+   "now": 1786847000
+  },
+  {
+   "credit": {
+    "granted": 0.0,
+    "id": "e",
+    "kind": "promo",
+    "remaining": 0.0
+   },
+   "met": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "name": "empty",
+   "now": 1786847000
+  },
+  {
+   "credit": {
+    "expires_at": 1786847000,
+    "id": "x",
+    "kind": "promo",
+    "remaining": 5.0
+   },
+   "met": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "name": "expired",
+   "now": 1786847000
+  }
+ ],
+ "now": 1786847000,
+ "shown": [
+  {
+   "conditions": [],
+   "credit": "cloud",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    }
+   ],
+   "credit": "cloud",
+   "shown": true
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    }
+   ],
+   "credit": "cloud",
+   "shown": true
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "!=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "hours",
+     "value": 15
+    },
+    {
+     "field": "expiry",
+     "op": "<=",
+     "unit": "minutes",
+     "value": 900
+    },
+    {
+     "field": "expiry",
+     "op": ">=",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "days",
+     "value": 20
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "percent",
+     "value": 0
+    },
+    {
+     "field": "height",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "balance",
+     "op": "=<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": "0"
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": true
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "value": 0
+    },
+    [
+     "balance",
+     ">",
+     0,
+     "usd"
+    ],
+    null
+   ],
+   "credit": "cloud",
+   "shown": true
+  },
+  {
+   "conditions": "x",
+   "credit": "cloud",
+   "shown": false
+  },
+  {
+   "conditions": [],
+   "credit": "promo",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    }
+   ],
+   "credit": "promo",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    }
+   ],
+   "credit": "promo",
+   "shown": true
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "!=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "hours",
+     "value": 15
+    },
+    {
+     "field": "expiry",
+     "op": "<=",
+     "unit": "minutes",
+     "value": 900
+    },
+    {
+     "field": "expiry",
+     "op": ">=",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "days",
+     "value": 20
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "percent",
+     "value": 0
+    },
+    {
+     "field": "height",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "balance",
+     "op": "=<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": "0"
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": true
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "value": 0
+    },
+    [
+     "balance",
+     ">",
+     0,
+     "usd"
+    ],
+    null
+   ],
+   "credit": "promo",
+   "shown": true
+  },
+  {
+   "conditions": "x",
+   "credit": "promo",
+   "shown": false
+  },
+  {
+   "conditions": [],
+   "credit": "prepaid",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    }
+   ],
+   "credit": "prepaid",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    }
+   ],
+   "credit": "prepaid",
+   "shown": true
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "!=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "hours",
+     "value": 15
+    },
+    {
+     "field": "expiry",
+     "op": "<=",
+     "unit": "minutes",
+     "value": 900
+    },
+    {
+     "field": "expiry",
+     "op": ">=",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "days",
+     "value": 20
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "percent",
+     "value": 0
+    },
+    {
+     "field": "height",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "balance",
+     "op": "=<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": "0"
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": true
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "value": 0
+    },
+    [
+     "balance",
+     ">",
+     0,
+     "usd"
+    ],
+    null
+   ],
+   "credit": "prepaid",
+   "shown": true
+  },
+  {
+   "conditions": "x",
+   "credit": "prepaid",
+   "shown": false
+  },
+  {
+   "conditions": [],
+   "credit": "empty",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    }
+   ],
+   "credit": "empty",
+   "shown": true
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    }
+   ],
+   "credit": "empty",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "!=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "hours",
+     "value": 15
+    },
+    {
+     "field": "expiry",
+     "op": "<=",
+     "unit": "minutes",
+     "value": 900
+    },
+    {
+     "field": "expiry",
+     "op": ">=",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "days",
+     "value": 20
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "percent",
+     "value": 0
+    },
+    {
+     "field": "height",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "balance",
+     "op": "=<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": "0"
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": true
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "value": 0
+    },
+    [
+     "balance",
+     ">",
+     0,
+     "usd"
+    ],
+    null
+   ],
+   "credit": "empty",
+   "shown": true
+  },
+  {
+   "conditions": "x",
+   "credit": "empty",
+   "shown": false
+  },
+  {
+   "conditions": [],
+   "credit": "expired",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    }
+   ],
+   "credit": "expired",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    }
+   ],
+   "credit": "expired",
+   "shown": false
+  },
+  {
+   "conditions": [
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "!=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">=",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "percent",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "days",
+     "value": 1
+    },
+    {
+     "field": "expiry",
+     "op": "<",
+     "unit": "hours",
+     "value": 15
+    },
+    {
+     "field": "expiry",
+     "op": "<=",
+     "unit": "minutes",
+     "value": 900
+    },
+    {
+     "field": "expiry",
+     "op": ">=",
+     "unit": "days",
+     "value": 7
+    },
+    {
+     "field": "balance",
+     "op": "<",
+     "unit": "days",
+     "value": 20
+    },
+    {
+     "field": "spent",
+     "op": ">",
+     "unit": "percent",
+     "value": 0
+    },
+    {
+     "field": "height",
+     "op": ">",
+     "unit": "usd",
+     "value": 0
+    },
+    {
+     "field": "balance",
+     "op": "=<",
+     "unit": "usd",
+     "value": 20
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": "0"
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "unit": "usd",
+     "value": true
+    },
+    {
+     "field": "balance",
+     "op": ">",
+     "value": 0
+    },
+    [
+     "balance",
+     ">",
+     0,
+     "usd"
+    ],
+    null
+   ],
+   "credit": "expired",
+   "shown": false
+  },
+  {
+   "conditions": "x",
+   "credit": "expired",
+   "shown": false
+  }
+ ]
+}
