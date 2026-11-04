@@ -143,16 +143,19 @@ and its plan windows:
   own records. The 🎮 session row takes the measured fall in the pool's
   balance instead, once two readings bracket the session.
 
-## Open
+## Decided (2026-11-04, by the user)
 
-- **Placement:** `credits.place` defaults to `"account"`, the 💳 row
-  after 🪫, or to `"row"`, a row of their own.
-- **The cloud credit's glyph:** ⛅, ☁️ (☁ with a variation selector,
-  drawn 1 or 2 wide) or 🌐.
-- **The rows' column:** a column after 💰, the payer's glyph in place of
-  💰, or the session's spending on the credits alone.
-- **The rows' amounts:** the estimate corrected on the session row, or
-  measured falls alone.
+1. **The conditions** are `{field, op, value, unit}` maps with the math
+   operators, over `balance`, `spent` and `expiry`, as "The
+   configuration" has them.
+2. **`credits.place`** defaults to `"account"`: the 💳 row, after 🪫.
+3. **The cloud session credit's glyph** is ⛅, the one cloud drawn two
+   columns wide in every terminal.
+4. **The rows' column** follows 💰: the payer's glyph and dollars, blank
+   while the plan pays.
+5. **The rows' amounts** are each record's share of the 💰 estimate,
+   billed to the payer; the 🎮 session row takes the measured fall in the
+   balance once two readings bracket the session.
 
 ## The build order
 
