@@ -248,6 +248,20 @@ for a source that has one, and otherwise the session — so two sessions never
 share a reading that might belong to different accounts. Name the account
 with `--account` to share a reading across sessions.
 
+### The account's high for each window
+
+A plan window's use only rises until it resets, so a reading that names its
+account (an `account_id`, or a cache shared under the account's id) shows
+each window at the highest any reading of that account has given for it.
+A window matches on its bucket, its window id and its reset, to the nearest
+minute. Without this, a session idle since its last response keeps the
+figure that response carried, 16٪ say, while the account's other sessions
+read 20٪ and its OAuth answer 21٪. All three show 21٪.
+
+The highs are kept in one small file per account (source `window-highs`),
+and a window's high is dropped once the window resets. A reading that names
+no account is shown as its source gave it.
+
 ### Calibration cache
 
 The calibration (the dollars in one percent of a plan window) is kept in its

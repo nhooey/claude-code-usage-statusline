@@ -222,13 +222,14 @@ export function accountLabel(st: Settings, sess: number | null,
   // Each window whole on the label, its share then its reset, since the
   // row has no figure in the plan columns to sit under: 🔋 15٪ 🔜 6.7m.
   // Three digits for both, so 🪫 reads 87٪ as 🔋 does, not the 87.0٪ the
-  // wider 🪫 column draws for an agent's small share.
+  // wider 🪫 column draws for an agent's small share; padded to three on
+  // the left, so 9.9٪ going to 10٪ moves nothing after it.
   const plan = (path: string, mark: string, colour: string,
     v: number | null, reset: string | null): Piece[] => {
     if (v === null && reset === null) return [];
     const out: Piece[] = [];
     out.push({ path, spans: [span(mark + " "), ...(v === null ? [] :
-      [span(limitPct(st, v, 3) + E_PCT, colour),
+      [span(limitPct(st, v, 3).padStart(3) + E_PCT, colour),
         ...(stale === null ? [] : [span(" " + E_STALE + stale)])]),
       span(" ")], drop: 0 });
     if (reset !== null) {

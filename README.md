@@ -20,7 +20,7 @@ them left out:
                          🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
                          🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                               💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                          🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 

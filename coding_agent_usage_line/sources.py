@@ -643,10 +643,76 @@ def claude_usage_tracker():
     # not a dict; either used to escape and take the status line down.
     except (OSError, ValueError, TypeError, ExpatError, AttributeError): return {}
 
+# A plan window's use only rises until it resets, so the highest any reading
+# of the account has given for one window is the truest: a session idle since
+# its last response keeps the figure that response carried, and its status
+# line writes it again, stamped with the time of writing, on every draw.  The
+# highs are kept per account in one small file, so no draw reads every cache.
+HIGHS_SOURCE = "window-highs"
+HIGHS_PERIOD = "highs"
+
+
+def _account_of(reading):
+    """The account a reading is of: its account id, else the account name a
+    reading shared by every session on the account is cached under."""
+    for value in (reading.get("account_id"), reading.get("account_name")):
+        if isinstance(value, str) and _ACCOUNT_ID.match(value): return value
+    return ""
+
+
+def _high_key(bucket, window, reset):
+    # Sources stamp one reset a fraction of a second apart: by the nearest
+    # minute, rounded half up, as the mod's highKey rounds it.
+    return "%s\0%s\0%d" % (bucket.get("id") or "", window.get("id") or "",
+                            int((reset + 30) // 60))
+
+
+def account_high(agent, reading, now):
+    """`reading` with each window's used percent raised to the highest the
+    account has read for that window, the bucket, window and reset the same;
+    and the account's highs raised to its figures, saved when they rise.  A
+    reading that names no account is left as it is."""
+    if not isinstance(reading, dict) or not has_reading(reading): return reading
+    account_id = _account_of(reading)
+    if not account_id: return reading
+    stored = state.load(agent, HIGHS_SOURCE, account_id, HIGHS_PERIOD).get("windows")
+    stored = stored if isinstance(stored, dict) else {}
+    highs = {}
+    for key, item in stored.items():
+        if isinstance(item, dict):
+            pct, reset = _number(item.get("used_percent")), epoch(item.get("resets_at"))
+            if pct is not None and reset is not None and reset > now:
+                highs[key] = {"used_percent": item["used_percent"], "resets_at": reset}
+    raised, rose = json.loads(json.dumps(reading)), False
+    for bucket in raised.get("buckets") or []:
+        for window in bucket.get("windows") or [] if isinstance(bucket, dict) else []:
+            if not isinstance(window, dict): continue
+            pct, reset = _number(window.get("used_percent")), epoch(window.get("resets_at"))
+            if pct is None or reset is None or reset <= now: continue
+            key = _high_key(bucket, window, reset)
+            high = highs.get(key)
+            if high is None or pct > _number(high["used_percent"]):
+                # The figure as the source gave it: 21 stays 21, not 21.0.
+                highs[key] = {"used_percent": window["used_percent"], "resets_at": reset}
+                rose = True
+            elif _number(high["used_percent"]) > pct:
+                window["used_percent"] = high["used_percent"]
+    if rose or len(highs) != len(stored):
+        state.save(agent, HIGHS_SOURCE, account_id, HIGHS_PERIOD, {"windows": highs})
+    return raised
+
+
 def collect(agent, spec="auto", account="default", period="day", context=None, now=None):
+    """Collect one selected reading with source/account/UTC-period isolation,
+    each window at the highest the account has read for it (account_high)."""
+    now = time.time() if now is None else now
+    return account_high(agent, _collect_one(agent, spec, account, period,
+                                            context, now), now)
+
+
+def _collect_one(agent, spec, account, period, context, now):
     """Collect one selected reading with source/account/UTC-period isolation."""
     spec = validate_source(agent, spec)
-    now = time.time() if now is None else now
     start, end = period_bounds(period, now)
     period_key = "%.0f" % start
     context = dict(context or {})
