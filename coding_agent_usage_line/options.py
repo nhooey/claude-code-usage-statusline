@@ -108,6 +108,28 @@ def _derive_key(value):
     return str(value)
 
 
+def _record(name, default, files):
+    """A record's value, merged field by field from the lowest layer up, a
+    conditions-by field key by key, with the layer of each part a file set
+    (keyed (name, field, key), key "" for a field set whole)."""
+    value = {field: (dict(v) if isinstance(v, dict) else v)
+             for field, v in default.items()}
+    fields, layer = {}, "default"
+    for f in reversed(files):
+        if name not in f.values:
+            continue
+        layer = f.name
+        for field, v in f.values[name].items():
+            if isinstance(v, dict):
+                for key, item in v.items():
+                    value[field][key] = item
+                    fields[(name, field, key)] = f.name
+            else:
+                value[field] = v
+                fields[(name, field, "")] = f.name
+    return value, layer, fields
+
+
 def _table(name, default, files):
     """A table's value, merged field by field from the lowest layer up,
     with the layer of each field a file set."""
@@ -139,9 +161,10 @@ def merge(flags, files=(), ports=("py",), warnings=(), defaults=None):
     for name, option in OPTIONS.items():
         if not set(ports) & set(option["ports"]):
             continue
-        if option["type"] == "table":
-            values[name], layers[name], got = _table(name, defaults[name],
-                                                     files)
+        if option["type"] in ("table", "record"):
+            merge_one = _table if option["type"] == "table" else _record
+            values[name], layers[name], got = merge_one(name, defaults[name],
+                                                        files)
             fields.update(got)
             continue
         if name in flags:
@@ -187,6 +210,8 @@ def _merged_value(name, values, flags, files, defaults):
         return values[name]
     if OPTIONS[name]["type"] == "table":
         return _table(name, defaults[name], files)[0]
+    if OPTIONS[name]["type"] == "record":
+        return _record(name, defaults[name], files)[0]
     if name in flags:
         return flags[name]
     for f in files:

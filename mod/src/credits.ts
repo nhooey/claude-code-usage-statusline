@@ -123,3 +123,18 @@ export function creditCell(st: Settings, credit: Dict, tint: "red" |
   }
   return out;
 }
+
+/** The credits the 💳 row draws and the colour of each, in the reading's
+ * order, by the `credits` option: none with `place` "none"; else each
+ * credit whose kind's `show` list holds, unexpired. */
+export function drawnCredits(credits: unknown, option: {
+  readonly place: string;
+  readonly show: { readonly [kind: string]: unknown };
+  readonly amber: unknown; readonly red: unknown;
+}, now: number): { credit: Dict; tint: "red" | "amber" | null }[] {
+  if (option.place === "none" || !Array.isArray(credits)) return [];
+  return credits.filter((c): c is Dict => isDict(c) &&
+    shown(c, option.show[String(c.kind)] ?? [], now))
+    .map((credit) => ({ credit,
+      tint: colour(credit, option.amber, option.red, now) }));
+}

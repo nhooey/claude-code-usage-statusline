@@ -380,6 +380,7 @@ local file of its own reads its main checkout's.
 
 Lists replace and tables merge per field: a project that sets
 `rows.agent.transcript` keeps every other row from the layers under it.
+`credits` merges per field too, and its `show` per credit.
 `label` follows `usage-text` when no layer sets it.
 
 Nothing in your own files stops a run. A key a file leaves out comes from
@@ -433,6 +434,39 @@ usage-source                   user           "claude-usage-tracker"
 hide                           project-local  []
 ...
 ```
+
+### The credits
+
+The mod draws the account's dollar credits on the 💳 row, after 🪫, each as
+its glyph, what is left and 🔜 the time to its expiry:
+`⛅ $4.4 🔜 15h  🎁 $200 🔜 9.6d`. `credits` says which and how:
+
+| Field | Value | Effect |
+|---|---|---|
+| `place` | `"account"` or `"none"` | Draw them on the 💳 row, or not at all. |
+| `show` | a list of conditions for each of `cloud` ⛅, `promo` 🎁, `prepaid` 💵, `extra` 💸 and `passes` 🎫 | A credit is drawn when any one condition in its list holds. An empty list never draws it. |
+| `amber`, `red` | a list of conditions | A credit's figure is amber when one of `amber`'s holds, and red when one of `red`'s does. Red wins. |
+| `original` | `true` or `false` | Draw each original amount after the figure: `⛅ $4.4/250`. |
+| `command` | a program's path, or `null` | A program that prints `{"schema_version": 1, "credits": [...]}`, as [the reading's `credits`](usage-sources.md#writing-a-custom-command) has them, run every 5 minutes for the Console's credits. |
+
+A condition is one map of `field`, `op`, `value` and `unit`:
+
+```jsonc
+{"field": "balance", "op": "<=", "value": 20, "unit": "usd"}
+```
+
+| `field` | `unit` | Means |
+|---|---|---|
+| `balance` | `usd` or `percent` | what is left, in dollars or as a share of what was granted |
+| `spent` | `usd` | what it has paid for since its period began |
+| `expiry` | `days`, `hours` or `minutes` | the time to its expiry |
+
+`op` is one of `<`, `<=`, `=`, `!=`, `>=` and `>`. A condition whose figure
+a credit doesn't have doesn't hold, and an expired credit is never drawn.
+To draw a credit always, give it
+`{"field": "balance", "op": ">=", "value": 0, "unit": "usd"}`. A list with a
+condition that is not of this shape is skipped whole, with a warning naming
+it. On a narrow terminal the credits leave the row before 📅 and 🕐.
 
 ## Environment variables
 

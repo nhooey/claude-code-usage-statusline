@@ -549,6 +549,11 @@ test('the credits are asked of the usage endpoint once per 5 minutes, ' +
     expect(kept()[0]).toContain('"period_start":"credits"')
     expect(kept()[0]).toContain('"kind":"cloud","remaining":4.5')
     expect(kept()[0]).not.toContain('extra_usage')
+    // Drawn on the 💳 row by the default `credits`: a balance over $0.
+    const drawn = (lastDoc(w).credits as Dict).drawn as Dict[]
+    expect(drawn.map((d) => (d.credit as Dict).kind)).toEqual(['cloud'])
+    expect(text(accountLine(BAND_ST, lastDoc(w), HIDE, 200, HOME)))
+      .toContain('⛅ $4.5')
     // Within the 5 minutes, nothing asked.
     const asked = asks()
     await w.clock.advance(31_000)

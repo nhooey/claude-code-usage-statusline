@@ -594,7 +594,10 @@ def render(lang, root, source):
 # Constants written `as const` in TypeScript, so their records keep their
 # literal types.
 AS_CONST = {"OPTIONS"}
-TYPES = ("bool", "int", "string", "enum", "list", "table")
+TYPES = ("bool", "int", "string", "enum", "list", "table", "record")
+# A record's fields: the scalar types, and lists of condition maps
+# ({field, op, value, unit}), alone or keyed by name.
+RECORD_FIELDS = ("bool", "string", "enum", "conditions", "conditions-by")
 FIELDS = ("type", "items", "fields", "rows", "metavar", "default", "derived",
           "minimum", "ports", "agents", "file", "flag", "aliases",
           "negatable", "modes", "doc-table", "doc-default", "usage", "doc")
@@ -647,6 +650,33 @@ def fits(t, value, items):
         return (isinstance(value, list)
                 and all(isinstance(v, str) for v in value))
     return isinstance(value, dict)
+
+
+CONDITION_UNITS = {"balance": ["usd", "percent"], "spent": ["usd"],
+                   "expiry": ["days", "hours", "minutes"]}
+CONDITION_OPS = ["<", "<=", "=", "!=", ">=", ">"]
+
+
+def fits_condition(c):
+    return (isinstance(c, dict) and list(c) == ["field", "op", "value", "unit"]
+            and c["field"] in CONDITION_UNITS and c["op"] in CONDITION_OPS
+            and isinstance(c["value"], (int, float))
+            and not isinstance(c["value"], bool)
+            and c["unit"] in CONDITION_UNITS[c["field"]])
+
+
+def fits_field(ft, v):
+    """Whether a record's default `v` is of its field's type."""
+    t = ft["type"]
+    if t == "conditions":
+        return isinstance(v, list) and all(fits_condition(c) for c in v)
+    if t == "conditions-by":
+        return (isinstance(v, dict) and list(v) == ft["keys"]
+                and all(fits_field({"type": "conditions"}, c)
+                        for c in v.values()))
+    if v is None:
+        return bool(ft.get("nullable"))
+    return fits(t, v, ft.get("items"))
 
 
 def check_derived(name, o, opts, bad):
@@ -718,9 +748,10 @@ def check_options(opts):
             bad(name, "unknown type %r" % t)
         if (t == "enum") != ("items" in o):
             bad(name, "items go with an enum, and only with one")
-        if (t == "table") != ("fields" in o) or ("fields" in o) != (
-                "rows" in o):
-            bad(name, "fields and rows go with a table, and only with one")
+        if (t in ("table", "record")) != ("fields" in o) or (
+                t == "table") != ("rows" in o):
+            bad(name, "fields go with a table or a record, and rows with a "
+                "table only")
         if o["file"] == ("default" in o):
             bad(name, "a default goes with an option no file sets; a file's "
                 "option has its default in %s" % DEFAULTS)
@@ -734,6 +765,21 @@ def check_options(opts):
                         % k)
                 if set(ft.get("fixed", ())) - set(o["rows"]):
                     bad(name, "field %r fixes a row the table has not" % k)
+        elif t == "record":
+            if o["file"] is not True or o["flag"] is not None:
+                bad(name, "a record is set by a file, and has no flag")
+            for k, ft in o["fields"].items():
+                if ft.get("type") not in RECORD_FIELDS:
+                    bad(name, "field %r is not one of %s" % (k, RECORD_FIELDS))
+                if set(ft) - {"type", "items", "keys", "nullable"}:
+                    bad(name, "field %r has more than type, items, keys, "
+                        "nullable" % k)
+                if (ft["type"] == "enum") != ("items" in ft):
+                    bad(name, "field %r: items go with an enum" % k)
+                if (ft["type"] == "conditions-by") != ("keys" in ft):
+                    bad(name, "field %r: keys go with conditions-by" % k)
+                if ft.get("nullable") and ft["type"] != "string":
+                    bad(name, "field %r: only a string is nullable" % k)
         elif "default" in o and not fits(t, o["default"], o.get("items")):
             bad(name, "default %r is not a %s" % (o["default"], t))
         if not o["ports"] or set(o["ports"]) - {"py", "mod"}:
@@ -798,6 +844,15 @@ def check_defaults(opts, defaults):
             continue
         if value is None:
             bad("%r has no default" % name)
+        if o["type"] == "record":
+            if not isinstance(value, dict) or list(value) != list(o["fields"]):
+                bad("%r's fields are not %s, in that order"
+                    % (name, list(o["fields"])))
+            for k, v in value.items():
+                ft = o["fields"][k]
+                if not fits_field(ft, v):
+                    bad("%s.%s is not a %s" % (name, k, ft["type"]))
+            continue
         if o["type"] == "table":
             if not isinstance(value, dict) or list(value) != o["rows"]:
                 bad("%r's rows are not %s, in that order" % (name, o["rows"]))
@@ -834,6 +889,21 @@ def ts_type(t, items):
             "list": "readonly string[]"}[t]
 
 
+CONDITION_TS = ("readonly { readonly field: string; readonly op: string; "
+                "readonly value: number; readonly unit: string }[]")
+
+
+def record_field_ts(ft):
+    t = ft["type"]
+    if t == "conditions":
+        return CONDITION_TS
+    if t == "conditions-by":
+        return "{ %s }" % " ".join("readonly %s: %s;" % (camel(k), CONDITION_TS)
+                                   for k in ft["keys"])
+    return ts_type(t, ft.get("items")) + (" | null" if ft.get("nullable")
+                                          else "")
+
+
 def options_type(opts):
     """Options: the mod's merged value of each option it reads."""
     lines = ["// The merged value of each option the mod reads, by the camel",
@@ -841,6 +911,12 @@ def options_type(opts):
              "export type Options = {"]
     for name, o in opts.items():
         if "mod" not in o["ports"]:
+            continue
+        if o["type"] == "record":
+            lines.append("  readonly %s: {" % camel(name))
+            lines += ["    readonly %s: %s;" % (camel(k), record_field_ts(f))
+                      for k, f in o["fields"].items()]
+            lines.append("  };")
             continue
         if o["type"] == "table":
             lines.append("  readonly %s: {" % camel(name))

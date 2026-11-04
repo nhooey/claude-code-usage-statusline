@@ -23,6 +23,7 @@ place (config-merge.md, Decided 18).
 Imports nothing of the package but the spec, and only the stdlib.
 """
 import json
+import math
 import os
 from collections import namedtuple
 
@@ -321,6 +322,94 @@ def _table(name, option, value, fixed):
     return kept, why
 
 
+CONDITION_UNITS = {"balance": ("usd", "percent"), "spent": ("usd",),
+                   "expiry": ("days", "hours", "minutes")}
+CONDITION_OPS = ("<", "<=", "=", "!=", ">=", ">")
+CONDITION_KEYS = ("field", "op", "value", "unit")
+
+
+def _condition(value, path):
+    """(the condition `value` is, None) or (None, why not), `path` naming
+    it; the mod's condition gives the same words."""
+    at = lambda part: json.dumps(path + part)
+    if not isinstance(value, dict) or sorted(value) != sorted(CONDITION_KEYS):
+        return None, "%s must be an object of field, op, value and unit" % at("")
+    field, op, unit, number = (value["field"], value["op"], value["unit"],
+                               value["value"])
+    if not isinstance(field, str) or field not in CONDITION_UNITS:
+        return None, "%s must be one of %s%s" % (
+            at(".field"), _quoted(list(CONDITION_UNITS)),
+            _hint(field, list(CONDITION_UNITS)) if isinstance(field, str) else "")
+    if not isinstance(op, str) or op not in CONDITION_OPS:
+        return None, "%s must be one of %s" % (at(".op"), _quoted(CONDITION_OPS))
+    units = CONDITION_UNITS[field]
+    if not isinstance(unit, str) or unit not in units:
+        return None, "%s must be one of %s for %s" % (
+            at(".unit"), _quoted(units), json.dumps(field))
+    if isinstance(number, bool) or not isinstance(number, (int, float)) or (
+            isinstance(number, float) and not math.isfinite(number)):
+        return None, "%s must be a number" % at(".value")
+    return {"field": field, "op": op, "value": number, "unit": unit}, None
+
+
+def _conditions(value, path):
+    """(the list of conditions, None) or (None, [why for each fault]): a
+    list is kept whole or not at all."""
+    if not isinstance(value, list):
+        return None, ["%s must be a list of conditions" % json.dumps(path)]
+    kept, why = [], []
+    for i, item in enumerate(value):
+        got, bad = _condition(item, "%s[%d]" % (path, i))
+        if bad is None:
+            kept.append(got)
+        else:
+            why.append(bad)
+    return (None, why) if why else (kept, [])
+
+
+def _record(name, option, value):
+    """A record's value checked field by field: (the fields that passed,
+    [why for each that did not]).  A conditions-by field passes per key."""
+    if not isinstance(value, dict):
+        return {}, ["%s must be an object" % json.dumps(name)]
+    kept, why = {}, []
+    fields = option["fields"]
+    for field, v in value.items():
+        where = json.dumps("%s.%s" % (name, field))
+        spec = fields.get(field)
+        if spec is None:
+            why.append("%s is no field%s" % (where, _hint(field, list(fields))))
+            continue
+        kind = spec["type"]
+        if kind == "conditions":
+            got, bad = _conditions(v, "%s.%s" % (name, field))
+            why += bad
+            if got is not None:
+                kept[field] = got
+        elif kind == "conditions-by":
+            if not isinstance(v, dict):
+                why.append("%s must be an object" % where)
+                continue
+            for key, item in v.items():
+                at = "%s.%s.%s" % (name, field, key)
+                if key not in spec["keys"]:
+                    why.append("%s is no key%s" % (json.dumps(at), _hint(key, spec["keys"])))
+                    continue
+                got, bad = _conditions(item, at)
+                why += bad
+                if got is not None:
+                    kept.setdefault(field, {})[key] = got
+        elif v is None and spec.get("nullable"):
+            kept[field] = None
+        else:
+            got, bad = _scalar(kind, v, spec, where)
+            if bad is None:
+                kept[field] = got
+            else:
+                why.append(bad)
+    return kept, why
+
+
 def _known(name):
     """(the option a file may set by `name`, or None, why not)."""
     option = OPTIONS.get(name)
@@ -342,6 +431,9 @@ def check(name, value, defaults=None):
         return None, [why]
     if value is None and "derived" in option:
         return None, []
+    if option["type"] == "record":
+        kept, why = _record(name, option, value)
+        return (kept or None), why
     if option["type"] == "table":
         table = (defaults if defaults is not None else load_defaults())[name]
         kept, why = _table(name, option, value, table)
@@ -444,7 +536,17 @@ def parse_defaults(path, text):
                     where, json.dumps(option["derived"]["from"])))
             values[name] = None
             continue
-        if option["type"] == "table":
+        if option["type"] == "record":
+            got, why = _record(name, option, value)
+            faults += why
+            missing = [f for f in option["fields"] if f not in got] if not why else []
+            missing += [
+                "%s.%s" % (f, k) for f, spec in option["fields"].items()
+                if spec["type"] == "conditions-by" and f in got
+                for k in spec["keys"] if k not in got[f]]
+            faults += ["%s is missing" % json.dumps("%s.%s" % (name, m))
+                       for m in missing]
+        elif option["type"] == "table":
             got, why = _defaults_table(name, option, value)
             faults += why
         else:

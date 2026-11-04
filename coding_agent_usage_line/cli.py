@@ -314,6 +314,17 @@ def _show_config(found, options):
     for name, option in OPTIONS.items():
         if not option["file"]:
             continue
+        if option["type"] == "record":
+            for field, value in options[name].items():
+                parts = (sorted(value.items(), key=lambda kv: list(
+                    option["fields"][field]["keys"]).index(kv[0]))
+                    if isinstance(value, dict) else [("", value)])
+                for key, part in parts:
+                    out.append("%-30s %-14s %s" % (
+                        ".".join(p for p in (name, field, key) if p),
+                        options.field_layer(name, field, key),
+                        json.dumps(part, ensure_ascii=False)))
+            continue
         if option["type"] == "table":
             for row, rec in options[name].items():
                 for field, value in rec.items():

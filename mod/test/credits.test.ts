@@ -2,7 +2,7 @@
 // conditions are the shared cases' (sources.test.ts).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { creditCell } from "../src/credits.ts";
+import { creditCell, drawnCredits } from "../src/credits.ts";
 import { settings } from "../src/formatting.ts";
 import type { Span } from "../src/spans.ts";
 
@@ -40,4 +40,26 @@ test("a prepaid credit's expiry only while it is coloured, and the figure " +
   assert.deepEqual(tints(amber), [null, "F_AMB", null]);
   assert.deepEqual(tints(creditCell(st, prepaid, "red", false, NOW)),
     [null, "F_RED", null]);
+});
+
+test("the credits drawn: by kind's show list, unexpired, with each colour, " +
+  "and none with place none", () => {
+  const option = {
+    place: "account",
+    show: { cloud: [{ field: "balance", op: ">", value: 0, unit: "usd" }],
+      promo: [] },
+    amber: [{ field: "balance", op: "<", value: 20, unit: "percent" }],
+    red: [{ field: "balance", op: "=", value: 0, unit: "usd" }],
+  };
+  const credits = [
+    { id: "c", kind: "cloud", remaining: 4.4, granted: 250 },
+    { id: "d", kind: "cloud", remaining: 0, granted: 250 },
+    { id: "e", kind: "cloud", remaining: 9, expires_at: NOW },
+    { id: "p", kind: "promo", remaining: 200, granted: 200 },
+    { id: "x", kind: "extra", remaining: 12, spent: 38 }];
+  assert.deepEqual(drawnCredits(credits, option, NOW).map((d) =>
+    [d.credit.id, d.tint]), [["c", "amber"]]);
+  assert.deepEqual(drawnCredits(credits, { ...option, place: "none" }, NOW),
+    []);
+  assert.deepEqual(drawnCredits(null, option, NOW), []);
 });
