@@ -1727,6 +1727,56 @@ test('the credits trial logs the usage answer\'s dollar windows and what ' +
       'https://platform.claude.com/api/organizations'])
   })
 
+test('the second credits trial logs extra usage and the dollar window at ' +
+  'a turn\'s end, at most once a minute and only when they change',
+  async ($, on) => {
+    const w = world(on)
+    const answer = (used: number) => JSON.stringify({
+      extra_usage: { is_enabled: true, monthly_limit: 50, used_credits: used,
+        currency: 'usd', note: 'Not logged, free text' },
+      cloud_credit: { limit_dollars: 250, used_dollars: 245.58,
+        remaining_dollars: 4.42, resets_at: '2026-11-05T07:59:00Z' } })
+    w.oauth.body = answer(12)
+    await start($, w, 'terminal', COST)
+    creditsTrialNext(true)
+    try {
+      const end = (id: string) => $.turn.complete({ answer: '',
+        durationMs: 1_000, isAborted: false, turnId: id, reason: 'answer' })
+      const turnAsks = () => w.oauth.asked.filter((a) =>
+        a.url === 'https://api.anthropic.com/api/oauth/usage').length
+      const before = turnAsks()
+      await end('t1')
+      await settle()
+      expect(turnAsks()).toBe(before + 1)
+      // Within the minute, no ask.
+      await end('t2')
+      await settle()
+      expect(turnAsks()).toBe(before + 1)
+      // A minute on, the same figures ask again and log nothing new.
+      await w.clock.advance(61_000)
+      await end('t3')
+      await settle()
+      expect(turnAsks()).toBe(before + 2)
+      // Extra usage spent: a new line.
+      w.oauth.body = answer(14.5)
+      await w.clock.advance(61_000)
+      await end('t4')
+      await settle()
+    } finally {
+      creditsTrialNext(false)
+    }
+    const lines = logOf(w).split('\n').filter((l) =>
+      l.includes('trial: credits turn'))
+    const shape = (used: number) => 'trial: credits turn {"extra_usage":' +
+      '{"is_enabled":true,"monthly_limit":50,"used_credits":' + used +
+      ',"currency":"usd","note":"string"},"dollars":{"key":"cloud_credit",' +
+      '"used":245.58,"remaining":4.42,"resets_at":"2026-11-05T07:59:00Z"}}'
+    expect(lines.length).toBe(2)
+    expect(lines[0]).toContain(shape(12))
+    expect(lines[1]).toContain(shape(14.5))
+    expect(logOf(w)).not.toContain('Not logged')
+  })
+
 test('a read that never ends is dropped and logged after its limit, and ' +
   'the next one draws', async ($, on) => {
     const w = world(on)
