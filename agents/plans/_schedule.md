@@ -77,8 +77,8 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CB1` | **Done.** The trial: what the session's credential reaches of the dollar credits, logged | none | none | `mod/hooks/register.tsx` |
 | `CB1b` | **Done.** The second trial: `extra_usage`'s figures and the cloud credit's `used` per turn, logged | `CB1` | none | `mod/hooks/register.tsx` |
 | `CB2` | **Built.** The `credits[]` reading, parsed in both ports | `CB1b` | none | `mod/src/sources.ts`, `coding_agent_usage_line/sources.py`, `docs/usage-sources.md` |
-| `CB3` | The sources: the OAuth answer, the Console by the trial's finding, the shared cache | `CB2` | none | `mod/hooks/edges.ts`, `mod/src/sources.ts` |
-| `CB4` | The credits drawn, and the `credits` option and its conditions | `CB2` | `AR3` | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/src/band.ts` |
+| `CB3` | **Built.** The sources: the OAuth answer's credits, asked every 5 minutes, and the shared cache | `CB2` | none | `mod/hooks/edges.ts`, `mod/src/sources.ts` |
+| `CB4` | The credits drawn, the `credits` option and its conditions, and the Console's credits from `credits.command` | `CB2` | `AR3` | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/src/band.ts` |
 | `CB6` | The spending column on the turn, agent, session and subagent rows | `CB3`, `CB4` | none | `mod/src/band.ts`, `mod/src/cells.ts`, `coding_agent_usage_line/claude.py` |
 | `CB5` | Docs, and the acceptance check, live | `CB3`, `CB6` | none | `docs/layout.md`, `docs/options.md`, `docs/usage-sources.md` |
 

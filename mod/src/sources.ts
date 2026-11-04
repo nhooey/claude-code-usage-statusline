@@ -931,6 +931,50 @@ export function claudeOauthReading(raw: unknown, now: number): Reading {
                    "experimental-claude-oauth");
 }
 
+// The account's dollar credits are read apart from its plan windows, which
+// auto takes from the payload and so never asks the OAuth answer for: the
+// mod asks it every CREDITS_TTL seconds and keeps the credits per account in
+// one small file, and the status line reads that file without fetching.
+export const CREDITS_SOURCE = "credits";
+export const CREDITS_PERIOD = "credits";
+export const CREDITS_TTL = 300;
+
+/** The credits in /api/oauth/usage's answer `raw`, as credits[] entries
+ * before `credits` checks them: each window with a dollar limit, taken by
+ * its fields and never its name, as the cloud session credit; and extra
+ * usage, while it is on and has a cap, its figures in dollars. */
+export function oauthCredits(raw: unknown): Dict[] {
+  if (!isDict(raw)) return [];
+  const out: Dict[] = [];
+  for (const [key, item] of Object.entries(raw)) {
+    if (!isDict(item) || number(pyGet(item, "limit_dollars")) === null) {
+      continue;
+    }
+    out.push({ id: key, kind: "cloud",
+               remaining: pyGet(item, "remaining_dollars"),
+               granted: pyGet(item, "limit_dollars"),
+               spent: pyGet(item, "used_dollars"), currency: "USD",
+               expires_at: pyGet(item, "resets_at") });
+  }
+  const extra = pyGet(raw, "extra_usage");
+  if (isDict(extra) && pyGet(extra, "is_enabled") === true) {
+    const cap = number(pyGet(extra, "monthly_limit"));
+    const used = number(pyGet(extra, "used_credits"));
+    if (cap !== null && used !== null) {
+      out.push({ id: "extra_usage", kind: "extra",
+                 remaining: Math.max(0, cap - used), granted: cap,
+                 spent: used, currency: pyGet(extra, "currency") });
+    }
+  }
+  return out;
+}
+
+/** The credits reading of the OAuth answer `raw`, taken at `now`. */
+export function creditsReading(raw: unknown, now: number): Reading {
+  return normalise({ schema_version: 1, as_of: now,
+                     credits: oauthCredits(raw) }, CREDITS_SOURCE);
+}
+
 export type Fetch = (selected: string, context: Dict, start: number,
                      end: number, failure: Dict) => Promise<unknown>;
 

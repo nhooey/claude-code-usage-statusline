@@ -16,6 +16,7 @@ What the files hold:
   normalise.json  version-1 readings in, normalise, has_reading and
                   _cached_reading out.
   native.json     a payload's rate_limits in, native_reading out.
+  credits.json    OAuth usage answers in, credits_reading out.
   tracker.json    tracker stores as plist text in, tracker_reading and
                   claude_usage_tracker out.  A store tracker_reading
                   raises on is marked so; claude_usage_tracker returns no
@@ -348,6 +349,39 @@ NATIVE = [
     ("not a dict", [1]),
     ("empty", {}),
 ]
+
+
+CLOUD = {"limit_dollars": 250, "used_dollars": 245.580541,
+         "remaining_dollars": 4.419458999999989,
+         "resets_at": "2026-11-05T07:59:00+00:00"}
+EXTRA_OFF = {"is_enabled": False, "monthly_limit": None, "used_credits": None,
+             "utilization": None, "currency": None, "user_disabled": True}
+
+OAUTH_CREDITS = [
+    ("cloud credit, extra usage off", {
+        "seven_day": {"utilization": 21, "resets_at": PIN_NOW + 3600},
+        "iguana_necktie": CLOUD, "extra_usage": EXTRA_OFF, "limits": None}),
+    ("extra usage on", {"extra_usage": {
+        "is_enabled": True, "monthly_limit": 50, "used_credits": 12.5,
+        "currency": "USD"}}),
+    ("extra usage over its cap", {"extra_usage": {
+        "is_enabled": True, "monthly_limit": 50, "used_credits": 51}}),
+    ("extra usage on, no cap", {"extra_usage": {
+        "is_enabled": True, "monthly_limit": None, "used_credits": 3}}),
+    ("extra usage enabled as a string", {"extra_usage": {
+        "is_enabled": "true", "monthly_limit": 50, "used_credits": 1}}),
+    ("two dollar windows, one malformed", {
+        "a": CLOUD, "b": dict(CLOUD, remaining_dollars=300),
+        "c": {"limit_dollars": "x", "remaining_dollars": 1}}),
+    ("no credits", {"five_hour": {"utilization": 3}}),
+    ("not a dict", [CLOUD]),
+]
+
+
+def oauth_credits_cases():
+    return [{"name": name, "raw": raw, "now": PIN_NOW,
+             "expected": sources.credits_reading(raw, PIN_NOW)}
+            for name, raw in OAUTH_CREDITS]
 
 
 def native_cases():
@@ -875,6 +909,7 @@ def main():
         write("values.json", values())
         write("normalise.json", normalise_cases())
         write("native.json", native_cases())
+        write("credits.json", oauth_credits_cases())
         write("tracker.json", tracker_cases(scratch))
         write("command.json", command_cases(scratch))
         write("limits.json", limits_cases())

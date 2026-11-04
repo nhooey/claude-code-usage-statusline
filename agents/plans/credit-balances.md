@@ -185,11 +185,12 @@ and its plan windows:
 3. **`CB2`, the reading.** `credits[]` in `docs/usage-sources.md`'s format,
    its parser in both ports, with cases.
 4. **`CB3`, the sources.** The cloud credit and extra usage from the OAuth
-   answer; the Console credits from `credits.command`; the cache shared
-   with the Python port.
+   answer, asked every 5 minutes apart from the plan windows, and kept per
+   signed-in account in a file the Python port reads without asking.
 5. **`CB4`, the credits drawn.** `credits` in `spec/options.jsonc`, the
-   defaults file and both ports, its conditions evaluated in both; its
-   cells and row cases.
+   defaults file and both ports, its conditions evaluated in both; the
+   Console credits from `credits.command`, merged into the kept credits;
+   its cells and row cases.
 6. **`CB6`, the spending column.** The payer of each record, the column on
    the 🎤, 🤖, 🎮 and subagent rows, and the session row's measured
    figure; its cases.

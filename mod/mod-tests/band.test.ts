@@ -528,6 +528,46 @@ test('under auto, with no native reading, the plan comes from the usage ' +
     expect(String((lastDoc(w).limits as Dict).weekly_pct)).toMatch(/^24/)
   })
 
+test('the credits are asked of the usage endpoint once per 5 minutes, ' +
+  'kept under the signed-in account for the status line, and kept on a ' +
+  'failed ask', async ($, on) => {
+    const w = world(on)
+    w.files.set('/claude/.claude.json', encoder.encode(
+      '{"oauthAccount": {"accountUuid": "0f0f0f0f-test-account"}}'))
+    const answer = (remaining: number) => JSON.stringify({
+      cloud_credit: { limit_dollars: 250, used_dollars: 250 - remaining,
+        remaining_dollars: remaining, resets_at: '2026-11-05T07:59:00Z' },
+      extra_usage: { is_enabled: false, monthly_limit: null } })
+    w.oauth.body = answer(4.5)
+    await start($, w, 'terminal', STATUS)
+    const kept = () => [...w.files.values()]
+      .map((b) => new TextDecoder().decode(b))
+      .filter((t) => t.includes('"source":"credits"'))
+    const asks = () => w.oauth.asked.length
+    expect(kept().length).toBe(1)
+    expect(kept()[0]).toContain('"account_name":"account:')
+    expect(kept()[0]).toContain('"period_start":"credits"')
+    expect(kept()[0]).toContain('"kind":"cloud","remaining":4.5')
+    expect(kept()[0]).not.toContain('extra_usage')
+    // Within the 5 minutes, nothing asked.
+    const asked = asks()
+    await w.clock.advance(31_000)
+    await settle()
+    expect(asks()).toBe(asked)
+    // After them, asked again, and the new figure kept.
+    w.oauth.body = answer(3)
+    await w.clock.advance(300_000)
+    await settle()
+    expect(asks()).toBeGreaterThan(asked)
+    expect(kept()[0]).toContain('"remaining":3')
+    // A failed ask keeps the last credits.
+    w.oauth.body = 'not json'
+    await w.clock.advance(301_000)
+    await settle()
+    expect(kept().length).toBe(1)
+    expect(kept()[0]).toContain('"remaining":3')
+  })
+
 test('a turn running draws the running phase', async ($, on) => {
   const w = world(on)
   await start($, w, 'terminal', STATUS)
