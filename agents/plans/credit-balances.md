@@ -174,6 +174,9 @@ and its plan windows:
    conditions, alone or by credit.
 7. **Extra usage's figures** are read as dollars until they are seen with
    extra usage on.
+8. **The Console's credits** come from `console-credits.py`, shipped as a
+   `credits.command`. It reads the Console sign-in from a command the
+   user names, so any store works, SecretSpec among them.
 
 ## The build order
 

@@ -447,7 +447,7 @@ its glyph, what is left and 🔜 the time to its expiry:
 | `show` | a list of conditions for each of `cloud` ⛅, `promo` 🎁, `prepaid` 💵, `extra` 💸 and `passes` 🎫 | A credit is drawn when any one condition in its list holds. An empty list never draws it. |
 | `amber`, `red` | a list of conditions | A credit's figure is amber when one of `amber`'s holds, and red when one of `red`'s does. Red wins. |
 | `original` | `true` or `false` | Draw each original amount after the figure: `⛅ $4.4/250`. |
-| `command` | a program's path, or `null` | A program that prints `{"schema_version": 1, "credits": [...]}`, as [the reading's `credits`](usage-sources.md#writing-a-custom-command) has them, run every 5 minutes for the Console's credits. |
+| `command` | a program's path, or `null` | A program that prints `{"schema_version": 1, "credits": [...]}`, as [the reading's `credits`](usage-sources.md#writing-a-custom-command) has them, run every 5 minutes. [The Console's credits](#the-consoles-credits) come this way. |
 
 A condition is one map of `field`, `op`, `value` and `unit`:
 
@@ -468,6 +468,50 @@ To draw a credit always, give it
 condition that is not of this shape is skipped whole, with a warning naming
 it. On a narrow terminal the credits leave the row before 📅 and 🕐.
 
+### The Console's credits
+
+The cloud credit ⛅ comes from Claude Code's own sign-in, with no setup.
+The Claude Console's promotional 🎁 and prepaid 💵 credits don't: the
+Console reports them only to its own web sign-in, and refuses Claude
+Code's. `console-credits.py`, in the repository's root, asks the Console
+with a sign-in that a command of your choosing prints, so the sign-in
+stays in whatever store you already keep secrets in.
+
+1. **Store the sign-in.** Sign in at platform.claude.com, copy the value
+   of its `sessionKey` cookie from the browser's developer tools, and put
+   it in your store. For the macOS keychain:
+
+   ```
+   security add-generic-password -a "$USER" -s coding-agent-usage-line-console -w
+   ```
+
+2. **Say how to read it**, as one line in
+   `~/.config/coding-agent-usage-line/console-session-command` (or in
+   `$CODING_AGENT_USAGE_LINE_CONSOLE_SESSION_COMMAND`). It runs through
+   `/bin/sh` and prints the value:
+
+   | Store | The line |
+   |---|---|
+   | The macOS keychain | `security find-generic-password -w -s coding-agent-usage-line-console` |
+   | The Linux keyring | `secret-tool lookup service coding-agent-usage-line-console` |
+   | 1Password | `op read op://<vault>/<item>/<field>` |
+   | SecretSpec | `secretspec get --reason "Console credits" CONSOLE_SESSION` |
+   | A file only you can read | `cat ~/.config/coding-agent-usage-line/console-session` |
+
+3. **Point `credits.command` at the program:**
+
+   ```jsonc
+   "credits": {"command": "/path/to/claude-code-usage-statusline/console-credits.py"}
+   ```
+
+The program sends the sign-in to platform.claude.com alone, as the
+`sessionKey` cookie, and never prints, logs or saves it. Each run must
+finish within the mod's 5 seconds, so a store that asks for a fingerprint
+can miss a run. A failed run prints nothing and exits 1, and the mod keeps
+the credits it had. The Console's endpoint is undocumented, so it may
+change, and the sign-in expires: when the 🎁 figure stops moving, run
+`console-credits.py` by hand, which says why on stderr.
+
 ## Environment variables
 
 | Variable | Effect |
@@ -476,6 +520,7 @@ it. On a narrow terminal the credits leave the row before 📅 and 🕐.
 | `CODING_AGENT_USAGE_LINE_STATE_DIR` | Where caches and per-session state live. Default `$XDG_STATE_HOME/coding-agent-usage-line`, or `~/.local/state/coding-agent-usage-line`. |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_PROJECTS_DIR` | Where Claude transcripts live, for calibration. Default `~/.claude/projects`. |
 | `CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST` | Read an exported Claude Usage Tracker store from this path instead of the running app's preferences. |
+| `CODING_AGENT_USAGE_LINE_CONSOLE_SESSION_COMMAND` | The command that prints the Console sign-in for [`console-credits.py`](#the-consoles-credits), in place of the `console-session-command` file. |
 | `CODEX_HOME` | Codex's data directory, used to find child-agent rollouts. Default `~/.codex`. |
 | `ANTHROPIC_ADMIN_KEY`, `OPENAI_ADMIN_KEY`, `CLAUDE_OAUTH_ACCESS_TOKEN`, `CODEX_USAGE_ACCESS_TOKEN`, `CODEX_USAGE_ACCOUNT_ID` | Credentials for the sources that need them. See [Usage sources](usage-sources.md#sources). |
 
