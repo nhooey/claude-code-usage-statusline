@@ -1553,6 +1553,441 @@
   "cached": {
    "300": {
     "account": {},
+    "as_of": null,
+    "buckets": [],
+    "credits": [
+     {
+      "applies_to": "cloud",
+      "currency": "USD",
+      "expires_at": 1793865540.0,
+      "granted": 250.0,
+      "id": "iguana_necktie",
+      "kind": "cloud",
+      "label": "Cloud sessions",
+      "remaining": 4.42
+     },
+     {
+      "expires_at": 1786933400.0,
+      "granted": 200.0,
+      "granted_at": 1786760600.0,
+      "id": "promo-1",
+      "kind": "promo",
+      "remaining": 199.99
+     },
+     {
+      "granted": 50.0,
+      "id": "extra",
+      "kind": "extra",
+      "remaining": 12.0,
+      "spent": 38.0
+     },
+     {
+      "granted": 3.0,
+      "id": "passes",
+      "kind": "passes",
+      "remaining": 2.0
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [],
+    "credits": [
+     {
+      "applies_to": "cloud",
+      "currency": "USD",
+      "expires_at": 1793865540.0,
+      "granted": 250.0,
+      "id": "iguana_necktie",
+      "kind": "cloud",
+      "label": "Cloud sessions",
+      "remaining": 4.42
+     },
+     {
+      "expires_at": 1786933400.0,
+      "granted": 200.0,
+      "granted_at": 1786760600.0,
+      "id": "promo-1",
+      "kind": "promo",
+      "remaining": 199.99
+     },
+     {
+      "granted": 50.0,
+      "id": "extra",
+      "kind": "extra",
+      "remaining": 12.0,
+      "spent": 38.0
+     },
+     {
+      "granted": 3.0,
+      "id": "passes",
+      "kind": "passes",
+      "remaining": 2.0
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "credits": [
+    {
+     "applies_to": "cloud",
+     "currency": "USD",
+     "expires_at": 1793865540.0,
+     "granted": 250.0,
+     "id": "iguana_necktie",
+     "kind": "cloud",
+     "label": "Cloud sessions",
+     "remaining": 4.42
+    },
+    {
+     "expires_at": 1786933400.0,
+     "granted": 200.0,
+     "granted_at": 1786760600.0,
+     "id": "promo-1",
+     "kind": "promo",
+     "remaining": 199.99
+    },
+    {
+     "granted": 50.0,
+     "id": "extra",
+     "kind": "extra",
+     "remaining": 12.0,
+     "spent": 38.0
+    },
+    {
+     "granted": 3.0,
+     "id": "passes",
+     "kind": "passes",
+     "remaining": 2.0
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "credits": [
+    {
+     "applies_to": "cloud",
+     "currency": "USD",
+     "expires_at": "2026-11-05T07:59:00Z",
+     "granted": 250,
+     "id": "iguana_necktie",
+     "kind": "cloud",
+     "label": "Cloud sessions",
+     "remaining": 4.42,
+     "secret": "x"
+    },
+    {
+     "expires_at": 1786933400,
+     "granted": 200,
+     "granted_at": 1786760600,
+     "id": "promo-1",
+     "kind": "promo",
+     "remaining": "199.99"
+    },
+    {
+     "granted": 50,
+     "id": "extra",
+     "kind": "extra",
+     "remaining": 12,
+     "spent": 38
+    },
+    {
+     "granted": 3,
+     "id": "passes",
+     "kind": "passes",
+     "remaining": 2
+    }
+   ],
+   "schema_version": 1
+  },
+  "name": "credits",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": null,
+    "buckets": [],
+    "credits": [
+     {
+      "id": "p",
+      "kind": "prepaid",
+      "remaining": 0.0
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [],
+    "credits": [
+     {
+      "id": "p",
+      "kind": "prepaid",
+      "remaining": 0.0
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "credits": [
+    {
+     "id": "p",
+     "kind": "prepaid",
+     "remaining": 0.0
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "credits": [
+    {
+     "id": "p",
+     "kind": "prepaid",
+     "remaining": 0
+    }
+   ],
+   "schema_version": 1
+  },
+  "name": "credits only",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": false,
+  "input": {
+   "credits": [
+    {
+     "id": "no kind",
+     "remaining": 1
+    },
+    {
+     "id": "odd kind",
+     "kind": "gift",
+     "remaining": 1
+    },
+    {
+     "granted": 5,
+     "id": "no remaining",
+     "kind": "promo"
+    },
+    {
+     "id": "negative",
+     "kind": "promo",
+     "remaining": -1
+    },
+    {
+     "id": "bool",
+     "kind": "promo",
+     "remaining": true
+    },
+    {
+     "granted": 5,
+     "id": "more than granted",
+     "kind": "promo",
+     "remaining": 6
+    },
+    {
+     "expires_at": 1786846999,
+     "granted_at": 1786847000,
+     "id": "expired before granted",
+     "kind": "promo",
+     "remaining": 1
+    },
+    {
+     "kind": "promo",
+     "remaining": 1
+    },
+    {
+     "id": "unsafe",
+     "kind": "promo",
+     "remaining": 1
+    },
+    "not a credit",
+    7
+   ],
+   "schema_version": 1
+  },
+  "name": "credits dropped whole",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
+    "as_of": null,
+    "buckets": [],
+    "credits": [
+     {
+      "id": "a",
+      "kind": "cloud",
+      "remaining": 1.0
+     },
+     {
+      "id": "b",
+      "kind": "promo",
+      "remaining": 2.0
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   },
+   "60": {
+    "account": {},
+    "as_of": null,
+    "buckets": [],
+    "credits": [
+     {
+      "id": "a",
+      "kind": "cloud",
+      "remaining": 1.0
+     },
+     {
+      "id": "b",
+      "kind": "promo",
+      "remaining": 2.0
+     }
+    ],
+    "schema_version": 1,
+    "source": "cmd",
+    "stale": true
+   }
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "credits": [
+    {
+     "id": "a",
+     "kind": "cloud",
+     "remaining": 1.0
+    },
+    {
+     "id": "b",
+     "kind": "promo",
+     "remaining": 2.0
+    }
+   ],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": true,
+  "input": {
+   "credits": [
+    {
+     "applies_to": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "currency": "usd",
+     "expires_at": "soon",
+     "granted": "lots",
+     "granted_at": true,
+     "id": "a",
+     "kind": "cloud",
+     "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+     "remaining": 1,
+     "spent": NaN
+    },
+    {
+     "currency": "EURO",
+     "id": "b",
+     "kind": "promo",
+     "remaining": 2
+    },
+    {
+     "id": "a",
+     "kind": "promo",
+     "remaining": 3
+    }
+   ],
+   "schema_version": 1
+  },
+  "name": "credits' optional fields malformed",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": false,
+  "input": {
+   "credits": {
+    "id": "a",
+    "kind": "promo",
+    "remaining": 1
+   },
+   "schema_version": 1,
+   "windows": []
+  },
+  "name": "credits not a list",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {},
+   "60": {}
+  },
+  "expected": {
+   "account": {},
+   "as_of": null,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "cmd"
+  },
+  "has_reading": false,
+  "input": {
+   "credits": [],
+   "schema_version": 1
+  },
+  "name": "credits empty",
+  "now": 1786847000
+ },
+ {
+  "cached": {
+   "300": {
+    "account": {},
     "as_of": 5.0,
     "buckets": [
      {
