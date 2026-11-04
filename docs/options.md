@@ -447,7 +447,7 @@ its glyph, what is left and 🔜 the time to its expiry:
 | `show` | a list of conditions for each of `cloud` ⛅, `promo` 🎁, `prepaid` 💵, `extra` 💸 and `passes` 🎫 | A credit is drawn when any one condition in its list holds. An empty list never draws it. |
 | `amber`, `red` | a list of conditions | A credit's figure is amber when one of `amber`'s holds, and red when one of `red`'s does. Red wins. |
 | `original` | `true` or `false` | Draw each original amount after the figure: `⛅ $4.4/250`. |
-| `command` | a program's path, or `null` | A program that prints `{"schema_version": 1, "credits": [...]}`, as [the reading's `credits`](usage-sources.md#writing-a-custom-command) has them, run every 5 minutes for the Console's credits. |
+| `command` | a program's path, or `null` | A program that prints `{"schema_version": 1, "credits": [...]}`, as [the reading's `credits`](usage-sources.md#writing-a-custom-command) has them, run every 5 minutes. [The Console's credits](#the-consoles-credits) come this way. |
 
 A condition is one map of `field`, `op`, `value` and `unit`:
 
@@ -467,6 +467,36 @@ To draw a credit always, give it
 `{"field": "balance", "op": ">=", "value": 0, "unit": "usd"}`. A list with a
 condition that is not of this shape is skipped whole, with a warning naming
 it. On a narrow terminal the credits leave the row before 📅 and 🕐.
+
+### The Console's credits
+
+The cloud credit ⛅ comes from Claude Code's own sign-in, with no setup.
+The Claude Console's promotional 🎁 and prepaid 💵 credits don't: the
+Console shows them only to a signed-in browser, behind bot protection,
+so no program reads them. Write them down instead, from the Console's
+billing page, in `~/.config/coding-agent-usage-line/console-credits.json`:
+
+```json
+{"credits": [
+  {"id": "console-promo", "kind": "promo", "remaining": 199.99,
+   "granted": 200, "expires_at": "2026-11-14T00:00:00Z"}
+]}
+```
+
+Each entry is one of [the reading's `credits`](usage-sources.md#writing-a-custom-command),
+`kind` `promo` or `prepaid`. Then point `credits.command` at
+`console-credits.py`, in the repository's root:
+
+```jsonc
+"credits": {"command": "/path/to/claude-code-usage-statusline/console-credits.py"}
+```
+
+The figure is as fresh as your last edit, which the mod reads within 5
+minutes; the expiry counts down by itself, and colours the figure by
+`amber` and `red`. Run `console-credits.py` by hand to check the file:
+it names on stderr each entry the reading would drop, and a missing or
+broken file prints nothing and exits 1, so the mod keeps the credits it
+had.
 
 ## Environment variables
 
