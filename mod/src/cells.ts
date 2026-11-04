@@ -218,7 +218,9 @@ export function untilReset(st: Settings, epoch: number | null,
  * the footer's tail draws in one style, so the mark is in the text. */
 export function accountLabel(st: Settings, sess: number | null,
   week: number | null, sessReset: string | null, weekReset: string | null,
-  date: string, time: string, stale: string | null = null): Piece[] {
+  date: string, time: string, stale: string | null = null,
+  credits: readonly { kind: string; spans: readonly Span[] }[] = []):
+    Piece[] {
   // Each window whole on the label, its share then its reset, since the
   // row has no figure in the plan columns to sit under: 🔋 15٪ 🔜 6.7m.
   // Three digits for both, so 🪫 reads 87٪ as 🔋 does, not the 87.0٪ the
@@ -251,9 +253,13 @@ export function accountLabel(st: Settings, sess: number | null,
     windows[windows.length - 1] = { ...last, spans: [...last.spans.slice(0,
       -1), { ...s, text: s.text.replace(/ +$/, "") }] };
   }
+  // The credits after the windows, each leaving before 📅 and 🕐 on a
+  // narrow terminal.
+  const owed: Piece[] = credits.map((c) => ({ path: "credits." + c.kind,
+    spans: [span("  "), ...c.spans], drop: 1 }));
   // 📅 and 🕐 last, at the right end of the footer (asked 2026-10-20).
   return [
-    piece("name.label", E_ACCT + " "), ...windows,
+    piece("name.label", E_ACCT + " "), ...windows, ...owed,
     piece("clock.date", "  " + E_DATE + " " + date, null, 2, true),
     piece("clock.time", "  " + E_TIME + " " + time, null, 3, true)];
 }

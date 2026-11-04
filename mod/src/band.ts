@@ -41,6 +41,7 @@ import {
   untilReset, workspacePieces, ymd,
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
+import { creditCell } from "./credits.ts";
 import { draw, hidden, layout } from "./grid.ts";
 import type { Piece, Row } from "./grid.ts";
 import type { Dict } from "./py.ts";
@@ -294,9 +295,16 @@ function accountRow(st: Settings, fig: Dict, now: number): Row {
   const asOf = Number(reading?.as_of);
   const age = Number.isFinite(asOf) ? now - asOf : NaN;
   const stale = age >= STALE_MARK_S ? durFmt(st, age).trim() : null;
+  // The credits the mod chose to draw (edges.ts creditsDoc): each with
+  // its colour, and whether to draw what was granted.
+  const owed = fig.credits as Dict | undefined;
+  const drawn = Array.isArray(owed?.drawn) ? owed.drawn as Dict[] : [];
+  const credits = drawn.map((d) => ({ kind: String((d.credit as Dict).kind),
+    spans: creditCell(st, d.credit as Dict,
+      d.tint as "red" | "amber" | null, owed?.original === true, now) }));
   return { scope: "account", label: accountLabel(st,
     pct(lim.session_pct), pct(lim.weekly_pct), reset("session_reset"),
-    reset("weekly_reset"), ymd(now), hms(now), stale), cells: {} };
+    reset("weekly_reset"), ymd(now), hms(now), stale, credits), cells: {} };
 }
 
 /** 🎤: the turn opened last, `open_turn`, with `accounting.open_turn`

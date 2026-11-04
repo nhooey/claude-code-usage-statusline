@@ -19,7 +19,9 @@ import {
   CONFIG_ENV, DEFAULTS_REL, DefaultsError, dumpsUnicode, jsonLoads, load,
   merge, nearest, parseDefaults, readDefaults, readFile, stripJsonc,
 } from "../src/config.ts";
-import type { ConfigEnv, ConfigFs, FileStat, Rows } from "../src/config.ts";
+import type {
+  ConfigEnv, ConfigFs, FileStat, RecordValue, Rows,
+} from "../src/config.ts";
 
 const CASES = path.join(import.meta.dirname, "..", "..", "tests", "fixtures",
   "config", "cases.json");
@@ -97,8 +99,8 @@ function caseEnv(c: Case): ConfigEnv {
 
 const filled = (v: unknown): unknown => JSON.parse(fill(JSON.stringify(v)));
 
-test("the shared cases are the Python's, 45 of them", () => {
-  assert.equal(cases.length, 45);
+test("the shared cases are the Python's, 48 of them", () => {
+  assert.equal(cases.length, 48);
   assert.deepEqual(cases.filter((c) => c.flags.length).map((c) => c.id),
     ["flag-over-local", "list-flag-repeated"]);
 });
@@ -122,6 +124,16 @@ for (const c of cases) {
           for (const [field, v] of Object.entries(rec)) {
             const at = found.options.fields[`${name}.${row}.${field}`];
             if (at) fields[`${name}.${row}.${field}`] = [v, at];
+          }
+        }
+      } else if (name === "credits") {
+        for (const [field, v] of Object.entries(value as RecordValue)) {
+          const parts = v !== null && !Array.isArray(v) && typeof v === "object"
+            ? Object.entries(v).map(([k, item]) => [`.${k}`, item] as const)
+            : [["", v] as const];
+          for (const [key, part] of parts) {
+            const at = found.options.fields[`${name}.${field}${key}`];
+            if (at) fields[`${name}.${field}${key}`] = [part, at];
           }
         }
       } else if (layer !== "default") {

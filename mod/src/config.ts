@@ -72,7 +72,8 @@ export const CONFIG_ENV = ["HOME", "XDG_CONFIG_HOME", CONFIG_DIR_ENV] as const;
 // ── The spec, loosely typed ───────────────────────────────────────────────
 
 type Scalar = { type: string; items?: readonly string[];
-  minimum?: number; fixed?: readonly string[] };
+  minimum?: number; fixed?: readonly string[]; keys?: readonly string[];
+  nullable?: boolean };
 type OptionRec = Scalar & {
   // An option no file sets has its default here; one a file may set has
   // it in the defaults file alone (Defaults).
@@ -496,9 +497,16 @@ const quoted = (items: readonly string[]) =>
 export type Row = { [field: string]: string | boolean };
 /** A table's value: its rows, by name. */
 export type Rows = { [row: string]: Row };
+/** A condition of a record's: {field, op, value, unit}. */
+export type Condition = { field: string; op: string; value: number;
+  unit: string };
+/** A record's value, field by field: a scalar, a list of conditions, or
+ * lists of them by key. */
+export type RecordValue = { [field: string]: string | boolean | null |
+  Condition[] | { [key: string]: Condition[] } };
 /** An option's value, as a file or a default gives it. */
 export type Value = string | boolean | number | readonly string[] | Rows |
-  null;
+  RecordValue | null;
 
 type Checked = { got: Value; bad: null } | { got: null; bad: string };
 
@@ -586,6 +594,113 @@ function table(name: string, option: OptionRec, value: Json,
   return { kept, why };
 }
 
+const CONDITION_UNITS: { [field: string]: readonly string[] } = {
+  balance: ["usd", "percent"], spent: ["usd"],
+  expiry: ["days", "hours", "minutes"] };
+const CONDITION_OPS = ["<", "<=", "=", "!=", ">=", ">"];
+const CONDITION_KEYS = ["field", "op", "value", "unit"];
+
+/** The condition `value` is, or why not, `path` naming it:
+ * config._condition's words. */
+function condition(value: Json, path: string):
+    { got: Condition; bad: null } | { got: null; bad: string } {
+  const at = (part: string) => dumps(path + part);
+  if (!(value instanceof Map) || value.size !== 4 ||
+      !CONDITION_KEYS.every((k) => value.has(k))) {
+    return { got: null,
+      bad: `${at("")} must be an object of field, op, value and unit` };
+  }
+  const field = value.get("field"), op = value.get("op");
+  const unit = value.get("unit"), number = value.get("value");
+  const fields = Object.keys(CONDITION_UNITS);
+  if (typeof field !== "string" || !fields.includes(field)) {
+    return { got: null, bad: `${at(".field")} must be one of ` +
+      quoted(fields) + (typeof field === "string" ? hint(field, fields) : "") };
+  }
+  if (typeof op !== "string" || !CONDITION_OPS.includes(op)) {
+    return { got: null,
+      bad: `${at(".op")} must be one of ${quoted(CONDITION_OPS)}` };
+  }
+  const units = CONDITION_UNITS[field];
+  if (typeof unit !== "string" || !units.includes(unit)) {
+    return { got: null, bad: `${at(".unit")} must be one of ` +
+      `${quoted(units)} for ${dumps(field)}` };
+  }
+  if (!(typeof number === "bigint" ||
+        (typeof number === "number" && Number.isFinite(number)))) {
+    return { got: null, bad: `${at(".value")} must be a number` };
+  }
+  return { got: { field, op, value: Number(number), unit }, bad: null };
+}
+
+/** The list of conditions, or why not for each fault: a list is kept
+ * whole or not at all. */
+function conditions(value: Json, path: string):
+    { got: Condition[] | null; why: string[] } {
+  if (!Array.isArray(value)) {
+    return { got: null, why: [`${dumps(path)} must be a list of conditions`] };
+  }
+  const kept: Condition[] = [];
+  const why: string[] = [];
+  value.forEach((item, i) => {
+    const c = condition(item, `${path}[${i}]`);
+    if (c.bad === null) kept.push(c.got);
+    else why.push(c.bad);
+  });
+  return why.length ? { got: null, why } : { got: kept, why: [] };
+}
+
+/** A record's value checked field by field: the fields that passed, and
+ * why for each that did not.  A conditions-by field passes per key. */
+function record(name: string, option: OptionRec, value: Json):
+    { kept: RecordValue; why: string[] } {
+  if (!(value instanceof Map)) {
+    return { kept: {}, why: [`${dumps(name)} must be an object`] };
+  }
+  const fields = option.fields ?? {};
+  const kept: RecordValue = {};
+  const why: string[] = [];
+  for (const [field, v] of value) {
+    const where = dumps(`${name}.${field}`);
+    if (!Object.hasOwn(fields, field)) {
+      why.push(`${where} is no field${hint(field, Object.keys(fields))}`);
+      continue;
+    }
+    const spec = fields[field];
+    if (spec.type === "conditions") {
+      const got = conditions(v, `${name}.${field}`);
+      why.push(...got.why);
+      if (got.got !== null) kept[field] = got.got;
+    } else if (spec.type === "conditions-by") {
+      if (!(v instanceof Map)) {
+        why.push(`${where} must be an object`);
+        continue;
+      }
+      const keys = spec.keys ?? [];
+      for (const [key, item] of v) {
+        const at = `${name}.${field}.${key}`;
+        if (!keys.includes(key)) {
+          why.push(`${dumps(at)} is no key${hint(key, keys)}`);
+          continue;
+        }
+        const got = conditions(item, at);
+        why.push(...got.why);
+        if (got.got !== null) {
+          const by = (kept[field] ??= {}) as { [key: string]: Condition[] };
+          by[key] = got.got;
+        }
+      }
+    } else if (v === null && spec.nullable) {
+      kept[field] = null;
+    } else {
+      const { got, bad } = scalar(spec.type, v, spec, where);
+      if (bad !== null) why.push(bad);
+      else kept[field] = got as string | boolean;
+    }
+  }
+  return { kept, why };
+}
+
 /** The option a file may set by `name`, or why not. */
 function known(name: string): { option: OptionRec; why: null } |
     { option: null; why: string } {
@@ -608,6 +723,10 @@ export function check(name: string, value: Json, defaults: Defaults):
   const { option, why: unknown } = known(name);
   if (option === null) return { got: null, why: [unknown] };
   if (value === null && option.derived) return { got: null, why: [] };
+  if (option.type === "record") {
+    const { kept, why } = record(name, option, value);
+    return { got: Object.keys(kept).length ? kept : null, why };
+  }
   if (option.type === "table") {
     const { kept, why } = table(name, option, value, defaults[name] as Rows);
     return { got: Object.keys(kept).length ? kept : null, why };
@@ -745,6 +864,23 @@ export function parseDefaults(path: string, text: string): Defaults {
       values[name] = null;
       continue;
     }
+    if (option.type === "record") {
+      const { kept, why } = record(name, option, value);
+      faults.push(...why);
+      const fields = option.fields ?? {};
+      const missing = why.length ? [] :
+        Object.keys(fields).filter((f) => !Object.hasOwn(kept, f));
+      for (const [f, spec] of Object.entries(fields)) {
+        if (spec.type !== "conditions-by" || !Object.hasOwn(kept, f)) continue;
+        const by = kept[f] as { [key: string]: Condition[] };
+        for (const k of spec.keys ?? []) {
+          if (!Object.hasOwn(by, k)) missing.push(`${f}.${k}`);
+        }
+      }
+      for (const m of missing) faults.push(`${dumps(`${name}.${m}`)} is missing`);
+      values[name] = kept;
+      continue;
+    }
     if (option.type === "table") {
       const got = defaultsTable(name, option, value);
       faults.push(...got.faults);
@@ -842,6 +978,32 @@ export function merge(files: readonly Layer[], warnings: readonly string[],
   const layers: Merged["layers"] = {};
   const fields: Merged["fields"] = {};
   for (const [name, option] of Object.entries(SPEC)) {
+    if (option.type === "record") {
+      const value: RecordValue = {};
+      for (const [field, v] of Object.entries(defaults[name] as RecordValue)) {
+        value[field] = v !== null && !Array.isArray(v) && typeof v === "object"
+          ? { ...v } : v;
+      }
+      let layer: LayerName = "default";
+      for (const f of [...files].reverse()) {
+        if (!Object.hasOwn(f.values, name)) continue;
+        layer = f.name;
+        for (const [field, v] of Object.entries(f.values[name] as RecordValue)) {
+          if (v !== null && !Array.isArray(v) && typeof v === "object") {
+            for (const [key, item] of Object.entries(v)) {
+              (value[field] as { [key: string]: Condition[] })[key] = item;
+              fields[`${name}.${field}.${key}`] = f.name;
+            }
+          } else {
+            value[field] = v;
+            fields[`${name}.${field}`] = f.name;
+          }
+        }
+      }
+      values[name] = value;
+      layers[name] = layer;
+      continue;
+    }
     if (option.type === "table") {
       const rows: Rows = {};
       for (const [row, rec] of Object.entries(defaults[name] as Rows)) {

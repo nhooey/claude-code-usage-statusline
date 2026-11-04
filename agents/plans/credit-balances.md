@@ -169,6 +169,12 @@ and its plan windows:
    billed to the payer; the 🎮 session row takes the measured fall in the
    balance once two readings bracket the session.
 
+6. **The configuration's shape** is the nested `credits` table, read
+   through a `record` option type whose fields may be lists of
+   conditions, alone or by credit.
+7. **Extra usage's figures** are read as dollars until they are seen with
+   extra usage on.
+
 ## The build order
 
 1. **`CB1`, the trial.** Once per process, at the mod's start, it logs
@@ -192,10 +198,11 @@ and its plan windows:
    with shared cases, the five glyphs in `spec/layout.jsonc`, and each
    credit's cell in the mod.
 6. **`CB4b`, the credits drawn.** `credits` in `spec/options.jsonc`, the
-   defaults file and both ports' configuration readers, which need a type
-   for its lists of condition maps; the credits on the 💳 row; the Console
-   credits from `credits.command`, merged into the kept credits; its row
-   cases.
+   defaults file and both ports' configuration readers, through a
+   `record` type; the credits on the 💳 row; the Console credits from
+   `credits.command`, merged into the kept credits. Its `place` is
+   `"account"` or `"none"`: a row of their own, and `show-missing`, are
+   left until they're wanted.
 7. **`CB6`, the spending column.** The payer of each record, the column on
    the 🎤, 🤖, 🎮 and subagent rows, and the session row's measured
    figure; its cases.

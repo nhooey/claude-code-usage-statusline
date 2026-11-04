@@ -378,6 +378,36 @@ OPTIONS = {
         "doc-table": None,
         "doc": "Where the 💳 account is drawn when `rows.account.live` draws it: `row`, a row of its own where `rows.account.place` puts it, in its colours, or `tail`, in plain text at the right end of Claude Code's footer line, whatever `rows.account.place` says.",
     },
+    # A record merges per field across layers; `show` merges per credit,
+    # and each list of conditions is replaced whole, as a list is.
+    "credits": {
+        "type": "record",
+        "fields": {
+            #   "account" — on the 💳 row, after 🪫
+            #   "none"    — not drawn
+            "place": {"type": "enum", "items": ("account", "none")},
+            # Each credit is drawn when any one condition in its list holds;
+            # an empty list never draws it.
+            "show": {
+                "type": "conditions-by",
+                "keys": ("cloud", "promo", "prepaid", "extra", "passes"),
+            },
+            # A credit's figure is amber when any one of these holds, and red
+            # when any one of `red`'s does; red wins.
+            "amber": {"type": "conditions"},
+            "red": {"type": "conditions"},
+            # Each credit's original amount after its figure: $4.4/250.
+            "original": {"type": "bool"},
+            # A program that prints the credits[] JSON, for the Console's
+            # credits, run every 5 minutes; null for none.
+            "command": {"type": "string", "nullable": True},
+        },
+        "ports": ("mod",),
+        "file": True,
+        "flag": None,
+        "doc-table": None,
+        "doc": "The account's dollar credits on the 💳 row: `place`, which credits `show` draws and when, the `amber` and `red` conditions, the `original` amount, and a `command` that prints the Console's credits. A condition is `{field, op, value, unit}`; see [The credits](#the-credits).",
+    },
     "hint-tuck": {
         "type": "bool",
         "ports": ("mod",),

@@ -44,6 +44,7 @@ OUT = os.path.join(FIXTURES, "config", "cases.json")
 sys.path.insert(0, REPO)
 
 from coding_agent_usage_line import cli, config  # noqa: E402
+from coding_agent_usage_line.options_spec import OPTIONS  # noqa: E402
 from coding_agent_usage_line.options import flag_values, parse  # noqa: E402
 
 with open(config.DEFAULTS_FILE, encoding="utf-8") as _fh:
@@ -260,6 +261,32 @@ CASES = [
                    ' "session": {"place": "footer"}}}',
           "home/p/.git/": None}),
 
+    # ── A record: credits ───────────────────────────────────────────────
+    case("credits-merge", "a record merges per field, and show per credit:"
+         " the project's cloud list over the user's, the user's promo and"
+         " place kept, each list replaced whole",
+         {USER: '{"credits": {"place": "none", "show": {"cloud": [],'
+                ' "promo": [{"field": "balance", "op": ">=", "value": 0,'
+                ' "unit": "usd"}]}}}',
+          PROJECT: '{"credits": {"show": {"cloud": [{"field": "expiry",'
+                   ' "op": "<", "value": 2.5, "unit": "hours"}]},'
+                   ' "red": [], "command": "/bin/credits"}}',
+          "home/p/.git/": None}),
+    case("credits-bad", "a record's faults, each named: a list with one bad"
+         " condition is skipped whole, the rest kept",
+         {PROJECT: '{"credits": {"place": "row", "original": true,'
+                   ' "show": {"cloud": [{"field": "balance", "op": ">",'
+                   ' "value": 0, "unit": "usd"}, {"field": "balnce",'
+                   ' "op": ">", "value": 0, "unit": "usd"}], "gift": [],'
+                   ' "extra": [{"field": "spent", "op": "=>", "value": 1,'
+                   ' "unit": "usd"}]}, "amber": [{"field": "spent",'
+                   ' "op": ">", "value": 1, "unit": "days"}],'
+                   ' "red": [{"field": "expiry", "op": "<", "value": "1",'
+                   ' "unit": "days"}, 4], "command": 7, "x": 1}}',
+          "home/p/.git/": None}),
+    case("credits-not-object", "a record that is not an object",
+         {PROJECT: '{"credits": ["account"]}', "home/p/.git/": None}),
+
     # ── The defaults file, copied ───────────────────────────────────────
     case("copied-defaults", "the defaults file copied as the user's with"
          " one value changed: every key is the user's, at the default's"
@@ -329,6 +356,12 @@ DEFAULTS_CASES = [
     ("several", "every fault named, in the file's order, the missing last",
      _swap(_without(SHIPPED, '"prefix": "📊"'), '"color": false',
            '"color": 1')),
+    ("record-missing-field", "a record's field left out",
+     _without(SHIPPED, '"original": false,')),
+    ("record-missing-key", "a conditions-by key left out",
+     _without(SHIPPED, '"passes":  []')),
+    ("record-bad-condition", "a condition of another shape",
+     _swap(SHIPPED, '"unit": "percent"}]', '"unit": "dollars"}]')),
     ("version", "a version this program does not read",
      _swap(SHIPPED, '"usage-source": "auto"',
            '"version": 2, "usage-source": "auto"')),
@@ -389,7 +422,15 @@ def run(c):
         values, fields = {}, {}
         for name in options:
             value = options[name]
-            if isinstance(value, dict) or hasattr(value, "items"):
+            if OPTIONS[name]["type"] == "record":
+                for field, v in value.items():
+                    parts = v.items() if isinstance(v, dict) else [("", v)]
+                    for key, part in parts:
+                        layer = options.field_layer(name, field, key)
+                        if layer != "default":
+                            path = ".".join(p for p in (name, field, key) if p)
+                            fields[path] = [part, layer]
+            elif isinstance(value, dict) or hasattr(value, "items"):
                 for row, rec in value.items():
                     for field, v in rec.items():
                         layer = options.field_layer(name, row, field)

@@ -37,6 +37,7 @@ import {
   agentFoldText, FOLD_CHECK_BYTES as AGENT_CHECK_BYTES, foldCandidates,
   foldDir as agentFoldDir, slotNames, tailDigest,
 } from '../src/agent_fold.ts'
+import { drawnCredits } from '../src/credits.ts'
 import { statePath } from '../src/state.ts'
 import { agentOfMeta, lastReply, repliesOfLines }
   from '../src/agent_message.ts'
@@ -1027,36 +1028,52 @@ async function preparedVia($: $, places: Places, raw: Dict,
     'experimental-claude-oauth')
 }
 
-/** The account's credits, refreshed from the OAuth usage answer once
- * CREDITS_TTL has passed since the last ask, and kept for the status line
- * in the shared store under the signed-in account.  A failed ask keeps the
- * last credits and waits out the same pace; with no signed-in account
- * nothing is asked or kept. */
-export async function creditsVia($: $, places: Places, now: number):
-  Promise<Reading> {
-  const account = await configAccountVia($, places.home)
-  if (!account) return {}
+/** The account's credits, refreshed once CREDITS_TTL has passed since the
+ * last ask, from the OAuth usage answer and then `command`, a program
+ * printing the credits[] JSON (the `credits` option's), the first of a
+ * credit's id kept; and kept for the status line in the shared store
+ * under the signed-in account.  With none, the usage endpoint isn't
+ * asked, and only the command's credits are kept, under `account`.  When
+ * every ask fails the last credits are kept, and the next ask waits out
+ * the same pace. */
+export async function creditsVia($: $, places: Places, now: number,
+  account: string, command: string | null = null): Promise<Reading> {
+  const signedIn = await configAccountVia($, places.home)
+  const who = signedIn || (command ? account : '')
+  if (!who) return {}
   const dir = places.stateDir
-  const kept = await storeLoad($, dir, 'claude', CREDITS_SOURCE, account,
+  const kept = await storeLoad($, dir, 'claude', CREDITS_SOURCE, who,
     CREDITS_PERIOD)
   const asked = pyFloat(pyGet(kept, 'attempted_at'))
   if (asked !== null && now - asked < CREDITS_TTL && now >= asked) {
     return normalise(kept, CREDITS_SOURCE)
   }
-  let fresh: Reading = {}
+  const found: unknown[] = []
+  let answered = false
   try {
-    const auth = await $.session.authorize()
+    const auth = signedIn ? await $.session.authorize() : null
     if (auth) {
       const r = await $.http.fetch(OAUTH_USAGE_URL, { auth: auth.handle,
         headers: { 'anthropic-beta': 'oauth-2025-04-20' } })
-      if (r.ok) fresh = creditsReading(pyJsonLoads(r.text), now)
+      if (r.ok) {
+        const got = creditsReading(pyJsonLoads(r.text), now)
+        found.push(...(Array.isArray(got.credits) ? got.credits : []))
+        answered = true
+      }
     }
   } catch {
-    fresh = {}
+    // No answer: the command's, or the last credits.
   }
-  const reading = Object.keys(fresh).length ? fresh
-    : normalise(kept, CREDITS_SOURCE)
-  await storeSave($, dir, 'claude', CREDITS_SOURCE, account, CREDITS_PERIOD,
+  if (command) {
+    const got = await fetchOne($, places.home, 'cmd:' + command, {})
+    if (isDict(got) && Object.keys(got).length) {
+      found.push(...(Array.isArray(got.credits) ? got.credits : []))
+      answered = true
+    }
+  }
+  const reading = answered ? normalise({ schema_version: 1, as_of: now,
+    credits: found }, CREDITS_SOURCE) : normalise(kept, CREDITS_SOURCE)
+  await storeSave($, dir, 'claude', CREDITS_SOURCE, who, CREDITS_PERIOD,
     { ...reading, attempted_at: now })
   return reading
 }
@@ -1741,8 +1758,9 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
   }
   const prepared = await timed($, 'usage', () => preparedVia($, places, raw,
     payload.session_id, payload.model_id || payload.model, now))
-  // Kept warm for the status line, which reads it without asking.
-  await timed($, 'credits', () => creditsVia($, places, now))
+  const o = options()
+  const credits = o === null ? {} : await timed($, 'credits', () =>
+    creditsVia($, places, now, o.account, o.credits.command))
   const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
   const calib = await timed($, 'calib', () =>
     calibrationVia($, places, snap, now))
@@ -1751,10 +1769,16 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
     : tr.own_tok_up + tr.own_tok_down
   const [kept, rate] = sessionRate(samples, tokens, now)
   samples = kept
-  return statusFigures({ payload, transcript: tr, turns,
+  const doc = statusFigures({ payload, transcript: tr, turns,
     git: await timed($, 'git', () => gitVia($, payload.current_dir)),
     prepared, snap, calib, now,
     tz: localZone(), rate })
+  // The mod's alone, and only when there are some: the credits the 💳
+  // row draws, by the option.
+  const drawn = o === null ? [] : drawnCredits(credits.credits, o.credits,
+    now)
+  return drawn.length ? { ...doc, credits: { drawn,
+    original: o!.credits.original } } : doc
 }
 
 /** The session's turns as read_turns makes them from the transcript as it

@@ -85,6 +85,27 @@
   // rows.account.place puts it, in its colours, or "tail", at the footer
   // line's right end, plain and dim, whatever rows.account.place says.
   "account-place": "row",
+  // The account's credits on the 💳 row (docs/options.md, "The credits").
+  // A condition is {field, op, value, unit}: field "balance" (unit "usd"
+  // or "percent"), "spent" ("usd") or "expiry" ("days", "hours",
+  // "minutes"); op "<", "<=", "=", "!=", ">=" or ">".
+  "credits": {
+    "place": "account",
+    "show": {
+      "cloud":   [{"field": "balance", "op": ">", "value": 0, "unit": "usd"}],
+      "promo":   [{"field": "balance", "op": ">", "value": 0, "unit": "usd"}],
+      "prepaid": [{"field": "balance", "op": "<=", "value": 20, "unit": "usd"},
+                  {"field": "expiry", "op": "<", "value": 7, "unit": "days"}],
+      "extra":   [{"field": "spent", "op": ">", "value": 0, "unit": "usd"}],
+      "passes":  []
+    },
+    "amber": [{"field": "expiry", "op": "<", "value": 7, "unit": "days"},
+              {"field": "balance", "op": "<", "value": 20, "unit": "percent"}],
+    "red":   [{"field": "expiry", "op": "<", "value": 1, "unit": "days"},
+              {"field": "balance", "op": "=", "value": 0, "unit": "usd"}],
+    "original": false,
+    "command": null
+  },
   // Draw the rows under the footer line into the blank row below it.
   "hint-tuck": false,
   // How many columns in Claude Code draws the footer line's container.
