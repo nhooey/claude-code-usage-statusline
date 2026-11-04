@@ -75,8 +75,8 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `AR4` | The `/compact` receipt | `AR1` | `AR3` | `mod/hooks/register.tsx`, `mod/src/receipt.ts` |
 | `AR5` | Docs, and the acceptance check, live | `AR3`, `AR4` | none | `docs/layout.md`, `docs/options.md` |
 | `CB1` | **Done.** The trial: what the session's credential reaches of the dollar credits, logged | none | none | `mod/hooks/register.tsx` |
-| `CB1b` | **Built; the user's live run pending.** The second trial: `extra_usage`'s figures and the cloud credit's `used` per turn, logged | `CB1` | none | `mod/hooks/register.tsx` |
-| `CB2` | The `credits[]` reading, parsed in both ports | `CB1b` | none | `mod/src/sources.ts`, `coding_agent_usage_line/sources.py`, `docs/usage-sources.md` |
+| `CB1b` | **Done.** The second trial: `extra_usage`'s figures and the cloud credit's `used` per turn, logged | `CB1` | none | `mod/hooks/register.tsx` |
+| `CB2` | **Built.** The `credits[]` reading, parsed in both ports | `CB1b` | none | `mod/src/sources.ts`, `coding_agent_usage_line/sources.py`, `docs/usage-sources.md` |
 | `CB3` | The sources: the OAuth answer, the Console by the trial's finding, the shared cache | `CB2` | none | `mod/hooks/edges.ts`, `mod/src/sources.ts` |
 | `CB4` | The credits drawn, and the `credits` option and its conditions | `CB2` | `AR3` | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/src/band.ts` |
 | `CB6` | The spending column on the turn, agent, session and subagent rows | `CB3`, `CB4` | none | `mod/src/band.ts`, `mod/src/cells.ts`, `coding_agent_usage_line/claude.py` |

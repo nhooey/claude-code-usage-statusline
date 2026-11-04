@@ -122,6 +122,39 @@ def _tokens(value):
     if out["output_tokens"] is not None and out["reasoning_output_tokens"] is not None and out["reasoning_output_tokens"] > out["output_tokens"]: return {}
     return {key: val for key, val in out.items() if val is not None}
 
+CREDIT_KINDS = ("cloud", "promo", "prepaid", "extra", "passes")
+_CURRENCY = re.compile(r"[A-Z]{3}\Z")
+
+def _credits(value):
+    """The credits[] list: each entry whole or dropped, never guessed.
+
+    An entry needs an id, a known kind and what is left; one whose figures
+    contradict each other (more left than granted, an expiry before its
+    grant) is dropped.  The first entry with an id wins."""
+    out, seen = [], set()
+    for raw in value if isinstance(value, list) else []:
+        if not isinstance(raw, dict): continue
+        ident = _safe_text(raw.get("id"), 128)
+        kind = raw.get("kind")
+        remaining = _number(raw.get("remaining"))
+        if ident is None or ident in seen or kind not in CREDIT_KINDS or remaining is None: continue
+        item = {"id": ident, "kind": kind, "remaining": remaining}
+        for name in ("granted", "spent"):
+            figure = _number(raw.get(name))
+            if figure is not None: item[name] = figure
+        if item.get("granted") is not None and remaining > item["granted"]: continue
+        for name in ("expires_at", "granted_at"):
+            stamp = epoch(raw.get(name))
+            if stamp is not None: item[name] = stamp
+        if item.get("granted_at") is not None and item.get("expires_at") is not None and item["expires_at"] < item["granted_at"]: continue
+        currency = raw.get("currency")
+        if isinstance(currency, str) and _CURRENCY.match(currency): item["currency"] = currency
+        for name, maximum in (("label", 128), ("applies_to", 64)):
+            safe = _safe_text(raw.get(name), maximum)
+            if safe is not None: item[name] = safe
+        seen.add(ident); out.append(item)
+    return out
+
 def normalise(value, source=""):
     """Whitelist the v1 source fields; malformed numbers are unavailable."""
     if (not isinstance(value, dict) or isinstance(value.get("schema_version"), bool)
@@ -179,8 +212,13 @@ def normalise(value, source=""):
             if window.get(field) is not None: bucket[field] = window[field]
         child = {key: val for key, val in window.items() if key not in ("bucket_id", "heading", "model", "feature")}
         bucket["windows"].append(child)
-    return {"schema_version": 1, "source": source, "as_of": epoch(value.get("as_of")), "buckets": list(grouped.values()),
-            "account": safe_account}
+    reading = {"schema_version": 1, "source": source, "as_of": epoch(value.get("as_of")), "buckets": list(grouped.values()),
+               "account": safe_account}
+    # Absent, not empty, when there are none, so a reading without credits
+    # is the same as before they were read.
+    credits = _credits(value.get("credits"))
+    if credits: reading["credits"] = credits
+    return reading
 
 def has_reading(value):
     """An envelope alone is not a source response and must not replace cache."""
@@ -190,6 +228,9 @@ def has_reading(value):
         for window in bucket.get("windows", []) if isinstance(bucket, dict) and isinstance(bucket.get("windows"), list) else []:
             if _number(window.get("used_percent")) is not None:
                 return True
+    if any(isinstance(c, dict) and _number(c.get("remaining")) is not None
+           for c in value.get("credits", []) if isinstance(value.get("credits"), list)):
+        return True
     return any(_number(account.get(name)) is not None
                for name in ("input_tokens", "cached_input_tokens", "output_tokens",
                             "reasoning_output_tokens", "cost_usd"))

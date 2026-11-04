@@ -425,6 +425,50 @@ export function tokens(value: unknown): Dict {
   return kept;
 }
 
+export const CREDIT_KINDS = ["cloud", "promo", "prepaid", "extra", "passes"];
+
+/** The credits[] list: each entry whole or dropped, never guessed.  An
+ * entry needs an id, a known kind and what is left; one whose figures
+ * contradict each other (more left than granted, an expiry before its
+ * grant) is dropped.  The first entry with an id wins. */
+export function credits(value: unknown): Dict[] {
+  const out: Dict[] = [];
+  const seen = new Set<string>();
+  for (const raw of Array.isArray(value) ? value : []) {
+    if (!isDict(raw)) continue;
+    const ident = safeText(pyGet(raw, "id"), 128);
+    const kind = pyGet(raw, "kind");
+    const remaining = number(pyGet(raw, "remaining"));
+    if (ident === null || seen.has(ident) || typeof kind !== "string" ||
+        !CREDIT_KINDS.includes(kind) || remaining === null) continue;
+    const item: Dict = { id: ident, kind, remaining };
+    for (const name of ["granted", "spent"]) {
+      const figure = number(pyGet(raw, name));
+      if (figure !== null) item[name] = figure;
+    }
+    if (typeof item.granted === "number" && remaining > item.granted) continue;
+    for (const name of ["expires_at", "granted_at"]) {
+      const stamp = epoch(pyGet(raw, name));
+      if (stamp !== null) item[name] = stamp;
+    }
+    if (typeof item.granted_at === "number" &&
+        typeof item.expires_at === "number" &&
+        item.expires_at < item.granted_at) continue;
+    const currency = pyGet(raw, "currency");
+    if (typeof currency === "string" && /^[A-Z]{3}$/.test(currency)) {
+      item.currency = currency;
+    }
+    for (const [name, maximum] of [["label", 128], ["applies_to", 64]] as
+         const) {
+      const safe = safeText(pyGet(raw, name), maximum);
+      if (safe !== null) item[name] = safe;
+    }
+    seen.add(ident);
+    out.push(item);
+  }
+  return out;
+}
+
 // Whitelist the v1 source fields; malformed numbers are unavailable.
 export function normalise(value: unknown, source = ""): Reading {
   if (!isDict(value) || pyGet(value, "schema_version") !== 1) return {};
@@ -514,8 +558,14 @@ export function normalise(value: unknown, source = ""): Reading {
     }
     (bucket.windows as Dict[]).push(child);
   }
-  return { schema_version: 1, source, as_of: epoch(pyGet(value, "as_of")),
-           buckets: [...grouped.values()], account: safeAccount };
+  const reading: Reading = { schema_version: 1, source,
+    as_of: epoch(pyGet(value, "as_of")), buckets: [...grouped.values()],
+    account: safeAccount };
+  // Absent, not empty, when there are none, so a reading without credits
+  // is the same as before they were read.
+  const found = credits(pyGet(value, "credits"));
+  if (found.length) reading.credits = found;
+  return reading;
 }
 
 // An envelope alone is not a source response and must not replace cache.
@@ -532,6 +582,9 @@ export function hasReading(value: unknown): boolean {
       }
     }
   }
+  const found = pyGet(value, "credits");
+  if (Array.isArray(found) && found.some((c) =>
+      isDict(c) && number(pyGet(c, "remaining")) !== null)) return true;
   return ["input_tokens", "cached_input_tokens", "output_tokens",
           "reasoning_output_tokens", "cost_usd"]
     .some((name) => number(pyGet(account, name)) !== null);

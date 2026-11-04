@@ -34,14 +34,26 @@ session's own credential (`$.session.authorize()`, spent through
 - **The answer has an `extra_usage` key** besides `seven_day`, `limits`
   and `spend`. `CB1` logged keys and dollar windows only, so its figures
   are `CB1b`'s to log.
+
+`CB1b` found, logging at each turn's end:
+
+- **Extra usage is off on this account by the user's choice:**
+  `is_enabled` false, `user_disabled` true, `credits_ever_enabled` true,
+  `spend_limit_reached` false. Its `monthly_limit`, `used_credits`,
+  `utilization`, `currency`, `decimal_places`, `daily` and `weekly` are
+  all null while it is off, so the 💸 figures are still unseen.
+- **Local turns don't spend the cloud credit:** its `used` stayed at
+  245.58 across 2½ hours of this checkout's turns, with no line logged
+  after the first. It is spent by cloud sessions alone.
 - **The Console refuses that credential:** its organizations request
   answers 403. The Console's credits come from `credits-command` alone.
 
 ## The design
 
 - **The reading:** a `credits[]` list beside `buckets[]`, each entry `id`,
-  `label`, `remaining`, `granted`, `currency`, `expires_at`, `granted_at`,
-  `applies_to`. A window or tranche is taken by its fields, never by its
+  `kind`, `label`, `remaining`, `granted`, `spent`, `currency`,
+  `expires_at`, `granted_at`, `applies_to`, as `docs/usage-sources.md`
+  gives it. A window or tranche is taken by its fields, never by its
   codename; one missing a field is dropped, not guessed.
 - **The cloud session credit:** from the OAuth `usage` answer the mod
   already fetches, at its 5-minute pace, with no setup.
@@ -73,7 +85,7 @@ session's own credential (`$.session.authorize()`, spent through
 - **No figure:** a credit whose source is unset or failing meets no
   condition; `show-missing` draws it as `?`, as the 💳 row draws a
   missing total.
-- **Expired:** dropped from the reading, never drawn.
+- **Expired:** kept in the reading, never drawn.
 - **Every glyph draws two columns,** with no variation selector.
 
 ## The configuration
@@ -132,7 +144,7 @@ and its plan windows:
 | A plan login, its windows under 100%           | the plan                                   | `💰6.4       🧠-42k`, the column blank |
 | A plan login, a window at 100%, extra usage on | 💸 extra usage                             | `💰6.4  💸2.1  🧠-42k`                 |
 | An API key                                     | 🎁 the promotional credit, then 💵 prepaid | `💰6.4  🎁6.4  🧠-42k`                 |
-| A Claude Code on the web session               | ⛅ the cloud credit, if `CB1b` confirms it | `💰6.4  ⛅6.4  🧠-42k`                 |
+| A Claude Code on the web session               | ⛅ the cloud credit                        | `💰6.4  ⛅6.4  🧠-42k`                 |
 
 - **The column:** after 💰, the payer's glyph and dollars; blank while
   the plan pays, which 🔋 and 🪫 already show. A turn that crossed into

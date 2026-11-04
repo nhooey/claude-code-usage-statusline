@@ -139,6 +139,7 @@ quota
 | `windows[].used_percent` | no | Percent **used**, not remaining, 0–100. Missing means unknown, not zero. |
 | `windows[].resets_at` | no | Unix seconds or RFC 3339. A window whose reset has passed is shown as expired. |
 | `account` | no | Organization totals; see below. |
+| `credits` | no | The account's dollar credits; see below. |
 
 Buckets stay separate all the way to the readout. The General bucket above has
 no five-hour window, and nothing will fill one in from Spark's, even though a
@@ -151,6 +152,34 @@ The optional `account` object carries period totals: `period_start`,
 `reasoning_output_tokens`, `cost_usd` and `scope`. Cached input is part of
 input, and reasoning output part of output — they are subsets, not extra
 tokens.
+
+The optional `credits` list carries the account's dollar credits, apart from
+its plan windows:
+
+```json
+"credits": [
+  {"id": "cloud-sessions", "kind": "cloud", "label": "Cloud sessions",
+   "remaining": 4.42, "granted": 250, "currency": "USD",
+   "expires_at": "2026-11-05T07:59:00Z"},
+  {"id": "promo-1", "kind": "promo", "remaining": 199.99, "granted": 200,
+   "granted_at": "2026-10-15T00:00:00Z", "expires_at": "2026-11-14T00:00:00Z"}
+]
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `id` | yes | A stable identifier for the credit. The first entry with an id is kept. |
+| `kind` | yes | `cloud` (the cloud session credit), `promo` (a promotional credit), `prepaid`, `extra` (extra usage) or `passes` (guest passes). It chooses the glyph and the `credits.show` list. |
+| `remaining` | yes | What is left: dollars, or a count of passes. |
+| `granted` | no | The original amount. Not less than `remaining`. |
+| `spent` | no | What it has paid for since its period began, such as extra usage's month. |
+| `currency` | no | Three capital letters, such as `USD`. |
+| `expires_at`, `granted_at` | no | Unix seconds or RFC 3339. The expiry is not before the grant. An expired credit is kept in the reading and never drawn. |
+| `label`, `applies_to` | no | Its name, and what it pays for. |
+
+An entry missing a required field, or whose figures contradict each other, is
+dropped whole rather than drawn with a guess. A reading with no credits has no
+`credits` key.
 
 **Validation.** Unknown keys are dropped. A number that is negative,
 non-finite or out of range, and a label containing control characters, are
