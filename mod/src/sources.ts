@@ -900,12 +900,110 @@ const HTTP_SOURCES = ["anthropic-admin", "openai-admin",
 // not run one command twice; Node has no flock, and the cost of two
 // refreshes racing is one extra tracker read, so the lock and the re-read
 // under it are left out.
+//
+// Each window of the reading is at the highest the account has read for it
+// (accountHigh).
 export async function collect(agent: string, spec: string | null,
                               account: string, period: string,
                               context: unknown, now: number, store: Store,
                               fetch: Fetch, env: Env = {},
                               configAccount: AccountOf = () => "",
                               claudeFallback = "claude-usage-tracker"):
+    Promise<Reading> {
+  return accountHigh(agent, await collectOne(agent, spec, account, period,
+    context, now, store, fetch, env, configAccount, claudeFallback), now,
+    store);
+}
+
+// A plan window's use only rises until it resets, so the highest any
+// reading of the account has given for one window is the truest: a session
+// idle since its last response keeps the figure that response carried, and
+// its status line writes it again, stamped with the time of writing, on
+// every draw.  The highs are kept per account in one small file, so no draw
+// reads every cache.
+export const HIGHS_SOURCE = "window-highs";
+export const HIGHS_PERIOD = "highs";
+
+/** The account a reading is of: its account id, else the account name a
+ * reading shared by every session on the account is cached under. */
+function accountOf(reading: Dict): string {
+  for (const value of [pyGet(reading, "account_id"),
+                       pyGet(reading, "account_name")]) {
+    if (typeof value === "string" && ACCOUNT_ID.test(value)) return value;
+  }
+  return "";
+}
+
+/** A window's key among the highs.  Sources stamp one reset a fraction of
+ * a second apart: by the nearest minute, rounded half up, as the Python's
+ * _high_key rounds it. */
+function highKey(bucket: Dict, window: Dict, reset: number): string {
+  const name = (d: Dict) => {
+    const v = pyGet(d, "id");
+    return pyTruthy(v) ? pyStr(v) : "";
+  };
+  return name(bucket) + "\0" + name(window) + "\0" +
+    String(Math.floor((reset + 30) / 60));
+}
+
+/** `reading` with each window's used percent raised to the highest the
+ * account has read for that window, the bucket, window and reset the same;
+ * and the account's highs raised to its figures, saved when they rise.  A
+ * reading that names no account is left as it is. */
+export async function accountHigh(agent: string, reading: Reading,
+                                  now: number, store: Store):
+    Promise<Reading> {
+  if (!isDict(reading) || !hasReading(reading)) return reading;
+  const id = accountOf(reading);
+  if (!id) return reading;
+  const loaded = pyGet(await store.load(agent, HIGHS_SOURCE, id,
+                                        HIGHS_PERIOD), "windows");
+  const stored: Dict = isDict(loaded) ? loaded : {};
+  const highs: Dict = {};
+  for (const [key, item] of Object.entries(stored)) {
+    if (!isDict(item)) continue;
+    const pct = number(pyGet(item, "used_percent"));
+    const reset = epoch(pyGet(item, "resets_at"));
+    if (pct !== null && reset !== null && reset > now) {
+      highs[key] = { used_percent: item.used_percent, resets_at: reset };
+    }
+  }
+  const raised = JSON.parse(JSON.stringify(reading)) as Dict;
+  let rose = false;
+  const buckets = pyGet(raised, "buckets");
+  for (const bucket of Array.isArray(buckets) ? buckets : []) {
+    if (!isDict(bucket)) continue;
+    const windows = pyGet(bucket, "windows");
+    for (const window of Array.isArray(windows) ? windows : []) {
+      if (!isDict(window)) continue;
+      const pct = number(pyGet(window, "used_percent"));
+      const reset = epoch(pyGet(window, "resets_at"));
+      if (pct === null || reset === null || reset <= now) continue;
+      const key = highKey(bucket, window, reset);
+      const high = highs[key] as Dict | undefined;
+      const was = high ? number(high.used_percent) ?? 0 : null;
+      if (was === null || pct > was) {
+        // The figure as the source gave it.
+        highs[key] = { used_percent: window.used_percent, resets_at: reset };
+        rose = true;
+      } else if (was > pct) {
+        window.used_percent = high!.used_percent;
+      }
+    }
+  }
+  if (rose || Object.keys(highs).length !== Object.keys(stored).length) {
+    await store.save(agent, HIGHS_SOURCE, id, HIGHS_PERIOD,
+                     { windows: highs });
+  }
+  return raised;
+}
+
+async function collectOne(agent: string, spec: string | null,
+                          account: string, period: string,
+                          context: unknown, now: number, store: Store,
+                          fetch: Fetch, env: Env,
+                          configAccount: AccountOf,
+                          claudeFallback: string):
     Promise<Reading> {
   spec = validateSource(agent, spec);
   const [start, end] = periodBounds(period, now);

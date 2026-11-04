@@ -425,6 +425,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539900}}]</string>\n</dict></plist>\n"
@@ -554,6 +570,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539900}}]</string>\n</dict></plist>\n"
@@ -684,6 +716,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": null
@@ -815,6 +863,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": null
@@ -946,6 +1010,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": null
@@ -1075,6 +1155,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539900}}]</string>\n</dict></plist>\n"
@@ -1180,6 +1276,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -1278,6 +1390,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808536000}}]</string>\n</dict></plist>\n"
@@ -1376,6 +1504,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808536000}}]</string>\n</dict></plist>\n"
@@ -1864,6 +2008,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -2135,6 +2295,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -2246,6 +2422,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": null
@@ -2346,6 +2538,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -2495,6 +2703,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -2598,6 +2822,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -2696,6 +2936,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -2794,6 +3050,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -2897,6 +3169,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -3029,6 +3317,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -3161,6 +3465,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -3264,6 +3584,22 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -3362,6 +3698,38 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:d9298a10d1b0735837dc4bd8",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>other</string>\n<key>profiles_v3</key><string>[{\"id\":\"other\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -3697,6 +4065,18 @@
       "schema_version": 1,
       "source": "claude-usage-tracker",
       "stale": true
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808539799,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -4715,6 +5095,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "account:666ff6ccaa5b3c07feaa3a95",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780790": {
+        "resets_at": 1786847400.0,
+        "used_percent": 15.0
+       },
+       "default\u0000seven_day\u000029783450": {
+        "resets_at": 1787007000.0,
+        "used_percent": 87.5
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -4809,6 +5205,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "account:666ff6ccaa5b3c07feaa3a95",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780790": {
+        "resets_at": 1786847400.0,
+        "used_percent": 15.0
+       },
+       "default\u0000seven_day\u000029783450": {
+        "resets_at": 1787007000.0,
+        "used_percent": 87.5
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -4957,6 +5369,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "account:666ff6ccaa5b3c07feaa3a95",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780790": {
+        "resets_at": 1786847400.0,
+        "used_percent": 15.0
+       },
+       "default\u0000seven_day\u000029783450": {
+        "resets_at": 1787007000.0,
+        "used_percent": 87.5
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -5078,6 +5506,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "account:278ec6a36068c0901295e62c",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780790": {
+        "resets_at": 1786847400.0,
+        "used_percent": 15.0
+       },
+       "default\u0000seven_day\u000029783450": {
+        "resets_at": 1787007000.0,
+        "used_percent": 87.5
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -5192,6 +5636,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "account:278ec6a36068c0901295e62c",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780790": {
+        "resets_at": 1786847400.0,
+        "used_percent": 15.0
+       },
+       "default\u0000seven_day\u000029783450": {
+        "resets_at": 1787007000.0,
+        "used_percent": 87.5
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"
@@ -5625,6 +6085,22 @@
       "schema_version": 1,
       "source": "native",
       "stale": false
+     },
+     {
+      "account_name": "profile:dd56de4137951d9c92681b03",
+      "agent": "claude",
+      "period_start": "highs",
+      "source": "window-highs",
+      "windows": {
+       "default\u0000five_hour\u000029780880": {
+        "resets_at": 1786852800.0,
+        "used_percent": 41.0
+       },
+       "default\u0000seven_day\u000029783583": {
+        "resets_at": 1787015000.0,
+        "used_percent": 63.0
+       }
+      }
      }
     ],
     "tracker": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>activeProfileId</key><string>golden</string>\n<key>profiles_v3</key><string>[{\"id\":\"golden\",\"claudeUsage\":{\"sessionPercentage\":41,\"sessionResetTime\":808545600,\"weeklyPercentage\":63,\"weeklyResetTime\":808707800,\"lastUpdated\":808539600}}]</string>\n</dict></plist>\n"

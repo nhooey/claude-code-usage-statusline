@@ -70,7 +70,7 @@ footer`):
 
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                               💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                          🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
@@ -290,7 +290,7 @@ rows under it, with the prompt between them left out (`--part above`, then
                     🎤  💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
                     🎮  💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean         💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  📦repo 🌿golden-clean       💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                     🤖  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
 ```
 
@@ -300,7 +300,7 @@ At 80:
                        🎤  💰6.4   🧠-42k  -4٪  ⌛  5m  🔋 1.2٪   🪫 1.56٪
                        🎮  💰 35                ⌛9.3h  🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean    💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    🕐 02:23:20
+  📦repo 🌿golden-clean  💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    🕐 02:23:20
                        🤖  💰 35   🧠115k  11٪  ⌛9.3h  🔋 3.8٪   🪫 8.45٪
 ```
 
@@ -318,7 +318,7 @@ prompt and under the footer line):
 ```
                          🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                               💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                          🤖  🤖O⁵🏃           💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
@@ -368,7 +368,7 @@ the footer line:
                                               🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
                                               🎮                   💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                                               💳 🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                                              💳 🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                                               🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
 ```
 
@@ -852,7 +852,7 @@ edge of Claude Code's footer container (`--part footer --rows` set so,
 
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                                  💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                                💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                             🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
                             🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
                             🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
@@ -864,7 +864,7 @@ Every row above the prompt, with
 (`--part above --rows` set so, `--right-edge 5`):
 
 ```
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                               💳 🔋 15٪ 🔜 6.7m  🪫 87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                          🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
                          🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
                          🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
@@ -878,7 +878,7 @@ line, plain and dim, after Claude Code's ` · `, whatever
 `rows.account.place` says (`--part tail`):
 
 ```
-  -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle) · 📦repo 🌿golden-clean ⠀📁~/src/statusline-fixture/deep/tree 💳 🔋 15٪ 🔜 6.7m ⠀🪫 87٪ 🔜 1.9d 📅 2026-08-16 ⠀🕐 02:23:20
+  -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle) · 📦repo 🌿golden-clean ⠀📁~/src/statusline-fixture/deep/tree 💳 🔋  15٪ 🔜 6.7m ⠀🪫  87٪ 🔜 1.9d 📅 2026-08-16 ⠀🕐 02:23:20
 ```
 
 Claude Code trims the tail's leading spaces and draws a run of spaces as

@@ -8,9 +8,9 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
-  cachedReading, cacheName, claudeUsageTracker, commandReading, epoch,
+  accountHigh, cachedReading, cacheName, claudeUsageTracker, commandReading, epoch,
   hasReading, isCacheName, nativeReading, normalise, number, periodBounds,
-  pyJsonLoads,
+  HIGHS_PERIOD, HIGHS_SOURCE, pyJsonLoads,
 } from "../src/sources_node.ts";
 import type { Dict } from "../src/sources_node.ts";
 import { isDict, pyGet, pyTruthy } from "../src/py.ts";
@@ -269,6 +269,50 @@ test("collect: scenarios over one state directory", async () => {
       fs.rmSync(dir, { recursive: true, force: true });
     }
   }
+});
+
+test("each window reads at the highest the account has given for it", async () => {
+  // As tests/source-cache.py: sessions on 20, the OAuth reading on 21 and
+  // an idle session's stale 16 all read 21.
+  const files: { [key: string]: Dict } = {};
+  const key = (...k: string[]) => k.join("\0");
+  const store = {
+    load: (a: string, s: string, acc: string, p: string) =>
+      structuredClone(files[key(a, s, acc, p)] ?? {}),
+    save: (a: string, s: string, acc: string, p: string, v: Dict) => {
+      files[key(a, s, acc, p)] = structuredClone(v);
+    },
+    findCompatible: () => ({}),
+  };
+  const acct = "account:aec47d42ff6857fec81c29d6";
+  const other = "account:0123456789abcdef01234567";
+  const now = 1793786000, reset = 1794272400;
+  const weekly = (pct: number, at = reset, ident: Dict = {}): Dict => ({
+    schema_version: 1, as_of: now, ...ident,
+    buckets: [{ id: "default", label: "default", windows: [{
+      id: "seven_day", duration_seconds: 604800, resets_at: at,
+      used_percent: pct }] }],
+  });
+  const pct = (v: unknown) =>
+    (((v as Dict).buckets as Dict[])[0].windows as Dict[])[0].used_percent;
+  const high = (v: Dict, at = now) => accountHigh("claude", v, at, store);
+  assert.equal(pct(await high(weekly(20, reset, { account_id: acct }))), 20);
+  assert.equal(pct(await high(weekly(21, reset + 0.435,
+                                     { account_name: acct }))), 21);
+  const stale = weekly(16, reset, { account_id: acct });
+  assert.equal(pct(await high(stale)), 21);
+  assert.equal(pct(stale), 16, "the reading given is not changed");
+  assert.equal(pct(await high(weekly(20, reset, { account_id: acct }))), 21);
+  assert.equal(pct(await high(weekly(16, reset, { account_id: other }))), 16);
+  assert.equal(pct(await high(weekly(16))), 16);
+  assert.equal(pct(await high(weekly(5, reset + 604800,
+                                     { account_id: acct }))), 5);
+  assert.equal(pct(await high(weekly(2, reset + 604800,
+                                     { account_id: acct }), reset + 1)), 5);
+  assert.equal(pct(await high(weekly(1, reset, { account_id: acct }),
+                              reset + 1)), 1);
+  files[key("claude", HIGHS_SOURCE, other, HIGHS_PERIOD)] = { windows: [1] };
+  assert.equal(pct(await high(weekly(3, reset, { account_id: other }))), 3);
 });
 
 test("every case ran", () => {

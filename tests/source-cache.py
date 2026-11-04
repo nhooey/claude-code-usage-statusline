@@ -63,4 +63,33 @@ with tempfile.TemporaryDirectory() as tmp:
         assert sources.collect("claude", "native", context={"session":"bridge"}, now=1001)["buckets"][0]["windows"][0]["used_percent"] == 44
     finally:
         sources.command_reading, sources.codex_app_server = old_command, old_app
+with tempfile.TemporaryDirectory() as tmp:
+    os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = tmp
+    # A window's use only rises until it resets, so each window reads at the
+    # highest the account has given for it: sessions on 20, the account's
+    # OAuth reading on 21 (its reset a fraction of a second later), and an
+    # idle session's stale 16 all read 21.  Another account, a reading with
+    # no account and the next window keep their own figures.
+    acct, other, now, reset = ("account:aec47d42ff6857fec81c29d6",
+                               "account:0123456789abcdef01234567", 1793786000, 1794272400)
+    def weekly(pct, at=reset, **ident):
+        value={"schema_version":1, "as_of":now, "buckets":[{"id":"default","label":"default",
+               "windows":[{"id":"seven_day","duration_seconds":604800,"resets_at":at,"used_percent":pct}]}]}
+        value.update(ident); return value
+    pct=lambda value: value["buckets"][0]["windows"][0]["used_percent"]
+    assert pct(sources.account_high("claude", weekly(20, account_id=acct), now)) == 20
+    assert pct(sources.account_high("claude", weekly(21, reset + 0.435, account_name=acct), now)) == 21
+    stale = weekly(16, account_id=acct)
+    assert pct(sources.account_high("claude", stale, now)) == 21
+    assert pct(stale) == 16, "the reading given is not changed"
+    assert pct(sources.account_high("claude", weekly(20, account_id=acct), now)) == 21
+    assert pct(sources.account_high("claude", weekly(16, account_id=other), now)) == 16
+    assert pct(sources.account_high("claude", weekly(16), now)) == 16
+    assert pct(sources.account_high("claude", weekly(5, reset + 604800, account_id=acct), now)) == 5
+    # Past its reset a window's high is dropped, so the new window starts low.
+    assert pct(sources.account_high("claude", weekly(2, reset + 604800, account_id=acct), reset + 1)) == 5
+    assert pct(sources.account_high("claude", weekly(1, reset, account_id=acct), reset + 1)) == 1
+    # A corrupt highs file reads as none.
+    state.save("claude", sources.HIGHS_SOURCE, other, sources.HIGHS_PERIOD, {"windows": [1]})
+    assert pct(sources.account_high("claude", weekly(3, account_id=other), now)) == 3
 print("ok source cache selection and freshness")
