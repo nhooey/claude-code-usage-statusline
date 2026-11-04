@@ -1028,10 +1028,18 @@ async function preparedVia($: $, places: Places, raw: Dict,
     'experimental-claude-oauth')
 }
 
+/** Whether an ask for the credits is under way, so a document doesn't
+ * start a second. */
+let creditsAsking = false
+
 /** The account's credits, refreshed once CREDITS_TTL has passed since the
- * last ask, from the OAuth usage answer and then `command`, a program
- * printing the credits[] JSON (the `credits` option's), the first of a
- * credit's id kept; and kept for the status line in the shared store
+ * last ask, behind the document as calibrationVia scans: a document takes
+ * the kept credits, and an ask that is due starts after it, whose answer
+ * the next document takes, so a slow or refused endpoint never holds the
+ * status document.  The ask is of the OAuth usage answer and then
+ * `command`, a program printing the credits[] JSON (the `credits`
+ * option's), the first of a credit's id kept; and the answer is kept for
+ * the status line in the shared store
  * under the signed-in account.  With none, the usage endpoint isn't
  * asked, and only the command's credits are kept, under `account`.  When
  * every ask fails the last credits are kept, and the next ask waits out
@@ -1045,9 +1053,23 @@ export async function creditsVia($: $, places: Places, now: number,
   const kept = await storeLoad($, dir, 'claude', CREDITS_SOURCE, who,
     CREDITS_PERIOD)
   const asked = pyFloat(pyGet(kept, 'attempted_at'))
-  if (asked !== null && now - asked < CREDITS_TTL && now >= asked) {
-    return normalise(kept, CREDITS_SOURCE)
+  const due = asked === null || now - asked >= CREDITS_TTL || now < asked
+  if (due && !creditsAsking) {
+    creditsAsking = true
+    void askCredits($, places, who, signedIn, command, kept, now)
+      .catch(() => {})
+      .finally(() => {
+        creditsAsking = false
+      })
   }
+  return normalise(kept, CREDITS_SOURCE)
+}
+
+/** creditsVia's ask: the usage endpoint's credits and then the command's,
+ * saved with attempted_at, or the last credits when neither answers. */
+async function askCredits($: $, places: Places, who: string,
+  signedIn: string, command: string | null, kept: unknown,
+  now: number): Promise<void> {
   const found: unknown[] = []
   let answered = false
   try {
@@ -1073,9 +1095,8 @@ export async function creditsVia($: $, places: Places, now: number,
   }
   const reading = answered ? normalise({ schema_version: 1, as_of: now,
     credits: found }, CREDITS_SOURCE) : normalise(kept, CREDITS_SOURCE)
-  await storeSave($, dir, 'claude', CREDITS_SOURCE, who, CREDITS_PERIOD,
-    { ...reading, attempted_at: now })
-  return reading
+  await storeSave($, places.stateDir, 'claude', CREDITS_SOURCE, who,
+    CREDITS_PERIOD, { ...reading, attempted_at: now })
 }
 
 // ════════════════════════════════════════════════════════════════════════════
