@@ -109,6 +109,12 @@ export const E_RESET = "🔜";         // marks a duration as time UNTIL: the fi
                                      // is a deadline, not a cycle.  A rotation glyph (🔄, ⟳
                                      // before it) said only "something recurs here"; this one
                                      // names the number, which is what earns its two columns.
+export const E_CLOUD = "⛅";         // the account's credits, on the 💳 row: the cloud
+export const E_PROMO = "🎁";         // session credit, the Console's promotional and
+export const E_PREPAID = "💵";       // prepaid credits, extra usage and the guest passes
+export const E_EXTRA = "💸";         // (agents/plans/credit-balances.md).  ⛅ U+26C5 is
+export const E_PASSES = "🎫";        // the one cloud drawn two columns wide with no
+                                     // variation selector; ☁ and 🛰 draw one.
 export const E_EFF_LOW = "🐢";       // effort ladder, legible as a picture: the pace of the
 export const E_EFF_MED = "🚶";       // thing doing the work.  Since 2026-09-13 the picture is
 export const E_EFF_HIGH = "🏃";      // the whole cell, against the model spec, on both

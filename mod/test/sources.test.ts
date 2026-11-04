@@ -13,6 +13,7 @@ import {
   HIGHS_PERIOD, HIGHS_SOURCE, pyJsonLoads,
 } from "../src/sources_node.ts";
 import type { Dict } from "../src/sources_node.ts";
+import { colour, met, shown } from "../src/credits.ts";
 import { isDict, pyGet, pyTruthy } from "../src/py.ts";
 import { seedLimitsSnapshot } from "../src/claude_calib_node.ts";
 import {
@@ -129,6 +130,26 @@ test("credits_reading", () => {
   for (const c of load("credits.json")) {
     same(creditsReading(c.raw, c.now), c.expected, c.name);
     count("credits");
+  }
+});
+
+test("credits: met, shown and colour", () => {
+  const d = load("conditions.json") as unknown as Dict;
+  const now = d.now as number;
+  const credits = d.credits as Dict[];
+  const byName = Object.fromEntries(credits.map((c) => [c.name, c.credit]));
+  for (const c of credits) {
+    same((d.conditions as unknown[]).map((k) => met(c.credit, k, now)),
+         c.met, String(c.name));
+    count("conditions");
+  }
+  for (const c of d.shown as Dict[]) {
+    same(shown(byName[String(c.credit)], c.conditions, now), c.shown,
+         String(c.credit));
+  }
+  for (const c of d.colours as Dict[]) {
+    same(colour(byName[String(c.credit)], c.amber, c.red, now), c.colour,
+         String(c.credit));
   }
 });
 

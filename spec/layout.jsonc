@@ -127,6 +127,12 @@
                            // is a deadline, not a cycle.  A rotation glyph (🔄, ⟳
                            // before it) said only "something recurs here"; this one
                            // names the number, which is what earns its two columns.
+  "E_CLOUD": "⛅",         // the account's credits, on the 💳 row: the cloud
+  "E_PROMO": "🎁",         // session credit, the Console's promotional and
+  "E_PREPAID": "💵",       // prepaid credits, extra usage and the guest passes
+  "E_EXTRA": "💸",         // (agents/plans/credit-balances.md).  ⛅ U+26C5 is
+  "E_PASSES": "🎫",        // the one cloud drawn two columns wide with no
+                           // variation selector; ☁ and 🛰 draw one.
   "E_EFF_LOW": "🐢",       // effort ladder, legible as a picture: the pace of the
   "E_EFF_MED": "🚶",       // thing doing the work.  Since 2026-09-13 the picture is
   "E_EFF_HIGH": "🏃",      // the whole cell, against the model spec, on both
