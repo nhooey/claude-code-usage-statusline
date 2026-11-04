@@ -16,6 +16,8 @@ files they both change. Written 2026-10-20 from:
   2026-10-21; approved and its decisions taken 2026-10-21).
 - [Receipts for a subagent's run and a typed /compact](agent-compact-receipts.md),
   steps 1–5: `AR1` … `AR5`.
+- [The account's dollar credits on the band](credit-balances.md), steps
+  1–5: `CB1` … `CB5`.
 - Work in flight outside the plans: `CA`, the calibration cache keyed by
   account id (asked 2026-10-20, Blocked.1.A).
 
@@ -72,6 +74,11 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `AR3` | A subagent's receipt, filed and drawn; the options | `AR2` | none | `mod/hooks/register.tsx`, `spec/options.jsonc`, `mod/defaults/config.jsonc` |
 | `AR4` | The `/compact` receipt | `AR1` | `AR3` | `mod/hooks/register.tsx`, `mod/src/receipt.ts` |
 | `AR5` | Docs, and the acceptance check, live | `AR3`, `AR4` | none | `docs/layout.md`, `docs/options.md` |
+| `CB1` | **Built; the user's live run pending.** The trial: what the session's credential reaches of the dollar credits, logged | none | none | `mod/hooks/register.tsx` |
+| `CB2` | The `credits[]` reading, parsed in both ports | `CB1` | none | `mod/src/sources.ts`, `coding_agent_usage_line/sources.py`, `docs/usage-sources.md` |
+| `CB3` | The sources: the OAuth answer, the Console by the trial's finding, the shared cache | `CB2` | none | `mod/hooks/edges.ts`, `mod/src/sources.ts` |
+| `CB4` | The `rows.credits` row and its option | `CB2` | `AR3` | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/src/band.ts` |
+| `CB5` | Docs, and the acceptance check, live | `CB3`, `CB4` | none | `docs/layout.md`, `docs/options.md`, `docs/usage-sources.md` |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
@@ -115,7 +122,12 @@ flowchart LR
     AR1 --> AR2 --> AR3 --> AR5
     AR1 --> AR4 --> AR5
   end
+  subgraph credit-balances
+    CB1 --> CB2 --> CB3 --> CB5
+    CB2 --> CB4 --> CB5
+  end
   AR3 -.-> AR4
+  AR3 -.-> CB4
   RP4 -.-> RP5
 ```
 

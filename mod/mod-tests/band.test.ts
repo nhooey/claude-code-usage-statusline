@@ -26,9 +26,13 @@ import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
 import { fromBase64 } from '../hooks/edges.ts'
 import { merge as mergeConfig, optionsOf } from '../src/config.ts'
 import { DEFAULTS, DEFAULTS_TEXT, isDefaults } from './defaults.ts'
-import { startKey } from '../hooks/register.tsx'
+import { creditsTrialNext, startKey } from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
 import { CONFIG } from '../hooks/config.ts'
+
+// The credits trial asks the network beside the reads these tests count;
+// its own test turns it on.
+creditsTrialNext(false)
 import {
   _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, foldAgentBytes,
   newAgentFold, readPayload, transcriptOf, turnsOf,
@@ -1691,6 +1695,36 @@ test('a turn before any session.start still draws all three',
     await drewAll($, w)
     // The first event started the load's tick, and said so.
     expect(logOf(w)).toContain('started by turn.start')
+  })
+
+test('the credits trial logs the usage answer\'s dollar windows and what ' +
+  'the Console answers, once, and never the body', async ($, on) => {
+    const w = world(on)
+    w.oauth.body = JSON.stringify({
+      seven_day: { utilization: 20, resets_at: '2026-11-10T01:00:00Z',
+        limit_dollars: null },
+      cloud_credit: { utilization: 98.2, resets_at: '2026-11-05T07:59:00Z',
+        limit_dollars: 250, used_dollars: 245.58, remaining_dollars: 4.42 },
+      five_hour: null, private_note: 'not logged' })
+    creditsTrialNext(true)
+    try {
+      await $.session.start({ cwd: CWD, surface: 'terminal',
+        isInteractive: true })
+      await settle()
+    } finally {
+      creditsTrialNext(false)
+    }
+    const text = logOf(w)
+    expect(text).toContain('trial: credits oauth {"kind":"bearer",' +
+      '"status":200,"keys":["seven_day","cloud_credit","private_note"],' +
+      '"dollars":[{"key":"cloud_credit","limit":250,"used":245.58,' +
+      '"remaining":4.42,"resets_at":"2026-11-05T07:59:00Z"}]}')
+    expect(text).toContain('trial: credits console orgs ' +
+      '{"status":200,"orgs":-1}')
+    expect(text).not.toContain('not logged')
+    expect(w.oauth.asked.map((a) => a.url)).toEqual([
+      'https://api.anthropic.com/api/oauth/usage',
+      'https://platform.claude.com/api/organizations'])
   })
 
 test('a read that never ends is dropped and logged after its limit, and ' +
