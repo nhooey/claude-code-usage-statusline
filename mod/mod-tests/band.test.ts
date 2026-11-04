@@ -171,7 +171,8 @@ type World = {
   session: { id: string }
   // The usage endpoint's answer, and the requests made of it; with no
   // answer there is no credential, and nothing is asked.
-  oauth: { body: string | null; asked: { url: string; auth?: string }[] }
+  oauth: { body: string | null; asked: { url: string; auth?: string }[];
+    hang?: boolean }
 }
 
 type Run = { argv: readonly string[]; init?: { stdin?: string } }
@@ -278,6 +279,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     : { handle: 'test-handle', kind: 'bearer' as const } }))
   on('http.fetch', ($, e: any) => {
     oauth.asked.push({ url: e.url, auth: e.init?.auth })
+    if (oauth.hang) return new Promise(() => {})
     return oauth.body === null ? { deny: 'no network in tests' } as any
       : { value: { status: 200, ok: true, headers: {}, text: oauth.body } }
   })
@@ -571,6 +573,29 @@ test('the credits are asked of the usage endpoint once per 5 minutes, ' +
     await settle()
     expect(kept().length).toBe(1)
     expect(kept()[0]).toContain('"remaining":3')
+  })
+
+test('a credits ask that never answers holds no document, and no second ' +
+  'ask starts behind it', async ($, on) => {
+    const w = world(on)
+    w.files.set('/claude/.claude.json', encoder.encode(
+      '{"oauthAccount": {"accountUuid": "0f0f0f0f-test-account"}}'))
+    w.oauth.body = '{}'
+    w.oauth.hang = true
+    await start($, w, 'terminal', STATUS)
+    const credits = () => w.oauth.asked.filter((a) =>
+      a.url === 'https://api.anthropic.com/api/oauth/usage').length
+    const first = lastDoc(w)
+    expect(first.credits).toBeUndefined()
+    const asked = credits()
+    expect(asked).toBeGreaterThan(0)
+    await w.clock.advance(31_000)
+    await settle()
+    expect(lastDoc(w)).not.toBe(first)
+    await w.clock.advance(300_000)
+    await settle()
+    expect(credits()).toBe(asked)
+    expect(logOf(w)).not.toContain('still running after')
   })
 
 test('a turn running draws the running phase', async ($, on) => {
