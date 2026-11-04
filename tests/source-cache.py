@@ -92,4 +92,14 @@ with tempfile.TemporaryDirectory() as tmp:
     # A corrupt highs file reads as none.
     state.save("claude", sources.HIGHS_SOURCE, other, sources.HIGHS_PERIOD, {"windows": [1]})
     assert pct(sources.account_high("claude", weekly(3, account_id=other), now)) == 3
+    # The credits the mod kept for the account, read without fetching, as
+    # the mod's storeSave writes them; none for another account or none.
+    kept = sources.credits_reading({"cloud": {"limit_dollars": 250, "used_dollars": 245.5,
+                                    "remaining_dollars": 4.5, "resets_at": reset}}, now)
+    state.save("claude", sources.CREDITS_SOURCE, acct, sources.CREDITS_PERIOD, dict(kept, attempted_at=now))
+    found, as_of = sources.cached_credits("claude", acct)
+    assert [(c["kind"], c["remaining"], c["expires_at"]) for c in found] == [("cloud", 4.5, reset)], found
+    assert as_of == now
+    assert sources.cached_credits("claude", other) == ([], None)
+    assert sources.cached_credits("claude", "") == ([], None)
 print("ok source cache selection and freshness")

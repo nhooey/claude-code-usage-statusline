@@ -54,9 +54,10 @@ import type {
 } from '../src/claude_calib.ts'
 import {
   cacheName, commandInput, commandOutput, identity, isCacheName, pyFloat,
-  claudeOauthReading, pyJsonDumps, pyJsonLoads, pyStr, trackerV1,
+  claudeOauthReading, creditsReading, CREDITS_PERIOD, CREDITS_SOURCE,
+  CREDITS_TTL, normalise, pyJsonDumps, pyJsonLoads, pyStr, trackerV1,
 } from '../src/sources.ts'
-import type { Env, Fetch, Store } from '../src/sources.ts'
+import type { Env, Fetch, Reading, Store } from '../src/sources.ts'
 import {
   configAccountOf, plistLoads, prepareClaudeReading, statusSourceContext,
   trackerReading,
@@ -1026,6 +1027,40 @@ async function preparedVia($: $, places: Places, raw: Dict,
     'experimental-claude-oauth')
 }
 
+/** The account's credits, refreshed from the OAuth usage answer once
+ * CREDITS_TTL has passed since the last ask, and kept for the status line
+ * in the shared store under the signed-in account.  A failed ask keeps the
+ * last credits and waits out the same pace; with no signed-in account
+ * nothing is asked or kept. */
+export async function creditsVia($: $, places: Places, now: number):
+  Promise<Reading> {
+  const account = await configAccountVia($, places.home)
+  if (!account) return {}
+  const dir = places.stateDir
+  const kept = await storeLoad($, dir, 'claude', CREDITS_SOURCE, account,
+    CREDITS_PERIOD)
+  const asked = pyFloat(pyGet(kept, 'attempted_at'))
+  if (asked !== null && now - asked < CREDITS_TTL && now >= asked) {
+    return normalise(kept, CREDITS_SOURCE)
+  }
+  let fresh: Reading = {}
+  try {
+    const auth = await $.session.authorize()
+    if (auth) {
+      const r = await $.http.fetch(OAUTH_USAGE_URL, { auth: auth.handle,
+        headers: { 'anthropic-beta': 'oauth-2025-04-20' } })
+      if (r.ok) fresh = creditsReading(pyJsonLoads(r.text), now)
+    }
+  } catch {
+    fresh = {}
+  }
+  const reading = Object.keys(fresh).length ? fresh
+    : normalise(kept, CREDITS_SOURCE)
+  await storeSave($, dir, 'claude', CREDITS_SOURCE, account, CREDITS_PERIOD,
+    { ...reading, attempted_at: now })
+  return reading
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // The calibration.
 // ════════════════════════════════════════════════════════════════════════════
@@ -1706,6 +1741,8 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
   }
   const prepared = await timed($, 'usage', () => preparedVia($, places, raw,
     payload.session_id, payload.model_id || payload.model, now))
+  // Kept warm for the status line, which reads it without asking.
+  await timed($, 'credits', () => creditsVia($, places, now))
   const snap = seedLimitsSnapshot(baseLimits(prepared), prepared.reading)
   const calib = await timed($, 'calib', () =>
     calibrationVia($, places, snap, now))

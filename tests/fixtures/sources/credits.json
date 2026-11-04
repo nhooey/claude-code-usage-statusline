@@ -1,0 +1,212 @@
+[
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "credits": [
+    {
+     "currency": "USD",
+     "expires_at": 1793865540.0,
+     "granted": 250.0,
+     "id": "iguana_necktie",
+     "kind": "cloud",
+     "remaining": 4.419458999999989,
+     "spent": 245.580541
+    }
+   ],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "cloud credit, extra usage off",
+  "now": 1786847000,
+  "raw": {
+   "extra_usage": {
+    "currency": null,
+    "is_enabled": false,
+    "monthly_limit": null,
+    "used_credits": null,
+    "user_disabled": true,
+    "utilization": null
+   },
+   "iguana_necktie": {
+    "limit_dollars": 250,
+    "remaining_dollars": 4.419458999999989,
+    "resets_at": "2026-11-05T07:59:00+00:00",
+    "used_dollars": 245.580541
+   },
+   "limits": null,
+   "seven_day": {
+    "resets_at": 1786850600,
+    "utilization": 21
+   }
+  }
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "credits": [
+    {
+     "currency": "USD",
+     "granted": 50.0,
+     "id": "extra_usage",
+     "kind": "extra",
+     "remaining": 37.5,
+     "spent": 12.5
+    }
+   ],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "extra usage on",
+  "now": 1786847000,
+  "raw": {
+   "extra_usage": {
+    "currency": "USD",
+    "is_enabled": true,
+    "monthly_limit": 50,
+    "used_credits": 12.5
+   }
+  }
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "credits": [
+    {
+     "granted": 50.0,
+     "id": "extra_usage",
+     "kind": "extra",
+     "remaining": 0.0,
+     "spent": 51.0
+    }
+   ],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "extra usage over its cap",
+  "now": 1786847000,
+  "raw": {
+   "extra_usage": {
+    "is_enabled": true,
+    "monthly_limit": 50,
+    "used_credits": 51
+   }
+  }
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "extra usage on, no cap",
+  "now": 1786847000,
+  "raw": {
+   "extra_usage": {
+    "is_enabled": true,
+    "monthly_limit": null,
+    "used_credits": 3
+   }
+  }
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "extra usage enabled as a string",
+  "now": 1786847000,
+  "raw": {
+   "extra_usage": {
+    "is_enabled": "true",
+    "monthly_limit": 50,
+    "used_credits": 1
+   }
+  }
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "credits": [
+    {
+     "currency": "USD",
+     "expires_at": 1793865540.0,
+     "granted": 250.0,
+     "id": "a",
+     "kind": "cloud",
+     "remaining": 4.419458999999989,
+     "spent": 245.580541
+    }
+   ],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "two dollar windows, one malformed",
+  "now": 1786847000,
+  "raw": {
+   "a": {
+    "limit_dollars": 250,
+    "remaining_dollars": 4.419458999999989,
+    "resets_at": "2026-11-05T07:59:00+00:00",
+    "used_dollars": 245.580541
+   },
+   "b": {
+    "limit_dollars": 250,
+    "remaining_dollars": 300,
+    "resets_at": "2026-11-05T07:59:00+00:00",
+    "used_dollars": 245.580541
+   },
+   "c": {
+    "limit_dollars": "x",
+    "remaining_dollars": 1
+   }
+  }
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "no credits",
+  "now": 1786847000,
+  "raw": {
+   "five_hour": {
+    "utilization": 3
+   }
+  }
+ },
+ {
+  "expected": {
+   "account": {},
+   "as_of": 1786847000.0,
+   "buckets": [],
+   "schema_version": 1,
+   "source": "credits"
+  },
+  "name": "not a dict",
+  "now": 1786847000,
+  "raw": [
+   {
+    "limit_dollars": 250,
+    "remaining_dollars": 4.419458999999989,
+    "resets_at": "2026-11-05T07:59:00+00:00",
+    "used_dollars": 245.580541
+   }
+  ]
+ }
+]

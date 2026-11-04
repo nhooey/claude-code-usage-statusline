@@ -291,6 +291,23 @@ The highs are kept in one small file per account (source `window-highs`),
 and a window's high is dropped once the window resets. A reading that names
 no account is shown as its source gave it.
 
+### The account's credits
+
+The account's dollar credits are read apart from its plan windows, since
+`auto` takes the windows from Claude Code and so never asks the usage
+endpoint. Every 5 minutes the mod asks the account's usage endpoint as the
+session, as `experimental-claude-oauth` does, and keeps the `credits` it
+gives in one small file per signed-in account, source `credits`, period
+`credits`. The status line reads that file and never asks.
+
+- **The cloud session credit:** each window of the answer with a dollar
+  limit, taken by its fields and never its name, is a `cloud` credit: its
+  dollars left, its limit, what it has spent, and its reset as its expiry.
+- **Extra usage:** an `extra` credit while it is on and has a monthly cap,
+  what is left of the cap, the cap, and what it has spent.
+- **A failed ask** keeps the last credits, and the next ask waits out the
+  same 5 minutes. With no signed-in account nothing is asked or kept.
+
 ### Calibration cache
 
 The calibration (the dollars in one percent of a plan window) is kept in its

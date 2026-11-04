@@ -743,6 +743,49 @@ def account_high(agent, reading, now):
     return raised
 
 
+# The account's dollar credits are read apart from its plan windows, which
+# auto takes from the payload and so never asks the OAuth answer for: the mod
+# asks it every CREDITS_TTL seconds and keeps the credits per account in one
+# small file, and the status line reads that file without fetching.
+CREDITS_SOURCE = "credits"
+CREDITS_PERIOD = "credits"
+CREDITS_TTL = 300
+
+
+def oauth_credits(raw):
+    """The credits in /api/oauth/usage's answer `raw`, as credits[] entries
+    before _credits checks them: each window with a dollar limit, taken by
+    its fields and never its name, as the cloud session credit; and extra
+    usage, while it is on and has a cap, its figures in dollars."""
+    if not isinstance(raw, dict): return []
+    out = []
+    for key, item in raw.items():
+        if not isinstance(item, dict) or _number(item.get("limit_dollars")) is None: continue
+        out.append({"id": key, "kind": "cloud", "remaining": item.get("remaining_dollars"),
+                    "granted": item.get("limit_dollars"), "spent": item.get("used_dollars"),
+                    "currency": "USD", "expires_at": item.get("resets_at")})
+    extra = raw.get("extra_usage")
+    if isinstance(extra, dict) and extra.get("is_enabled") is True:
+        cap, used = _number(extra.get("monthly_limit")), _number(extra.get("used_credits"))
+        if cap is not None and used is not None:
+            out.append({"id": "extra_usage", "kind": "extra", "remaining": max(0.0, cap - used),
+                        "granted": cap, "spent": used, "currency": extra.get("currency")})
+    return out
+
+
+def credits_reading(raw, now):
+    """The credits reading of the OAuth answer `raw`, taken at `now`."""
+    return normalise({"schema_version": 1, "as_of": now, "credits": oauth_credits(raw)}, CREDITS_SOURCE)
+
+
+def cached_credits(agent, account):
+    """The account's credits as the mod last read them, and when: the
+    credits[] list and its as_of, or [] and None with none read."""
+    if not account: return [], None
+    reading = normalise(state.load(agent, CREDITS_SOURCE, account, CREDITS_PERIOD), CREDITS_SOURCE)
+    return reading.get("credits", []) if reading else [], reading.get("as_of") if reading else None
+
+
 def collect(agent, spec="auto", account="default", period="day", context=None, now=None):
     """Collect one selected reading with source/account/UTC-period isolation,
     each window at the highest the account has read for it (account_high)."""

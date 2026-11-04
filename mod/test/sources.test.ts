@@ -8,7 +8,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
-  accountHigh, cachedReading, cacheName, claudeUsageTracker, commandReading, epoch,
+  accountHigh, cachedReading, creditsReading, cacheName, claudeUsageTracker, commandReading, epoch,
   hasReading, isCacheName, nativeReading, normalise, number, periodBounds,
   HIGHS_PERIOD, HIGHS_SOURCE, pyJsonLoads,
 } from "../src/sources_node.ts";
@@ -122,6 +122,13 @@ test("normalise, has_reading, _cached_reading", () => {
            c.name + " ttl " + ttl);
     }
     count("normalise");
+  }
+});
+
+test("credits_reading", () => {
+  for (const c of load("credits.json")) {
+    same(creditsReading(c.raw, c.now), c.expected, c.name);
+    count("credits");
   }
 });
 
