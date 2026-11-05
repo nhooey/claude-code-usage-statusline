@@ -1243,7 +1243,8 @@ async function scanWindows($: $, places: Places, snap: Snapshot,
   })
   await readCosts($, places)
   const recs = new Map<string, Priced[]>()
-  for (const p of wanted) recs.set(p, await pricedOf($, p))
+  const listed = new Map(files.map((f) => [f.path, f]))
+  for (const p of wanted) recs.set(p, await pricedOf($, listed.get(p)!))
   const [sc, wc] = _windowCostsOf(ss, ws, paths,
     (p) => mtime.get(p) ?? null, (p) => recs.get(p) ?? [])
   await saveCosts($, places, new Set(wanted))
@@ -1289,47 +1290,49 @@ async function saveCosts($: $, places: Places,
   await writeAtomicVia($, statePath(places.stateDir, 'window-costs'), text)
 }
 
-/** _tailDigest through `$`: the COST_TAIL_BYTES before `off`, of a file
- * `size` long. */
-async function tailOf($: $, path: string, off: number, size: number):
-  Promise<string | null> {
-  try {
-    const b = await readRange($, path, Math.max(0, off - COST_TAIL_BYTES),
-      off, size)
-    return b.length === Math.min(off, COST_TAIL_BYTES) ? sha256Hex(b) : null
-  } catch {
-    return null
-  }
-}
+/** What pricedOf gave for each file this load, under the size and mtime
+ * the listing gave it at: a file listed again with both the same is not
+ * read again, so a scan with nothing written costs a listing. */
+const pricedKept = new Map<string, { stamp: string; out: Priced[] }>()
 
 /** _CostCache.records through `$`: the file's priced records, read past
- * the offset kept for it when the bytes before it are unchanged. */
-async function pricedOf($: $, path: string): Promise<Priced[]> {
+ * the offset kept for it when the bytes before it are unchanged.  One read
+ * from COST_TAIL_BYTES before that offset gives both the digest checked
+ * and the one kept, since `$.fs` reads no range: a file of FS_READ_MAX or
+ * less is read whole whatever the range. */
+async function pricedOf($: $, f: Listed): Promise<Priced[]> {
+  const path = f.path
+  const stamp = f.size + ':' + f.mtimeMs
+  const was = pricedKept.get(path)
+  if (was && was.stamp === stamp) return was.out
   const size = await fileSize($, path)
   if (size === null) return []
   let got = costs.get(path)
-  if (got && (got.off > size || await tailOf($, path, got.off, size) !==
-      got.tail)) {
-    got = undefined
+  if (got && got.off > size) got = undefined
+  let lo = got ? Math.max(0, got.off - COST_TAIL_BYTES) : 0
+  let data: Uint8Array
+  try {
+    data = await readRange($, path, lo, size)
+    if (got && sha256Hex(data.subarray(0, got.off - lo)) !== got.tail) {
+      got = undefined
+      if (lo > 0) data = await readRange($, path, lo = 0, size)
+    }
+  } catch {
+    return got?.recs ?? []
   }
   let off = got?.off ?? 0, recs = got?.recs ?? []
   const seenIds = new Set(recs.map(([, k]) => _idKey(k)))
-  let data: Uint8Array
-  try {
-    data = await readRange($, path, off, size)
-  } catch {
-    return recs
-  }
+  const body = data.subarray(off - lo)
   const fresh: Priced[] = []
   let partial: Priced | null = null
   let s = 0
   for (;;) {
-    const e = data.indexOf(10, s)
+    const e = body.indexOf(10, s)
     if (e < 0) {
-      if (s < data.length) partial = _pricedRecord(data.subarray(s))
+      if (s < body.length) partial = _pricedRecord(body.subarray(s))
       break
     }
-    const rec = _pricedRecord(data.subarray(s, e + 1))
+    const rec = _pricedRecord(body.subarray(s, e + 1))
     s = e + 1
     if (rec === null) continue
     const key = _idKey(rec[1])
@@ -1339,9 +1342,13 @@ async function pricedOf($: $, path: string): Promise<Priced[]> {
   }
   off += s
   recs = [...recs, ...fresh]
-  costs.set(path, { off, tail: await tailOf($, path, off, size), recs })
-  return partial !== null && !seenIds.has(_idKey(partial[1]))
+  const tail = sha256Hex(data.subarray(Math.max(0, off - COST_TAIL_BYTES) - lo,
+    off - lo))
+  costs.set(path, { off, tail, recs })
+  const out = partial !== null && !seenIds.has(_idKey(partial[1]))
     ? [...recs, partial] : recs
+  pricedKept.set(path, { stamp, out })
+  return out
 }
 
 /** projectFiles through `$.fs.list`: `<dir>/*\/*.jsonl` and every

@@ -173,6 +173,9 @@ type World = {
   // answer there is no credential, and nothing is asked.
   oauth: { body: string | null; asked: { url: string; auth?: string }[];
     hang?: boolean }
+  // The path of each `$.fs.read` and each `$.fs.list`, in order.
+  reads: string[]
+  lists: string[]
 }
 
 type Run = { argv: readonly string[]; init?: { stdin?: string } }
@@ -240,7 +243,9 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     }
     return { deny: 'no such file: ' + e.path }
   })
+  const reads: string[] = [], lists: string[] = []
   on('fs.read', ($, e) => {
+    reads.push(e.path)
     const f = fileAt(e.path)
     if (!f) return { deny: 'no such file: ' + e.path }
     if (e.as === 'bytes') {
@@ -255,6 +260,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     return { value: undefined }
   })
   on('fs.list', ($, e) => {
+    lists.push(e.path)
     const dir = e.path.endsWith('/') ? e.path : e.path + '/'
     const names = new Map<string, 'file' | 'dir'>()
     for (const f of files.keys()) {
@@ -306,7 +312,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     return { value: undefined }
   })
   return { files, store, docs, usage, debug, logged, clock, session,
-    oauth }
+    oauth, reads, lists }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -897,6 +903,47 @@ test('a scan writes the shared window-cost cache through a rename',
     expect(_windowCostsText(files)).toBe(text)
     expect(files[path].off).toBe(bytes.lastIndexOf(10) + 1)
     expect(files[path].recs.length).toBeGreaterThan(0)
+  })
+
+// A scan reads each transcript once, its kept digest checked from the same
+// read; a later scan reads no transcript whose size and mtime are as they
+// were, and one appended to once, from before its kept offset.
+test('a scan reads a transcript once, and a rescan only one that changed',
+  async ($, on) => {
+    const costs = statePath(STATE, 'window-costs')
+    const w: World = world(on, (e) => {
+      const [cmd, , script, , path] = e.argv
+      if (cmd !== '/bin/sh' || !script.includes('mv -f')) return NO_GIT_HERE
+      w.files.set(path, encoder.encode(e.init?.stdin ?? ''))
+      return { ...NO_GIT_HERE, exitCode: 0, stderr: '' }
+    }, false, false)
+    const path = '/claude/projects/-work/rescanned.jsonl'
+    const bytes = w.files.get(MAIN)!
+    w.files.set(path, bytes)
+    const of = (p: string) => w.reads.filter((r) => r === p).length
+    const scans = () => w.lists.filter((p) => p === '/claude/projects').length
+    const rescan = async () => {
+      const was = scans()
+      await w.clock.advance(301_000)
+      for (let i = 0; i < 20 && scans() === was; i++) await settle()
+      await settle()
+      expect(scans()).toBeGreaterThan(was)
+    }
+    await start($, w, 'terminal', MAIN)
+    for (let i = 0; i < 20 && !w.files.has(costs); i++) await settle()
+    expect(of(path)).toBe(1)
+    await rescan()
+    expect(of(path)).toBe(1)
+    // Appended to: read once more, and its records read on from the end.
+    const more = new Uint8Array(bytes.length * 2)
+    more.set(bytes)
+    more.set(bytes, bytes.length)
+    w.files.set(path, more)
+    await rescan()
+    expect(of(path)).toBe(2)
+    const files = _windowCostsFiles(new TextDecoder()
+      .decode(w.files.get(costs)!))!
+    expect(files[path].off).toBe(more.lastIndexOf(10) + 1)
   })
 
 // ════════════════════════════════════════════════════════════════════════════
