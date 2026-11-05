@@ -31,7 +31,7 @@ out.  Three forms are read specially:
                                     name holds, and a true-colour one,
                                     which TRUE_COLOURS holds by name; one
                                     written once is the same in both
-    "F_SPIN": {"same_as": "F_RED"}  another name's value, which must come
+    "F_SHARE": {"same_as": "F_AMB"} another name's value, which must come
                                     earlier
     [1, 2]                          an array: a tuple in Python
 

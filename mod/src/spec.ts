@@ -476,7 +476,6 @@ export const F_OVER = "#ff0000";                         // bright red  — an a
                                                          //  still going, which is the louder
                                                          //  fact, so it is redder than F_RED
                                                          //  and not that row hue itself.
-export const F_SPIN = F_RED;                             // the agent row's E_SPIN spinner
 export const F_CHAT_U = "#a8a8a8";                       // light grey  — user chat row
 export const F_CHAT_B = "#767676";                       // mid grey    — assistant chat row.
                                                          //  The 256 values are neutral: that
@@ -1099,14 +1098,6 @@ export const E_MODE_ETA = E_ETA;                 // ⛳  paused on nothing it ca
 // way the tree glyphs do, but it has no emoji form for a terminal to widen,
 // and U+2800, the empty cell, keeps the gauge's width at a zero share.
 export const E_GAUGE = "⠀⠄⠆⠦⠶";
-// A running agent row's spinner, the first of its cells: Claude Code's own
-// spinner glyphs, which it plays forward and then back.  The row steps it
-// one frame for each ⏺ in the agent's transcript, a text or tool-call block,
-// so it moves when the agent does and stops when it stalls.  Ambiguous and
-// Neutral, so they break rule 2 the way the tree glyphs do, and for the same
-// reason: Claude Code draws them one column wide in the same terminal, and a
-// different set would not read as Claude working.
-export const E_SPIN = "·✢✳✶✻✽";
 export const GAUGE_W = 2;
 export const E_ROW_AGENTS = "👥";           // 👥  agent spend the 🎤 row cannot carry.
                                             // Emoji_Presentation=Yes and a single code
@@ -1334,7 +1325,7 @@ export const MODEL_FAMILIES = ["Opus", "Sonnet", "Haiku", "Fable", "Mythos"];
 // --right-edge 0 (Settings.rightEdge, formatting.RIGHT_EDGE_COLS).
 export const RIGHT_EDGE = 5;
 // The fewest columns a row's label keeps before columns start to drop: an
-// agent row's head on the panel (spinner, kind and state marks and a
+// agent row's head on the panel (the kind and state marks and a
 // blank, 7) and the first 5 of its name, so two agents still read apart.
 // The band's labels are their marks, 🤖's with its 📨 count, 7 at most.
 export const LABEL_MIN = 12;
@@ -1445,7 +1436,6 @@ export const TRUE_COLOURS: { readonly [name: string]: string } = {
   "F_PRW": "#8c96ff",
   "F_ETA": "#ff4dff",
   "F_OVER": "#ff2828",
-  "F_SPIN": "#ff5a5a",
   "F_CHAT_U": "#a6aa9e",
   "F_CHAT_B": "#707e8c",
   "B_DRK": "#0c0e12",

@@ -832,12 +832,11 @@ def run(tmp):
         "\U0001F50B" + sl.dec_align(sl.limit_pct(want), 2, 2, sl.E_PCT),
         "\U0001FAAB" + sl.dec_align(sl.limit_pct(want / 10.0, 4), 2, 3, sl.E_PCT),
         unpainted(sl.render_diff("12", "4"))))
-    # The spinner's first frame, for a transcript with no text or tool call
-    # in it; then 🟢 running, and the name.  The Doing field is the grid's
+    # 🟢 running, and the name.  The Doing field is the grid's
     # 🛫 column now, after the model: 🤖, no call waiting on its result, and
     # nothing written for 1.2h, so the quiet time rather than the rate.
     right = right.replace("\U0001F3C3  ", "\U0001F3C3  \U0001F916 1.2h  ", 1)
-    head = "·\U0001F50D\U0001F7E2 "
+    head = "\U0001F50D\U0001F7E2 "
     # The payload's columns are the terminal's less PANEL_COLUMNS_SHORT, and
     # the rows are laid out for the terminal's, less the chrome Claude Code
     # draws ("  ◯ " at the top level) and the RIGHT_EDGE every readout keeps.
@@ -856,7 +855,7 @@ def run(tmp):
                for r in (rows["a1"], rows["a2"])}), 1)
     check("no sidecar: the task's kind, and the transcript's model where "
           "the payload has none",
-          # No spinner on a row not running, and no blank for it, then ⚫,
+          # ⚫, then
           # and its ✅ with the time since it finished, a minute after its
           # last record, in the 🛫 column.
           (rows["a2"].startswith("\U0001F465⚫ Zephyr"),
@@ -875,8 +874,8 @@ def run(tmp):
           "label for what it is doing; a shell shows nothing it did not "
           "bill, and its label runs on over the blank columns to its ⌛",
           re.sub(r" {2,}", "  ", rows["bash-1"]),
-          # No spinner, 🟢 and no mode: a shell has no transcript to count
-          # in or to say who has the floor.
+          # 🟢 and no mode: a shell has no transcript to say who has the
+          # floor.
           "\U0001F41A\U0001F7E2 npm test  npm test --watch  ⌛ 13m")
     label = lambda name, act, room, branch="": unpainted(sr.grid.label_text(
         sr.grid.Row("agent", sr.agent_label(
@@ -943,30 +942,13 @@ def run(tmp):
            for t in ("a1", "a3", "a4")],
           # The counts follow the kind and state, 👶🏻 first.  E_KIDS is two
           # codepoints, and its width the terminal's.
-          ["·\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 ",
-           "·\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 ",
-           "·\U0001F50D\U0001F7E2 " + " " * (sl.vis_width(sl.E_KIDS) + 1) + " "])
-    spun = os.path.join(tmp, "spin.jsonl")
-    tool = agent_says(12, "")
-    tool["message"]["content"] = [{"type": "thinking", "thinking": "hm"},
-                                  {"type": "text", "text": "  "},
-                                  {"type": "tool_use", "id": "t1", "name": "Read",
-                                   "input": {}}]
-    write_jsonl(spun, [agent_says(10, "Plan."), agent_says(11, "Go."), tool])
-    spin = lambda st, eta, n: unpainted(sr.render_spin(st, NS(eta=eta, blocks=n)))
-    check("a running agent's spinner steps one frame for each ⏺ it has "
-          "written, a text or tool-call block and not a thought or a blank, "
-          "forward through Claude Code's glyphs and back; a row not running, "
-          "or with no transcript, draws none",
-          (sl.read_agent_usage(spun).blocks,
-           [spin("running", (), n) for n in (0, 1, 5, 6, 11, 12)],
-           spin("completed", (), 3), spin("running", None, 3)),
-          (3, ["·", "✢", "✽", "✽", "·", "·"],
-           "", ""))
-    at_head = lambda r: sl.vis_width(r[:r.index("\U0001F50D")])   # past the spinner
+          ["\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 ",
+           "\U0001F50D\U0001F7E2 " + sl.E_KIDS + "1 ",
+           "\U0001F50D\U0001F7E2 " + " " * (sl.vis_width(sl.E_KIDS) + 1) + " "])
+    at_head = lambda r: sl.vis_width(r[:r.index("\U0001F50D")])
     check("and its label starts right after the chrome at every depth: no "
           "lead, the chrome is Claude Code's",
-          [at_head(rows_n[t]) for t in ("a1", "a3", "a4")], [1, 1, 1])
+          [at_head(rows_n[t]) for t in ("a1", "a3", "a4")], [0, 0, 0])
     at_clock = lambda r: sl.vis_width(r[:r.index("⌛")])
     check("and the grid's columns are what hold: the label gives",
           [at_clock(rows_n[t]) + chrome(d)
@@ -1083,12 +1065,10 @@ def run(tmp):
             "tasks": [task("b1"), task("b2", contextWindowSize=None,
                                        status="completed")]}
     irows = render(sl, ipay)[1]
-    # The spinner keeps no column (2026-10-19), so past it.
-    unspun = lambda r: r.lstrip(sl.E_SPIN)
     check("📨 and 🤏 on the row that has them, and a blank of their width on "
           "the row that does not, so the columns after them hold",
           ("\U0001F4E81 " in irows["b1"], "\U0001F90F1" in irows["b1"],
-           sl.vis_width(unspun(irows["b1"])[:unspun(irows["b1"]).index("Marigold")])
+           sl.vis_width(irows["b1"][:irows["b1"].index("Marigold")])
            == sl.vis_width(irows["b2"][:irows["b2"].index("Marigold")]),
            sl.vis_width(irows["b1"][:irows["b1"].index("⌛")])
            == sl.vis_width(irows["b2"][:irows["b2"].index("⌛")])),
