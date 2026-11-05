@@ -64,7 +64,6 @@ py39-floor|.|bash tests/py39-floor.sh
 usage-source|.|python3 tests/usage-source.py
 sources-v1|.|python3 tests/sources-v1.py
 source-cache|.|python3 tests/source-cache.py
-console-credits|.|python3 tests/console-credits.py
 http-sources|.|python3 tests/http-sources.py
 app-server|.|python3 tests/app-server.py
 claude-sources|.|python3 tests/claude-sources.py

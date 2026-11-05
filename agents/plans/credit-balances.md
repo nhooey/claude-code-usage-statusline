@@ -46,7 +46,7 @@ session's own credential (`$.session.authorize()`, spent through
   245.58 across 2½ hours of this checkout's turns, with no line logged
   after the first. It is spent by cloud sessions alone.
 - **The Console refuses that credential:** its organizations request
-  answers 403. The Console's credits come from `credits.command` alone.
+  answers 403. The Console's credits come from `credits-command` alone.
 
 ## The design
 
@@ -174,10 +174,6 @@ and its plan windows:
    conditions, alone or by credit.
 7. **Extra usage's figures** are read as dollars until they are seen with
    extra usage on.
-8. **The Console's credits** are written by hand in
-   `console-credits.json`, which `console-credits.py` prints as a
-   `credits.command`. The Console's endpoints sit behind Cloudflare's bot
-   protection, which answers a program 403 whatever its sign-in.
 
 ## The build order
 
