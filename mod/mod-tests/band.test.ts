@@ -23,10 +23,11 @@ import { BUDGET_MS, test } from './budget.ts'
 import type { On, RenderElement, RenderPropsOf } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
-import { fromBase64 } from '../hooks/edges.ts'
+import { fromBase64, partOf, partOfRun } from '../hooks/edges.ts'
 import { merge as mergeConfig, optionsOf } from '../src/config.ts'
 import { DEFAULTS, DEFAULTS_TEXT, isDefaults } from './defaults.ts'
-import { creditsTrialNext, startKey } from '../hooks/register.tsx'
+import { creditsTrialNext, drawingNote, ioText, startKey }
+  from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
 import { CONFIG } from '../hooks/config.ts'
 
@@ -1037,6 +1038,35 @@ test('an idle refresh reads no transcript and starts no process',
     expect(scan.lists).toContain('/claude/projects')
     expect(notGit(scan.runs)).toEqual([])
   })
+
+// The heavy lines name what cost what: each read and process counted under
+// the part its path serves, the parts listed costliest first, and a
+// minute's drawing logged only past CONFIG.drawNoteMs, its components
+// costliest first.
+test('the heavy lines split the cost by part and by component', () => {
+  expect(partOf('/p/-work/s/subagents/agent-a.jsonl')).toBe('agents')
+  expect(partOf('/p/-other/other-session.jsonl')).toBe('scan')
+  expect(partOf('/state/claude-window-costs-x.cache')).toBe('files')
+  expect(partOfRun(['/bin/sh', '-c', 'tail', 'sh', '1',
+    '/p/-other/big.jsonl', '4096'])).toBe('scan')
+  expect(partOfRun(['git', 'rev-parse'])).toBe('git')
+  expect(partOfRun(['/bin/rm', '-f', '--', '/state/old'])).toBe('sweep')
+  const c = (reads: number, mib: number, spawns: number) =>
+    ({ reads, readBytes: mib * 1048576, lists: 0, spawns })
+  expect(ioText({ ...c(150, 180, 273), parts: { files: c(3, 0, 0),
+    scan: c(147, 180, 273) } })).toBe('since the last refresh: 150 reads, ' +
+    '180.0 MiB, 0 listings, 273 processes; scan: 147 reads, 180.0 MiB, ' +
+    '0 listings, 273 processes; files: 3 reads, 0.0 MiB, 0 listings, ' +
+    '0 processes')
+  const cheap = CONFIG.drawNoteMs / 2
+  expect(drawingNote([['AbovePrompt', { draws: 60, ms: cheap }]], 1))
+    .toBeNull()
+  expect(drawingNote([['UserMessage', { draws: 900, ms: 300 }],
+    ['AbovePrompt', { draws: 60, ms: CONFIG.drawNoteMs }]], 1))
+    .toBe(`heavy drawing: ${CONFIG.drawNoteMs + 300}ms in 1.0 min ` +
+      `(AbovePrompt 60 draws ${CONFIG.drawNoteMs}ms, ` +
+      'UserMessage 900 draws 300ms)')
+})
 
 // ════════════════════════════════════════════════════════════════════════════
 // The folds saved, and a reload reading on from them.

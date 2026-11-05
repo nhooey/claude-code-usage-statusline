@@ -42,6 +42,10 @@ export const CONFIG = {
   // though it was quick: an idle refresh reads a few small files.
   ioNoteBytes: 16 * 1024 * 1024,
   ioNoteSpawns: 20,
+  // The ms a minute the mod's own drawing (its ui.render hooks, the
+  // engine's drawing beneath them left out) may take before the minute is
+  // logged with each component's draws and ms: 2% of it.
+  drawNoteMs: 1_200,
   // How long one step of a refresh may run before it is dropped and
   // logged: past it the band keeps its last figures and the next event
   // reads again, so a read that never ends cannot blank the band until a

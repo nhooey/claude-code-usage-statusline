@@ -98,35 +98,76 @@ const encoder = new TextEncoder()
 // What the mod asks of the engine.
 // ════════════════════════════════════════════════════════════════════════════
 
+/** File reads, the bytes they gave, directory listings and processes. */
+export type IoCounts = { reads: number; readBytes: number; lists: number;
+  spawns: number }
+
+const noCounts = (): IoCounts => ({ reads: 0, readBytes: 0, lists: 0,
+  spawns: 0 })
+
 /** Every file read, the bytes it gave, directory listing and process the
  * mod has asked the engine for since it loaded, counted where each is
- * asked: what a refresh's log line says it cost (register.tsx, ioNote). */
-export const io = { reads: 0, readBytes: 0, lists: 0, spawns: 0 }
+ * asked, in all and by the part of the mod's work it served (partOf):
+ * what a refresh's log line says it cost (register.tsx, ioSinceLast). */
+export const io: IoCounts & { parts: Record<string, IoCounts> } =
+  { ...noCounts(), parts: {} }
+
+/** The part a path serves, from the path alone, so work running beside
+ * other work is counted where it belongs: the session's transcript, a
+ * subagent's files, another transcript (a calibration scan's), or the
+ * state and configuration files. */
+export function partOf(path: string): string {
+  if (path.includes('/subagents/') || path.endsWith('/subagents')) {
+    return 'agents'
+  }
+  if (found.path && path === found.path) return 'transcript'
+  if (path.endsWith('.jsonl')) return 'scan'
+  return 'files'
+}
+
+/** The part a process serves: by the transcript it reads, where its
+ * arguments name one, else by the program. */
+export function partOfRun(argv: readonly string[]): string {
+  const file = argv.find((a) => a.endsWith('.jsonl'))
+  if (file) return partOf(file)
+  const program = argv[0].slice(argv[0].lastIndexOf('/') + 1)
+  if (program === 'git') return 'git'
+  if (program === 'defaults') return 'tracker'
+  if (program === 'rm' || program === 'rmdir') return 'sweep'
+  return 'files'
+}
+
+function count(part: string, f: (c: IoCounts) => void) {
+  f(io)
+  f(io.parts[part] ??= noCounts())
+}
 
 function readTextVia($: $, path: string): Promise<string> {
-  io.reads++
+  count(partOf(path), (c) => c.reads++)
   return $.fs.read(path).then((t) => {
-    io.readBytes += t.length
+    count(partOf(path), (c) => c.readBytes += t.length)
     return t
   })
 }
 
 function readBytesVia($: $, path: string): Promise<{ base64: string }> {
-  io.reads++
+  count(partOf(path), (c) => c.reads++)
   return $.fs.read(path, { as: 'bytes' }).then((got) => {
-    io.readBytes += Math.floor(got.base64.length * 3 / 4)
+    count(partOf(path),
+      (c) => c.readBytes += Math.floor(got.base64.length * 3 / 4))
     return got
   })
 }
 
 function listVia($: $, dir: string): ReturnType<$['fs']['list']> {
-  io.lists++
+  count(dir.includes('/subagents') ? 'agents'
+    : dir.includes('/projects') ? 'scan' : 'files', (c) => c.lists++)
   return $.fs.list(dir)
 }
 
 function runVia($: $, ...args: Parameters<$['process']['run']>):
   ReturnType<$['process']['run']> {
-  io.spawns++
+  count(partOfRun(args[0]), (c) => c.spawns++)
   return $.process.run(...args)
 }
 
