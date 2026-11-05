@@ -134,14 +134,6 @@ def render_phase(status, usage=None, waiting_on=False):
 def _phase_span(phase):
     """The phase circle, or a status never seen in amber."""
     return Span(phase, None if phase in PHASES else "F_AMB")
-def render_spin(status, usage=None):
-    """A running agent's spinner, one frame on for each ⏺ it has written; see E_SPIN.
-
-    Blank on any other row, and on one with no transcript to count in.
-    """
-    if status != "running" or getattr(usage, "eta", None) is None: return []
-    frames = E_SPIN + E_SPIN[::-1]
-    return [Span(frames[(getattr(usage, "blocks", 0) or 0) % len(frames)], "F_SPIN")]
 def render_kids(n):
     """👶🏻 and how many agents hang under this row on the panel; see render_task_rows."""
     return [] if not n else [Span(E_KIDS), Span("%d" % n, "F_CRM")]
@@ -564,7 +556,7 @@ def agent_cells(task, usage, meta, shares, limits, now=None, eta=False, waiting_
 def agent_label(task, usage, meta, waiting_on=False, kids=0, kids_w=0, widths=None):
     """The row's label, as grid pieces under the agent scope.
 
-    The kind's mark, with the spinner before it and the phase circle after
+    The kind's mark, with the phase circle after it
     (`name.kind`); the counts a panel draws only while some row needs one,
     each padded to the panel's widest so the names after them hold their
     column (`state.kids`, `state.compact`, `state.shells`, `state.monitors`,
@@ -584,10 +576,7 @@ def agent_label(task, usage, meta, waiting_on=False, kids=0, kids_w=0, widths=No
     """
     widths = widths or {}
     status, kind = str(task.get("status") or ""), str(task.get("type") or "")
-    # The spinner keeps no column of its own: blank, it wasted one before
-    # every row that reports no ETA (dropped 2026-10-19).
-    head = spans([render_spin(status, usage),
-                  render_kind(str(meta.get("agentType") or ""), kind),
+    head = spans([render_kind(str(meta.get("agentType") or ""), kind),
                   seg(A_STATE_W, render_phase(status, usage, waiting_on)), " "])
     out = [grid.Piece("name.kind", head, 0)]
     for path, w, cell in (

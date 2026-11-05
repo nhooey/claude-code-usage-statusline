@@ -24,7 +24,7 @@ import {
   E_MODE_AGENTS, E_MODE_API_ERROR, E_MODE_DONE, E_MODE_ETA, E_MODE_FAILED,
   E_MODE_KILLED, E_MODE_MONITOR, E_MODE_QUEUED, E_MODE_SHELL, E_PCT,
   E_PHASE_END, E_PHASE_PAUSE, E_PHASE_RUN, E_RATE, E_ROW_AGENTS,
-  E_ROW_COMPACT, E_SESS, E_SPIN, E_TOOL, E_WAIT, E_WEEK, E_WORK, GAUGE_W,
+  E_ROW_COMPACT, E_SESS, E_TOOL, E_WAIT, E_WEEK, E_WORK, GAUGE_W,
   MAG_DUR_S, MAG_RATE, MAG_SHARE_AGENT, MAG_TOK, QUIET_S, QUIET_WARN_S,
   E_CACHE, E_DIFF, CHROME_DEPTH, GRID_CELLS, LABEL_MIN,
 } from "./spec.ts";
@@ -265,17 +265,6 @@ export function renderPhase(status: string, usage: unknown = null,
 /** The phase circle, or a status never seen in amber. */
 function phaseSpan(phase: string): Span {
   return span(phase, PHASES.includes(phase) ? null : "F_AMB");
-}
-
-/** A running agent's spinner, one frame on for each ⏺ it has written. */
-export function renderSpin(status: string, usage: unknown = null): Span[] {
-  if (status !== "running" || ua(usage, "eta") === null) return [];
-  const one = Array.from(E_SPIN);
-  const frames = [...one, ...one.reverse()];
-  const n = pyOr(ua(usage, "blocks", 0), 0) as number;
-  // Python's % takes the divisor's sign.
-  const i = ((n % frames.length) + frames.length) % frames.length;
-  return [span(frames[i], "F_SPIN")];
 }
 
 /** 👶🏻 and how many agents hang under this row on the panel. */
@@ -758,9 +747,7 @@ export function agentLabel(st: Settings, task: Dict, usage: unknown,
   widths0: PanelWidths | null = null): Piece[] {
   const widths: Partial<PanelWidths> = widths0 ?? {};
   const status = strOr(task.status), kind = strOr(task.type);
-  // The spinner keeps no column of its own (dropped 2026-10-19).
-  const head = spans([renderSpin(status, usage),
-    renderKind(strOr(pyGet(meta, "agentType")), kind),
+  const head = spans([renderKind(strOr(pyGet(meta, "agentType")), kind),
     seg(st, A_STATE_W, renderPhase(status, usage, waitingOn)), " "]);
   const out: Piece[] = [{ path: "name.kind", spans: head, drop: 0 }];
   const counts: [string, number, Span[]][] = [

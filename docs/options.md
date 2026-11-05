@@ -285,7 +285,7 @@ On an agent row:
 
 | Path | Hides |
 |---|---|
-| `agent.name.kind` | the spinner, the kind's mark and the phase circle |
+| `agent.name.kind` | the kind's mark and the phase circle |
 | `agent.name.label` | the agent's name |
 | `agent.workspace.branch` | 🌿 and a worktree's branch |
 | `agent.chat.doing` | what it is doing, the panel's activity text |

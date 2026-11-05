@@ -543,9 +543,6 @@ def g_states():
     # A status never seen, and none at all.
     g.case("status-unknown", [row(ptask("u1", status="paused"), usage())])
     g.case("status-empty", [row(ptask("u1", status=""), usage())])
-    # The spinner steps a frame per block it has written.
-    for n in (0, 1, 5, 11, 12):
-        g.case("spin-%d" % n, [row(ptask("a1"), usage(blocks=n))])
     # The kind marks.
     for kind in ("general-purpose", "claude", "Explore", "Plan", "fork",
                  "workflow-subagent", "statusline-setup"):

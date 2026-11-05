@@ -53,13 +53,13 @@ One row per subagent or shell in Claude Code's agent panel, on the same
 columns. Installed as `subagentStatusLine`.
 
 ```
-✳🔍🟢 Marigold  Runnin…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
-✳🔩🟢 Bluebell           🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
+🔍🟢 Marigold  Runnin…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+🔩🟢 Bluebell           🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
 🔍⚫ Daisy               🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .02٪  🪫  .022٪
 🐚🟢 sleep 300 && make test                                                          ⌛  2m
 ```
 
-The label, left to right: Spinner · Kind · State · 👶🏻 Children ·
+The label, left to right: Kind · State · 👶🏻 Children ·
 🤏 Compactions · 💻 Shells · 📡 Monitors · 📨 Queue · Name, 🌿 worktree branch
 and activity. The figures are the rows' above, for that one agent, with what
 it is doing in 🛫's column. A shell has no transcript, so its row shows only
@@ -251,7 +251,7 @@ one it waits on; the count says how many.
 
 ### Agent kind
 
-These glyphs open a panel row, after a running agent's spinner. Each is named
+These glyphs open a panel row. Each is named
 for the agent type it
 stands for; `other` covers every other type, custom agents included.
 
@@ -298,7 +298,6 @@ to tell the two apart.
 
 | Glyph | Name | Meaning |
 |---|---|---|
-| `· ✢ ✳ ✶ ✻ ✽` | Spinner | a running agent's activity: one frame on for each block it writes, so it stands still when the agent stalls |
 | 👶🏻 | Children | how many agents hang directly under it |
 
 ### Turn tags

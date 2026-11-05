@@ -455,17 +455,17 @@ panel. At 160 columns (`python3 tools/draw-panel.py 01-mixed.json 160
 started, a shell and a teammate:
 
 ```
-✳🔍🟢 Marigold  Runnin…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
-✳🔩🟢 Bluebell           🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
-✢📐🟢 Thistle            🤖O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
-✢🎩🟢 Clover             🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🔍🟢 Marigold  Runnin…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+🔩🟢 Bluebell           🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
+📐🟢 Thistle            🤖O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+🎩🟢 Clover             🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 🔍⚫ Daisy               🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .02٪  🪫  .022٪
 🔩⚫ Fern                🤖O⁵🏃  ❌  32m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 🔩⚫ Kale                🤖O⁵🏃  🛑  23m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 🔍⚫ Elm                 🤖O⁵🏃  💥  18m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 50s         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 👥🟡 Quince              🤖O⁵🏃  🥚  30s
 🐚🟢 sleep 300 && make test                                                          ⌛  2m
-✢👥🟢 Willow             🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
+👥🟢 Willow             🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
 ```
 
 Claude Code draws its panel's chrome before each row, `  ◯ ` at the top
@@ -484,7 +484,6 @@ The label, left to right:
 
 | Cell | Meaning |
 |---|---|
-| spinner | a running agent's activity, first on the row: Claude Code's own spinner, `· ✢ ✳ ✶ ✻ ✽` and back, in red. It steps one frame for each ⏺ the agent writes, a text or tool-call block, so it moves when the agent does and stands still when it stalls. Absent on any other row, and on a shell, which has no transcript to count in |
 | kind | the agent type, as a glyph (the [README legend](../README.md#agent-kind)) |
 | state | the phase: 🟢 running, 🟡 paused or ⚫ ended. See [State](#state) |
 | 👶🏻 | how many rows hang directly under it on the panel, finished or not |
@@ -597,14 +596,14 @@ and finished ones (`python3 tools/draw-panel.py 03-tree.json 170
 --right-edge 5`):
 
 ```
-✳🎩🟢 👶🏻2 🤏2     Trunk          🤖O⁵🏃  🚦  23m  💰0.2   🧠 32k  16٪  🧩▴ 33k ▾2.4k  🎯91٪  ⌛ 33m         🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋  .04٪  🪫  .054٪
-✢🔍🟢           📨1 Twig         🤖O⁵🏃  🔧  50s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
-✢🔩🟢 👶🏻1     📨2 Thorn        🤖O⁵🏃  🚦  22m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
-✢🔩🟢 👶🏻1         Tendril …  🤖O⁵🏃  🚦  20m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 22m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
-✢🔍🟢               Tip      🤖O⁵🏃  🤖  10s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 20m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🎩🟢 👶🏻2 🤏2     Trunk          🤖O⁵🏃  🚦  23m  💰0.2   🧠 32k  16٪  🧩▴ 33k ▾2.4k  🎯91٪  ⌛ 33m         🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋  .04٪  🪫  .054٪
+🔍🟢           📨1 Twig         🤖O⁵🏃  🔧  50s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🔩🟢 👶🏻1     📨2 Thorn        🤖O⁵🏃  🚦  22m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 23m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+🔩🟢 👶🏻1         Tendril …  🤖O⁵🏃  🚦  20m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 22m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+🔍🟢               Tip      🤖O⁵🏃  🤖  10s  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 20m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 🎩⚫               Gourd           🤖O⁵🏃  ✅ 1.1h  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛1.7m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 🔍⚫               Garlic          🤖O⁵🏃  ✅ 1.1h  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛2.5m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
-✢🔍🟢               Moss           🤖O⁵🏃  🔧 6.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛8.3m         🤖⠆⠀ 🔧⠶⠆ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+🔍🟢               Moss           🤖O⁵🏃  🔧 6.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛8.3m         🤖⠆⠀ 🔧⠶⠆ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 ```
 
 An agent spawned by another agent is drawn by the panel under its parent,

@@ -2488,7 +2488,7 @@ class AgentUsage(NamedTuple):
                             # spent; see agent_state
     cwd: str = ""           # the directory its last record was written in
     blocks: int = 0         # its text and tool-call blocks, each a ⏺ in
-                            # Claude Code; what steps the row's spinner
+                            # Claude Code, kept in its saved fold
     # Filled by prepare_subagent_tasks, off the other files and the payload.
     inbox: int = 0          # messages waiting for its next tool round; see
                             # inbox_counts and inbox_fold.counts

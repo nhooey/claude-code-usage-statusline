@@ -46,16 +46,13 @@ measures two columns in Ghostty, so it stays. If it ever
 needs replacing, 📉 U+1F4C9 and 🔽 U+1F53D both satisfy every rule. 🗜 U+1F5DC
 does not: it is Neutral, Unicode 7, and text-presentation by default.
 
-Three sets of agent-panel glyphs break rule 2 on purpose. The tree glyphs ◯ ⏺
+Two sets of agent-panel glyphs break rule 2 on purpose. The tree glyphs ◯ ⏺
 ├ └ │ (`E_TREE_*`) are Ambiguous or Neutral because they are the tree Claude
 Code draws one column wide at the left of every agent row; the grid counts
 that chrome toward a row's width (`PANEL_CHROME`), so the width matters. The
 Braille gauge cells (`E_GAUGE`) are Neutral, but have no emoji form for a
-terminal to widen, and U+2800 holds a gauge's width at a zero share. The
-spinner's · ✢ ✳ ✶ ✻ ✽ (`E_SPIN`) are Claude Code's own spinner, which it draws
-one column wide in the same terminal; a different set would not read as
-Claude working. All three are `E_*` constants, so `probe-advance.sh` measures
-them.
+terminal to widen, and U+2800 holds a gauge's width at a zero share. Both
+are `E_*` constants, so `probe-advance.sh` measures them.
 
 ## Diagnosing a misaligned row
 

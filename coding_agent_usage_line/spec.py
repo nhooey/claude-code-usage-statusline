@@ -476,7 +476,6 @@ F_OVER = "\033[38;2;255;0;0m"              # bright red  — an agent row's ⛳
                                            #  still going, which is the louder
                                            #  fact, so it is redder than F_RED
                                            #  and not that row hue itself.
-F_SPIN = F_RED                             # the agent row's E_SPIN spinner
 F_CHAT_U = "\033[38;2;168;168;168m"        # light grey  — user chat row
 F_CHAT_B = "\033[38;2;118;118;118m"        # mid grey    — assistant chat row.
                                            #  The 256 values are neutral: that
@@ -1099,14 +1098,6 @@ E_MODE_ETA = E_ETA                 # ⛳  paused on nothing it can name, but its
 # way the tree glyphs do, but it has no emoji form for a terminal to widen,
 # and U+2800, the empty cell, keeps the gauge's width at a zero share.
 E_GAUGE = "⠀⠄⠆⠦⠶"
-# A running agent row's spinner, the first of its cells: Claude Code's own
-# spinner glyphs, which it plays forward and then back.  The row steps it
-# one frame for each ⏺ in the agent's transcript, a text or tool-call block,
-# so it moves when the agent does and stops when it stalls.  Ambiguous and
-# Neutral, so they break rule 2 the way the tree glyphs do, and for the same
-# reason: Claude Code draws them one column wide in the same terminal, and a
-# different set would not read as Claude working.
-E_SPIN = "·✢✳✶✻✽"
 GAUGE_W = 2
 E_ROW_AGENTS = "👥"           # 👥  agent spend the 🎤 row cannot carry.
                               # Emoji_Presentation=Yes and a single code
@@ -1334,7 +1325,7 @@ MODEL_FAMILIES = ("Opus", "Sonnet", "Haiku", "Fable", "Mythos")
 # --right-edge 0 (Settings.rightEdge, formatting.RIGHT_EDGE_COLS).
 RIGHT_EDGE = 5
 # The fewest columns a row's label keeps before columns start to drop: an
-# agent row's head on the panel (spinner, kind and state marks and a
+# agent row's head on the panel (the kind and state marks and a
 # blank, 7) and the first 5 of its name, so two agents still read apart.
 # The band's labels are their marks, 🤖's with its 📨 count, 7 at most.
 LABEL_MIN = 12
@@ -1453,7 +1444,6 @@ TRUE_COLOURS = {
     "F_PRW": "\033[38;2;140;150;255m",
     "F_ETA": "\033[38;2;255;77;255m",
     "F_OVER": "\033[38;2;255;40;40m",
-    "F_SPIN": "\033[38;2;255;90;90m",
     "F_CHAT_U": "\033[38;2;166;170;158m",
     "F_CHAT_B": "\033[38;2;112;126;140m",
     "B_DRK": "\033[48;2;12;14;18m",

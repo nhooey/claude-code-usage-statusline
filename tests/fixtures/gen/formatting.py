@@ -487,7 +487,7 @@ def span_lists():
         [S("x", "", False, False, "")],
         [S("x", "F_NOPE")],
         [S("x", None, False, False, "B_NOPE")],
-        [S("x", "F_RULE"), S("y", "F_SPIN", True), S("z", "F_LIM_WEEK")],
+        [S("x", "F_RULE"), S("y", "F_SHARE", True), S("z", "F_LIM_WEEK")],
     ]
     rng = random.Random(4242)
     colours = [None, "F_PNK", "F_TUP", "F_TDN", "F_RED", ""]
