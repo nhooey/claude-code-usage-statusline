@@ -178,6 +178,8 @@ type World = {
   reads: string[]
   lists: string[]
   runs: (readonly string[])[]
+  // Each file's mtime in ms where a test set one; NOW otherwise.
+  mtimes: Map<string, number>
 }
 
 type Run = { argv: readonly string[]; init?: { stdin?: string } }
@@ -195,6 +197,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
   usageDown = false, calib = true,
   terminal: Record<string, string> = {}): World {
   const files = new Map<string, Uint8Array>()
+  const mtimes = new Map<string, number>()
   for (const [p, b64] of Object.entries(FILES)) files.set(p, fromBase64(b64))
   files.set('/tracker.plist', encoder.encode(TRACKER))
   files.set(USER_FILE, encoder.encode(JSON.stringify(USER_SETTINGS)))
@@ -237,7 +240,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     const f = fileAt(e.path)
     if (f) {
       return { value: { kind: 'file' as const, size: f.length,
-        mtimeMs: NOW * 1000, isLink: false } }
+        mtimeMs: mtimes.get(e.path) ?? NOW * 1000, isLink: false } }
     }
     if (isDir(e.path)) {
       return { value: { kind: 'dir' as const, size: 0, mtimeMs: NOW * 1000,
@@ -274,7 +277,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     if (!names.size) return { deny: 'no such directory: ' + e.path }
     return { value: [...names].map(([name, kind]) => ({ name, kind,
       size: kind === 'file' ? files.get(dir + name)!.length : 0,
-      mtimeMs: NOW * 1000, isLink: false })) }
+      mtimeMs: mtimes.get(dir + name) ?? NOW * 1000, isLink: false })) }
   })
   const runs: (readonly string[])[] = []
   on('process.run', ($, e) => {
@@ -318,7 +321,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     return { value: undefined }
   })
   return { files, store, docs, usage, debug, logged, clock, session,
-    oauth, reads, lists, runs }
+    oauth, reads, lists, runs, mtimes }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -950,6 +953,40 @@ test('a scan reads a transcript once, and a rescan only one that changed',
     const files = _windowCostsFiles(new TextDecoder()
       .decode(w.files.get(costs)!))!
     expect(files[path].off).toBe(more.lastIndexOf(10) + 1)
+  })
+
+// A load's first scan, with the shared window-cost cache on disk: a file
+// the cache holds to its end, last written before the cache was, is not
+// read; one written since is, as is one the cache holds only part of.
+test('a load\'s first scan reads no file the cost cache holds whole',
+  async ($, on) => {
+    const costs = statePath(STATE, 'window-costs')
+    const w: World = world(on, (e) => {
+      const [cmd, , script, , path] = e.argv
+      if (cmd !== '/bin/sh' || !script.includes('mv -f')) return NO_GIT_HERE
+      w.files.set(path, encoder.encode(e.init?.stdin ?? ''))
+      return { ...NO_GIT_HERE, exitCode: 0, stderr: '' }
+    }, false, false)
+    const main = w.files.get(MAIN)!
+    const bytes = main.subarray(0, main.lastIndexOf(10) + 1)
+    const held = '/claude/projects/-work/held-whole.jsonl'
+    const since = '/claude/projects/-work/written-since.jsonl'
+    const part = '/claude/projects/-work/held-in-part.jsonl'
+    for (const p of [held, since, part]) w.files.set(p, bytes)
+    const kept = { off: bytes.length, tail: null, recs: [] }
+    w.files.set(costs, encoder.encode(_windowCostsText({ [held]: kept,
+      [since]: kept, [part]: { ...kept, off: bytes.length - 1 } })))
+    w.mtimes.set(costs, NOW * 1000)
+    w.mtimes.set(held, NOW * 1000 - 60_000)
+    w.mtimes.set(part, NOW * 1000 - 60_000)
+    w.mtimes.set(since, NOW * 1000 + 1)
+    const of = (p: string) => w.reads.filter((r) => r === p).length
+    await start($, w, 'terminal', MAIN)
+    for (let i = 0; i < 20 && of(since) === 0; i++) await settle()
+    await settle()
+    expect(of(held)).toBe(0)
+    expect(of(since)).toBe(1)
+    expect(of(part)).toBe(1)
   })
 
 // What an idle refresh, with nothing written since the last, asks of the
