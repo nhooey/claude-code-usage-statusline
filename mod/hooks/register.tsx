@@ -46,6 +46,7 @@ import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
+import type { IoCounts } from './edges.ts'
 import { costDoc, defaultsError, folderAgents, folderReplies, io, options,
   optionsFor, permissionModeOf,
   placesOf, readConfig, seen, statusDoc, steps, transcriptPath, turnsNow }
@@ -348,21 +349,107 @@ let opened = ''
 // The engine counts at the last refresh, so each refresh's line says what
 // was asked since: its own reads, and what the work it started behind the
 // last one asked, such as a calibration scan.
-let ioAt = { ...io }
+export type IoUsed = IoCounts & { parts: Record<string, IoCounts> }
 
-function ioSinceLast(): typeof io {
-  const now = { ...io }
-  const used = { reads: now.reads - ioAt.reads,
-    readBytes: now.readBytes - ioAt.readBytes,
-    lists: now.lists - ioAt.lists, spawns: now.spawns - ioAt.spawns }
+const copyIo = (): IoUsed => ({ ...io, parts: Object.fromEntries(
+  Object.entries(io.parts).map(([k, v]) => [k, { ...v }])) })
+
+let ioAt = copyIo()
+
+const minus = (a: IoCounts, b: IoCounts | undefined): IoCounts => ({
+  reads: a.reads - (b?.reads ?? 0),
+  readBytes: a.readBytes - (b?.readBytes ?? 0),
+  lists: a.lists - (b?.lists ?? 0), spawns: a.spawns - (b?.spawns ?? 0) })
+
+function ioSinceLast(): IoUsed {
+  const now = copyIo()
+  const parts: Record<string, IoCounts> = {}
+  for (const [k, v] of Object.entries(now.parts)) {
+    const d = minus(v, ioAt.parts[k])
+    if (d.reads || d.readBytes || d.lists || d.spawns) parts[k] = d
+  }
+  const used = { ...minus(now, ioAt), parts }
   ioAt = now
   return used
 }
 
-function ioText(u: typeof io): string {
-  return `since the last refresh: ${u.reads} reads, ` +
-    `${(u.readBytes / 1048576).toFixed(1)} MiB, ${u.lists} listings, ` +
-    `${u.spawns} processes`
+const countsText = (u: IoCounts): string =>
+  `${u.reads} reads, ${(u.readBytes / 1048576).toFixed(1)} MiB, ` +
+  `${u.lists} listings, ${u.spawns} processes`
+
+/** The counts, then each part's, the costliest by bytes first: what a
+ * heavy line names as the culprit. */
+export function ioText(u: IoUsed): string {
+  const parts = Object.entries(u.parts)
+    .sort(([, a], [, b]) => b.readBytes - a.readBytes || b.spawns - a.spawns)
+    .map(([k, v]) => `${k}: ${countsText(v)}`)
+  return `since the last refresh: ${countsText(u)}` +
+    (parts.length ? `; ${parts.join('; ')}` : '')
+}
+
+// ── The drawing, timed ──────────────────────────────────────────────────
+// Each `ui.render` hook's own time, the engine's drawing beneath it (its
+// `next`) left out, and how many times it ran, per component, since the
+// last minute's note: what a "heavy drawing" line names.  Timed by the
+// runtime's own clock, which costs no call to the engine.
+const drawn = new Map<string, { draws: number; ms: number }>()
+let drawnSince = 0
+
+const nowMs = (): number =>
+  typeof performance !== 'undefined' ? performance.now() : Date.now()
+
+function noteDrawn(component: string, ms: number) {
+  const d = drawn.get(component) ?? { draws: 0, ms: 0 }
+  d.draws++
+  d.ms += ms
+  drawn.set(component, d)
+}
+
+/** One drawing being timed: where it began, and the time its hook spent
+ * in the engine's drawing beneath it (`next`), which is left out. */
+type Draw = { component: string; at: number; inner: number }
+
+function drawStart(component: string): Draw {
+  return { component, at: nowMs(), inner: 0 }
+}
+
+/** `f`, a call of the hook's `next`, its time kept out of the hook's. */
+async function drawNext<T>(d: Draw, f: () => T | Promise<T>): Promise<T> {
+  const at = nowMs()
+  try {
+    return await f()
+  } finally {
+    d.inner += nowMs() - at
+  }
+}
+
+function drawEnd(d: Draw) {
+  noteDrawn(d.component, nowMs() - d.at - d.inner)
+}
+
+/** Once a minute, from the clock: a "heavy drawing" line where the render
+ * hooks took CONFIG.drawNoteMs or more of it, each component with its
+ * draws and ms, the costliest first. */
+async function noteDrawing($: $, now: number): Promise<void> {
+  if (!drawnSince) drawnSince = now
+  if (now - drawnSince < 60_000) return
+  const minutes = (now - drawnSince) / 60_000
+  drawnSince = now
+  const text = drawingNote([...drawn], minutes)
+  drawn.clear()
+  if (text !== null) await log($, text)
+}
+
+/** The "heavy drawing" line for `rows`, each component's draws and ms
+ * over `minutes`, the costliest first; null below CONFIG.drawNoteMs a
+ * minute. */
+export function drawingNote(rows: [string, { draws: number; ms: number }][],
+  minutes: number): string | null {
+  const ms = rows.reduce((s, [, d]) => s + d.ms, 0)
+  if (ms / minutes < CONFIG.drawNoteMs) return null
+  return `heavy drawing: ${Math.round(ms)}ms in ${minutes.toFixed(1)} ` +
+    'min (' + [...rows].sort(([, a], [, b]) => b.ms - a.ms).map(([k, d]) =>
+      `${k} ${d.draws} draws ${Math.round(d.ms)}ms`).join(', ') + ')'
 }
 
 /** Reads the status document afresh; the write redraws the band.  One at
@@ -488,8 +575,9 @@ async function clock($: $, mine: number) {
   while ((await read($, generation)) === mine) {
     await $.clock.sleep(CONFIG.clockMs)
     if ((await read($, generation)) !== mine) return
-    const now = (await $.clock.now()) / 1000
-    await update($, clockNow, () => now)
+    const ms = await $.clock.now()
+    await update($, clockNow, () => ms / 1000)
+    await noteDrawing($, ms).catch((err) => log($, 'drawing', err))
   }
 }
 
@@ -1037,33 +1125,48 @@ export const register: Register = on => {
   // The receipts trial: the shapes Claude Code draws a subagent's end and
   // a /compact with, logged once each, nothing drawn differently.
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
-    const row = await next(e)
-    if (e.props.tool === 'Agent' || e.props.tool === 'Task') {
-      const out = (e.props.output ?? {}) as Dict
-      void trial($, 'ToolResult', { tool: e.props.tool,
-        keys: Object.keys(out).sort(), status: out.status ?? null,
-        agentId: typeof out.agentId === 'string' ? 'yes' : 'no',
-        errored: e.props.isErrored }).catch(() => {})
+    const draw = drawStart('ToolResult')
+    try {
+      const row = await drawNext(draw, () => next(e))
+      if (e.props.tool === 'Agent' || e.props.tool === 'Task') {
+        const out = (e.props.output ?? {}) as Dict
+        void trial($, 'ToolResult', { tool: e.props.tool,
+          keys: Object.keys(out).sort(), status: out.status ?? null,
+          agentId: typeof out.agentId === 'string' ? 'yes' : 'no',
+          errored: e.props.isErrored }).catch(() => {})
+      }
+      return row
+    } finally {
+      drawEnd(draw)
     }
-    return row
   })
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
-    const row = await next(e)
-    if (e.props.origin.kind !== 'composer') {
-      const t = e.props.task
-      void trial($, 'UserMessage', { origin: e.props.origin.kind,
-        task: t ? { id: t.id ? 'yes' : 'no', status: t.status ?? null,
-          type: t.type ?? null, toolUseId: t.toolUseId ? 'yes' : 'no',
-          durationMs: typeof t.durationMs === 'number' } : null,
-        text: e.props.text.slice(0, 40) }).catch(() => {})
+    const draw = drawStart('UserMessage')
+    try {
+      const row = await drawNext(draw, () => next(e))
+      if (e.props.origin.kind !== 'composer') {
+        const t = e.props.task
+        void trial($, 'UserMessage', { origin: e.props.origin.kind,
+          task: t ? { id: t.id ? 'yes' : 'no', status: t.status ?? null,
+            type: t.type ?? null, toolUseId: t.toolUseId ? 'yes' : 'no',
+            durationMs: typeof t.durationMs === 'number' } : null,
+          text: e.props.text.slice(0, 40) }).catch(() => {})
+      }
+      return row
+    } finally {
+      drawEnd(draw)
     }
-    return row
   })
   on('ui.render', { component: 'CommandOutput' }, async ($, e, next) => {
-    const row = await next(e)
-    void trial($, 'CommandOutput', { command: e.props.command,
-      text: String(e.props.text ?? '').slice(0, 60) }).catch(() => {})
-    return row
+    const draw = drawStart('CommandOutput')
+    try {
+      const row = await drawNext(draw, () => next(e))
+      void trial($, 'CommandOutput', { command: e.props.command,
+        text: String(e.props.text ?? '').slice(0, 60) }).catch(() => {})
+      return row
+    } finally {
+      drawEnd(draw)
+    }
   })
 
   // Each drawing below reads `configured`, so a change of the options
@@ -1073,36 +1176,43 @@ export const register: Register = on => {
   // "above".  Its width is taken either way: the footer and the receipt
   // are laid out at it.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    void start($, 'ui.render').catch((err) => log($, 'no start', err))
-    bandCols = e.props.bodyColumns + 5
-    surveyHeld = e.props.hasSurvey
-    // The band's width, the terminal's, whether a pane can dock beside
-    // the transcript, and whether a survey holds the band, each time one
-    // changes: beside a docked pane bodyColumns is the transcript's
-    // column, and under a survey the band is the engine's.
-    const seen = JSON.stringify({ bodyColumns: e.props.bodyColumns,
-      viewportColumns: e.viewport?.columns ?? null,
-      isFullscreen: e.viewport?.isFullscreen ?? null,
-      hasSurvey: e.props.hasSurvey })
-    if (seen !== bandSeen) {
-      bandSeen = seen
-      void log($, 'band: ' + seen)
+    const draw = drawStart('AbovePrompt')
+    try {
+      void start($, 'ui.render').catch((err) => log($, 'no start', err))
+      bandCols = e.props.bodyColumns + 5
+      surveyHeld = e.props.hasSurvey
+      // The band's width, the terminal's, whether a pane can dock beside
+      // the transcript, and whether a survey holds the band, each time one
+      // changes: beside a docked pane bodyColumns is the transcript's
+      // column, and under a survey the band is the engine's.
+      const seen = JSON.stringify({ bodyColumns: e.props.bodyColumns,
+        viewportColumns: e.viewport?.columns ?? null,
+        isFullscreen: e.viewport?.isFullscreen ?? null,
+        hasSurvey: e.props.hasSurvey })
+      if (seen !== bandSeen) {
+        bandSeen = seen
+        void log($, 'band: ' + seen)
+      }
+      await read($, configured)
+      if (await optionsFor($) === null || e.props.hasSurvey) {
+        return await drawNext(draw, () => next(e))
+      }
+      const lines = await bandNow($, e.props.isWorking, 'above')
+      // Between turns the receipt carries the rows, and the band has none.
+      if (!lines.length) return await drawNext(draw, () => next(e))
+      const { Box, Text } = $.ui.resolve(e)
+      // No margin: Claude Code draws its `[-]` on the band's first row, and
+      // on a blank top row it stood alone.  A bottom margin of -1, into the
+      // blank row above the prompt's border, hid the band's last row under
+      // the border instead.
+      return (
+        <Box flexDirection="column">
+          {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
+        </Box>
+      )
+    } finally {
+      drawEnd(draw)
     }
-    await read($, configured)
-    if (await optionsFor($) === null || e.props.hasSurvey) return next(e)
-    const lines = await bandNow($, e.props.isWorking, 'above')
-    // Between turns the receipt carries the rows, and the band has none.
-    if (!lines.length) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
-    // No margin: Claude Code draws its `[-]` on the band's first row, and
-    // on a blank top row it stood alone.  A bottom margin of -1, into the
-    // blank row above the prompt's border, hid the band's last row under
-    // the border instead.
-    return (
-      <Box flexDirection="column">
-        {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
-      </Box>
-    )
   })
 
   // Claude Code's closing line, `✻ <word> for <duration>`, drawn as the
@@ -1112,29 +1222,34 @@ export const register: Register = on => {
   // then one blank row: a Box one row high around a space, rather than an
   // empty Text, which Ink measures as no row at all.
   on('ui.render', { component: 'TurnDuration' }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
-    await read($, filed)
-    await read($, configured)
-    const got = (await $.store.get(receiptAt(e.props.durationMs))) as
-      FiledReceipt | Span[][] | undefined
-    const rows = Array.isArray(got)
-      ? got.map((spans) => ({ scope: '', spans })) : got?.rows ?? []
-    if (rows.length) {
-      // A blank row above, so the receipt stands apart from the answer,
-      // and one under its tag line (asked 2026-10-19), which goes with the
-      // tag line (tagsShown).
+    const draw = drawStart('TurnDuration')
+    try {
+      const { Box, Text } = $.ui.resolve(e)
+      await read($, filed)
+      await read($, configured)
+      const got = (await $.store.get(receiptAt(e.props.durationMs))) as
+        FiledReceipt | Span[][] | undefined
+      const rows = Array.isArray(got)
+        ? got.map((spans) => ({ scope: '', spans })) : got?.rows ?? []
+      if (rows.length) {
+        // A blank row above, so the receipt stands apart from the answer,
+        // and one under its tag line (asked 2026-10-19), which goes with the
+        // tag line (tagsShown).
+        return (
+          <Box flexDirection="column" marginTop={1}
+            marginBottom={tagsShown(options()) ? 1 : 0}>
+            {rows.map((l, i) => line(Text, l.spans, 'receipt' + i))}
+          </Box>
+        )
+      }
       return (
-        <Box flexDirection="column" marginTop={1}
-          marginBottom={tagsShown(options()) ? 1 : 0}>
-          {rows.map((l, i) => line(Text, l.spans, 'receipt' + i))}
+        <Box height={1}>
+          <Text> </Text>
         </Box>
       )
+    } finally {
+      drawEnd(draw)
     }
-    return (
-      <Box height={1}>
-        <Text> </Text>
-      </Box>
-    )
   })
 
   // The footer under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`:
@@ -1143,96 +1258,106 @@ export const register: Register = on => {
   // "tail" the 💳 account is a dim tail at the line's right end
   // (footerTail).
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
-    void start($, 'ui.render').catch((err) => log($, 'no start', err))
-    // A change of mode draws the line first with the words of the mode it
-    // turned off, so the one now on is known before the transcript has it.
-    hintMode = modeOfHint(e.props.hint) ?? hintMode
-    const mode = hintMode ?? permissionMode
-    await read($, configured)
-    const o = await optionsFor($)
-    // A wrong defaults file: Claude Code's own line, and the error in red
-    // under it in place of every row, so it cannot be missed.
-    const fault = defaultsError()
-    if (fault !== null) {
-      const row = await next(e)
+    const draw = drawStart('PromptHint')
+    try {
+      void start($, 'ui.render').catch((err) => log($, 'no start', err))
+      // A change of mode draws the line first with the words of the mode it
+      // turned off, so the one now on is known before the transcript has it.
+      hintMode = modeOfHint(e.props.hint) ?? hintMode
+      const mode = hintMode ?? permissionMode
+      await read($, configured)
+      const o = await optionsFor($)
+      // A wrong defaults file: Claude Code's own line, and the error in red
+      // under it in place of every row, so it cannot be missed.
+      const fault = defaultsError()
+      if (fault !== null) {
+        const row = await drawNext(draw, () => next(e))
+        const { Box, Text } = $.ui.resolve(e)
+        return (
+          <Box flexDirection="column">
+            {row}
+            <Text color="#ff5f5f" wrap="truncate-end">
+              {`⚠ usage-band: the defaults file is wrong: ${fault}`}
+            </Text>
+          </Box>
+        )
+      }
+      const doc = await read($, status)
+      if (doc === null || o === null) return await drawNext(draw, () => next(e))
+      const st = await settingsOf($, o)
+      // The band's width before the viewport's: the viewport read 10 columns
+      // wider than the terminal drew, pushing the 🕐 off the row (seen live
+      // 2026-10-20), and the band's is where its rows end.
+      const cols = bandCols || (e.viewport?.columns ?? 80)
+      const fig = at(doc as Dict, await read($, clockNow))
+      // The 💳 account, where rows.account.live draws it now.
+      const accounted = accountedIn(o, e.props.isWorking || await read($, held))
+      const text = accounted && o.accountPlace === 'tail' ? footerTail(st, fig,
+        o.hide, e.props.hint, cols, mode, await home($)) : ''
+      const tail = o.footerRuler && text ? footerRuler(st, text, cols)
+        : text
+      // What the padding was worked out from, each time it changes, so a
+      // tail drawn too wide can be checked against the line it was given.
+      // And whether a survey held the band at its last draw, so a footer
+      // drawn under a survey says so (row-placement.md, RP1).
+      const seen = JSON.stringify([e.props.hint, mode ?? null, bandCols,
+        e.viewport?.columns ?? null, tail.length,
+        e.viewport?.isFullscreen ?? null, surveyHeld])
+      if (seen !== hintSeen) {
+        hintSeen = seen
+        void log($, 'footer: ' + seen)
+      }
+      const row = await drawNext(draw, () => tail
+        ? next({ ...e, props: { ...e.props, tail } }) : next(e))
+      // The rows whose rows.<row>.place is "footer", the 💳 account's among
+      // them, under the footer line, in their colours: Claude Code's own
+      // line first, from drawNext(draw, () => next(e)), so its pills
+      // stay live, and a node beside it in a column goes on the row below it
+      // (seen live 2026-10-20).  Claude Code draws the line's container
+      // hint-inset columns in, so the rows are drawn that much narrower on
+      // the panel's columns: drawn at the full width, each cell stood that
+      // many columns right of the agent panel's, and the 💳 row ended past
+      // the grid (seen live 2026-10-20).
+      const lines = await bandNow($, e.props.isWorking, 'footer')
+      if (!lines.length) return row
       const { Box, Text } = $.ui.resolve(e)
+      // A blank row parts the rows from the footer line.
       return (
-        <Box flexDirection="column">
+        <Box flexDirection="column" marginBottom={o.hintTuck ? -1 : 0}>
           {row}
-          <Text color="#ff5f5f" wrap="truncate-end">
-            {`⚠ usage-band: the defaults file is wrong: ${fault}`}
-          </Text>
+          <Box height={1}><Text> </Text></Box>
+          {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
         </Box>
       )
+    } finally {
+      drawEnd(draw)
     }
-    const doc = await read($, status)
-    if (doc === null || o === null) return next(e)
-    const st = await settingsOf($, o)
-    // The band's width before the viewport's: the viewport read 10 columns
-    // wider than the terminal drew, pushing the 🕐 off the row (seen live
-    // 2026-10-20), and the band's is where its rows end.
-    const cols = bandCols || (e.viewport?.columns ?? 80)
-    const fig = at(doc as Dict, await read($, clockNow))
-    // The 💳 account, where rows.account.live draws it now.
-    const accounted = accountedIn(o, e.props.isWorking || await read($, held))
-    const text = accounted && o.accountPlace === 'tail' ? footerTail(st, fig,
-      o.hide, e.props.hint, cols, mode, await home($)) : ''
-    const tail = o.footerRuler && text ? footerRuler(st, text, cols)
-      : text
-    // What the padding was worked out from, each time it changes, so a
-    // tail drawn too wide can be checked against the line it was given.
-    // And whether a survey held the band at its last draw, so a footer
-    // drawn under a survey says so (row-placement.md, RP1).
-    const seen = JSON.stringify([e.props.hint, mode ?? null, bandCols,
-      e.viewport?.columns ?? null, tail.length,
-      e.viewport?.isFullscreen ?? null, surveyHeld])
-    if (seen !== hintSeen) {
-      hintSeen = seen
-      void log($, 'footer: ' + seen)
-    }
-    const row = await (tail ? next({ ...e, props: { ...e.props, tail } })
-      : next(e))
-    // The rows whose rows.<row>.place is "footer", the 💳 account's among
-    // them, under the footer line, in their colours: Claude Code's own
-    // line first, from next(e), so its pills
-    // stay live, and a node beside it in a column goes on the row below it
-    // (seen live 2026-10-20).  Claude Code draws the line's container
-    // hint-inset columns in, so the rows are drawn that much narrower on
-    // the panel's columns: drawn at the full width, each cell stood that
-    // many columns right of the agent panel's, and the 💳 row ended past
-    // the grid (seen live 2026-10-20).
-    const lines = await bandNow($, e.props.isWorking, 'footer')
-    if (!lines.length) return row
-    const { Box, Text } = $.ui.resolve(e)
-    // A blank row parts the rows from the footer line.
-    return (
-      <Box flexDirection="column" marginBottom={o.hintTuck ? -1 : 0}>
-        {row}
-        <Box height={1}><Text> </Text></Box>
-        {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
-      </Box>
-    )
   })
 
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
-    const row = await next(e)
-    if (e.props.origin.kind !== 'composer') return row
-    await read($, configured)
-    if (!tagsShown(options())) return row
-    await read($, filed)
-    const tag = (await $.store.get(startKey(e.props.text))) as
-      Span[] | undefined
-    if (!tag) return row
-    const { Box, Text } = $.ui.resolve(e)
-    // On a line of its own under the prompt, at no indent, so its 🔻🔖
-    // stacks with the receipt's 🔺🔖 line, also at none (decided
-    // 2026-10-19; beside a short prompt it could not stack).
-    return (
-      <Box flexDirection="column">
-        {row}
-        {line(Text, tag, 'tag', true)}
-      </Box>
-    )
+    const draw = drawStart('UserMessage')
+    try {
+      const row = await drawNext(draw, () => next(e))
+      if (e.props.origin.kind !== 'composer') return row
+      await read($, configured)
+      if (!tagsShown(options())) return row
+      await read($, filed)
+      const tag = (await $.store.get(startKey(e.props.text))) as
+        Span[] | undefined
+      if (!tag) return row
+      const { Box, Text } = $.ui.resolve(e)
+      // On a line of its own under the prompt, at no indent, so its 🔻🔖
+      // stacks with the receipt's 🔺🔖 line, also at none (decided
+      // 2026-10-19; beside a short prompt it could not stack).
+      return (
+        <Box flexDirection="column">
+          {row}
+          {line(Text, tag, 'tag', true)}
+        </Box>
+      )
+    } finally {
+      drawEnd(draw)
+    }
   })
 
   // A message another agent sent, folded: Claude Code's `› Message from
@@ -1253,33 +1378,38 @@ export const register: Register = on => {
   // that click (asked 2026-10-21), and no call a press can make toggles a
   // row (`isExpanded` is read-only), so the row is plain Text.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
-    const from = e.props.from
-    if (!from) return next(e)
-    await read($, configured)
-    const o = await optionsFor($)
-    if (!o?.agentMessageRow) return next(e)
-    const sender = await senderOf($, from.name, e.props.text,
-      await agentsNow($))
-    const label = taskOf(sender, from.name)
-    // The band's width before the viewport's, as the footer takes it: the
-    // viewport has read wider than the terminal drew (seen live
-    // 2026-10-20).  Ending where the band's rows and the receipt's end,
-    // right-edge short of the edge (asked 2026-10-20: it ran to the edge).
-    // Should the row stand in from the edge, the Text's truncate-end cuts
-    // what the ellipsis did not.
-    const cols = (bandCols || (e.viewport?.columns ?? 80)) - o.rightEdge
-    const st = await settingsOf($, o)
-    const { Box, Text } = $.ui.resolve(e)
-    if (e.props.isExpanded) {
-      return (
-        <Box flexDirection="column">
-          {messageBlock(st, label, e.props.text, cols).map((l, i) =>
-            line(Text, l, 'agentMessage' + i))}
-        </Box>
-      )
+    const draw = drawStart('UserMessage')
+    try {
+      const from = e.props.from
+      if (!from) return await drawNext(draw, () => next(e))
+      await read($, configured)
+      const o = await optionsFor($)
+      if (!o?.agentMessageRow) return await drawNext(draw, () => next(e))
+      const sender = await senderOf($, from.name, e.props.text,
+        await agentsNow($))
+      const label = taskOf(sender, from.name)
+      // The band's width before the viewport's, as the footer takes it: the
+      // viewport has read wider than the terminal drew (seen live
+      // 2026-10-20).  Ending where the band's rows and the receipt's end,
+      // right-edge short of the edge (asked 2026-10-20: it ran to the edge).
+      // Should the row stand in from the edge, the Text's truncate-end cuts
+      // what the ellipsis did not.
+      const cols = (bandCols || (e.viewport?.columns ?? 80)) - o.rightEdge
+      const st = await settingsOf($, o)
+      const { Box, Text } = $.ui.resolve(e)
+      if (e.props.isExpanded) {
+        return (
+          <Box flexDirection="column">
+            {messageBlock(st, label, e.props.text, cols).map((l, i) =>
+              line(Text, l, 'agentMessage' + i))}
+          </Box>
+        )
+      }
+      return line(Text, messageSpans(st, label, e.props.text, cols),
+        'agentMessage')
+    } finally {
+      drawEnd(draw)
     }
-    return line(Text, messageSpans(st, label, e.props.text, cols),
-      'agentMessage')
   })
 }
 
