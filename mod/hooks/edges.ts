@@ -1342,18 +1342,23 @@ async function readCosts($: $, places: Places): Promise<void> {
   if (costsRead) return
   costsRead = true
   const path = statePath(places.stateDir, 'window-costs')
-  const size = await fileSize($, path)
-  if (size === null) return
+  const st = await $.fs.stat(path).catch(() => null)
+  if (st?.kind !== 'file') return
   let files: Record<string, CostKept> | null = null
   try {
     // ASCII, as both ports write it.
     files = _windowCostsFiles(new TextDecoder()
-      .decode(await readRange($, path, 0, size)))
+      .decode(await readRange($, path, 0, st.size)))
   } catch {
     // Unreadable: read everything.
   }
+  if (files) costsWrittenAt = st.mtimeMs
   for (const [k, v] of Object.entries(files ?? {})) costs.set(k, v)
 }
+
+/** When the window-cost cache this load read was written, in ms; null
+ * where it read none. */
+let costsWrittenAt: number | null = null
 
 /** The cost cache written back, keeping only the files this scan read:
  * the others have aged out of both windows. */
@@ -1393,6 +1398,14 @@ async function pricedOf($: $, f: Listed): Promise<Priced[]> {
   if (size === null) return []
   let got = costs.get(path)
   if (got && got.off > size) got = undefined
+  // Read to its end when the cache was written, and not written since:
+  // nothing to check or read on, so a load's first scan reads no file
+  // the cache already holds whole.
+  if (got && got.off === size && costsWrittenAt !== null &&
+      f.mtimeMs < costsWrittenAt) {
+    pricedKept.set(path, { stamp, out: got.recs })
+    return got.recs
+  }
   let lo = got ? Math.max(0, got.off - COST_TAIL_BYTES) : 0
   let data: Uint8Array
   try {
