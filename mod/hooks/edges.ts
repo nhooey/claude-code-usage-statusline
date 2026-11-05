@@ -95,6 +95,42 @@ const PIECE = 2 * 1024 * 1024
 const encoder = new TextEncoder()
 
 // ════════════════════════════════════════════════════════════════════════════
+// What the mod asks of the engine.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Every file read, the bytes it gave, directory listing and process the
+ * mod has asked the engine for since it loaded, counted where each is
+ * asked: what a refresh's log line says it cost (register.tsx, ioNote). */
+export const io = { reads: 0, readBytes: 0, lists: 0, spawns: 0 }
+
+function readTextVia($: $, path: string): Promise<string> {
+  io.reads++
+  return $.fs.read(path).then((t) => {
+    io.readBytes += t.length
+    return t
+  })
+}
+
+function readBytesVia($: $, path: string): Promise<{ base64: string }> {
+  io.reads++
+  return $.fs.read(path, { as: 'bytes' }).then((got) => {
+    io.readBytes += Math.floor(got.base64.length * 3 / 4)
+    return got
+  })
+}
+
+function listVia($: $, dir: string): ReturnType<$['fs']['list']> {
+  io.lists++
+  return $.fs.list(dir)
+}
+
+function runVia($: $, ...args: Parameters<$['process']['run']>):
+  ReturnType<$['process']['run']> {
+  io.spawns++
+  return $.process.run(...args)
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Bytes.
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -141,22 +177,65 @@ export async function fileSize($: $, path: string): Promise<number | null> {
   }
 }
 
+/** The bytes readRange last read, under the file's size and mtime then:
+ * whole files of FS_READ_MAX or less, and ranges of RANGE_KEPT_MAX or less
+ * of larger ones, the newest WHOLE_KEPT and RANGES_KEPT of each.  A
+ * refresh asks for the same transcript's tail several times, for its fold,
+ * its fold's check digests and its permission mode, and an idle one asks
+ * for bytes that have not changed; each ask read the whole file, or
+ * started a shell for a large one. */
+const wholeKept = new Map<string, { stamp: string; bytes: Uint8Array }>()
+const rangesKept = new Map<string, Uint8Array>()
+const WHOLE_KEPT = 4
+const RANGES_KEPT = 16
+const RANGE_KEPT_MAX = 1024 * 1024
+
+/** `value` set under `key`, as the newest, and the oldest dropped past
+ * `max`. */
+function keep<V>(m: Map<string, V>, key: string, value: V, max: number) {
+  m.delete(key)
+  m.set(key, value)
+  while (m.size > max) m.delete(m.keys().next().value as string)
+}
+
 /** The bytes of `path` from `start` to `end`, of a file `size` long (`end`
  * where it is read to its end).  A file `$.fs.read` takes whole is read so
  * and cut; a larger one, which it refuses, in pieces through the shell,
- * since `$.fs` reads no range. */
+ * since `$.fs` reads no range.  Bytes read before under the size and
+ * mtime the file has now are not read again. */
 export async function readRange($: $, path: string, start: number,
   end: number, size: number = end): Promise<Uint8Array> {
   if (end <= start) return new Uint8Array(0)
+  const st = await $.fs.stat(path).catch(() => null)
+  const stamp = st ? st.size + ':' + st.mtimeMs : null
   if (size <= FS_READ_MAX) {
-    const got = await $.fs.read(path, { as: 'bytes' })
-    return fromBase64(got.base64).subarray(start, end)
+    const was = wholeKept.get(path)
+    if (stamp !== null && was?.stamp === stamp) {
+      return was.bytes.subarray(start, end)
+    }
+    const got = await readBytesVia($, path)
+    const bytes = fromBase64(got.base64)
+    if (stamp !== null) keep(wholeKept, path, { stamp, bytes }, WHOLE_KEPT)
+    return bytes.subarray(start, end)
   }
+  const key = [path, start, end, stamp].join('\0')
+  const was = stamp !== null ? rangesKept.get(key) : undefined
+  if (was) return was
+  const got = await readPieces($, path, start, end)
+  if (stamp !== null && end - start <= RANGE_KEPT_MAX) {
+    keep(rangesKept, key, got, RANGES_KEPT)
+  }
+  return got
+}
+
+/** `path` from `start` to `end`, PIECE at a time, through the shell. */
+async function readPieces($: $, path: string, start: number, end: number):
+  Promise<Uint8Array> {
   const parts: Uint8Array[] = []
   steps.native = 'fromBase64' in Uint8Array ? 'yes' : 'no'
   for (let at = start; at < end;) {
     const want = Math.min(PIECE, end - at)
-    const r = await timed($, 'shell', () => $.process.run(['/bin/sh', '-c',
+    const r = await timed($, 'shell', () => runVia($, ['/bin/sh', '-c',
       'tail -c +"$1" "$2" | head -c "$3" | base64', 'sh',
       String(at + 1), path, String(want)], { timeoutMs: 30_000 }))
     if (r.exitCode !== 0) throw new Error('could not read ' + path)
@@ -171,7 +250,7 @@ export async function readRange($: $, path: string, start: number,
 
 async function readText($: $, path: string): Promise<string | null> {
   try {
-    return await $.fs.read(path)
+    return await readTextVia($, path)
   } catch {
     return null
   }
@@ -218,6 +297,8 @@ const agentKept = new Map<string, AgentKept>()
 const agentLabels = new Map<string, [string, string]>()
 const costs = new Map<string, CostKept>()
 let costsRead = false
+/** Whether `costs` holds what the window-cost cache does not yet. */
+let costsMoved = false
 let scanning = false
 /** When this load last swept the calibration caches, in Unix seconds. */
 let swept = 0
@@ -395,7 +476,7 @@ let foldWorkerFailed = false
 async function foldWorker($: $, path: string, dir: string, end: number):
   Promise<boolean> {
   if (foldWorkerFailed) return false
-  const r = await timed($, 'worker', () => $.process.run(['/usr/bin/env',
+  const r = await timed($, 'worker', () => runVia($, ['/usr/bin/env',
     'python3', $.plugin.root + '/scripts/agent_lines.py', 'fold', path,
     String(end), dir], { timeoutMs: CONFIG.agentLinesTimeoutMs }))
   if (r.exitCode !== 0) {
@@ -535,10 +616,10 @@ async function dropOldDir($: $, top: string, dirName: RegExp,
     dirs.push(dir)
   }
   for (let i = 0; i < files.length; i += RM_AT_ONCE) {
-    await $.process.run(['/bin/rm', '-f', '--',
+    await runVia($, ['/bin/rm', '-f', '--',
       ...files.slice(i, i + RM_AT_ONCE)], { timeoutMs: 15_000 })
   }
-  await $.process.run(['/bin/rmdir', '--', ...dirs, top],
+  await runVia($, ['/bin/rmdir', '--', ...dirs, top],
     { timeoutMs: 15_000 })
 }
 
@@ -549,7 +630,7 @@ type Listed = { path: string; size: number; mtimeMs: number }
 /** `$.fs.list`, or nothing where the directory will not list. */
 async function listDir($: $, dir: string) {
   try {
-    return await $.fs.list(dir)
+    return await listVia($, dir)
   } catch {
     return []
   }
@@ -743,7 +824,7 @@ async function agentLines($: $, path: string, fold: AgentFold, end: number):
   Promise<void> {
   if (agentLinesFailed) return
   while (fold.pos < end) {
-    const r = await timed($, 'lines', () => $.process.run(['/usr/bin/env',
+    const r = await timed($, 'lines', () => runVia($, ['/usr/bin/env',
       'python3', $.plugin.root + '/scripts/agent_lines.py', path,
       String(fold.pos), String(end)],
       { timeoutMs: CONFIG.agentLinesTimeoutMs }))
@@ -869,13 +950,13 @@ async function readTracker($: $, home: string): Promise<Dict | null> {
   if (override) {
     const path = override.startsWith('~/') ? home + override.slice(1)
       : override
-    const got = await $.fs.read(path, { as: 'bytes' })
+    const got = await readBytesVia($, path)
     return trackerReading(plistLoads(fromBase64(got.base64)))
   }
   const plist = home + '/Library/Preferences/' + TRACKER_DOMAIN + '.plist'
   if (await fileSize($, plist) === null) return null
   try {
-    const r = await $.process.run(['defaults', 'export', TRACKER_DOMAIN, '-'],
+    const r = await runVia($, ['defaults', 'export', TRACKER_DOMAIN, '-'],
       { timeoutMs: 15_000 })
     return trackerReading(r.stdout ? plistLoads(encoder.encode(r.stdout)) : {})
   } catch {
@@ -889,7 +970,7 @@ async function fetchOne($: $, home: string, selected: string,
   if (selected.startsWith('cmd:')) {
     // Exactly one path, or bash over it, passing only the scope fields.
     try {
-      const r = await $.process.run(['/bin/sh', '-c',
+      const r = await runVia($, ['/bin/sh', '-c',
         'if [ -x "$1" ]; then exec "$1"; else exec bash "$1"; fi', 'sh',
         selected.slice(4)], { stdin: commandInput(context),
         timeoutMs: 5_000 })
@@ -942,7 +1023,7 @@ async function configAccountVia($: $, home: string): Promise<string> {
     if (configAccount?.path === path && configAccount.stamp === stamp) {
       return configAccount.id
     }
-    const id = configAccountOf(await $.fs.read(path))
+    const id = configAccountOf(await readTextVia($, path))
     configAccount = { path, stamp, id }
     return id
   } catch {
@@ -1121,7 +1202,7 @@ export async function calibrationVia($: $, places: Places, snap: Snapshot,
   let prevAge: number | null = null
   try {
     const st = await $.fs.stat(path)
-    const d = pyJsonLoads(await $.fs.read(path))
+    const d = pyJsonLoads(await readTextVia($, path))
     if (isDict(d)) {
       prev = d
       prevAge = now - st.mtimeMs / 1000
@@ -1184,11 +1265,11 @@ async function sweepCalibrationsVia($: $, places: Places,
     dirs.push(dir)
   }
   for (let i = 0; i < stale.length; i += RM_AT_ONCE) {
-    await $.process.run(['/bin/rm', '-f', '--',
+    await runVia($, ['/bin/rm', '-f', '--',
       ...stale.slice(i, i + RM_AT_ONCE)], { timeoutMs: 15_000 })
   }
   if (dirs.length) {
-    await $.process.run(['/bin/rmdir', '--', ...dirs], { timeoutMs: 15_000 })
+    await runVia($, ['/bin/rmdir', '--', ...dirs], { timeoutMs: 15_000 })
   }
 }
 
@@ -1202,7 +1283,7 @@ async function removeOldCostsVia($: $, places: Places): Promise<void> {
   const old = oldWindowCosts(await listDir($, places.stateDir))
     .map((name) => pyJoin(places.stateDir, name))
   if (old.length) {
-    const r = await $.process.run(['/bin/rm', '-f', '--', ...old],
+    const r = await runVia($, ['/bin/rm', '-f', '--', ...old],
       { timeoutMs: 15_000 })
     if (r.exitCode !== 0) return
   }
@@ -1216,7 +1297,7 @@ async function removeOldCostsVia($: $, places: Places): Promise<void> {
 async function writeAtomicVia($: $, path: string, text: string):
   Promise<boolean> {
   try {
-    const r = await $.process.run(['/bin/sh', '-c',
+    const r = await runVia($, ['/bin/sh', '-c',
       'umask 077 && t="$1.$$" && cat > "$t" && mv -f -- "$t" "$1" ||' +
       ' { rm -f -- "$t"; exit 1; }', 'sh', path],
     { stdin: text, timeoutMs: 30_000 })
@@ -1278,6 +1359,9 @@ async function readCosts($: $, places: Places): Promise<void> {
  * the others have aged out of both windows. */
 async function saveCosts($: $, places: Places,
   keep: ReadonlySet<string>): Promise<void> {
+  // Nothing read on and nothing aged out: the file holds this already.
+  if (!costsMoved && [...costs.keys()].every((k) => keep.has(k))) return
+  costsMoved = false
   const files: Record<string, CostKept> = {}
   for (const [k, v] of costs) if (keep.has(k)) files[k] = v
   let text: string
@@ -1345,7 +1429,8 @@ async function pricedOf($: $, f: Listed): Promise<Priced[]> {
   const tail = sha256Hex(data.subarray(Math.max(0, off - COST_TAIL_BYTES) - lo,
     off - lo))
   costs.set(path, { off, tail, recs })
-  const out = partial !== null && !seenIds.has(_idKey(partial[1]))
+  costsMoved = true
+  const out =partial !== null && !seenIds.has(_idKey(partial[1]))
     ? [...recs, partial] : recs
   pricedKept.set(path, { stamp, out })
   return out
@@ -1410,7 +1495,7 @@ function configFs($: $): ConfigFs {
     },
     read: async (path) => {
       try {
-        const { base64 } = await $.fs.read(path, { as: 'bytes' })
+        const { base64 } = await readBytesVia($, path)
         return utf8(fromBase64(base64), true, true)
       } catch {
         return null
@@ -1747,7 +1832,7 @@ const MODE_TAIL = 256 * 1024
 async function gitVia($: $, cwd: string) {
   return detectGit(async (args) => {
     try {
-      const r = await $.process.run(['git', '--no-optional-locks', ...args],
+      const r = await runVia($, ['git', '--no-optional-locks', ...args],
         { cwd, timeoutMs: 2_000 })
       return r.exitCode === 0 ? r.stdout.trim() : null
     } catch {

@@ -37,6 +37,11 @@ export const CONFIG = {
   // slowToastMs.
   slowReadMs: 2_000,
   slowToastMs: 60_000,
+  // What the mod asked of the engine since the last refresh, its reads'
+  // bytes or its processes, past which the refresh is logged with them,
+  // though it was quick: an idle refresh reads a few small files.
+  ioNoteBytes: 16 * 1024 * 1024,
+  ioNoteSpawns: 20,
   // How long one step of a refresh may run before it is dropped and
   // logged: past it the band keeps its last figures and the next event
   // reads again, so a read that never ends cannot blank the band until a

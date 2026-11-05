@@ -46,7 +46,7 @@ import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import { costDoc, defaultsError, folderAgents, folderReplies, options,
+import { costDoc, defaultsError, folderAgents, folderReplies, io, options,
   optionsFor, permissionModeOf,
   placesOf, readConfig, seen, statusDoc, steps, transcriptPath, turnsNow }
   from './edges.ts'
@@ -323,9 +323,10 @@ let toastAt = 0
  * read is seen as it happens (asked 2026-10-19: the mod times itself and
  * warns when it is slow).  Off by default: the toast took the footer's
  * line, hiding the 💳 account at its right end (seen live 2026-10-20). */
-async function slow($: $, ms: number): Promise<void> {
+async function slow($: $, ms: number, used: string): Promise<void> {
   const parts = Object.entries(steps).map(([k, v]) => `${k} ${v}`)
-  const text = `slow read: ${Math.round(ms)}ms (${parts.join(', ')})`
+  const text = `slow read: ${Math.round(ms)}ms (${parts.join(', ')}; ` +
+    `${used})`
   await log($, text)
   const now = await $.clock.now()
   if (options()?.slowToast && now - toastAt >= CONFIG.slowToastMs) {
@@ -343,6 +344,26 @@ let pending: { text: string; before: unknown; filed?: string } | null =
 // after turn.complete instead, the newest prompt can be one written as the
 // turn ended, a task notification's (seen live 2026-10-20).
 let opened = ''
+
+// The engine counts at the last refresh, so each refresh's line says what
+// was asked since: its own reads, and what the work it started behind the
+// last one asked, such as a calibration scan.
+let ioAt = { ...io }
+
+function ioSinceLast(): typeof io {
+  const now = { ...io }
+  const used = { reads: now.reads - ioAt.reads,
+    readBytes: now.readBytes - ioAt.readBytes,
+    lists: now.lists - ioAt.lists, spawns: now.spawns - ioAt.spawns }
+  ioAt = now
+  return used
+}
+
+function ioText(u: typeof io): string {
+  return `since the last refresh: ${u.reads} reads, ` +
+    `${(u.readBytes / 1048576).toFixed(1)} MiB, ${u.lists} listings, ` +
+    `${u.spawns} processes`
+}
 
 /** Reads the status document afresh; the write redraws the band.  One at
  * a time: a call while one runs asks for one more after it. */
@@ -368,7 +389,14 @@ async function refresh($: $): Promise<void> {
           (async () => statusDoc($, await placesFor($)))())
         readAt = await $.clock.now()
         readMs = readAt - began
-        if (readMs > CONFIG.slowReadMs) await slow($, readMs)
+        const used = ioSinceLast()
+        if (readMs > CONFIG.slowReadMs) {
+          await slow($, readMs, ioText(used))
+        } else if (used.readBytes >= CONFIG.ioNoteBytes ||
+                   used.spawns >= CONFIG.ioNoteSpawns) {
+          await log($, `heavy refresh: ${Math.round(readMs)}ms ` +
+            `(${ioText(used)})`)
+        }
       } catch (err) {
         // A read that failed leaves the last document up, and the next
         // event reads again.

@@ -173,9 +173,11 @@ type World = {
   // answer there is no credential, and nothing is asked.
   oauth: { body: string | null; asked: { url: string; auth?: string }[];
     hang?: boolean }
-  // The path of each `$.fs.read` and each `$.fs.list`, in order.
+  // The path of each `$.fs.read` and each `$.fs.list`, and the argv of
+  // each `$.process.run`, in order.
   reads: string[]
   lists: string[]
+  runs: (readonly string[])[]
 }
 
 type Run = { argv: readonly string[]; init?: { stdin?: string } }
@@ -274,7 +276,11 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
       size: kind === 'file' ? files.get(dir + name)!.length : 0,
       mtimeMs: NOW * 1000, isLink: false })) }
   })
-  on('process.run', ($, e) => ({ value: run(e) }))
+  const runs: (readonly string[])[] = []
+  on('process.run', ($, e) => {
+    runs.push(e.argv)
+    return { value: run(e) }
+  })
   on('session.cwd', () => ({ value: CWD }))
   on('session.root', () => ({ value: CWD }))
   on('session.model', () => ({ value: MODEL }))
@@ -312,7 +318,7 @@ function world(on: On, run: (e: Run) => Ran = () => NO_GIT_HERE,
     return { value: undefined }
   })
   return { files, store, docs, usage, debug, logged, clock, session,
-    oauth, reads, lists }
+    oauth, reads, lists, runs }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -944,6 +950,55 @@ test('a scan reads a transcript once, and a rescan only one that changed',
     const files = _windowCostsFiles(new TextDecoder()
       .decode(w.files.get(costs)!))!
     expect(files[path].off).toBe(more.lastIndexOf(10) + 1)
+  })
+
+// What an idle refresh, with nothing written since the last, asks of the
+// engine: no transcript, agent file or project file read, no process
+// started, and a handful of small reads; a calibration scan due behind
+// it lists the projects and reads none of their unchanged files.  The
+// budget is the count of each, so a new idle cost fails here rather than
+// being found on a CPU meter.
+test('an idle refresh reads no transcript and starts no process',
+  async ($, on) => {
+    const w: World = world(on)
+    const scanned = '/claude/projects/-work/idle-scanned.jsonl'
+    w.files.set(scanned, w.files.get(MAIN)!)
+    const path = await start($, w, 'terminal', STATUS)
+    // Two refreshes in, so the first reads of everything are done, and
+    // the calibration due once its 5 minutes are up has run once.
+    for (const ms of [31_000, 301_000]) {
+      await w.clock.advance(ms)
+      await settle()
+    }
+    const idle = async (ms: number) => {
+      const at = { reads: w.reads.length, lists: w.lists.length,
+        runs: w.runs.length, docs: w.docs.length }
+      await w.clock.advance(ms)
+      await settle()
+      expect(w.docs.length).toBeGreaterThan(at.docs)
+      return { reads: w.reads.slice(at.reads), lists: w.lists.slice(at.lists),
+        runs: w.runs.slice(at.runs).map((a) => a[0] === 'git' ? 'git'
+          : a.join(' ')) }
+    }
+    const notGit = (runs: string[]) => runs.filter((r) => r !== 'git')
+    // An idle refresh: the session's git, and nothing else started.
+    const plain = await idle(31_000)
+    expect(plain.reads.filter((p) => p.endsWith('.jsonl'))).toEqual([])
+    expect(notGit(plain.runs)).toEqual([])
+    expect(plain.runs.length).toBeLessThanOrEqual(2)
+    // The state files the document is made from, each a few KiB: 6 today.
+    expect(plain.reads.every((p) => p.startsWith('/state/') ||
+      p === '/tracker.plist')).toBe(true)
+    expect(plain.reads.length).toBeLessThanOrEqual(8)
+    expect(plain.lists.length).toBeLessThanOrEqual(6)
+    expect(path).toContain('/claude/projects/')
+    // One with a calibration scan due: the projects listed, none of their
+    // unchanged files read, and the shared cost cache, unchanged, not
+    // written again.
+    const scan = await idle(301_000)
+    expect(scan.reads.filter((p) => p.endsWith('.jsonl'))).toEqual([])
+    expect(scan.lists).toContain('/claude/projects')
+    expect(notGit(scan.runs)).toEqual([])
   })
 
 // ════════════════════════════════════════════════════════════════════════════
