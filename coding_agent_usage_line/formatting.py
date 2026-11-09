@@ -218,7 +218,7 @@ _PAD = " " if PROFILE in PAD_PROFILES else ""
 # stack, and the grid's outer columns space their icons as a matter of layout
 # — see S_STY.
 #
-# The marks INSIDE column 4 — 🔜, Σ, and the three scope marks — take no S_
+# The marks INSIDE column 4 — 🔜 and the three scope marks — take no S_
 # form and no _PAD, and unlike every icon outside the column they are meant to
 # TOUCH their figure.  Their fields are right-aligned and exactly as wide as
 # the widest reading that can land in one, so a full-width value sits hard
@@ -269,23 +269,12 @@ S_WEEK = E_WEEK + " "
 # takes.  Both glyphs measure two like the batteries and need no compensation.
 S_READ = E_READ + " "
 S_WRITE = E_WRITE + " "
-# No separator space, unlike the other S_ forms: 🔜 and Σ mark what the figure
-# beside them measures rather than naming a metric, and the field they sit in
-# right-aligns its value hard against them, so a separator here would be the
-# one thing standing between a mark and the figure it labels.  Leaving it out
-# also puts the two marks on one rule, as Σ has none, and leaves the
-# field the four columns dur_fmt's widest reading needs.
+# No separator space, unlike the other S_ forms: 🔜 marks what the figure
+# beside it measures rather than naming a metric, and the field it sits in
+# right-aligns its value hard against it, so a separator here would be the
+# one thing standing between a mark and the figure it labels.  Leaving it
+# out also leaves the field the four columns dur_fmt's widest reading needs.
 S_RESET = E_RESET
-# Σ padded to 🔜's two columns so the last field has one shape on all three
-# rows and its figure begins on one column.  Padded on the RIGHT: Σ is one
-# column and 🔜 is two, the blank has to sit on one side of it, and putting it
-# after leaves the two marks starting on the same column — which is the edge
-# that reads, because a mark is found by where it begins, not where it ends.
-# The cost is the one blank on this readout that does divide a mark from its
-# figure; it buys the only stack the alternative could not.  Painted F_SUM
-# rather than the row's F_PRW, so it stacks under 🔜 in ink as well as in
-# column — see the constant for where that grey was measured.
-S_SUM = E_SUM + " "
 
 # The right-hand column grid, listed left to right.
 #

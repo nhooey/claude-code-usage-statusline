@@ -21,7 +21,7 @@ import {
   COL3_TIGHT_W, COL4_TIGHT_W, E_BOT, E_CACHE, E_COST, E_CTX, E_DATE, E_DIFF,
   E_HUMAN, E_IDLE, E_MOD, E_PCT, E_PR, E_RATE, E_READ, E_RESET,
   E_ROW_AGENTS, E_ROW_COMPACT, E_ROW_PROMPT, E_ROW_TOTAL, E_SESS, E_STY,
-  E_SUB_DIGITS, E_SUM, E_TIME, E_TOK, E_WEEK, E_WORK, E_WRITE, EAW_WIDE, G,
+  E_SUB_DIGITS, E_TIME, E_TOK, E_WEEK, E_WORK, E_WRITE, EAW_WIDE, G,
   K, LINE3_TIGHT, M, MAG_SHARE_READ, MAG_SHARE_SESS, MAG_SHARE_TURN,
   MAX_LINE, MODEL_FAMILIES, MONTH_S, PAD_PROFILES, PAIR_GAP, PROFILE_RULES,
   RIGHT_EDGE, RULE_MIN, SEG_GAP, SEG_RULE, VAL_W, VAL2_W, WIDTH_PROFILES,
@@ -80,7 +80,6 @@ export const S_WEEK = E_WEEK + " ";
 export const S_READ = E_READ + " ";
 export const S_WRITE = E_WRITE + " ";
 export const S_RESET = E_RESET;
-export const S_SUM = E_SUM + " ";
 
 // ════════════════════════════════════════════════════════════════════════════
 // The terminal profile and the settings.

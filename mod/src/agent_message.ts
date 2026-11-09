@@ -8,8 +8,9 @@
 // asked.  The mod draws the row instead as the agent's task, as its Agent
 // call described it, and the message's first line, `› 🤖📨 Reclaim the
 // right-edge columns: The right edge is now a setting in both ports…`, cut
-// to the terminal's width.  The task is bold at full strength and the rest
-// dim, so the task is what the eye finds.
+// to the terminal's width.  The task is bold and the rest at normal
+// strength, so the task is what the eye finds and the rest stays readable
+// on the bar.
 //
 // The sender is known only by name (`e.props.from.name`), so its agent is
 // found in `$.agent.list()` by that: an agent whose own name it is (a

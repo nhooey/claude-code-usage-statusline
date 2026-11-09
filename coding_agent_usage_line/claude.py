@@ -987,7 +987,7 @@ def _with_shares(lim: Limits, transcript: str,
     this picked and reading the transcript a second time to find it again
     would be both slower and free to disagree.
 
-    (Not the turn's wall-clock seconds: ⌛'s first field is 🔧, and reads
+    (Not the turn's wall-clock seconds: the ⌛ row is ⛳ 🤖 🔧 🚦, read
     off the transcript the status line has already summed.)
     Those need no plan reading and no calibration, only the transcript, so
     they are derived before the limits are looked at and a session with no

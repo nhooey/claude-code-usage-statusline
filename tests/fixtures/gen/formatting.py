@@ -206,7 +206,7 @@ def settings():
         "LINE_CLEAR", "EOL_CLEAR", "SI_UNITS", "C_LABEL", "C_TOTALS_LABEL",
         "C_COMPACT_LABEL", "C_AGENTS_LABEL", "S_HUMAN", "S_BOT", "S_TIME",
         "S_DATE", "S_IDLE", "S_STY", "S_PR", "S_DIFF", "S_WORK", "S_SESS",
-        "S_WEEK", "S_READ", "S_WRITE", "S_RESET", "S_SUM")}
+        "S_WEEK", "S_READ", "S_WRITE", "S_RESET")}
     constants.update({k: getattr(sp, k)
                       for k in ("R", "DIM", "BOLD", "UNBOLD")})
     escapes = {k: getattr(spec, k) for k in dir(spec)
