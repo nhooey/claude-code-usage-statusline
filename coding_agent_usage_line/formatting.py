@@ -90,16 +90,15 @@ C_LIM_TOT = C_LIM_TOT_TIGHT + len(MARK_SP)
                # a narrower cell does not simply leave a gap at its end: it
                # pushes the whole cell right, off the row it has to stack on.
                #
-               # It was " / 99٪" until 2026-08-27, on the stated argument that
-               # the slash was "the status line's idiom for exactly this
-               # pair".  It never was one: column 4 divides its four fields
-               # with MARKS and carries no slash anywhere, so what the two
-               # readouts had in common was the pair, not the punctuation.
-               # 💳 is what the status line actually prints beside this
-               # reading, and it says WHICH of the two figures the second one
-               # is — the account, drawn down — where a slash says only that
-               # there are two.  Same six columns under --no-mark-spacing;
-               # one more with the spacing, which is where the blank went.
+               # 💳 and not " / 99٪": a slash is not the status line's idiom
+               # for this pair.  Column 4 divides its four fields with MARKS
+               # and carries no slash anywhere, so what the two readouts have
+               # in common is the pair, not the punctuation.  💳 is what the
+               # status line actually prints beside this reading, and it says
+               # WHICH of the two figures the second one is — the account,
+               # drawn down — where a slash says only that there are two.
+               # Same six columns under --no-mark-spacing; one more with the
+               # spacing.
 C_SESS = 9 + C_LIM_TOT  # 🔋 + a sign column + dec_align(plan_pct, 2, 2, ٪),
                # then the window's own reading after a "/".
                #
@@ -116,8 +115,8 @@ C_SESS = 9 + C_LIM_TOT  # 🔋 + a sign column + dec_align(plan_pct, 2, 2, ٪),
 # Padded to a common width rather than written to one.  The invariant is that
 # the two labels are the SAME width — the rows are right-aligned as one block,
 # so a shorter label starts its row further right and the two 📊 stop stacking.
-# Writing both to twenty columns satisfied that by hand and lost it the first
-# time one was reworded; computing it cannot be lost.
+# Writing both to a fixed width would satisfy that by hand and lose it the
+# first time one is reworded; computing it cannot be lost.
 # All three padded to one width.  place_stacked lays the two rows out as a
 # single block and the 📊 prefixes drift the moment the labels differ in
 # length, so the compaction label has to be measured with the others rather
@@ -183,17 +182,18 @@ def term_profile(env: Optional[Dict[str, str]] = None) -> str:
 def widths_for(profile: str) -> Widths:
     """The measurement rules for one terminal profile.
 
-    MEASURED 2026-08-16, and again 2026-09-08 in two terminals: every override
-    in WIDTH_PROFILES (spec/layout.jsonc) now corrects nothing.  Both glyphs that needed one have left the
-    layout — ⏱ for ⌛, and 🕰 for 🕐 over the font-run fault described at
-    E_TIME — so a probe run against the current glyph set emits empty tables in
-    all three profiles.  The 2026-09-08 run also measured every specimen row
-    in --selftest at delta 0 in both.  Deleting them would change no output.
+    MEASURED in two terminals: every override in WIDTH_PROFILES
+    (spec/layout.jsonc) corrects nothing.  The two glyphs that need one, ⏱
+    and 🕰 (the font-run fault described at E_TIME), are not in the layout,
+    which draws ⌛ and 🕐 — so a probe run against the current glyph set
+    emits empty tables in all three profiles.  The same run measured every
+    specimen row in --selftest at delta 0 in both.  Deleting them would
+    change no output.
 
     They stay because they record measured behaviour of the TERMINALS rather
     than a fix for this layout, and the next glyph choice may want exactly
     that.  Do not read them as load-bearing: what the split actually carries
-    now is `clusters`, and the grid width beside it.
+    is `clusters`, and the grid width beside it.
     """
     for p in WIDTH_PROFILES:
         if profile in p["profiles"]:
@@ -259,8 +259,7 @@ S_DIFF = E_DIFF + " "
 # 💰, 🔋 and 📆 put theirs — hard against the icon.
 S_WORK = E_IDLE + E_WORK
 S_SESS = E_SESS + " "
-# One space, like every other prefix on these rows.  It carried two while the
-# glyph was 🛢, to compensate for a single-cell draw; 🪫 measures two like the
+# One space, like every other prefix on these rows: 🪫 measures two like the
 # 🔋 above it and needs no compensation.  If this slot ever takes a glyph that
 # does, the pad belongs HERE rather than in the grid, because it is a property
 # of the glyph and travels with it.
@@ -273,8 +272,8 @@ S_WRITE = E_WRITE + " "
 # No separator space, unlike the other S_ forms: 🔜 and Σ mark what the figure
 # beside them measures rather than naming a metric, and the field they sit in
 # right-aligns its value hard against them, so a separator here would be the
-# one thing standing between a mark and the figure it labels.  Dropping it
-# also puts the two marks on one rule — Σ never had one — and leaves the
+# one thing standing between a mark and the figure it labels.  Leaving it out
+# also puts the two marks on one rule, as Σ has none, and leaves the
 # field the four columns dur_fmt's widest reading needs.
 S_RESET = E_RESET
 # Σ padded to 🔜's two columns so the last field has one shape on all three
@@ -310,47 +309,32 @@ S_SUM = E_SUM + " "
 # rather than a hole between two figures.  Column 5 ends the readout with
 # the stamp and the diff.
 #
-# Rearranged 2026-09-13, to Neil's spec, in steps over one evening.  Until
-# then column 2 was the two-value column with the model and its 📏 window on
-# its third row, and column 3 read 🎯 💰 ⚡ top to bottom.  The cache rate
-# moved in beside the new 🛫 token rate — two readings of the one stream of
-# requests, how fast it runs and how much of it the cache served — the cost
-# moved up beside the tokens it is the price of, and the model took the
-# cost's old cell without the window, which is a constant the 🧠 percentage
-# already divides by, and with its name cut to the two characters the agent
-# rows use, "O⁵".  The context row went to the bottom, so the rate sits
-# directly under the total it is the slope of, and its two fields swapped so
-# the size stacks under 🧩's tokens.  The effort cell went, its glyph moving
-# against the model spec as on the agent rows, "🤖O⁵🏃".  Then the two
-# columns changed places — the short cells first, the two-value column
-# against the limits — and last the model and the cost swapped rows, the
-# configuration above the spend.
-#
-# AND AGAIN ON THE EVENING OF 2026-09-16, to Neil's spec, from six columns
-# to five.  The model and the cost went side by side on one row, at the top
-# of the two-value column, and the tokens and the rate each dropped a row
-# under them; their own column, two short cells over a reserved third, went
-# with them.  🧠 left the two-value column for the top of the cache-share
-# column, over 📖 and 📝, which each dropped a row in turn.  And the ⌛ row
-# went to the head of the limits column, over 🔋 and 🪫, which dropped a
-# row each as well.  What it costs is the stacking the 2026-09-13
-# arrangement bought the context row — its size no longer sits under 🧩's
-# tokens — and what it buys is a readout with no reserved cells left: every
-# column is three rows deep and every row is full, the first row reads
-# what the session is and how long it has run, and the grid is ten columns
-# narrower, which RULE_MIN and LINE3_RESERVED follow down.  The rate still
-# sits under the total it is the slope of.
+# WHY THIS ARRANGEMENT.  The cache rate sits beside the 🛫 token rate — two
+# readings of the one stream of requests, how fast it runs and how much of
+# it the cache served — and the rate sits directly under the total it is the
+# slope of.  The model carries no window, which is a constant the 🧠
+# percentage already divides by; its name is cut to the two characters the
+# agent rows use, "O⁵", with the effort's glyph against it as on the agent
+# rows, "🤖O⁵🏃".  The model and the cost share one row at the top of the
+# two-value column rather than taking a column of their own, two short cells
+# over a reserved third.  🧠 heads the cache-share column, over 📖 and 📝,
+# and the ⌛ row heads the limits column, over 🔋 and 🪫.  What it costs is
+# stacking for the context row — its size does not sit under 🧩's tokens —
+# and what it buys is a readout with no reserved cells: every column is
+# three rows deep and every row is full, the first row reads what the
+# session is and how long it has run, and the grid is five columns rather
+# than six, ten columns narrower, which RULE_MIN and LINE3_RESERVED follow.
 #
 # COLUMN 3 IS THE CONTEXT OVER THE PAIR THE COST LINE PRINTS IN ITS SPARE
-# HALF-CELL.  The pair is read at two scopes -- added 2026-09-16, to Neil's
-# spec, to the LEFT of the limits and in their shape.  📖 the share of a
+# HALF-CELL.  The pair is read at two scopes, to the LEFT of the limits and
+# in their shape.  📖 the share of a
 # bill spent re-reading the conversation and 📝 the share spent caching
 # what was added, each as 🎤 the turn just answered and 🎮 this session
 # summed; see E_READ for what the pair is for and SHARE_FIG_W for the
 # field.  Two fields and not column 4's four, because there is no
 # account-wide bill to take a share of and no horizon the shares are spent
-# against -- the scopes stop where the transcript does.  Over them, since
-# that evening, 🧠: the context the re-reading is of, its size first and
+# against -- the scopes stop where the transcript does.  Over them, 🧠:
+# the context the re-reading is of, its size first and
 # its percentage on the column's right edge, where 🎮's figures end below
 # it.  Left of the limits and not right, so the two columns that carry
 # 🎤 🎮 sit together and the scope sequence runs once across both -- a
@@ -363,47 +347,43 @@ S_SUM = E_SUM + " "
 # widening left to right — 🎤 this turn, 🎮 this session, 💳 the account —
 # each a mark and a value right-aligned in LIM_FIG_W, each divided from the
 # next by one space.  Field 3 is a duration and its mark says which kind: 🔜
-# time until this window resets, Σ time since the session opened.
+# time until this window resets on the limit rows, 🚦 time spent waiting on
+# the ⌛ row.
 #
-# The duration went last on 2026-08-28, having led the column since it was
-# built.  Leading was defensible — a countdown answers the same question as
-# the ⌛ row, and the three durations stack whichever end they sit
-# at — but it cost the arrangement its opening.  Fields 0 to 2 are ONE
-# sequence, a scope widening a step at a time, and the reader met it a field
-# in from the column's edge with a figure of a different kind in front of it.
-# Now the column opens on the narrowest scope, widens twice, and ends on the
-# one reading that is not a scope at all — the horizon the three of them are
-# being spent against.  The three durations still stack; they stack on the
-# other edge.
+# The duration goes last.  Leading would be defensible — a countdown answers
+# the same question as the ⌛ row, and the three durations stack whichever
+# end they sit at — but it would cost the arrangement its opening.  Fields 0
+# to 2 are ONE sequence, a scope widening a step at a time, and the reader
+# would meet it a field in from the column's edge with a figure of a
+# different kind in front of it.  Last, the column opens on the narrowest
+# scope, widens twice, and ends on the one reading that is not a scope at
+# all — the horizon the three of them are being spent against.  The three
+# durations stack on that edge.
 #
 # The value is right-aligned in a field exactly its own widest reading, which
 # is what makes the column read as a column: the last character of every
 # figure lands on one terminal column, so a percentage's ٪ sits directly above
 # the m/h/d of the duration below it, and the mark touches the figure it
-# labels whenever that figure is full width.  The ⌛ row buys its share of
-# that by asking dur_fmt for two digits rather than three — "6h" and not
-# "6.4h" — everywhere except Σ, which keeps three because field 3 is a column
-# wider and the session's own age is the one duration here worth a decimal.
+# labels whenever that figure is full width.
 #
-# The two limit rows fill all three scopes.  The ⌛ row fills 🎤 with the
-# turn's own wall-clock time, and its other two scope fields are positional
-# rather than scoped: 🚦 and 🤖 split the session age that field 3 states,
-# and there is no account-wide time to put under 💳.  That is the same
-# compromise the row made before this change, one field wider.
+# The two limit rows fill all three scopes.  The ⌛ row's fields are
+# positional rather than scoped: ⛳ 🤖 🔧 🚦, the turn's ETA and the
+# session's age split three ways, each keeping its decimal below ten; see
+# render_elapsed in claude_render.py.
 #
 # The marks are what make the stacking possible, not decoration.  Without
 # them the three rows want different field widths — the limit rows carry no
-# glyph inside a field and the ⌛ row's halves carried two columns of one —
+# glyph inside a field and the ⌛ row's would carry two columns of one —
 # so they could not be given one field width and could not stack.
 #
-# Column 5 is 14: eleven columns of diff after an icon that now takes three.
+# Column 5 is 14: eleven columns of diff after an icon that takes three.
 # 📅 and 🕐 pad their values to the same eleven rather than to the ten the date
 # needs, so all three right edges meet — the alignment that makes a date
 # sitting above a time read as one stamp instead of two unrelated fields, and
 # that puts the diff's figures under both of them.
 #
 # The four gaps between these five columns carry a rule at wide enough widths —
-# added 2026-08-28, see SEG_RULE for the glyph, F_RULE for the ink and
+# see SEG_RULE for the glyph, F_RULE for the ink and
 # rules_on for when it is drawn.  It is painted INTO SEG_GAP and takes no
 # column of its own, so nothing here moves and a row with the rules stacks
 # against one without them.  What it buys is that the grid stops relying on
@@ -490,16 +470,16 @@ def vis_width(s: str, w: Widths = WIDTHS) -> int:
 
     So a variation selector, a zero-width joiner and a keycap enclosure each
     take a cell of their own, and the tables are consulted per codepoint with
-    no sequence handling whatsoever.  Earlier versions folded clusters the way
-    a correct implementation would and were wrong here by four columns on a
-    family emoji.  If you "fix" this to handle clusters, you reintroduce that.
+    no sequence handling whatsoever.  Folding clusters the way a correct
+    implementation would is wrong here by four columns on a family emoji, so
+    do not "fix" this to handle clusters.
 
     What it predicts is the cursor ADVANCE, not the ink.  The two differ often
     enough that several glyphs carry a trailing space purely so their overspill
     lands somewhere harmless.
 
-    Ghostty under tmux measured 2 for every one of those four on 2026-09-08,
-    so the parenthesised column above is measured, not inferred.
+    Ghostty under tmux measured 2 for every one of those four, so the
+    parenthesised column above is measured, not inferred.
 
     Rerun probe-advance.sh after a terminal update: these numbers describe one
     build of a terminal, not a standard.
@@ -566,10 +546,8 @@ def pad_val(want: int, txt, left: bool = False):
     ASCII, obvious the moment one of those lands in a padded field.
 
     The token marks are NOT an example of this.  ▴ and ▾ are one column, so
-    "▴4M" measures three either way, and ↑ before them was one column too:
-    this comment named the arrow for as long as it existed and the example
-    never demonstrated the bug.  🎯 and 🧩 are characters that do, and so
-    was 📏 while it stood beside the model.
+    "▴4M" measures three either way and never demonstrates the bug.  🎯 and
+    🧩 are characters that do.
 
     It never truncates.  A value that outgrows its field pushes the cell's
     later fields right rather than corrupting anything else; only the fit_*
@@ -750,10 +728,8 @@ def fit_cols(txt: str, max_cols: int) -> str:
     count overruns the budget, drives the row's padding negative and pushes the
     row past the right margin — one column per emoji.
 
-    Binary search rather than a per-character walk, inherited from the bash
-    where vis_width was a subshell and a walk cost a process per character.
-    It costs nothing here either way; it stays because it is what was proved
-    against the bash, not because a walk would be wrong.
+    Binary search rather than a per-character walk.  Either costs nothing
+    here, and a walk would not be wrong.
     """
     if vis_width(txt) <= max_cols:
         return txt
@@ -810,7 +786,7 @@ def set_subscript_decimals(on: bool) -> None:
 # RIGHT_EDGE, the room for the band's [-] above the prompt, unless
 # --right-edge says otherwise.  Under Claude Code's footer line there is no
 # [-], and the band, the 💳 row and the agent panel take the columns back
-# (asked 2026-10-20), the panel through `--right-edge 0`.
+# the panel through `--right-edge 0`.
 RIGHT_EDGE_COLS = RIGHT_EDGE
 
 
@@ -878,9 +854,9 @@ def humanize(n: float) -> str:
         # same cut for the same reason -- see the note there.  999,600 belongs
         # with "1.0M" because "%.0f" of 999.6 writes "1000": five characters
         # in a field that reserves four, and a figure that has to be read
-        # twice to be told a thousand thousands from a million.  Reported from
-        # a live readout on 2026-09-08 as "▾1000k", which is what the whole
-        # band 999,500 to 999,999 drew.
+        # twice to be told a thousand thousands from a million.  A cut at the
+        # round number would draw the whole band 999,500 to 999,999 as
+        # "▾1000k".
         if n >= lim - lim / 2000.0:
             v = n / lim
             s = "%.0f" % v if v >= 10 else re.sub(r"\.0$", "", "%.1f" % v)
@@ -962,7 +938,7 @@ def plan_pct(v: float, places: int = 2) -> str:
         return "99." + "9" * (places - 1)
     # Trailing zeros stripped for the reason limit_pct strips them: the totals
     # row's figure comes from a source that quantises to whole points, so
-    # "91.0٪" was two columns spent asserting a tenth nobody measured.  The
+    # "91.0٪" would be two columns spent asserting a tenth nobody measured.  The
     # per-prompt figure directly above IS continuous and keeps every digit it
     # earns; dec_align still stacks the two on their units column.
     s = ("%.*f" % (places - 1, v) if v >= 10 - 0.5 * 10 ** -places
@@ -983,20 +959,20 @@ def limit_pct(v: float, digits: int = 3) -> str:
         under 1      ".38"   ".04"
         exactly 0    "0"
 
-    This field used to spend four characters holding three significant digits
-    at every magnitude, and stopped below 100 on the argument that 99.9 and
-    100 say the same thing to a reader — you are out — so the third integer
-    digit was not worth a column on every other reading.
+    Four characters holding three significant digits at every magnitude,
+    stopping below 100, would rest on the argument that 99.9 and 100 say the
+    same thing to a reader — you are out — so the third integer digit is not
+    worth a column on every other reading.
 
-    What overturned that is where the number comes from.  Both sources quantise
+    What outweighs that is where the number comes from.  Both sources quantise
     to whole points before this code sees them: the menu-bar app stores its
     snapshots as integers (27,735 of them on this machine, not one fractional),
     and Claude Code's payload, though it does carry a float, has been observed
     only at whole values — 56.00000000000001 is a ratio times a hundred, not a
     measurement to two decimals.  The two figures on a limit row are that
-    number and a difference between two of them, so a decimal on either was
-    reserving a column to display a zero.  100 is a reading you can actually
-    reach, and the field could not print it.
+    number and a difference between two of them, so a decimal on either would
+    reserve a column to display a zero.  100 is a reading you can actually
+    reach, and the field has to print it.
 
     The decimals that remain are the ones that still earn their column.  Below
     10 a tenth is a fifth of the figure, so it survives; below 1 the leading
@@ -1034,7 +1010,7 @@ def limit_pct(v: float, digits: int = 3) -> str:
     fixed width and right-aligned: every figure ends on the same column, ٪
     under ٪, which is the edge the eye actually tracks.
 
-    The "100" branch is no longer what render_limit draws — it intercepts at
+    The "100" branch is not what render_limit draws — it intercepts at
     100 and puts E_HUNDRED in the field instead.  The branch stays because this
     function is pure and says what a percentage looks like in three characters;
     returning "99" for a full window would make it wrong on its own terms, and
@@ -1072,7 +1048,7 @@ def limit_pct(v: float, digits: int = 3) -> str:
         return "%.0f" % v
     if v >= 0.995:
         # ".0" stripped, not merely tolerated.  Both sources quantise to whole
-        # points, so at this magnitude the decimal was printing a zero every
+        # points, so at this magnitude the decimal would print a zero every
         # time — a claim of precision the figure does not have.  The branch
         # stays because the payload's field IS a float and may one day carry
         # 5.4; what goes is the "5.0" that meant nothing.
@@ -1092,13 +1068,13 @@ def money_fmt(c: float) -> str:
 
     Past $999 it climbs SI_UNITS, the same ladder humanize() climbs, and for
     the same reason: a field that stops having units at the top of its range
-    does not lose precision there, it loses its WIDTH.  This one used to write
-    $1234 as "1234" — four characters where the status line reserves four and
-    the cost row reserves three-and-a-point, so on the cost row the cell ran a
-    column long, and because only the totals row ever carries the big figure,
-    the two groups came out different widths and the 📊 stopped stacking.  The
-    old note here said "widen this before that day"; a unit is the cheaper
-    answer, and it is the one every other magnitude on the row already uses.
+    does not lose precision there, it loses its WIDTH.  $1234 written as
+    "1234" is four characters where the status line reserves four and the
+    cost row reserves three-and-a-point, so on the cost row the cell would run
+    a column long, and because only the totals row ever carries the big
+    figure, the two groups would come out different widths and the 📊 would
+    stop stacking.  A unit is cheaper than widening the field, and it is the
+    answer every other magnitude on the row already uses.
 
     No "$" — the emoji ahead of it already says what the number is, and the
     sign costs a column the path can use.
@@ -1108,13 +1084,10 @@ def money_fmt(c: float) -> str:
         # character, not at the round number under it: $999.5 belongs with
         # "1.0k" because "%.0f" would write it "1000".
         #
-        # This note used to end "humanize needs no such adjustment — its
-        # sub-unit branch truncates with %d and cannot round up".  That was
-        # true of the branch it looked at and false of the function: the
-        # BOTTOM step cannot round up, and every step above it can, because
-        # they format with %.0f exactly as this one does.  humanize drew
-        # 999,600 tokens as "1000k" until 2026-09-08.  The two ladders are
-        # climbed the same way after all.
+        # humanize needs the same adjustment.  Its sub-unit branch truncates
+        # with %d and cannot round up, but that is only the BOTTOM step:
+        # every step above it can, because they format with %.0f exactly as
+        # this one does.  The two ladders are climbed the same way.
         if c >= lim - lim / 2000.0:
             v = c / lim
             return ("%.0f" % v if v >= 10
@@ -1130,9 +1103,9 @@ def money_fig(c: float) -> str:
     the cost line keeps it, because there a decimal point has a column
     reserved to stack in.  On the status line the cell sits in a column of
     figures that all end on a unit — ▴2.7M, 841k, 115k two columns over —
-    and a money figure that ended on a digit in the unit's column read as a
-    thousand times itself for as long as it took to see there was no k.
-    Since 2026-09-14, to Neil's spec, the unit column is held: a blank under
+    and a money figure that ended on a digit in the unit's column would read
+    as a thousand times itself for as long as it took to see there was no k.
+    So the unit column is held: a blank under
     a thousand dollars, as humanize holds it under a thousand tokens and for
     the reason given there, so the digits stack under digits and the k, when
     it comes, lands where every other k on the readout does.
@@ -1259,18 +1232,18 @@ def short_model(m: str, field: int = VAL_W) -> str:
     order is: family AND version if both fit, family alone if only it fits,
     and a cut family with its version only where the family cannot fit at all.
 
-    That last case is the one this used to do unconditionally, and it is why
-    "Fable 5" drew as "Fabl5": a name squeezed for a digit that distinguished
-    it from nothing.  "Haiku 4.5" drew as "Ha4.5" for the same reason.  Both
-    now give their whole name, and lose a version that was disambiguating
-    them against models nobody is running.
+    Taking that last case unconditionally would draw "Fable 5" as "Fabl5": a
+    name squeezed for a digit that distinguishes it from nothing.  "Haiku
+    4.5" would draw as "Ha4.5" for the same reason.  Both give their whole
+    name instead, and lose a version that would only disambiguate them
+    against models nobody is running.
 
     What it costs, stated plainly: a family with several live versions and a
-    name too long to carry one -- Opus at 4.x, whose "Opus 4.8" no longer
-    fits with its version -- draws as the bare family.  The field is the knob
+    name too long to carry one -- Opus at 4.x, whose "Opus 4.8" does not
+    fit with its version -- draws as the bare family.  The field is the knob
     for that, not the name: widen VAL_W and the version comes back on its
     own.  Sonnet and Mythos are six characters and cannot fit the field at
-    all, so they keep the old squeeze ("So4.6"), which is ugly and unambiguous
+    all, so they keep the squeeze ("So4.6"), which is ugly and unambiguous
     and beats a mangled family that says nothing.
 
     Anything outside the catalogue is passed through at the field width.
@@ -1300,9 +1273,9 @@ def dec_align(v: str, ip: int, fp: int, suffix: str = "") -> str:
     of their own and strand each one from the number it qualifies — "0.13  ٪".
 
     UNDER --subscript-decimals there is no point to align, and the column it
-    used to occupy is not reclaimed: the reservation stays `fp + 1`, so the
-    cell keeps its width and the fraction sits one column left of where it was
-    with a blank behind it.  Every row in a stacked pair moves identically, so
+    would occupy is not reclaimed: the reservation stays `fp + 1`, so the
+    cell keeps its width and the fraction sits one column left of where a
+    point puts it, with a blank behind it.  Every row in a stacked pair moves identically, so
     units still stack over units and tenths over tenths — which is the whole
     job, the point having only ever been the marker for it.
 
@@ -1411,8 +1384,8 @@ def reset_dim(d: str) -> bool:
     Reading the unit rather than re-deriving the seconds keeps this to one
     branch and keeps dur_fmt the only place that knows the arithmetic.
 
-    Two levels where there were three shades of slate, so one of the old
-    ladder's distinctions had to go.  Hours-against-days is the one that went:
+    Two levels, not a ladder of three shades, so one distinction a ladder
+    would draw goes.  Hours-against-days is the one dropped:
     a window that resets tomorrow and one that resets this afternoon are the
     same news — not yet — while one resetting inside the hour is the only
     reading on the field a person acts on.  Bright means that and nothing
@@ -1459,12 +1432,11 @@ def cache_dims(turn_read: Optional[int], sess_read: Optional[int]
     where there is one.  A share that is missing is not dimmed here -- it
     draws "?" and render_cache_share's fig dims that itself.
 
-    TWO THIRDS, and measured rather than argued for.  On 2026-09-16, over
-    the 275 most recent sessions on the machine this was written on (6,002
-    turns, read through read_turns and priced by turn_shares): the median
-    turn spends 73٪ of its bill re-reading and the median session 56٪ --
-    far above the "8٪ to 57٪" E_READ's note recorded when the cost line's
-    cell was built, and enough that re-reading is normally the MAJORITY of
+    TWO THIRDS, and measured rather than argued for.  Over the 275 most
+    recent sessions on the machine this was written on (6,002 turns, read
+    through read_turns and priced by turn_shares): the median turn spends
+    73٪ of its bill re-reading and the median session 56٪ -- far above the
+    "8٪ to 57٪" E_READ's note records, and enough that re-reading is normally the MAJORITY of
     what a prompt costs.  So a cut at the half lights three quarters of
     everything (78٪ of turns, 60٪ of sessions) and brightness stops being a
     signal.  At 67٪ it lights 60٪ of turns and 26٪ of sessions -- a bright
@@ -1490,7 +1462,7 @@ def cache_color(p: int) -> _sp.Span:
     number is the healthy one.  A collapse means something invalidated the
     cached prefix and the same work now bills about ten times over.
 
-    The green tier is DIM as well as green, at Neil's call of 2026-09-14: a
+    The green tier is DIM as well as green: a
     high hit rate is the state nothing has to be done about, and the figure
     that asks for nothing should not be the one the eye lands on.  Amber and
     red are the tiers that mean something happened, and stay full strength.
@@ -1555,10 +1527,10 @@ def term_cols() -> Optional[int]:
     for _ in range(6):
         if p <= 1:
             return None
-        # One ps per hop, asking for both fields at once.  The shell version
-        # this replaces spent two — a second process to fetch a number the
-        # first call could have returned — and at roughly 10 ms a spawn that
-        # was the single largest avoidable cost in the walk.
+        # One ps per hop, asking for both fields at once.  Two would spend a
+        # second process to fetch a number the first call can return, and at
+        # roughly 10 ms a spawn that is the single largest avoidable cost in
+        # the walk.
         try:
             out = subprocess.run(["ps", "-o", "tty=,ppid=", "-p", str(p)],
                                  capture_output=True, text=True).stdout.split()

@@ -214,8 +214,7 @@ function threadEta(st: Settings, tr: Transcript, now: number): Span[] {
 }
 
 /** 🎤's ⛳: the turn's own last report alone, and nothing before the turn
- * has one; 🤖's (threadEta) is what live agents push out (asked
- * 2026-10-19). */
+ * has one; 🤖's (threadEta) is what live agents push out. */
 function turnEta(st: Settings, tr: Transcript, now: number): Span[] {
   if (!tr.start_s || !tr.eta.length) return [];
   if (tr.eta[1] === 0 && tr.idle_at) return [];
@@ -225,7 +224,7 @@ function turnEta(st: Settings, tr: Transcript, now: number): Span[] {
 
 /** The time a ⛳ is counted to: `now` while the thread answers, and the
  * end of its last answer once it is idle, so a turn's ⛳ stops with the
- * turn rather than counting on between turns (asked 2026-10-21).  A ⛳
+ * turn rather than counting on between turns.  A ⛳
  * signed off at zero is not drawn once idle: its overrun is only the
  * seconds between the sign-off and the turn's last record. */
 function etaNow(tr: Transcript, now: number): number {
@@ -242,7 +241,7 @@ function homeDir(dir: string, home: string): string {
 }
 
 /** `dir`, as homeDir draws it, with the project's root, `root`, drawn as
- * 📦, the project's own mark, under its parent (asked 2026-10-19):
+ * 📦, the project's own mark, under its parent:
  * "~/git/📦/mod" for its mod/ folder. */
 function projectDir(dir: string, root: string, home: string): string {
   const r = pyRstrip(root, "/");
@@ -316,7 +315,7 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   const raw = fig.open_turn as Dict | null;
   const acc = (fig.accounting as Dict).open_turn as Accounting | null;
   const pay = decodePayload(fig.payload);
-  // The model and effort, and 🛫, are the turn's (decided 2026-10-19), not
+  // The model and effort, and 🛫, are the turn's, not
   // the 🤖 row's: 🎤 is drawn only while the turn runs.  While a tool runs
   // no tokens stream, so 🛫's column says how long the tool has run.
   const cells: Cells = {
@@ -464,7 +463,7 @@ export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
 }
 
 /** The rows a phase draws, top to bottom, of 🎤, 🤖💬 and 🎮, the order
- * the receipt stamps them in (asked 2026-10-20): while a turn runs, each
+ * the receipt stamps them in: while a turn runs, each
  * whose `live` is not "never", and once it ends, each whose `live` is
  * "always".  A row absent from `live` is "running".  Given a `place`,
  * only the rows `places` puts there, a row absent being "footer".  💳 is
@@ -578,11 +577,11 @@ function trimSpans(spans: readonly Span[]): Span[] {
  * `hint`, at `cols`: `accountText`, after blanks that end it where the
  * band's rows end; "" with no account text.  Claude Code trims the tail's
  * leading spaces and joins it to the line with FOOTER_JOIN, so the blanks
- * are TAIL_BLANK, which it keeps (seen live 2026-10-20).  The line is two
+ * are TAIL_BLANK, which it keeps.  The line is two
  * blanks in, and `hint` is read with one space between its parts, so the
  * padding is a guess at the drawn width; a tail too wide is cut where the
  * row ends.  `hint` leaves out the permission mode's pill, "⏵⏵ auto mode
- * on · " (seen live 2026-10-20: "-- INSERT -- 2 shells"), so the pill of
+ * on · " (as in "-- INSERT -- 2 shells"), so the pill of
  * `mode`, the session's permission mode, is counted apart. */
 export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   hint: string, cols: number, mode?: string, home = ""): string {
@@ -590,20 +589,19 @@ export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
   if (!plain) return "";
   const pillW = pillWidth(st, hint, MODE_PILLS[mode ?? ""] ?? "");
   // TAIL_CUT more than a row: Claude Code cuts the tail a column short of
-  // where a row under the line ends (seen live 2026-10-20: at a right edge
-  // of 2 the 🕐 ended `18:58:…`, the line one column over).
+  // where a row under the line ends: without it, at a right edge of 2 the
+  // 🕐 ends `18:58:…`, the line one column over.
   const room = cols - st.rightEdge - 2 - TAIL_CUT - pillW -
     visWidth(hint, st.widths) - visWidth(FOOTER_JOIN, st.widths);
   // The workspace, the 💳 account and 📅 🕐, FOOTER_GAP columns apart,
-  // both gaps fewer, down to one, where the row is short (asked
-  // 2026-10-20).
+  // both gaps fewer, down to one, where the row is short.
   const parts = footerParts(plain);
   const gapless = visWidth(parts.join(""), st.widths);
   const gaps = parts.length - 1;
   const gap = gaps ? Math.max(1, Math.min(FOOTER_GAP,
     Math.floor((room - gapless) / gaps))) : 0;
-  // Claude Code draws a run of spaces in the tail as one (seen live
-  // 2026-10-20: "6.6h 📅"), so a run's spaces past its first are blanks.
+  // Claude Code draws a run of spaces in the tail as one ("6.6h 📅"), so a
+  // run's spaces past its first are blanks.
   const text = parts.join(" ".repeat(gap)).replace(/ {2,}/g,
     (run) => " " + TAIL_BLANK.repeat(run.length - 1));
   return TAIL_BLANK.repeat(Math.max(0, room - visWidth(text, st.widths))) +
@@ -640,7 +638,7 @@ export function footerParts(text: string): string[] {
 }
 
 /** The columns the footer draws for the mode's `pill` that `hint` does
- * not read (seen live 2026-10-20):
+ * not read:
  *
  *   none, where `hint` has the pill whole;
  *   its glyph and a space, where it has the pill's words alone, "-- INSERT
@@ -663,8 +661,8 @@ export function pillWidth(st: Settings, hint: string, pill: string): number {
 
 /** The permission mode a change of mode has just turned on, from the
  * first of the two draws it makes: that `hint` reads the words of the
- * mode turned off (seen live 2026-10-20: "accept edits on" while plan's
- * pill was drawn), and shift+tab turns on the next in MODE_CYCLE_ORDER.
+ * mode turned off ("accept edits on" while plan's pill is drawn), and
+ * shift+tab turns on the next in MODE_CYCLE_ORDER.
  * undefined where `hint` reads no mode's words. */
 export function modeOfHint(hint: string): string | undefined {
   for (const [mode, pill] of Object.entries(MODE_PILLS)) {
@@ -676,7 +674,7 @@ export function modeOfHint(hint: string): string | undefined {
   return undefined;
 }
 
-/** The modes shift+tab steps through, in order (seen live 2026-10-20). */
+/** The modes shift+tab steps through, in order. */
 export const MODE_CYCLE_ORDER: readonly string[] =
   ["default", "acceptEdits", "plan", "auto"];
 
@@ -687,7 +685,7 @@ export const MODE_CYCLE = "(shift+tab to cycle)";
 export const FOOTER_JOIN = " · ";
 
 /** The pill Claude Code draws in the footer for each permission mode, by
- * the mode's name: all but bypassPermissions's seen live (2026-10-20). */
+ * the mode's name: all but bypassPermissions's as seen drawn. */
 export const MODE_PILLS: Readonly<Record<string, string>> = {
   default: "⏸ manual mode on",
   auto: "⏵⏵ auto mode on",

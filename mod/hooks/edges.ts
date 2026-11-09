@@ -419,8 +419,8 @@ export async function foldOf($: $, path: string): Promise<MainFold | null> {
   }
   // Whatever the worker left, a piece of FOLD_PIECE at a time: only where
   // it failed is that more than a megabyte, but then it can be the whole
-  // transcript, which read in one piece crashed the hooks worker at 157 MB
-  // (seen live 2026-10-20).
+  // transcript, and read in one piece a 157 MB transcript crashes the hooks
+  // worker.
   let data: Uint8Array = new Uint8Array(0)
   let want = FOLD_PIECE
   try {
@@ -778,8 +778,8 @@ export async function folderReplies($: $, transcript: string,
 /** Each agent file's reading, each read from where the last read of it
  * stopped: in this load, or saved by an earlier one (savedFold), so a
  * reload reads none of it again.  An agent's file is only ever appended
- * to, and reading each whole, 2.7 GB over a session's 231 agents, left the
- * mod dead in that session (seen live 2026-10-20).  A file that shrank was
+ * to, and reading each whole, 2.7 GB over one session's 231 agents, leaves
+ * the mod dead in that session.  A file that shrank was
  * rewritten, and is read from its start. */
 export async function agentReadings($: $, transcript: string):
   Promise<[string, AgentReading][]> {

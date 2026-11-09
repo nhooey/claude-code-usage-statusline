@@ -26,10 +26,10 @@ import { _naiveTimestamp, _strptimeStamp } from "./claude_calib.ts";
 import { isDict, pyIsDigit, pyIntDigits } from "./py.ts";
 import type { Dict } from "./py.ts";
 
-// 2 since 2026-10-19: the status document's `turn` and `accounting`, and
-// the main thread's own figures on its transcript.  3 the same day:
-// `open_turn`, `accounting.own`, the session's `start_s`, the transcript's
-// `own_parts` and `own_est`, and the Turn's `eta`.  claude.py says which.
+// The status document's `turn`, `accounting` and `open_turn`,
+// `accounting.own`, the session's `start_s`, the main thread's own figures
+// on its transcript (`own_parts` and `own_est`), and the Turn's `eta`.
+// claude.py says which.
 export const FIGURES_SCHEMA = 3;
 
 // ════════════════════════════════════════════════════════════════════════════

@@ -98,10 +98,10 @@ function absorbAccounting(a: Accounting, c: Accounting, merged: Turn):
 
 /** `turns` as the receipt bills them: each automatic compaction folded
  * into the turn it landed in, with `acc`, the turns' accountings, folded
- * alike.  The fold splits such a turn in two at the compaction (seen live
- * 2026-10-20): its prompt with what it billed before, and a compaction
- * with no promptId holding the rest, which the receipt passes over, so it
- * billed the turn before instead, or nothing. */
+ * alike.  The fold splits such a turn in two at the compaction: its prompt
+ * with what it billed before, and a compaction with no promptId holding
+ * the rest, which the receipt would pass over, billing the turn before
+ * instead, or nothing. */
 export function inTurns<A extends Accounting | null>(turns: readonly Turn[],
   acc: readonly A[]): [Turn[], A[]] {
   const out: Turn[] = [];
@@ -169,7 +169,7 @@ export interface TurnEnd {
  * known, else "": it may yet bill.  A turn the fold shows billed is never
  * one.  Ended by an interrupt or an API error with no request counted
  * (`end`), it is "interrupted" or "an API error"; a prompt sent before it
- * was finished is rewound so, before any reply (seen live 2026-10-20).
+ * was finished is rewound so, before any reply.
  * Or "replaced": no call of its own and a later prompt in the same turn
  * slot, its turnPosition's turnIndex, as the full prompt that replaced
  * that one was written ~2 min on. */
@@ -264,8 +264,8 @@ function sessionRow(st: Settings, turns: readonly Turn[], acc: Accounting,
 }
 
 /** The receipt's rows from a cost figures document: 🎤, or null with no
- * turn to bill, and 🎮.  They have no 📊 of their own (decided
- * 2026-10-19): the band has no 🎤 or 🎮 once a turn ends, so they read
+ * turn to bill, and 🎮.  They have no 📊 of their own: the band has no
+ * 🎤 or 🎮 once a turn ends, so they read
  * apart by being dim. */
 export function receiptRows(st: Settings, all: Dict):
   { turn: Row | null; session: Row } {
@@ -328,7 +328,7 @@ export function receiptHead(all: Dict, hide: readonly string[]): Span[] {
  * row, where there is one, and 🎮 on the band's fixed grid, `inset`
  * columns in (the mod's is hint-inset, where the band's rows start), then
  * the tag line
- * (receiptHead) under them (decided 2026-10-19).  A hidden scope's row is
+ * (receiptHead) under them.  A hidden scope's row is
  * left out, and so is a row not `stamped` (RowName: the rows whose
  * `rows.<row>.transcript` is true), and the tag line without `tags`
  * (`rows.tag.transcript`).  `dim` draws every span dim, as the stamped
@@ -350,7 +350,7 @@ export function receiptScoped(st: Settings, fig: Dict, cols: number,
   { scope: string; spans: Span[] }[] {
   const { turn, session } = receiptRows(st, fig);
   // 🤖 between 🎤 and 🎮, as the band stacks them, where the caller has
-  // the band's row for it (asked 2026-10-20).
+  // the band's row for it.
   const kept = scopesOf(stamped);
   const rows = [turn, main, session].filter((r): r is Row =>
     r !== null && kept.includes(r.scope) && !hidden(hide, r.scope));
@@ -361,7 +361,7 @@ export function receiptScoped(st: Settings, fig: Dict, cols: number,
   const lines = drawRows(st, rows, cols, hide, inset)
     .map((l, i) => ({ scope: rows[i].scope,
       spans: inset ? [span(" ".repeat(inset)), ...l] : l }));
-  // A blank row before the tag line (asked 2026-10-20): a space, since Ink
+  // A blank row before the tag line: a space, since Ink
   // measures an empty Text as no row at all.
   const head = tags ? receiptHead(fig, hide) : [];
   if (head.length) {
@@ -388,7 +388,7 @@ export function drawRows(st: Settings, rows: readonly Row[], cols: number,
 
 /** Whether `hide` hides the turn's tag lines, the start line's 🔻🔖 and
  * the receipt's 🔺🔖, with the blank rows that set them apart: the hide
- * path `name.tag` (asked 2026-10-20). */
+ * path `name.tag`. */
 export function tagsHidden(hide: readonly string[]): boolean {
   return hidden(hide, "name.tag");
 }

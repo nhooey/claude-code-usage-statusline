@@ -1,4 +1,4 @@
-"""The redesigned grid: one scope per row, one column per metric.
+"""The grid: one scope per row, one column per metric.
 
 agents/plans/_implemented/redesign.md has the design, and mod/src/grid.ts
 is the reference this ports, function for function.  Every row of the band, the
@@ -133,7 +133,7 @@ def _share_gone(patterns: Sequence[str]) -> bool:
 # The columns 🧠's size takes without its share: the mark, then a sign
 # column, three for the digits and one for the unit, "🧠+316k", "🧠 1.2M",
 # so the relative and absolute sizes stack from the band down to the
-# subagents (asked 2026-10-20).
+# subagents.
 CTX_SIZE_W = 5
 
 

@@ -799,8 +799,7 @@ and a true value:
   178 in steps of 10. So the 256 set draws in tmux's limited mode exactly
   as chosen, in the mod's rows, which go through Claude Code's renderer,
   and in the agent panel, which writes its own escapes.
-- **The true set** is the softer colours from before the 256 set, drawn
-  only where Claude Code itself draws true colour. Both ports work its level
+- **The true set** is softer colours, drawn only where Claude Code itself draws true colour. Both ports work its level
   out with its own rules, from the variables it reads (`COLORTERM`, `TERM`,
   `TERM_PROGRAM`, `FORCE_COLOR`, `NO_COLOR`, `TMUX`,
   `CLAUDE_CODE_TMUX_TRUECOLOR`); a wrong guess errs to the 256 set, which
@@ -889,11 +888,10 @@ column digits in its place to check it.
 
 ### The status line and the Stop hook
 
-Before the mod, a `statusLine` command drew the session's figures on three
-rows under the prompt, a grid of its own with 👤💬, 📖 and 📝 cells, and a
-`Stop` hook printed the prompt receipt behind Claude Code's `Stop says:`.
-Both commands still exist, `--mode status` and `--mode cost` (see
-[Options](options.md#modes)), and their goldens in `tests/golden/` still pin
-them, but with the mod loaded leave both out of `settings.json`: the mod's
-rows replace the status line, and its receipt the Stop hook's, which would
-otherwise print a second one each turn.
+Without the mod, a `statusLine` command, `--mode status`, draws the session's
+figures on three rows under the prompt, a grid of its own with 👤💬, 📖 and
+📝 cells, and a `Stop` hook, `--mode cost`, prints the prompt receipt behind
+Claude Code's `Stop says:` (see [Options](options.md#modes)). Their goldens
+in `tests/golden/` pin both, but with the mod loaded leave both out of
+`settings.json`: the mod's rows replace the status line, and its receipt
+the Stop hook's, which would otherwise print a second one each turn.

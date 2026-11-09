@@ -321,9 +321,9 @@ let toastAt = 0
 
 /** A read that took `ms`: logged, with each step's ms, and shown as a
  * toast at most once per slowToastMs under the option slow-toast, so a slow
- * read is seen as it happens (asked 2026-10-19: the mod times itself and
- * warns when it is slow).  Off by default: the toast took the footer's
- * line, hiding the 💳 account at its right end (seen live 2026-10-20). */
+ * read is seen as it happens: the mod times itself and warns when it is
+ * slow.  Off by default: the toast takes the footer's line, hiding the 💳
+ * account at its right end. */
 async function slow($: $, ms: number, used: string): Promise<void> {
   const parts = Object.entries(steps).map(([k, v]) => `${k} ${v}`)
   const text = `slow read: ${Math.round(ms)}ms (${parts.join(', ')}; ` +
@@ -343,7 +343,7 @@ let pending: { text: string; before: unknown; filed?: string } | null =
 // The promptId the running turn opened with, once a document showed its
 // record (fileStart); "" until then.  The receipt bills this turn: read
 // after turn.complete instead, the newest prompt can be one written as the
-// turn ended, a task notification's (seen live 2026-10-20).
+// turn ended, a task notification's.
 let opened = ''
 
 // The engine counts at the last refresh, so each refresh's line says what
@@ -523,9 +523,9 @@ async function refresh($: $): Promise<void> {
  * with no turn index is filed and the prompt kept pending, so a later
  * record that has one files over it: a task notification queued while
  * idle is written just before the prompt that opens the turn, with no
- * turnPosition of its own, and the turn bills the prompt (seen live
- * 2026-10-21: the tag read `1f2a3772` with no #, and the receipt waited
- * on that id while the turn billed `abfeacea #366`). */
+ * turnPosition of its own, and the turn bills the prompt.  Filed for good,
+ * the notification's record would give the tag an id with no #, and the
+ * receipt would wait on that id while the turn bills the prompt's. */
 async function fileStart($: $, doc: Dict): Promise<void> {
   const tr = doc.transcript as Dict | undefined
   if (!pending || !tr?.prompt_id || tr.prompt_id === pending.before) return
@@ -570,7 +570,7 @@ async function tick($: $, mine: number) {
 }
 
 // Moves the time the band draws at every clockMs, so its clocks run
-// between reads (decided 2026-10-19); the figures wait for the next read.
+// between reads; the figures wait for the next read.
 async function clock($: $, mine: number) {
   while ((await read($, generation)) === mine) {
     await $.clock.sleep(CONFIG.clockMs)
@@ -1033,8 +1033,8 @@ export const register: Register = on => {
   })
 
   // Each event below starts this load's tick if no event has yet (start).
-  // The reads are not awaited: a session with many agents read for 34s
-  // after a reload (seen live 2026-10-20), its parsing the hook's own time,
+  // The reads are not awaited: a session with many agents can read for 34s
+  // after a reload, its parsing the hook's own time,
   // past the engine's 10s budget for a hook.
   // A session's start may be in another project: its configuration files
   // are looked at again (reconfigure), as the tick looks at them.
@@ -1094,8 +1094,7 @@ export const register: Register = on => {
         err))
       turnRunning = false
       // The band keeps the turn's 🎤 and 🎮 until its receipt is stamped,
-      // and a second more, so the two lines are never missing from both
-      // (asked 2026-10-19).
+      // and a second more, so the two lines are never missing from both.
       await update($, held, () => true)
     }
     if (e.agentId) {
@@ -1217,8 +1216,8 @@ export const register: Register = on => {
 
   // Claude Code's closing line, `✻ <word> for <duration>`, drawn as the
   // turn's receipt: 🔺🔖 its tag beside 🎤, then 📅 🕐 beside 🎮, dim, on
-  // the band's columns, once stamped (decided 2026-10-19: a `$.ui.log` line came with
-  // Claude Code's `⏺ usage-band:` before it and a blank row after).  Until
+  // the band's columns, once stamped, since a `$.ui.log` line comes with
+  // Claude Code's `⏺ usage-band:` before it and a blank row after.  Until
   // then one blank row: a Box one row high around a space, rather than an
   // empty Text, which Ink measures as no row at all.
   on('ui.render', { component: 'TurnDuration' }, async ($, e) => {
@@ -1233,7 +1232,7 @@ export const register: Register = on => {
         ? got.map((spans) => ({ scope: '', spans })) : got?.rows ?? []
       if (rows.length) {
         // A blank row above, so the receipt stands apart from the answer,
-        // and one under its tag line (asked 2026-10-19), which goes with the
+        // and one under its tag line, which goes with the
         // tag line (tagsShown).
         return (
           <Box flexDirection="column" marginTop={1}
@@ -1285,9 +1284,9 @@ export const register: Register = on => {
       const doc = await read($, status)
       if (doc === null || o === null) return await drawNext(draw, () => next(e))
       const st = await settingsOf($, o)
-      // The band's width before the viewport's: the viewport read 10 columns
-      // wider than the terminal drew, pushing the 🕐 off the row (seen live
-      // 2026-10-20), and the band's is where its rows end.
+      // The band's width before the viewport's: the viewport can read 10
+      // columns wider than the terminal draws, pushing the 🕐 off the row,
+      // and the band's is where its rows end.
       const cols = bandCols || (e.viewport?.columns ?? 80)
       const fig = at(doc as Dict, await read($, clockNow))
       // The 💳 account, where rows.account.live draws it now.
@@ -1312,12 +1311,11 @@ export const register: Register = on => {
       // The rows whose rows.<row>.place is "footer", the 💳 account's among
       // them, under the footer line, in their colours: Claude Code's own
       // line first, from drawNext(draw, () => next(e)), so its pills
-      // stay live, and a node beside it in a column goes on the row below it
-      // (seen live 2026-10-20).  Claude Code draws the line's container
-      // hint-inset columns in, so the rows are drawn that much narrower on
-      // the panel's columns: drawn at the full width, each cell stood that
-      // many columns right of the agent panel's, and the 💳 row ended past
-      // the grid (seen live 2026-10-20).
+      // stay live, and a node beside it in a column goes on the row below
+      // it.  Claude Code draws the line's container hint-inset columns in,
+      // so the rows are drawn that much narrower on the panel's columns:
+      // drawn at the full width, each cell would stand that many columns
+      // right of the agent panel's, and the 💳 row would end past the grid.
       const lines = await bandNow($, e.props.isWorking, 'footer')
       if (!lines.length) return row
       const { Box, Text } = $.ui.resolve(e)
@@ -1347,8 +1345,8 @@ export const register: Register = on => {
       if (!tag) return row
       const { Box, Text } = $.ui.resolve(e)
       // On a line of its own under the prompt, at no indent, so its 🔻🔖
-      // stacks with the receipt's 🔺🔖 line, also at none (decided
-      // 2026-10-19; beside a short prompt it could not stack).
+      // stacks with the receipt's 🔺🔖 line, also at none: beside a short
+      // prompt it could not stack.
       return (
         <Box flexDirection="column">
           {row}
@@ -1362,20 +1360,20 @@ export const register: Register = on => {
 
   // A message another agent sent, folded: Claude Code's `› Message from
   // @general-purpose (ctrl+o to expand)` drawn as the agent's task and the
-  // message's first line, the task bold and the rest dim
+  // message's first line, the task bold and the rest at normal strength
   // (agent-message-row; agent_message.ts has how the agent is found,
   // senderOf what that reads).  A tree, not a rewritten `text`: folded,
   // Claude Code draws the sender's name and not the text, so a new text
   // would change nothing there.  The tree is the row's own look as far as
   // a tree can give it, one line led by `›`.  Unfolded (ctrl+o, or a
   // surface that draws every row in full), the same row over the whole
-  // message, wrapped, on the same green (asked 2026-10-20: Claude Code's
-  // own named the agent's type, in its own colour).  On every other row,
+  // message, wrapped, on the same green, where Claude Code's own names only
+  // the agent's type, in its own colour.  On every other row,
   // Claude Code's own.
   //
   // Not pressable: a click on the row is Claude Code's, which expands the
-  // message and collapses it again, as on its own row.  A Button here took
-  // that click (asked 2026-10-21), and no call a press can make toggles a
+  // message and collapses it again, as on its own row.  A Button here would
+  // take that click, and no call a press can make toggles a
   // row (`isExpanded` is read-only), so the row is plain Text.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const draw = drawStart('UserMessage')
@@ -1389,9 +1387,8 @@ export const register: Register = on => {
         await agentsNow($))
       const label = taskOf(sender, from.name)
       // The band's width before the viewport's, as the footer takes it: the
-      // viewport has read wider than the terminal drew (seen live
-      // 2026-10-20).  Ending where the band's rows and the receipt's end,
-      // right-edge short of the edge (asked 2026-10-20: it ran to the edge).
+      // viewport can read wider than the terminal draws.  Ending where the
+      // band's rows and the receipt's end, right-edge short of the edge.
       // Should the row stand in from the edge, the Text's truncate-end cuts
       // what the ellipsis did not.
       const cols = (bandCols || (e.viewport?.columns ?? 80)) - o.rightEdge

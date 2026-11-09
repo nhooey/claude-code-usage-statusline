@@ -47,16 +47,15 @@ W_CACHE_WRITE, W_CACHE_READ = 2.0, 0.1
 P_IN, P_OUT, P_CR, P_CW = 5e-6, 25e-6, 0.5e-6, 10e-6
 
 # Per-model prices.  For the calibration scan, which sees other sessions'
-# turns and so cannot assume one model; and since 2026-09-11 for every
-# record read_turns prices, because an agent can run a model its session
-# does not.  $/token: fresh, output, cache-read, cache-write at the 2x TTL.
+# turns and so cannot assume one model; and for every record read_turns
+# prices, because an agent can run a model its session does not.  $/token: fresh, output, cache-read, cache-write at the 2x TTL.
 #
 # FIRST MATCH WINS, so the specific rows sit above the family they refine.
 # Figures are Claude Code's own: its binary bakes in a model catalog
-# (`pricing_tiers` / `models[].pricing`), read out of 2.1.268 on 2026-09-11.
-# Fable 5.1 differs from Fable 5 in one field, cache-read, and Sonnet 5 is
-# not Sonnet 4.x — the old "sonnet" row was 3/15/6/0.3, which is the 4.x
-# tier and priced every Sonnet 5 fork half again too high.  The bare
+# (`pricing_tiers` / `models[].pricing`), read out of 2.1.268.  Fable 5.1
+# differs from Fable 5 in one field, cache-read, and Sonnet 5 is not Sonnet
+# 4.x — the 4.x tier, 3/15/6/0.3, would price every Sonnet 5 fork half
+# again too high.  The bare
 # "opus" row stays as _price's fallback for a model it has never heard of:
 # the deliberate ceiling rather than a guess in the other direction.
 MODEL_PRICE = (
@@ -154,11 +153,11 @@ class Transcript(NamedTuple):
     last_seen: float = 0.0  # its last stamped record of any kind
     # The main thread's OWN figures, off this file alone: the tokens, cache
     # rate and list-price cost above count the agents' requests as well,
-    # and the redesign's 🤖💬 row is the main thread apart from them.  The
+    # and the 🤖💬 row is the main thread apart from them.  The
     # same requests, read the same way, before the agents are added.  A
     # compaction bills through no request, so it is in none of the token
-    # figures; its cost is in the dollars, since 2026-10-19, charged to the
-    # thread whose window it compacts.
+    # figures; its cost is in the dollars, charged to the thread whose
+    # window it compacts.
     own_tok_up: Optional[int] = None
     own_tok_down: int = 0
     own_cache_pct: int = -1
@@ -275,8 +274,8 @@ class Turn(NamedTuple):
                             # token sums above at one model's rates cannot say
                             # that.  A compaction puts its preTokens here at
                             # the cache-read rate, which is what lets
-                            # turn_cost drop the "unless compact" clause it
-                            # used to need.
+                            # turn_cost do without an "unless compact"
+                            # clause.
     compact: bool = False   # a compaction rather than a prompt.  Its figures
                             # come from the boundary record, not from usage
     reported: bool = False  # a Stop hook has already run at a point AFTER this
@@ -508,7 +507,7 @@ def _agent_dir(transcript: str) -> str:
 def agent_files(transcript: str) -> List[str]:
     """Every agent transcript of this session, sorted so the walk is stable.
 
-    Two depths and no others, measured over 2,134 files on 2026-09-11:
+    Two depths and no others, measured over 2,134 files:
     `subagents/agent-<id>.jsonl` for the Agent tool, forks, and agents that
     agents spawned (those carry parentAgentId in their sidecar and sit in
     the same directory); `subagents/workflows/wf_<id>/agent-<id>.jsonl` for
@@ -558,9 +557,9 @@ def agent_records(transcript: str, seen: Optional[set] = None,
     see agent_offsets — and it is bytes rather than a stamp because files
     that flush on their own schedules share no clock.
 
-    It fed the status line's clocks as well until 2026-09-27, when ⌛ became
-    the main thread's own — see thread_clock — and an agent's time moved to
-    its row alone.  The receipt still wants it, so each record carries the
+    It does not feed the status line's clocks: ⌛ is the main thread's own —
+    see thread_clock — and an agent's time is on its row alone.  The receipt
+    wants it, so each record carries the
     agent's 🤖 and 🔧 since the one before it, by thread_clock's rule; see
     split_clock.  For a finished agent they add up to its own clock, and
     each second is filed with the request after it.  A
@@ -787,11 +786,11 @@ def _agent_file_readings(transcript: str) -> List[Tuple[str, dict]]:
     read on from the fold saved for it (agent_fold.py), so a render reads
     only what was appended since the last.
 
-    Without it, every render parsed every agent file the session ever ran.
-    A session with 611 of them, 768 MB, took six seconds a render, longer
-    than Claude Code's five-second refresh, and its status line stopped at
-    the last frame that finished: on 2026-10-01 it held a 98٪ weekly figure
-    for hours after the week had reset to 1٪.
+    Without it, every render would parse every agent file the session ever
+    ran.  A session with 611 of them, 768 MB, takes six seconds a render
+    that way, longer than Claude Code's five-second refresh, so its status
+    line stops at the last frame that finished: one held a 98٪ weekly
+    figure for hours after the week had reset to 1٪.
     """
     from . import agent_fold
     out = []
@@ -877,7 +876,7 @@ def squash(s: str, fold: str = E_FOLD) -> str:
     So the glyphs that cannot be trusted are replaced by their codepoint in
     ASCII: <27F3> in place of a reset arrow.  That is wider than the glyph, but
     it is ASCII, so its width is exact and the row can be measured to the
-    column.  It also SAYS what was there, which a dot did not — a row reading
+    column.  It also SAYS what was there, which a dot does not — a row reading
     <1FAA3> is a bug report, where a row reading a dot is only a mystery.
 
     Two families qualify.  U+2190-U+2BFF is arrows, misc technical, misc
@@ -885,12 +884,11 @@ def squash(s: str, fold: str = E_FOLD) -> str:
     neighbouring codepoint is no guide.  Variation selectors are the other,
     being the construction behind every rendering fault recorded in this file.
 
-    Pictographs used to be left alone wholesale, on the claim that everything
-    from U+1F300 up measures two columns in both terminals.  That was wrong,
-    and 🛢 U+1F6E2 is how it was found out: a pictograph with no default emoji
-    presentation is drawn from whatever text font the terminal reaches for,
-    which is one column in some and two in others — the same fault as the
-    U+2190 block, in a range this function trusted.
+    Pictographs cannot be left alone wholesale, on the claim that everything
+    from U+1F300 up measures two columns in both terminals.  🛢 U+1F6E2 shows
+    why: a pictograph with no default emoji presentation is drawn from
+    whatever text font the terminal reaches for, which is one column in some
+    and two in others — the same fault as the U+2190 block.
 
     The test that separates them is already in the file.  UAX #11 gives East
     Asian Width Wide to pictographs whose default presentation is emoji and
@@ -1056,7 +1054,7 @@ BLOCKING_TOOLS = frozenset({"AskUserQuestion", "ExitPlanMode"})
 # own row.  Both names, because Claude Code renamed Task to Agent and older
 # transcripts still say Task.  A background dispatch returns at once, so its
 # span is a second or two either way; a foreground one is the child's whole
-# run, and without this it was the caller's 🔧.  See thread_clock.
+# run, and without this it would be the caller's 🔧.  See thread_clock.
 DELEGATING_TOOLS = frozenset({"Agent", "Task"})
 
 # What a thread's 🚦 takes out of its tool spans: a person answering, or
@@ -1212,7 +1210,7 @@ def live_agent_etas(records: Sequence[dict], etas: Sequence[tuple]
     them, as (finish, last record), less each agent the main transcript says
     ended after its last record (scan_agent_end).  A killed agent's file
     stops mid-answer, so it reads as still answering, and its last report
-    went on pushing ⛳ past its finish for half an hour (2026-10-19).  An
+    would go on pushing ⛳ past its finish, for half an hour in one case.  An
     entry with no id is kept."""
     ends: Dict[str, float] = {}
     for r in records:
@@ -1250,9 +1248,9 @@ def open_tool_spans(pending: Dict[str, Tuple[float, str]], now: float,
     `pending` is what scan_tool_spans has left unanswered at the end of a
     file: a Bash call still running, an agent still working in the
     foreground.  Its seconds are 🔧's — or 🚦's, for a WAITING_TOOLS call —
-    as they happen, and not only once the result lands; left out, they sat
-    in 🚦 as the remainder until then, so a thread ten minutes into a test
-    run read as ten minutes waiting.  The caller passes a `now` only for a
+    as they happen, and not only once the result lands; left out, they would
+    sit in 🚦 as the remainder until then, so a thread ten minutes into a
+    test run would read as ten minutes waiting.  The caller passes a `now` only for a
     thread that is live: a finished one's unanswered calls were interrupted.
     """
     for t, name in pending.values():
@@ -1281,11 +1279,11 @@ def thread_clock(work: Sequence[Tuple[float, float]],
     busy, plus waiting, is 🚦.  The three partition the age exactly: 🤖 holds
     no tool second, 🔧 no waiting one, and 🚦 is the rest by construction.
 
-    OWN FILE ALONE, since 2026-09-27.  The status line unioned every agent's
-    spans into its busy clock until then, and an agent row added its
-    children's tools to its 🔧, so a coordinator parked on five background
-    agents read as busy the whole time it sat waiting on them.  Waiting on an
-    agent is 🚦 now, on either readout, and the agent's work is on its row.
+    OWN FILE ALONE.  Unioning every agent's spans into the busy clock, and
+    adding an agent row's children's tools to its 🔧, would read a
+    coordinator parked on five background agents as busy the whole time it
+    sat waiting on them.  Waiting on an agent is 🚦, on either readout, and
+    the agent's work is on its row.
     """
     return (union_seconds(list(work) + list(tools)),
             net_tool_seconds(tools, waiting), union_seconds(waiting))
@@ -1625,12 +1623,12 @@ def read_transcript(path: str, agents: Optional[Sequence[AgentRec]] = None,
     a 🧩 that reports the main thread alone is short by whatever the forks
     and workflows spent, which in the sessions that use them is most of it.
 
-    Time does NOT, since 2026-09-27: busy, tool and waiting time are this
+    Time does NOT: busy, tool and waiting time are this
     thread's own, off this file alone — see thread_clock, which an agent row
     reads its agent through too.  A main thread that dispatches six agents
     and waits is waiting, and says so in 🚦; the agents' work is on their
-    rows.  The clocks unioned every agent's spans in until then, which read
-    a coordinator parked on its agents as the busiest thread in the session.
+    rows.  Unioning every agent's spans into the clocks would read a
+    coordinator parked on its agents as the busiest thread in the session.
     With a `now`, a tool call still running counts to it; see open_tool_spans.
 
     Context size does NOT.  It is a reading of THIS window — the one 🧠 is
@@ -1803,7 +1801,7 @@ def _fold_context(f: TranscriptFold, r: dict, kept: bool) -> None:
         # alone (see read_turns); what it leaves out is the system prompt,
         # the tools and the files and skills re-attached after it, and
         # the session's first reading carries the same set.  Over 520
-        # local compactions on 2026-10-16, postTokens + that first reading
+        # local compactions, postTokens + that first reading
         # came within -5.8k / +9.6k (p10 / p90) of the next request's
         # reading, median -1k; postTokens + a fixed 46k, the fallback for
         # a file with no reading before its boundary, ran -6k / +65k.
@@ -2035,15 +2033,15 @@ def opens_turn(r: dict) -> bool:
     carries the text and opens the turn instead (see `queued_text`).  Newer
     ones write the removal as a bare `dequeue` with NO content: 697 of the
     716 queued records here have no removal with their text anywhere in the
-    file, and refused, each one's answer was filed under the prompt before
-    it (2026-10-21: 🎤 printed an agent report over the reply to the prompt
-    typed after it).  Where one prompt is written both ways, a few records
+    file, and refused, each one's answer would be filed under the prompt
+    before it, and 🎤 would print an agent report over the reply to the
+    prompt typed after it.  Where one prompt is written both ways, a few records
     apart with nothing answered between, read_turns keeps one turn, as for
     a prompt recorded typed and queued.
 
-    The exclusion this replaces was written against a mid-turn injection —
-    "four in a row landed inside one turn" — and that shape does not exist in
-    any transcript here: of the 355 wake records, not one is preceded by an
+    Wake records are not excluded as a mid-turn injection — "four in a row
+    landed inside one turn" — because that shape does not exist in any
+    transcript here: of the 355 wake records, not one is preceded by an
     assistant record or a tool result.  Every one sits at a turn boundary,
     after a queue dequeue, a turn_duration, or another wake record delivered
     in the same batch.  A peer message that genuinely arrives mid-turn gets no
@@ -2156,14 +2154,14 @@ def queued_text(r: dict) -> Optional[str]:
     if r.get("type") != "queue-operation":
         return None
     # Text pulled back into the editor was never answered: read as a
-    # delivery, it opened a turn holding the old text, and the answer to
-    # what was sent after it went under that (218 of them here).
+    # delivery, it would open a turn holding the old text, and the answer
+    # to what was sent after it would go under that (218 of them here).
     if r.get("operation") not in QUEUE_HANDED:
         return None
     # A message handed over while the answer runs is the same turn: Claude
     # Code stamps it "absorbed_mid_turn", and its tool results carry the
-    # turn's promptId.  Opening a turn there restarted ⌛ and swapped 🎤's
-    # prompt at every message the user sent mid-answer (2026-10-19).
+    # turn's promptId.  Opening a turn there would restart ⌛ and swap 🎤's
+    # prompt at every message the user sent mid-answer.
     if r.get("reason") == "absorbed_mid_turn":
         return None
     c = r.get("content")
@@ -2193,7 +2191,7 @@ def queue_step(r: dict) -> int:
 
 # What postTokens leaves out of a reading, when the transcript has no
 # reading before its compaction to take it from: the median over 520 local
-# compactions on 2026-10-16.  See the 🧠 estimate in read_transcript.
+# compactions.  See the 🧠 estimate in read_transcript.
 COMPACT_OVERHEAD = 46000
 
 
@@ -2207,8 +2205,8 @@ def is_compaction(r: dict) -> bool:
 # in that agent's inbox until its next tool round, and Claude Code's panel
 # counts it on the agent's row as "1 queued".  The payload the panel hands
 # the subagent status line carries no such count, so inbox_counts rebuilds it
-# from the two ends.  Read out of Claude Code 2.1.284 on 2026-09-30; 261 of
-# 261 SendMessage results to an agent over six days read this way.
+# from the two ends.  Read out of Claude Code 2.1.284; 261 of 261
+# SendMessage results to an agent over six days read this way.
 SEND_QUEUED_RE = re.compile(r"queued for delivery to (\S+) at its next tool round")
 SEND_QUEUED_MARK = b"queued for delivery to"
 # The origins inbox_delivery counts: tighter than `"queued_command"`, which
@@ -2419,9 +2417,9 @@ def turn_opens(r: dict, gate: list) -> Optional[str]:
     turn's, and 12 of those come before its answer has ended — a batch of
     peer messages delivered together, or a peer's hand-back landing 16
     seconds after a typed prompt and before the first request of its
-    answer (2026-10-21).  Each opened a turn of its own, the answer went
-    under the last of them, and 🎤 printed the hand-back over the reply to
-    the prompt typed with it.  The other three wake an idle session after
+    answer.  Opened as turns of their own, the answer would go under the
+    last of them, and 🎤 would print the hand-back over the reply to the
+    prompt typed with it.  The other three wake an idle session after
     the turn ended, and Claude Code numbers them with the turn before all
     the same, so the number alone is not enough.
 
@@ -2909,10 +2907,10 @@ def fold_turns(f: TurnsFold, r: dict) -> None:
         # previous cost line drew its window, and it is what makes "report
         # each compaction exactly once" true rather than nearly true.
         #
-        # The pairing it replaces inferred that boundary from the prompts: a
-        # compaction falls between two consecutive answered prompts, and the
-        # second of them reports it.  That holds only while every Stop sees
-        # its own prompt.  When one does not — the transcript is not flushed
+        # Inferring that boundary from the prompts instead — a compaction
+        # falls between two consecutive answered prompts, and the second of
+        # them reports it — holds only while every Stop sees its own
+        # prompt.  When one does not — the transcript is not flushed
         # in step with the hook, see read_turns_settled — two consecutive
         # Stops share a window, the pair that straddles the compaction never
         # gets a Stop of its own, and the row is not late: it is gone.

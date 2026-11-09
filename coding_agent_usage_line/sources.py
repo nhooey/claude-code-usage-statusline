@@ -642,7 +642,7 @@ def _native_windows(value):
     seen = set()
     for item in windows:
         # Keyed on the values normalise will keep, which always hash: a list
-        # in `resets_at` raised TypeError here and took the line down.
+        # in `resets_at` would raise TypeError here and take the line down.
         key = (item.get("bucket_id"), item["id"], _number(item.get("duration_seconds")), epoch(item.get("resets_at")))
         if key not in seen:
             seen.add(key); unique.append(item)
@@ -681,7 +681,7 @@ def claude_usage_tracker():
         if reading and account is not None: reading["account_id"] = account
         return reading
     # ExpatError is a store that is not XML, and AttributeError one that is
-    # not a dict; either used to escape and take the status line down.
+    # not a dict; either would escape and take the status line down.
     except (OSError, ValueError, TypeError, ExpatError, AttributeError): return {}
 
 # A plan window's use only rises until it resets, so the highest any reading

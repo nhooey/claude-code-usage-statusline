@@ -8,17 +8,17 @@
 // asked.  The mod draws the row instead as the agent's task, as its Agent
 // call described it, and the message's first line, `› 🤖📨 Reclaim the
 // right-edge columns: The right edge is now a setting in both ports…`, cut
-// to the terminal's width (asked 2026-10-20).  The task is bold at full
-// strength and the rest dim, so the task is what the eye finds (asked
-// 2026-10-20).
+// to the terminal's width.  The task is bold at full strength and the rest
+// dim, so the task is what the eye finds.
 //
 // The sender is known only by name (`e.props.from.name`), so its agent is
 // found in `$.agent.list()` by that: an agent whose own name it is (a
 // named subagent), else one whose type it is, the live ones before the
 // rest.  Where that finds more than one, the message's own words pick it:
 // the one agent of them whose last reply holds the message's first line,
-// the harness's framing of a subagent's report set aside (unframe) (asked 2026-10-20: ten `general-purpose` agents all read
-// `general-purpose`).  Where none or several hold it, or there were none
+// the harness's framing of a subagent's report set aside (unframe), since
+// ten `general-purpose` agents all read `general-purpose` by name alone.
+// Where none or several hold it, or there were none
 // to begin with, the row names the sender as Claude Code did: a guess
 // between two agents' tasks would put one agent's words under the other's.
 //
@@ -26,9 +26,8 @@
 // of the mod forgets what was found; so where the list does not settle
 // it, the session's `subagents/` folder does, as Claude Code keeps it:
 // each agent's meta file (agentOfMeta) and the end of its transcript
-// (repliesOfLines), its last reply read as the list's is (asked
-// 2026-10-21: a reload turned every finished agent's row back into
-// `general-purpose`).
+// (repliesOfLines), its last reply read as the list's is, so a reload does
+// not turn every finished agent's row back into `general-purpose`.
 //
 // Pure: the caller lists the agents, reads their replies and measures the
 // row.
@@ -106,8 +105,8 @@ export function senderLabel(from: string,
 }
 
 // The harness's own framing of a subagent's report, which the agent never
-// wrote (seen live 2026-10-20: the row read `general-purpose: [harness:
-// subagent output matc…`, no reply holding that line):
+// wrote, and which left in would have the row read `general-purpose:
+// [harness: subagent output matc…`, no reply holding that line:
 //   - a preamble line at column zero, `[Subagent hand-back] The text below
 //     is the final report … The report follows:`, and every line of the
 //     report under it indented two spaces;
@@ -247,7 +246,7 @@ export function saidBy(head: string,
  * `[harness: …]` note stays, the reader's to see), wrapped at word breaks
  * to `cols` (a word wider than the room is cut by columns), all on B_MSG and padded to `cols`, so it reads
  * as the folded row does, named by its task, not Claude Code's
- * `@general-purpose` on its own colour (asked 2026-10-20). */
+ * `@general-purpose` on its own colour. */
 export function messageBlock(st: Settings, label: string, text: string,
   cols: number): Span[][] {
   const w = Math.max(4, cols);
@@ -297,12 +296,12 @@ export function wrapCols(st: Settings, text: string, cols: number): string[] {
 }
 
 /** The row as spans: `› 🤖📨 `, the sender's label bold, and after a
- * colon the message's first line, all at normal strength (asked
- * 2026-10-20: dim was hard to read on the bar); cut to `cols` columns
+ * colon the message's first line, all at normal strength, since dim is
+ * hard to read on the bar; cut to `cols` columns
  * with an ellipsis, counted as the terminal counts them
  * (formatting.visWidth), the `…` in the style of the piece it cuts.  All
  * of it on B_MSG, padded with blanks to `cols`, so the row is a bar out
- * to the right margin (asked 2026-10-20). */
+ * to the right margin. */
 export function messageSpans(st: Settings, label: string, text: string,
   cols: number): Span[] {
   const head = firstLine(text);

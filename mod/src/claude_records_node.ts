@@ -49,7 +49,7 @@ export function _records(path: string): Rec[] {
 
 /** Every agent transcript of this session, sorted so the walk is stable.
  *
- * Two depths and no others, measured over 2,134 files on 2026-09-11:
+ * Two depths and no others, measured over 2,134 files:
  * `subagents/agent-<id>.jsonl` for the Agent tool, forks, and agents that
  * agents spawned; `subagents/workflows/wf_<id>/agent-<id>.jsonl` for a
  * workflow's agents.  The workflow's `journal.jsonl` carries no usage and

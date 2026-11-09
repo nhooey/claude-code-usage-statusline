@@ -128,7 +128,7 @@ def render_state(status, usage=None, waiting_on=False):
     phase, mode = agent_state(status, usage, waiting_on)
     return spans([_phase_span(phase), mode])
 def render_phase(status, usage=None, waiting_on=False):
-    """The phase circle alone: the mode is the 🛫 column's now, beside how
+    """The phase circle alone: the mode is in the 🛫 column, beside how
     long the agent has been in it; see render_doing."""
     return spans(_phase_span(agent_state(status, usage, waiting_on)[0]))
 def _phase_span(phase):
@@ -173,8 +173,8 @@ def render_background(mark, n):
 def render_agent_diff(usage):
     """The agent's own +adds/-removes, in the status line's 💾 cell.
 
-    Blank at "+0 -0" (decided 2026-10-19, on every row of the grid): a cell
-    that says nothing draws nothing, so a blank 💾 means no line changed or
+    Blank at "+0 -0", on every row of the grid: a cell that says nothing
+    draws nothing, so a blank 💾 means no line changed or
     none was counted.  A task with no transcript to count — a shell, a
     remote agent — is blanked by the caller too, the way 💰 is.
     """
@@ -206,8 +206,7 @@ def agent_elapsed(start_ms, now, end=None, first=None):
 def render_agent_elapsed(start_ms, now, end=None, first=None):
     """⌛ and the agent's age; see agent_elapsed.
 
-    Its whole life, where the 🤖 before it until 2026-09-27 was the life less
-    its tools: the split is render_agent_split's now, drawn after it as
+    Its whole life: the split is render_agent_split's, drawn after it as
     shares, so the one figure left is the one no share can be read without.
     """
     run = agent_elapsed(start_ms, now, end, first)
@@ -297,7 +296,7 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
     red: `signed_off` says the zero is the finish the figure counts to, so
     the agent said it was done and is running over.  With no live
     estimate — no report yet, or a run that completed — the cell is blank
-    (decided 2026-10-19: a dim "?" said nothing a blank does not), and
+    (a dim "?" would say nothing a blank does not), and
     never a manufactured "0s": an agent that has not said is not an agent
     with nothing left.  A task with no transcript to say it in draws
     nothing too, the way every other cell on its row does.
@@ -312,10 +311,10 @@ def render_agent_eta(eta, start_ms, now, status="running", end=None, signed_off=
     return [Span(E_ETA), Span(pad_val(A_ETA_FIG_W, dur_fmt(left)), "F_ETA",
                               mag_dim(left, MAG_DUR_S))]
 def render_agent_rate(rate, mark=E_RATE):
-    """🛫 and the tokens a second, without a "/s" (dropped 2026-10-19, to
-    narrow the column), as humanize writes a count: three columns of figure,
-    its decimal among them, then the unit, "1.2k" and "632 " (asked
-    2026-10-20), so the unit stacks with render_doing's."""
+    """🛫 and the tokens a second, without a "/s", to narrow the column, as
+    humanize writes a count: three columns of figure, its decimal among
+    them, then the unit, "1.2k" and "632 ", so the unit stacks with
+    render_doing's."""
     return [] if rate is None else [Span(mark + " "), Span(pad_val(4, humanize(rate)), "F_RATE", mag_dim(rate, MAG_RATE))]
 def state_since(status, usage, phase, mode, task=None):
     """The epoch the agent entered the state `mode` names, or None.
@@ -356,8 +355,7 @@ def render_doing(status, usage, waiting_on=False, rate=None, now=None, task=None
     🤖 keeps the rate while the agent's records keep landing: the figure
     says it is moving and how fast.  Once it has written nothing for
     A_SILENT_S the figure is how long it has been quiet instead, amber from
-    A_SILENT_WARN_S — the reading 🔇 drew in a cell of its own until
-    2026-10-05.  A row with no mode, a shell, keeps the rate under 🛫.
+    A_SILENT_WARN_S.  A row with no mode, a shell, keeps the rate under 🛫.
     """
     phase, mode = agent_state(status, usage, waiting_on)
     if not mode:

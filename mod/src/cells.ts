@@ -257,7 +257,7 @@ export function accountLabel(st: Settings, sess: number | null,
   // narrow terminal.
   const owed: Piece[] = credits.map((c) => ({ path: "credits." + c.kind,
     spans: [span("  "), ...c.spans], drop: 1 }));
-  // 📅 and 🕐 last, at the right end of the footer (asked 2026-10-20).
+  // 📅 and 🕐 last, at the right end of the footer.
   return [
     piece("name.label", E_ACCT + " "), ...windows, ...owed,
     piece("clock.date", "  " + E_DATE + " " + date, null, 2, true),

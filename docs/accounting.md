@@ -289,11 +289,11 @@ waited for approval did hold up the thread.
 thread's on a live status line. An offline `--transcript` read counts only
 calls that returned, as does an agent that has finished.
 
-**Why its own thread alone.** Until 2026-09-27 the status line unioned every
-agent's spans into its busy clock, and an agent row added its children's
-tool time to its 🔧. A coordinator parked on five background agents then read
-as fully busy the whole time it sat waiting on them. Waiting on an agent is
-now 🚦 on both readouts, and the agent's work shows on its own row.
+**Why its own thread alone.** Were the status line to union every agent's
+spans into its busy clock, or an agent row to add its children's tool time
+to its 🔧, a coordinator parked on five background agents would read as
+fully busy the whole time it sat waiting on them. Waiting on an agent is 🚦
+on both readouts, and the agent's work shows on its own row.
 
 On an agent row the split is drawn as three Braille gauges of ⌛ rather than
 as figures. They hold eight dots between them, shared by largest remainder,

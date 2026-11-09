@@ -457,9 +457,9 @@ export function renderAgentEta(st: Settings, eta: Eta, startMs: unknown,
     "F_ETA", magDim(left, MAG_DUR_S))];
 }
 
-/** 🛫 and the tokens a second, without a "/s" (dropped 2026-10-19), as
+/** 🛫 and the tokens a second, without a "/s", as
  * humanize writes a count: three columns of figure, its decimal among them,
- * then the unit, "1.2k" and "632 " (asked 2026-10-20). */
+ * then the unit, "1.2k" and "632 ". */
 export function renderAgentRate(st: Settings, rate: number | null,
   mark: string = E_RATE): Span[] {
   return rate === null ? [] : [span(mark + " "),

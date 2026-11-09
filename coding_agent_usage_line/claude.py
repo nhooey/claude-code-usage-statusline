@@ -308,11 +308,11 @@ def ctx_window_for(size: str, name: str) -> int:
 
     The payload carries context_window.context_window_size, which is the
     number the thing enforcing the window is actually using.  Prefer it
-    absolutely.  Reading the model's NAME for a "1m" was always inference
-    dressed as fact, and it is wrong in both directions: a model whose window
-    is not written into its id reads as 200k whatever it really is, which is
-    why switching to Fable dropped the ruler to 200k, and why coming back to
-    an Opus selected without the [1m] suffix left it there.
+    absolutely.  Reading the model's NAME for a "1m" is inference dressed as
+    fact, and it is wrong in both directions: a model whose window is not
+    written into its id reads as 200k whatever it really is, so switching to
+    Fable would drop the ruler to 200k, and coming back to an Opus selected
+    without the [1m] suffix would leave it there.
 
     The name remains the fallback, for a payload that predates the field or
     omits it.  Kept deliberately: a ruler that guesses is better than a row
@@ -345,10 +345,10 @@ def _pct_str(v: Optional[float]) -> str:
     """A percentage as the limit rows carry it, or "" for a missing figure.
 
     Nothing is rounded here, which is the point: the payload's used_percentage
-    is a float and this used to meet it with "%.0f", so a window at 0.38٪
-    reached the renderer as "0" and no later code could tell that from a window
-    at nothing.  Precision is now thrown away once, in limit_pct, where the
-    column budget is actually known.
+    is a float, and meeting it with "%.0f" here would hand a window at 0.38٪
+    to the renderer as "0", which no later code could tell from a window at
+    nothing.  Precision is thrown away once, in limit_pct, where the column
+    budget is actually known.
 
     "%g" rather than "%s" for two reasons.  It writes a whole percentage as
     "15", not "15.0" — the baseline file this string goes into was read by
@@ -420,8 +420,7 @@ class ClaudeUsageTrackerSource:
     Read through `defaults export` rather than by opening the .plist, because
     a running app's preferences live in cfprefsd and reach the file when
     cfprefsd feels like it.  The app writes a reading every 30 seconds and the
-    file lagged it by minutes in testing.  One subprocess, and it replaces the
-    three the shell wrapper spawned.
+    file lagged it by minutes in testing.  One subprocess.
 
     CODING_AGENT_USAGE_LINE_CLAUDE_TRACKER_PLIST overrides that with a path to
     an exported plist
@@ -626,11 +625,11 @@ def seed_limits_snapshot(lim: Limits, reading: Optional[dict] = None) -> dict:
     account = reading.get("account_id") or reading.get("account_name")
     period = reading.get("period_start")
     scope = "\0".join(str(value or "") for value in (source, account, period))
-    # The percentages go in as NUMBERS, the form the old plan cache carried
-    # and the one calibration compares against CALIB_MIN_PCT.  Limits carries
-    # them as strings for the renderer, and seeding those verbatim made
-    # `sp >= 2.0` a TypeError — caught by _with_shares' catch-all and drawn
-    # as `?` in every share cell, on every render, with nothing on stderr.
+    # The percentages go in as NUMBERS, the form calibration compares
+    # against CALIB_MIN_PCT.  Limits carries them as strings for the
+    # renderer, and seeding those verbatim would make `sp >= 2.0` a
+    # TypeError — caught by _with_shares' catch-all and drawn as `?` in every
+    # share cell, on every render, with nothing on stderr.
     _SNAPSHOT = {"session_pct": _pct_num(lim.session_pct),
                  "session_resets_at": lim.session_reset,
                  "weekly_pct": _pct_num(lim.weekly_pct),
@@ -650,14 +649,15 @@ def calibration_cache_path() -> str:
                             limits_snapshot().get("_scope", ""))
 
 
-# The calibration caches as they were named before spec/state.jsonc: the
-# Python's, one per pair of window starts, and the mod's, one per version.
+# The legacy calibration caches, under names spec/state.jsonc does not
+# list: the Python's, one per pair of window starts, and the mod's, one per
+# version.
 _OLD_CALIB = re.compile(
     r"claude-calibration-(?:[0-9a-f]{64}\.json|ts-[0-9a-f]{64}\.cache)\Z")
 # Written once none is left, so the directory is listed only until then.
 OLD_CALIB_DONE = "claude-calibration-old-removed"
-# How long one run spends removing them.  There were 65,000, and the panel's
-# command is killed at five seconds, so a run stops here and the next goes
+# How long one run spends removing them.  One machine held 65,000, and the
+# panel's command is killed at five seconds, so a run stops here and the next goes
 # on.
 OLD_CALIB_BUDGET_S = 1.0
 _old_calib_checked = False
@@ -676,7 +676,7 @@ def _remove_old_calibrations() -> int:
     return _remove_old_names(_OLD_CALIB, OLD_CALIB_DONE)
 
 
-# The window-cost caches as they were named before spec/state.jsonc's
+# The legacy window-cost caches, under names outside spec/state.jsonc's
 # window-costs kind: the Python's, keyed inside by a digest of its source,
 # the Node port's and the mod's, keyed by the mod's version; and the
 # temporary files of the Python's that a killed save left behind.
@@ -695,8 +695,8 @@ def _remove_old_window_costs() -> int:
     return _remove_old_names(_OLD_COSTS, OLD_COSTS_DONE)
 
 
-# The agent files' readings as each port kept them before spec/state.jsonc's
-# agent-fold kind: the Python's, keyed inside by a digest of its source,
+# The legacy agent files' readings, as each port kept them outside
+# spec/state.jsonc's agent-fold kind: the Python's, keyed inside by a digest of its source,
 # and the Node port's; and the temporary files of the Python's that a
 # killed save left behind.
 _OLD_AGENT_FILES = re.compile(
@@ -987,9 +987,8 @@ def _with_shares(lim: Limits, transcript: str,
     this picked and reading the transcript a second time to find it again
     would be both slower and free to disagree.
 
-    (The turn's wall-clock seconds came back here too until 2026-09-25, for
-    ⌛'s first field.  That field is 🔧 now and reads off the transcript
-    the status line has already summed, so nothing asks for it here.)
+    (Not the turn's wall-clock seconds: ⌛'s first field is 🔧, and reads
+    off the transcript the status line has already summed.)
     Those need no plan reading and no calibration, only the transcript, so
     they are derived before the limits are looked at and a session with no
     usable window still gets its column; the limits' early return is
@@ -997,41 +996,41 @@ def _with_shares(lim: Limits, transcript: str,
 
     The same derivation the cost line's totals row uses — session_shares over
     this transcript's turns, bounded by the window and divided by
-    calibration's dollars-per-point — so the two readouts now report one
+    calibration's dollars-per-point — so the two readouts report one
     quantity rather than two things with one name.
 
-    WHAT THIS REPLACES, because the old figure looked plausible for months.
-    There was no transcript here at all: the share was the plan-wide reading
-    now minus the plan-wide reading this session first saw, stored per session
-    id under TMPDIR.  A subtraction of two plan-wide readings contains every
-    other session's consumption over the interval as well as this one's, and
-    the baseline only ever moved DOWN — it was rewritten whenever the reading
-    fell, on the correct theory that a fall means the window rolled over.
+    WHY NOT A SUBTRACTION, because one looks plausible.  The share could be
+    taken with no transcript at all, as the plan-wide reading now minus the
+    plan-wide reading this session first saw, stored per session id.  A
+    subtraction of two plan-wide readings contains every other session's
+    consumption over the interval as well as this one's, and the baseline
+    only ever moves DOWN — it is rewritten whenever the reading falls, on
+    the correct theory that a fall means the window rolled over.
 
     Which makes it worthless the moment a session outlives a window, and the
     5-hour window rolls over every five hours.  At the rollover the reading
     goes to zero, the baseline follows it to zero, and nothing raises it
     again, so from then on `now - 0` IS the plan-wide total: both halves of
     the cell print the same number, and a session that has ever crossed a
-    reset never reports a share again.  Measured 2026-08-25 on a four-day-old
-    session: the status row said `62٪ / 62٪` and `6٪ / 6٪` while the cost row,
+    reset never reports a share again.  Measured on a four-day-old session:
+    the subtraction said `62٪ / 62٪` and `6٪ / 6٪` while the cost row,
     counting the same session's own turns, said 16.2٪ and 1.57٪.  The 4.4
     weekly points between them were other sessions, charged here.
 
     What the subtraction alone could see and this cannot is usage from another
     machine — a phone, the web app — because the scan reads transcripts. That
-    made it a true ceiling.  A ceiling that sits at 100٪ of the window for the
+    makes it a true ceiling.  A ceiling that sits at 100٪ of the window for the
     rest of the session is not worth the column.
 
     Left as "" when there is no transcript to sum or no calibration to divide
     by, which render_limit draws as "?" rather than as a zero.
 
-    BOUNDED BY THE WINDOW, both figures.  The 🎤 cell was `turn_cost(last)`
-    over the unit, with no boundary on it at all, while 🎮 beside it was
-    bounded — so a turn that straddled a reset was charged in full to a cell
-    whose two neighbours had already dropped it, and column 4 printed
-    `🎤 18٪  🎮 0٪  💳 1٪`: a part larger than the whole it belongs to, twice
-    over.  Both now go through the split; see turn_cost_since.  What the
+    BOUNDED BY THE WINDOW, both figures.  With `turn_cost(last)` over the
+    unit in the 🎤 cell, no boundary on it at all, while 🎮 beside it is
+    bounded, a turn that straddled a reset would be charged in full to a
+    cell whose two neighbours had already dropped it, and column 4 would
+    print `🎤 18٪  🎮 0٪  💳 1٪`: a part larger than the whole it belongs
+    to, twice over.  Both go through the split; see turn_cost_since.  What the
     reader gets is the one thing the column claims — turn ≤ session ≤ account
     — as an identity rather than as a coincidence that holds while no window
     happens to reset mid-answer.
@@ -1120,30 +1119,29 @@ def turn_cost(t: Turn) -> float:
 def turn_cost_since(t: Turn, start: Optional[datetime]) -> float:
     """The part of one turn's cost that was billed at or after `start`.
 
-    A turn is not an instant.  This one ran 56 calls over five minutes and a
-    plan window opened in the middle of it, and until 2026-09-03 every reader
-    here charged the whole turn to whichever window its PROMPT was typed in —
-    `Turn.ts`, which is when the user pressed return and not when any of the
-    money was spent.  Measured on the turn that exposed it: prompt at
-    14:57:32, window open at 15:00:00, $1.02 billed across 13 calls before the
-    reset and $3.85 across 43 calls after it.  All $4.87 went to the window
-    that had closed, and the status row reported this session's share of the
-    live one as 0٪ — under a 🎤 cell reporting the same turn at 18٪, because
-    that cell had no window bound on it at all.  A column whose three fields
-    are the same window read at three scopes printed turn > session > account,
-    which is not a rounding error but an ordering that cannot happen.
+    A turn is not an instant.  One ran 56 calls over five minutes and a plan
+    window opened in the middle of it.  Charging the whole turn to whichever
+    window its PROMPT was typed in — `Turn.ts`, which is when the user
+    pressed return and not when any of the money was spent — goes wrong
+    there.  Measured on that turn: prompt at 14:57:32, window open at
+    15:00:00, $1.02 billed across 13 calls before the reset and $3.85 across
+    43 calls after it.  All $4.87 would go to the window that had closed, and
+    the status row would report this session's share of the live one as 0٪ —
+    under a 🎤 cell with no window bound on it reporting the same turn at
+    18٪.  A column whose three fields are the same window read at three
+    scopes would print turn > session > account, which is not a rounding
+    error but an ordering that cannot happen.
 
-    The machine-wide scan had it right the whole time and is worth reading
-    beside this: _window_costs filters INDIVIDUAL assistant records by their
-    own stamps.  The per-session tally was the only place a turn was still
-    atomic, so calibration's denominator was split at the boundary and the
-    numerator divided into it was not.
+    The machine-wide scan is worth reading beside this: _window_costs
+    filters INDIVIDUAL assistant records by their own stamps.  Calibration's
+    denominator is split at the boundary, so the numerator divided into it
+    has to be too.
 
     A stamp that will not parse counts IN, which is _window_costs' rule and
     session_shares' before it: both windows end at now, so the likelier of the
     two errors is to drop a call that belongs.
 
-    Falls back to the old whole-turn test when there are no parts to split.
+    Falls back to the whole-turn test when there are no parts to split.
     That is a COMPACTION and only a compaction — it bills through no usage
     record, so its cost comes off the boundary metadata and there is nothing
     stamped to divide.  `t.compact` is tested rather than `not t.parts` alone
@@ -1249,11 +1247,10 @@ def window_for(turns: Sequence[Turn], session_id: str = "") -> int:
     200k is proof of the larger window, since the smaller could not have held
     it.
 
-    Its failure mode was called self-correcting, and the correction never came
-    in the session that exposed it: a 1M session that has not yet passed 200k
-    reads as 200k, so every 🧠 figure runs 5x high — and COMPACTING is what
-    keeps it under the line.  This session compacted twice, at 176k and 157k,
-    and read 51.3٪ where the truth was 10.3٪.  The habit that keeps a session
+    Its failure mode looks self-correcting, and is not: a 1M session that has
+    not yet passed 200k reads as 200k, so every 🧠 figure runs 5x high — and
+    COMPACTING is what keeps it under the line.  One session compacted twice,
+    at 176k and 157k, and read 51.3٪ where the truth was 10.3٪.  The habit that keeps a session
     healthy is the one that stops the window ever being proved.  Hence the
     published figure: the guess erring toward a SMALL window is the better of
     two wrong answers, not an acceptable one.
@@ -1314,8 +1311,7 @@ def _window_costs(sess_start: Optional[datetime],
                   week_start: Optional[datetime]) -> Tuple[float, float]:
     """Total spend on this machine since each window opened.
 
-    Bounded by FILE MTIME, which the bash and the old Python were not.  The
-    scan reads every assistant record in every project's every transcript, and
+    Bounded by FILE MTIME.  The scan reads every assistant record in every project's every transcript, and
     json.loads dominates: at roughly ten times the current corpus it crosses
     the Stop hook's timeout and the row simply vanishes with no diagnosis.
     Nothing older than the weekly window can contribute to either figure, so
@@ -1330,26 +1326,26 @@ def _window_costs(sess_start: Optional[datetime],
     beside each transcript, see agent_records — and the reason is the
     division this feeds.  The unit is machine spend over the plan reading,
     and the reading is Anthropic's count, which includes every agent.  A
-    numerator without them was short by the agent share of the window, so
-    the unit was small and every share divided by it was high, by a factor
-    that changed with which sessions had been running forks.  Measured
-    2026-09-11 with the eight-day cutoff: 42 agent files admitted of 2,134,
+    numerator without them would be short by the agent share of the window,
+    so the unit would be small and every share divided by it high, by a
+    factor that changes with which sessions have been running forks.
+    Measured with the eight-day cutoff: 42 agent files admitted of 2,134,
     0.49 s on top of the main files' 2.34 s.
 
     Each window is bounded by its OWN start, and the scan by the earlier of
-    the two.  The week usually opened days before the 5-hour window, and
-    this used to skip everything before the week's start for both figures.
-    In the hours after a weekly reset the order flips, and the 5-hour cost
-    lost everything spent between its own start and the reset.  The unit came
-    out small, and a session's 🔋 share came out above the account's own
+    the two.  The week usually opens days before the 5-hour window, but in
+    the hours after a weekly reset the order flips, and skipping everything
+    before the week's start for both figures would lose the 5-hour cost
+    everything spent between its own start and the reset.  The unit would
+    come out small, and a session's 🔋 share above the account's own
     reading: 💯 seconds after a reset, and 14٪ of a window reading 10٪ six
     minutes later.
 
     Each file's priced records are kept between scans by _file_costs, and a
     scan reads only the bytes appended since the last one.  Reading them all
-    took 6.2 s on 2026-10-01, 836 MB in 372 files, which is past the agent
-    panel's five-second timeout: Claude Code killed the panel's command, put
-    its stock rows back, and the next tick started the same scan again.
+    took 6.2 s, 836 MB in 372 files, which is past the agent panel's
+    five-second timeout: Claude Code kills the panel's command, puts its
+    stock rows back, and the next tick starts the same scan again.
 
     A cold scan, after a change to the cache's format, still reads
     everything, and the status line is killed too when the next refresh
@@ -1439,7 +1435,7 @@ class _CostCache:
     scan is still at its head, and only the lines after it need reading.
     The cache keeps, per file, the offset of the last complete line it read,
     a digest of the bytes just before it, and the records up to it.  A file
-    that has shrunk, or whose bytes before the offset no longer match, was
+    that has shrunk, or whose bytes before the offset do not match, was
     rewritten, and is read again from the start.
 
     Within one file a request id after its first record is dropped when the
@@ -1565,13 +1561,12 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     plan_totals prints after the "/" and _window_starts bounds the sum with,
     so all three describe one moment.  Letting them differ would put the two
     🔋 cells of one readout on different scales, which is the same
-    disagreement as plan_totals', one row apart — and it happened, by way of
-    the DISK cache below: the ratio was stored, so a unit another session had
-    derived from a live reading was divided into a share bounded by a stale
-    one.
+    disagreement as plan_totals', one row apart — and the DISK cache below
+    could cause it: a stored ratio means a unit another session derived from
+    a live reading is divided into a share bounded by a stale one.
 
-    WHAT IS CACHED IS THE SCAN, NOT THE RATIO, and since 2026-09-03 the
-    READING THE SCAN WAS TAKEN WITH goes to disk beside it.  The expensive
+    WHAT IS CACHED IS THE SCAN, NOT THE RATIO, and the READING THE SCAN WAS
+    TAKEN WITH goes to disk beside it.  The expensive
     half is _window_costs, which walks transcripts — 1.3 s here, far too slow
     for a status line that redraws as you type; the percentages are free.  So
     the costs go to disk keyed by the WINDOWS they were measured over, the
@@ -1595,7 +1590,7 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     carrying a constant that silently goes stale.  Two honest caveats: it
     assumes limit consumption is proportional to list-price cost (unverified —
     the real weighting is unpublished), and it can only see transcripts on this
-    machine.  The second one used to be written down backwards.  Usage from
+    machine.  The second one is easy to get backwards.  Usage from
     elsewhere raises the PERCENTAGE without raising the cost this scan can
     see, so it DEFLATES $/1% and therefore OVERSTATES every share divided by
     it: $14 spent here against a 1٪ reading gives $14 a point, but if a phone
@@ -1614,15 +1609,15 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     files of scopes gone by.
 
     Written via a temp file and os.replace: the path is shared by every
-    session of the account, and two hooks finishing together were previously
-    able to interleave a write.
+    session of the account, and two hooks finishing together could otherwise
+    interleave a write.
 
     `scan=False` never runs the scan.  It takes the cached one for these
     windows however old, and with none returns no units, which draws "?".
     The agent panel passes it: Claude Code kills the panel's command at five
     seconds and puts its stock rows back, a cold scan can take longer than
-    that, and a killed scan never reaches the cache, so the next tick paid
-    for it again.  The status line and the Stop hook keep the cache filled.
+    that, and a killed scan never reaches the cache, so the next tick would
+    pay for it again.  The status line and the Stop hook keep the cache filled.
     """
     _remove_old_calibrations()
     _remove_old_window_costs()
@@ -1649,17 +1644,16 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
         # scan this machine's transcripts.  See tests/fixtures/env/.
         return {"sess": cached.get("sess"), "week": cached.get("week")}
     if cached is not None:
-        # BOTH HALVES OFF THE CACHE, which is the 2026-09-03 change and the
-        # whole of it.  The scan was cached and the reading was taken live, so
-        # a numerator measured five minutes ago was divided by a denominator
-        # measured now — and a rate estimated across two moments is only as
-        # good as the assumption that nothing moved between them.  At a
-        # RESET everything moves: the scan is written seconds into the new
-        # window holding seconds of spending, the reading climbs while it
-        # sits there, and the unit comes out far too small.  Every share
-        # divided by it is then far too large, which is how 🎤 came to print
-        # 18٪ of a window whose own account total read 1٪ — a part three
-        # times the whole it belongs to.  Same instant on both sides and that
+        # BOTH HALVES OFF THE CACHE.  With the scan cached and the reading
+        # taken live, a numerator measured five minutes ago would be divided
+        # by a denominator measured now — and a rate estimated across two
+        # moments is only as good as the assumption that nothing moved
+        # between them.  At a RESET everything moves: the scan is written
+        # seconds into the new window holding seconds of spending, the
+        # reading climbs while it sits there, and the unit comes out far too
+        # small.  Every share divided by it is then far too large, so 🎤
+        # could print 18٪ of a window whose own account total read 1٪ — a
+        # part three times the whole it belongs to.  Same instant on both sides and that
         # cannot happen: this session's transcripts are IN the scan, so its
         # cost is at most sc, so its share is at most sp.
         #
@@ -1739,10 +1733,10 @@ def _read_calib_cache(windows: str, ttl: Optional[float] = CALIB_TTL
         return d
     if d.get("windows") != windows:
         return None
-    # An entry written before 2026-09-03 carries no reading to pair the scan
-    # with, and pairing it with a live one is the bug this key was added to
-    # fix.  Treated as a miss, which costs one rescan on the first render
-    # after an upgrade and nothing after that.
+    # An entry with no `sess_pct` carries no reading to pair the scan with,
+    # and pairing it with a live one is what this key prevents.  Treated as
+    # a miss, which costs one rescan on the first render that meets one and
+    # nothing after that.
     return d if "sess_pct" in d else None
 
 
@@ -1805,9 +1799,9 @@ def share_half(emoji: str, share: Optional[int], colour: bool) -> SpanLike:
 
     Same shape as the half it stacks on -- a leading blank, the mark, fmt.MARK_SP,
     and one whole-percent reading in three columns -- so the two figures land
-    in one column and the row can be read downward.  It is the blank the
-    per-prompt row used to pad with, now spent on a reading; the width is
-    unchanged, which is the point.  fmt.MARK_SP is read HERE and not captured,
+    in one column and the row can be read downward.  It spends on a reading
+    the width the per-prompt row would otherwise pad with, which is the
+    point.  fmt.MARK_SP is read HERE and not captured,
     because --no-mark-spacing rebinds it after import and this cell has to
     close with the rest of them.
 
@@ -1837,8 +1831,8 @@ def cost_group(t: Turn, shares: Dict[str, Optional[float]], win: int,
     — which reads as a font problem rather than a layout one, and sends you
     looking in the wrong place.
     """
-    # NOT floored.  See cost_totals_group for why the truncation that used to
-    # live here is gone from both paths rather than from one of them.
+    # NOT floored.  See cost_totals_group for why neither path truncates
+    # rather than one of them.
     up = t.fresh + W_CACHE_WRITE * t.cache_write + W_CACHE_READ * t.cache_read
     in_all = t.fresh + t.cache_write + t.cache_read
     cpct = int(100 * t.cache_read / in_all) if in_all else -1
@@ -1881,9 +1875,8 @@ def cost_group(t: Turn, shares: Dict[str, Optional[float]], win: int,
         seg(C_COST, [E_COST, Span("+" + money_cell(c), _c(colour, "F_YEL"))],
             left=False),
         # The second half of each cell is the fmt.C_LIM_TOT the row below spends
-        # on 💳 and the window's own reading.  It was seven blanks until
-        # 2026-09-03 — reserved so the emoji above lands over the emoji below,
-        # and otherwise wasted.  It now carries where THIS prompt's money
+        # on 💳 and the window's own reading, reserved so the emoji above
+        # lands over the emoji below.  It carries where THIS prompt's money
         # went: 📖 the part spent re-reading the conversation, 📝 the part
         # spent caching what this turn added.  See turn_shares for why those
         # two and not a third, and E_READ for why they are shares of the turn
@@ -1969,18 +1962,16 @@ def session_shares(turns: Sequence[Turn],
                    ) -> Dict[str, Optional[float]]:
     """What THIS session put into each plan window, as a percentage of it.
 
-    Both readouts, since 2026-08-25.  The status line derived its own version
-    by subtracting plan-wide readings, which counted every other session's
-    consumption as this one's and collapsed onto the plan-wide total the
-    moment a window reset under a live session — see _with_shares for what
-    that looked like on screen.  One derivation, two rows.
+    Both readouts.  Subtracting plan-wide readings instead would count every
+    other session's consumption as this one's and collapse onto the
+    plan-wide total the moment a window reset under a live session — see
+    _with_shares for what that looks like on screen.  One derivation, two
+    rows.
 
-    The totals row's 🔋 and 🪫 were the plan-wide readings — every session on
-    this machine, plus anything run off it — printed under a label that says
-    "Session".  They were the only two cells on the row that did not total
-    the column above them, and nothing in the row said so.  Now they do total
-    it, and the plan-wide figure moves to the far side of a "/", which is the
-    arrangement the status line already uses for this same pair.
+    The totals row's 🔋 and 🪫 total the column above them, under a label
+    that says "Session"; the plan-wide reading — every session on this
+    machine, plus anything run off it — goes on the far side of a "/", which
+    is the arrangement the status line uses for this same pair.
 
     Bounded by the WINDOW, not by the session.  A session outliving its
     5-hour window still holds turns that reset with it, and charging those to
@@ -1989,17 +1980,16 @@ def session_shares(turns: Sequence[Turn],
     was nine hours old against a five-hour window.
 
     Same derivation as the per-prompt cell directly above — cost over dollars
-    per one percent — so the deltas on that row now sum to the figure beneath
-    them, which is what the column claims and could not previously deliver.
+    per one percent — so the deltas on that row sum to the figure beneath
+    them, which is what the column claims.
 
-    Each turn is SPLIT at the boundary rather than tested against it.  It used
-    to be tested — `_local_naive(t.ts) >= start`, on the stamp of the prompt —
-    and a turn that straddles a reset then went wholly to the window it was
-    typed in, which by then was the window that had closed.  See
-    turn_cost_since for the measurement; the short version is that a five
-    minute turn put $3.85 into the live 5-hour window and this function
-    reported 0.  A turn whose stamp will not parse is still counted IN, for
-    the reason it always was: both windows end at now, so the likelier of the
+    Each turn is SPLIT at the boundary rather than tested against it.
+    Tested — `_local_naive(t.ts) >= start`, on the stamp of the prompt — a
+    turn that straddles a reset would go wholly to the window it was typed
+    in, which by then is the window that has closed.  See turn_cost_since
+    for the measurement; the short version is that a five minute turn put
+    $3.85 into the live 5-hour window and the test reported 0.  A turn whose
+    stamp will not parse is counted IN: both windows end at now, so the likelier of the
     two errors is to drop spending that belongs.
     """
     out = {"sess": None, "week": None}
@@ -2025,18 +2015,17 @@ def limit_cell(emoji: str, share: Optional[float], total: Optional[float],
     line's.  💳 sits beside that same reading in column 4, so a reader moving
     between the readouts meets one glyph for one quantity.
 
-    It was a spaced slash until 2026-08-27, and the note here claimed the
-    slash as "the status line's idiom for exactly this pair".  That was never
-    true: column 4 divides its four fields with marks and has no slash on it
-    anywhere.  What the two readouts genuinely shared was the PAIR, and a
-    slash is the one divider that says nothing about which half is which — it
-    reads as "out of", which is wrong twice over here, since the share is a
-    percentage of the same window and not a part of the total beside it.
-    💳 names the second figure instead of merely separating it.
+    Not a spaced slash: column 4 divides its four fields with marks and has
+    no slash on it anywhere.  What the two readouts genuinely share is the
+    PAIR, and a slash is the one divider that says nothing about which half
+    is which — it reads as "out of", which is wrong twice over here, since
+    the share is a percentage of the same window and not a part of the
+    total beside it.  💳 names the second figure instead of merely
+    separating it.
 
-    render_diff dropped its own slash on the same argument and is worth
-    reading beside this: "the signs already say which half is which, so the
-    slash was a column spent repeating them".  Here the mark does not merely
+    render_diff has no slash on the same argument and is worth reading
+    beside this: "the signs already say which half is which, so a slash
+    would be a column spent repeating them".  Here the mark does not merely
     avoid repeating something — it says the one thing the cell could not
     otherwise say, which of the two windows-worth of spending is the account's.
 
@@ -2057,16 +2046,16 @@ def limit_cell(emoji: str, share: Optional[float], total: Optional[float],
 
     💯 stands in for a full window here exactly as it does on the status
     line's 💳 field, and that is not decoration.  This total and that field
-    are THE SAME READING from the same source, so before it the two readouts
-    disagreed at the one moment either of them matters: the status line drew
-    💯 and this row printed "99٪" — not a rounding but pct's clamp, which is
-    to say a figure that was never true.  A three-column field cannot hold
+    are THE SAME READING from the same source, so without it the two
+    readouts would disagree at the one moment either of them matters: the
+    status line would draw 💯 and this row print "99٪" — not a rounding but
+    pct's clamp, which is to say a figure that was never true.  A three-column field cannot hold
     "100٪", so the glyph is what makes the honest reading fit, in both places,
-    in the same three columns.  With 💳 ahead of it the pair now renders as
+    in the same three columns.  With 💳 ahead of it the pair renders as
     the status line's own 💳 💯٪ -- the unit included, because the glyph
     replaces the FIGURE and not the unit after it, and a column read downward
     should not lose its unit at the one reading that matters.  "💯٪" is three
-    columns, which is what " 💯" was.
+    columns, as " 💯" is.
     """
     if share is None and (total is None or not acct):
         return ""
@@ -2104,12 +2093,11 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
       🕐  blank.  A clock has no total, and an elapsed figure would be a
           different metric wearing the same icon.
 
-    🔋📆 carry two figures each and are the reason this note changed.  They
-    used to carry only the windows' plan-wide consumption, which is a total
-    of every session on the machine rather than of the column above it — the
-    one place this row printed something other than what its label promised.
-    The session's own share now leads the cell and the plan-wide reading
-    follows a "/", so the column sums and the wider context survives.  See
+    🔋📆 carry two figures each.  The windows' plan-wide consumption alone
+    would be a total of every session on the machine rather than of the
+    column above it — something other than what the row's label promises.
+    The session's own share leads the cell and the plan-wide reading follows
+    a "/", so the column sums and the wider context survives.  See
     session_shares and limit_cell.
 
     The cache rate is recomputed over every request rather than averaged over
@@ -2117,16 +2105,15 @@ def cost_totals_group(turns: Sequence[Turn], totals: Dict[str, Optional[float]],
     hundred-thousand-token one.
 
     The weighted ▴ figure is never truncated, here or in the per-prompt row.
-    The implementation this replaces floored it once per turn and then summed,
-    so the total drifted below a true tally by up to a token per turn without
-    bound — 7 tokens over a 14-turn transcript, measured.  That is invisible at
-    humanize()'s three significant digits, which is how it survived.
+    Flooring it once per turn and then summing drifts the total below a true
+    tally by up to a token per turn without bound — 7 tokens over a 14-turn
+    transcript, measured.  That is invisible at humanize()'s three
+    significant digits, which is how it would go unnoticed.
 
     Flooring only the total would have been worse than leaving it: the
     per-prompt rows would then no longer sum to the row beneath them, which is
-    a more confusing kind of wrong than being seven tokens light.  So the
-    truncation is gone from BOTH paths rather than fixed in one.  It bought
-    nothing in the first place — the value is weighted by 2.0 and 0.1, so it is
+    a more confusing kind of wrong than being seven tokens light.  So
+    NEITHER path truncates.  It would buy nothing — the value is weighted by 2.0 and 0.1, so it is
     fractional by construction, and humanize() formats it to three significant
     digits whether or not it arrives whole.
     """
@@ -2305,7 +2292,8 @@ def selftest() -> int:
         ("elapsed-clock", pair(S_IDLE + pad_val(RST_W, "45s", True),
                                render_time(), fmt.RIGHT_GRID[-1])),
         # The same cell with nothing elapsed to report, which is how every
-        # session starts and the state in which the clock used to wander.
+        # session starts and the state in which the clock is likeliest to
+        # wander.
         ("clock-alone", pair("", render_time(), fmt.RIGHT_GRID[-1])),
         ("model-effort", render_model("Opus 5 (1M context)", "high")),
         # The two side by side, as column 2's first row draws them: the
@@ -2329,12 +2317,11 @@ def selftest() -> int:
                  prompt_id="8f37748e-47ff-492b-888b-0163beb40189",
                  turn_index=12), True)),
         # The TOTALS row, which the per-prompt specimen above cannot stand in
-        # for.  It used to be the WIDER of the two — 🔋 and 🪫 carried a
-        # second figure each where the row above them carried blanks — and
-        # since 2026-09-03 it is not: 📖 and 📝 fill that half on the
-        # per-prompt row, so both rows now spend fmt.C_SESS on content.  Which is
-        # why this specimen still has to be measured separately rather than
-        # dropped as the narrower case: what differs now is the CONTENT of
+        # for.  It is not the wider of the two — 🔋 and 🪫 carry a second
+        # figure each, and 📖 and 📝 fill that half on the per-prompt row, so
+        # both rows spend fmt.C_SESS on content.  This specimen still has to
+        # be measured separately rather than dropped as the narrower case:
+        # what differs is the CONTENT of
         # those seven columns, not their width, and it is content with its own
         # ways to miscount — dec_align's fixed point, the "?" fallback, and 💯
         # standing in for a full window.  fmt.C_SESS is still the width whose
@@ -2418,7 +2405,7 @@ def selftest() -> int:
 #     stdout  {"id": "<task id>", "content": "<row text>"}   per task
 #
 # A task left out keeps the panel's own row; `content: ""` hides it.  Read
-# out of Claude Code 2.1.268 on 2026-09-13; regression fixtures keep that
+# out of Claude Code 2.1.268; regression fixtures keep that
 # observed shape explicit as the panel protocol evolves.
 #
 # WHAT THE PAYLOAD DOES NOT SAY is most of what is worth reading.  It carries
@@ -2623,8 +2610,7 @@ def agent_clock(usage: AgentUsage, running: bool,
     on to now, and so does every tool call still waiting on its result —
     see open_tool_spans; a finished one's stop where its file does.
 
-    Only its OWN tool calls, where 🔧 counted its descendants' too until
-    2026-09-27.  A child's tools are on the child's row; this agent waiting
+    Only its OWN tool calls.  A child's tools are on the child's row; this agent waiting
     on one, in the foreground or the background, is its 🚦.
     """
     t = time.time() if now is None else now
@@ -2810,7 +2796,7 @@ def emit_source_diagnose(spec: str, prepared, check: str = "",
 def _cost_check(pay: Payload, session: Optional[dict]) -> str:
     """The session's 💰 and 💾 two ways, for --diagnose: ours, the
     accounting's over the transcript and the agent files, which the band
-    and the receipt draw (decided 2026-10-19), and Claude Code's own off the
+    and the receipt draw, and Claude Code's own off the
     payload, as a check on them.  Numbers only, each blank where its side
     has none; a payload string that is no number is blank too, so nothing
     but figures reaches the line."""
@@ -2888,13 +2874,12 @@ def main_subagent(options: Options, raw: str) -> int:
 # than only the ones that render from a file.
 # ════════════════════════════════════════════════════════════════════════════
 
-# 2 since 2026-10-19: the status document's `turn` and `accounting`, the
-# accounting's time and 💾 figures, the Turn's lines and the Transcript's
-# main-thread figures, for the redesigned grid's rows.  3 the same day, for
-# the decisions in the plan's "Where each row's figures come from": the
-# status document's `open_turn` and its accounting, `accounting.own`, the
-# session's `start_s`, the Transcript's `own_parts` and `own_est` with
-# compactions in its own cost, and the Turn's last reported `eta`.
+# 3: the status document's `turn`, `open_turn` and their `accounting`,
+# `accounting.own` and the session's `start_s`; the accounting's time and
+# 💾 figures; the Turn's lines and last reported `eta`; and the
+# Transcript's main-thread figures, `own_parts` and `own_est` with
+# compactions in its own cost.  The grid's rows draw them, as the plan's
+# "Where each row's figures come from" lays out.
 FIGURES_SCHEMA = 3
 
 # Where a run writes its figures as well as drawing them.  For the shared
@@ -3230,7 +3215,7 @@ def turn_accounting(t: Turn, calib: Dict[str, Optional[float]]) -> dict:
     The window shares read the plan reading through limits_snapshot, so
     this belongs to the first stage, never to a render.
 
-    And how its time went and what it wrote, for the redesigned grid's ⌛
+    And how its time went and what it wrote, for the grid's ⌛
     split and 💾: `model_s` and `tool_s` are turn_times', the main thread's
     and its agents' agent-seconds; `blocked_s` is the main thread's waiting,
     which no agent adds to; the lines are the Turn's own.  Today's cells
@@ -3296,7 +3281,7 @@ def parts_shares(parts: Sequence[Tuple[Optional[float], float]],
 def own_accounting(tr: Transcript, calib: Dict[str, Optional[float]]
                    ) -> dict:
     """The main thread's own cost and its share of each live window, apart
-    from its agents: the redesign's 🤖💬 row.  Its compactions are in both
+    from its agents: the 🤖💬 row.  Its compactions are in both
     (see Transcript.own_parts), and `own_est` on the Transcript says so."""
     sh = parts_shares(tr.own_parts, calib)
     return {"cost_usd": tr.own_usd, "sess_share": sh["sess"],
@@ -3414,9 +3399,8 @@ def main_status(options: Options, raw: str) -> int:
 def main_cost(options: Options, raw: str) -> int:
     """The Stop hook.  Everything here is inside one catch-all.
 
-    It replaces both cost-line.py and hooks/cost-line.sh: the hook used to
-    parse the payload in bash, walk the ancestry for the width, then spawn a
-    second Python to do the work.  One process now does all three.
+    One process parses the payload, walks the ancestry for the width and
+    does the work.
     """
     try:
         explicit = bool(options["transcript"])
@@ -3516,7 +3500,7 @@ modes:
   --mode cost        read the Stop-hook JSON on stdin, print a systemMessage
   --mode subagent    read the agent panel's task list on stdin, print one
                      {"id", "content"} line per task -- the subagentStatusLine
-                     setting.  Each row is laid out on the redesigned grid
+                     setting.  Each row is laid out on the grid
                      (agents/plans/_implemented/redesign.md) for the
                      terminal's width, the payload's columns plus 6: the
                      kind and its phase, the name (or the description,
