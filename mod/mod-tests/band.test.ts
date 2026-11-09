@@ -20,7 +20,7 @@ import { BUDGET_MS, test } from './budget.ts'
 import type { On, RenderPropsOf } from 'claude-code'
 
 import { CALIB, NOW, TRACKER } from './fixtures.gen.ts'
-import { partOf, partOfRun } from '../hooks/edges.ts'
+import { partOf, partOfRun } from '../hooks/engine.ts'
 import { merge as mergeConfig, optionsOf } from '../src/config.ts'
 import { DEFAULTS } from './defaults.ts'
 import {

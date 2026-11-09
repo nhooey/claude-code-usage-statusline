@@ -9,7 +9,7 @@ import type { On, RenderElement } from 'claude-code'
 
 import { CALIB, FILES, NOW, TRACKER } from './fixtures.gen.ts'
 import { DEFAULTS_TEXT, isDefaults } from './defaults.ts'
-import { fromBase64 } from '../hooks/edges.ts'
+import { fromBase64 } from '../hooks/engine.ts'
 import type { Dict } from '../src/py.ts'
 
 export const HOME = '/home/fixture'

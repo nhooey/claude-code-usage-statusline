@@ -212,7 +212,7 @@ and its plan windows:
 
 ## Files
 
-`mod/hooks/edges.ts` and
+`mod/hooks/usage.ts` and
 `mod/src/sources.ts` (the fetch and the reading),
 `coding_agent_usage_line/sources.py`, `mod/src/band.ts`,
 `spec/options.jsonc` and its generated files, `mod/defaults/config.jsonc`,

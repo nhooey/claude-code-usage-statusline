@@ -17,7 +17,7 @@
 // is a log with a line missing.
 import type { EngineInterface } from 'claude-code'
 
-import { placesOf } from './edges.ts'
+import { placesOf } from './engine.ts'
 import { LOG_KEPT, LOG_NAME, describe, logAppended, logLine }
   from '../src/modlog.ts'
 

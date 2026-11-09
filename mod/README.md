@@ -59,7 +59,9 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 The hooks import the ports from `src/`. The mod's runtime has no Node and
 loads nothing from outside the plugin's folder, so the ports that read
 files keep their reads in `src/*_node.ts`, which only Node imports, and
-`hooks/edges.ts` makes the same reads through the engine's `$`.
+`hooks/` makes the same reads through the engine's `$`, in
+`engine.ts`, `transcripts.ts`, `usage.ts`, `calibration.ts` and
+`configuration.ts`, and `edges.ts` builds the documents from them.
 
 ### Configuration
 
@@ -81,7 +83,7 @@ and `subscript-decimals`, the `rows` table (for each of 🎤, 🤖, 🎮, the
 🔖 tag lines and 💳, where it is drawn, above the prompt or under the
 footer line, when, and whether a turn's end stamps it into the
 transcript), `account-place`, `right-edge` (following the rows' places),
-and the footer's layout (`hint-inset`, `hint-tuck`, `footer-ruler`). `hooks/edges.ts` reads the
+and the footer's layout (`hint-inset`, `hint-tuck`, `footer-ruler`). `hooks/configuration.ts` reads the
 files at each load, on `session.start`, and every 30 seconds on the tick,
 a stat of each file, reading again only one that has changed, or the
 files of a new root after a `/cd`; a change draws everything again, with

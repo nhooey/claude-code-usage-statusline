@@ -16,7 +16,7 @@
 // made up in its place (config-merge.md, Decided 18).
 //
 // Pure: the files are reached through a ConfigFs the caller hands in, `$.fs`
-// in the mod (hooks/edges.ts, configVia), a fake built from a case's files
+// in the mod (hooks/configuration.ts, configVia), a fake built from a case's files
 // in the tests; the environment is a plain object.  Paths are POSIX, and the
 // path functions are posixpath's.
 //

@@ -11,7 +11,7 @@ skips the line itself.
 
     python3 agent_lines.py fold PATH END DIR
 
-The session's own transcript, for foldOf (hooks/edges.ts), with nothing
+The session's own transcript, for foldOf (hooks/transcripts.ts), with nothing
 printed but an offset: the fold saved in DIR, the main-fold state
 directory, read on over PATH's whole lines up to END and saved back into
 DIR, as coding_agent_usage_line/main_fold.py's fold_on does it.  The

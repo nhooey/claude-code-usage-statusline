@@ -708,7 +708,7 @@ _old_agent_files_checked = False
 def _remove_old_agent_files() -> int:
     """Remove the old agent-file caches, once; how many this run removed.
     The mod never wrote these; it removes its own old folds itself
-    (dropOldDir in hooks/edges.ts)."""
+    (dropOldDir in hooks/transcripts.ts)."""
     global _old_agent_files_checked
     if _old_agent_files_checked:
         return 0
@@ -779,7 +779,7 @@ def _sweep_calibrations(now: Optional[float] = None) -> int:
     folds' directories none of whose files was written for as long, at
     most once a day across processes; how many files this run removed.
 
-    The mod sweeps the same files (sweepCalibrationsVia in hooks/edges.ts),
+    The mod sweeps the same files (sweepCalibrationsVia in hooks/calibration.ts),
     through `rm`, since its `$.fs` cannot remove a file."""
     global _calib_swept
     # An override names the one file in use, outside the directory.
