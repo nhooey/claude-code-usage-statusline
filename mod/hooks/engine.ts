@@ -37,7 +37,7 @@ const noCounts = (): IoCounts => ({ reads: 0, readBytes: 0, lists: 0,
 /** Every file read, the bytes it gave, directory listing and process the
  * mod has asked the engine for since it loaded, counted where each is
  * asked, in all and by the part of the mod's work it served (partOf):
- * what a refresh's log line says it cost (register.tsx, ioSinceLast). */
+ * what a refresh's log line says it cost (profile.ts, ioSinceLast). */
 export const io: IoCounts & { parts: Record<string, IoCounts> } =
   { ...noCounts(), parts: {} }
 
@@ -309,4 +309,17 @@ export async function placesOf($: $): Promise<Places> {
       '/coding-agent-usage-line'
   const config = (await $.env.get('CLAUDE_CONFIG_DIR')) || home + '/.claude'
   return { home, stateDir: state, projectsDir: config + '/projects' }
+}
+
+let places: Places | null = null
+
+/** placesOf, read once for the session the mod draws: forgetPlaces lets
+ * it go when the session changes. */
+export async function placesFor($: $): Promise<Places> {
+  places ??= await placesOf($)
+  return places
+}
+
+export function forgetPlaces(): void {
+  places = null
 }
