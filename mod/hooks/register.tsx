@@ -174,141 +174,6 @@ async function trial($: $, what: string, shape: Dict): Promise<void> {
   await log($, 'trial: ' + line)
 }
 
-// The credits trial (agents/plans/credit-balances.md, CB1): what the
-// session's own credential reaches of the account's dollar credits.
-const CREDITS_OAUTH_URL = 'https://api.anthropic.com/api/oauth/usage'
-const CONSOLE_ORGS_URL = 'https://platform.claude.com/api/organizations'
-let creditsTried = false
-// The second credits trial (CB1b): at a main turn's end, at most once per
-// creditsTurnMs, extra usage's figures and the cloud credit's use, logged
-// when they change, so its lines say whether a turn here moved either.
-let creditsTurnOn = true
-let creditsTurnAt = -Infinity
-const creditsTurnMs = 60_000
-
-/** For the harness tests, which count the network's asks: whether the
- * next start runs the credits trial, and turns' ends the second. */
-export function creditsTrialNext(run: boolean): void {
-  creditsTried = !run
-  creditsTurnOn = run
-  creditsTurnAt = -Infinity
-}
-
-const isDict = (x: unknown): x is Dict =>
-  typeof x === 'object' && x !== null && !Array.isArray(x)
-
-/** The figures of `text`'s JSON that the trial logs, never the body: of
- * the OAuth usage answer, its keys with a value and each window with a
- * dollar limit; of the Console's, its organizations' count. */
-function creditsShape(what: 'oauth' | 'orgs' | 'prepaid', text: string):
-  Dict {
-  let raw: unknown
-  try {
-    raw = JSON.parse(text)
-  } catch {
-    return { json: false }
-  }
-  const dict = isDict
-  if (what === 'orgs') return { orgs: Array.isArray(raw) ? raw.length : -1 }
-  if (!dict(raw)) return { json: 'not an object' }
-  if (what === 'prepaid') {
-    const tranche = (t: unknown) => dict(t) ? { name: t.name,
-      program: t.program_id, granted: t.granted_amount_minor_units,
-      remaining: t.remaining_amount_minor_units, currency: t.currency,
-      granted_at: t.granted_at, expires_at: t.expires_at } : null
-    const list = (k: string) => Array.isArray(raw[k])
-      ? (raw[k] as unknown[]).map(tranche) : null
-    return { tranches: list('tranches'), promo: list('promo_tranches'),
-      balance_credits: raw.balance_credits ?? null }
-  }
-  const dollars = Object.entries(raw).filter(([, v]) => dict(v) &&
-    typeof v.limit_dollars === 'number').map(([k, v]) => ({ key: k,
-    limit: (v as Dict).limit_dollars, used: (v as Dict).used_dollars,
-    remaining: (v as Dict).remaining_dollars,
-    resets_at: (v as Dict).resets_at }))
-  return { keys: Object.keys(raw).filter((k) => raw[k] !== null), dollars }
-}
-
-/** One GET with the session's credential: its status, and its shape. */
-async function creditsAsk($: $, handle: string, url: string,
-  what: 'oauth' | 'orgs' | 'prepaid'): Promise<{ ok: boolean; raw: unknown;
-  shape: Dict }> {
-  try {
-    const r = await $.http.fetch(url, { auth: handle,
-      headers: { 'anthropic-beta': 'oauth-2025-04-20' } })
-    const shape = r.ok ? creditsShape(what, r.text) : {}
-    let raw: unknown = null
-    if (r.ok) try { raw = JSON.parse(r.text) } catch { raw = null }
-    return { ok: r.ok, raw, shape: { status: r.status, ...shape } }
-  } catch (err) {
-    return { ok: false, raw: null,
-      shape: { refused: err instanceof Error ? err.message : String(err) } }
-  }
-}
-
-/** Of the OAuth usage answer, what CB1b logs: `extra_usage`'s plain
- * fields (numbers, booleans, nulls, timestamps and short lower-case
- * words, never other text), and the dollar window's use. */
-function creditsTurnShape(raw: unknown): Dict {
-  if (!isDict(raw)) return { json: 'not an object' }
-  const plain = (v: unknown) => v === null || typeof v === 'number' ||
-    typeof v === 'boolean' || (typeof v === 'string' &&
-      /^(?:[0-9][0-9TZ:.+-]{9,34}|[a-z_]{1,24})$/.test(v))
-  const extra = raw.extra_usage
-  const extraShape = isDict(extra)
-    ? Object.fromEntries(Object.entries(extra).map(([k, v]) =>
-        [k, plain(v) ? v : typeof v]))
-    : plain(extra) ? extra : typeof extra
-  const cloud = Object.entries(raw).find(([, v]) => isDict(v) &&
-    typeof v.limit_dollars === 'number')
-  return { extra_usage: extraShape, dollars: cloud ? { key: cloud[0],
-    used: (cloud[1] as Dict).used_dollars,
-    remaining: (cloud[1] as Dict).remaining_dollars,
-    resets_at: (cloud[1] as Dict).resets_at } : null }
-}
-
-/** CB1b, at a main turn's end: the OAuth usage answer's extra usage and
- * dollar window, at most once per creditsTurnMs.  `trial` logs a line
- * once, so only a change is written.  Nothing drawn changes. */
-async function creditsTurnTrial($: $): Promise<void> {
-  if (!creditsTurnOn) return
-  const now = await $.clock.now()
-  if (now - creditsTurnAt < creditsTurnMs) return
-  creditsTurnAt = now
-  const auth = await $.session.authorize().catch(() => null)
-  if (!auth) return
-  const r = await creditsAsk($, auth.handle, CREDITS_OAUTH_URL, 'oauth')
-  await trial($, 'credits turn', r.ok
-    ? creditsTurnShape(r.raw) : { status: r.shape.status ?? null,
-      refused: r.shape.refused ?? null })
-}
-
-/** The credits trial, once per process: the OAuth usage answer's dollar
- * windows, and whether the same credential reaches the Console's prepaid
- * credits.  Nothing drawn changes. */
-async function creditsTrial($: $): Promise<void> {
-  if (creditsTried) return
-  creditsTried = true
-  const auth = await $.session.authorize().catch(() => null)
-  if (!auth) {
-    await trial($, 'credits', { credential: 'none' })
-    return
-  }
-  const oauth = await creditsAsk($, auth.handle, CREDITS_OAUTH_URL, 'oauth')
-  await trial($, 'credits oauth', { kind: auth.kind, ...oauth.shape })
-  const orgs = await creditsAsk($, auth.handle, CONSOLE_ORGS_URL, 'orgs')
-  await trial($, 'credits console orgs', orgs.shape)
-  if (!Array.isArray(orgs.raw)) return
-  for (const [i, org] of (orgs.raw as unknown[]).entries()) {
-    const id = typeof org === 'object' && org !== null
-      ? (org as Dict).uuid : null
-    if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/.test(id)) continue
-    const prepaid = await creditsAsk($, auth.handle,
-      `${CONSOLE_ORGS_URL}/${id}/prepaid/credits`, 'prepaid')
-    await trial($, 'credits console prepaid', { org: i, ...prepaid.shape })
-  }
-}
-
 let refreshing: Promise<void> | null = null
 let again = false
 // When the last read finished and how long it took, in ms, and whether a
@@ -612,7 +477,6 @@ async function start($: $, by: string): Promise<void> {
   try {
     const cwd = await $.session.cwd().catch(() => '?')
     await log($, `started by ${by} in ${cwd}`)
-    void creditsTrial($).catch((err) => log($, 'credits trial', err))
     // The configuration files, at each load; until they are read the
     // options are the mod's settings and the defaults.
     void reconfigure($).catch((err) => log($, 'config', err))
@@ -1090,8 +954,6 @@ export const register: Register = on => {
       usage: e.usage !== undefined, durationMs: e.durationMs ?? null })
       .catch(() => {})
     if (!e.agentId) {
-      void creditsTurnTrial($).catch((err) => log($, 'credits turn trial',
-        err))
       turnRunning = false
       // The band keeps the turn's 🎤 and 🎮 until its receipt is stamped,
       // and a second more, so the two lines are never missing from both.
