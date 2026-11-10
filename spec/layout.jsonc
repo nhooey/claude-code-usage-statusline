@@ -209,7 +209,7 @@
   // just answered consumed, what this session has consumed, what the account
   // has.  Each MARKS a figure rather than naming a metric, so each is emitted
   // bare and lets its field's padding supply the column of air, exactly as
-  // 🔜 and Σ do on the same rows.  Column 3 takes the first two of them, for
+  // 🔜 does on the same rows.  Column 3 takes the first two of them, for
   // the same pair of scopes on a different bill -- see E_READ.
   //
   // The first two are the cost line's own row marks rather than new ones:
@@ -556,24 +556,17 @@
   // limit rows' does: see MAG_SHARE_READ.
   "F_SHARE": {"same_as": "F_AMB"},
 
-  // Σ, and Σ only — the ⌛ row's mark, in the colour the 🔜 below it paints
-  // itself.  MEASURED, not matched by eye: Apple Color Emoji stores 🔜 as a PNG
-  // in its sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
-  // every strike from 20ppem to 160 — a flat neutral grey, no hue at all, which
-  // is not what an emoji named SOON looks like it should be.  L* 32.3.  This
-  // is its true value; the 256 value is that palette's nearest grey to it,
-  // rgb(78,78,78), 0.9 ΔE away.
-  //
-  // It is the mark that takes this and not the figure.  On the two limit rows,
-  // the countdown's figure carries the row's colour and 🔜 paints itself this
-  // grey; painting BOTH halves of the ⌛ row F_PRW would make it the one row
-  // where the mark competes with what it labels.  All three read the same way
-  // down the column — a receding mark, a figure that carries the row — and Σ
-  // stacks with 🔜 in ink as well as in column.
+  // The grey 🔜 paints itself, which the column rules take (F_RULE).
+  // MEASURED, not matched by eye: Apple Color Emoji stores 🔜 as a PNG in its
+  // sbix table, and the alpha-weighted mean of its ink is rgb(76,76,76) at
+  // every strike from 20ppem to 160 — a flat neutral grey, no hue at all,
+  // which is not what an emoji named SOON looks like it should be.  L* 32.3.
+  // This is its true value; the 256 value is that palette's nearest grey to
+  // it, rgb(78,78,78), 0.9 ΔE away.
   //
   // It is dim on purpose and it is dim in fact: 2.2:1 against the chat rows'
-  // background, which is under every legibility threshold there is.  That is the
-  // 🔜's own contrast — this only stops Σ from being the exception.
+  // background, which is under every legibility threshold there is.  That is
+  // the 🔜's own contrast, and a rule should recede as far.
   "F_SUM": {"256": "rgb(78, 78, 78)",
             "true": "rgb(76, 76, 76)"},       // the SOON arrow's ink, sampled
 
@@ -758,7 +751,7 @@
                            //
                            // It closes the column.  The argument for leading it is
                            // real — a countdown asks the same question as the ⌛
-                           // below it — but that puts the one field that is not a
+                           // above it — but that puts the one field that is not a
                            // scope in front of the three that are, so the reader
                            // crosses it to reach the sequence and the sequence
                            // starts a field in from the column's edge.

@@ -256,7 +256,7 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
     Narrowest first, because that is the one a reader can still do something
     about; widest last, because it is what it is whichever session you look
     from.  Then the countdown, which is the same question as ⌛ directly
-    below it — how long until this changes — and shares RST_W with it so the
+    above it — how long until this changes — and shares RST_W with it so the
     two line up in the column.
 
     The countdown does not lead, though that shared question would argue for
@@ -802,7 +802,7 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     its own: 🔧 and 🤖 are the fields that flip in practice — ten minutes
     in tools, or ten minutes of thinking, is a session that has done
     something — while 🚦 passes the cut in the session's first minutes and
-    stays bright.  The 🔜 directly above
+    stays bright.  The 🔜 directly below
     dims the other way, and deliberately: for a time-until it is the SMALL
     figure that matters (reset_dim).  The two rows agree on what bright
     means — the figure worth looking up for — and differ on which end of

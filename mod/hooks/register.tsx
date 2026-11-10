@@ -806,9 +806,9 @@ export const register: Register = on => {
 
   // Claude Code's closing line, `✻ <word> for <duration>`, drawn as the
   // turn's receipt: 🔺🔖 its tag beside 🎤, then 📅 🕐 beside 🎮, dim, on
-  // the band's columns, once stamped, since a `$.ui.log` line comes with
-  // Claude Code's `⏺ usage-band:` before it and a blank row after.  Until
-  // then one blank row: a Box one row high around a space, rather than an
+  // the band's columns, once stamped.  Drawn here rather than as a
+  // `$.ui.log` line, which comes with Claude Code's `⏺ usage-band:` before
+  // it and a blank row after.  Until then one blank row: a Box one row high around a space, rather than an
   // empty Text, which Ink measures as no row at all.
   on('ui.render', { component: 'TurnDuration' }, async ($, e) => {
     const draw = drawStart('TurnDuration')
