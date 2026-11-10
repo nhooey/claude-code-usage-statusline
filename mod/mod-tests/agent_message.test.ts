@@ -18,7 +18,7 @@ import type { AgentInfo, On, RenderElement, RenderPropsOf } from 'claude-code'
 import { settings } from '../src/formatting.ts'
 import { messageSpans, senderLabel } from '../src/agent_message.ts'
 import { CONFIG } from '../hooks/config.ts'
-import { unconfigured } from '../hooks/edges.ts'
+import { unconfigured } from '../hooks/configuration.ts'
 import { DEFAULTS, DEFAULTS_TEXT, isDefaults } from './defaults.ts'
 
 // The options the mod draws with here, with no configuration file.

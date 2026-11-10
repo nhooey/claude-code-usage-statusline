@@ -16,11 +16,12 @@
 // ended and Claude Code has written its records, the mod stamps them,
 // frozen, as the receipt its closing line draws (stamp).
 //
-// The handlers do the reading (edges.ts) and file what they read: the
-// status document in `$.state`, so a new one redraws the band, and each
-// start line in `$.store`, so it outlives the module and a reload draws it
-// again.  The drawings read only what was filed.  What a handler catches
-// goes to the mod's log (log.ts), never to the engine.
+// The handlers do the reading (edges.ts and the modules it reads with) and
+// file what they read: the status document in `$.state`, so a new one
+// redraws the band, and each start line in `$.store`, so it outlives the
+// module and a reload draws it again.  The drawings read only what was
+// filed.  What a handler catches goes to the mod's log (log.ts), never to
+// the engine.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
@@ -46,12 +47,16 @@ import type { AgentLike, MessageLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import type { IoCounts } from './edges.ts'
-import { costDoc, defaultsError, folderAgents, folderReplies, io, options,
-  optionsFor, permissionModeOf,
-  placesOf, readConfig, seen, statusDoc, steps, transcriptPath, turnsNow }
-  from './edges.ts'
-import type { Places } from './edges.ts'
+import type { IoCounts } from './engine.ts'
+import { io, placesOf, steps } from './engine.ts'
+import { folderAgents, folderReplies } from './transcripts.ts'
+import {
+  defaultsError, options, optionsFor, readConfig,
+} from './configuration.ts'
+import {
+  costDoc, permissionModeOf, seen, statusDoc, transcriptPath, turnsNow,
+} from './edges.ts'
+import type { Places } from './engine.ts'
 import { log } from './log.ts'
 
 type $ = EngineInterface
@@ -815,7 +820,7 @@ async function keepSender($: $, key: string, agent: AgentLike) {
 }
 
 /** The one agent of the session's `subagents/` folder named or typed
- * `from` whose last reply there holds `head` (edges.ts folderAgents,
+ * `from` whose last reply there holds `head` (transcripts.ts folderAgents,
  * folderReplies); null where none or several do.  For a sender gone from
  * the agent list: an agent finished a while, or one the list did not
  * settle. */

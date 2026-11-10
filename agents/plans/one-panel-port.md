@@ -27,7 +27,7 @@ one JSON line per task.
 | Use                                   | Entry                                                     | Has a TypeScript twin                                 |
 | ------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
 | The agent panel                       | `coding-agent-usage-line.py --agent claude --mode subagent` | the rendering and readers; not the command           |
-| The mod's large transcript folds      | `mod/scripts/agent_lines.py`, spawned by `edges.ts`       | yes: the mod folds 8 MiB at a time without it, slower |
+| The mod's large transcript folds      | `mod/scripts/agent_lines.py`, spawned by `transcripts.ts`       | yes: the mod folds 8 MiB at a time without it, slower |
 | The status line and the cost receipt  | `--mode status`, `--mode cost`                            | yes: the band and the mod's receipt replace both      |
 | Codex receipts and its status         | `--agent codex`, from a Codex `Stop` hook                 | no                                                    |
 | The reference the ports are tested on | the fixture generators and goldens under `tests/`         | the TypeScript is what is tested against it           |
@@ -76,7 +76,7 @@ one JSON line per task.
    install section and `docs/` name `panel.ts`; the README states the Node
    version needed in place of Python 3.9. The user changes
    `~/.claude/settings.json` themselves.
-6. **`OP6` The mod's fold worker in TypeScript.** `edges.ts` spawns
+6. **`OP6` The mod's fold worker in TypeScript.** `transcripts.ts` spawns
    `node .../agent_lines.ts` in place of `python3 .../agent_lines.py`.
 7. **`OP7` Remove the Python's Claude twins.** Delete the modules `OP1`
    found only the panel, the status line and the cost receipt use, their

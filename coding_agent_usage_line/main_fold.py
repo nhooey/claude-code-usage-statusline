@@ -328,7 +328,7 @@ def fold_writes(f: MainFold, meta: dict, mark: Optional[SaveMark] = None,
     mark it brings `mark` to; None where the head is over its cap.  With no
     mark, a fold started over, both heads are emptied first, so neither
     reads a part it was not written beside; then the parts; then the head.
-    The mod's saveMainFold (hooks/edges.ts) writes foldWrites' list, the
+    The mod's saveMainFold (hooks/transcripts.ts) writes foldWrites' list, the
     same one."""
     got = fold_save(f, meta, mark, part_bytes)
     if got is None:

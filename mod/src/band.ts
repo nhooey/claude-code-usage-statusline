@@ -294,7 +294,7 @@ function accountRow(st: Settings, fig: Dict, now: number): Row {
   const asOf = Number(reading?.as_of);
   const age = Number.isFinite(asOf) ? now - asOf : NaN;
   const stale = age >= STALE_MARK_S ? durFmt(st, age).trim() : null;
-  // The credits the mod chose to draw (edges.ts creditsDoc): each with
+  // The credits the mod chose to draw (usage.ts creditsVia): each with
   // its colour, and whether to draw what was granted.
   const owed = fig.credits as Dict | undefined;
   const drawn = Array.isArray(owed?.drawn) ? owed.drawn as Dict[] : [];

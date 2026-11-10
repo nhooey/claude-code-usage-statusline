@@ -85,6 +85,6 @@ nothing for them: its Stop hook's receipt is the main thread's alone.
 ## Files
 
 `mod/hooks/register.tsx` (filing and drawing), `mod/src/receipt.ts` (the
-rows), `mod/hooks/edges.ts` (an agent's records by id),
+rows), `mod/hooks/transcripts.ts` (an agent's records by id),
 `spec/options.jsonc` and its generated files, `mod/defaults/config.jsonc`,
 `mod/mod-tests/band.test.ts`, `docs/layout.md`, `docs/options.md`.

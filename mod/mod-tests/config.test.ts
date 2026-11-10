@@ -1,7 +1,7 @@
 // The mod's read of the configuration files, in the engine's test harness:
 // what a session's start reads through `$.fs` and says in the mod's log.
 // test/config.test.ts holds the reading itself to the Python's over the
-// shared cases; this holds the edges (hooks/edges.ts, readConfig) to it.
+// shared cases; this holds the edges (hooks/configuration.ts, readConfig) to it.
 //
 // Hermetic, as tests/config.py's GoldensAreHermetic is for the Python: the
 // harness has nothing beneath the mod, and this world answers `$.fs`,
@@ -14,7 +14,7 @@ import { test } from './budget.ts'
 import type { On, RenderElement } from 'claude-code'
 
 import { LOG_NAME } from '../hooks/log.ts'
-import { optionsTable, unconfigured } from '../hooks/edges.ts'
+import { optionsTable, unconfigured } from '../hooks/configuration.ts'
 import { MOD_LAYER, merge as mergeConfig, optionsOf } from '../src/config.ts'
 import { DEFAULTS, DEFAULTS_TEXT, isDefaults } from './defaults.ts'
 
