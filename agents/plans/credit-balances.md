@@ -181,13 +181,12 @@ and its plan windows:
    what the session's credential reaches: the OAuth `usage` answer's keys
    with a value and each window with a dollar limit, then the Console's
    organizations and each one's prepaid credits, as figures only, never a
-   body. Nothing drawn changes. After `/reload-plugins` the user tells
-   the agent, which reads the `trial: credits` lines in
-   `~/.local/state/coding-agent-usage-line/usage-band.log`.
+   body. Nothing drawn changes. Its findings are above, and its code is
+   out of the mod.
 2. **`CB1b`, the second trial.** It logs `extra_usage`'s figures and the
    cloud credit's `used` at each turn's end, as figures only: extra
    usage's cap, spend and reset, and whether a local session moves the
-   cloud credit.
+   cloud credit. Its findings are above, and its code is out of the mod.
 3. **`CB2`, the reading.** `credits[]` in `docs/usage-sources.md`'s format,
    its parser in both ports, with cases.
 4. **`CB3`, the sources.** The cloud credit and extra usage from the OAuth
@@ -213,7 +212,7 @@ and its plan windows:
 
 ## Files
 
-`mod/hooks/register.tsx` (the trial), `mod/hooks/edges.ts` and
+`mod/hooks/edges.ts` and
 `mod/src/sources.ts` (the fetch and the reading),
 `coding_agent_usage_line/sources.py`, `mod/src/band.ts`,
 `spec/options.jsonc` and its generated files, `mod/defaults/config.jsonc`,

@@ -28,14 +28,11 @@ import {
   WINDOW, world,
 } from './world.ts'
 import type { World } from './world.ts'
-import { creditsTrialNext, drawingNote, ioText, startKey }
+import { drawingNote, ioText, startKey }
   from '../hooks/register.tsx'
 import { LOG_NAME } from '../hooks/log.ts'
 import { CONFIG } from '../hooks/config.ts'
 
-// The credits trial asks the network beside the reads these tests count;
-// its own test turns it on.
-creditsTrialNext(false)
 import {
   _readAgentBytes, _recordsOf, agentLabelOf, agentRecordsOf, foldAgentBytes,
   newAgentFold, readPayload, transcriptOf, turnsOf,
@@ -1747,86 +1744,6 @@ test('a turn before any session.start still draws all three',
     await drewAll($, w)
     // The first event started the load's tick, and said so.
     expect(logOf(w)).toContain('started by turn.start')
-  })
-
-test('the credits trial logs the usage answer\'s dollar windows and what ' +
-  'the Console answers, once, and never the body', async ($, on) => {
-    const w = world(on)
-    w.oauth.body = JSON.stringify({
-      seven_day: { utilization: 20, resets_at: '2026-11-10T01:00:00Z',
-        limit_dollars: null },
-      cloud_credit: { utilization: 98.2, resets_at: '2026-11-05T07:59:00Z',
-        limit_dollars: 250, used_dollars: 245.58, remaining_dollars: 4.42 },
-      five_hour: null, private_note: 'not logged' })
-    creditsTrialNext(true)
-    try {
-      await $.session.start({ cwd: CWD, surface: 'terminal',
-        isInteractive: true })
-      await settle()
-    } finally {
-      creditsTrialNext(false)
-    }
-    const text = logOf(w)
-    expect(text).toContain('trial: credits oauth {"kind":"bearer",' +
-      '"status":200,"keys":["seven_day","cloud_credit","private_note"],' +
-      '"dollars":[{"key":"cloud_credit","limit":250,"used":245.58,' +
-      '"remaining":4.42,"resets_at":"2026-11-05T07:59:00Z"}]}')
-    expect(text).toContain('trial: credits console orgs ' +
-      '{"status":200,"orgs":-1}')
-    expect(text).not.toContain('not logged')
-    expect(w.oauth.asked.map((a) => a.url)).toEqual([
-      'https://api.anthropic.com/api/oauth/usage',
-      'https://platform.claude.com/api/organizations'])
-  })
-
-test('the second credits trial logs extra usage and the dollar window at ' +
-  'a turn\'s end, at most once a minute and only when they change',
-  async ($, on) => {
-    const w = world(on)
-    const answer = (used: number) => JSON.stringify({
-      extra_usage: { is_enabled: true, monthly_limit: 50, used_credits: used,
-        currency: 'usd', note: 'Not logged, free text' },
-      cloud_credit: { limit_dollars: 250, used_dollars: 245.58,
-        remaining_dollars: 4.42, resets_at: '2026-11-05T07:59:00Z' } })
-    w.oauth.body = answer(12)
-    await start($, w, 'terminal', COST)
-    creditsTrialNext(true)
-    try {
-      const end = (id: string) => $.turn.complete({ answer: '',
-        durationMs: 1_000, isAborted: false, turnId: id, reason: 'answer' })
-      const turnAsks = () => w.oauth.asked.filter((a) =>
-        a.url === 'https://api.anthropic.com/api/oauth/usage').length
-      const before = turnAsks()
-      await end('t1')
-      await settle()
-      expect(turnAsks()).toBe(before + 1)
-      // Within the minute, no ask.
-      await end('t2')
-      await settle()
-      expect(turnAsks()).toBe(before + 1)
-      // A minute on, the same figures ask again and log nothing new.
-      await w.clock.advance(61_000)
-      await end('t3')
-      await settle()
-      expect(turnAsks()).toBe(before + 2)
-      // Extra usage spent: a new line.
-      w.oauth.body = answer(14.5)
-      await w.clock.advance(61_000)
-      await end('t4')
-      await settle()
-    } finally {
-      creditsTrialNext(false)
-    }
-    const lines = logOf(w).split('\n').filter((l) =>
-      l.includes('trial: credits turn'))
-    const shape = (used: number) => 'trial: credits turn {"extra_usage":' +
-      '{"is_enabled":true,"monthly_limit":50,"used_credits":' + used +
-      ',"currency":"usd","note":"string"},"dollars":{"key":"cloud_credit",' +
-      '"used":245.58,"remaining":4.42,"resets_at":"2026-11-05T07:59:00Z"}}'
-    expect(lines.length).toBe(2)
-    expect(lines[0]).toContain(shape(12))
-    expect(lines[1]).toContain(shape(14.5))
-    expect(logOf(w)).not.toContain('Not logged')
   })
 
 test('a read that never ends is dropped and logged after its limit, and ' +
