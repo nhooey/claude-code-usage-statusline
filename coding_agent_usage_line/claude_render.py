@@ -33,9 +33,9 @@ def project_name(git: Git, project_dir: str) -> str:
 # module scope — pads its own value to a fixed width, and knows nothing about
 # where on the row it will land.  That is the layout's business, below.
 #
-# This is the one structural change the port exists to make.  In the bash these
-# read globals, so their inputs were invisible in their signatures and the
-# function that set those globals grew every time a renderer wanted something.
+# Renderers that read globals would hide their inputs from their signatures,
+# and the function that set those globals would grow every time a renderer
+# wanted something.
 #
 # Each returns its cell as spans (see spans.py), [] for nothing to draw, with
 # each colour by its constant's name.  render_status joins them into escape
@@ -109,8 +109,7 @@ def render_rate_cache(rate: Optional[float], cache_pct: int,
     drawn, the field empty — while there is no slope to report, which is the
     first tick of a session and nothing else.
 
-    Nothing at all when there has been no usage, as the cache cell was on
-    its own: no requests is no rate and no hit rate, and a cell of two blank
+    Nothing at all when there has been no usage: no requests is no rate and no hit rate, and a cell of two blank
     fields would be a row saying something where there is nothing to say.
 
     The figure dims under its magnitude cut — MAG_RATE for a rate, MAG_DUR_S
@@ -147,37 +146,31 @@ def render_ctx(ctx_pct: Optional[int], ctx_tokens: int,
 
     The window itself is deliberately not printed: it is constant for the
     session, so of the three possible numbers it is the one that never says
-    anything twice — and it was 🤖's second field until 2026-09-13.
+    anything twice.
 
-    Size first, percentage second, since the evening of 2026-09-13 and to
-    Neil's spec; this cell has now been turned round twice.  The order it
-    replaces put the percentage first, on the argument that it is the figure
-    the row is read for and the size its qualifier, and turned the prompt-cost
-    row round to match on the same day.  This order put the size under 🧩's
-    tokens two rows up — figure under figure, with the 🛫 rate between them
-    — and the percentage on the column's right edge, where 🎯's sat on the
-    row above.  Since the evening of 2026-09-16 the cell heads column 3 over
-    the two cache-share rows instead, and stacks with THEM: the size is
-    still first, and its unit lands on the column the 🎤 figures' ٪ ends on
-    below it — the first field is as wide as the share row's spaced mark,
-    🎤 and figure, less the 🧠's own width — and the percentage still ends
-    on the column's right edge, which is now the edge 🎮's figures end on;
-    the second field is whatever the column has past the first.  Both are
-    read from the share row's geometry rather than fixed, so the two edges
-    hold with or without the mark spacing and in either icon profile.  The
-    cost row was NOT turned back: it still reads
+    Size first, percentage second.  Percentage first would rest on the
+    figure the row is read for leading and the size qualifying it; this
+    order wins on stacking.  The cell heads column 3 over the two
+    cache-share rows and stacks with THEM: the size's unit lands on the
+    column the 🎤 figures' ٪ ends on below it — the first field is as wide
+    as the share row's spaced mark, 🎤 and figure, less the 🧠's own width
+    — and the percentage ends on the column's right edge, the edge 🎮's
+    figures end on; the second field is whatever the column has past the
+    first.  Both are read from the share row's geometry rather than fixed,
+    so the two edges hold with or without the mark spacing and in either
+    icon profile.  The cost row reads the other way round,
     "🧠+ 8.0٪ + 16k", the change in the level before the change in the size,
-    and the two readouts now differ in order.  The argument for one order
+    so the two readouts differ in order.  The argument for one order
     across both — a reader moving between them should not have to work out
-    which field is which — stands as it did; it is outweighed here by the
-    stacking, and the cost line's two rows stack with each other regardless.
+    which field is which — stands; it is outweighed here by the stacking,
+    and the cost line's two rows stack with each other regardless.
 
     One hue and one brightness across both fields: the size dims under
     MAG_TOK like every other token count on the two readouts, and the
-    percentage dims with it, to Neil's spec on 2026-10-16.  Until then the
-    percentage stayed bright at any value, on the argument that a level with
-    a ceiling needs no cut to say what high is, and 115k of a 1M window read
-    bright-dim.  The pair now reads as one quantity said twice, ranked once
+    percentage dims with it.  A percentage left bright at any value, on the
+    argument that a level with a ceiling needs no cut to say what high is,
+    would read 115k of a 1M window bright-dim.  The pair reads as one
+    quantity said twice, ranked once
     — the size against the 🧩 figures two rows up that it stacks under.
 
     Always pink rather than tiered, so an approaching window limit reads off
@@ -229,17 +222,15 @@ def render_model_cost(model: str, effort: str,
                       cost_usd: str) -> List[Span]:
     """The model and the cost side by side in one cell — "🤖O⁵🏃 💰115 ".
 
-    Column 2's first row since the evening of 2026-09-16, to Neil's spec.
-    Until then these were two rows of a column of their own, over an empty
-    third, beside the two-value column; now the two-value column holds them
-    on its first row and its own two cells drop a row each.  The model's
+    Column 2's first row: the two-value column holds them on its first row,
+    rather than giving them two rows of a column of their own over an empty
+    third, and its own two cells sit a row lower.  The model's
     half is held at W_MOD past the icon whether or not an effort glyph is
     drawn, so the 💰 does not shift with the effort; one space between,
     so the glyph and the coin are not two emoji touching.  Either half
     absent draws blank in its place, and both absent draws nothing.
 
-    Since 2026-10-02, to Neil's spec, the two halves are the column's two
-    fields: the model in VAL_W, over ▴'s figure and the rate, and 💰 with
+    The two halves are the column's two fields: the model in VAL_W, over ▴'s figure and the rate, and 💰 with
     its figure right-aligned in COL2_VAL2_W, so the cost ends on the
     column's edge with ▾'s and 🎯's figures — "🤖 O⁵🚶  💰5.1k".  💰 touches
     its figure as ▾ does, and the agent rows' 💰 keeps its pad.
@@ -268,19 +259,18 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
     below it — how long until this changes — and shares RST_W with it so the
     two line up in the column.
 
-    The countdown led until 2026-08-28, on that shared question.  It still
-    shares it, and the durations still stack, but leading put a reading of a
-    different kind in front of a sequence that is only worth arranging
-    because it is a sequence: the three scopes now start at the column's edge
-    and the horizon they are measured against closes it.  See the
-    column-4 note above fmt.RIGHT_GRID.
+    The countdown does not lead, though that shared question would argue for
+    it.  Leading would put a reading of a different kind in front of a
+    sequence that is only worth arranging because it is a sequence: the
+    three scopes start at the column's edge and the horizon they are
+    measured against closes it.  See the column-4 note above fmt.RIGHT_GRID.
 
     The 🎤 figure is the same quantity the cost line's 🎤 row prints, off
-    the same derivation and — see _with_shares — the same turn.  Before it
+    the same derivation and — see _with_shares — the same turn.  Without it
     the status line could say a session had spent 1.2٪ of a window without
     saying whether that was one expensive turn or forty cheap ones.
 
-    A separator was tried and dropped.  Two figures divided by " / " read as
+    No separator divides them.  Two figures divided by " / " read as
     "mine out of everyone's"; three do not divide that way, and once each
     figure carries a mark the slashes are six columns spent repeating what
     the marks already say.
@@ -307,11 +297,11 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
     therefore answers "which window is this?" and nothing else, which is
     the one question it can answer from across a screen.
 
-    It tiered green/amber/red on the account figure until 2026-08-28, through
-    limit_color.  Three hues, none of them the row's own, moving on a
-    quantity that already sits in plain digits two fields to the left; and
-    the 🪫 row was pinned red regardless, so the same colour meant "weekly"
-    on one row and "over 90٪" on the other.  See F_LIM_SESS.
+    Tiering green/amber/red on the account figure would put three hues,
+    none of them the row's own, on a quantity that already sits in plain
+    digits two fields to the left; and with the 🪫 row pinned red
+    regardless, the same colour would mean "weekly" on one row and "over
+    90٪" on the other.  See F_LIM_SESS.
     """
     if not pct_s:
         return []
@@ -321,16 +311,15 @@ def render_limit(emoji: str, pct_s: str, delta: str, resets: str,
     d = short_dur(resets, now)
     if d:
         # Blank rather than absent when there is no reset time to count down
-        # to.  The field is the last one now, so its blank falls at the
+        # to.  The field is the last one, so its blank falls at the
         # column's right edge and reads as slack; it is not.  Holding it keeps
         # the account figure of a row without a countdown under the account
         # figure of one with it, which is the whole reason the field is fixed.
         # Shaped like fig() below: the mark stands outside the colour and
-        # only the figure is painted.  It used to wrap both, which was
-        # harmless while the wrapper was a plain foreground — 🔜 paints
-        # itself and ignores one — and would not be now, because DIM reaches
-        # a pictograph where a foreground colour does not, and would have
-        # dimmed the mark on every countdown an hour or more out.
+        # only the figure is painted.  Wrapping both would be harmless with a
+        # plain foreground — 🔜 paints itself and ignores one — but not with
+        # DIM, which reaches a pictograph where a foreground colour does not,
+        # and would dim the mark on every countdown an hour or more out.
         rst = [Span(S_RESET + fmt.MARK_SP),
                Span(pad_val(RST_W - vis_width(S_RESET), d), colour,
                     reset_dim(d))]
@@ -400,8 +389,7 @@ def render_cache_share(emoji: str, turn: Optional[int], sess: Optional[int],
     nothing at all when neither scope has one, which is a session with no
     transcript: the row goes blank as render_limit's does without a
     reading, and so does the 🧠 over both, which has no context to read.
-    The two rows close the column since the evening of 2026-09-16; they
-    headed it, over a reserved blank, for the day before that.
+    The two rows close the column.
 
     ONE COLOUR FOR BOTH ROWS, and brightness for what the column has to
     say.  Column 4's two hues answer "which window is this?", a question 📖
@@ -447,20 +435,19 @@ def render_diff(added: str, removed: str) -> List[Span]:
 
     One for the space that divides the halves, two for the signs, and four for
     each figure, so a four-digit diff reads "3.4k" rather than overflowing.
-    Neil's budget, and it is the same shape the cost row's signed() uses: the
+    It is the same shape the cost row's signed() uses: the
     sign gets a column of its own so it never drifts with the width of the
     number behind it, and the figures right-align under each other.
 
     humanize's trailing unit column is kept, as everywhere else: it stacks
     mantissa under mantissa and unit under unit down the grid, where the band
-    and the panel draw 💾 on every row, " 30k" over "  6 ".  It was once
-    thrown away here, when nothing sat above or below this cell, and then a
-    lone count under a thousand stood on its unit's column (changed
-    2026-10-19).
+    and the panel draw 💾 on every row, " 30k" over "  6 ".  Thrown away
+    here, it would stand a lone count under a thousand on its unit's
+    column.
 
-    A space divides them rather than the "/" this carried before.  The signs
-    already say which half is which, so the slash was a column spent repeating
-    them — and the column buys the fourth digit that lets 3443 stay legible.
+    A space divides them rather than a "/".  The signs already say which
+    half is which, so a slash would be a column spent repeating them — and
+    the column buys the fourth digit that lets 3443 stay legible.
 
     Renders even at zero, unlike the other optional segments: nothing shares
     its cell, and "+0 -0" is a fact worth stating — this session has changed
@@ -534,25 +521,23 @@ def model_spec(model_id: str) -> str:
 def render_model(model: str, effort: str = "") -> List[Span]:
     """🤖, the two-character model spec and the effort's glyph — "🤖O⁵🏃".
 
-    Three changes on 2026-09-13, all to Neil's spec.  The context window went:
-    "📏1M" stood in a second field beside the name for as long as the model
-    had column 2's width, and the window is a constant for the session that
-    🧠's percentage already reads as a level, so of the three numbers this
-    row could print about it this was the one that never said anything
-    twice.  It is still read — ctx_window_for, for the percentage and for
-    the Stop hook via publish_ctx_window — and simply not drawn.  And the
-    name went from short_model's spelled family, "Opus5", to model_spec's
-    initial and superscript major version, "O⁵", the form the agent rows had
-    taken that morning: one readout, one way of naming a model, and a cell
-    that fits the column 💰 set.  The payload's display name goes in as it
-    is; model_label reads either that or an id.  And the effort joined it:
-    "⚡🏃hi" had a cell of its own in this column — the fixed mark so the
-    segment is found by icon, the glyph as a picture of pace, the word to
-    tell "medium" from "max" — and now the glyph alone stands against the
-    spec, as render_agent_model had it since the morning.  What that costs
-    is the word: 🚶 and 🔥 are the two levels it told apart, and a reader
-    who cannot tell them has the glyph ladder at E_EFF_LOW.  What it buys is
-    a cell of the column's exact width, six, and a row of it back.
+    No context window: the window is a constant for the session that 🧠's
+    percentage already reads as a level, so of the three numbers this row
+    could print about it this is the one that never says anything twice.
+    It is still read — ctx_window_for, for the percentage and for the Stop
+    hook via publish_ctx_window — and simply not drawn.  The name is
+    model_spec's initial and superscript major version, "O⁵", rather than a
+    spelled family, "Opus5": the agent rows use the same form, so there is
+    one readout, one way of naming a model, and a cell that fits the column
+    💰 set.  The payload's display name goes in as it is; model_label reads
+    either that or an id.  And the effort is its glyph alone against the
+    spec, as render_agent_model has it, rather than a cell of its own like
+    "⚡🏃hi" — the fixed mark so the segment is found by icon, the glyph as
+    a picture of pace, the word to tell "medium" from "max".  What that
+    costs is the word: 🚶 and 🔥 are the two levels it would tell apart,
+    and a reader who cannot tell them has the glyph ladder at E_EFF_LOW.
+    What it buys is a cell of the column's exact width, six, and one row
+    fewer in the column.
     """
     if not model:
         return []
@@ -564,9 +549,8 @@ def render_model(model: str, effort: str = "") -> List[Span]:
 
 def effort_glyph(effort: str) -> str:
     """The level's glyph on the ladder; the middle of it for a level not on
-    it.  The two-letter label and the tiered colour that stood beside the
-    glyph in the old ⚡ cell went with that cell on 2026-09-13 — an emoji
-    takes no colour, so the ladder's intensity is the picture alone."""
+    it.  No two-letter label or tiered colour stands beside the glyph — an
+    emoji takes no colour, so the ladder's intensity is the picture alone."""
     return {
         "low": E_EFF_LOW,
         "medium": E_EFF_MED,
@@ -738,24 +722,21 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
                    ) -> List[Span]:
     """The session's clock, in the four fields the two rows below it use.
 
-    It heads the column since the evening of 2026-09-16, to Neil's spec,
-    over the 🔋 and 🪫 rows it had closed since it was built; the fields
-    and the marks are unchanged, and everything below that says "above"
-    of the limit rows now means below.
+    It heads the column, over the 🔋 and 🪫 rows.
 
-    ⛳ 🤖 🔧 🚦, to Neil's spec of 2026-09-26: the time the current turn
+    ⛳ 🤖 🔧 🚦: the time the current turn
     says it has left, then THREE FIELDS THAT PARTITION THE SESSION.  🤖 is what answering is
     left once the tool seconds come out — the machine actually thinking — 🔧
     the part spent inside a tool, and 🚦 the part spent waiting for someone
     to type.  None overlaps another, so every second of the session is in
     exactly one of the three.  The agent rows split an agent's ⌛ the same
     three ways and in the same order, as Braille shares rather than figures:
-    see render_agent_split.  🚦 was 👤 until 2026-09-27, when the agent rows
-    took it too — an agent waits on more than a person.
+    see render_agent_split.  The mark is 🚦 rather than 👤 because an agent
+    waits on more than a person.
 
-    Σ, the session's age, closed the row until then.  It is the three summed,
-    so it said nothing the row does not; 🚦 took its field, the last, which
-    stacks over 🔜 below and is one column wider than a scope field.
+    The session's age is not drawn: it is the three summed, so it would say
+    nothing the row does not.  🚦 has the last field, which stacks over 🔜
+    below and is one column wider than a scope field.
 
     ⛳ IS THE MAIN THREAD'S ETA for the turn it is answering — see
     eta_reading and read_transcript, which clears it at a new prompt and
@@ -774,8 +755,8 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
 
     A TOOL WHOSE RESULT IS THE USER'S ANSWER CROSSES THE LINE.  The
     transcript records a question put to the reader as a tool call like any
-    other, and its span is the time they took to answer — so 🔧 counted the
-    reader's own deliberation and reported it back to them as machine work.
+    other, and its span is the time they took to answer — so 🔧 would count
+    the reader's own deliberation and report it back to them as machine work.
     `blocked_s` is that subset, and this row gives it to 🚦, which already
     means "waiting".  So is an Agent call, whose span is another agent
     working.  It comes out of the busy clock in the same move, so the three
@@ -787,22 +768,22 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
     was the machine busy" and 🔧 is a footnote to it.  Partitioned, 🤖
     becomes "how much of the day was the MODEL busy" — a different figure,
     and the one that moves when a session changes character: an hour of
-    waiting on builds now reads as an hour of 🔧 and a few minutes of 🤖,
-    where before both cells simply said an hour.  The seconds are this
+    waiting on builds reads as an hour of 🔧 and a few minutes of 🤖,
+    where nested, both cells would simply say an hour.  The seconds are this
     thread's own, by the rule every agent row reads its agent by, and an
     hour of waiting on agents is 🚦; see thread_clock.
 
-    WHAT IT REPLACED.  🎤 stood in 🔧's field until 2026-09-25, holding how
-    long the turn those rows report the cost of actually took.  It was scoped
-    where nothing else on the row is, and it bought scale for the 🎤
-    percentages below at the price of the row's one structural claim — that
-    its figures are all about the same session, over the same age.  The turn
-    duration is still printed, on the cost line's own 🎤 row, next to the
-    cost it qualifies, which is where it was always read from anyway.
+    NO TURN DURATION.  A 🎤 field holding how long the turn those rows
+    report the cost of actually took would be scoped where nothing else on
+    the row is, and it would buy scale for the 🎤 percentages below at the
+    price of the row's one structural claim — that its figures are all
+    about the same session, over the same age.  The turn duration is
+    printed on the cost line's own 🎤 row, next to the cost it qualifies,
+    which is where it is read from.
 
-    EVERY FIGURE KEEPS ITS DECIMAL BELOW TEN.  ⛳, 🤖 and 🔧 asked dur_fmt
-    for two digits until 2026-09-30, which forbids the decimal outright, so
-    1.9h rendered "2h" and a row read "🤖 9h 🔧 6h 🚦 2.9d".  Their fields
+    EVERY FIGURE KEEPS ITS DECIMAL BELOW TEN.  Asking dur_fmt for two
+    digits forbids the decimal outright, so 1.9h would render "2h" and a
+    row read "🤖 9h 🔧 6h 🚦 2.9d".  ⛳, 🤖 and 🔧's fields
     are four columns, LIM_FIG_W over 🎤 and 🎮 and LIM_ACCT_W over 💳, and
     "1.9h" fits four exactly with its unit under the ٪ below.  ⛳'s overrun
     keeps two digits, since its "+" takes the fourth column; see eta_fig.
@@ -813,9 +794,9 @@ def render_elapsed(busy_s: float, start_s: float, tool_s: float = 0.0,
 
     All three partition fields draw their zeros, 🔧 included: a session that has run
     no tool spent no time in one, and in a partition a zero IS the
-    measurement.  (🎤 blanked instead, mark and all, because a turn that was
-    never found is not a turn that took no time — the field had two empty
-    states and this one has one.)
+    measurement.  A turn field would blank instead, mark and all, because a
+    turn that was never found is not a turn that took no time — it has two
+    empty states and a partition field has one.
 
     Every figure on the row dims under MAG_DUR_S, ten minutes, and each on
     its own: 🔧 and 🤖 are the fields that flip in practice — ten minutes
@@ -1026,11 +1007,10 @@ def chat_row(prefix: str, text: str, placeholder: str, fg: str,
 
     out = [Span(prefix, fg), Span(body, fg, dim, bg="B_DRK")]
     if tail:
-        # tail_w is deliberately left at 0 when the width is unknown, matching
-        # the arithmetic this was ported from: the pad goes negative either
-        # way and clamps to MIN_GAP, so the result is identical.  Kept as the
-        # port left it — the reasoning is checkable by reading it, which is
-        # just as well, since the test that used to check it is retired.
+        # tail_w is deliberately left at 0 when the width is unknown: the pad
+        # goes negative either way and clamps to MIN_GAP, so the result is
+        # identical.  No test checks it; the reasoning is checkable by
+        # reading it.
         pad = (cols or 0) - RIGHT_MARGIN - tail_w - vis_width(prefix + body)
         if pad < MIN_GAP:
             pad = MIN_GAP
@@ -1078,7 +1058,7 @@ def render_status(pay: Payload, tr: Transcript, git: Git, lim: Limits,
     four when the terminal is too narrow for line 3 to hold both halves.
 
     Line 3 reads as two halves.  Flush left: where the work is happening.
-    Flush right, in the order they were already in: what has changed, how the
+    Flush right, in this order: what has changed, how the
     session is configured, what it is consuming, and the clock.
 
     Every right-hand segment is wrapped at a reserved width, so the group's

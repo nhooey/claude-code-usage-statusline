@@ -227,7 +227,7 @@ export function renderDiff(st: Settings, added: string,
 
   const half = (sign: string, v: number | null, col: string): Span => {
     // humanize's unit column kept, so 💾 stacks digit under digit down the
-    // grid, " 30k" over "  6 " (asked 2026-10-19).
+    // grid, " 30k" over "  6 ".
     const fig = v === null ? "? " : humanize(st, v);
     return span(sign + padVal(st, 4, fig), col, magDim(v, MAG_DIFF));
   };

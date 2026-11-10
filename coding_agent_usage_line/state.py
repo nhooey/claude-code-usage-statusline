@@ -216,7 +216,7 @@ def claim_reportable_requests(session_id, current_turn, request_origins, consume
     charged to an older root visible without re-emitting either root's old
     requests.  No prompt or response text is persisted.
 
-    Older releases wrote one journal per session/turn.  We only consult those
+    A legacy journal is one per session/turn.  We only consult those
     exact, derivable legacy paths for origins in this call, which keeps the
     migration scoped and avoids treating an arbitrary state-file ID as proof
     for another session.

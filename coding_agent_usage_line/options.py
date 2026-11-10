@@ -79,8 +79,8 @@ def flag_values(parsed):
 
     A repeated list flag makes one list.  A repeated value flag takes the
     last.  A negatable switch is False when its `--no-` spelling is given
-    anywhere, whichever comes first, as --column-rules and --mark-spacing
-    always had it.
+    anywhere, whichever comes first, as for --column-rules and
+    --mark-spacing.
     """
     values = {}
     negated = set()

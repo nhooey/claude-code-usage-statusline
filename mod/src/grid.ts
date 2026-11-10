@@ -150,11 +150,11 @@ function shareGone(patterns: readonly string[]): boolean {
 /** The columns 🧠's size takes without its share: the mark, then a sign
  * column, three for the digits and one for the unit, "🧠+316k", "🧠 1.2M",
  * so the relative and absolute sizes stack from the band down to the
- * subagents (asked 2026-10-20). */
+ * subagents. */
 const CTX_SIZE_W = 5;
 
 /** A column's width under `patterns`: 🧠's, where every scope hides its
- * share, only its mark and CTX_SIZE_W (asked 2026-10-19). */
+ * share, only its mark and CTX_SIZE_W. */
 function colWidth(st: Settings, c: { key: string; width: number | string },
   patterns: readonly string[]): number {
   return c.key === "ctx" && shareGone(patterns)

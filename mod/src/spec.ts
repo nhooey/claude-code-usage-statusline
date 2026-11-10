@@ -15,8 +15,7 @@
 // rule and the one-line test for a new glyph.
 // ════════════════════════════════════════════════════════════════════════════
 export const E_HUMAN = "👤💬";       // chat row prefix — user.  U+1F464, Unicode 6.0, single
-                                     // codepoint, two columns — same width as the 👨 it
-                                     // replaced, so no field moves.
+                                     // codepoint, two columns.
 export const E_BOT = "🤖";           // chat row prefix — assistant
 export const E_PROJ = "📦";          // project name
 export const E_DIR = "📁";           // pwd
@@ -31,16 +30,15 @@ export const E_UP = "▴";             // input tokens, inside the 🧩 segment.
 export const E_DOWN = "▾";           // output tokens, likewise.  U+25BE BLACK DOWN-POINTING
                                      // SMALL TRIANGLE.
                                      //
-                                     // These were ↑ and ↓ (U+2191/U+2193) until 2026-08-28.
-                                     // Both of those are East_Asian_Width AMBIGUOUS, the
-                                     // class that is one column on some terminals and two on
-                                     // others -- the same property that keeps the em dash out
-                                     // of this file's prose.  They are absent from EAW_WIDE,
-                                     // so vis_width called them one and the terminals agreed;
-                                     // nothing was ever observed to be wrong.  But they sit
-                                     // in the token field, which is on EVERY row of both
+                                     // Not ↑ and ↓ (U+2191/U+2193): both are
+                                     // East_Asian_Width AMBIGUOUS, the class that is one
+                                     // column on some terminals and two on others -- the
+                                     // same property that keeps the em dash out of this
+                                     // file's prose.  They are absent from EAW_WIDE, so
+                                     // vis_width calls them one and the terminals tried
+                                     // agree.  But the token field is on EVERY row of both
                                      // readouts, so an Ambiguous character resolving the
-                                     // other way would not have been a small failure.
+                                     // other way there would not be a small failure.
                                      //
                                      // U+25B4 and U+25BE are NEUTRAL rather than Ambiguous:
                                      // not East Asian at all, and drawn one column by the
@@ -62,23 +60,20 @@ export const E_FOLD = "¶ ";          // stands in for a newline when chat text 
 export const E_CACHE = "🎯";         // prompt-cache HIT rate — the glyph names what is
                                      // measured rather than the mechanism.  It also keeps
                                      // the row free of variation selectors: ♻️ (U+267B+VS16)
-                                     // held this slot twice and cost more than every other
-                                     // glyph together — drawn as "♻ ?" where the terminal
-                                     // would not compose it, ink spilling onto the first
-                                     // digit, and a different measured width in each of two
-                                     // terminals.  U+1F3AF is one codepoint, Unicode 6.0,
+                                     // costs more than every other glyph together — drawn
+                                     // as "♻ ?" where the terminal will not compose it, ink
+                                     // spilling onto the first digit, and a different
+                                     // measured width in each of two terminals.  U+1F3AF is one codepoint, Unicode 6.0,
                                      // two columns everywhere, and asks nothing of anybody.
 export const E_CTX = "🧠";           // context-window occupancy / growth
 export const E_RATE = "🛫";          // 🛫  the token RATE — how fast 🧩's total is climbing,
-                                     // in tokens per second.  On the status line since
-                                     // 2026-09-13, beside 🎯 in column 2; on the agent
-                                     // panel's rows a few hours before that, where the
-                                     // figure is the panel's own samples rather than the
-                                     // transcript's.  Was Δ, then 🚀 — which is
-                                     // E_EFF_XHIGH, two cells along — then ✈️ U+2708
-                                     // U+FE0F for a quarter of an hour, during which a
-                                     // digit was seen painted over the cell's slash.
-                                     // That is the glyph rules' warning made
+                                     // in tokens per second.  On the status line beside 🎯
+                                     // in column 2, and on the agent panel's rows, where
+                                     // the figure is the panel's own samples rather than
+                                     // the transcript's.  Not 🚀, which is E_EFF_XHIGH,
+                                     // two cells along, and not ✈️ U+2708 U+FE0F, under
+                                     // which a digit is seen painted over the cell's
+                                     // slash.  That is the glyph rules' warning made
                                      // flesh: a text-presentation character plus a
                                      // variation selector, counted two here and advanced
                                      // otherwise there.  🛫 is the same picture, single
@@ -86,18 +81,14 @@ export const E_RATE = "🛫";          // 🛫  the token RATE — how fast 🧩
                                      // — a glyph that can only be drawn one way.
 export const E_COST = "💰";          // cost
 export const E_DIFF = "💾";          // +adds/-removes
-// ⚡ U+26A1, the fixed mark of the effort cell — "⚡🏃hi" — left the readout on
-// 2026-09-13 with the cell itself: the effort is now the ladder glyph alone,
-// against the model spec, "🤖O⁵🏃", as the agent rows had it first.
-// 📏 U+1F4CF, the context-window size beside the model, left the readout on
-// 2026-09-13 when the model moved to column 3 without it.  The window is a
+// The effort has no fixed mark: it is the ladder glyph alone, against the
+// model spec, "🤖O⁵🏃".  The context-window size has no cell: the window is a
 // constant for the session, and 🧠's percentage is that constant read as a
-// level, so it was the one figure on the grid that never said anything twice.
-// The reasoning behind the glyph stands for the next one this file needs from
-// that region: it was deliberately from the Unicode 6.0 range, because 🪟
-// (U+1FA9F) and 🪣 (U+1FAA3) both read better and both come from the Unicode
-// 13 block this terminal carries loose metrics for — painting past the two
-// columns they advance and leaving debris on redraw.
+// level, so a figure for it would never say anything 🧠 does not.
+// A glyph this file needs from that region comes from the Unicode 6.0 range,
+// because 🪟 (U+1FA9F) and 🪣 (U+1FAA3) both read better and both come from
+// the Unicode 13 block this terminal carries loose metrics for — painting
+// past the two columns they advance and leaving debris on redraw.
 export const E_STALE = "🧊";         // a plan reading gone cold: the 💳 row's window figure
                                      // and, beside it, how long ago it was read, once that
                                      // is STALE_MARK_S or more.  U+1F9CA, Emoji_Presentation
@@ -106,8 +97,8 @@ export const STALE_MARK_S = 600;     // seconds a plan reading may be old before
                                      // a source refreshes within five minutes, so one past
                                      // ten has stopped.
 export const E_RESET = "🔜";         // marks a duration as time UNTIL: the figure beside it
-                                     // is a deadline, not a cycle.  A rotation glyph (🔄, ⟳
-                                     // before it) said only "something recurs here"; this one
+                                     // is a deadline, not a cycle.  A rotation glyph (🔄 or
+                                     // ⟳) would say only "something recurs here"; this one
                                      // names the number, which is what earns its two columns.
 export const E_CLOUD = "⛅";         // the account's credits, on the 💳 row: the cloud
 export const E_PROMO = "🎁";         // session credit, the Console's promotional and
@@ -116,7 +107,7 @@ export const E_EXTRA = "💸";         // (agents/plans/credit-balances.md).  �
 export const E_PASSES = "🎫";        // the one cloud drawn two columns wide with no
                                      // variation selector; ☁ and 🛰 draw one.
 export const E_EFF_LOW = "🐢";       // effort ladder, legible as a picture: the pace of the
-export const E_EFF_MED = "🚶";       // thing doing the work.  Since 2026-09-13 the picture is
+export const E_EFF_MED = "🚶";       // thing doing the work.  The picture is
 export const E_EFF_HIGH = "🏃";      // the whole cell, against the model spec, on both
 export const E_EFF_XHIGH = "🚀";     // readouts.  All five single-codepoint and EAW-Wide (the
 export const E_EFF_MAX = "🔥";       // 🎚/🎛 sliders are not, and would shift everything to
@@ -129,8 +120,8 @@ export const E_WAIT = "🚦";          // time spent waiting: on the status line
                                      // person; on an agent row, for anything that is
                                      // neither the model nor a tool.  A light held at red
                                      // says "stopped, not by choice" without saying on
-                                     // whom, which 👤 did and an agent's wait is not.
-                                     // It was 👤 until 2026-09-27.  U+1F6A6, Unicode 6.0,
+                                     // whom, which 👤 would and an agent's wait is not.
+                                     // U+1F6A6, Unicode 6.0,
                                      // one codepoint, Emoji_Presentation=Yes, EAW W.
 export const E_WORK = "🤖";          // time it spent answering
 export const E_TOOL = "🔧";          // of that answering, the part spent inside a
@@ -153,45 +144,44 @@ export const E_TOOL = "🔧";          // of that answering, the part spent insi
 export const E_DATE = "📅";          // calendar date, above the wall clock it belongs to
 export const E_TIME = "🕐";          // wall clock.
                                      //
-                                     // It was 🕰 (U+1F570), which reads better at terminal
-                                     // size, until the colons of the time beside it stopped
-                                     // drawing in one terminal — while the same bytes rendered
-                                     // correctly in iTerm and a hexdump confirmed the colons
-                                     // were in the buffer.  The mechanism is font-run
+                                     // Not 🕰 (U+1F570), which reads better at terminal
+                                     // size, but stops the colons of the time beside it
+                                     // drawing in one terminal — while the same bytes render
+                                     // correctly in iTerm and a hexdump shows the colons
+                                     // in the buffer.  The mechanism is font-run
                                      // shaping: the renderer picks one face for a run, and
                                      // having chosen the emoji face for 🕰 it draws what
                                      // follows from that face too.  Apple Color Emoji carries
                                      // digits (for keycaps) but no colon, so the digits
                                      // survive and the colons come out blank.  Selecting text
-                                     // across the row went wrong too, which corroborates it.
+                                     // across the row goes wrong too, which corroborates it.
                                      // Neither symptom is a width error, so neither shows up
                                      // in the probe: the only detector is the eye.
 export const E_IDLE = "⌛";          // the ⌛ row's head, and on an agent row the agent's
                                      // age, which its 🤖 🔧 🚦 gauges split.  An hourglass reads
-                                     // as elapsed time as plainly as the ⏱ it replaced, and
-                                     // advances two columns where ⏱ advances one — which
-                                     // retired the last EAW_NARROW entry the layout depended
-                                     // on.
+                                     // as elapsed time as plainly as ⏱ does, and advances
+                                     // two columns where ⏱ advances one, so the layout
+                                     // depends on no EAW_NARROW entry.
 export const E_SESS = "🔋";          // 5-hour window consumed — a fixed reserve that drains
                                      // with use and refills on a cycle, which is exactly what
                                      // a rolling window is.  It also keeps the row from
-                                     // carrying three timepieces.  🪣 read as well and is out
-                                     // on mechanics: U+1FAA3 is Unicode 13, later than the
-                                     // cutoff the rest of this file observes, and it drew as
-                                     // a .notdef box once.
+                                     // carrying three timepieces.  🪣 reads as well and is
+                                     // out on mechanics: U+1FAA3 is Unicode 13, later than
+                                     // the cutoff the rest of this file observes, and it can
+                                     // draw as a .notdef box.
 export const E_WEEK = "🪫";         // weekly window consumed — a drained battery under
                                     // 🔋's charged one, two containers that drain, which is
-                                    // what these two rows are.  It replaced 📆 to stop the
-                                    // weekly limit wearing a calendar in a layout where 📅
+                                    // what these two rows are.  Not 📆, which would put the
+                                    // weekly limit in a calendar in a layout where 📅
                                     // means the DATE two columns along; two calendars on
                                     // one screen meaning different things is a misread
                                     // waiting to happen.
                                     //
-                                    // It then replaced 🛢, which said the same thing and
-                                    // could not be drawn reliably: U+1F6E2 has no default
+                                    // Nor 🛢, which says the same thing and cannot be
+                                    // drawn reliably: U+1F6E2 has no default
                                     // emoji presentation, so whether it advances one column
                                     // or two is decided by whichever font the terminal
-                                    // happens to reach for, and one terminal's kept tearing the
+                                    // happens to reach for, and one terminal's tears the
                                     // grid to the right of it.  U+1FAAB is
                                     // Emoji_Presentation=Yes — two columns everywhere, no
                                     // width-table entry on any profile, no compensating
@@ -201,23 +191,23 @@ export const E_WEEK = "🪫";         // weekly window consumed — a drained ba
 // just answered consumed, what this session has consumed, what the account
 // has.  Each MARKS a figure rather than naming a metric, so each is emitted
 // bare and lets its field's padding supply the column of air, exactly as
-// 🔜 and Σ do on the same rows.  Column 3 takes the first two of them, since
-// 2026-09-16, for the same pair of scopes on a different bill -- see E_READ.
+// 🔜 and Σ do on the same rows.  Column 3 takes the first two of them, for
+// the same pair of scopes on a different bill -- see E_READ.
 //
 // The first two are the cost line's own row marks rather than new ones:
 // E_ROW_PROMPT and E_ROW_TOTAL below ARE these.  One quantity, one glyph,
-// wherever it is printed — before this the two readouts had two
-// vocabularies for one pair of figures, and the reader had to learn both.
-export const E_TURN = "🎤";          // the turn just answered.  Not 💬, which was already
+// wherever it is printed — two glyphs would give the two readouts two
+// vocabularies for one pair of figures, and the reader would learn both.
+export const E_TURN = "🎤";          // the turn just answered.  Not 💬, which is already
                                      // spoken for: E_HUMAN and E_BOT carry a LITERAL 💬 in
-                                     // column 1, so one picture meant "a line of chat" on the
-                                     // left of the row and "the last turn" on the right.
-                                     // Nothing else here has two meanings, and 💬 keeps the
-                                     // one it had first.
+                                     // column 1, so one picture would mean "a line of chat"
+                                     // on the left of the row and "the last turn" on the
+                                     // right.  Nothing else here has two meanings, and 💬
+                                     // keeps the one it has in column 1.
                                      //
-                                     // A microphone still says what 💬 said — what was just
-                                     // spoken — so the reading is not lost, only moved to a
-                                     // glyph that is dark-bodied instead of a bright white
+                                     // A microphone says what 💬 would — what was just
+                                     // spoken — so the reading is kept, in a glyph that
+                                     // is dark-bodied instead of a bright white
                                      // blob.  This field is read BESIDE a figure, not instead
                                      // of one, so its mark has no business being the loudest
                                      // thing in the cell.
@@ -227,19 +217,19 @@ export const E_TURN = "🎤";          // the turn just answered.  Not 💬, whi
 export const E_SESSION = "🎮";       // this session, summed.  A controller, because a
                                      // session is a thing you are AT — it started when you
                                      // sat down and it ends when you stop, and the figure
-                                     // beside it is what this sitting has spent.  🧮 stood
-                                     // here first and said "summed", which is true of every
-                                     // figure on the readout and so distinguished nothing.
+                                     // beside it is what this sitting has spent.  🧮 would
+                                     // say "summed", which is true of every figure on the
+                                     // readout and so distinguishes nothing.
                                      //
-                                     // It also clears the glyph bar more cleanly than what it
-                                     // replaces: U+1F3AE is Unicode 6.0, where 🧮 (U+1F9EE)
-                                     // is Unicode 11 and was the one mark on these rows
+                                     // It also clears the glyph bar where 🧮 would not:
+                                     // U+1F3AE is Unicode 6.0, where 🧮 (U+1F9EE) is
+                                     // Unicode 11 and would be the one mark on these rows
                                      // relying on a terminal's newer tables.  Single
                                      // codepoint, Emoji_Presentation=Yes, EAW W, inside
                                      // EAW_WIDE.
                                      //
                                      // E_ROW_TOTAL is this, so the cost line's total row
-                                     // moved with it — one quantity, one glyph.
+                                     // wears it too — one quantity, one glyph.
 export const E_ACCT = "💳";          // the whole account.  A card because the figure is
                                      // what the SUBSCRIPTION has been drawn down by, and a
                                      // subscription is not bounded by this machine:
@@ -249,12 +239,12 @@ export const E_ACCT = "💳";          // the whole account.  A card because the
                                      // states the caveat the docstring makes.
                                      //
                                      // It does sit two fields from 💰 in column 3, and two
-                                     // money pictures on one row was the argument for the
-                                     // globe that stood here first.  Overruled deliberately:
+                                     // money pictures on one row is the argument for a
+                                     // globe instead.  Overruled deliberately:
                                      // 💰 is dollars this session and 💳 is percent of a
                                      // plan window, they are never confusable as figures, and
                                      // the reading the card buys — this is the bill — is worth
-                                     // more than the separation the globe bought.
+                                     // more than the separation a globe would buy.
                                      //
                                      // U+1F4B3, Unicode 6.0, single codepoint,
                                      // Emoji_Presentation=Yes — the bar every icon on
@@ -262,7 +252,7 @@ export const E_ACCT = "💳";          // the whole account.  A card because the
                                      // and 🧾 lost: the first is later than the blocks this
                                      // file trusts, the second puts a second picture of a
                                      // tally one row under 🎮, which is the misread that
-                                     // retired 📆.
+                                     // keeps 📆 off the weekly row.
 
 export const E_READ = "📖";          // of ONE prompt's cost, the share that went on
                                      // re-reading the conversation so far -- cache_read, at
@@ -278,7 +268,7 @@ export const E_READ = "📖";          // of ONE prompt's cost, the share that w
                                      //
                                      // A SHARE OF THE TURN, not of the plan window, even
                                      // though the cell it sits in is a window cell.  The
-                                     // window form was tried first and cannot be drawn: the
+                                     // window form cannot be drawn: the
                                      // largest such turn on record spent $1.46 re-reading,
                                      // which is 0.25٪ of a 5-hour window and 0.08٪ of a
                                      // weekly one, and this field is the three WHOLE columns
@@ -318,15 +308,15 @@ export const E_WRITE = "📝";         // same denominator, the other component:
                                      // U+1F4DD, Unicode 6.0, single codepoint,
                                      // Emoji_Presentation=Yes, EAW W, inside EAW_WIDE.
                                      //
-                                     // BOTH HEAD A STATUS-LINE ROW AS WELL, since
-                                     // 2026-09-16: column 3, to the left of the limits,
+                                     // BOTH HEAD A STATUS-LINE ROW AS WELL: column 3, to
+                                     // the left of the limits,
                                      // is the pair read at two scopes -- 🎤 the turn just
                                      // answered, 🎮 the session summed -- in the shape of
                                      // the column beside it, so the eye that has learned
                                      // "🎤 then 🎮, narrow then wide" on column 4 reads
                                      // column 3 without being taught.  The cost line
-                                     // carried the turn's pair alone, in a half-cell it
-                                     // had spare; the session's had nowhere to go there,
+                                     // carries the turn's pair alone, in a half-cell it
+                                     // has spare; the session's has nowhere to go there,
                                      // because its totals row spends that half on 💳.
                                      // The status line is where the session figure lives,
                                      // and it is the one that says whether this SITTING,
@@ -342,35 +332,35 @@ export const E_HUNDRED = "💯";       // stands in for the "100" of "100٪" on 
                                      // number.
                                      //
                                      // E_PCT FOLLOWS IT, exactly as it follows a spelled
-                                     // figure.  Until 2026-08-28 it did not: the glyph
-                                     // already draws "100" with a percent sign inside it, so
-                                     // the sign was dropped as a doubling.  That reasoning
-                                     // was about the picture and not about the row.  Read
-                                     // DOWN the column -- "5.4٪", "44٪", "💯" -- and the one
-                                     // reading that matters was the only one not wearing the
-                                     // unit, which makes it look like a different kind of
-                                     // thing rather than the top of the same scale.
+                                     // figure, though the glyph already draws "100" with a
+                                     // percent sign inside it.  Dropping the sign as a
+                                     // doubling would be reasoning about the picture and
+                                     // not about the row.  Read DOWN the column -- "5.4٪",
+                                     // "44٪", "💯" -- and the one reading that matters would
+                                     // be the only one not wearing the unit, which makes it
+                                     // look like a different kind of thing rather than the
+                                     // top of the same scale.
                                      //
-                                     // It costs nothing to fix, which is why there is no
-                                     // trade to weigh: the glyph is two columns in a field of
-                                     // three, so it was already being padded with a leading
+                                     // It costs nothing, which is why there is no trade to
+                                     // weigh: the glyph is two columns in a field of three,
+                                     // so it would otherwise be padded with a leading
                                      // blank.  "💯٪" spends that blank on the unit and the
-                                     // field is the same three columns it always was.  Both
-                                     // render sites do this, and both say so.
+                                     // field stays three columns.  Both render sites do
+                                     // this, and both say so.
                                      //
-                                     // ⚠ was asked for beside it and cannot be had: U+26A0
+                                     // ⚠ beside it cannot be had: U+26A0
                                      // is East_Asian_Width Neutral and needs U+FE0F to draw as
                                      // an emoji at all, which is the two-codepoint,
-                                     // measures-one-draws-two shape that left 🪟 a phantom
+                                     // measures-one-draws-two shape that leaves 🪟 a phantom
                                      // cell.  Glyph rule 2 rules it out, the same rule that
-                                     // ruled out 🗨.
+                                     // rules out 🗨.
                                      //
-                                     // It narrows exactly one field, and did not at first.
-                                     // LIM_FIG_W could not follow it down, because limit_pct
-                                     // spends three characters at EVERY magnitude -- "5.4"
-                                     // and ".38" as much as "100" -- so retiring the hundreds
-                                     // case left the widest percentage where it was.  What
-                                     // changed is LIM_ACCT_W: the account figure is a whole
+                                     // It narrows exactly one field.  LIM_FIG_W cannot
+                                     // follow it down, because limit_pct spends three
+                                     // characters at EVERY magnitude -- "5.4" and ".38" as
+                                     // much as "100" -- so drawing the hundreds case as a
+                                     // glyph leaves the widest percentage where it is.  What
+                                     // narrows is LIM_ACCT_W: the account figure is a whole
                                      // number, so with 100 drawn rather than spelled its
                                      // widest reading is "99٪", three columns.  The glyph is
                                      // what makes that field a column narrower than the two
@@ -395,8 +385,7 @@ export const F_BLU = "#00afff";                          // blue        — 📁
                                                          //  name
 export const F_PROJ = "#ffafaf";                         // coral       — 📦 project
                                                          //  name, apart from 📁's
-                                                         //  blue beside it (decided
-                                                         //  2026-10-19)
+                                                         //  blue beside it
 export const F_BLU2 = "#00afd7";                         // dark blue   — pwd
 export const F_GRN = "#00af00";                          // green       — healthy / clean
 export const F_AMB = "#ffaf00";                          // amber       — *_WARN thresholds
@@ -414,20 +403,18 @@ export const F_CYN = "#00d7ff";                          // cyan        — PR, 
 export const F_PUR = "#d7afff";                          // purple      — model
 export const F_TUP = "#afd7d7";                          // teal        — ▴ input tokens
 export const F_RATE = "#00d7af";                         // mint        — 🛫 tokens per second.
-                                                         // Its own hue since 2026-09-13: it
-                                                         // was F_TUP, the ▴ figure's, and on
-                                                         // the status line it now sits one
-                                                         // row under that figure in the same
-                                                         // field, where one colour said the
-                                                         // rate WAS the input count.  Mint is
+                                                         // Its own hue, not F_TUP, the ▴
+                                                         // figure's: on the status line it
+                                                         // sits one row under that figure
+                                                         // in the same field, where one
+                                                         // colour would say the rate IS
+                                                         // the input count.  Mint is
                                                          // off every other reading here — a
                                                          // green with the blue of the teal
                                                          // above it and none of F_GRN's
                                                          // yellow, so it does not read as the
                                                          // healthy tier of anything, which a
-                                                         // rate is never in.  F_PUR2, the
-                                                         // dark purple of the model's second
-                                                         // field, went with 📏 the same day.
+                                                         // rate is never in.
 export const F_TDN = "#ffafd7";                          // pink        — ▾ output tokens
 export const F_YEL = "#ffd700";                          // yellow      — cost (never tiered)
 export const F_PNK = "#ffafff";                          // pink        — context %, and
@@ -436,13 +423,13 @@ export const F_PNK = "#ffafff";                          // pink        — cont
                                                          //  are all under the faint floor
 export const F_PNK2 = "#af00af";                         // dark pink   — context size
 export const F_CRM = "#d7d7af";                          // cream       — default text
-export const F_PRW = "#afafff";                          // periwinkle  — the ⌛ row.  It was
-                                                         //  orange, and orange had the same
+export const F_PRW = "#afafff";                          // periwinkle  — the ⌛ row.  Not
+                                                         //  orange, which has the same
                                                          //  problem F_AMB has: amber means "a
                                                          //  threshold was crossed" everywhere
                                                          //  else on these rows, and elapsed
                                                          //  time is never a warning about
-                                                         //  anything.  Orange only stood a
+                                                         //  anything.  Orange only stands a
                                                          //  short way from that reading; blue
                                                          //  cannot be given it at all.
                                                          //
@@ -453,21 +440,21 @@ export const F_PRW = "#afafff";                          // periwinkle  — the 
                                                          //  from each other (24) while
                                                          //  sitting side by side; these sit
                                                          //  at opposite ends of the row.
-                                                         //  L* 74, about the orange's 72, so
-                                                         //  the row keeps the weight it read
-                                                         //  at.  13 ΔE from F_PUR, the
+                                                         //  L* 74, about an orange's 72, so
+                                                         //  the row reads at a warm hue's
+                                                         //  weight.  13 ΔE from F_PUR, the
                                                          //  nearest the palette allows.
-export const F_ETA = "#ffd7ff";                          // light magenta — ⛳ time left.  It
-                                                         //  was F_PRW, the ⌛ beside it, and
-                                                         //  the two figures read as one.  A
+export const F_ETA = "#ffd7ff";                          // light magenta — ⛳ time left.  Not
+                                                         //  F_PRW, the ⌛ beside it, or the
+                                                         //  two figures read as one.  A
                                                          //  cool hue apart from the others,
                                                          //  in the 256 set 30 ΔE from F_PRW, 25 from F_PUR,
                                                          //  27 from F_PNK.  Not warm, for the
                                                          //  reason F_PRW gives; the late "+"
                                                          //  stays F_AMB.  The full magenta
-                                                         //  was too dark to read faint, as ⛳
+                                                         //  is too dark to read faint, as ⛳
                                                          //  is under its cut (seen live under
-                                                         //  tmux 2026-10-21).
+                                                         //  tmux).
 export const F_OVER = "#ff0000";                         // bright red  — an agent row's ⛳
                                                          //  past a report of ZERO.  An
                                                          //  estimate that ran out is amber:
@@ -487,8 +474,7 @@ export const B_DRK = "#121212";                          // near-black backgroun
 export const B_MSG = "#af00af";                          // purple background, the row
                                                          //  of a message another agent
                                                          //  sent, apart from the user's
-                                                         //  dark blue prompts (asked
-                                                         //  2026-10-20).  The 256 value
+                                                         //  dark blue prompts.  The 256 value
                                                          //  is the darkest purple that
                                                          //  palette has: no
                                                          //  colour channel can be 95 or
@@ -496,14 +482,13 @@ export const B_MSG = "#af00af";                          // purple background, t
                                                          //  in tools/gen-spec.py), and
                                                          //  off the palette two dark
                                                          //  colours drew as one teal
-                                                         //  under tmux (seen live
-                                                         //  2026-10-20).  White on it
-                                                         //  is 6.1:1; on the true value,
-                                                         //  the old dark purple, more.  It shares its
+                                                         //  under tmux (seen live).
+                                                         //  White on it is 6.1:1; on
+                                                         //  the true value, more.  It shares its
                                                          //  entry with F_PNK2, a
                                                          //  foreground never drawn on it.
 export const F_MSG = "#ffffff";                          // white, that row's text on
-                                                         //  B_MSG (asked 2026-10-20)
+                                                         //  B_MSG
 
 // The two limit rows, one colour each.  ROW IDENTITY, not a reading: 🔋 is
 // green because it is the battery, 🪫 red because it is the low one, and
@@ -511,16 +496,14 @@ export const F_MSG = "#ffffff";                          // white, that row's te
 // distinguish inside itself — this session against the account, a countdown
 // against a consumption — is carried by brightness instead, so hue answers
 // exactly one question here and answers it the same way every frame.  (On
-// the rows that carry no percentage, brightness has a second job since
-// 2026-09-14 — magnitude against a fixed cut, see MAG_TOK — and the same
-// rule holds: the brightness means one thing per figure, every frame.)
+// the rows that carry no percentage, brightness has a second job —
+// magnitude against a fixed cut, see MAG_TOK — and the same rule holds: the
+// brightness means one thing per figure, every frame.)
 //
-// It replaced two hue ladders on 2026-08-28.  limit_color tiered the 🔋 row
-// green/amber/red on the account's consumption, and F_RST_FAR/MID/NEAR ran the
-// countdown down three shades of slate by its unit.  Between them a single row
-// could carry three unrelated hues, none of which was the row's own, and the
-// colour had to be decoded before it could be read.  git has both if the alarm
-// is wanted back on a channel of its own.
+// Not hue ladders: tiering the 🔋 row green/amber/red on the account's
+// consumption, and running the countdown down shades of slate by its unit,
+// would let a single row carry three unrelated hues, none of them the row's
+// own, and the colour would have to be decoded before it could be read.
 export const F_LIM_SESS = F_GRN;                         // the 🔋 5-hour row
 export const F_LIM_WEEK = F_RED;                         // the 🪫 weekly row
 // Column 3's 📖 and 📝 rows, ONE colour for the pair: the cost line's
@@ -543,11 +526,10 @@ export const F_SHARE = F_AMB;
 //
 // It is the mark that takes this and not the figure.  On the two limit rows,
 // the countdown's figure carries the row's colour and 🔜 paints itself this
-// grey; the ⌛ row painted BOTH halves F_PRW and was the one row where the mark
-// competed with what it labels.  Now all three read the same way down the
-// column — a receding mark, a figure that carries the row — and Σ stacks with
-// 🔜 in ink as well as in column.  (The ⌛ row closed the column when this
-// was written and has headed it since the evening of 2026-09-16.)
+// grey; painting BOTH halves of the ⌛ row F_PRW would make it the one row
+// where the mark competes with what it labels.  All three read the same way
+// down the column — a receding mark, a figure that carries the row — and Σ
+// stacks with 🔜 in ink as well as in column.
 //
 // It is dim on purpose and it is dim in fact: 2.2:1 against the chat rows'
 // background, which is under every legibility threshold there is.  That is the
@@ -601,21 +583,13 @@ export const COL3_TIGHT_W = 14;      // column 3 with MARK_SP empty: a row mark 
                                      // divided by one space.  Each of its two fields grows
                                      // by len(MARK_SP).
 export const COL4_TIGHT_W = 30;      // column 4 with MARK_SP empty; each of its four fields
-                                     // grows by len(MARK_SP).  It was 29 until 2026-10-13:
-                                     // LIM_ACCT_W went to four on 2026-09-30 and this did
-                                     // not follow, so ⌛ and 🪫 overran the column by one
-                                     // while an empty 🔋 cell did not, and the 🔋 row's
-                                     // tail sat a column right of the rows around it.
+                                     // grows by len(MARK_SP).  It follows LIM_ACCT_W: one
+                                     // short, and ⌛ and 🪫 overrun the column by one while
+                                     // an empty 🔋 cell does not, so the 🔋 row's tail sits
+                                     // a column right of the rows around it.
 export const LINE3_TIGHT = 114;      // LINE3_RESERVED at COL3_TIGHT_W + COL4_TIGHT_W, measured
-export const LINE3_RESERVED = 114;   // columns the non-pwd segments of line 3 occupy.  It
-                                     // was 123 until the evening of 2026-09-16, when the
-                                     // model and the cost went side by side on one row and
-                                     // their column with them -- seven of cell and a
-                                     // SEG_GAP gone, one back for the wider row -- 105
-                                     // until column 3 arrived that morning and took
-                                     // eighteen -- fourteen of cell and a SEG_GAP -- and 110
-                                     // before that, while column 4 was 34 wide.  Measured,
-                                     // not estimated: shrink a column and this follows it
+export const LINE3_RESERVED = 114;   // columns the non-pwd segments of line 3 occupy.
+                                     // Measured, not estimated: shrink a column and this follows it
                                      // down, or the pwd is held that many columns shorter
                                      // than the line can afford whenever the width is
                                      // unknown.
@@ -659,8 +633,8 @@ export const W_MOD = 4;              // the model cell past its icon: the two-ch
 export const VAL_W = 5;              // a metric's first value field: "▴4.8M", "200/s",
                                      // " 115k"
 export const VAL2_W = 6;             // the second field — one wider, because one of them
-                                     // carries a glyph as well as a figure ("🎯98٪", and
-                                     // "📏200k" before it).  All three second fields share
+                                     // carries a glyph as well as a figure ("🎯98٪").  All
+                                     // three second fields share
                                      // it, so output tokens, the cache rate and the context
                                      // percentage right-align down the column.
 export const PAIR_GAP = 2;           // between two metrics sharing one cell (⌛ and 🕐)
@@ -685,12 +659,12 @@ export const LIM_FIG_W = 4;          // the field each of the three marks right-
                                      // and that is the trade — not a glyph, and not a
                                      // probe.
                                      //
-                                     // It was five until 2026-08-27, one wider than any
-                                     // reading, which put a blank column between every mark
-                                     // and every figure on every row.  That column was
-                                     // bought for the space it left in front of the NEXT
-                                     // mark, and the single space between fields already
-                                     // buys that; the mark and the figure it labels were
+                                     // Not five, one wider than any reading, which would
+                                     // put a blank column between every mark and every
+                                     // figure on every row.  That column would be bought
+                                     // for the space it leaves in front of the NEXT mark,
+                                     // and the single space between fields already buys
+                                     // that; the mark and the figure it labels would be
                                      // paying for the gap after them.
                                      //
                                      // Right-aligned and not left, which is the other way to
@@ -705,9 +679,9 @@ export const LIM_FIG_W = 4;          // the field each of the three marks right-
 export const LIM_ACCT_W = 4;         // field 3 only — 💳 the account, and 🔧 above it.
                                      // Four, as wide as the fields beside it, for 🔧: a
                                      // duration below ten spends four with its decimal,
-                                     // "1.9h", and at three 🔧 rounded it to "2h" while ⛳,
-                                     // 🤖 and 🚦 kept theirs.  It was three until
-                                     // 2026-09-30, which 💳 alone could afford:
+                                     // "1.9h", and at three 🔧 would round it to "2h"
+                                     // while ⛳, 🤖 and 🚦 keep theirs.  💳 alone could
+                                     // afford three:
                                      //
                                      // A percentage there spends two characters because the
                                      // account figure is a WHOLE NUMBER at both sources: the
@@ -715,7 +689,7 @@ export const LIM_ACCT_W = 4;         // field 3 only — 💳 the account, and �
                                      // has only ever been observed at whole values (see
                                      // limit_pct).  0 to 99 is two characters exactly, and
                                      // 100 is not printed at all — E_HUNDRED draws it.  So
-                                     // the column was given up for nothing, unlike 🎤 and 🎮,
+                                     // 💳 would lose nothing at three, unlike 🎤 and 🎮,
                                      // whose figures are ratios this program computes and are
                                      // fractional for real.  💳 keeps its two digits and
                                      // right-aligns, so its ٪ still lands under 🔧's unit.
@@ -734,19 +708,19 @@ export const SHARE_FIG_W = 3;        // column 3's two fields, 🎤 and 🎮 ahe
                                      // figure anyone acts on, and rounding it to 0 says the
                                      // same thing in fewer columns.
 export const RST_W = 6;              // the countdown/elapsed field — column 4's LAST, shared
-                                     // by 🔋 📆 ⌛ so the three durations line up down it.
+                                     // by 🔋 🪫 ⌛ so the three durations line up down it.
                                      // Two columns of mark and four of figure, dur_fmt's
                                      // widest at the default three digits ("5.8d").  🔜
-                                     // and 🚦, which holds it on the ⌛ row since Σ left it
-                                     // on 2026-09-26, both measure two, so the field is one
-                                     // shape on all three rows and begins on one column.
+                                     // and 🚦, which holds it on the ⌛ row, both measure
+                                     // two, so the field is one shape on all three rows and
+                                     // begins on one column.
                                      //
-                                     // It led the column until 2026-08-28.  The argument for
-                                     // that was real — a countdown asks the same question as
-                                     // the ⌛ below it — but it put the one field that is not
-                                     // a scope in front of the three that are, so the reader
-                                     // crossed it to reach the sequence and the sequence
-                                     // started a field in from the column's edge.
+                                     // It closes the column.  The argument for leading it is
+                                     // real — a countdown asks the same question as the ⌛
+                                     // below it — but that puts the one field that is not a
+                                     // scope in front of the three that are, so the reader
+                                     // crosses it to reach the sequence and the sequence
+                                     // starts a field in from the column's edge.
 export const SEG_GAP = 4;            // columns between adjacent grid cells
 export const SEG_RULE = "|";         // the divider drawn inside that gap, at wide enough
                                      // widths.  ASCII, and not U+2502, which is what a box
@@ -781,15 +755,10 @@ export const RULE_MIN = 170;         // narrowest row that still gets the rules.
                                      // on that floor, and one closing on its floor has
                                      // nothing to spend on chrome.
                                      //
-                                     // It was 160 until column 3 arrived on 2026-09-16 and
-                                     // took twenty columns -- sixteen of cell, four of gap
-                                     // -- and 180 until that evening, when the model and
-                                     // the cost's column folded into the tokens' and gave
-                                     // ten back.  The threshold moved by exactly each, so
-                                     // the 47 it leaves the names is the 47 it left them
-                                     // before: the argument is about what survives the
-                                     // trim, and a wider or narrower grid does not change
-                                     // how much has to.
+                                     // It moves with the grid, column for column, so the 47
+                                     // it leaves the names stays 47: the argument is about
+                                     // what survives the trim, and a wider or narrower grid
+                                     // does not change how much has to.
                                      //
                                      // Deliberately NOT MAX_LINE, which sits near it and
                                      // answers a different question: that is the width to
@@ -802,20 +771,20 @@ export const CTX_1M = 1000000;       // context window for the *-1M-context vari
 export const CACHE_WARN = 80;                    // cache hit %: ≤ WARN amber, ≤ CRIT red
 export const CACHE_CRIT = 50;
 
-// Magnitude, as brightness.  Since 2026-09-14, to Neil's spec: a figure with
-// no ceiling of its own is DIM under its cut and full strength at or over it,
-// on the status line and the agent rows alike.  A percentage says what high
-// is by being a percentage — 100 is the window, and the reader knows it
-// without being told — and the hit rate has its tiers; a token count, a rate,
-// a cost, a duration and a diff have no such edge, so 841k and 8.4k sat in
-// the same ink and the same four columns and a reader had to parse the unit
-// to tell one from the other.  Now the ink says it first.
+// Magnitude, as brightness.  A figure with no ceiling of its own is DIM under
+// its cut and full strength at or over it, on the status line and the agent
+// rows alike.  A percentage says what high is by being a percentage — 100 is
+// the window, and the reader knows it without being told — and the hit rate
+// has its tiers; a token count, a rate, a cost, a duration and a diff have no
+// such edge, so in one ink 841k and 8.4k would sit in the same four columns
+// and a reader would have to parse the unit to tell one from the other.  The
+// ink says it first.
 //
 // One cut per KIND of quantity, fixed, and the same wherever that quantity is
 // drawn — not "high for this session" or "high against the other rows".  A
 // relative cut would make the same brightness mean a different thing in every
-// frame and on every panel, which is the fault hue was cured of on the limit
-// rows (F_LIM_SESS): a signal that has to be decoded is not a signal.  A
+// frame and on every panel, which is the fault the limit rows keep out of
+// hue (F_LIM_SESS): a signal that has to be decoded is not a signal.  A
 // static cut lets an agent row be read against the status line above it and
 // against yesterday's, and lets the flip itself be read as an event — ▾ has
 // come to a hundred thousand; that agent has run ten minutes.
@@ -838,8 +807,8 @@ export const CACHE_CRIT = 50;
 //   MAG_DIFF   a hundred lines, each half of 💾 on its own — the size at
 //              which an uncommitted diff is work rather than a tweak.
 //
-// THE SHARES take a cut of their own kind, since 2026-09-14 and to Neil's
-// spec: a share is a percentage, but of a window it will never fill, so 100
+// THE SHARES take a cut of their own kind: a share is a percentage, but of a
+// window it will never fill, so 100
 // is not the edge a reader holds it against — the question is whether this
 // turn, this session, this agent is a real part of the week, and the WEEKLY
 // share answers it for both rows at once.  The 5-hour share of the same
@@ -856,13 +825,13 @@ export const CACHE_CRIT = 50;
 //                    panel; this one leaves the agent that did the turn's
 //                    work bright and dims the ones that ran an errand.
 //   MAG_SHARE_READ   two thirds of a BILL, for column 3's 🎤 and 🎮 -- each
-//                    scope's 📖 and 📝 as a pair, off the 📖 alone, since
-//                    2026-09-16.  The one cut here that is a percentage,
+//                    scope's 📖 and 📝 as a pair, off the 📖 alone.  The
+//                    one cut here that is a percentage,
 //                    and a percentage of a figure the reader can see: it
 //                    says whether the transcript, rather than the answer,
 //                    is what the money went on.  See cache_dims for the
 //                    measurement the number came from.
-// A share that could not be derived draws "?" and was dim already.
+// A share that could not be derived draws "?", dim whatever the cut.
 //
 // What it does NOT touch.  The limit percentages themselves (a ceiling of
 // their own); 🎯, which is tiered and inverted, and dims its green tier by a
@@ -894,8 +863,7 @@ export const MAG_SHARE_READ = 67;    // ٪ of the BILL that was 📖: column 3's
 // menu-bar app's own JSON emitted -- a channel that changed format would be a
 // channel silently read wrong, and _window_starts parses with one strptime.
 //
-// Named once because it was written out five times, in four functions that
-// have to agree about it, and nothing said they had to.
+// Named once because four functions have to agree about it.
 export const STAMP_FMT = "%Y-%m-%d %H:%M";
 export const K = 1000;                              // humanize boundaries
 export const M = 1000000;
@@ -910,24 +878,24 @@ export const G = 1000000000;
 // it holds a SIGN -- "+" on the per-prompt row, a blank on the totals row
 // directly beneath it -- and that is content, not spacing: close it and the two
 // rows stop stacking digit under digit, which is the one alignment this readout
-// exists to hold.  On 🧩 and 🎯 there was nothing in it at all, so those
+// exists to hold.  On 🧩 and 🎯 there is nothing in it at all, so those
 // two follow the status line's MARK_SP and give the column back under
 // --no-mark-spacing.
 // So does the 💳 that divides the two halves of a totals-row limit cell, which
 // is a mark like any other -- see C_LIM_TOT.  📅 and 🕐 carry S_DATE/S_TIME's
-// hard space, the status line's own column 5 constant, and were already spaced
-// on both readouts.
+// hard space, the status line's own column 5 constant, and are spaced on both
+// readouts.
 //
-// It read "no separator between them" until 2026-08-27, on the argument that a
-// two-cell glyph divides itself from what follows.  Five of the seven cells
-// already disproved it -- the sign column has been there as long as the rows
-// have stacked -- and the status line spent that day deciding the same question
-// the other way.  One readout arguing for the tight form while the other
-// defaults to the spaced one is the inconsistency, not either form.
+// Not "no separator between them", on the argument that a two-cell glyph
+// divides itself from what follows.  Five of the seven cells disprove it --
+// the sign column is what lets the rows stack -- and the status line decides
+// the same question the other way.  One readout arguing for the tight form
+// while the other defaults to the spaced one would be the inconsistency, not
+// either form.
 export const C_ELAPSED = 9;  // ⌛🤖 + a duration.  BOTH rows are robot time: this prompt's
                              // answering time on top, every prompt's answering time summed
-                             // beneath it.  The session's AGE used to sit on the bottom row
-                             // and was the wrong total for the row it was on — everything
+                             // beneath it.  The session's AGE would be the wrong total
+                             // for the bottom row — everything
                              // else here totals what the prompts above it did, and an age
                              // totals what the clock did.  The 🤖 says which of the two
                              // this is, against the status line's ⌛ 🤖 🔧 🚦, where all
@@ -951,24 +919,20 @@ export const C_CACHE_TIGHT = 5;      // 🎯 + "97٪" with MARK_SP empty
 
 export const C_COST = 9;     // 💰 + a sign column + money_cell: three integer columns, one
                              // fractional so the two rows' points land in one column, and
-                             // one for the unit.  Nine, not the eight it was until
-                             // 2026-09-03, and the column bought is the unit's: three
-                             // integer columns used to cap the row at $999, past which the
-                             // cell overran and — because only ONE of the two rows carries
-                             // the big figure — the groups came out different widths and the
-                             // 📊 stopped stacking.  The old note here said to widen this
-                             // before that day and not to touch the fraction.  Half of that
-                             // was right.  What the field wanted was not a fourth integer
-                             // column, which buys one decade and then faces the same cliff
-                             // at $9999; it wanted the k and M every other magnitude on this
-                             // row already carries, and a unit costs exactly one column
-                             // whatever the figure.  The fraction is untouched, as the note
-                             // asked.  The line is one column wider, which place() takes out
-                             // of the label, never out of the group.
+                             // one for the unit.  The ninth column is the unit's: three
+                             // integer columns alone cap the row at $999, past which the
+                             // cell overruns and — because only ONE of the two rows carries
+                             // the big figure — the groups come out different widths and the
+                             // 📊 stops stacking.  A fourth integer column buys one decade
+                             // and then faces the same cliff at $9999; the k and M every
+                             // other magnitude on this row already carries cost exactly one
+                             // column whatever the figure.  The fraction stays.  place()
+                             // takes the unit's column out of the label, never out of the
+                             // group.
                              // The sign column carries "+" on the per-prompt row and a space
                              // on the totals row, as 🧠 🔋 and 📆 do either side of it: every
                              // figure on that row is what ONE prompt added to the reading
-                             // beneath it, and 💰 was the only one not saying so — the field
+                             // beneath it, and 💰 without it would be the one not saying so — the field
                              // a reader is most likely to mistake for a running total, since
                              // a dollar figure beside a session's name reads as the bill
 export const C_LIM_TOT_TIGHT = 6;    // " 💳99٪" with MARK_SP empty
@@ -985,9 +949,9 @@ export const C_SEG_GAP = 2;  // between adjacent cost-row segments; matches the 
 //
 // Neither figure can be derived; both were read off a pasted row, by counting
 // how far its 📊 sat from the screen's left edge and subtracting the leading pad
-// this program had emitted.  They were 14 and 3 first, which is the same
-// ELEVEN-column difference and so stacked correctly while quietly spending two
-// of RIGHT_MARGIN's four columns.
+// this program had emitted.  A correct stack does not check them: 14 and 3
+// keep the same ELEVEN-column difference and so stack correctly while quietly
+// spending two of RIGHT_MARGIN's four columns.
 export const C_CHROME_LEFT = 16;
 // The same box on a CONTINUATION line: the indent alone.  "Stop says: " is
 // printed against the first line only, so a row below it starts eleven columns
@@ -1025,7 +989,7 @@ export const E_ROW_COMPACT = "🤏";          // 🤏  the compaction
 // The agent panel's tree, which Claude Code draws before every agent row.
 // These break rule 2 in docs/glyphs-and-terminals.md on purpose: they are
 // Ambiguous, and they are the panel's own glyphs, drawn one column wide.
-// The panel no longer copies the tree; the grid counts Claude Code's
+// The panel does not copy the tree; the grid counts Claude Code's
 // chrome toward a row's width instead (PANEL_CHROME), so its width still
 // matters.  Named E_* so probe-advance.sh measures them.
 export const E_TREE_NODE = "◯";        // ◯  an agent
@@ -1061,8 +1025,6 @@ export const E_INBOX = "📨";           // 📨  messages sent to it and not ye
                                        //    line, the ones waiting for the main thread.
                                        //    After 🤖, the mod's folded row of a message
                                        //    from another agent (agent_message.ts)
-// 🔇 U+1F507, how long a running agent had written nothing, left the panel's
-// head on 2026-10-05: the 🤖 state in the Doing cell says it now.
 export const E_KIDS = "👶🏻";                  // 👶🏻  how many agents hang under it on the
                                                //    panel.  The light tone, for its contrast on a
                                                //    dark background, and so the one mark here that
@@ -1076,23 +1038,22 @@ export const E_KIDS = "👶🏻";                  // 👶🏻  how many agents 
 export const E_ETA = "⛳";             // ⛳  how long an agent says it has LEFT, off the
                                        //    last report the coding-agent-usage-line-report-eta
                                        //    skill had it write.  The readout draws the golf
-                                       //    flag, at Neil's ask of 2026-09-27, and the report
-                                       //    opens with it too, at his ask of 2026-09-28.
+                                       //    flag, and the report opens with it too.
                                        //    U+26F3, Unicode 5.2, one codepoint,
                                        //    Emoji_Presentation=Yes, EAW W.
 export const E_ETA_REPORT = E_ETA;                 // ⛳  the flag the skill's report line opens with,
                                                    //    which ETA_LINE forgives the absence of
-export const E_ETA_REPORT_OLD = "🏁";          // 🏁  the flag it opened with before
-                                               //    2026-09-28, still read, so an agent that loaded
-                                               //    the skill earlier keeps its row counting down
+export const E_ETA_REPORT_OLD = "🏁";          // 🏁  the flag older copies of the skill open
+                                               //    with, still read, so an agent that loaded
+                                               //    one keeps its row counting down
 export const E_MODE_ETA = E_ETA;                 // ⛳  paused on nothing it can name, but its last
                                                  //    message said how long it has left
 // The gauge after each of an agent row's 🤖 🔧 🚦: that mark's share of the
 // agent's ⌛, as a bar of GAUGE_W Braille cells that uses only the middle
 // two dot rows — two dots a column, 4 * GAUGE_W dots in all.  The top and
 // bottom rows stay empty, so a gauge never touches the one on the row above
-// or below it; the full 2x4 cells that held this slot before the ▰▰▰▱ bar
-// ran into each other down the panel.  E_GAUGE is one cell's steps, 0 to 4
+// or below it, where full 2x4 cells would run into each other down the
+// panel.  E_GAUGE is one cell's steps, 0 to 4
 // dots: each column fills its lower dot, then its upper, left column first.
 // Braille is Neutral and breaks rule 2 in docs/glyphs-and-terminals.md the
 // way the tree glyphs do, but it has no emoji form for a terminal to widen,
@@ -1101,8 +1062,8 @@ export const E_GAUGE = "⠀⠄⠆⠦⠶";
 export const GAUGE_W = 2;
 export const E_ROW_AGENTS = "👥";           // 👥  agent spend the 🎤 row cannot carry.
                                             // Emoji_Presentation=Yes and a single code
-                                            // point, chosen for that.  Measured 2026-09-12
-                                            // by tests/probe-advance.sh: advance=2 in
+                                            // point, chosen for that.  Measured by
+                                            // tests/probe-advance.sh: advance=2 in
                                             // bare Ghostty, not under tmux -- a reading,
                                             // like the other three.
 export const E_TURN_ID = "🔖";              // 🔖  the receipt's turn tag: which turn the
@@ -1113,7 +1074,7 @@ export const E_TURN_PAST = "🔺";            // 🔺  before 🔖: the turn ABO
                                             // Wide, one code point, Emoji_Presentation=Yes,
                                             // Unicode 6, as 🔖 is.  Not ↑, ⇧ or ▲: all
                                             // three are Ambiguous, the class E_UP's note
-                                            // retired ↑ from the token field for.
+                                            // keeps ↑ out of the token field for.
 export const E_TURN_AHEAD = "🔻";           // 🔻  before 🔖 on the line under a prompt:
                                             // the turn BELOW, the one it starts, as 🔺
                                             // points up at the turn that ended.  Wide,
@@ -1129,9 +1090,8 @@ export const TURN_ID_HEX = 8;              // how much of the promptId 🔖 prin
 // Sorted, inclusive [lo, hi] decimal codepoint ranges the terminal draws in two
 // cells.  Everything below U+1100 is narrow, so the table starts there.
 //
-// THIS IS NOT unicodedata, AND MUST NOT BE REPLACED BY IT.  It began as a
-// generated East_Asian_Width table and was then corrected against
-// probe-advance.sh; the three corrections, and why unicodedata gets each of
+// THIS IS NOT unicodedata, AND MUST NOT BE REPLACED BY IT.  It is a
+// generated East_Asian_Width table corrected against probe-advance.sh; the three corrections, and why unicodedata gets each of
 // them wrong, are in docs/glyphs-and-terminals.md under "Why vis_width is not
 // a correct Unicode implementation".  Short version: the regional indicators are folded in at
 // two columns EACH, U+1F300–U+1FAFF is ONE range rather than a dozen with
@@ -1147,7 +1107,7 @@ export const TURN_ID_HEX = 8;              // how much of the promptId 🔖 prin
 //
 // Second known imprecision, and the one that shows what "corrected against the
 // probe" is worth.  U+1F300-U+1FBFF is one range, so this table calls U+1F900
-// wide.  MEASURED 2026-09-08: Ghostty under tmux advances it ONE, agreeing
+// wide.  MEASURED: Ghostty under tmux advances it ONE, agreeing
 // with the standard (the block is Neutral to U+1F90B and Wide from U+1F90C).
 // It costs nothing because no glyph here lives in U+1F900-U+1F90B — 🤏
 // U+1F90F is above the split and measures two — and it is written down so
@@ -1185,18 +1145,16 @@ export const PROFILE_RULES = [
 // stay although none of the glyphs they name is drawn any more.
 export const WIDTH_PROFILES = [
   {
-    "profiles": ["tmux", "iterm"],    // probed 2026-08-16, iTerm2 +
-                                      //  tmux; again 2026-09-08,
-                                      //  Ghostty + tmux, which agreed
-                                      //  on all four sequences and
-                                      //  needed no entry of its own.
+    "profiles": ["tmux", "iterm"],    // probed in iTerm2 + tmux, and
+                                      //  in Ghostty + tmux, which
+                                      //  agrees on all four sequences
+                                      //  and needs no entry of its own.
                                       //  Note term_profile checks TMUX
                                       //  first, so Ghostty reaches
                                       //  this entry only inside tmux;
                                       //  bare Ghostty is "unknown" and
                                       //  unmeasured, bar one glyph:
-                                      //  👥 advanced two there,
-                                      //  2026-09-12.
+                                      //  👥 advances two there.
     "narrow": [128368, 9201],         // 🕰 and ⏱ both advance one
     "icons": [9851],                  // ♻ U+267B advances two.  Correct
                                       //  only because nothing here
@@ -1205,10 +1163,10 @@ export const WIDTH_PROFILES = [
                                       //  ♻️ measuring two.  If a bare
                                       //  one is ever added, this becomes
                                       //  a one-column error on it.  The
-                                      //  same construction once produced
-                                      //  49 (ASCII "1", from the keycap
-                                      //  1️⃣), which would have made every
-                                      //  literal 1 on the row count two.
+                                      //  same construction from the
+                                      //  keycap 1️⃣ would give 49 (ASCII
+                                      //  "1"), making every literal 1
+                                      //  on the row count two.
     "clusters": true,                 // measured: skin tone 2, ZWJ 2,
                                       //  flag 2
   },
@@ -1219,11 +1177,9 @@ export const WIDTH_PROFILES = [
 // where it does, the ink lands on the digit beside it.  iTerm needs a column of
 // air after the icons that carry a value directly.
 //
-// 🤖 and 💰 lost the pad for an hour on 2026-09-14 and have it back: the
-// value against the icon was asked for and then unasked.  The agent rows'
-// 🤖 never had it (render_agent_model), and that row's 💰 borrows this cell
-// and follows it.  The status line's own 💰 touches its figure again since
-// 2026-10-02, as ▾ does, so the column's second figures end together; see
+// The agent rows' 🤖 has no pad (render_agent_model), and that row's 💰
+// borrows this cell and follows it.  The status line's own 💰 touches its
+// figure, as ▾ does, so the column's second figures end together; see
 // render_model_cost.
 export const PAD_PROFILES = ["iterm", "tmux"];
 
@@ -1233,7 +1189,7 @@ export const PAD_PROFILES = ["iterm", "tmux"];
 // decimal point costs nothing.  Off unless --subscript-decimals says otherwise.
 //
 // WHY IT IS A SWITCH AND NOT THE FORMAT.  Not the width, which is settled.
-// MEASURED 2026-09-08, all ten digits, in Ghostty: one column each,
+// MEASURED, all ten digits, in Ghostty: one column each,
 // which is what East Asian Width says of the block and what vis_width has
 // always returned.  Worth measuring anyway -- there is a known trap of exactly
 // that shape one plane up (see the U+1F900 note beside EAW_WIDE), where the
@@ -1247,13 +1203,10 @@ export const PAD_PROFILES = ["iterm", "tmux"];
 //
 // THE NAME CARRIES THE E_ PREFIX because probe-advance.sh derives what to
 // measure by parsing the E_* assignments out of spec.py, so a glyph named
-// anything else is a glyph nobody measures -- which is what these ten were
-// until 2026-09-08, sitting one rename away from the probe.
+// anything else is a glyph nobody measures.
 //
-// NOTHING IS RECLAIMED, AND NOTHING WAS EVER GOING TO BE.  This block used to
-// promise that narrowing LIM_FIG_W from 4 to 3 was "the payoff, and it comes
-// after the probe".  The probe came; the payoff was never there.  What sets
-// that field is the widest thing that can land in it, and swept across every
+// NOTHING IS RECLAIMED.  The switch does not narrow LIM_FIG_W from 4 to 3.
+// What sets that field is the widest thing that can land in it, and swept across every
 // hundredth of a percent the widest is FOUR columns in both forms and for the
 // same reason:
 //
@@ -1261,32 +1214,31 @@ export const PAD_PROFILES = ["iterm", "tmux"];
 //     on   "0₀₁٪"      the leading zero comes back, so three again
 //
 // Subscripts narrow the readings at or above 1٪ -- "4.1٪" to "4₁٪" -- and
-// those were never the widest.  The sub-1 reading is, in both forms, and the
+// those are not the widest.  The sub-1 reading is, in both forms, and the
 // leading zero that makes it so is deliberate and stays (below).  So the
 // switch buys leading pad on the middle magnitudes and no column anywhere,
-// which is exactly what the six widths of golden files already showed and
-// what this comment talked past.
+// which is what the six widths of golden files show.
 //
-// EVERY FIELD KEEPS THE WIDTH IT HAD, so a shorter figure gets one more column
-// of leading pad and the grid cannot tear on the switch.  That was insurance
-// against the terminal drawing these two columns wide -- the damage would show
-// as a figure overrunning its own cell rather than as a whole row shifted,
-// which is the difference between a diagnosis and a mystery.  The probe says
-// one column, so the insurance was never claimed.
+// EVERY FIELD KEEPS ITS WIDTH under the switch, so a shorter figure gets one
+// more column of leading pad and the grid cannot tear on the switch.  That is
+// insurance against the terminal drawing these two columns wide -- the damage
+// would show as a figure overrunning its own cell rather than as a whole row
+// shifted, which is the difference between a diagnosis and a mystery.  The
+// probe says one column, so the insurance goes unclaimed.
 //
 // THE LEADING ZERO STAYS, where limit_pct drops it.  ".38" is unambiguous
 // because the point marks the figure as a fraction; "₃₈" is not -- it is the
 // same glyph sequence a reader would take for 38 in a smaller font.  So the
 // zero comes back for this form, which means a sub-1 reading saves nothing.
-// Neil's call, and the right one: a column is worth less than the difference
+// A column is worth less than the difference
 // between a third of a point and thirty-eight of them.
 export const E_SUB_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
 // The superscript digits, for the model's major version — "O⁵", "H⁴" — on the
-// agent rows and the status line both, since 2026-09-13 and to Neil's spec.
+// agent rows and the status line both.
 // The same shape of risk as the subscripts above, and the same reading to go
 // on: six of the ten are East_Asian_Width Neutral and four — ¹ ² ³ ⁴ — are
 // Ambiguous, exactly the split of the subscript block, which both terminals
-// advanced one column on 2026-09-08.  ¹ ² ³ are Latin-1 rather than
+// advance one column.  ¹ ² ³ are Latin-1 rather than
 // U+2070-2079 and the four Opus, Sonnet, Haiku and Fable versions in the
 // catalogue land on ⁴ and ⁵, so one Ambiguous digit is in live use.  None of
 // these has been probed; see "Open issues" in docs/development.md.  vis_width
@@ -1303,19 +1255,19 @@ export const MONTH_S = 2629800.0;
 
 // Longest first is NOT required -- no name here is a prefix of another --
 // but the list is: every family in the CLI's own model catalogue as of
-// 2.1.261.  Mythos was missing until 2026-09-07 and fell through to
-// short_model's five-character passthrough, which drew it as "Mytho" -- a
+// 2.1.261.  A family missing from it falls through to short_model's
+// five-character passthrough, which would draw Mythos as "Mytho" -- a
 // family name with its last letter eaten, which reads as a bug in the
 // status line rather than as a model.
 export const MODEL_FAMILIES = ["Opus", "Sonnet", "Haiku", "Fable", "Mythos"];
 
 // ════════════════════════════════════════════════════════════════════════════
-// The redesigned grid.
+// The grid.
 //
 // One scope per row, one column per metric: the band, the receipt and the
 // agent panel draw these columns in this order on every row.  The design is
 // agents/plans/_implemented/redesign.md's; mod/tools/layout-mockup.ts draws
-// it from made-up figures.  Nothing the program draws today reads these yet.
+// it from made-up figures.
 // ════════════════════════════════════════════════════════════════════════════
 
 // The five columns Claude Code keeps for the band's [-] button.  The panel's
@@ -1331,11 +1283,11 @@ export const RIGHT_EDGE = 5;
 export const LABEL_MIN = 12;
 // The panel's chrome before a row of the session's own, drawn by Claude
 // Code: two blanks, its pointer and one blank, "  ◯ ", measured with the
-// align-probe mod on 2026-10-19.  A nested row's is a guess: two more blanks
+// align-probe mod.  A nested row's is a guess: two more blanks
 // per level.
 export const PANEL_CHROME = 4;
 // What the panel's payload calls `columns`: the terminal's width less this.
-// Measured on 2026-10-19: 154 in a 160-column terminal.
+// Measured: 154 in a 160-column terminal.
 export const PANEL_COLUMNS_SHORT = 6;
 // The deepest nesting the grid keeps room for.  The chrome is kept for this
 // many levels whether any agent runs or not, so the columns follow from the

@@ -17,7 +17,7 @@ export const CONFIG = {
   // How long scripts/agent_lines.py may take over one piece of an agent's
   // file, its output at most 3 MiB: the first read of a session's agents
   // goes through gigabytes, and runs in that process, outside any hook's
-  // 10s budget (asked 2026-10-20, so the first read does not crash it).
+  // 10s budget, so the first read does not crash it.
   agentLinesTimeoutMs: 300_000,
   // How often a live agent's fold, and the main transcript's, is saved, so
   // a reload reads on from it.
@@ -27,7 +27,7 @@ export const CONFIG = {
   // often it looks at the configuration files for a change.
   tickMs: 30_000,
   // How often it reads again while a main-thread turn runs, so 🛫 and the
-  // totals keep up with the clocks (decided 2026-10-19); never more often
+  // totals keep up with the clocks; never more often
   // than readSpacing times as long as the last read took, so a long
   // transcript's reads cannot crowd the session.
   tickRunningMs: 5_000,

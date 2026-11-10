@@ -80,8 +80,8 @@ what the character *should* do; the table records what the terminal *does*.
 Python 3.9's `unicodedata` also ships Unicode 13, older than several glyphs in
 conversation text.
 
-`EAW_WIDE` started as a generated East Asian Width table and was corrected
-against the probe:
+`EAW_WIDE` is a generated East Asian Width table corrected against the
+probe:
 
 | Range | Correction |
 |---|---|
@@ -115,8 +115,8 @@ whether the terminal clusters graphemes. `unknown` does not cluster at all:
 a skin-tone sequence counts 4 columns, a ZWJ sequence 5, a flag 4, a keycap
 3, and VS16 adds 1.
 
-The override entries that remain are for glyphs that have since left the
-layout (⏱ U+23F1, 🕰 U+1F570). Against the current glyph set the probe emits
+The override entries are for glyphs the layout does not draw (⏱ U+23F1,
+🕰 U+1F570). Against the current glyph set the probe emits
 empty override tables in every profile; the entries are kept as a record of
 how those terminals behave.
 

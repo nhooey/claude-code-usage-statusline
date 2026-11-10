@@ -112,9 +112,9 @@ def cut(x: SpanLike, cols: int) -> List[Span]:
 
 
 def rstrip(x: SpanLike) -> List[Span]:
-    """The spans less trailing blanks, as str.rstrip took them off a drawn
-    string: only off plain spans, since a coloured span's text ends at the
-    reset after it, which no rstrip reached."""
+    """The spans less trailing blanks, as str.rstrip would take them off a
+    drawn string: only off plain spans, since a coloured span's text ends at
+    the reset after it, which no rstrip reaches."""
     out = spans(x)
     while out and not out[-1].styled():
         t = out[-1].text.rstrip()
@@ -127,7 +127,7 @@ def rstrip(x: SpanLike) -> List[Span]:
 
 def lstrip(x: SpanLike, chars: Optional[str] = None) -> List[Span]:
     """The spans less leading `chars` (blanks by default), as str.lstrip
-    took them off a drawn string: only off plain spans, since a coloured
+    would take them off a drawn string: only off plain spans, since a coloured
     span's text starts after the escape that opens it."""
     out = spans(x)
     while out and not out[0].styled():

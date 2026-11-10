@@ -181,16 +181,16 @@ export const P_IN = 5e-6, P_OUT = 25e-6, P_CR = 0.5e-6, P_CW = 10e-6;
 export type Prices = readonly [number, number, number, number];
 
 // Per-model prices.  For the calibration scan, which sees other sessions'
-// turns and so cannot assume one model; and since 2026-09-11 for every
-// record read_turns prices, because an agent can run a model its session
-// does not.  $/token: fresh, output, cache-read, cache-write at the 2x TTL.
+// turns and so cannot assume one model; and for every record read_turns
+// prices, because an agent can run a model its session does not.
+// $/token: fresh, output, cache-read, cache-write at the 2x TTL.
 //
 // FIRST MATCH WINS, so the specific rows sit above the family they refine.
 // Figures are Claude Code's own: its binary bakes in a model catalog
-// (`pricing_tiers` / `models[].pricing`), read out of 2.1.268 on 2026-09-11.
+// (`pricing_tiers` / `models[].pricing`), read out of 2.1.268.
 // Fable 5.1 differs from Fable 5 in one field, cache-read, and Sonnet 5 is
-// not Sonnet 4.x — the old "sonnet" row was 3/15/6/0.3, which is the 4.x
-// tier and priced every Sonnet 5 fork half again too high.  The bare
+// not Sonnet 4.x — the 4.x tier, 3/15/6/0.3, would price every Sonnet 5
+// fork half again too high.  The bare
 // "opus" row stays as _price's fallback for a model it has never heard of:
 // the deliberate ceiling rather than a guess in the other direction.
 export const MODEL_PRICE: readonly (readonly [string, Prices])[] = [
@@ -889,7 +889,7 @@ export function openToolSpans(pending: Pending, now: number, tools: Span[],
  *   waiting  the waiting spans
  *
  * so that busy - tool - waiting is 🤖, the model thinking, and the age less
- * busy, plus waiting, is 🚦.  Own file alone since 2026-09-27: waiting on
+ * busy, plus waiting, is 🚦.  Own file alone: waiting on
  * an agent is 🚦, and the agent's work is on its row. */
 export function threadClock(work: readonly Span[], tools: readonly Span[],
   waiting: readonly Span[]): [number, number, number] {
@@ -1211,7 +1211,7 @@ export const QUEUE_HANDED: readonly unknown[] = ["remove", "dequeue"];
 export function queuedText(r: Rec): string | null {
   if (pyGet(r, "type") !== "queue-operation") return null;
   // Text pulled back into the editor was never answered; read as a
-  // delivery, it opened a turn holding the old text.
+  // delivery, it would open a turn holding the old text.
   if (!QUEUE_HANDED.includes(pyGet(r, "operation"))) return null;
   // A message handed over while the answer runs is the same turn; the
   // Python's comment has why.
@@ -1232,7 +1232,7 @@ export function queueStep(r: Rec): number {
 
 // What postTokens leaves out of a reading, when the transcript has no
 // reading before its compaction to take it from: the median over 520 local
-// compactions on 2026-10-16.  See the 🧠 estimate in transcriptOf.
+// compactions.  See the 🧠 estimate in transcriptOf.
 export const COMPACT_OVERHEAD = 46000;
 
 /** True for the marker a compaction writes, /compact's or the automatic
@@ -1958,8 +1958,8 @@ export function agentDiff(records: readonly Rec[]): [number, number] {
  *
  * The token totals and the cache rate count what the session's AGENTS
  * billed as well — `agents` is agentRecords' reading of the files beside
- * the transcript — because it was billed.  Time does NOT, since
- * 2026-09-27: busy, tool and waiting time are this thread's own, off this
+ * the transcript — because it was billed.  Time does NOT: busy, tool and
+ * waiting time are this thread's own, off this
  * file alone — see threadClock.  With a `now`, a tool call still running
  * counts to it; see openToolSpans.  Context size does NOT either: it is a
  * reading of THIS window, the one 🧠 is watched to decide when to compact.
