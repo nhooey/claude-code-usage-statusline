@@ -28,8 +28,8 @@ import {
   WINDOW, world,
 } from './world.ts'
 import type { World } from './world.ts'
-import { drawingNote, ioText, startKey }
-  from '../hooks/register.tsx'
+import { startKey } from '../hooks/register.tsx'
+import { drawingNote, ioText } from '../hooks/profile.ts'
 import { LOG_NAME } from '../hooks/log.ts'
 import { CONFIG } from '../hooks/config.ts'
 

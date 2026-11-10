@@ -31,9 +31,10 @@ import type { Env, Settings } from '../src/formatting.ts'
 import { hexOf } from '../src/spans.ts'
 import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
-import { ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler,
-  footerTail, modeOfHint }
-  from '../src/band.ts'
+import {
+  ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler, footerTail,
+  modeOfHint,
+} from '../src/band.ts'
 import type { Place, RowsLive, RowsPlace } from '../src/band.ts'
 import {
   billedNothing, newestBilled, receiptScoped, startLine, tagsHidden, turnKey,
@@ -41,22 +42,21 @@ import {
 } from '../src/receipt.ts'
 import type { TurnEnd } from '../src/receipt.ts'
 import type { Options } from '../src/options_spec.ts'
-import { candidates, firstLine, lastReply, messageBlock, messageSpans, saidBy, soleSender,
-  taskOf } from '../src/agent_message.ts'
-import type { AgentLike, MessageLike } from '../src/agent_message.ts'
+import { messageBlock, messageSpans, taskOf } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
 import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
-import type { IoCounts } from './engine.ts'
-import { io, placesOf, steps } from './engine.ts'
-import { folderAgents, folderReplies } from './transcripts.ts'
+import { forgetPlaces, placesFor, steps } from './engine.ts'
+import {
+  drawEnd, drawNext, drawStart, ioSinceLast, ioText, noteDrawing,
+} from './profile.ts'
+import { agentsChanged, agentsNow, senderOf } from './senders.ts'
 import {
   defaultsError, options, optionsFor, readConfig,
 } from './configuration.ts'
 import {
   costDoc, permissionModeOf, seen, statusDoc, transcriptPath, turnsNow,
 } from './edges.ts'
-import type { Places } from './engine.ts'
 import { log } from './log.ts'
 
 type $ = EngineInterface
@@ -77,15 +77,9 @@ const configured = atom({ plugin: 'usage-band', key: 'configured' } as const,
 export const startKey = (text: string) =>
   'start:' + sha256Hex(text).slice(0, 32)
 
-let places: Places | null = null
 let st: Settings | null = null
 // The options `st` was made under.
 let stKey = ''
-
-async function placesFor($: $): Promise<Places> {
-  places ??= await placesOf($)
-  return places
-}
 
 /** The settings the rows are drawn under `o`, made again when the
  * options they take have changed. */
@@ -215,112 +209,6 @@ let pending: { text: string; before: unknown; filed?: string } | null =
 // after turn.complete instead, the newest prompt can be one written as the
 // turn ended, a task notification's.
 let opened = ''
-
-// The engine counts at the last refresh, so each refresh's line says what
-// was asked since: its own reads, and what the work it started behind the
-// last one asked, such as a calibration scan.
-export type IoUsed = IoCounts & { parts: Record<string, IoCounts> }
-
-const copyIo = (): IoUsed => ({ ...io, parts: Object.fromEntries(
-  Object.entries(io.parts).map(([k, v]) => [k, { ...v }])) })
-
-let ioAt = copyIo()
-
-const minus = (a: IoCounts, b: IoCounts | undefined): IoCounts => ({
-  reads: a.reads - (b?.reads ?? 0),
-  readBytes: a.readBytes - (b?.readBytes ?? 0),
-  lists: a.lists - (b?.lists ?? 0), spawns: a.spawns - (b?.spawns ?? 0) })
-
-function ioSinceLast(): IoUsed {
-  const now = copyIo()
-  const parts: Record<string, IoCounts> = {}
-  for (const [k, v] of Object.entries(now.parts)) {
-    const d = minus(v, ioAt.parts[k])
-    if (d.reads || d.readBytes || d.lists || d.spawns) parts[k] = d
-  }
-  const used = { ...minus(now, ioAt), parts }
-  ioAt = now
-  return used
-}
-
-const countsText = (u: IoCounts): string =>
-  `${u.reads} reads, ${(u.readBytes / 1048576).toFixed(1)} MiB, ` +
-  `${u.lists} listings, ${u.spawns} processes`
-
-/** The counts, then each part's, the costliest by bytes first: what a
- * heavy line names as the culprit. */
-export function ioText(u: IoUsed): string {
-  const parts = Object.entries(u.parts)
-    .sort(([, a], [, b]) => b.readBytes - a.readBytes || b.spawns - a.spawns)
-    .map(([k, v]) => `${k}: ${countsText(v)}`)
-  return `since the last refresh: ${countsText(u)}` +
-    (parts.length ? `; ${parts.join('; ')}` : '')
-}
-
-// ── The drawing, timed ──────────────────────────────────────────────────
-// Each `ui.render` hook's own time, the engine's drawing beneath it (its
-// `next`) left out, and how many times it ran, per component, since the
-// last minute's note: what a "heavy drawing" line names.  Timed by the
-// runtime's own clock, which costs no call to the engine.
-const drawn = new Map<string, { draws: number; ms: number }>()
-let drawnSince = 0
-
-const nowMs = (): number =>
-  typeof performance !== 'undefined' ? performance.now() : Date.now()
-
-function noteDrawn(component: string, ms: number) {
-  const d = drawn.get(component) ?? { draws: 0, ms: 0 }
-  d.draws++
-  d.ms += ms
-  drawn.set(component, d)
-}
-
-/** One drawing being timed: where it began, and the time its hook spent
- * in the engine's drawing beneath it (`next`), which is left out. */
-type Draw = { component: string; at: number; inner: number }
-
-function drawStart(component: string): Draw {
-  return { component, at: nowMs(), inner: 0 }
-}
-
-/** `f`, a call of the hook's `next`, its time kept out of the hook's. */
-async function drawNext<T>(d: Draw, f: () => T | Promise<T>): Promise<T> {
-  const at = nowMs()
-  try {
-    return await f()
-  } finally {
-    d.inner += nowMs() - at
-  }
-}
-
-function drawEnd(d: Draw) {
-  noteDrawn(d.component, nowMs() - d.at - d.inner)
-}
-
-/** Once a minute, from the clock: a "heavy drawing" line where the render
- * hooks took CONFIG.drawNoteMs or more of it, each component with its
- * draws and ms, the costliest first. */
-async function noteDrawing($: $, now: number): Promise<void> {
-  if (!drawnSince) drawnSince = now
-  if (now - drawnSince < 60_000) return
-  const minutes = (now - drawnSince) / 60_000
-  drawnSince = now
-  const text = drawingNote([...drawn], minutes)
-  drawn.clear()
-  if (text !== null) await log($, text)
-}
-
-/** The "heavy drawing" line for `rows`, each component's draws and ms
- * over `minutes`, the costliest first; null below CONFIG.drawNoteMs a
- * minute. */
-export function drawingNote(rows: [string, { draws: number; ms: number }][],
-  minutes: number): string | null {
-  const ms = rows.reduce((s, [, d]) => s + d.ms, 0)
-  if (ms / minutes < CONFIG.drawNoteMs) return null
-  return `heavy drawing: ${Math.round(ms)}ms in ${minutes.toFixed(1)} ` +
-    'min (' + [...rows].sort(([, a], [, b]) => b.ms - a.ms).map(([k, d]) =>
-      `${k} ${d.draws} draws ${Math.round(d.ms)}ms`).join(', ') + ')'
-}
 
 /** Reads the status document afresh; the write redraws the band.  One at
  * a time: a call while one runs asks for one more after it. */
@@ -500,7 +388,7 @@ async function start($: $, by: string): Promise<void> {
  * places and settings read for it, its turn under way, its permission
  * mode and the effort its requests asked for. */
 function forgetSession(): void {
-  places = null
+  forgetPlaces()
   st = null
   stKey = ''
   readAt = 0
@@ -724,171 +612,6 @@ function accountedIn(o: Options, running: boolean): boolean {
 
 async function home($: $): Promise<string> {
   return (await placesFor($)).home
-}
-
-// The session's agents as `$.agent.list()` last gave them, and when, in
-// ms; 0 for never, or for a list an agent's start or end has made stale.
-// A module variable, not `$.state`: a render hook may not write state, and
-// the row that reads it is drawn afresh with each draw of the transcript.
-let agentList: readonly AgentLike[] = []
-let agentListAt = 0
-let agentListing: Promise<readonly AgentLike[]> | null = null
-
-/** The session's agents, listed again only once CONFIG.agentListMs has
- * passed since the last list, or an agent started or ended since: a
- * message row is drawn on every draw, and one list stands for them all.
- * Draws that come while a list is out wait on that one.  A list that
- * fails is logged and counts as none, so the row names the sender as
- * Claude Code did. */
-async function agentsNow($: $): Promise<readonly AgentLike[]> {
-  const now = await $.clock.now()
-  if (agentListAt && now - agentListAt < CONFIG.agentListMs) return agentList
-  agentListing ??= (async () => {
-    try {
-      agentList = await $.agent.list()
-    } catch (err) {
-      await log($, 'no agent list', err)
-      agentList = []
-    }
-    agentListAt = await $.clock.now()
-    return agentList
-  })().finally(() => {
-    agentListing = null
-  })
-  return agentListing
-}
-
-/** An agent has started or ended: the next message row lists them again,
- * and a message no reply held is looked for again, in case its sender is
- * the agent just come or its reply the one just written. */
-function agentsChanged(): void {
-  agentListAt = 0
-  for (const [text, agent] of senders) {
-    if (!agent) senders.delete(text)
-  }
-}
-
-// The sender of each message its words have been looked for by, keyed by
-// its text, null where no one reply held it; the oldest dropped past
-// CONFIG.agentSenderMemo.  A module variable, as the agent list is.  A
-// message never changes, so a sender once found is its sender for good.
-const senders = new Map<string, AgentLike | null>()
-// The lookups out, so draws that come while one is out wait on it.
-const sending = new Map<string, Promise<AgentLike | null>>()
-
-// The senders found, as the store keeps them for a reload, which starts
-// `senders` over: a finished agent may be gone from the list and its
-// reply from the folder's tail by then.  Under SENDERS_KEY, each keyed by
-// keptKey, the oldest dropped past CONFIG.agentSenderMemo.  A sender not
-// found is not kept, so a later load may find it.  `$.store`, not
-// `$.state`: a render hook may not write state.
-const SENDERS_KEY = 'agent-senders'
-let kept: Promise<Record<string, AgentLike>> | null = null
-
-/** The store's key for the sender of `text` in session `session`. */
-const keptKey = (session: string, text: string) =>
-  sha256Hex(session + '\n' + text).slice(0, 32)
-
-/** The senders the store keeps, read once per load; none where it will
- * not read. */
-function keptSenders($: $): Promise<Record<string, AgentLike>> {
-  kept ??= $.store.get(SENDERS_KEY).then(
-    (got) => got && typeof got === 'object'
-      ? { ...got as Record<string, AgentLike> } : {},
-    async (err) => {
-      await log($, 'no kept senders', err)
-      return {}
-    })
-  return kept
-}
-
-/** Keep `agent` as the sender under `key`, for a reload to find; only what
- * the row reads of it. */
-async function keepSender($: $, key: string, agent: AgentLike) {
-  const all = await keptSenders($)
-  delete all[key]
-  all[key] = { id: agent.id, type: agent.type,
-    description: agent.description, status: agent.status,
-    ...agent.name !== undefined ? { name: agent.name } : {} }
-  const keys = Object.keys(all)
-  for (const old of keys.slice(0, Math.max(0,
-    keys.length - CONFIG.agentSenderMemo))) {
-    delete all[old]
-  }
-  await $.store.set(SENDERS_KEY, all)
-    .catch((err) => log($, 'sender not kept', err))
-}
-
-/** The one agent of the session's `subagents/` folder named or typed
- * `from` whose last reply there holds `head` (transcripts.ts folderAgents,
- * folderReplies); null where none or several do.  For a sender gone from
- * the agent list: an agent finished a while, or one the list did not
- * settle. */
-async function folderSender($: $, from: string, head: string):
-  Promise<AgentLike | null> {
-  if (!head) return null
-  const path = await transcriptPath($, await placesFor($))
-  if (!path) return null
-  const among = (await folderAgents($, path))
-    .filter((a) => a.name === from || a.type === from)
-  return saidBy(head, await folderReplies($, path, among))
-}
-
-/** The sender of `text` as `from` by the words of its message, kept under
- * `key` where found: the one of `agents` whose conversation's last reply
- * holds its first line, else folderSender's. */
-async function lookFor($: $, from: string, text: string,
-  agents: readonly AgentLike[], key: string): Promise<AgentLike | null> {
-  const among = candidates(from, agents).filter((a) => a.id)
-  const replies = await Promise.all(among.map(async (a) => {
-    try {
-      const got = await $.session.messages({ agentId: a.id! })
-      return [a, Array.isArray(got)
-        ? lastReply(got as readonly MessageLike[]) : ''] as const
-    } catch (err) {
-      await log($, 'no messages for ' + a.id, err)
-      return [a, ''] as const
-    }
-  }))
-  const head = firstLine(text)
-  const found = saidBy(head, replies) ??
-    await folderSender($, from, head).catch(async (err) => {
-      await log($, 'no folder sender', err)
-      return null
-    })
-  if (found) await keepSender($, key, found)
-  return found
-}
-
-/** The agent that sent `text` as `from`: the one agent of that name or
- * type, with no read; else the one a load before this one found, as the
- * store keeps it; else the one of them whose last reply holds the
- * message's first line (agent_message.ts), each candidate's conversation
- * read once per message; else the one of the session's `subagents/`
- * folder whose reply there holds it (folderSender); null where none finds
- * one.  A read that fails is logged and counts as no reply. */
-async function senderOf($: $, from: string, text: string,
-  agents: readonly AgentLike[]): Promise<AgentLike | null> {
-  const sole = soleSender(from, agents)
-  if (sole) return sole
-  if (senders.has(text)) return senders.get(text)!
-  let lookup = sending.get(text)
-  if (!lookup) {
-    lookup = (async () => {
-      const key = keptKey(await $.session.id().catch(() => ''), text)
-      const found = (await keptSenders($))[key] ??
-        await lookFor($, from, text, agents, key)
-      senders.set(text, found)
-      while (senders.size > CONFIG.agentSenderMemo) {
-        senders.delete(senders.keys().next().value!)
-      }
-      return found
-    })().finally(() => {
-      sending.delete(text)
-    })
-    sending.set(text, lookup)
-  }
-  return lookup
 }
 
 export const register: Register = on => {
