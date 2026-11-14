@@ -1257,14 +1257,47 @@ export function turnIndex(r: Rec): number | null {
 }
 
 /** turnOpens's state: the open turn's turnIndex, null where it has none,
- * whether its answer has ended, and whether any record so far has carried
- * a turnPosition. */
-export type TurnGate = [number | null, boolean, boolean];
+ * whether its answer has ended, whether any record so far has carried a
+ * turnPosition, and whether the answer is in flight (inFlightAfter). */
+export type TurnGate = [number | null, boolean, boolean, boolean];
 
 /** A fresh `gate` for turnOpens: no turn open, so no number, none running,
- * and no turnPosition seen. */
+ * no turnPosition seen, and nothing in flight. */
 export function newTurnGate(): TurnGate {
-  return [null, true, false];
+  return [null, true, false, false];
+}
+
+// The stop_reason of an assistant record its answer goes on from: a tool
+// call, or none yet, written as the request streams.
+export const IN_FLIGHT_STOPS: readonly unknown[] = [null, "tool_use"];
+// The system records Claude Code writes after an answer is done: its Stop
+// hooks' summary and its clock.
+export const ANSWER_DONE: readonly unknown[] =
+  ["stop_hook_summary", "turn_duration"];
+
+/** Where `r` leaves the main thread's answer: true, in flight, after an
+ * assistant record that calls a tool or has no stop_reason yet, and after
+ * a tool result, the records an answer runs on between its requests;
+ * false after any other assistant record (an end_turn, and the synthetic
+ * stop_sequence Claude Code writes after an interrupt or an API error),
+ * after any other user record but an isMeta one (a prompt, an
+ * interrupt), and after the stop_hook_summary and turn_duration Claude
+ * Code writes once an answer is done; null, as it was, for every other
+ * record. */
+export function inFlightAfter(r: Rec): boolean | null {
+  if (pyGet(r, "isSidechain") === true) return null;
+  const type = pyGet(r, "type");
+  if (type === "system") {
+    return ANSWER_DONE.includes(pyGet(r, "subtype")) ? false : null;
+  }
+  if (type === "assistant") {
+    return IN_FLIGHT_STOPS.includes(
+      pyDig(r, "message", "stop_reason") ?? null);
+  }
+  if (type !== "user" || pyTruthy(pyGet(r, "isMeta"))) return null;
+  const c = pyDig(r, "message", "content");
+  return Array.isArray(c) &&
+    c.some((b) => isDict(b) && pyGet(b, "type") === "tool_result");
 }
 
 /** turnStartText, less a message delivered (promptSource "system") into
@@ -1281,16 +1314,30 @@ export function newTurnGate(): TurnGate {
  * wake record with no turnPosition, in a transcript that has already shown
  * one, opens no turn: Claude Code folds it into the next request and never
  * answers it alone, and its records stay in the turn before.  A transcript
- * that never shows the field opens them as turnStartText says.  The
- * Python's docstring has the measurements. */
+ * that never shows the field opens them as turnStartText says.
+ *
+ * A prompt the user typed while the answer runs, and handed to it between
+ * two of its requests, opens no turn either: a promptSource "queued"
+ * record written after a tool result or an assistant record that did not
+ * end its turn (inFlightAfter), before the answer has ended.  Claude Code
+ * gives it a promptId and a turnIndex of its own, as it does a turn's
+ * prompt, but runs no Stop hook before it and answers it in the same
+ * turn, so the turn keeps its prompt, its promptId and its clock, and the
+ * records after it stay the turn's.  A run of them handed over together
+ * leaves the answer in flight for the next.  Only "queued" is read so: a
+ * prompt typed while the session is idle opens its turn whatever came
+ * before it.  The Python's docstring has the measurements. */
 export function turnOpens(r: Rec, gate: TurnGate): string | null {
   const seen = gate[2];
+  const flight = gate[3];
   if (isDict(pyGet(r, "turnPosition"))) gate[2] = true;
   const text = turnStartText(r);
   if (text === null) {
     if (pyGet(r, "isSidechain") !== true && (endsTurn(r) ||
       (pyGet(r, "type") === "system" &&
         pyGet(r, "subtype") === "turn_duration"))) gate[1] = true;
+    const after = inFlightAfter(r);
+    if (after !== null) gate[3] = after;
     return null;
   }
   if (seen && pyGet(r, "promptSource") === "system" &&
@@ -1298,8 +1345,12 @@ export function turnOpens(r: Rec, gate: TurnGate): string | null {
   const idx = turnIndex(r);
   if (idx !== null && idx === gate[0] && !gate[1] &&
     pyGet(r, "promptSource") === "system") return null;
+  if (flight && !gate[1] && pyGet(r, "promptSource") === "queued") {
+    return null;
+  }
   gate[0] = idx;
   gate[1] = false;
+  gate[3] = false;
   return text;
 }
 
@@ -2065,7 +2116,7 @@ export function copyTranscriptFold(f: TranscriptFold): TranscriptFold {
       f.etaState[3]],
     background: new Map(f.background), opened: { ...f.opened },
     wrote: new Set(f.wrote), ends: new Map(f.ends),
-    gate: [f.gate[0], f.gate[1], f.gate[2]] };
+    gate: [f.gate[0], f.gate[1], f.gate[2], f.gate[3]] };
 }
 
 /** `f` with `tail` folded in, on a copy where there is a tail: the records
@@ -2558,7 +2609,7 @@ export function copyTurnsFold(f: TurnsFold): TurnsFold {
     settled: f.settled, seen: new Set(f.seen), byPid: new Map(f.byPid),
     lastStop: f.lastStop, pending: new Map(f.pending),
     ends: new Map(f.ends), wrote: new Set(f.wrote),
-    gate: [f.gate[0], f.gate[1], f.gate[2]] };
+    gate: [f.gate[0], f.gate[1], f.gate[2], f.gate[3]] };
 }
 
 /** `f` with `tail` folded in, on a copy where there is a tail; see

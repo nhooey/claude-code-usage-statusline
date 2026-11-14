@@ -128,6 +128,24 @@ prompt and the first request of its answer, into the turn already open, and
 the answer is that turn's. A wake after the answer ended can carry the same
 number, and opens a turn of its own.
 
+A prompt typed while the answer runs, and handed to it between two of its
+requests, opens nothing either. Claude Code writes it in one of two ways:
+
+* A `queue-operation` removal with `reason: "absorbed_mid_turn"`, and a
+  `queued_command` attachment carrying the text.
+* A `dequeue`, then a `type: user` record with `promptSource: "queued"` and
+  a `promptId` and `turnPosition.turnIndex` of its own, written after a tool
+  result or an assistant record whose `stop_reason` is `tool_use` or not
+  yet set, before the answer has ended (an assistant `end_turn`, a
+  `stop_hook_summary` or a `turn_duration`).
+
+Claude Code runs no Stop hook before either, and answers the prompt in the
+turn still running. So the turn runs from the prompt that opened it to the
+end of its answer: it keeps that prompt's text, its `promptId` and its
+clock, and every request after the mid-turn prompt is the turn's, on the
+🎤 row and on the receipt alike. A `"queued"` record after the answer
+ended, or after an interrupt, opens a turn of its own.
+
 A `promptSource: "system"` record with no `turnPosition` opens nothing once
 any earlier record in the transcript has carried a `turnPosition`. Claude
 Code numbers every message it delivers as a turn of its own; the ones it
@@ -197,8 +215,10 @@ happens in two ways:
 
 * The turn was already reported, and the agent finished afterwards (a
   background agent, a fork left running, a workflow).
-* The turn never gets its own Stop: a prompt queued during a run opens a turn,
-  but the run's single Stop reports only the last of them.
+* The turn never gets its own Stop: a record the transcript does not mark as
+  delivered mid-run, such as an older transcript's queue removal, opens a
+  turn inside the run, and the run's single Stop reports only the last of
+  them.
 
 Such a request, if no earlier Stop has seen it, goes into a separate
 **agents** turn instead of its own, one for each agent file, and prints on

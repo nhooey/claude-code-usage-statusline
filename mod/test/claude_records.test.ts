@@ -258,6 +258,42 @@ test("a typed slash command opens a turn, an unnumbered wake does not", () => {
   assert.equal(cr.commandLabel("<command-message>x</command-message>"), "/x");
 });
 
+// records.py's midturn.jsonl: prompts typed while M1's answer runs, handed
+// over between its requests as "queued" records with promptIds and
+// turnIndexes of their own, stay in M1: its text, its promptId, its clock
+// and every call after them.  The queued prompt after the answer ended
+// opens M6, and the typed one after an interrupt opens M7.
+test("a prompt delivered mid-turn stays in the turn running", () => {
+  const p = path.join(DIR, "inputs/midturn.jsonl");
+  const turns = cr.readTurns(p, []);
+  assert.deepEqual(
+    turns.map((t) => [t.text, t.prompt_id, t.turn_index, t.calls, t.dur_s]),
+    [["build the widget", "M1", 10, 4, 20.0],
+      ["ship it", "M6", 15, 1, 3.0],
+      ["start over", "M7", 16, 1, 2.0]]);
+  // Read live, just after the last prompt handed over mid-turn: 🎤 and the
+  // tag are still M1's, and its clock still runs from M1's prompt.
+  const records = cr._records(p);
+  const at = records.findIndex((r) => r.promptId === "M5");
+  const live = records.slice(0, at + 1);
+  const tr = cr.transcriptOf(live, []);
+  assert.deepEqual([tr.prompt_id, tr.turn_index, tr.turn_s],
+    ["M1", 10, Date.parse("2026-08-17T20:53:20Z") / 1000]);
+  const open = cr.openTurn(cr.turnsOf(live, () => []));
+  assert.deepEqual([open?.text, open?.prompt_id, open?.calls],
+    ["build the widget", "M1", 3]);
+  // Each mid-turn prompt alone: the gate refuses it while the answer is
+  // in flight, and the same record opens a turn once the answer has ended.
+  const gate = cr.newTurnGate();
+  for (const r of records.slice(0, records.findIndex(
+    (r) => r.promptId === "M2"))) cr.turnOpens(r, gate);
+  const m2 = records.find((r) => r.promptId === "M2")!;
+  assert.deepEqual(gate.slice(1), [false, true, true]);
+  assert.equal(cr.turnOpens(m2, [...gate]), null);
+  assert.equal(cr.turnOpens(m2, [gate[0], true, gate[2], false]),
+    "also check the docs");
+});
+
 // The mod reads an agent's file as it grows, folding only what was appended
 // since its last read: cut anywhere, mid-line included, the file folded
 // piece by piece reads as the Python reads it whole.

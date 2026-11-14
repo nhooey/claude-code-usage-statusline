@@ -1391,6 +1391,216 @@
   },
   {
    "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": null
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "Started over.",
+    "asst_ts": "2026-08-17T20:54:02.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 25.0,
+    "cache_pct": 92,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 1601,
+    "eta": [],
+    "idle_at": 0.0,
+    "last_seen": 0.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 92,
+    "own_est": false,
+    "own_parts": [
+     [
+      1787000003.0,
+      0.001755
+     ],
+     [
+      1787000009.0,
+      0.002055
+     ],
+     [
+      1787000015.0,
+      0.002355
+     ],
+     [
+      1787000020.0,
+      0.0026550000000000002
+     ],
+     [
+      1787000033.0,
+      0.002955
+     ],
+     [
+      1787000042.0,
+      0.003255
+     ]
+    ],
+    "own_tok_down": 210,
+    "own_tok_up": 1956,
+    "own_usd": 0.015030000000000002,
+    "prompt_id": "M7",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 210,
+    "tok_up": 1956,
+    "tool_at": 0.0,
+    "tool_s": 4.0,
+    "turn_index": 16,
+    "turn_s": 1787000040.0,
+    "user_text": "start over",
+    "user_ts": "2026-08-17T20:54:00.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787001000.0
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "Started over.",
+    "asst_ts": "2026-08-17T20:54:02.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 989.0,
+    "cache_pct": 92,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 1601,
+    "eta": [],
+    "idle_at": 1787000042.0,
+    "last_seen": 1787000042.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 92,
+    "own_est": false,
+    "own_parts": [
+     [
+      1787000003.0,
+      0.001755
+     ],
+     [
+      1787000009.0,
+      0.002055
+     ],
+     [
+      1787000015.0,
+      0.002355
+     ],
+     [
+      1787000020.0,
+      0.0026550000000000002
+     ],
+     [
+      1787000033.0,
+      0.002955
+     ],
+     [
+      1787000042.0,
+      0.003255
+     ]
+    ],
+    "own_tok_down": 210,
+    "own_tok_up": 1956,
+    "own_usd": 0.015030000000000002,
+    "prompt_id": "M7",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 210,
+    "tok_up": 1956,
+    "tool_at": 0.0,
+    "tool_s": 971.0,
+    "turn_index": 16,
+    "turn_s": 1787000040.0,
+    "user_text": "start over",
+    "user_ts": "2026-08-17T20:54:00.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl"
+   ],
+   "fn": "read_transcript",
+   "kw": {
+    "now": 1787000116.5
+   },
+   "out": {
+    "agent_etas": [],
+    "asst_text": "Started over.",
+    "asst_ts": "2026-08-17T20:54:02.000Z",
+    "blocked_s": 0.0,
+    "busy_s": 105.5,
+    "cache_pct": 92,
+    "compactions": 0,
+    "ctx_est": false,
+    "ctx_tokens": 1601,
+    "eta": [],
+    "idle_at": 1787000042.0,
+    "last_seen": 1787000042.0,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "monitors": 0,
+    "own_cache_pct": 92,
+    "own_est": false,
+    "own_parts": [
+     [
+      1787000003.0,
+      0.001755
+     ],
+     [
+      1787000009.0,
+      0.002055
+     ],
+     [
+      1787000015.0,
+      0.002355
+     ],
+     [
+      1787000020.0,
+      0.0026550000000000002
+     ],
+     [
+      1787000033.0,
+      0.002955
+     ],
+     [
+      1787000042.0,
+      0.003255
+     ]
+    ],
+    "own_tok_down": 210,
+    "own_tok_up": 1956,
+    "own_usd": 0.015030000000000002,
+    "prompt_id": "M7",
+    "queued": 0,
+    "shells": 0,
+    "start_s": 1787000000.0,
+    "tok_down": 210,
+    "tok_up": 1956,
+    "tool_at": 0.0,
+    "tool_s": 87.5,
+    "turn_index": 16,
+    "turn_s": 1787000040.0,
+    "user_text": "start over",
+    "user_ts": "2026-08-17T20:54:00.000Z",
+    "wait_at": 0.0
+   }
+  },
+  {
+   "args": [
     "tests/fixtures/records/inputs/own.jsonl"
    ],
    "fn": "read_transcript",
@@ -15641,6 +15851,891 @@
    "fn": "read_turns_settled",
    "kw": {},
    "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl",
+    null
+   ],
+   "fn": "read_turns",
+   "kw": {},
+   "out": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 4600,
+      "cache_write": 400,
+      "calls": 4,
+      "compact": false,
+      "ctx": 1401,
+      "dctx": null,
+      "dur_s": 20.0,
+      "eta": [],
+      "fresh": 4,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 100,
+      "parts": [
+       [
+        1787000003.0,
+        0.001755
+       ],
+       [
+        1787000009.0,
+        0.002055
+       ],
+       [
+        1787000015.0,
+        0.002355
+       ],
+       [
+        1787000020.0,
+        0.0026550000000000002
+       ]
+      ],
+      "prompt_id": "M1",
+      "reported": true,
+      "text": "build the widget",
+      "tool_s": 4.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 10,
+      "usd_cr": 0.0023,
+      "usd_cw": 0.004,
+      "usd_in": 2e-05,
+      "usd_out": 0.0025
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 1400,
+      "cache_write": 100,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1501,
+      "dctx": 100,
+      "dur_s": 3.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 50,
+      "parts": [
+       [
+        1787000033.0,
+        0.002955
+       ]
+      ],
+      "prompt_id": "M6",
+      "reported": false,
+      "text": "ship it",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:51.010Z",
+      "turn_index": 15,
+      "usd_cr": 0.0007,
+      "usd_cw": 0.001,
+      "usd_in": 5e-06,
+      "usd_out": 0.00125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 1500,
+      "cache_write": 100,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1601,
+      "dctx": 100,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 60,
+      "parts": [
+       [
+        1787000042.0,
+        0.003255
+       ]
+      ],
+      "prompt_id": "M7",
+      "reported": false,
+      "text": "start over",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:00.000Z",
+      "turn_index": 16,
+      "usd_cr": 0.00075,
+      "usd_cw": 0.001,
+      "usd_in": 5e-06,
+      "usd_out": 0.0015
+     }
+    ],
+    {}
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 4600,
+     "cache_write": 400,
+     "calls": 4,
+     "compact": false,
+     "ctx": 1401,
+     "dctx": null,
+     "dur_s": 20.0,
+     "eta": [],
+     "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 100,
+     "parts": [
+      [
+       1787000003.0,
+       0.001755
+      ],
+      [
+       1787000009.0,
+       0.002055
+      ],
+      [
+       1787000015.0,
+       0.002355
+      ],
+      [
+       1787000020.0,
+       0.0026550000000000002
+      ]
+     ],
+     "prompt_id": "M1",
+     "reported": true,
+     "text": "build the widget",
+     "tool_s": 4.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 10,
+     "usd_cr": 0.0023,
+     "usd_cw": 0.004,
+     "usd_in": 2e-05,
+     "usd_out": 0.0025
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 16.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 4600,
+     "cache_write": 400,
+     "calls": 4,
+     "compact": false,
+     "ctx": 1401,
+     "dctx": null,
+     "dur_s": 20.0,
+     "eta": [],
+     "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 100,
+     "parts": [
+      [
+       1787000003.0,
+       0.001755
+      ],
+      [
+       1787000009.0,
+       0.002055
+      ],
+      [
+       1787000015.0,
+       0.002355
+      ],
+      [
+       1787000020.0,
+       0.0026550000000000002
+      ]
+     ],
+     "prompt_id": "M1",
+     "reported": true,
+     "text": "build the widget",
+     "tool_s": 4.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 10,
+     "usd_cr": 0.0023,
+     "usd_cw": 0.004,
+     "usd_in": 2e-05,
+     "usd_out": 0.0025
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    16.0,
+    4.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 1400,
+     "cache_write": 100,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1501,
+     "dctx": 100,
+     "dur_s": 3.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 50,
+     "parts": [
+      [
+       1787000033.0,
+       0.002955
+      ]
+     ],
+     "prompt_id": "M6",
+     "reported": false,
+     "text": "ship it",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:51.010Z",
+     "turn_index": 15,
+     "usd_cr": 0.0007,
+     "usd_cw": 0.001,
+     "usd_in": 5e-06,
+     "usd_out": 0.00125
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 3.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 1400,
+     "cache_write": 100,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1501,
+     "dctx": 100,
+     "dur_s": 3.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 50,
+     "parts": [
+      [
+       1787000033.0,
+       0.002955
+      ]
+     ],
+     "prompt_id": "M6",
+     "reported": false,
+     "text": "ship it",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:51.010Z",
+     "turn_index": 15,
+     "usd_cr": 0.0007,
+     "usd_cw": 0.001,
+     "usd_in": 5e-06,
+     "usd_out": 0.00125
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    3.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 1500,
+     "cache_write": 100,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1601,
+     "dctx": 100,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 60,
+     "parts": [
+      [
+       1787000042.0,
+       0.003255
+      ]
+     ],
+     "prompt_id": "M7",
+     "reported": false,
+     "text": "start over",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:00.000Z",
+     "turn_index": 16,
+     "usd_cr": 0.00075,
+     "usd_cw": 0.001,
+     "usd_in": 5e-06,
+     "usd_out": 0.0015
+    }
+   ],
+   "fn": "turn_model_s",
+   "kw": {},
+   "out": 2.0
+  },
+  {
+   "args": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 1500,
+     "cache_write": 100,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1601,
+     "dctx": 100,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 60,
+     "parts": [
+      [
+       1787000042.0,
+       0.003255
+      ]
+     ],
+     "prompt_id": "M7",
+     "reported": false,
+     "text": "start over",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:00.000Z",
+     "turn_index": 16,
+     "usd_cr": 0.00075,
+     "usd_cw": 0.001,
+     "usd_in": 5e-06,
+     "usd_out": 0.0015
+    }
+   ],
+   "fn": "turn_times",
+   "kw": {},
+   "out": [
+    2.0,
+    0.0
+   ]
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 4600,
+      "cache_write": 400,
+      "calls": 4,
+      "compact": false,
+      "ctx": 1401,
+      "dctx": null,
+      "dur_s": 20.0,
+      "eta": [],
+      "fresh": 4,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 100,
+      "parts": [
+       [
+        1787000003.0,
+        0.001755
+       ],
+       [
+        1787000009.0,
+        0.002055
+       ],
+       [
+        1787000015.0,
+        0.002355
+       ],
+       [
+        1787000020.0,
+        0.0026550000000000002
+       ]
+      ],
+      "prompt_id": "M1",
+      "reported": true,
+      "text": "build the widget",
+      "tool_s": 4.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 10,
+      "usd_cr": 0.0023,
+      "usd_cw": 0.004,
+      "usd_in": 2e-05,
+      "usd_out": 0.0025
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 1400,
+      "cache_write": 100,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1501,
+      "dctx": 100,
+      "dur_s": 3.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 50,
+      "parts": [
+       [
+        1787000033.0,
+        0.002955
+       ]
+      ],
+      "prompt_id": "M6",
+      "reported": false,
+      "text": "ship it",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:51.010Z",
+      "turn_index": 15,
+      "usd_cr": 0.0007,
+      "usd_cw": 0.001,
+      "usd_in": 5e-06,
+      "usd_out": 0.00125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 1500,
+      "cache_write": 100,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1601,
+      "dctx": 100,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 60,
+      "parts": [
+       [
+        1787000042.0,
+        0.003255
+       ]
+      ],
+      "prompt_id": "M7",
+      "reported": false,
+      "text": "start over",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:00.000Z",
+      "turn_index": 16,
+      "usd_cr": 0.00075,
+      "usd_cw": 0.001,
+      "usd_in": 5e-06,
+      "usd_out": 0.0015
+     }
+    ]
+   ],
+   "fn": "_settled",
+   "kw": {},
+   "out": true
+  },
+  {
+   "args": [
+    [
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 4600,
+      "cache_write": 400,
+      "calls": 4,
+      "compact": false,
+      "ctx": 1401,
+      "dctx": null,
+      "dur_s": 20.0,
+      "eta": [],
+      "fresh": 4,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 100,
+      "parts": [
+       [
+        1787000003.0,
+        0.001755
+       ],
+       [
+        1787000009.0,
+        0.002055
+       ],
+       [
+        1787000015.0,
+        0.002355
+       ],
+       [
+        1787000020.0,
+        0.0026550000000000002
+       ]
+      ],
+      "prompt_id": "M1",
+      "reported": true,
+      "text": "build the widget",
+      "tool_s": 4.0,
+      "ts": "2026-08-17T20:53:20.000Z",
+      "turn_index": 10,
+      "usd_cr": 0.0023,
+      "usd_cw": 0.004,
+      "usd_in": 2e-05,
+      "usd_out": 0.0025
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 1400,
+      "cache_write": 100,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1501,
+      "dctx": 100,
+      "dur_s": 3.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 50,
+      "parts": [
+       [
+        1787000033.0,
+        0.002955
+       ]
+      ],
+      "prompt_id": "M6",
+      "reported": false,
+      "text": "ship it",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:53:51.010Z",
+      "turn_index": 15,
+      "usd_cr": 0.0007,
+      "usd_cw": 0.001,
+      "usd_in": 5e-06,
+      "usd_out": 0.00125
+     },
+     {
+      "agent": false,
+      "agent_calls": 0,
+      "agent_id": "",
+      "agent_ids": [],
+      "agent_model_s": 0.0,
+      "agent_name": "",
+      "agent_tool_s": 0.0,
+      "blocked_s": 0.0,
+      "cache_read": 1500,
+      "cache_write": 100,
+      "calls": 1,
+      "compact": false,
+      "ctx": 1601,
+      "dctx": 100,
+      "dur_s": 2.0,
+      "eta": [],
+      "fresh": 1,
+      "lines_added": 0,
+      "lines_removed": 0,
+      "out": 60,
+      "parts": [
+       [
+        1787000042.0,
+        0.003255
+       ]
+      ],
+      "prompt_id": "M7",
+      "reported": false,
+      "text": "start over",
+      "tool_s": 0.0,
+      "ts": "2026-08-17T20:54:00.000Z",
+      "turn_index": 16,
+      "usd_cr": 0.00075,
+      "usd_cw": 0.001,
+      "usd_in": 5e-06,
+      "usd_out": 0.0015
+     }
+    ]
+   ],
+   "fn": "open_turn",
+   "kw": {},
+   "out": {
+    "agent": false,
+    "agent_calls": 0,
+    "agent_id": "",
+    "agent_ids": [],
+    "agent_model_s": 0.0,
+    "agent_name": "",
+    "agent_tool_s": 0.0,
+    "blocked_s": 0.0,
+    "cache_read": 1500,
+    "cache_write": 100,
+    "calls": 1,
+    "compact": false,
+    "ctx": 1601,
+    "dctx": 100,
+    "dur_s": 2.0,
+    "eta": [],
+    "fresh": 1,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "out": 60,
+    "parts": [
+     [
+      1787000042.0,
+      0.003255
+     ]
+    ],
+    "prompt_id": "M7",
+    "reported": false,
+    "text": "start over",
+    "tool_s": 0.0,
+    "ts": "2026-08-17T20:54:00.000Z",
+    "turn_index": 16,
+    "usd_cr": 0.00075,
+    "usd_cw": 0.001,
+    "usd_in": 5e-06,
+    "usd_out": 0.0015
+   }
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl",
+    null
+   ],
+   "fn": "read_turns_settled",
+   "kw": {},
+   "out": [
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 4600,
+     "cache_write": 400,
+     "calls": 4,
+     "compact": false,
+     "ctx": 1401,
+     "dctx": null,
+     "dur_s": 20.0,
+     "eta": [],
+     "fresh": 4,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 100,
+     "parts": [
+      [
+       1787000003.0,
+       0.001755
+      ],
+      [
+       1787000009.0,
+       0.002055
+      ],
+      [
+       1787000015.0,
+       0.002355
+      ],
+      [
+       1787000020.0,
+       0.0026550000000000002
+      ]
+     ],
+     "prompt_id": "M1",
+     "reported": true,
+     "text": "build the widget",
+     "tool_s": 4.0,
+     "ts": "2026-08-17T20:53:20.000Z",
+     "turn_index": 10,
+     "usd_cr": 0.0023,
+     "usd_cw": 0.004,
+     "usd_in": 2e-05,
+     "usd_out": 0.0025
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 1400,
+     "cache_write": 100,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1501,
+     "dctx": 100,
+     "dur_s": 3.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 50,
+     "parts": [
+      [
+       1787000033.0,
+       0.002955
+      ]
+     ],
+     "prompt_id": "M6",
+     "reported": false,
+     "text": "ship it",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:53:51.010Z",
+     "turn_index": 15,
+     "usd_cr": 0.0007,
+     "usd_cw": 0.001,
+     "usd_in": 5e-06,
+     "usd_out": 0.00125
+    },
+    {
+     "agent": false,
+     "agent_calls": 0,
+     "agent_id": "",
+     "agent_ids": [],
+     "agent_model_s": 0.0,
+     "agent_name": "",
+     "agent_tool_s": 0.0,
+     "blocked_s": 0.0,
+     "cache_read": 1500,
+     "cache_write": 100,
+     "calls": 1,
+     "compact": false,
+     "ctx": 1601,
+     "dctx": 100,
+     "dur_s": 2.0,
+     "eta": [],
+     "fresh": 1,
+     "lines_added": 0,
+     "lines_removed": 0,
+     "out": 60,
+     "parts": [
+      [
+       1787000042.0,
+       0.003255
+      ]
+     ],
+     "prompt_id": "M7",
+     "reported": false,
+     "text": "start over",
+     "tool_s": 0.0,
+     "ts": "2026-08-17T20:54:00.000Z",
+     "turn_index": 16,
+     "usd_cr": 0.00075,
+     "usd_cw": 0.001,
+     "usd_in": 5e-06,
+     "usd_out": 0.0015
+    }
+   ]
   },
   {
    "args": [

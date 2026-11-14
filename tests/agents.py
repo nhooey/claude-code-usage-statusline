@@ -752,6 +752,31 @@ def run(tmp):
           "turn", [(t.text[:19], t.calls) for t in got],
           [("first", 1), ("<task-notification>", 1)])
 
+    print("--- a prompt delivered mid-turn ---")
+    # A prompt typed while the answer runs, handed over between two of its
+    # requests as a "queued" record with a promptId of its own: the turn
+    # keeps its prompt, its promptId and every request after it.  The same
+    # record after the answer has ended opens a turn.
+    def tool_call(minute, rid, stop):
+        return dict(answer(minute, rid, 10, 0, 100, 5),
+                    message=dict(answer(minute, rid, 10, 0, 100, 5)["message"],
+                                 stop_reason=stop))
+
+    def mid(minute, text, pid):
+        return dict(prompt(minute, text, pid), promptSource="queued")
+    got = sl.read_turns(session(tmp, "midturn", [
+        prompt(1, "first", "q1"),
+        tool_call(1, "q1a", "tool_use"),
+        tool_result(2, "q1"),
+        mid(2, "also this", "q2"),
+        tool_call(3, "q1b", "end_turn"),
+        mid(4, "next", "q3"),
+        tool_call(4, "q3a", "end_turn")]))
+    check("a queued prompt in a running answer stays in its turn, and one "
+          "after the answer ended opens a turn",
+          [(t.text, t.prompt_id, t.calls) for t in got],
+          [("first", "q1", 2), ("next", "q3", 1)])
+
     print("--- the late row ---")
     # One agent under the first prompt that keeps billing after that
     # prompt's Stop.  Three Stops read the same session, each at the cut the
