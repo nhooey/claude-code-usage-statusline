@@ -458,7 +458,7 @@ function sessionRow(st: Settings, fig: Dict, tr: Transcript, now: number,
 }
 
 /** The band's rows above the prompt, as the tree draws them
- * (band_tree.ts): of 🎮, 🧵 and 🎤, those `places` puts above and the
+ * (band_tree.ts): of 🎮, 🎤 and 🧵, those `places` puts above and the
  * phase draws, whose scope `hide` leaves, and the subagents of the
  * document's `agents` where `opts.agents` draws them. */
 export function treeOf(st: Settings, fig: Dict, rows: BandRows,

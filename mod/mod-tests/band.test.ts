@@ -459,7 +459,7 @@ test('a turn running draws the running phase', async ($, on) => {
   expect((await drawnOf(ui.above)).props?.marginTop).toBeUndefined()
 })
 
-test('each row is drawn in its place: the tree of 🎮, 🧵 and 🎤 above ' +
+test('each row is drawn in its place: the tree of 🎮, 🎤 and 🧵 above ' +
   'the prompt, 💳 alone under the footer line', async ($, on) => {
   const w = world(on)
   await start($, w, 'terminal', STATUS)
@@ -471,12 +471,12 @@ test('each row is drawn in its place: the tree of 🎮, 🧵 and 🎤 above ' +
     { ...opts, place: 'above', indent: INSET })
   const below = bandLines(BAND_ST, doc, COLS, HIDE,
     { ...opts, place: 'footer', inset: INSET })
-  // 🎮, 🧵 with the fixture's fork, ended this turn, under it, then 🎤.
+  // 🎮, 🎤, then 🧵 with the fixture's fork, ended this turn, under it.
   expect([above.length, below.length]).toEqual([4, 0])
   expect(text(above[0])).toMatch(/^ *⊟ 🎮 📦/u)
-  expect(text(above[1])).toMatch(/^ *├⊟ 🧵/u)
-  expect(text(above[2])).toMatch(/^ *│  ╰⊞ ✅ 1 done/u)
-  expect(text(above[3])).toMatch(/^ *╰─ 🎤/u)
+  expect(text(above[1])).toMatch(/^ *├─ 🎤/u)
+  expect(text(above[2])).toMatch(/^ *╰⊟ 🧵/u)
+  expect(text(above[3])).toMatch(/^ *   ╰⊞ ✅ 1 done/u)
   expect(await drawnRows(ui.above)).toEqual(expected(above))
   // The 💳 row alone under the footer line, a row of its own by default,
   // without the 📦 🌿 🔀 the tree's root draws.

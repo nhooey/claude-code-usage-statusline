@@ -468,7 +468,7 @@
               "it is drawn `never`, while a turn is `running` or `always`;",
               "and `transcript`, whether a turn's end stamps it into the",
               "transcript. Above the prompt the rows are a tree, 🎮 the",
-              "root, 🧵 and the subagents under it, then 🎤; under the",
+              "root, 🎤, then 🧵 and the subagents under it; under the",
               "footer line they go in one order: 💳, 🎤, 🧵, 🎮. The",
               "subagents are always above the prompt and never stamped."]
     },

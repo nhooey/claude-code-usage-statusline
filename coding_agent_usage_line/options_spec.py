@@ -369,7 +369,7 @@ OPTIONS = {
         "file": True,
         "flag": None,
         "doc-table": None,
-        "doc": "Each row the mod draws, 🎤 `turn`, 🧵 `agent`, 🎮 `session`, the 🔖 `tag` lines, the 💳 `account` row and the `subagents`' rows: `place`, whether it is drawn `above` the prompt or under Claude Code's `footer` line; `live`, whether it is drawn `never`, while a turn is `running` or `always`; and `transcript`, whether a turn's end stamps it into the transcript. Above the prompt the rows are a tree, 🎮 the root, 🧵 and the subagents under it, then 🎤; under the footer line they go in one order: 💳, 🎤, 🧵, 🎮. The subagents are always above the prompt and never stamped.",
+        "doc": "Each row the mod draws, 🎤 `turn`, 🧵 `agent`, 🎮 `session`, the 🔖 `tag` lines, the 💳 `account` row and the `subagents`' rows: `place`, whether it is drawn `above` the prompt or under Claude Code's `footer` line; `live`, whether it is drawn `never`, while a turn is `running` or `always`; and `transcript`, whether a turn's end stamps it into the transcript. Above the prompt the rows are a tree, 🎮 the root, 🎤, then 🧵 and the subagents under it; under the footer line they go in one order: 💳, 🎤, 🧵, 🎮. The subagents are always above the prompt and never stamped.",
     },
     "subagent-rows": {
         "type": "int",
