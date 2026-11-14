@@ -189,9 +189,10 @@ function headText(f: MainFold, meta: FoldMeta, counts: readonly number[],
       compactions: tr.compactions, background: [...tr.background],
       idle_at: tr.idleAt, last_seen: tr.lastSeen,
       opened: [tr.opened.pid, tr.opened.tidx], added: tr.added,
-      removed: tr.removed, gate: [tr.gate[0], tr.gate[1], tr.gate[2]] },
+      removed: tr.removed,
+      gate: [tr.gate[0], tr.gate[1], tr.gate[2], tr.gate[3]] },
     tu: { settled: tu.settled, last_stop: tu.lastStop,
-      gate: [tu.gate[0], tu.gate[1], tu.gate[2]],
+      gate: [tu.gate[0], tu.gate[1], tu.gate[2], tu.gate[3]],
       pending: pendingJson(tu.pending),
       open: tu.turns.length ? turnJson(tu.turns[tu.turns.length - 1])
         : null } });
@@ -364,9 +365,9 @@ export function foldOfSaved(
     tr.opened = { pid: h.opened[0], tidx: h.opened[1] };
     tr.added = h.added;
     tr.removed = h.removed;
-    tr.gate = [h.gate[0], h.gate[1], h.gate[2]];
+    tr.gate = [h.gate[0], h.gate[1], h.gate[2], h.gate[3]];
     tu.settled = u.settled;
-    tu.gate = [u.gate[0], u.gate[1], u.gate[2]];
+    tu.gate = [u.gate[0], u.gate[1], u.gate[2], u.gate[3]];
     tu.lastStop = u.last_stop;
     for (const [k, v] of pendingOf(u.pending)) tu.pending.set(k, v);
     if (u.open !== null) tu.turns.push(turnOf(u.open));

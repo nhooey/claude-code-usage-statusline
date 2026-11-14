@@ -625,6 +625,60 @@ def handmade():
         wake(5, "w1", promptId="U2"),
         asst(7, "u2", "two", usage=(1, 10, 110, 5), stop="end_turn"),
     ])
+    # Prompts typed while the answer runs, as Claude Code 2.1.325 hands
+    # them over between two requests: a dequeue, then a "queued" user
+    # record with a promptId and turnIndex of its own, after a tool result
+    # or a request still streaming, and no Stop hook before it.  They stay
+    # in the turn M1 opened, a pair handed over together among them.  The
+    # queued prompt after the answer ended opens M6; the typed prompt after
+    # an interrupt and the synthetic reply to it opens M7.
+    def queued(sec, idx, pid, text):
+        return prompt(sec, text, promptSource="queued", promptId=pid,
+                      origin={"kind": "human"},
+                      turnPosition={"promptIndex": 7, "turnIndex": idx})
+    put("midturn.jsonl", [
+        prompt(0, "build the widget", promptId="M1", origin={"kind": "human"},
+               turnPosition={"promptIndex": 6, "turnIndex": 10}),
+        asst(3, "m1", tools=[("t1", "Bash")], usage=(1, 100, 1000, 10),
+             stop="tool_use"),
+        queue(4, "enqueue"),
+        result(5, "t1", promptId="M1"),
+        queue(6, "dequeue"),
+        queued(6.01, 11, "M2", "also check the docs"),
+        asst(9, "m2", tools=[("t2", "Read")], usage=(1, 100, 1100, 20),
+             stop="tool_use"),
+        result(11, "t2", promptId="M2"),
+        queue(12, "enqueue"),
+        queue(12.5, "enqueue"),
+        queue(13, "dequeue"),
+        queue(13, "dequeue"),
+        queued(13.01, 12, "M3", "and the tests"),
+        queued(13.02, 13, "M4", "then stop"),
+        asst(15, "m3", usage=(1, 100, 1200, 30)),
+        queue(16, "enqueue"),
+        queue(17, "dequeue"),
+        queued(17.01, 14, "M5", "one more thing"),
+        asst(20, "m4", "Built, checked and tested.",
+             usage=(1, 100, 1300, 40), stop="end_turn"),
+        {"type": "system", "subtype": "stop_hook_summary",
+         "timestamp": stamp(20.1)},
+        {"type": "system", "subtype": "turn_duration",
+         "timestamp": stamp(20.2)},
+        queue(30, "enqueue"),
+        queue(31, "dequeue"),
+        queued(31.01, 15, "M6", "ship it"),
+        asst(33, "m5", tools=[("t3", "Bash")], usage=(1, 100, 1400, 50),
+             stop="tool_use"),
+        {"type": "user", "timestamp": stamp(34), "promptId": "M6",
+         "message": {"content": [{"type": "text",
+                                  "text": "[Request interrupted by user]"}]}},
+        asst(34.5, "m5s", "No response requested.", model="<synthetic>",
+             stop="stop_sequence"),
+        prompt(40, "start over", promptId="M7", origin={"kind": "human"},
+               turnPosition={"promptIndex": 8, "turnIndex": 16}),
+        asst(42, "m6", "Started over.", usage=(1, 100, 1500, 60),
+             stop="end_turn"),
+    ])
     files.update(session())
     files.update(inbox_now())
     return files

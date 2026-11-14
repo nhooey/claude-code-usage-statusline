@@ -2396,18 +2396,52 @@ def turn_index(r: dict) -> Optional[int]:
 
 def new_turn_gate() -> list:
     """A fresh `gate` for turn_opens: no turn open, so no number, none
-    running, and no turnPosition seen."""
-    return [None, True, False]
+    running, no turnPosition seen, and nothing in flight."""
+    return [None, True, False, False]
+
+
+# The stop_reason of an assistant record its answer goes on from: a tool
+# call, or none yet, written as the request streams.
+IN_FLIGHT_STOPS = (None, "tool_use")
+# The system records Claude Code writes after an answer is done: its Stop
+# hooks' summary and its clock.
+ANSWER_DONE = ("stop_hook_summary", "turn_duration")
+
+
+def in_flight_after(r: dict) -> Optional[bool]:
+    """Where `r` leaves the main thread's answer: True, in flight, after an
+    assistant record that calls a tool or has no stop_reason yet, and
+    after a tool result, the records an answer runs on between its
+    requests; False after any other assistant record (an end_turn, and the
+    synthetic stop_sequence Claude Code writes after an interrupt or an
+    API error), after any other user record but an isMeta one (a prompt,
+    an interrupt), and after the stop_hook_summary and turn_duration Claude
+    Code writes once an answer is done; None, as it was, for every other
+    record."""
+    if r.get("isSidechain") is True:
+        return None
+    if r.get("type") == "system":
+        return False if r.get("subtype") in ANSWER_DONE else None
+    m = r.get("message")
+    if r.get("type") == "assistant":
+        return (m.get("stop_reason") if isinstance(m, dict)
+                else None) in IN_FLIGHT_STOPS
+    if r.get("type") != "user" or r.get("isMeta"):
+        return None
+    c = m.get("content") if isinstance(m, dict) else None
+    return isinstance(c, list) and any(
+        isinstance(b, dict) and b.get("type") == "tool_result" for b in c)
 
 
 def turn_opens(r: dict, gate: list) -> Optional[str]:
     """turn_start_text, less a message delivered into the turn still
     running.  `gate` is [the open turn's turnIndex, whether its answer has
-    ended, whether any record so far has carried a turnPosition]: each
-    opener sets the number, None where it has none; the end of an answer —
-    an assistant record that ends its turn, or the turn_duration Claude
-    Code writes after one — sets the second; and the first turnPosition
-    sets the third.
+    ended, whether any record so far has carried a turnPosition, whether
+    the answer is in flight]: each opener sets the number, None where it
+    has none; the end of an answer — an assistant record that ends its
+    turn, or the turn_duration Claude Code writes after one — sets the
+    second; the first turnPosition sets the third; and in_flight_after
+    sets the fourth, which an opener clears.
 
     turn_start_text reads one record at a time, so it cannot tell a wake
     message (promptSource "system") that opens a turn from one delivered
@@ -2437,8 +2471,29 @@ def turn_opens(r: dict, gate: list) -> Optional[str]:
     20 MB transcript here read 231 turns with no call in them.  Their
     records stay in the turn before.  A transcript that never shows the
     field, written before it existed, opens them as turn_start_text says.
+
+    A prompt the user typed while the answer runs, and handed to it between
+    two of its requests, opens no turn either: a promptSource "queued"
+    record written after a tool result or an assistant record that did not
+    end its turn (in_flight_after), before the answer has ended.  Claude
+    Code writes it with a promptId and a turnIndex of its own, just as it
+    writes a queued prompt that opens a turn once the one before has
+    ended; but it runs no Stop hook before it, and answers it in the turn
+    still running.  In 62 transcripts here, 22 prompts were written so,
+    every one "queued", in Claude Code 2.1.316 to 2.1.325, and none came
+    after a Stop hook ran.  Opened as turns, each restarted ⌛, swapped
+    🎤's prompt, and left 🎤 and the receipt billing only what the answer
+    cost after it.  The turn keeps its prompt, its promptId and its clock,
+    and the records after it stay the turn's.  A run of them handed over
+    together leaves the answer in flight for the next.  Only "queued" is
+    read so: a prompt typed while the session is idle opens its turn
+    whatever came before it, as do the prompts of transcripts whose
+    assistant records carry no stop_reason.  The other shape a prompt
+    typed mid-answer takes, a queue removal stamped "absorbed_mid_turn",
+    queued_text refuses.
     """
     seen = gate[2]
+    flight = gate[3]
     if isinstance(r.get("turnPosition"), dict):
         gate[2] = True
     text = turn_start_text(r)
@@ -2447,6 +2502,9 @@ def turn_opens(r: dict, gate: list) -> Optional[str]:
                 ends_turn(r) or (r.get("type") == "system"
                                  and r.get("subtype") == "turn_duration")):
             gate[1] = True
+        after = in_flight_after(r)
+        if after is not None:
+            gate[3] = after
         return None
     if (seen and r.get("promptSource") == "system"
             and not isinstance(r.get("turnPosition"), dict)):
@@ -2455,7 +2513,9 @@ def turn_opens(r: dict, gate: list) -> Optional[str]:
     if (idx is not None and idx == gate[0] and not gate[1]
             and r.get("promptSource") == "system"):
         return None
-    gate[0], gate[1] = idx, False
+    if flight and not gate[1] and r.get("promptSource") == "queued":
+        return None
+    gate[0], gate[1], gate[3] = idx, False, False
     return text
 
 

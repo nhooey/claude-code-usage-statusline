@@ -287,7 +287,9 @@ has no context and no ⛳ of its own.
   output.
 - **🎯**, `🎯98٪`: prompt-cache hit rate, cache reads as a share of all
   input.
-- **⌛**: how long the scope has run. The turn's, from its prompt: up to now
+- **⌛**: how long the scope has run. The turn's, from the prompt that
+  opened it, through any prompt typed and handed over mid-turn, which
+  opens no turn of its own (see [Turns](accounting.md#turns)): up to now
   while it runs, so it counts on through a tool call that writes no record
   until it ends; between turns and on the receipt, up to its last record,
   or the transcript's own duration for it once that is written. The main
@@ -560,12 +562,15 @@ tests/fixtures/figures/status/18-agents@196.json --part start --plain`):
 🔻🔖 p-fork  💳 🔋  15٪  🪫  87٪  📅 2026-08-16  🕐 01:23:20
 ```
 
-`8f37748e` is the first group of the turn's `promptId`, the UUID on every
-user record of the turn, so it can be grepped in the transcript, and `#12`
-is Claude Code's own turn index. Each half is drawn only when the transcript
-records it. 🔻 points down at the turn the prompt opens, 🔺 up at the turn
-that ended; both lines are at no indent, so they stack, and every turn
-carries its tag at both ends, even one that is interrupted or still running.
+`8f37748e` is the first group of the turn's `promptId`, the UUID on the
+prompt that opened it and on the turn's user records, so it can be grepped
+in the transcript; a prompt handed over mid-turn and the records after it
+carry a `promptId` of their own, and the tag stays the opening prompt's.
+`#12` is Claude Code's own turn index. Each half is drawn only when the
+transcript records it. 🔻 points down at the turn the prompt opens, 🔺 up
+at the turn that ended; both lines are at no indent, so they stack, and
+every turn carries its tag at both ends, even one that is interrupted or
+still running.
 
 After the tag, 💳 and the account's 🔋 5-hour and 🪫 weekly windows, drawn
 as the 💳 row draws them, without the 🔜 resets: on `🔻🔖` as the status

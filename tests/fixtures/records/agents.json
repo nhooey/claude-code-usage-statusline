@@ -7733,6 +7733,907 @@
   },
   {
    "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl"
+   ],
+   "fn": "inbox_classify",
+   "kw": {},
+   "out": [
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ],
+    [
+     "",
+     false
+    ]
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl"
+   ],
+   "fn": "inbox_sends",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl"
+   ],
+   "fn": "inbox_deliveries",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl",
+    [
+     "queued for delivery to"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl",
+    [
+     "\"coordinator\"",
+     "\"peer\""
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl",
+    [
+     "{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "build the widget"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "turnPosition": {
+      "promptIndex": 6,
+      "turnIndex": 10
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t1",
+        "name": "Bash",
+        "type": "tool_use"
+       }
+      ],
+      "id": "m1",
+      "model": "claude-opus-5",
+      "stop_reason": "tool_use",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1000,
+       "input_tokens": 1,
+       "output_tokens": 10
+      }
+     },
+     "requestId": "req-m1",
+     "timestamp": "2026-08-17T20:53:23.000Z",
+     "type": "assistant"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:24.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "t1",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "promptId": "M1",
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "user"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:26.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "also check the docs"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M2",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:26.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 11
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t2",
+        "name": "Read",
+        "type": "tool_use"
+       }
+      ],
+      "id": "m2",
+      "model": "claude-opus-5",
+      "stop_reason": "tool_use",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1100,
+       "input_tokens": 1,
+       "output_tokens": 20
+      }
+     },
+     "requestId": "req-m2",
+     "timestamp": "2026-08-17T20:53:29.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "t2",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "promptId": "M2",
+     "timestamp": "2026-08-17T20:53:31.000Z",
+     "type": "user"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:32.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:32.500Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:33.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:33.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "and the tests"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M3",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:33.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 12
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "then stop"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M4",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:33.020Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 13
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [],
+      "id": "m3",
+      "model": "claude-opus-5",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1200,
+       "input_tokens": 1,
+       "output_tokens": 30
+      }
+     },
+     "requestId": "req-m3",
+     "timestamp": "2026-08-17T20:53:35.000Z",
+     "type": "assistant"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:36.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:37.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "one more thing"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M5",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:37.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 14
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "Built, checked and tested.",
+        "type": "text"
+       }
+      ],
+      "id": "m4",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1300,
+       "input_tokens": 1,
+       "output_tokens": 40
+      }
+     },
+     "requestId": "req-m4",
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "type": "assistant"
+    },
+    {
+     "subtype": "stop_hook_summary",
+     "timestamp": "2026-08-17T20:53:40.100Z",
+     "type": "system"
+    },
+    {
+     "subtype": "turn_duration",
+     "timestamp": "2026-08-17T20:53:40.200Z",
+     "type": "system"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:51.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "ship it"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M6",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:51.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 15
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t3",
+        "name": "Bash",
+        "type": "tool_use"
+       }
+      ],
+      "id": "m5",
+      "model": "claude-opus-5",
+      "stop_reason": "tool_use",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1400,
+       "input_tokens": 1,
+       "output_tokens": 50
+      }
+     },
+     "requestId": "req-m5",
+     "timestamp": "2026-08-17T20:53:53.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "[Request interrupted by user]",
+        "type": "text"
+       }
+      ]
+     },
+     "promptId": "M6",
+     "timestamp": "2026-08-17T20:53:54.000Z",
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "No response requested.",
+        "type": "text"
+       }
+      ],
+      "id": "m5s",
+      "model": "<synthetic>",
+      "stop_reason": "stop_sequence"
+     },
+     "timestamp": "2026-08-17T20:53:54.500Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "start over"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M7",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:54:00.000Z",
+     "turnPosition": {
+      "promptIndex": 8,
+      "turnIndex": 16
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "Started over.",
+        "type": "text"
+       }
+      ],
+      "id": "m6",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1500,
+       "input_tokens": 1,
+       "output_tokens": 60
+      }
+     },
+     "requestId": "req-m6",
+     "timestamp": "2026-08-17T20:54:02.000Z",
+     "type": "assistant"
+    }
+   ]
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl",
+    [
+     "zzz"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": []
+  },
+  {
+   "args": [
+    "tests/fixtures/records/inputs/midturn.jsonl",
+    [
+     "}\n{"
+    ]
+   ],
+   "fn": "marked_records",
+   "kw": {},
+   "out": [
+    {
+     "message": {
+      "content": "build the widget"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M1",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:53:20.000Z",
+     "turnPosition": {
+      "promptIndex": 6,
+      "turnIndex": 10
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t1",
+        "name": "Bash",
+        "type": "tool_use"
+       }
+      ],
+      "id": "m1",
+      "model": "claude-opus-5",
+      "stop_reason": "tool_use",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1000,
+       "input_tokens": 1,
+       "output_tokens": 10
+      }
+     },
+     "requestId": "req-m1",
+     "timestamp": "2026-08-17T20:53:23.000Z",
+     "type": "assistant"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:24.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "t1",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "promptId": "M1",
+     "timestamp": "2026-08-17T20:53:25.000Z",
+     "type": "user"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:26.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "also check the docs"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M2",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:26.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 11
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t2",
+        "name": "Read",
+        "type": "tool_use"
+       }
+      ],
+      "id": "m2",
+      "model": "claude-opus-5",
+      "stop_reason": "tool_use",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1100,
+       "input_tokens": 1,
+       "output_tokens": 20
+      }
+     },
+     "requestId": "req-m2",
+     "timestamp": "2026-08-17T20:53:29.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "tool_use_id": "t2",
+        "type": "tool_result"
+       }
+      ]
+     },
+     "promptId": "M2",
+     "timestamp": "2026-08-17T20:53:31.000Z",
+     "type": "user"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:32.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:32.500Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:33.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:33.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "and the tests"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M3",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:33.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 12
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": "then stop"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M4",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:33.020Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 13
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [],
+      "id": "m3",
+      "model": "claude-opus-5",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1200,
+       "input_tokens": 1,
+       "output_tokens": 30
+      }
+     },
+     "requestId": "req-m3",
+     "timestamp": "2026-08-17T20:53:35.000Z",
+     "type": "assistant"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:36.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:37.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "one more thing"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M5",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:37.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 14
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "Built, checked and tested.",
+        "type": "text"
+       }
+      ],
+      "id": "m4",
+      "model": "claude-opus-5",
+      "stop_reason": "end_turn",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1300,
+       "input_tokens": 1,
+       "output_tokens": 40
+      }
+     },
+     "requestId": "req-m4",
+     "timestamp": "2026-08-17T20:53:40.000Z",
+     "type": "assistant"
+    },
+    {
+     "subtype": "stop_hook_summary",
+     "timestamp": "2026-08-17T20:53:40.100Z",
+     "type": "system"
+    },
+    {
+     "subtype": "turn_duration",
+     "timestamp": "2026-08-17T20:53:40.200Z",
+     "type": "system"
+    },
+    {
+     "operation": "enqueue",
+     "timestamp": "2026-08-17T20:53:50.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "operation": "dequeue",
+     "timestamp": "2026-08-17T20:53:51.000Z",
+     "type": "queue-operation"
+    },
+    {
+     "message": {
+      "content": "ship it"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M6",
+     "promptSource": "queued",
+     "timestamp": "2026-08-17T20:53:51.010Z",
+     "turnPosition": {
+      "promptIndex": 7,
+      "turnIndex": 15
+     },
+     "type": "user",
+     "userType": "external"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "id": "t3",
+        "name": "Bash",
+        "type": "tool_use"
+       }
+      ],
+      "id": "m5",
+      "model": "claude-opus-5",
+      "stop_reason": "tool_use",
+      "usage": {
+       "cache_creation_input_tokens": 100,
+       "cache_read_input_tokens": 1400,
+       "input_tokens": 1,
+       "output_tokens": 50
+      }
+     },
+     "requestId": "req-m5",
+     "timestamp": "2026-08-17T20:53:53.000Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "[Request interrupted by user]",
+        "type": "text"
+       }
+      ]
+     },
+     "promptId": "M6",
+     "timestamp": "2026-08-17T20:53:54.000Z",
+     "type": "user"
+    },
+    {
+     "message": {
+      "content": [
+       {
+        "text": "No response requested.",
+        "type": "text"
+       }
+      ],
+      "id": "m5s",
+      "model": "<synthetic>",
+      "stop_reason": "stop_sequence"
+     },
+     "timestamp": "2026-08-17T20:53:54.500Z",
+     "type": "assistant"
+    },
+    {
+     "message": {
+      "content": "start over"
+     },
+     "origin": {
+      "kind": "human"
+     },
+     "promptId": "M7",
+     "promptSource": "typed",
+     "timestamp": "2026-08-17T20:54:00.000Z",
+     "turnPosition": {
+      "promptIndex": 8,
+      "turnIndex": 16
+     },
+     "type": "user",
+     "userType": "external"
+    }
+   ]
+  },
+  {
+   "args": [
     "tests/fixtures/records/inputs/own.jsonl"
    ],
    "fn": "inbox_classify",
