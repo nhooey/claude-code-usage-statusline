@@ -6,7 +6,7 @@ its two open decisions are taken at `OP7`.
 ## Why
 
 Most of the logic is written twice. Nineteen modules of
-`coding_agent_usage_line/` have a twin in `mod/src/`, about 16,000 lines
+`coding_agent_usage_line/` have a twin in `mod/src/`, about 17,800 lines
 of Python beside about 12,000 of TypeScript, and the two are held together
 by fixtures the Python writes and goldens both sides are checked against.
 Every change to what a row shows is made in both ports, in
@@ -32,6 +32,64 @@ one JSON line per task.
 | Codex receipts and its status         | `--agent codex`, from a Codex `Stop` hook                 | no                                                    |
 | The reference the ports are tested on | the fixture generators and goldens under `tests/`         | the TypeScript is what is tested against it           |
 
+## Which entries reach each module
+
+`OP1`'s measure, by `tools/python-module-reach.py`, which follows each
+module's imports from each entry without running anything. Codex is the
+launcher with `--agent codex`; Claude is the same launcher with
+`--agent claude`, the agent panel among its modes; the fold worker is
+`mod/scripts/agent_lines.py`. The last column counts the Python files
+under `tests/` and `tools/` that load the module.
+
+| Module | Lines | Codex | Claude | Fold worker | Test files |
+| --- | ---: | :---: | :---: | :---: | ---: |
+| `claude.py` | 3649 | — | ✅ | — | 20 |
+| `claude_render.py` | 1192 | — | ✅ | — | 23 |
+| `claude_subagent_render.py` | 720 | — | ✅ | — | 22 |
+| `claude_cost_render.py` | 267 | — | ✅ | — | 20 |
+| `grid.py` | 260 | — | ✅ | — | 22 |
+| `inbox_fold.py` | 245 | — | ✅ | — | 21 |
+| `claude_sources.py` | 77 | — | ✅ | — | 20 |
+| `credits.py` | 69 | — | — | — | 1 |
+| `claude_records.py` | 3204 | — | ✅ | ✅ | 26 |
+| `main_fold.py` | 662 | — | ✅ | ✅ | 26 |
+| `agent_fold.py` | 193 | — | ✅ | ✅ | 26 |
+| `sources.py` | 1006 | ✅ | ✅ | — | 20 |
+| `config.py` | 637 | ✅ | ✅ | — | 21 |
+| `codex.py` | 540 | ✅ | ✅ | — | 20 |
+| `options_spec.py` | 463 | ✅ | ✅ | — | 21 |
+| `cli.py` | 454 | ✅ | ✅ | — | 3 |
+| `options.py` | 255 | ✅ | ✅ | — | 21 |
+| `render.py` | 200 | ✅ | ✅ | — | 20 |
+| `usage_report.py` | 113 | ✅ | ✅ | — | 3 |
+| `models.py` | 40 | ✅ | ✅ | — | 20 |
+| `formatting.py` | 1539 | ✅ | ✅ | ✅ | 32 |
+| `spec.py` | 1402 | ✅ | ✅ | ✅ | 32 |
+| `spans.py` | 280 | ✅ | ✅ | ✅ | 32 |
+| `state.py` | 268 | ✅ | ✅ | ✅ | 26 |
+| `state_spec.py` | 91 | ✅ | ✅ | ✅ | 26 |
+
+What it decides for `OP6` and `OP7`:
+
+- **Codex keeps 14 modules, 7,288 lines:** `cli.py`, `codex.py`,
+  `render.py`, `sources.py`, `config.py`, `options.py`, `options_spec.py`,
+  `usage_report.py`, `models.py`, `state.py`, `state_spec.py`,
+  `formatting.py`, `spec.py` and `spans.py`. `formatting.py` and `spec.py`
+  are kept whole here but hold the Claude rows' glyphs and cells too, and
+  `sources.py` holds the Claude Usage Tracker's adapter; each can shed its
+  Claude parts at `OP7`.
+- **Claude alone uses 7 modules, 6,410 lines:** `claude.py`,
+  `claude_render.py`, `claude_subagent_render.py`, `claude_cost_render.py`,
+  `grid.py`, `inbox_fold.py` and `claude_sources.py`. They go at `OP7`.
+- **The fold worker also uses 3, 4,059 lines:** `claude_records.py`,
+  `main_fold.py` and `agent_fold.py`. They go at `OP7` once `OP6` has
+  moved the worker to Node.
+- **No entry loads `credits.py`,** 69 lines: the 💳 row is the mod's, and
+  only `tests/source-cache.py` imports it. It can go with its test now.
+- **The tests:** 32 files load `formatting.py`, so the generators and
+  checks that only test the Claude modules go with them at `OP7`, and the
+  rest stay as Codex's.
+
 ## Target
 
 - `subagentStatusLine` runs `node mod/src/panel.ts --mode subagent` (Node
@@ -49,11 +107,12 @@ one JSON line per task.
 
 ## Steps
 
-1. **`OP1` Measure what the move would remove.** List, per Python module,
-   which entries reach it: the panel, Codex, the mod's fold worker, the
-   tests. That decides what the Python keeps after `OP6`, and whether
-   Codex shares enough with Claude (`sources.py`, `formatting.py`,
-   `config.py`) to keep those modules whole.
+1. **`OP1` Measure what the move would remove.** Done: see
+   [Which entries reach each module](#which-entries-reach-each-module).
+   List, per Python module, which entries reach it: the panel, Codex, the
+   mod's fold worker, the tests. That decides what the Python keeps after
+   `OP6`, and whether Codex shares enough with Claude (`sources.py`,
+   `formatting.py`, `config.py`) to keep those modules whole.
 2. **`OP2` The panel's command in TypeScript.** `mod/src/panel.ts`: the
    port of `main_subagent`, `prepare_subagent_tasks` and
    `render_subagent`, over the Node readers, with the same options parser
