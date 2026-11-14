@@ -1,6 +1,6 @@
 # One port: Claude's figures drawn by the mod alone
 
-Approved to build. Its steps are `OP1` … `OP5` in [the schedule](_schedule.md).
+Approved to build. Its steps are `OP1` … `OP7` in [the schedule](_schedule.md).
 Its decisions are taken (see [Decided](#decided)).
 
 ## Why
@@ -96,16 +96,84 @@ What it decides for `OP4` and `OP5`:
   every doc that names it are gone. The renderer's own cases
   (`tests/fixtures/panel/`) stay, as the inputs and rows the TypeScript
   renderer is checked against.
-- **A row per running subagent in the band.** The mod draws them above
-  the prompt from the agent folds it already keeps, with the figures the
-  panel's rows had: model, cost, tokens, cache, context, plan-window
-  shares, 🤖 🔧 🚦 clocks, the inbox and the worktree branch.
+- **The session's threads as a tree in the band.** Above the prompt, the
+  mod draws 🎮 the session as the root, 🧵 the main thread and 🎤 the turn
+  as its children, and each subagent under the thread that started it,
+  from the agent folds it already keeps, with the figures the panel's
+  rows had: model, cost, tokens, cache, context, plan-window shares,
+  🤖 🔧 🚦 clocks, the inbox and the worktree branch. See
+  [The band's tree](#the-bands-tree).
 - **The mod's large folds in Node,** through `process.run`, so the mod
   needs no Python.
 - **The Python keeps Codex alone.** Its Claude modules, their tests and
   their fixture generators go, with `--mode status` and `--mode cost`
   for Claude: the mod is the one way to see them in Claude Code. The
   TypeScript becomes the reference for what stays.
+
+## The band's tree
+
+Every thread, the main one included, is a row of the same grid: small
+multiples, one row design repeated, with the hierarchy in the label
+alone, as a tree table draws it, so every figure keeps its column on
+every row.
+
+- **The tree.** 🎮 the session is the root; 🧵 main and 🎤 the turn are
+  its children; each subagent sits under the thread that started it, in
+  the order they started. The lines are `├─` `╰─` `│`, branching at the
+  middle of the cell, two columns a depth.
+- **The label.** Its kind glyph and state circle (🟢 🟡 ⚫, ✅ once
+  finished), its counts, its name, then its latest progress update, the
+  line a thread writes between tool calls, dimmed, while it works or
+  waits; an idle or finished thread shows its name alone. The label takes
+  the columns the figures leave and is cut with `…`, so on a narrow
+  terminal the update shrinks first and no figure moves. The path
+  `chat.progress` hides the update.
+- **The root's label** is the workspace: 📦 the project, 🌿 the branch and
+  🔀 the pull request, each a link to it on GitHub. The 💳 row keeps the
+  account alone.
+- **Folding.** Every row with children folds and opens on a click: its
+  mark takes the place of the `─` in its tree line, `├⊟` opened and `├⊞`
+  folded, and the root's mark stands before it. A folded agent keeps its
+  own figures, with 👶🏻 before its name counting every agent hidden under
+  it; 👶🏻 is drawn on folded rows alone. An agent that starts under a
+  folded row stays hidden and adds to its 👶🏻, and a row stays as it was
+  left for the rest of the session.
+- **`✅ N done`,** under 🧵 main, sums the subagents that finished this
+  turn, which Claude Code's own panel drops after 30 seconds; it starts
+  folded, and opened lists them.
+- **The cap.** At most 6 running subagent rows by default. Past it, the
+  later siblings under one parent fold into that parent's `… N more`,
+  which sums them and starts folded; every shown row's parents stay.
+- **The glyphs.** 🧵 marks the main thread, in the kind slot 🔍 🔩 📐 fill
+  for agents; 🤖 keeps one job, the model having the floor, in the 🛫
+  column and the first time gauge.
+- **A click on a thread's label** switches the transcript to it, as
+  Claude Code's tasks list does (`$.ui.view`); 🧵 main's goes back to the
+  main conversation. There are no hotkeys: the numbers would move as
+  threads come and go.
+
+Drawn at 236 columns, with Marigold opened, then folded:
+
+```text
+Marigold opened
+⊟ 🎮 📦 claude-code-usage-statusline 🌿 master 🔀 #38                                                                         💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+├⊟ 🧵🟢 main  Checking the binary for subagentStatusLine, then the changelog for a hook that replaces it     🧬O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+│  ├⊟ 🔍🟢 Marigold  Running the plugin tests after the wrapper Box fix, then the 29 suites                  🧬O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+│  │  ├─ 🔩🟢 Fern  Reading spec/layout.jsonc for the rows table and the cells each row draws                🧬S⁵🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪  💾 + 41  - 12
+│  │  ├─ 🔩🟢 Rowan  Reading mod/src/grid.ts to see how a label runs over the blank columns                  🧬H⁵🐇  🔧  50s  💰0.0   🧠  9k   4٪  🧩▴1.1k ▾120   🎯89٪  ⌛ 1m          🤖⠄⠀ 🔧⠶⠀ 🚦⠀⠀  🔋  .00٪  🪫  .003٪
+│  │  ╰⊞ … 2 more                                                                                                    🏃   2   💰0.0                🧩▴2.4k ▾210   🎯88٪  ⌛20s          🤖⠄⠀ 🔧⠶⠀ 🚦⠀⠀  🔋  .00٪  🪫  .004٪
+│  ├─ 📐🟡 Thistle  Asking you which layout to build                                                         🧬O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+│  ╰⊞ ✅ 3 done                                                                                                      ✅  42m  💰0.4                🧩▴ 61k ▾4.2k  🎯95٪  ⌛ 31m         🤖⠶⠆ 🔧⠶⠄ 🚦⠀⠀  🔋  .07٪  🪫  .081٪  💾 + 88  - 30
+╰─ 🎤🟢 turn                                                                                                 🧬O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+
+Marigold folded
+⊟ 🎮 📦 claude-code-usage-statusline 🌿 master 🔀 #38                                                                         💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+├⊟ 🧵🟢 main  Checking the binary for subagentStatusLine, then the changelog for a hook that replaces it     🧬O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+│  ├⊞ 🔍🟢 👶🏻4 Marigold  Running the plugin tests after the wrapper Box fix, then the 29 suites            🧬O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+│  ├─ 📐🟡 Thistle  Asking you which layout to build                                                         🧬O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+│  ╰⊞ ✅ 3 done                                                                                                      ✅  42m  💰0.4                🧩▴ 61k ▾4.2k  🎯95٪  ⌛ 31m         🤖⠶⠆ 🔧⠶⠄ 🚦⠀⠀  🔋  .07٪  🪫  .081٪  💾 + 88  - 30
+╰─ 🎤🟢 turn                                                                                                 🧬O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+```
 
 ## Steps
 
@@ -120,14 +188,16 @@ What it decides for `OP4` and `OP5`:
    `tests/fixtures/panel/` stay until `OP5`, since the TypeScript
    renderer and folds are checked against them. The corpus is committed
    data: its inputs are read as they are and its rows drawn again.
-3. **`OP3` The subagent rows in the band.** A `rows.subagents` row in
-   `spec/options.jsonc` and `mod/defaults/config.jsonc`, placed `above`
-   and live while a turn runs, as the turn and session rows are. The mod
-   prepares each running agent's task from `$.agent.list()` and its agent
-   fold (`transcripts.ts`), with the agent's usage, clocks, inbox and
-   branch worked out as `prepare_subagent_tasks` does, and draws each
-   with `renderTaskRows`. Tests in `mod/mod-tests/` and `mod/test/`, and
-   `docs/layout.md`.
+3. **`OP3` The band's tree.** [The band's tree](#the-bands-tree) above
+   the prompt: the 🎮 root with the workspace, 🧵 main moved up from under
+   the footer line, 🎤 the turn, and a `rows.subagents` row in
+   `spec/options.jsonc` and `mod/defaults/config.jsonc` for the agents,
+   live while a turn runs. The mod prepares each agent's task from
+   `$.agent.list()` and its agent fold (`transcripts.ts`), its usage,
+   clocks, inbox and branch worked out as `prepare_subagent_tasks` does,
+   and draws each with `renderTaskRows`; `✅ N done`, the cap and its
+   `… N more`, and the progress updates. Tests in `mod/mod-tests/` and
+   `mod/test/`, and `docs/layout.md`.
 4. **`OP4` The mod's fold worker in TypeScript.** `transcripts.ts` folds
    large transcripts in Node in place of `python3 .../agent_lines.py`.
 5. **`OP5` Remove the Python's Claude twins.** Delete the modules `OP1`
@@ -135,6 +205,12 @@ What it decides for `OP4` and `OP5`:
    `--mode cost` for Claude, their tests and their fixture generators,
    and move what the TypeScript's tests still need to Node or keep it as
    committed data.
+6. **`OP6` 🧬 for the model cell.** `🤖O⁵🏃` becomes `🧬O⁵🏃` on every
+   row and the receipt (`E_MOD` in `spec/layout.jsonc`), so 🤖 keeps one
+   job. After `OP5` it touches the TypeScript and its cases alone.
+7. **`OP7` The band's clicks.** A label's click switches the transcript
+   to its thread; a row with children folds and opens, its fold kept in
+   `$.state` by agent id; 📦 🌿 🔀 are links. Tests in `mod/mod-tests/`.
 
 ## What to watch
 
@@ -144,13 +220,14 @@ What it decides for `OP4` and `OP5`:
   the mod both read the `window-costs` cache (`spec/state.jsonc`); its
   format must not move.
 - **The band's height.** Each running subagent adds a row above the
-  prompt. `rows.subagents` can be placed in the footer or hidden like
-  any other row.
+  prompt, up to the cap; `rows.subagents` can be hidden like any other
+  row.
 
 ## Decided
 
 1. **The subagents' figures go in the band above the prompt,** one row
-   per running subagent, not in a pane.
+   per running subagent, not in a pane, as
+   [The band's tree](#the-bands-tree) draws them.
 2. **The Python drops its Claude status line and cost receipt** with its
    other Claude modules at `OP5`; the mod is the way to see them.
 3. **Codex stays in Python.** Porting `--agent codex` waits until someone
