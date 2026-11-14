@@ -138,11 +138,11 @@ export type ListedAgent = {
   readonly teammateId?: string;
 };
 
-/** The renderer's status for `$.agent.list()`'s AgentStatus: a loop
- * waiting on a permission is still running, and an idle teammate has
- * finished its turn. */
+/** The renderer's status for `$.agent.list()`'s AgentStatus: `waiting`
+ * stays waiting, an agent that ended its turn on background work it owns,
+ * a plan's approval or an Agent call, which the renderer draws paused
+ * (parked); an idle teammate has finished its turn. */
 export function taskStatus(status: string | undefined): string {
-  if (status === "waiting") return "running";
   if (status === "idle") return "completed";
   return status ?? "completed";
 }

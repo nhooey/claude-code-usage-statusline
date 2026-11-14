@@ -88,9 +88,10 @@ def agent_state(status, usage=None, waiting_on=False):
     its result, 🤖 the model; and none for a task with no transcript to say.
     Paused, it is what the agent waits on, in the order it is likeliest to
     be the thing that wakes it: 💤 its agents, then 💻 a background shell,
-    📡 a Monitor, ⛳ only the ETA it gave (see parked); 🥚 is a task not
-    started.  Ended, it is how: ✅ ❌ 🛑.  💥, paused or ended, is an agent
-    whose last answer died on an API error.  A status never seen is its
+    📡 a Monitor, then 📋 for a task the mod's agent list calls waiting on
+    nothing else it names, else ⛳ only the ETA it gave (see parked); 🥚 is
+    a task not started.  Ended, it is how: ✅ ❌ 🛑.  💥, paused or ended,
+    is an agent whose last answer died on an API error.  A status never seen is its
     first two letters, which render_phase paints amber.
     """
     if status == "running":
@@ -111,7 +112,8 @@ def agent_state(status, usage=None, waiting_on=False):
     if parked(status, getattr(usage, "eta", None), waiting_on, getattr(usage, "background", ())):
         kinds = [k for _, k in getattr(usage, "background", ()) or ()]
         return E_PHASE_PAUSE, (E_MODE_AGENTS if waiting_on else
-                               next((PAUSE_MARK[k] for k in ("bash", "monitor") if k in kinds), E_MODE_ETA))
+                               next((PAUSE_MARK[k] for k in ("bash", "monitor") if k in kinds),
+                                    E_MODE_HELD if status == "waiting" else E_MODE_ETA))
     if status in END_MARK:
         return E_PHASE_END, END_MARK[status]
     return (status[:2], "") if status else ("", "")
@@ -262,7 +264,8 @@ def render_agent_split(elapsed, model_s, tool_s=0.0):
         out += ([Span(" ")] if out else []) + render_gauge(m, s, n)
     return out
 def parked(status, eta, waiting_on=False, background=()):
-    """Whether a task Claude Code calls completed is only waiting.
+    """Whether a task is only waiting: one the mod's `$.agent.list()` calls
+    waiting, which says so itself, or one Claude Code calls completed.
 
     An agent that ends its turn to wait on background work is marked
     completed while it waits, and its clock has to keep running through the
@@ -273,7 +276,8 @@ def parked(status, eta, waiting_on=False, background=()):
     has not heard the end of (scan_background), or an ETA still live in its
     last message (live_eta).
     """
-    return status == "completed" and (bool(eta) or waiting_on or bool(background))
+    return status == "waiting" or (
+        status == "completed" and (bool(eta) or waiting_on or bool(background)))
 def running_parents(prepared_tasks):
     """The ids with an agent running or not yet started anywhere under them on the panel."""
     parent = {str(t["id"]): str((m or {}).get("parentAgentId") or "")

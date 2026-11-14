@@ -265,6 +265,7 @@ the 🛫 column, with how long it has been doing it.
 | 🟡 | 💤 | Agents | an agent under it is still running or not started |
 | 🟡 | 💻 | Shell | a background shell it has not heard the end of |
 | 🟡 | 📡 | Monitor | a Monitor it has not heard the end of |
+| 🟡 | 📋 | Held | Claude Code holds it waiting on nothing it can name, such as its plan's approval |
 | 🟡 | ⛳ | ETA | nothing it can name, but a live ETA in its last message |
 | 🟡 | 🥚 | Pending | not started |
 | ⚫ | ✅ | Completed | finished, and waiting on nothing |
@@ -274,7 +275,8 @@ the 🛫 column, with how long it has been doing it.
 
 Claude Code calls an agent completed both when it has finished and when it has
 ended its turn to wait. The row reads the agent's transcript and its children
-to tell the two apart.
+to tell the two apart; in the mod, Claude Code's agent list says `waiting` for
+the second, and the row is paused whatever the transcript holds.
 
 ### Subagent rows
 

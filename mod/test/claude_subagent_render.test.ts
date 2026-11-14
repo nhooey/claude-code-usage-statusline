@@ -62,3 +62,14 @@ for (const file of FILES) {
 test("panel: every case was run", () => {
   assert.equal(total, 278);
 });
+
+test("a waiting agent is paused, on its shell, its Monitor, its agents, " +
+  "or else on what it is held for", () => {
+  const bg = (kinds: string[]) => ({ eta: [], pending: [],
+    background: kinds.map((k, i) => ["b" + i, k]) });
+  assert.deepEqual(sr.agentState("waiting", bg(["bash"])), ["🟡", "💻"]);
+  assert.deepEqual(sr.agentState("waiting", bg(["monitor"])), ["🟡", "📡"]);
+  assert.deepEqual(sr.agentState("waiting", bg([]), true), ["🟡", "💤"]);
+  assert.deepEqual(sr.agentState("waiting", bg([])), ["🟡", "📋"]);
+  assert.ok(sr.parked("waiting", [], false, []));
+});

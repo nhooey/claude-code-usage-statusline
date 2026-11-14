@@ -276,7 +276,8 @@ function linked(pieces: readonly Piece[], repo: string | null,
 }
 
 /** Whether a task has ended: failed, killed, or completed and waiting on
- * nothing (parked says what a completed agent can still wait on). */
+ * nothing (parked says what a completed agent can still wait on).  A
+ * waiting one has not: it is paused. */
 function ended(t: Dict, u: Dict, busy: ReadonlySet<string>): boolean {
   const s = String(t.status ?? "");
   if (s === "failed" || s === "killed") return true;
@@ -447,7 +448,8 @@ function groupNode(st: Settings, a: TreeAgents, tasks: readonly TreeTask[],
     const work = u.work as [number, number][];
     const firsts = [...work.slice(0, 1).map((w) => w[0]),
       ...(u.open_at !== null ? [u.open_at as number] : [])];
-    const live = t.task.status === "running";
+    const live = t.task.status === "running" ||
+      t.task.status === "waiting";
     const end = live ? null : (u.last_epoch ?? (work.length
       ? Math.max(...work.map((w) => w[1])) : null)) as number | null;
     return agentElapsed(t.task.startTime, a.now, end,

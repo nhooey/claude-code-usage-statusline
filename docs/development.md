@@ -155,7 +155,7 @@ in [Glyphs and terminals](glyphs-and-terminals.md).
   constants, they are literals in that table, so the probe does not see them
   until it is taught to read it. A wrong width here shifts one subagent row.
 - The agent-row state marks and 👶🏻, `E_PHASE_*`, `E_MODE_*` and `E_KIDS`:
-  🟢 🟡 ⚫, 💤 💻 📡 🥚 ✅ ❌ 🛑 and 👶🏻. They are `E_*` constants, so the next
+  🟢 🟡 ⚫, 💤 💻 📡 📋 🥚 ✅ ❌ 🛑 and 👶🏻. They are `E_*` constants, so the next
   probe run covers them. 🟢 and 🟡 are Unicode 12, newer than any other glyph
   on either readout. 👶🏻 is a base and a skin-tone modifier, two codepoints:
   two columns where the terminal folds clusters and four where it does not,

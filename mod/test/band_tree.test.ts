@@ -92,10 +92,10 @@ test("agentShares divides what an agent billed in each window by the " +
     { sess: null, week: null });
 });
 
-test("taskStatus reads a waiting loop as running and an idle teammate as " +
-  "done", () => {
+test("taskStatus keeps a waiting loop waiting and reads an idle teammate " +
+  "as done", () => {
   assert.deepEqual(["waiting", "idle", "running", "killed", undefined]
-    .map(taskStatus), ["running", "completed", "running", "killed",
+    .map(taskStatus), ["waiting", "completed", "running", "killed",
     "completed"]);
 });
 
@@ -123,7 +123,7 @@ test("treeTasks builds each task from the list and the fold, and the " +
     type: "Explore", parentId: "p", description: "Look around",
     name: "Moss" }, meta: null, fold: null, inbox: 2, branch: "b",
   progress: "Reading" }], NOW, () => 200000, null, null);
-  assert.equal(t.task.status, "running");
+  assert.equal(t.task.status, "waiting");
   assert.equal(t.task.name, "Moss");
   assert.equal(t.task.type, "local_agent");
   assert.deepEqual(t.meta, { agentType: "Explore", parentAgentId: "p" });
@@ -133,10 +133,14 @@ test("treeTasks builds each task from the list and the fold, and the " +
 });
 
 /** The tree over a corpus case's tasks, under 🧵 main, as plain lines at
- * 200 columns. */
+ * 200 columns; `statuses` gives some tasks, by id, another status. */
 function tree(id: string, over: Partial<TreeInput> = {},
-  hide: string[] = [], turnStart: number | null = null): string[] {
+  hide: string[] = [], turnStart: number | null = null,
+  statuses: { [id: string]: string } = {}): string[] {
   const doc = corpusAgents(id, "Checking the binary");
+  doc.tasks = (doc.tasks as TreeTask[]).map((t) =>
+    statuses[String(t.task.id)] === undefined ? t
+      : { ...t, task: { ...t.task, status: statuses[String(t.task.id)] } });
   const blank = (scope: string): Row => ({ scope, label: [], cells: {} });
   const rows = treeRows(ST, { session: blank("session"),
     main: blank("main"), turn: blank("turn"),
@@ -221,6 +225,40 @@ test("the progress update is drawn for a working or waiting thread " +
     l.includes("Running the suite") || l.includes("Checking the binary")));
   assert.ok(!tree("01-mixed@220", { mainPhase: "⚫" }).some((l) =>
     l.includes("Checking the binary")));
+});
+
+test("a waiting agent is paused and live: 🟡, its 🛫 what it waits on " +
+  "and for how long since its last record, its progress update drawn, " +
+  "counted toward the cap and not in ✅ N done", () => {
+  const turn = NOW - 3600;
+  const waiting = { p1: "waiting", x1: "waiting" };
+  const lines = tree("02-parked@220", { cap: 10 }, [], turn, waiting);
+  const row = (name: string) => lines.find((l) => l.includes(name))!;
+  // Pine waits on its background shell, 980s after its last record.
+  assert.match(row("Pine"), /🔩🟡 💻1 Pine .*💻  16m/u);
+  // Yarrow waits on nothing its transcript names.
+  assert.match(row("Yarrow"), /🔍🟡 Yarrow .*📋  13m/u);
+  assert.match(tree("02-parked@220", {}, [], turn).find((l) =>
+    l.includes("done"))!, /✅ 1 done/u);
+  assert.ok(!lines.some((l) => l.includes("done")));
+  // Each takes a row under the cap like any other live agent.
+  const capped = tree("02-parked@220", { cap: 7 }, [], turn, waiting);
+  assert.ok(capped.some((l) => /… 1 more/u.test(l)));
+  assert.ok(!tree("02-parked@220", { cap: 7 }, [], turn).some((l) =>
+    l.includes("more")));
+});
+
+test("a waiting agent's progress update stays drawn", () => {
+  const doc = corpusAgents("02-parked@220", "");
+  const tasks = (doc.tasks as TreeTask[]).map((t) => t.task.id === "x1"
+    ? { ...t, task: { ...t.task, status: "waiting" }, progress: "Held" } : t);
+  const rows = treeRows(ST, { session: null, main: null, turn: null,
+    workspace: null, mainPhase: "🟢", mainInbox: 0, mainProgress: "",
+    turnPhase: "🟢", agents: { tasks, limits: LIMITS, now: NOW,
+      turnStart: null }, cap: 10 }, []);
+  const keys = fixedKeys(ST, 200, []);
+  const lines = rows.map((r) => stripAnsi(join(draw(ST, r, keys, 200, []))));
+  assert.ok(lines.some((l) => /🔍🟡 Yarrow  Held/u.test(l)));
 });
 
 /** The band's tree over the baseline status document, its turn opened an

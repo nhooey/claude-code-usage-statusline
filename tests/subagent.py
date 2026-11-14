@@ -784,6 +784,14 @@ def run(tmp):
           ["\U0001F7E1\U0001F4A4", "\U0001F7E1\U0001F4BB",
            "\U0001F7E1\U0001F4E1", "\U0001F7E1\u26F3",
            "\u26AB\u2705"])
+    check("waiting, as the mod's agent list says, is paused: on a shell, a "
+          "Monitor, or else on what it is held for, even with an ETA",
+          [unpainted(sr.render_state("waiting",
+                                 read._replace(eta=e, background=b), False))
+           for e, b in (((), (("b1", "bash"),)), ((), (("m1", "monitor"),)),
+                        ((NOW, 60.0), ()), ((), ()))],
+          ["\U0001F7E1\U0001F4BB", "\U0001F7E1\U0001F4E1",
+           "\U0001F7E1\U0001F4CB", "\U0001F7E1\U0001F4CB"])
     check("a completed agent with a background task open is parked, and a "
           "pending child keeps its parent parked as a running one does",
           (sr.parked("completed", (), False, (("b1", "bash"),)),
