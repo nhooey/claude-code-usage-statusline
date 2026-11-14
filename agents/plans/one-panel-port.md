@@ -1,7 +1,7 @@
 # One port: the agent panel drawn by the TypeScript
 
-Proposed, not approved. Its steps are `OP1` … `OP7`; they join
-[the schedule](_schedule.md) once the plan is approved.
+Approved to build. Its steps are `OP1` … `OP7` in [the schedule](_schedule.md);
+its two open decisions are taken at `OP7`.
 
 ## Why
 
