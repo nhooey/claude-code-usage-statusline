@@ -20,7 +20,8 @@ import {
   E_ACCT, E_COST, E_DATE, E_DIR, E_DIRTY, E_GIT_BAD,
   E_GIT_OK, E_IDLE, E_PCT, E_PR, E_PROJ, E_RESET, E_SESS, E_SESSION, E_STALE,
   E_STY, E_THREAD,
-  E_TIME, E_TURN, E_TURN_ID, E_WEEK, K, MAG_COST, MAG_DUR_S, TURN_ID_HEX,
+  E_TIME, E_TURN, E_TURN_ID, E_WEEK, K, MAG_COST, MAG_DUR_S, TAG_SCOPE,
+  TURN_ID_HEX,
 } from "./spec.ts";
 import {
   durFmt, humanize, limitPct, magDim, moneyFig, padVal, visWidth,
@@ -35,6 +36,7 @@ import {
   renderAgentLimit, renderAgentModel, renderAgentRate, renderAgentSplit,
   renderInbox,
 } from "./claude_subagent_render.ts";
+import { hidden } from "./grid.ts";
 import type { Piece } from "./grid.ts";
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -212,20 +214,20 @@ export function untilReset(st: Settings, epoch: number | null,
   return delta <= 0 ? "now" : durFmt(st, delta);
 }
 
-/** 💳 account, then each window's 🔜 reset where it has one, then 📅 and 🕐
- * at the end, which leave first on a narrow terminal.  With `stale`, how
- * long ago the reading was taken, each figure is followed by 🧊 and that:
- * the footer's tail draws in one style, so the mark is in the text. */
-export function accountLabel(st: Settings, sess: number | null,
+/** The plan's two windows as the 💳 row draws them: 🔋 `sess` and 🪫
+ * `week`, each followed by its 🔜 reset where it has one, under the paths
+ * `plan.five_hour`, `plan.week` and `plan.reset`; a window with neither a
+ * share nor a reset is left out.  With `stale`, how long ago the reading
+ * was taken, each share is followed by 🧊 and that.  Each window ends in
+ * blanks, which trimLast takes off the last. */
+export function planPieces(st: Settings, sess: number | null,
   week: number | null, sessReset: string | null, weekReset: string | null,
-  date: string, time: string, stale: string | null = null,
-  credits: readonly { kind: string; spans: readonly Span[] }[] = []):
-    Piece[] {
-  // Each window whole on the label, its share then its reset, since the
-  // row has no figure in the plan columns to sit under: 🔋 15٪ 🔜 6.7m.
-  // Three digits for both, so 🪫 reads 87٪ as 🔋 does, not the 87.0٪ the
-  // wider 🪫 column draws for an agent's small share; padded to three on
-  // the left, so 9.9٪ going to 10٪ moves nothing after it.
+  stale: string | null = null): Piece[] {
+  // Each window whole, its share then its reset, since the row has no
+  // figure in the plan columns to sit under: 🔋 15٪ 🔜 6.7m.  Three digits
+  // for both, so 🪫 reads 87٪ as 🔋 does, not the 87.0٪ the wider 🪫
+  // column draws for an agent's small share; padded to three on the left,
+  // so 9.9٪ going to 10٪ moves nothing after it.
   const plan = (path: string, mark: string, colour: string,
     v: number | null, reset: string | null): Piece[] => {
     if (v === null && reset === null) return [];
@@ -242,17 +244,36 @@ export function accountLabel(st: Settings, sess: number | null,
     }
     return out;
   };
-  const windows = [
+  return [
     ...plan("plan.five_hour", E_SESS, "F_LIM_SESS", sess, sessReset),
     ...plan("plan.week", E_WEEK, "F_LIM_WEEK", week, weekReset)];
-  // No blanks after the last window: they would only take room a cut
-  // label needs.
-  const last = windows.at(-1);
+}
+
+/** `pieces` with the blanks after the last one taken off: they would only
+ * take room a cut label needs. */
+export function trimLast(pieces: readonly Piece[]): Piece[] {
+  const out = [...pieces];
+  const last = out.at(-1);
   if (last) {
     const s = last.spans.at(-1)!;
-    windows[windows.length - 1] = { ...last, spans: [...last.spans.slice(0,
-      -1), { ...s, text: s.text.replace(/ +$/, "") }] };
+    out[out.length - 1] = { ...last, spans: [...last.spans.slice(0, -1),
+      { ...s, text: s.text.replace(/ +$/, "") }] };
   }
+  return out;
+}
+
+/** 💳 account, then each window's 🔜 reset where it has one (planPieces),
+ * then 📅 and 🕐 at the end, which leave first on a narrow terminal.  With
+ * `stale`, how long ago the reading was taken, each figure is followed by
+ * 🧊 and that: the footer's tail draws in one style, so the mark is in the
+ * text. */
+export function accountLabel(st: Settings, sess: number | null,
+  week: number | null, sessReset: string | null, weekReset: string | null,
+  date: string, time: string, stale: string | null = null,
+  credits: readonly { kind: string; spans: readonly Span[] }[] = []):
+    Piece[] {
+  const windows = trimLast(planPieces(st, sess, week, sessReset, weekReset,
+    stale));
   // The credits after the windows, each leaving before 📅 and 🕐 on a
   // narrow terminal.
   const owed: Piece[] = credits.map((c) => ({ path: "credits." + c.kind,
@@ -331,6 +352,33 @@ export function turnHead(arrow: string, promptId: string,
   const tag = turnTag(arrow, promptId, turnIndex);
   const when = turnWhen(date, time);
   return tag && when ? tag + "  " + when : tag + when;
+}
+
+/** A turn's tag line, "🔺🔖 8f37748e #12  💳 🔋  15٪  🪫  87٪  📅
+ * 2026-10-19  🕐 13:06:02": turnTag, then the account's two windows, 🔋
+ * `sess` and 🪫 `week`, as the 💳 row draws them (planPieces) without
+ * their resets, then turnWhen, each part where it has something, two
+ * blanks apart.  The windows are under the paths `tag.plan.five_hour` and
+ * `tag.plan.week` (TAG_SCOPE), which `hide` leaves out; 💳 goes with the
+ * last of them.  [] with neither a tag nor a time, whatever the windows. */
+export function turnLine(st: Settings, arrow: string, promptId: string,
+  turnIndex: number | null, sess: number | null, week: number | null,
+  date: string | null, time: string | null,
+  hide: readonly string[]): Span[] {
+  const tag = turnTag(arrow, promptId, turnIndex);
+  const when = turnWhen(date, time);
+  if (!tag && !when) return [];
+  // Every blank after the last window's share taken off, its own and the
+  // one that stands in for its reset, so two blanks part it from 📅.
+  const windows = planPieces(st, sess, week, null, null)
+    .filter((p) => !hidden(hide, TAG_SCOPE + "." + p.path))
+    .flatMap((p) => p.spans);
+  while (windows.length && /^ *$/.test(windows.at(-1)!.text)) windows.pop();
+  const parts: Span[][] = [
+    ...(tag ? [[span(tag)]] : []),
+    ...(windows.length ? [[span(E_ACCT + " "), ...windows]] : []),
+    ...(when ? [[span(when)]] : [])];
+  return parts.flatMap((p, i) => i ? [span("  "), ...p] : p);
 }
 
 /** turnHead's tag, "🔺🔖 8f37748e #12", "" with neither part. */

@@ -109,7 +109,7 @@ These work for both agents.
 | `--diagnose` | off | Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Claude's status line adds the session's cost and lines two ways, as a check on each other: `cost_usd` and `lines`, this program's own over the transcript and the agent files, as the cost line totals them, and `claude_cost_usd` and `claude_lines`, the totals Claude Code's payload gave; each is blank where its side has none. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses. |
 | `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
 | `--right-edge N` | `5` with any of the mod's rows above the prompt (`rows.*.place`), else `2` | The columns every grid row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `rows.*.place` from the files: `5` when any row the mod draws live is placed `above`, else `2`, so every row ends in one column. Claude only; the Python's modes accept it and draw no grid row. |
-| `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). The mod's rows draw on the grid; the Python's modes, and Codex, accept it and ignore it. |
+| `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid, or 🔋 and 🪫 off the turn tag lines (`tag.plan.five_hour`, `tag.plan.week`); see [Hiding](#hiding). The mod's rows draw on the grid; the Python's modes, and Codex, accept it and ignore it. |
 <!-- options:end shared -->
 
 ### Terminal width
@@ -220,7 +220,7 @@ removes it.
 
 | Part | Values |
 |---|---|
-| scope | `account`, `turn`, `main`, `session`, `agent` |
+| scope | `account`, `turn`, `main`, `session`, `agent`, and `tag` for the turn tag lines, 🔻🔖 and 🔺🔖 |
 | group | `plan` (🔋 🪫), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫, and on agent rows the 👶🏻 🤏 💻 📡 📨 counts), `chat` (the activity, and the progress update in the band's tree), `workspace` (🌿), `name` (the name and the kind) |
 
 On an agent row:
@@ -235,6 +235,16 @@ On an agent row:
 | `agent.state.kids`, `.compact`, `.shells`, `.monitors`, `.inbox` | 👶🏻, 🤏, 💻, 📡, 📨 |
 | `agent.state.model`, `.rate`, `agent.cost`, `agent.context`, `agent.tokens.io`, `.cache`, `agent.time.elapsed`, `.eta`, `.split`, `agent.plan.five_hour`, `.week`, `agent.work` | the columns |
 | `agent.context.share` | 🧠's ٪ of the window, its size set flush right; hidden on every scope (`*.context.share`), 🧠's column narrows by the ٪'s room |
+
+On the turn tag lines, 🔻🔖 under the prompt and the receipt's 🔺🔖
+([docs/layout.md](layout.md#the-turn-tags)):
+
+| Path | Hides |
+|---|---|
+| `tag.plan.five_hour` | 🔋, the account's 5-hour window; `*.plan.five_hour` hides it here and on every row |
+| `tag.plan.week` | 🪫, the account's weekly window; `*.plan.week` hides it here and on every row |
+| `tag.plan` | both, and 💳 with them |
+| `name.tag` | both tag lines, with the blank rows around the receipt's |
 
 ```
 --hide agent                  every agent row, empty

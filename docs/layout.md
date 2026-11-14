@@ -415,7 +415,7 @@ which take the paths in the option `hide`, from the
 
 | Part | Values |
 |---|---|
-| scope | `account`, `turn`, `main` (the 🧵 row), `session`, `agent` |
+| scope | `account`, `turn`, `main` (the 🧵 row), `session`, `agent`, and `tag` for the turn tag lines' 🔋 and 🪫 (`tag.plan.five_hour`, `tag.plan.week`; [The turn tags](#the-turn-tags)) |
 | group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫; on agent rows also `kids`, `compact`, `shells`, `monitors`, `inbox`: 👶🏻 🤏 💻 📡 📨; on the 🧵 row `inbox`), `chat` (`doing`, on agent rows; `progress`, the latest progress update in the tree, on 🧵 and agent rows), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `tag`: the row's name, an agent's kind, the turn's tag lines) |
 
 ```
@@ -425,6 +425,7 @@ which take the paths in the option `hide`, from the
 --hide account.workspace    📦 🌿 📁 🔀 🎨 on the 💳 row
 --hide '*.state.rate'       🛫 everywhere
 --hide '*.chat.progress'    every thread's progress update in the tree
+--hide tag.plan            🔋 🪫 and 💳 on the turn tag lines
 ```
 
 A column hidden on every row it could show on is removed, and the others
@@ -456,7 +457,7 @@ tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part receipt
 ```
                          🎤                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
 
-🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
+🔺🔖 8f37748e #12  💳 🔋  41٪  🪫  63٪  📅 2026-08-16  🕐 02:23:20
 ```
 
 With `"rows": {"agent": {"transcript": true}, "session": {"transcript":
@@ -469,7 +470,7 @@ tests/fixtures/figures/status/18-agents@196.json`):
                          🧵  🤖O⁵🏃           💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
                          🎮                   💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
 
-🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
+🔺🔖 8f37748e #12  💳 🔋  41٪  🪫  63٪  📅 2026-08-16  🕐 02:23:20
 ```
 
 No fixture pairs a cost document with a status document of the same
@@ -502,11 +503,12 @@ once.
 ### The turn tags
 
 The receipt's last line names the turn it bills, and the prompt that opened
-the turn carries the same tag under it, `🔻🔖` and when the turn started,
-dim (`--part start`, from a status document):
+the turn carries the same tag under it, `🔻🔖`, then the account's limits
+and when the turn started, dim (`node mod/tools/draw-figures.ts
+tests/fixtures/figures/status/18-agents@196.json --part start --plain`):
 
 ```
-🔻🔖 p-fork  📅 2026-08-16  🕐 01:23:20
+🔻🔖 p-fork  💳 🔋  15٪  🪫  87٪  📅 2026-08-16  🕐 01:23:20
 ```
 
 `8f37748e` is the first group of the turn's `promptId`, the UUID on every
@@ -515,7 +517,26 @@ is Claude Code's own turn index. Each half is drawn only when the transcript
 records it. 🔻 points down at the turn the prompt opens, 🔺 up at the turn
 that ended; both lines are at no indent, so they stack, and every turn
 carries its tag at both ends, even one that is interrupted or still running.
-`--hide name.tag` hides both, with the blank rows around the receipt's.
+
+After the tag, 💳 and the account's 🔋 5-hour and 🪫 weekly windows, drawn
+as the 💳 row draws them, without the 🔜 resets: on `🔻🔖` as the status
+document read them as the turn started (`limits`), on `🔺🔖` as the cost
+document read them as the receipt was stamped (`usage.plan`). Read side by
+side, the two lines show what the turn took from each window. A window
+with no figure is left out, and with neither, so is 💳.
+
+Their hide paths are under the scope `tag`: `tag.plan.five_hour` hides 🔋
+on both lines and `tag.plan.week` 🪫, and `*.plan.five_hour` hides 🔋 here
+as on every row. The start line takes the paths as they stand when the
+turn starts, the receipt's when it is stamped. The start line again, with
+`--hide '*.plan.five_hour'` added:
+
+```
+🔻🔖 p-fork  💳 🪫  87٪  📅 2026-08-16  🕐 01:23:20
+```
+
+`--hide name.tag` hides both lines, with the blank rows around the
+receipt's.
 
 ## The subagent rows
 

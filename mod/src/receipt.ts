@@ -4,8 +4,8 @@
 // agents/plans/_implemented/redesign.md has the design ("The receipt"):
 // live, then stamped.  While a turn runs the band draws its 🎤 and 🎮 rows; once the
 // turn's records are in the transcript, the mod stamps them there frozen, a
-// `$.ui.log` line each: a head, 🔺🔖 the turn's tag and when it was
-// stamped, and over it the same two rows, from the cost document
+// `$.ui.log` line each: a head, 🔺🔖 the turn's tag, the account's limits
+// and when it was stamped, and over it the same two rows, from the cost document
 // (`cost_figures`), dim so history reads apart from the live band.  As
 // a turn starts, the mod draws the same tag under the prompt, 🔻 pointing
 // down at the turn it opens, from the status document.  The rows are drawn
@@ -20,10 +20,10 @@ import type { Span } from "./spans.ts";
 import type { Turn } from "./claude_records.ts";
 import { turnShares } from "./claude_calib.ts";
 import type { Accounting } from "./claude_calib.ts";
-import { decodeTranscript } from "./figures.ts";
+import { decodeLimits, decodeTranscript } from "./figures.ts";
 import { _readAccounting, decodeTurn } from "./claude_cost.ts";
 import {
-  CELLS, cacheRate, hms, sessionLabel, turnHead, turnLabel, ymd,
+  CELLS, cacheRate, hms, sessionLabel, turnLabel, turnLine, ymd,
 } from "./cells.ts";
 import { draw, hidden } from "./grid.ts";
 import type { Row } from "./grid.ts";
@@ -32,6 +32,7 @@ import {
   turnTokens,
 } from "./band.ts";
 import type { RowName } from "./band.ts";
+import { pyFloat } from "./sources.ts";
 import type { Dict } from "./py.ts";
 
 type Cells = { [key: string]: Span[] };
@@ -308,20 +309,31 @@ export function withEngineDuration(all: Dict, durationMs: number): Dict {
   return { ...fig, turns: t, accounting: { ...acc, turns: accTurns } };
 }
 
+/** A share of a plan window as a figures document gives it, a number or
+ * its text, or null for none. */
+function pctOf(v: unknown): number | null {
+  const f = pyFloat(v ?? null);
+  return f === null || Number.isNaN(f) ? null : f;
+}
+
 /** The receipt's tag line, drawn as the start line is, at no indent, so the
- * two stack: "🔺🔖 8f37748e #12  📅 2026-10-19  🕐 13:06:02", the billed
- * turn's tag and `clock.now`, when it was stamped; none under the hide path
- * `name.tag`. */
-export function receiptHead(all: Dict, hide: readonly string[]): Span[] {
+ * two stack: "🔺🔖 8f37748e #12  💳 🔋  15٪  🪫  87٪  📅 2026-10-19  🕐
+ * 13:06:02", the billed turn's tag, the account's windows as the cost
+ * document read them when the receipt was stamped, `usage.plan.session_pct`
+ * and `weekly_pct` (turnLine), and `clock.now`, when it was stamped; none
+ * under the hide path `name.tag`. */
+export function receiptHead(st: Settings, all: Dict,
+  hide: readonly string[]): Span[] {
   if (tagsHidden(hide)) return [];
   const fig = billedFig(all);
   const now = (fig.clock as Dict).now as number;
   const turns = (fig.turns as Dict[]).map(decodeTurn);
   const i = receiptTurn(turns);
   const t = i < 0 ? null : turns[i];
-  const text = turnHead(E_TURN_PAST, t ? t.prompt_id : "",
-    t ? t.turn_index : null, ymd(now), hms(now));
-  return text ? [span(text)] : [];
+  const plan = ((fig.usage as Dict | undefined)?.plan ?? {}) as Dict;
+  return turnLine(st, E_TURN_PAST, t ? t.prompt_id : "",
+    t ? t.turn_index : null, pctOf(plan.session_pct),
+    pctOf(plan.weekly_pct), ymd(now), hms(now), hide);
 }
 
 /** The receipt as drawn at `cols` under `hide`: 🎤, `main`, the band's 🤖
@@ -363,7 +375,7 @@ export function receiptScoped(st: Settings, fig: Dict, cols: number,
       spans: inset ? [span(" ".repeat(inset)), ...l] : l }));
   // A blank row before the tag line: a space, since Ink
   // measures an empty Text as no row at all.
-  const head = tags ? receiptHead(fig, hide) : [];
+  const head = tags ? receiptHead(st, fig, hide) : [];
   if (head.length) {
     lines.push({ scope: "blank", spans: [span(" ")] },
       { scope: "tag", spans: head });
@@ -395,14 +407,24 @@ export function tagsHidden(hide: readonly string[]): boolean {
 
 /** The line under the prompt as its turn starts, dim, from a status
  * document: 🔻🔖, the tag of the turn opened last, `transcript.prompt_id`
- * and `turn_index`, and when its prompt was stamped, `transcript.turn_s`;
- * without the stamp, the tag alone, and nothing with neither, or under the
- * hide path `name.tag`. */
-export function startLine(fig: Dict, hide: readonly string[] = []): Span[] {
-  if (tagsHidden(hide)) return [];
+ * and `turn_index`, the account's windows as the document read them,
+ * `limits.session_pct` and `weekly_pct` (turnLine), where it has them, and
+ * when its prompt was stamped, `transcript.turn_s`; nothing with neither a
+ * tag nor a stamp, or under the hide path `name.tag` (startTag draws it
+ * whatever that path says). */
+export function startLine(st: Settings, fig: Dict,
+  hide: readonly string[] = []): Span[] {
+  return tagsHidden(hide) ? [] : startTag(st, fig, hide);
+}
+
+/** startLine, drawn under the hide path `name.tag` too: the mod files it
+ * as the turn starts and asks the options again as it draws it. */
+export function startTag(st: Settings, fig: Dict,
+  hide: readonly string[] = []): Span[] {
   const tr = decodeTranscript(fig.transcript);
+  const lim = decodeLimits(fig.limits);
   const at = tr.turn_s || null;
-  const text = turnHead(E_TURN_AHEAD, tr.prompt_id, tr.turn_index,
-    at === null ? null : ymd(at), at === null ? null : hms(at));
-  return text ? [span(text, null, true)] : [];
+  return dimmed(turnLine(st, E_TURN_AHEAD, tr.prompt_id, tr.turn_index,
+    pctOf(lim.session_pct), pctOf(lim.weekly_pct),
+    at === null ? null : ymd(at), at === null ? null : hms(at), hide));
 }

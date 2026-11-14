@@ -1300,6 +1300,11 @@ CHROME_DEPTH = 2
 # The scopes a row can be, the first part of a --hide path.  A row's label
 # names its scope; its figures do not carry the scope's glyph.
 GRID_SCOPES = ("account", "turn", "main", "session", "agent")
+# The first part of a --hide path on the turn tag lines, 🔻🔖 under the
+# prompt and the receipt's 🔺🔖: their 🔋 and 🪫 are `tag.plan.five_hour`
+# and `tag.plan.week`, so `*.plan.five_hour` hides 🔋 there too.  Not a
+# row's scope: the tag lines are not on the grid.
+TAG_SCOPE = "tag"
 
 # The groups and metrics of a --hide path, scope.group.metric, with * for
 # any one part.  A cell's metric is its column; a label piece's is the part

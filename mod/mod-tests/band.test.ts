@@ -656,38 +656,65 @@ test('above the prompt the rows are plain, and the band logs its widths ' +
     expect(logOf(w)).toMatch(/footer: \[.*,false,true\]/)
   })
 
+/** Starts the session on STATUS and opens a turn with the prompt "Go on.",
+ * its record in the transcript as the turn opens: the status document
+ * read then, the start line drawn from it, and the prompt's row as the
+ * composer's UserMessage draws it. */
+async function promptTagged($: any, w: World) {
+  const path = await start($, w, 'terminal', STATUS)
+  const prompt = JSON.stringify({ message: { content: 'Go on.' },
+    promptId: 'p-next', promptSource: 'typed',
+    timestamp: '2026-08-16T08:20:00Z', type: 'user',
+    userType: 'external' }) + '\n'
+  const before = w.files.get(path)!
+  const grown = new Uint8Array(before.length + prompt.length)
+  grown.set(before)
+  grown.set(encoder.encode(prompt), before.length)
+  w.files.set(path, grown)
+  await $.turn.start({ text: 'Go on.', turnId: 't3' })
+  await settle()
+  const doc = lastDoc(w)
+  expect((doc.transcript as Dict).prompt_id).toBe('p-next')
+  const tag = startLine(BAND_ST, doc, HIDE)
+  expect(tag.length).toBeGreaterThan(0)
+  const typed = await $.ui.mount({ plugin: 'usage-band',
+    surface: 'terminal', component: 'UserMessage',
+    props: { text: 'Go on.', isExpanded: false,
+      origin: { kind: 'composer' } } })
+  return { doc, tag, typed }
+}
+
 test('a prompt from the composer gets its turn tag under it, at no indent',
   async ($, on) => {
     const w = world(on)
-    const path = await start($, w, 'terminal', STATUS)
-    // The prompt's record reaches the transcript as the turn opens.
-    const prompt = JSON.stringify({ message: { content: 'Go on.' },
-      promptId: 'p-next', promptSource: 'typed',
-      timestamp: '2026-08-16T08:20:00Z', type: 'user',
-      userType: 'external' }) + '\n'
-    const before = w.files.get(path)!
-    const grown = new Uint8Array(before.length + prompt.length)
-    grown.set(before)
-    grown.set(encoder.encode(prompt), before.length)
-    w.files.set(path, grown)
-    await $.turn.start({ text: 'Go on.', turnId: 't3' })
-    await settle()
-    const doc = lastDoc(w)
-    expect((doc.transcript as Dict).prompt_id).toBe('p-next')
-    const tag = startLine(doc)
-    expect(tag.length).toBeGreaterThan(0)
-    const props = { text: 'Go on.', isExpanded: false }
-    const typed = await $.ui.mount({ plugin: 'usage-band',
-      surface: 'terminal', component: 'UserMessage',
-      props: { ...props, origin: { kind: 'composer' } } })
+    const { tag, typed } = await promptTagged($, w)
+    // The account's limits as the turn started, 🪫 alone: the user file
+    // hides 🔋 on every scope, `*.plan.five_hour`.
+    expect(text(tag)).toContain('p-next  ' + spec.E_ACCT + ' ' +
+      spec.E_WEEK + '  63' + spec.E_PCT + '  ' + spec.E_DATE)
+    expect(text(tag)).not.toContain(spec.E_SESS)
     // A short prompt has it on a line of its own too, so its 🔻🔖 stacks
     // with the receipt's 🔺🔖, both at no indent.
     expect(await tagDrawn(typed)).toEqual({ beside: false,
       text: text(tag) })
     const other = await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'UserMessage',
-      props: { ...props, origin: { kind: 'unclassified' } } as any })
+      props: { text: 'Go on.', isExpanded: false,
+        origin: { kind: 'unclassified' } } as any })
     expect(await drawnRows(other)).toEqual([])
+  })
+
+test('a turn started with no plan reading has no 💳 on its tag',
+  async ($, on) => {
+    const w = world(on)
+    // The tracker's store gone: the usage source has no reading.
+    w.files.delete('/tracker.plist')
+    const { doc, tag, typed } = await promptTagged($, w)
+    expect((doc.limits as Dict).weekly_pct ?? null).toBe(null)
+    expect(text(tag)).toContain('p-next  ' + spec.E_DATE)
+    expect(text(tag)).not.toContain(spec.E_ACCT)
+    expect(await tagDrawn(typed)).toEqual({ beside: false,
+      text: text(tag) })
   })
 
 
@@ -1341,7 +1368,10 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     expect(text(want[4])).toContain('p-resume'.slice(0, 8))
     expect(text(want[4]).startsWith(spec.E_TURN_PAST)).toBe(true)
     expect(text(want[4])).toContain(spec.E_DATE)
-    expect(text(want[4])).not.toContain(spec.E_ACCT)
+    // The account's limits as the receipt was stamped, 🪫 alone under the
+    // user file's `*.plan.five_hour`.
+    expect(text(want[4])).toContain('  ' + spec.E_ACCT + ' ' + spec.E_WEEK)
+    expect(text(want[4])).not.toContain(spec.E_SESS)
     // The closing line draws it, on the band's columns, and nothing goes
     // to the transcript as a notice.
     expect(await closing($, ASKED_MS)).toEqual(expected(want))
@@ -1659,7 +1689,7 @@ async function drewAll($: any, w: World) {
   expect(shown('done')).toEqual([])
   expect(await drawnRows(await mount())).toEqual([])
 
-  const tag = startLine(doc)
+  const tag = startLine(BAND_ST, doc, HIDE)
   expect(tag.length).toBeGreaterThan(0)
   expect(w.store.get(startKey(ASKED))).toBeDefined()
   const typed = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',

@@ -63,10 +63,12 @@ ended, dim, then the turn's tag. 🧵 and 🎮 stay live on screen, and
 ```
                          🎤                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
 
-🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
+🔺🔖 8f37748e #12  💳 🔋  41٪  🪫  63٪  📅 2026-08-16  🕐 02:23:20
 ```
 
-The prompt that opened the turn carries the same tag under it, 🔻🔖.
+The prompt that opened the turn carries the same tag under it, 🔻🔖, with
+the account's limits as the turn started, so the two lines side by side
+show what the turn took from each plan window.
 
 ## Install
 
@@ -284,8 +286,8 @@ to tell the two apart.
 
 | Glyph | Name | Meaning |
 |---|---|---|
-| 🔻🔖 | Start | under a prompt, the turn it opens: the first 8 characters of its `promptId`, then Claude Code's turn index, and when it started |
-| 🔺🔖 | End | under the receipt, the turn it bills, already answered, and when it was stamped |
+| 🔻🔖 | Start | under a prompt, the turn it opens: the first 8 characters of its `promptId`, then Claude Code's turn index, the account's 💳 🔋 and 🪫 as it started, and when it started |
+| 🔺🔖 | End | under the receipt, the turn it bills, already answered, the account's 💳 🔋 and 🪫 as it was stamped, and when it was stamped |
 | `› 🤖📨` | Message | a message from another agent, folded: the sender's task in bold, then the message's first line, dim; where several agents share the sender's name, the one whose last reply holds that line |
 
 ## Three rules the display follows

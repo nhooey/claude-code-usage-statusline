@@ -230,14 +230,16 @@
       "file": true,
       "flag": "--hide",
       "doc-table": "shared",
-      "usage": ["Repeatable. Leave out a column or a label part,",
-                "scope[.group[.metric]] with * for any one part",
-                "(docs/options.md). The mod draws it; the Python's",
-                "modes accept it and ignore it."],
+      "usage": ["Repeatable. Leave out a column, a label part or a",
+                "turn tag line's plan figure (tag.plan.five_hour,",
+                "tag.plan.week), scope[.group[.metric]] with * for any",
+                "one part (docs/options.md). The mod draws it; the",
+                "Python's modes accept it and ignore it."],
       "doc": ["Repeatable. Leave a column or a part of a row's label out of",
-              "the redesigned grid; see [Hiding](#hiding). The mod's rows",
-              "draw on the grid; the Python's modes, and Codex, accept it",
-              "and ignore it."]
+              "the redesigned grid, or 🔋 and 🪫 off the turn tag lines",
+              "(`tag.plan.five_hour`, `tag.plan.week`); see",
+              "[Hiding](#hiding). The mod's rows draw on the grid; the",
+              "Python's modes, and Codex, accept it and ignore it."]
     },
 
     // ── Claude display options ───────────────────────────────────────────
