@@ -211,10 +211,18 @@ binary, then the changelog" --cols 200`):
   where the label ends: the first line of the last text the thread wrote
   between its tool calls, an ETA report left out. The hide path
   `chat.progress` hides it.
+- **Waiting agents.** An agent that has ended its turn to wait on its own
+  shell or Monitor, or that Claude Code otherwise holds, is `waiting` in
+  `$.agent.list()` and ◯ waiting in Claude Code's panel. Its row is 🟡
+  paused, not 🟢: its 🛫 column is what it waits on, 💻 a shell, 📡 a
+  Monitor, 💤 an agent under it, or 📋 for anything else, and how long
+  since its last record ([State](#state)), not a work clock. It is live:
+  it keeps its row and its progress update, counts toward the cap, and is
+  never in `✅ N done`.
 - **The grouped rows.** `✅ N done`, last under 🧵 while a turn runs,
   sums the subagents that ended since the turn opened; its 🛫 column is ✅ and how long ago
-  the last one ended. Past `subagent-rows` running subagent rows (6 as
-  the mod ships), the later siblings fold into their parent's `… N more`,
+  the last one ended. Past `subagent-rows` live subagent rows, running or
+  paused (6 as the mod ships), the later siblings fold into their parent's `… N more`,
   which sums them and their subagents, 🏃 and how many of them run in its
   🛫 column; every row drawn keeps its parents. A grouped row's 🎯 is
   weighted by each agent's ▴, its ⌛ is the agents' ⌛ summed.
@@ -658,9 +666,13 @@ agent) shows only what the task list gives.
 
 ### State
 
-Claude Code gives a task one of five statuses, and `completed` covers two
-different things: an agent that has finished, and one that ended its turn to
-wait on work it started, which Claude Code keeps alive until that work ends.
+Claude Code's task list gives a task one of five statuses, and `completed`
+covers two different things: an agent that has finished, and one that ended
+its turn to wait on work it started, which Claude Code keeps alive until that
+work ends. The mod's agent list, `$.agent.list()`, says `waiting` for the
+second, as Claude Code's own panel draws it ◯ waiting, and the mod passes it
+on: a waiting agent is paused, never running, whatever its transcript holds.
+The mod reads `idle`, a teammate between turns, as `completed`.
 The row reads the phase off everything it knows, and puts the circle in the
 state cell. What the agent is doing in that phase goes in the 🛫 column, with
 how long it has been doing it:
@@ -678,9 +690,10 @@ how long it has been doing it:
 | | 🔧 | a tool call is waiting on its result |
 | | 🚦 | the call it waits on is a question to you or an agent it started |
 | | (none) | a task with no transcript to say, such as a shell |
-| 🟡 paused | 💤 | completed, with an agent under it still running or not started |
-| | 💻 | completed, with a background shell it has not heard the end of |
-| | 📡 | completed, with a Monitor it has not heard the end of |
+| 🟡 paused | 💤 | completed or `waiting`, with an agent under it still running or not started |
+| | 💻 | completed or `waiting`, with a background shell it has not heard the end of |
+| | 📡 | completed or `waiting`, with a Monitor it has not heard the end of |
+| | 📋 | `waiting`, on nothing it can name: its plan's approval, or an Agent call whose agent the list does not have |
 | | ⛳ | completed, with nothing it can name but a live ETA in its last message |
 | | 🥚 | Claude Code's `pending`: not started |
 | ⚫ ended | ✅ ❌ 🛑 | completed and waiting on nothing, failed, killed |

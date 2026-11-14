@@ -1001,10 +1001,11 @@ E_THREAD = "🧵"          # 🧵  the main thread, in the kind slot an agent's
                          #    🔍 🔩 📐 fill
 E_MORE = "…"             # …  the later siblings past the cap, summed
 # An agent row's state, in two marks: a circle for its phase and a mark for
-# what it is doing in it.  Claude Code's own status says completed for an
-# agent that has finished and for one that ended its turn to wait on
-# something, and the one question a person asks of a row is which.  Every
-# mark here is one codepoint, Emoji_Presentation=Yes, EAW W.
+# what it is doing in it.  The status line's task list says completed for
+# an agent that has finished and for one that ended its turn to wait on
+# something, and the one question a person asks of a row is which; the
+# mod's `$.agent.list()` says waiting for the second.  Every mark here is
+# one codepoint, Emoji_Presentation=Yes, EAW W.
 E_PHASE_RUN = "🟢"       # 🟢  running: it has the floor
 E_PHASE_PAUSE = "🟡"     # 🟡  paused: not started yet, or waiting to resume
 E_PHASE_END = "⚫"       # ⚫  ended, and waiting on nothing
@@ -1015,6 +1016,10 @@ E_MODE_SHELL = "💻"      # 💻  paused on a background shell; not 🐚, which
                          #    figure, how many it has open, and on the
                          #    status line the main thread's
 E_MODE_MONITOR = "📡"    # 📡  paused on a Monitor; with a figure, likewise
+E_MODE_HELD = "📋"       # 📋  paused where `$.agent.list()` says waiting,
+                         #    on nothing the transcript names: its plan's
+                         #    approval, or an Agent call whose agent the
+                         #    list does not have
 E_MODE_QUEUED = "🥚"     # 🥚  not started: Claude Code's pending
 E_MODE_DONE = "✅"       # ✅  completed
 E_MODE_FAILED = "❌"     # ❌  failed

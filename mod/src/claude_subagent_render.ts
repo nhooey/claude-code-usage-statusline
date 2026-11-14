@@ -22,8 +22,8 @@
 import {
   E_ETA, E_GAUGE, E_GIT_OK, E_HUNDRED, E_IDLE, E_INBOX, E_KIDS, E_MOD,
   E_MODE_AGENTS, E_MODE_API_ERROR, E_MODE_DONE, E_MODE_ETA, E_MODE_FAILED,
-  E_MODE_KILLED, E_MODE_MONITOR, E_MODE_QUEUED, E_MODE_SHELL, E_PCT,
-  E_PHASE_END, E_PHASE_PAUSE, E_PHASE_RUN, E_RATE, E_ROW_AGENTS,
+  E_MODE_HELD, E_MODE_KILLED, E_MODE_MONITOR, E_MODE_QUEUED, E_MODE_SHELL,
+  E_PCT, E_PHASE_END, E_PHASE_PAUSE, E_PHASE_RUN, E_RATE, E_ROW_AGENTS,
   E_ROW_COMPACT, E_SESS, E_TOOL, E_WAIT, E_WEEK, E_WORK, GAUGE_W,
   MAG_DUR_S, MAG_RATE, MAG_SHARE_AGENT, MAG_TOK, QUIET_S, QUIET_WARN_S,
   E_CACHE, E_DIFF, CHROME_DEPTH, GRID_CELLS, LABEL_MIN,
@@ -239,7 +239,8 @@ export function agentState(status: string, usage: unknown = null,
     const kinds = uaList(usage, "background").map((b) => b[1]);
     const woke = (["bash", "monitor"] as const).find((k) => kinds.includes(k));
     return [E_PHASE_PAUSE, waitingOn ? E_MODE_AGENTS
-      : woke !== undefined ? PAUSE_MARK.get(woke)! : E_MODE_ETA];
+      : woke !== undefined ? PAUSE_MARK.get(woke)!
+      : status === "waiting" ? E_MODE_HELD : E_MODE_ETA];
   }
   const end = END_MARK.get(status);
   if (end !== undefined) return [E_PHASE_END, end];
@@ -405,12 +406,13 @@ export function renderAgentSplit(elapsed: number | null,
   return out;
 }
 
-/** Whether a task Claude Code calls completed is only waiting: on an ETA
- * still live, an agent under it, or a background task it started. */
+/** Whether a task is only waiting: one `$.agent.list()` calls waiting, or
+ * one Claude Code calls completed with an ETA still live, an agent under
+ * it, or a background task it started. */
 export function parked(status: string, eta: unknown, waitingOn = false,
   background: unknown = []): boolean {
-  return status === "completed" &&
-    (pyTruthy(eta) || waitingOn || pyTruthy(background));
+  return status === "waiting" || (status === "completed" &&
+    (pyTruthy(eta) || waitingOn || pyTruthy(background)));
 }
 
 /** The ids with an agent running or not yet started anywhere under them. */
