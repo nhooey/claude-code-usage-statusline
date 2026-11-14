@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""The subagent rows: what --mode subagent reads, derives, and prints.
+"""The subagent rows: what prepare_subagent_tasks reads and derives, and
+what claude_subagent_render draws from it.
 
-The agent panel hands the program a task list and reads back one JSON line
-per row.  These cases pin the three things the row depends on that the
-panel does not say: where a task's transcript is, what it billed, and what
-that is against the plan windows — plus the row's shape, as stripped text,
-so a reordering shows up as a diff of one line and not of a golden file.
+A row starts from a task list.  These cases pin the three things the row
+depends on that the task list does not say: where a task's transcript is,
+what it billed, and what that is against the plan windows — plus the row's
+shape, as stripped text, so a reordering shows up as a diff of one line and
+not of a golden file.
 
 Every fixture is generated.  Nothing in here is a real transcript.
 
@@ -14,7 +15,6 @@ Run:  python3 tests/subagent.py
 """
 
 import importlib.util
-import io
 import json
 import os
 import re
@@ -163,22 +163,30 @@ SOURCE = "auto"      # main sets the fixture source
 
 
 def render(sl, payload, argv=()):
-    """Run main_subagent the way the panel does, and hand back the rows as
-    {id: stripped content}."""
+    """Prepare the payload's tasks and draw their rows under `argv`'s
+    --usage-source, --cols and --hide, and hand back the rows as {id:
+    stripped content}.  The width is --cols where given, else the payload's
+    `columns` plus PANEL_COLUMNS_SHORT, the terminal's."""
     sl._SNAPSHOT = None                     # a new process per tick
-    buf = io.StringIO()
-    old = sys.stdout
-    sys.stdout = buf
-    try:
-        rc = sl.main_subagent(sl.from_argv(("--usage-source", SOURCE) + tuple(argv)),
-                              json.dumps(payload))
-    finally:
-        sys.stdout = old
-    rows = {}
-    for line in buf.getvalue().splitlines():
-        d = json.loads(line)
-        rows[d["id"]] = unpainted(d["content"])
-    return rc, rows
+    sr = load_renderer()
+    options = sl.from_argv(("--usage-source", SOURCE) + tuple(argv))
+    if options["cols"] is not None:
+        cols = options["cols"] or None
+    else:
+        c = payload.get("columns")
+        cols = (int(c) + sl.PANEL_COLUMNS_SHORT
+                if isinstance(c, (int, float)) and c > 0 else None)
+    reading = sl.prepare_claude_reading(
+        options["usage-source"], options["account"],
+        options["account-period"],
+        {"session": str(payload.get("session_id") or ""),
+         "model": str(payload.get("model") or "")}, sl.frozen_now())
+    lim = reading.limits if reading.reading else sl.NO_LIMITS
+    sl.seed_limits_snapshot(lim, reading.reading)
+    now = sl.frozen_now()
+    rows = sr.render_task_rows(sl.prepare_subagent_tasks(payload, now), lim,
+                               cols, now, list(options["hide"]))
+    return 0, {tid: unpainted(row) for tid, row in rows}
 
 
 def main():
@@ -200,9 +208,8 @@ def run(tmp):
     os.environ["CODING_AGENT_USAGE_LINE_NOW"] = "%d" % NOW
     os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE"] = os.path.join(tmp, "calib.json")
     os.environ["CODING_AGENT_USAGE_LINE_STATE_DIR"] = os.path.join(tmp, "state")
-    # The panel uses the same v1 collector contract as status/cost.  Keep
-    # this test's quota fixture at that boundary rather than reviving its old
-    # global Claude cache as an implicit source.
+    # The rows read the same v1 collector contract as status/cost, so the
+    # quota fixture sits at that boundary.
     fixture_source = os.path.join(tmp, "quota-source")
     fixture = {"schema_version": 1, "as_of": NOW, "buckets": [{
         "id": "default", "label": "default", "windows": [
@@ -214,7 +221,7 @@ def run(tmp):
     # paid inside the program's deadline (write_executable).
     write_executable(fixture_source, "#!/bin/sh\nprintf '%%s\\n' '%s'\n" %
                      (json.dumps(fixture, separators=(",", ":"))))
-    # Every render reads it, as the panel's --usage-source; render's own
+    # Every render reads it, as its --usage-source; render's own
     # argv comes after, so a case may name another.
     global SOURCE
     SOURCE = "cmd:" + fixture_source
@@ -708,8 +715,8 @@ def run(tmp):
          0.1)
     check("no records, no share", sl.agent_window_shares(sl.NO_AGENT_USAGE),
           {"sess": None, "week": None})
-    # The panel never runs the scan: Claude Code kills its command at five
-    # seconds, which a cold scan can outlast.  It divides by a cached scan
+    # The rows never run the scan, which a cold one can take seconds over.
+    # They divide by a cached scan
     # of these windows however old, and with none draws "?".
     calib_path = os.environ["CODING_AGENT_USAGE_LINE_CLAUDE_CALIB_CACHE"]
     with open(calib_path) as fh:
@@ -1005,16 +1012,6 @@ def run(tmp):
           sorted(set(edge)), [1])
     rc, rows = render(sl, dict(pay, tasks=[task("a1"), {"no": "id"}, 7]))
     check("a task without an id is skipped, not fatal", sorted(rows), ["a1"])
-    for raw in ("", "not json", "[]", "null"):
-        buf = io.StringIO()
-        old = sys.stdout
-        sys.stdout = buf
-        try:
-            rc = sl.main_subagent(sl.from_argv([]), raw)
-        finally:
-            sys.stdout = old
-        check("bad input %r: exit 0 and nothing printed, so the panel's "
-              "own rows stand" % raw, (rc, buf.getvalue()), (0, ""))
 
     print("--- the inbox, the silence, the compactions, the API error ---")
     def send(minute, target, second=0):

@@ -228,18 +228,14 @@ class Program(unittest.TestCase):
             "  %s: --hide on the command line overrides its \"hide\" here, "
             "which the mod reads" % (self.tmp / "user" / "config.jsonc")])
 
-    def test_a_bad_file_still_draws_the_panel_with_the_warning_on_stderr(self):
+    def test_a_bad_file_still_draws_the_status_line_with_the_warning_on_stderr(self):
         write(self.project / D / "config.jsonc", '{"hide": "agent", "rows": nope}')
-        payload = {"session_id": "s", "cwd": str(self.project), "columns": 160, "tasks": [
-            {"id": "a1", "name": "Marigold", "type": "local_agent", "status": "running",
-             "description": "Review the plan", "startTime": 1789379000000,
-             "model": "claude-opus-5", "cwd": str(self.project)}]}
-        result = self.run_program("--agent", "claude", "--mode", "subagent",
+        payload = {"session_id": "s", "cwd": str(self.project)}
+        result = self.run_program("--agent", "claude", "--mode", "status",
                                   "--usage-source", "none", "--cols", "160",
                                   stdin=json.dumps(payload), cwd=self.tmp)
         self.assertEqual(result.returncode, 0, result.stderr)
-        rows = [json.loads(line) for line in result.stdout.splitlines()]
-        self.assertEqual([r["id"] for r in rows], ["a1"])
+        self.assertNotEqual(result.stdout.strip(), "")
         self.assertEqual(result.stderr, "%s: not valid JSONC, so the file is skipped\n"
                          % (self.project / D / "config.jsonc"))
 
@@ -269,11 +265,6 @@ class Program(unittest.TestCase):
         cost = run("--agent", "claude", "--mode", "cost", stdin="{}")
         self.assertEqual((cost.returncode, json.loads(cost.stdout)),
                          (0, {"systemMessage": "⚠ " + error}))
-        panel = run("--agent", "claude", "--mode", "subagent",
-                    stdin=json.dumps({"tasks": [{"id": "a1"}, {"id": "a2"}]}))
-        self.assertEqual([json.loads(l) for l in panel.stdout.splitlines()],
-                         [{"id": "a1", "content": "⚠ " + error},
-                          {"id": "a2", "content": "⚠ " + error}])
         for by_hand in (("--show-config",), ("--help",),
                         ("--agent", "claude", "--mode", "cost", "--all",
                          "--transcript", str(self.transcript))):
@@ -281,21 +272,6 @@ class Program(unittest.TestCase):
                 result = run(*by_hand)
                 self.assertEqual((result.returncode, result.stdout, result.stderr),
                                  (2, "", error + "\n"))
-
-    def test_the_panel_reads_hide_from_the_payloads_project(self):
-        payload = {"session_id": "s", "cwd": str(self.project), "columns": 160, "tasks": [
-            {"id": "a1", "name": "Marigold", "type": "local_agent", "status": "running",
-             "description": "Review the plan", "startTime": 1789379000000,
-             "model": "claude-opus-5", "cwd": str(self.project)}]}
-        def panel():
-            result = self.run_program("--agent", "claude", "--mode", "subagent",
-                                      "--usage-source", "none", "--cols", "160",
-                                      stdin=json.dumps(payload), cwd=self.tmp)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            return result.stdout
-        plain = panel()
-        write(self.project / D / "config.jsonc", '{"hide": ["agent.time.elapsed"]}')
-        self.assertNotEqual(panel(), plain)
 
     def test_codex_starts_from_the_rollouts_cwd_and_diagnose_counts_warnings(self):
         rollout = self.tmp / "rollout.jsonl"
@@ -341,7 +317,7 @@ class GoldensAreHermetic(unittest.TestCase):
             write(home / "src" / "statusline-fixture" / D / "config.jsonc", text)
             cases = json.loads((HERE / "fixtures" / "cases.json").read_text())["cases"]
             picked = [next(c for c in cases if c["suite"] == s)
-                      for s in ("status", "cost", "subagent")]
+                      for s in ("status", "cost")]
             with environ(HOME=str(home), XDG_CONFIG_HOME=str(tmp / "xdg"),
                          CODING_AGENT_USAGE_LINE_CONFIG_DIR=str(tmp / "cfg"),
                          CODING_AGENT_USAGE_LINE_PROJECT_DIR=str(home / "src")):

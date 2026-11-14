@@ -51,7 +51,7 @@ calib.main()
 config.main()
 formatting.main()
 render.main()
-# After cases.json, whose subagent cases it runs to capture the corpus.
+# Reads the committed corpus before it rewrites panel/.
 panel.main_panel()
 # Draws the committed cost figures documents, which run-cases.py writes.
 receipt.main()

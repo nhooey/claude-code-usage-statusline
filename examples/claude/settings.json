@@ -1,6 +1,0 @@
-{
-  "subagentStatusLine": {
-    "type": "command",
-    "command": "~/src/claude-code-usage-statusline/coding-agent-usage-line.py --agent claude --mode subagent"
-  }
-}

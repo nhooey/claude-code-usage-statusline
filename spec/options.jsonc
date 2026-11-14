@@ -67,14 +67,14 @@
     },
     "mode": {
       "type": "enum",
-      "items": ["status", "cost", "subagent", "usage"],
+      "items": ["status", "cost", "usage"],
       "metavar": "MODE",
       "default": "status",
       "ports": ["py"],
       "file": false,
       "flag": "--mode",
       "doc-table": "shared",
-      "usage": "status (the default), cost, subagent or usage; see Modes.",
+      "usage": "status (the default), cost or usage; see Modes.",
       "doc": ["See [Modes](#modes)."]
     },
     "transcript": {
@@ -190,7 +190,7 @@
       "doc": ["Terminal width. `0` means \"unknown\", which forces the",
               "fallback layout. Claude only; Codex accepts and ignores it."]
     },
-    // The panel's rows end where the band's do: 2 short of the edge with
+    // The grid's rows end where the band's do: 2 short of the edge with
     // the mod's rows all under the footer line, 5 with any above the
     // prompt, where the band's [-] stands.  Unset in every layer, it
     // follows rows.*.place, in both ports: "above" when any row the mod
@@ -207,21 +207,21 @@
       "flag": "--right-edge",
       "doc-table": "shared",
       "doc-default": "`5` with any of the mod's rows above the prompt (`rows.*.place`), else `2`",
-      "usage": ["Columns every agent-panel row leaves blank at the",
+      "usage": ["Columns every grid row leaves blank at the",
                 "terminal's right edge (default: 5, the band's [-] room,",
                 "with any of the mod's rows above the prompt; 2 with",
                 "them all under the footer line)."],
-      "doc": ["The columns every agent-panel row leaves blank at the",
+      "doc": ["The columns every grid row leaves blank at the",
               "terminal's right edge. `2` matches the mod with its rows",
               "under the footer line, whose container stops two columns",
               "short of the edge; `5` is the room Claude Code keeps for the",
               "mod's band `[-]` above the prompt. Unset, it follows the",
               "mod's `rows.*.place` from the files: `5` when any row the",
-              "mod draws live is placed `above`, else `2`, so the panel and",
-              "the band end in one column; a panel run without the mod",
-              "sets it where it wants another. Claude only."]
+              "mod draws live is placed `above`, else `2`, so every row",
+              "ends in one column. Claude only; the Python's modes accept",
+              "it and draw no grid row."]
     },
-    // One list for the band and the panel.  The rows table, not hide,
+    // One list for the band and the receipt.  The rows table, not hide,
     // drops a whole row (config-merge.md, Decided 9).
     "hide": {
       "type": "list",
@@ -232,12 +232,12 @@
       "doc-table": "shared",
       "usage": ["Repeatable. Leave out a column or a label part,",
                 "scope[.group[.metric]] with * for any one part",
-                "(docs/options.md). The agent panel only, for now; the",
-                "other modes accept it and ignore it."],
+                "(docs/options.md). The mod draws it; the Python's",
+                "modes accept it and ignore it."],
       "doc": ["Repeatable. Leave a column or a part of a row's label out of",
-              "the redesigned grid; see [Hiding](#hiding). Only the agent",
-              "panel draws on the grid so far; the other modes, and Codex,",
-              "accept it and ignore it."]
+              "the redesigned grid; see [Hiding](#hiding). The mod's rows",
+              "draw on the grid; the Python's modes, and Codex, accept it",
+              "and ignore it."]
     },
 
     // ── Claude display options ───────────────────────────────────────────
@@ -260,7 +260,7 @@
       "file": true,
       "flag": "--mark-spacing",
       "negatable": true,
-      "modes": ["status", "cost", "subagent"],
+      "modes": ["status", "cost"],
       "doc-table": "display",
       "usage": "Close the blank between a mark and its value.",
       "doc": ["Close the blank between a mark and its value."]
@@ -272,7 +272,7 @@
       "file": true,
       "flag": "--subscript-decimals",
       "negatable": true,
-      "modes": ["status", "cost", "subagent"],
+      "modes": ["status", "cost"],
       "doc-table": "display",
       "usage": "Write the digits after a decimal point as subscripts.",
       "doc": ["Write fractions as subscript digits: `1.2٪` becomes `1₂٪`."]

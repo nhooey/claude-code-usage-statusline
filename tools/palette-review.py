@@ -16,8 +16,8 @@ is marked * and must clear the floor in tools/gen-spec.py.  --nearest adds
 that many palette entries closest to each true value.  --old adds a column
 for a revision's 256 value.  Then the pairs whose roles must stay apart,
 how far apart they are in each set, any two names that share one 256
-entry, and real rows drawn at each level: the agent panel, the band and the
-receipt, true colour then 256.  The palette and the checks are gen-spec's.
+entry, and real rows drawn at each level: the band and the receipt, true
+colour then 256.  The palette and the checks are gen-spec's.
 """
 import argparse
 import importlib.util
@@ -43,23 +43,16 @@ PAIRS = [("F_LIM_SESS", "F_LIM_WEEK"), ("F_CHAT_U", "F_CHAT_B"),
          ("F_GRN", "F_AMB"), ("F_RED", "F_PROJ")]
 # The environments the rows are drawn under: Claude Code at true colour,
 # then at 256 colours.
-LEVELS = [("true colour", {"TERM": "xterm-256color", "COLORTERM": "truecolor"},
-           "true-colour-panel"),
-          ("256 colours", {"TERM": "xterm-256color"}, "app-41-63")]
-# Real rows: (label, command run from the tree's root, given the level's
-# fixture environment for the panel).
+LEVELS = [("true colour", {"TERM": "xterm-256color", "COLORTERM": "truecolor"}),
+          ("256 colours", {"TERM": "xterm-256color"})]
+# Real rows: (label, command run from the tree's root).
 DRAWINGS = [
-    ("the agent panel, 01-mixed at 150",
-     lambda env: ["python3", "tools/draw-panel.py", "--ansi", "--env", env,
-                  "01-mixed.json", "150"]),
     ("the band, 01-baseline at 196",
-     lambda env: ["node", "mod/tools/draw-figures.ts",
-                  "tests/fixtures/figures/status/01-baseline@196.json",
-                  "--cols", "196"]),
+     ["node", "mod/tools/draw-figures.ts",
+      "tests/fixtures/figures/status/01-baseline@196.json", "--cols", "196"]),
     ("the receipt, 01-plain at 150",
-     lambda env: ["node", "mod/tools/draw-figures.ts",
-                  "tests/fixtures/figures/cost/01-plain@150.json",
-                  "--cols", "150"]),
+     ["node", "mod/tools/draw-figures.ts",
+      "tests/fixtures/figures/cost/01-plain@150.json", "--cols", "150"]),
 ]
 GOLDENS = [("true colour", "status/true-colour-01@196.txt"),
            ("256 colours", "status/01-baseline@196.txt")]
@@ -194,9 +187,9 @@ def main():
 
     if not args.no_drawings:
         for label, argv in DRAWINGS:
-            for level, env, fixture_env in LEVELS:
+            for level, env in LEVELS:
                 out += ["", "\x1b[1m%s, at %s\x1b[0m" % (label, level), ""]
-                out.append(run(argv(fixture_env), env).rstrip("\n"))
+                out.append(run(argv, env).rstrip("\n"))
         for level, golden in GOLDENS:
             out += ["", "\x1b[1mthe status line golden %s, at %s\x1b[0m" % (
                 golden, level), ""]

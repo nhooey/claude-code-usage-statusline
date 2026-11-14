@@ -11,10 +11,6 @@ mod/.claude-plugin/types/
 # disagreement, so diff shows it directly.  Rewritten on every run.
 tests/out/
 tests/out-cost/
-tests/out-subagent/
-
-# The alignment probe is switched on by this file being present.
-tools/align-probe/align-probe.on
 
 # Nix: build outputs, and the dev shell's state.
 result

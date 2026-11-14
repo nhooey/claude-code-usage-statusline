@@ -602,7 +602,7 @@ FIELDS = ("type", "items", "fields", "rows", "metavar", "default", "derived",
           "minimum", "ports", "agents", "file", "flag", "aliases",
           "negatable", "modes", "doc-table", "doc-default", "usage", "doc")
 REQUIRED = ("type", "ports", "file", "flag", "doc-table", "doc")
-MODES = ["status", "cost", "subagent"]
+MODES = ["status", "cost"]
 DOC = os.path.join("docs", "options.md")
 # The defaults of every option a file may set, which both ports read at
 # run time; this holds it to the spec, and writes the docs' Default cells

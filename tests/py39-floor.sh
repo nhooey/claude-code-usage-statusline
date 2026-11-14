@@ -105,11 +105,5 @@ else
     bad "show-config" "$out"
 fi
 
-if out=$("$PY" "$PROG" --agent codex --mode subagent --usage-source native 2>&1); then
-    bad "reject Codex subagent" "$out"
-else
-    ok "reject Codex subagent"
-fi
-
 printf '\npass %d   fail %d   missing 0\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

@@ -91,12 +91,6 @@
               }
               {
                 category = "dev";
-                name = "draw-panel";
-                help = "draw the agent panel for a payload at a width";
-                command = ''python3 "$PRJ_ROOT/tools/draw-panel.py" "$@"'';
-              }
-              {
-                category = "dev";
                 name = "regen-spec";
                 help = "regenerate spec.py and spec.ts from spec/layout.jsonc";
                 command = ''python3 "$PRJ_ROOT/tools/gen-spec.py" "$@"'';
@@ -114,12 +108,6 @@
                 name = "tests";
                 help = "run every suite, or the ones named; --repeat N to catch a flake (tests/all.sh)";
                 command = ''bash "$PRJ_ROOT/tests/all.sh" "$@"'';
-              }
-              {
-                category = "test";
-                name = "time-panel";
-                help = "time the agent panel's read of the session with the most agents, cold and off its saved folds; [--runs N] [TRANSCRIPT]";
-                command = ''python3 "$PRJ_ROOT/tools/time-panel.py" "$@"'';
               }
               {
                 category = "test";

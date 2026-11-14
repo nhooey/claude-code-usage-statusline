@@ -2,25 +2,25 @@
 
 The reference for everything the program draws: the rows above the prompt
 and under Claude Code's footer line, the receipt each turn leaves in the
-transcript, the agent panel and the row a message from another agent is
+transcript, the subagent rows and the row a message from another agent is
 folded into. Each section opens
 with a real render, then says what every cell is. The
 [legend](../README.md#legend) in the README names every glyph.
 
-Two programs draw them, on one grid. The mod, `usage-band` in
-[`mod/`](../mod/README.md), draws inside Claude Code's own screen: the rows
-above the prompt and under the footer line, the receipt and the turn's
-tags. The Python program,
-run as `subagentStatusLine` with `--mode subagent`, draws the agent panel.
-Every row of all of them has the same columns in the same order, so a figure
-stands on the same screen column wherever it is drawn. Why it is laid out
-this way is in [the plan it was built from](../agents/plans/_implemented/redesign.md).
+The mod, `usage-band` in [`mod/`](../mod/README.md), draws inside Claude
+Code's own screen: the rows above the prompt and under the footer line, the
+receipt and the turn's tags. The subagent rows, one per subagent or shell,
+are drawn by `claude_subagent_render` in both ports. Every row of all of
+them has the same columns in the same order, so a figure stands on the same
+screen column wherever it is drawn. Claude Code's own agent panel draws its
+rows itself. Why it is laid out this way is in
+[the plan it was built from](../agents/plans/_implemented/redesign.md).
 
 All examples below are the programs' own output against the test fixtures
 (clock pinned to 2026-08-16 02:23:20 UTC, the `unknown` terminal profile),
 with colour stripped: `node mod/tools/draw-figures.ts` for the mod's rows,
-from `tests/fixtures/figures/`, and `tools/draw-panel.py` (`draw-panel` in
-the dev shell) for the panel, from `tests/fixtures/payloads/subagent/`.
+from `tests/fixtures/figures/`, and the renderer's cases in
+`tests/fixtures/panel/` for the subagent rows.
 Colour and brightness carry meaning of their own — see
 [Colour and brightness](#colour-and-brightness).
 
@@ -35,8 +35,8 @@ Colour and brightness carry meaning of their own — see
   - [Hiding](#hiding)
 - [The receipt](#the-receipt)
   - [The turn tags](#the-turn-tags)
-- [The agent panel](#the-agent-panel)
-  - [Panel cells](#panel-cells)
+- [The subagent rows](#the-subagent-rows)
+  - [Subagent cells](#subagent-cells)
   - [State](#state)
   - [Inbox](#inbox)
   - [Nesting](#nesting)
@@ -78,7 +78,7 @@ The footer's first line is Claude Code's, drawn by Claude Code, so its
 pills stay live; the mod draws the rest under it. Claude Code draws its
 `[-]` in the five rightmost columns of the band's first row, beside 🎤.
 The fixture's transcript writes no lines and reports no ETA, so 💾 and ⛳
-are blank here; the [agent panel's render](#the-agent-panel) has both.
+are blank here; the [subagent rows' render](#the-subagent-rows) has both.
 
 ### The rows
 
@@ -97,13 +97,13 @@ as the mod ships:
 
 In each place the rows stand in one order, whatever the places: 💳, 🎤,
 🤖, 🎮. Above the prompt that is 🎤 then 🎮; under the footer line 💳 then
-🤖, the lowest row the mod draws, just over the agent panel whose rows it
-is compared with. When the turn ends, 🎤 becomes [the receipt](#the-receipt),
-frozen, in the transcript just above the band.
+🤖, the lowest row the mod draws, just over Claude Code's agent panel.
+When the turn ends, 🎤 becomes [the receipt](#the-receipt), frozen, in the
+transcript just above the band.
 
 Every row, above the prompt and under the footer line, and the receipt,
 starts at one column and ends at one column, so a figure on 🎮 stands over
-the same figure on 🤖 and on the agent panel's rows:
+the same figure on 🤖 and on the subagent rows:
 
 - **The left edge.** Claude Code draws the footer's container `hint-inset`
   (2) columns in from each edge, and the mod draws its rows there that much
@@ -111,8 +111,8 @@ the same figure on 🤖 and on the agent panel's rows:
   so its rows, and the receipt, are indented `hint-inset` columns instead.
 - **The right edge.** Every row ends `right-edge` columns short of the
   terminal's edge: 5 when any row drawn live is above the prompt, clear of
-  the `[-]`, else 2 (`right-edge` follows `rows.*.place` from the same
-  files the agent panel reads, so the panel's rows end there too).
+  the `[-]`, else 2 (`right-edge` follows `rows.*.place`, and the subagent
+  rows end there too).
 
 Under the rows Claude Code's blank row stays, between the footer and the
 panel's `⏺ main`; `hint-tuck` draws them with a bottom margin of -1
@@ -148,7 +148,7 @@ whether a survey held the band when it was drawn.
 
 ### The grid
 
-Every row of the mod's rows, the receipt and the agent panel draws the same
+Every row of the mod's rows, the receipt and the subagent rows draws the same
 columns, in this order:
 
 ```
@@ -249,7 +249,7 @@ flush left.
   Its windows and clock are in [The rows](#the-rows).
 
 A label keeps at least 12 columns before columns drop: an agent row's head
-on the [panel](#the-agent-panel) and the first letters of its name. It
+on the [subagent rows](#the-subagent-rows) and the first letters of its name. It
 sheds its ranked parts whole before anything is cut, least important
 first: 🎨, then 🔀, then 📁 on a label that has them. A part leaves whole
 rather than showing as `📁~/sr…`. What is left is cut with `…`. Which
@@ -340,10 +340,9 @@ otherwise; their clocks (🔧 ⌛ ⛳ 🕐 🔜) move each second between reads.
 ### Hiding
 
 `--hide scope[.group[.metric]]`, repeatable, with `*` for any one part. One
-path means the same on the mod's rows, the receipt and the agent panel: the
-mod and the panel take the paths in the option `hide`, from the
-[configuration files](options.md#configuration-files), and the panel as
-flags too.
+path means the same on the mod's rows, the receipt and the subagent rows,
+which take the paths in the option `hide`, from the
+[configuration files](options.md#configuration-files).
 
 | Part | Values |
 |---|---|
@@ -359,8 +358,7 @@ flags too.
 ```
 
 A column hidden on every row it could show on is removed, and the others
-close up; hidden on some rows, it is left blank there. Keep the panel's
-flags the same as the mod's, so the columns stack.
+close up; hidden on some rows, it is left blank there.
 
 Hiding 🔋 (`*.plan.five_hour`), 🧠's share of the window
 (`*.context.share`) and 🎯 (`*.tokens.cache`), above the prompt and under
@@ -449,12 +447,12 @@ that ended; both lines are at no indent, so they stack, and every turn
 carries its tag at both ends, even one that is interrupted or still running.
 `--hide name.tag` hides both, with the blank rows around the receipt's.
 
-## The agent panel
+## The subagent rows
 
-While agents run, `--mode subagent` replaces each row of Claude Code's agent
-panel. At 160 columns (`python3 tools/draw-panel.py 01-mixed.json 160
---right-edge 5`), a running agent in each state, finished ones, one not yet
-started, a shell and a teammate:
+One row per task the session runs: an Agent tool call, a fork, a background
+shell, a workflow agent, a teammate. At 160 columns with a right edge of 5,
+a running agent in each state, finished ones, one not yet started, a shell
+and a teammate (the `01-mixed@160` case of `tests/fixtures/panel/corpus.json`):
 
 ```
 🔍🟢 Marigold  Runnin…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
@@ -470,17 +468,19 @@ started, a shell and a teammate:
 👥🟢 Willow             🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
 ```
 
-Claude Code draws its panel's chrome before each row, `  ◯ ` at the top
-level, four columns, and the `⏺ main` row above them, which no hook
-reaches. The row counts the chrome toward its width and does not print it,
-so on screen each row's figures stand under the mod's: the payload's
-`columns` is the terminal's width less 6, and the row is laid out for the
-terminal's width, ending as many columns short of the edge as `--right-edge`
-says. Unset, it follows the mod's `rows.*.place` from the configuration
-files, as the mod's rows do: 5 when any row the mod draws live is above
-the prompt, as under the defaults, else 2.
+Each row is laid out for the terminal's width and keeps room at its left
+for a tree's chrome, `  ◯ ` at the top level, four columns, and two more
+for each level an agent started by another agent sits below it; the row
+counts the chrome toward its width and does not print it. It ends as many
+columns short of the edge as `right-edge` says, which unset follows
+`rows.*.place` from the configuration files, as the mod's rows do: 5 when
+any row the mod draws live is above the prompt, as under the defaults,
+else 2. The columns follow from the width and `hide` alone; on a narrow
+terminal whole columns drop from every row at once, 🛫 first and 💰 last,
+and at an unknown width every column is drawn and the label keeps 12
+columns.
 
-### Panel cells
+### Subagent cells
 
 The label, left to right:
 
@@ -488,15 +488,15 @@ The label, left to right:
 |---|---|
 | kind | the agent type, as a glyph (the [README legend](../README.md#agent-kind)) |
 | state | the phase: 🟢 running, 🟡 paused or ⚫ ended. See [State](#state) |
-| 👶🏻 | how many rows hang directly under it on the panel, finished or not |
+| 👶🏻 | how many rows hang directly under it, finished or not |
 | 🤏 | how often its window has been compacted |
 | 💻 | how many background shells it started and has not heard the end of, while it runs or is paused; not once it has failed or been killed |
 | 📡 | the same for its Monitors |
 | 📨 | messages sent to it with SendMessage and not yet delivered: Claude Code's own "N queued". See [Inbox](#inbox) |
 | name | the task's name, or its description; then 🌿 and the branch of a worktree it works in apart from the session's; then what it is doing now. A label that only repeats the description is not drawn |
 
-👶🏻, 🤏, 💻, 📡 and 📨 are drawn only while some row on the panel needs one,
-and then on every row, padded to the panel's widest, so the names after them
+👶🏻, 🤏, 💻, 📡 and 📨 are drawn only while some subagent row needs one,
+and then on every row, padded to the widest, so the names after them
 hold their column. The ones that stay once they come, 👶🏻 and 🤏, sit
 furthest left, then 💻 and 📡, which last as long as a shell or a Monitor
 runs, so 📨 coming and going moves the fewest. On a label too short for
@@ -511,9 +511,9 @@ agent, from its own transcript:
 | Cell | Meaning |
 |---|---|
 | model | model and effort |
-| 🛫 | what the agent is doing in its phase, and for how long: its state's mark, then the time it has been in that state. 🤖 shows the token rate from the panel's own samples while records keep landing (`🤖 333`), and how long the agent has written nothing once that is a minute, amber from ten. A shell keeps 🛫 and its rate |
+| 🛫 | what the agent is doing in its phase, and for how long: its state's mark, then the time it has been in that state. 🤖 shows the token rate from the task's own token samples while records keep landing (`🤖 333`), and how long the agent has written nothing once that is a minute, amber from ten. A shell keeps 🛫 and its rate |
 | 💰 | cost, each request priced at its own model |
-| 🧠 | the agent's context size (its last request's input), and its share of the window the payload gives for its model |
+| 🧠 | the agent's context size (its last request's input), and its share of the window the task list gives for its model |
 | 🧩 🎯 | tokens in and out, and the cache hit rate |
 | ⌛ | the agent's age: from its first record, or its `startTime` if that is earlier, to now, or to its last record once it has finished. A completed agent still parked on its children keeps counting. Not the `startTime` alone, which Claude Code restarts when it resumes an agent |
 | ⛳ | the time the agent says it has left. Blank until it reports. See [ETA](#eta) |
@@ -521,10 +521,11 @@ agent, from its own transcript:
 | 🔋 🪫 | the agent's share of each plan window |
 | 💾 | lines added and removed by the agent's own edits and writes, over its whole life |
 
-The payload carries each task's name, type, status, start time, model,
+The task list carries each task's name, type, status, start time, model,
 effort and a running token count; everything else comes from the agent's
-transcript, `<session>/subagents/agent-<id>.jsonl`. See
-[Options](options.md#agent-panel-rows---mode-subagent).
+transcript, `<session>/subagents/agent-<id>.jsonl`, with workflow agents
+one directory further down. A task with no transcript (a shell, a remote
+agent) shows only what the task list gives.
 
 ### State
 
@@ -564,17 +565,11 @@ for that id that carries a `<status>` (a Monitor's events carry none), on
 TaskStop's result, or on a TaskOutput that reads it finished. A status never
 seen is two amber letters and no mark.
 
-Some limits are Claude Code's and no setting changes them. The panel shows
-five rows at a time and scrolls with the cursor. It hides a finished
-background agent that waits on nothing, and removes any other finished task
-30 seconds after it ends, unless you have opened it. Nothing hides the panel
-itself, and its `⏺ main` row cannot be changed.
-
 ### Inbox
 
 A message SendMessage cannot hand over at once waits in the agent's inbox
 until its next tool round, and Claude Code's own row says `1 queued`. The
-payload carries no such count, so 📨 rebuilds it from the two ends. The
+task list carries no such count, so 📨 rebuilds it from the two ends. The
 sender's transcript — the main thread's or another agent's — gets a result
 reading `Message queued for delivery to <id> at its next tool round.` The
 agent's own file gets the delivery, as a `queued_command` attachment or a
@@ -584,8 +579,8 @@ delivery takes one away, and the count never drops below zero. A peer
 `handback` is a report home and is not counted, and nor is a message typed
 into the agent's pane, which leaves nothing on the sending side, so 📨 can
 read lower than Claude Code's count. A killed or failed agent's inbox is
-dropped. Files last written before the earliest agent on the panel started
-are not read. Each file's sends and deliveries are saved per session in
+dropped. Files last written before the earliest agent in the task list
+started are not read. Each file's sends and deliveries are saved per session in
 `claude-inbox-fold-<digest>/` in private state, as `spec/state.jsonc`'s
 `inbox-fold` row names it, so a tick reads only what each file had
 appended since the last; a file rewritten in place is read afresh.
@@ -594,8 +589,7 @@ appended since the last; a file rewritten in place is read afresh.
 
 At 170 columns, wide enough for every count to keep its place, a parent
 with two children, one of them with a child of its own, a worktree agent
-and finished ones (`python3 tools/draw-panel.py 03-tree.json 170
---right-edge 5`):
+and finished ones, with a right edge of 5:
 
 ```
 🎩🟢 👶🏻2 🤏2     Trunk          🤖O⁵🏃  🚦  23m  💰0.2   🧠 32k  16٪  🧩▴ 33k ▾2.4k  🎯91٪  ⌛ 33m         🤖⠆⠀ 🔧⠀⠀ 🚦⠶⠆  🔋  .04٪  🪫  .054٪
@@ -608,8 +602,8 @@ and finished ones (`python3 tools/draw-panel.py 03-tree.json 170
 🔍🟢               Moss           🤖O⁵🏃  🔧 6.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛8.3m         🤖⠆⠀ 🔧⠶⠆ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
 ```
 
-An agent spawned by another agent is drawn by the panel under its parent,
-its chrome two columns further in for each level. The row's figures stay on
+An agent spawned by another agent is drawn under its parent, its chrome
+two columns further in for each level. The row's figures stay on
 the columns a top-level row's are on: the grid takes the chrome's columns
 from the label, so a nested row's label is that much shorter. The columns
 are kept for two levels of nesting whether any agent runs or not
@@ -617,16 +611,16 @@ are kept for two levels of nesting whether any agent runs or not
 deeper row cuts its own label instead.
 
 The program reads each agent's depth from `spawnDepth` in its `.meta.json`
-sidecar, and its parent from `parentAgentId`, resolved the way the panel
-resolves it:
+sidecar, and its parent from `parentAgentId`, resolved the way Claude
+Code's agent panel resolves it:
 
 - An ancestor that has finished and waits on nothing is stepped over. The
-  panel drops such an agent and hangs its children from its parent. The
-  panel's own test reads state the payload doesn't carry, so the program
+  agent panel drops such an agent and hangs its children from its parent.
+  Its own test reads state the task list doesn't carry, so the program
   takes "completed and not paused" for it (see [State](#state)). An agent
   paused on a child still running keeps its children.
-- An ancestor missing from the payload ends the walk, and the row is top
-  level. The payload lists every agent the panel can show.
+- An ancestor missing from the task list ends the walk, and the row is top
+  level. The task list holds every agent the agent panel can show.
 - A task with no sidecar — a shell, a remote agent — is top level.
 
 A parent's figures are its own transcript only: its children's tool time,
@@ -799,8 +793,7 @@ and a true value:
   the 80 palette entries that come back as themselves: a cube colour whose
   channels are all 0, 175, 215 or 255, black, white, or a grey from 8 to
   178 in steps of 10. So the 256 set draws in tmux's limited mode exactly
-  as chosen, in the mod's rows, which go through Claude Code's renderer,
-  and in the agent panel, which writes its own escapes.
+  as chosen in the mod's rows, which go through Claude Code's renderer.
 - **The true set** is softer colours, drawn only where Claude Code itself draws true colour. Both ports work its level
   out with its own rules, from the variables it reads (`COLORTERM`, `TERM`,
   `TERM_PROGRAM`, `FORCE_COLOR`, `NO_COLOR`, `TMUX`,

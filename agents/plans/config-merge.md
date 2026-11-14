@@ -10,17 +10,15 @@ files. This document collects the design as it is decided.
 The usage line has two ports, and each takes its settings its own way:
 
 - **The Python package**, `coding_agent_usage_line/`, takes flags on its
-  command line, which lives in `~/.claude/settings.json` as the
-  `subagentStatusLine` command (and in Codex's hook commands). One command
-  serves every project, so a setting cannot differ between projects.
+  command line, which lives in the hook commands. One command serves every
+  project, so a setting cannot differ between projects.
 - **The mod**, `mod/`, takes a TypeScript object, `CONFIG` in
   `mod/hooks/config.ts`, read once at module load. A change is an edit to the
   mod's source and a `/reload-plugins`, and it applies to every project too.
 
-Some settings have to agree between the two, and today only comments keep
-them in step: `CONFIG.hide` says "keep subagentStatusLine's --hide flags the
-same, so the panel stacks", and `CONFIG.bandPlace` says to keep the panel's
-`--right-edge` at 0 or 5 to match it. Two copies of one value drift.
+Some settings have to agree between the two, `hide` and the right edge
+among them, and only comments keep them in step. Two copies of one value
+drift.
 
 The first setting that has to differ by project is where and when each
 row appears: the 🎤, 🤖 and 🎮 rows kept under the footer line between turns
@@ -138,7 +136,6 @@ pays for `git` in the status line.
 | Reader | Starts from |
 |---|---|
 | the mod | `$.session.root()`: where the session started, or where `/cd` or a worktree move took it; a shell `cd` does not move it |
-| the panel (`--mode subagent`) | the payload's `cwd` |
 | the status line (`--mode status`) | the payload's `workspace.project_dir`, else `cwd` |
 | the Stop hook (`--mode cost`) | the payload's `cwd` |
 | Codex | the payload's `cwd`, else the rollout's |
@@ -692,14 +689,12 @@ and `npm test`.
    - `_flag` and `_costOpts(argv)` in `mod/src/claude_cost.ts` stay a
      test's reading of a case's flags: the mod draws no cost line.
 7. **Move today's settings into files.** The user's `hide` list and
-   `--usage-source`, `--mark-spacing` leave the `subagentStatusLine` command
-   in `~/.claude/settings.json` and `CONFIG` for the user-global file, so the
-   band and the panel read one copy. The command keeps only
-   `--agent claude --mode subagent`. This is the user's file, so the step is
-   a short note in `docs/options.md` and done by hand, not in a commit.
+   `--usage-source`, `--mark-spacing` leave `CONFIG` for the user-global
+   file, so both ports read one copy. This is the user's file, so the step
+   is a short note in `docs/options.md` and done by hand, not in a commit.
 
    Since step 6 the mod's own settings are `SETTINGS` in `config.ts`.
-   The user file that draws as now, band and panel, checked with
+   The user file that draws as now, checked with
    `--show-config` (no warning; `right-edge` derived 2):
 
    ```jsonc
@@ -717,14 +712,12 @@ and `npm test`.
 
    Acceptance 1 has the user file with no `rows`, taking the defaults
    (🤖 and 🎮 kept between turns, 🎤 alone stamped): leaving `rows` out
-   is that change of look, the user's call. Then the panel's command
-   drops its `--mark-spacing`, `--usage-source`, `--right-edge` and
-   `--hide` flags in the same edit (a flag that differs from the file is
-   warned about, Decided 1), and `SETTINGS` empties to `{}` in a commit.
+   is that change of look, the user's call. `SETTINGS` empties to `{}` in
+   a commit.
 
    **Status 2026-10-21: done,** with `rows` kept (the user's call): the
    user file above is written, `SETTINGS` is `{}` and the ignore line is
-   in `.gitignore`; the panel's command is the user's to cut down.
+   in `.gitignore`.
 8. **The acceptance check**, below.
 
    **Status 2026-11-02: steps 2, 3 and 7 pass, 4 to 6 to run.** Step 1

@@ -58,7 +58,6 @@ export PATH="$work/bin:$PATH"
 SUITES='
 status|.|bash tests/golden.sh
 cost|.|bash tests/golden-cost.sh
-subagent-goldens|.|python3 tests/run-cases.py --suite subagent
 panel|.|python3 tests/run-cases.py --suite panel
 py39-floor|.|bash tests/py39-floor.sh
 usage-source|.|python3 tests/usage-source.py

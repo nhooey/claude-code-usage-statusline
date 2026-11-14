@@ -291,11 +291,10 @@ The plan takes that as it is, with no code for it
 
 What the Python draws, and what it must change:
 
-- **The agent panel** (`--mode subagent`) draws Claude Code's panel rows,
-  none of the mod's. It must change one thing: its `right-edge`, derived
-  from `rows.*.place` (5 under the new defaults) in step with the mod, as
-  it is derived from `live-place` today. The user's `subagentStatusLine`
-  command gives no `--right-edge`, so it follows.
+- **The subagent rows' renderer** draws none of the mod's rows. It must
+  change one thing: its `right-edge`, derived from `rows.*.place` (5
+  under the new defaults) in step with the mod, as it is derived from
+  `live-place` today.
 - **The defaults file** is read strictly by both ports, so `place` must be
   in the spec the Python's checker is generated from, and `live-place`
   gone from both at once (`RP2`, one commit).

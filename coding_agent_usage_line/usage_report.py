@@ -1,7 +1,7 @@
 """`--mode usage`: the account's plan windows as one JSON object.
 
 No payload is read.  The reading comes from sources.collect, the same
-chain the agent panel and the Stop hook use when their payload holds no
+chain the status line and the Stop hook use when their payload holds no
 plan windows: a cached native reading, else the source's fallback.  The
 session that scopes a cached reading under `--account default` is
 `--transcript`'s, else (Claude) $CLAUDE_CODE_SESSION_ID, which Claude Code

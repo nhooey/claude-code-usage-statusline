@@ -2,7 +2,7 @@
 """Run the shared golden cases in tests/fixtures/cases.json.
 
     python3 tests/run-cases.py                  # every case
-    python3 tests/run-cases.py --suite status   # or cost, subagent, panel
+    python3 tests/run-cases.py --suite status   # or cost, panel
     python3 tests/run-cases.py --regen          # re-record, then read the diff
     python3 tests/run-cases.py --regen-figures  # the figures alone
 
@@ -26,11 +26,8 @@ Each case is checked in the two stages the program runs in besides
 --regen rewrites the goldens and the figures; --regen-figures the figures
 only, for when the document's shape changes and the drawing must not.
 
-The subagent suite is the agent panel's: a subagentStatusLine payload on
-stdin, the JSON lines the program prints compared whole with
-tests/golden/subagent/<id>.txt.  The panel writes no figures document, so
-its two stages are the `panel` suite instead: tests/fixtures/panel/, the
-renderer's inputs and the rows it draws for them, written again by
+The `panel` suite is the subagent rows' renderer: tests/fixtures/panel/,
+the renderer's inputs and the rows it draws for them, written again by
 fixtures/gen/panel.py and compared with what is committed.  --regen
 rewrites those too.
 
@@ -57,7 +54,7 @@ FIGURES = os.path.join(FIXTURES, "figures")
 PROGRAM = os.path.join(os.path.dirname(HERE), "coding-agent-usage-line.py")
 sys.path.insert(0, os.path.dirname(HERE))
 from coding_agent_usage_line.spans import COLOUR_VARS  # noqa: E402
-# tests/, for _checks: fixtures/gen/panel.py loads this file by path.
+# tests/, for _checks.
 sys.path.insert(0, HERE)
 from _checks import write_executable  # noqa: E402
 
@@ -159,10 +156,9 @@ class Suite:
         # the project walk starts in the case's repository, whose .git
         # stops it: no golden reads this machine's own config files,
         # whatever the payload's directory or the developer's environment.
-        # The right edge too: the panel's goldens are drawn 5 columns short
-        # of the edge, the band's [-] room, set here so they do not move
-        # with the derived default, which follows the mod's rows.*.place
-        # (Decided 13).
+        # The right edge too, 5 columns, the band's [-] room, set here so no
+        # case moves with the derived default, which follows the mod's
+        # rows.*.place (Decided 13).
         source = "auto" if e["source"] is None else "cmd:" + cmd
         config = os.path.join(self.tmp, "config-" + name)
         if not os.path.exists(config):
@@ -215,10 +211,6 @@ def render(python, suite, case):
     if case["suite"] == "status":
         with open(path, encoding="utf-8") as fh:
             stdin = fill(fh.read()).encode("utf-8")
-    elif case["suite"] == "subagent":
-        # The tasks' working directories are the fixture repositories.
-        with open(path, encoding="utf-8") as fh:
-            stdin = fill(fh.read(), suite.scratch).encode("utf-8")
     else:
         argv += ["--transcript", path]
         stdin = b""
@@ -344,11 +336,6 @@ def run_suite(name, cases, args, drawers):
                 fails.append("rows")
                 with open(os.path.join(out, cid + ".got"), "wb") as fh:
                     fh.write(got)
-            if name == "subagent":
-                # No figures document: the panel suite checks the
-                # drawing apart.
-                pending.append((cid, None, fails, want, None))
-                continue
             # Figures: what the run wrote against what is committed.
             kept = read(fig_path)
             if kept is None:
@@ -388,7 +375,7 @@ def run_suite(name, cases, args, drawers):
 
 def run_panel(args):
     """The panel suite: (printed lines, (cases, files that differ) or None)."""
-    lines = ["=== panel: the agent panel's rows from its inputs ==="]
+    lines = ["=== panel: the subagent rows from their inputs ==="]
     sys.path.insert(0, os.path.join(FIXTURES, "gen"))
     import panel as gen_panel
     if args.regen:
@@ -403,7 +390,7 @@ def run_panel(args):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--suite", choices=("status", "cost", "subagent", "panel"))
+    ap.add_argument("--suite", choices=("status", "cost", "panel"))
     ap.add_argument("--regen", action="store_true")
     ap.add_argument("--regen-figures", action="store_true")
     ap.add_argument("--python", default="/usr/bin/python3")
@@ -415,7 +402,7 @@ def main():
     stages = {s: {"pass": 0, "fail": 0} for s in ("figures", "render")}
     # The suites share no state, so they run side by side; what each prints
     # is printed whole, in this order, once it is done.
-    names = [n for n in ("status", "cost", "subagent", "panel")
+    names = [n for n in ("status", "cost", "panel")
              if not args.suite or args.suite == n]
     regen_panel = args.regen and "panel" in names
     if regen_panel:

@@ -8,8 +8,6 @@ Two readouts, two modes, one set of facts:
                     stdout: three rows (four when narrow), redrawn continuously
     --mode cost     stdin: the Stop-hook JSON payload
                     stdout: {"systemMessage": "<two rows>"}, once per turn
-    --mode subagent stdin: the agent panel's task list
-                    stdout: one {"id", "content"} line per task, every tick
     --selftest      draws specimen rows on the tty and asks the terminal
                     where the cursor landed; needs a real terminal tab
 
@@ -83,7 +81,6 @@ from .claude_sources import prepare_claude_reading
 from .options import Options, from_argv
 from . import agent_fold
 from . import inbox_fold
-from . import claude_subagent_render as subagent_render
 
 CALIB_TTL = 300        # the scan walks transcripts; five minutes is plenty
 # The expensive calibration scan is private and scope-keyed below
@@ -594,7 +591,7 @@ _SNAPSHOT = None
 def limits_snapshot() -> dict:
     """The collector projection selected for this one Claude invocation.
 
-    Status, cost, and panel orchestration seed this before any historical
+    Status and cost orchestration seed this before any historical
     accounting.  There is intentionally no hidden second collector/cache
     fallback here: source choice and account scope must remain visible and
     consistent across every derived percentage.
@@ -656,9 +653,8 @@ _OLD_CALIB = re.compile(
     r"claude-calibration-(?:[0-9a-f]{64}\.json|ts-[0-9a-f]{64}\.cache)\Z")
 # Written once none is left, so the directory is listed only until then.
 OLD_CALIB_DONE = "claude-calibration-old-removed"
-# How long one run spends removing them.  One machine held 65,000, and the
-# panel's command is killed at five seconds, so a run stops here and the next goes
-# on.
+# How long one run spends removing them.  One machine held 65,000, and a
+# hook runs under a timeout, so a run stops here and the next goes on.
 OLD_CALIB_BUDGET_S = 1.0
 _old_calib_checked = False
 
@@ -1343,12 +1339,10 @@ def _window_costs(sess_start: Optional[datetime],
 
     Each file's priced records are kept between scans by _file_costs, and a
     scan reads only the bytes appended since the last one.  Reading them all
-    took 6.2 s, 836 MB in 372 files, which is past the agent panel's
-    five-second timeout: Claude Code kills the panel's command, puts its
-    stock rows back, and the next tick starts the same scan again.
+    took 6.2 s, 836 MB in 372 files.
 
     A cold scan, after a change to the cache's format, still reads
-    everything, and the status line is killed too when the next refresh
+    everything, and the status line is killed when the next refresh
     starts.  So the cache is saved every COST_SAVE_EVERY_S while it fills,
     and a killed scan leaves the next one only the files it had not reached.
     """
@@ -1601,7 +1595,7 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
     the cost is the machine's and the percentage the plan's.  So the file is
     named by seed_limits_snapshot's scope, the source, the account's hashed
     id and the period, and every session of one account on this machine
-    shares it, the panel's and the mod's alike.  The id is what keeps two
+    shares it, the Python's and the mod's alike.  The id is what keeps two
     accounts apart, since their windows can open at the same minute and the
     percentage stored with the scan is one account's.  A source that names
     no account falls back to the reading caches' namespace, which for
@@ -1614,10 +1608,9 @@ def calibration(scan: bool = True) -> Dict[str, Optional[float]]:
 
     `scan=False` never runs the scan.  It takes the cached one for these
     windows however old, and with none returns no units, which draws "?".
-    The agent panel passes it: Claude Code kills the panel's command at five
-    seconds and puts its stock rows back, a cold scan can take longer than
-    that, and a killed scan never reaches the cache, so the next tick would
-    pay for it again.  The status line and the Stop hook keep the cache filled.
+    agent_window_shares passes it for the subagent rows, drawn every few
+    seconds, which a cold scan can take longer than.  The status line and
+    the Stop hook keep the cache filled.
     """
     _remove_old_calibrations()
     _remove_old_window_costs()
@@ -2389,33 +2382,28 @@ def selftest() -> int:
 # ════════════════════════════════════════════════════════════════════════════
 
 # ════════════════════════════════════════════════════════════════════════════
-# The subagent rows — `--mode subagent`.
+# The subagent rows' figures.
 #
-# Claude Code's agent panel lists every task the session is running — Agent
-# tool calls, forks, background shells, workflows, teammates — one row each,
-# and `subagentStatusLine` in settings.json lets a command REPLACE the text of
-# any of those rows.  Every few seconds the panel runs the command with one
-# JSON object on stdin and reads back one JSON object per line:
+# Each task the session is running — Agent tool calls, forks, background
+# shells, workflows, teammates — gets one row.  prepare_subagent_tasks takes
+# the session and its tasks as one object:
 #
-#     stdin   {"session_id", "transcript_path", "cwd", "columns",
-#              "tasks": [{"id", "name", "type", "status", "description",
-#                         "label", "startTime", "model", "effort",
-#                         "contextWindowSize", "tokenCount", "tokenSamples",
-#                         "cwd"}, ...]}
-#     stdout  {"id": "<task id>", "content": "<row text>"}   per task
+#     {"session_id", "transcript_path", "cwd", "columns",
+#      "tasks": [{"id", "name", "type", "status", "description",
+#                 "label", "startTime", "model", "effort",
+#                 "contextWindowSize", "tokenCount", "tokenSamples",
+#                 "cwd"}, ...]}
 #
-# A task left out keeps the panel's own row; `content: ""` hides it.  Read
-# out of Claude Code 2.1.268; regression fixtures keep that
-# observed shape explicit as the panel protocol evolves.
+# and claude_subagent_render draws the rows from what it returns.
 #
-# WHAT THE PAYLOAD DOES NOT SAY is most of what is worth reading.  It carries
-# the harness's own `tokenCount` — the last request's input plus every output
-# token, a shape that is neither the context nor the bill — and nothing about
-# cache, cost, or the plan windows.  But a local agent's task id IS its agent
-# id, and agent_records already knows where `agent-<id>.jsonl` lives, so the
-# row is built the way the status line's is: from the transcript, priced per
-# record at its own model, with the plan figures taken from the snapshot the
-# status line just published.  The panel's figure is not printed at all.
+# WHAT THE TASK LIST DOES NOT SAY is most of what is worth reading.  It
+# carries the harness's own `tokenCount` — the last request's input plus
+# every output token, a shape that is neither the context nor the bill — and
+# nothing about cache, cost, or the plan windows.  But a local agent's task
+# id IS its agent id, and agent_records already knows where
+# `agent-<id>.jsonl` lives, so the row is built the way the status line's
+# is: from the transcript, priced per record at its own model, with the plan
+# figures taken from the snapshot the status line just published.
 # ════════════════════════════════════════════════════════════════════════════
 
 class AgentUsage(NamedTuple):
@@ -2523,8 +2511,8 @@ def agent_meta(path: str) -> dict:
 
 def read_agent_usage(path: str) -> AgentUsage:
     """One pass over an agent's transcript, the way read_transcript reads the
-    session's: deduped on requestId, summed, priced per record.  The panel
-    reads on from the fold saved for the file instead (agent_fold), and
+    session's: deduped on requestId, summed, priced per record.
+    prepare_subagent_tasks reads on from the fold saved for the file instead (agent_fold), and
     finishes it the same way: see agent_usage_of.
     """
     if not path:
@@ -2658,7 +2646,8 @@ def agent_window_shares(u: AgentUsage) -> Dict[str, Optional[float]]:
 def git_head(path: str) -> Tuple[str, str]:
     """`(root, branch)` of the git checkout holding `path`, off its files alone.
 
-    The panel runs every few seconds, once per row, so this reads `.git`
+    The subagent rows are drawn every few seconds, each reading this, so
+    it reads `.git`
     rather than starting git: a directory in a main checkout, a `gitdir:`
     file in a linked worktree, and HEAD beside either.  A detached HEAD is
     its commit's first seven digits.  ("", "") outside a checkout.
@@ -2705,9 +2694,9 @@ def worktree_branch(cwd: str, session_cwd: str) -> str:
 def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
     """Read every task sidecar once and return renderer-ready task facts.
 
-    The agent-panel renderer receives only these immutable-ish snapshots.  In
-    particular it never opens a transcript while composing a row, which keeps
-    panel layout safe to reuse by another coding-agent adapter.  `now` is the
+    The subagent rows' renderer receives only these immutable-ish snapshots.
+    In particular it never opens a transcript while composing a row, which
+    keeps the layout safe to reuse by another coding-agent adapter.  `now` is the
     renderer's, for the figures read here that run on to it: a running
     agent's 🤖 and 🔧 (agent_clock).
     """
@@ -2737,8 +2726,8 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
             prepared.append((task, usage, agent_meta(path),
                              agent_window_shares(usage)))
         except Exception:
-            # A malformed or concurrently replaced sidecar must leave the
-            # panel's own task row intact rather than break every task.
+            # A malformed or concurrently replaced sidecar drops its own
+            # task rather than break every task.
             continue
     # A killed or failed agent's inbox is dropped with it, and a shell has
     # none.  The rest are counted in one pass over every file that can send,
@@ -2759,19 +2748,6 @@ def prepare_subagent_tasks(pay: dict, now: Optional[float] = None):
         inbox = {}
     return tuple((t, u._replace(inbox=inbox.get(str(t["id"]), 0)), m, sh)
                  for t, u, m, sh in prepared)
-
-
-def render_subagent(prepared_tasks, cols: Optional[int], lim: Limits,
-                    now: Optional[float] = None,
-                    hide: Sequence[str] = ()) -> str:
-    """Serialize pure pre-rendered task rows for Claude Code's JSONL panel.
-    `cols` is the terminal's width; `hide` the --hide paths."""
-    out = []
-    for task_id, row in subagent_render.render_task_rows(prepared_tasks, lim,
-                                                           cols, now, hide):
-        out.append(json.dumps({"id": task_id, "content": row},
-                              ensure_ascii=False))
-    return "".join(line + "\n" for line in out)
 
 
 def emit_source_diagnose(spec: str, prepared, check: str = "",
@@ -2814,47 +2790,6 @@ def _cost_check(pay: Payload, session: Optional[dict]) -> str:
                 num(acc.get("lines_added"), "%d"),
                 num(acc.get("lines_removed"), "%d"),
                 num(pay.lines_added, "%d"), num(pay.lines_removed, "%d")))
-
-
-def main_subagent(options: Options, raw: str) -> int:
-    try:
-        pay = json.loads(raw)
-    except Exception:
-        return 0                            # nothing printed: panel's rows stand
-    if not isinstance(pay, dict):
-        return 0
-    if options["cols"] is not None:
-        cols = options["cols"] or None
-    else:
-        # The payload's `columns` is the terminal's width less
-        # PANEL_COLUMNS_SHORT, and the rows are laid out for the terminal's,
-        # so they line up with the band's
-        # (agents/plans/_implemented/redesign.md, "The whole screen").
-        c = pay.get("columns")
-        cols = (int(c) + PANEL_COLUMNS_SHORT
-                if isinstance(c, (int, float)) and c > 0 else term_cols())
-    source_spec = options["usage-source"]
-    account = options["account"]
-    period = options["account-period"]
-    prepared = prepare_claude_reading(
-        source_spec, account, period,
-        {"session": str(pay.get("session_id") or ""),
-         "model": str(pay.get("model") or "")}, frozen_now())
-    # A failed explicit source is unavailable, never a reason to revive a
-    # global legacy limit cache.  Native/auto readings remain available via
-    # the shared collector above.
-    lim = prepared.limits if prepared.reading else NO_LIMITS
-    seed_limits_snapshot(lim, prepared.reading)
-    if options["diagnose"]:
-        emit_source_diagnose(source_spec, prepared,
-                             warnings=len(options.warnings))
-    # Panel stdout is JSONL task rows only; account scope is intentionally not
-    # appended here because it would be mistaken for a panel task.
-    now = frozen_now()
-    # --hide, repeatable: the paths the panel's rows leave out.
-    sys.stdout.write(render_subagent(prepare_subagent_tasks(pay, now), cols,
-                                     lim, now, list(options["hide"])))
-    return 0
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -3487,30 +3422,18 @@ def main_cost(options: Options, raw: str) -> int:
 
 
 USAGE = """\
-usage: claude-code-usage-statusline.py --mode {status|cost|subagent} [options]
+usage: claude-code-usage-statusline.py --mode {status|cost} [options]
        claude-code-usage-statusline.py --selftest
 
-Renders the Claude Code status line, the per-prompt cost line and the agent
-panel's rows from one set of glyphs, widths and formatters.  docs/, beside
-this file, carries the design notes: the layout rule, the terminal width
-tables, and the chrome the cost rows are laid out against.
+Renders the Claude Code status line and the per-prompt cost line from one
+set of glyphs, widths and formatters.  docs/, beside this file, carries the
+design notes: the layout rule, the terminal width tables, and the chrome
+the cost rows are laid out against.
 
 modes:
   --mode status      read the status-line JSON on stdin, print three rows
   --mode cost        read the Stop-hook JSON on stdin, print a systemMessage
-  --mode subagent    read the agent panel's task list on stdin, print one
-                     {"id", "content"} line per task -- the subagentStatusLine
-                     setting.  Each row is laid out on the grid
-                     (agents/plans/_implemented/redesign.md) for the
-                     terminal's width, the payload's columns plus 6: the
-                     kind and its phase, the name (or the description,
-                     where the panel has no name) and what it is doing,
-                     then the grid's columns: model, what it is doing or
-                     its token rate, cost, context, tokens, cache rate,
-                     elapsed, ETA and split, its share of the two plan
-                     windows, and lines written.  --cols, --hide and
-                     --usage-source apply.
-  --selftest         draw specimen rows and measure them against the terminal
+  --selftest        draw specimen rows and measure them against the terminal
 
 options (all modes):
   --subscript-decimals
@@ -3534,15 +3457,16 @@ options (all modes):
                      settings file can say which it wants
   --hide PATH        leave a column or a label part out of the grid,
                      scope[.group[.metric]] with * for any one part;
-                     repeatable.  The agent panel only, for now: the other
-                     modes accept it and ignore it.  docs/options.md, "Hiding".
-  --right-edge N     the columns every agent-panel row leaves blank at the
+                     repeatable.  The mod's rows draw on the grid; these
+                     modes accept it and ignore it.  docs/options.md,
+                     "Hiding".
+  --right-edge N     the columns every grid row leaves blank at the
                      terminal's right edge.  Unset, it follows the mod's
                      rows.*.place: 5 when any row it draws is above the
                      prompt, the default, the room Claude Code keeps for
                      the band's [-]; 2 with them all under the footer
                      line, whose container stops two short of the edge.
-                     The panel ends where the band's rows do.
+                     These modes accept it and draw no grid row.
   --cols N           terminal width, overriding the ancestry walk.  Chiefly
                      for the golden test, which must be deterministic.  "0"
                      means "pretend the width is unknown".
@@ -3626,13 +3550,6 @@ def main(options: Options, raw: Optional[str] = None) -> int:
             print("{}")
             return 0
         return main_cost(options, raw)
-    if mode == "subagent":
-        try:
-            if raw is None:
-                raw = sys.stdin.read()
-        except Exception:
-            return 0
-        return main_subagent(options, raw)
     if mode != "status":
         sys.stderr.write("unknown --mode %r\n" % mode)
         sys.stdout.write(USAGE)
