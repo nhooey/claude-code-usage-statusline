@@ -68,8 +68,8 @@ tests/fixtures/figures/status/01-baseline@196.json --cols 160 --part above
 
 ```
   ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
-  ├─ 🧵🟢 main               🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-  ╰─ 🎤🟢 turn               🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  ├─ 🎤🟢 turn               🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  ╰─ 🧵🟢 main               🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
 and, past the prompt, under the footer line (the same with `--part
@@ -100,10 +100,10 @@ as the mod ships:
 | 🎮 `session` | the session: the main thread and every agent, summed; on its label, where the session works | above the prompt, the tree's root | always |
 | 🧵 `agent` | the main thread alone, before any agent's figures are added | above the prompt, under 🎮 | always |
 | `subagents` | each subagent alone | above the prompt, under the thread that started it | while a turn runs |
-| 🎤 `turn` | the turn: what it has cost so far | above the prompt, under 🎮, last | while a turn runs |
+| 🎤 `turn` | the turn: what it has cost so far | above the prompt, under 🎮, first | while a turn runs |
 
-Above the prompt the rows are [a tree](#the-tree): 🎮, then 🧵 and the
-subagents under it, then 🎤. Under the footer line they stand in one
+Above the prompt the rows are [a tree](#the-tree): 🎮, then 🎤, then 🧵
+and the subagents under it. Under the footer line they stand in one
 order, whatever the places: 💳, 🎤, 🧵, 🎮, the lowest just over Claude
 Code's agent panel. The subagents are drawn in the tree alone, and their
 place is always above the prompt. When the turn ends, 🎤 becomes
@@ -159,21 +159,23 @@ whether a survey held the band when it was drawn.
 ### The tree
 
 Above the prompt the rows are a tree of the session's threads: 🎮 the
-root, with where the session works (📦 🌿 🔀) on its label; under it 🧵
-main, the main thread; under 🧵 the subagents it started, each under the
-thread that started it, in the order they started; and 🎤 the turn last.
+root, with where the session works (📦 🌿 🔀) on its label; under it 🎤
+the turn first, then 🧵 main, the main thread, last; under 🧵 the
+subagents it started, each under the thread that started it, in the order
+they started. The receipt stamps 🎤 then 🧵, and the tree stacks them the
+same way.
 With three subagents running and four more folded past a cap of 3 (the
 render above with `--agents 01-mixed@220 --cap 3 --progress "Checking the
 binary, then the changelog" --cols 200`):
 
 ```
   ⊟ 🎮 📦repo 🌿golden-clean                                                          💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
-  ├⊟ 🧵🟢 main  Checking the binary, then the changelog              🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-  │  ├─ 🎩🟢 Clover                                                  🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
-  │  ├─ 🔍🟢 Marigold  Running the suite                             🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
-  │  ├─ 👥🟢 Willow                                                  🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
-  │  ╰⊞ … 4 more                                                             🏃   3   💰0.1                🧩▴ 20k ▾1.7k  🎯95٪  ⌛ 14m         🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋  .02٪  🪫  .027٪
-  ╰─ 🎤🟢 turn                                                       🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  ├─ 🎤🟢 turn                                                       🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  ╰⊟ 🧵🟢 main  Checking the binary, then the changelog              🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+     ├─ 🎩🟢 Clover                                                  🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+     ├─ 🔍🟢 Marigold  Running the suite                             🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+     ├─ 👥🟢 Willow                                                  🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
+     ╰⊞ … 4 more                                                             🏃   3   💰0.1                🧩▴ 20k ▾1.7k  🎯95٪  ⌛ 14m         🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋  .02٪  🪫  .027٪
 ```
 
 - **The lines.** `├─` and `╰─` join a row to its parent, `│` carries a
@@ -203,7 +205,7 @@ binary, then the changelog" --cols 200`):
 
 The subagents' `live` in `rows` picks when they are drawn: `"running"`
 while a turn runs, `"always"` between turns too, `"never"` not at all. Their `place` is always `"above"`. With 🎮 placed under the footer
-line the tree has no root, and its top rows are 🧵 and 🎤; with 🧵 placed
+line the tree has no root, and its top rows are 🎤 and 🧵; with 🧵 placed
 there, the subagents hang from 🎮.
 
 ### The grid
@@ -355,8 +357,8 @@ rows under it, with the prompt between them left out (`--part above`, then
 
 ```
   ⊟ 🎮 📦repo 🌿golde…  💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
-  ├─ 🧵🟢 main          💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
-  ╰─ 🎤🟢 turn          💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
+  ├─ 🎤🟢 turn          💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
+  ╰─ 🧵🟢 main          💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
                               💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
@@ -365,8 +367,8 @@ At 80:
 
 ```
   ⊟ 🎮 📦repo 🌿golden-c…  💰 35                ⌛9.3h  🔋 3.8٪   🪫 8.45٪
-  ├─ 🧵🟢 main             💰 35   🧠115k  11٪  ⌛9.3h  🔋 3.8٪   🪫 8.45٪
-  ╰─ 🎤🟢 turn             💰6.4   🧠-42k  -4٪  ⌛  5m  🔋 1.2٪   🪫 1.56٪
+  ├─ 🎤🟢 turn             💰6.4   🧠-42k  -4٪  ⌛  5m  🔋 1.2٪   🪫 1.56٪
+  ╰─ 🧵🟢 main             💰 35   🧠115k  11٪  ⌛9.3h  🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
           💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
@@ -434,8 +436,8 @@ the footer line:
 
 ```
   ⊟ 🎮 📦repo 🌿golden-clean                                       💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
-  ├─ 🧵🟢 main                                    🤖O⁵🏃  🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
-  ╰─ 🎤🟢 turn                                    🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
+  ├─ 🎤🟢 turn                                    🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
+  ╰─ 🧵🟢 main                                    🤖O⁵🏃  🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📁~/src/statusline-fixture/deep/tree                                                                     💳 🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
@@ -929,8 +931,8 @@ own line (`--part above --rows` set so, `--right-edge 5`):
 ```
   📁~/src/statusline-fixture/deep/tree                                                    💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
   ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
-  ├─ 🧵🟢 main               🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-  ╰─ 🎤🟢 turn               🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  ├─ 🎤🟢 turn               🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+  ╰─ 🧵🟢 main               🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
 ```
 
 ### The footer's tail

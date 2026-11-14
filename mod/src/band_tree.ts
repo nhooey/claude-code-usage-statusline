@@ -1,12 +1,12 @@
 // The band's tree of threads above the prompt.
 //
 // agents/plans/one-panel-port.md, "The band's tree", has the design.  🎮
-// the session is the root, its label the workspace; 🧵 the main thread and
-// 🎤 the turn are its children, and each subagent hangs under the thread
-// that started it, in the order they started.  Every row is a row of the
-// one grid (grid.ts): the hierarchy is in the label alone, as `├─` `╰─`
-// `│` lines three columns a level, so every figure keeps its column on
-// every row.
+// the session is the root, its label the workspace; 🎤 the turn and 🧵 the
+// main thread are its children, in that order, and each subagent hangs
+// under the thread that started it, in the order they started.  Every row
+// is a row of the one grid (grid.ts): the hierarchy is in the label
+// alone, as `├─` `╰─` `│` lines three columns a level, so every figure
+// keeps its column on every row.
 //
 // Under 🧵 main, after its agents, `✅ N done` sums the subagents that
 // finished in the turn.  Past the cap, the later siblings under one parent
@@ -133,14 +133,19 @@ function drawNode(n: Node, lasts: readonly boolean[], out: Row[]): void {
   if (!n.folded) walk(n.kids, lasts, out);
 }
 
-/** The tree's rows, top to bottom, under `hide`: 🎮, then 🧵 and its
- * subagents, `… N more` and `✅ N done`, then 🎤.  Without 🎮 its children
+/** The tree's rows, top to bottom, under `hide`: 🎮, then 🎤, then 🧵 and
+ * its subagents, `… N more` and `✅ N done`.  Without 🎮 its children
  * stand at the top; without 🧵 the subagents hang from the root. */
 export function treeRows(st: Settings, inp: TreeInput,
   hide: readonly string[]): Row[] {
   const agents = inp.agents !== null && !hidden(hide, "agent")
     ? agentNodes(st, inp.agents, inp.cap, inp.folded ?? new Set()) : [];
   const top: Node[] = [];
+  if (inp.turn) {
+    top.push({ folded: false, kids: [], row: { ...inp.turn, label: [
+      headPiece(st, E_TURN, inp.turnPhase),
+      { path: "name.label", spans: [span("turn", "F_BLU")], drop: 0 }] } });
+  }
   if (inp.main) {
     top.push({ folded: false, kids: agents, row: { ...inp.main, label: [
       headPiece(st, E_THREAD, inp.mainPhase),
@@ -150,11 +155,6 @@ export function treeRows(st: Settings, inp: TreeInput,
       ...(inp.mainPhase === E_PHASE_END ? []
         : progressPiece(inp.mainProgress))] } });
   } else top.push(...agents);
-  if (inp.turn) {
-    top.push({ folded: false, kids: [], row: { ...inp.turn, label: [
-      headPiece(st, E_TURN, inp.turnPhase),
-      { path: "name.label", spans: [span("turn", "F_BLU")], drop: 0 }] } });
-  }
   const out: Row[] = [];
   if (inp.session) {
     const ws = workspacePieces(inp.workspace).filter((p) =>

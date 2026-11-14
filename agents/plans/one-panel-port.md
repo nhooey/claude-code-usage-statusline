@@ -97,7 +97,7 @@ What it decides for `OP4` and `OP5`:
   (`tests/fixtures/panel/`) stay, as the inputs and rows the TypeScript
   renderer is checked against.
 - **The session's threads as a tree in the band.** Above the prompt, the
-  mod draws 🎮 the session as the root, 🧵 the main thread and 🎤 the turn
+  mod draws 🎮 the session as the root, 🎤 the turn and 🧵 the main thread
   as its children, and each subagent under the thread that started it,
   from the agent folds it already keeps, with the figures the panel's
   rows had: model, cost, tokens, cache, context, plan-window shares,
@@ -117,10 +117,10 @@ multiples, one row design repeated, with the hierarchy in the label
 alone, as a tree table draws it, so every figure keeps its column on
 every row.
 
-- **The tree.** 🎮 the session is the root; 🧵 main and 🎤 the turn are
-  its children; each subagent sits under the thread that started it, in
+- **The tree.** 🎮 the session is the root; 🎤 the turn and then 🧵 main
+  are its children; each subagent sits under the thread that started it, in
   the order they started. The lines are `├─` `╰─` `│`, branching at the
-  middle of the cell, two columns a depth.
+  middle of the cell, three columns a depth.
 - **The label.** Its kind glyph and state circle (🟢 🟡 ⚫, ✅ once
   finished), its counts, its name, then its latest progress update, the
   line a thread writes between tool calls, dimmed, while it works or
@@ -157,22 +157,22 @@ Drawn at 236 columns, with Marigold opened, then folded:
 ```text
 Marigold opened
 ⊟ 🎮 📦 claude-code-usage-statusline 🌿 master 🔀 #38                                                                         💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
-├⊟ 🧵🟢 main  Checking the binary for subagentStatusLine, then the changelog for a hook that replaces it     🧬O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-│  ├⊟ 🔍🟢 Marigold  Running the plugin tests after the wrapper Box fix, then the 29 suites                  🧬O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
-│  │  ├─ 🔩🟢 Fern  Reading spec/layout.jsonc for the rows table and the cells each row draws                🧬S⁵🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪  💾 + 41  - 12
-│  │  ├─ 🔩🟢 Rowan  Reading mod/src/grid.ts to see how a label runs over the blank columns                  🧬H⁵🐇  🔧  50s  💰0.0   🧠  9k   4٪  🧩▴1.1k ▾120   🎯89٪  ⌛ 1m          🤖⠄⠀ 🔧⠶⠀ 🚦⠀⠀  🔋  .00٪  🪫  .003٪
-│  │  ╰⊞ … 2 more                                                                                                    🏃   2   💰0.0                🧩▴2.4k ▾210   🎯88٪  ⌛20s          🤖⠄⠀ 🔧⠶⠀ 🚦⠀⠀  🔋  .00٪  🪫  .004٪
-│  ├─ 📐🟡 Thistle  Asking you which layout to build                                                         🧬O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
-│  ╰⊞ ✅ 3 done                                                                                                      ✅  42m  💰0.4                🧩▴ 61k ▾4.2k  🎯95٪  ⌛ 31m         🤖⠶⠆ 🔧⠶⠄ 🚦⠀⠀  🔋  .07٪  🪫  .081٪  💾 + 88  - 30
-╰─ 🎤🟢 turn                                                                                                 🧬O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+├─ 🎤🟢 turn                                                                                                 🧬O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+╰⊟ 🧵🟢 main  Checking the binary for subagentStatusLine, then the changelog for a hook that replaces it     🧬O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+   ├⊟ 🔍🟢 Marigold  Running the plugin tests after the wrapper Box fix, then the 29 suites                  🧬O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+   │  ├─ 🔩🟢 Fern  Reading spec/layout.jsonc for the rows table and the cells each row draws                🧬S⁵🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪  💾 + 41  - 12
+   │  ├─ 🔩🟢 Rowan  Reading mod/src/grid.ts to see how a label runs over the blank columns                  🧬H⁵🐇  🔧  50s  💰0.0   🧠  9k   4٪  🧩▴1.1k ▾120   🎯89٪  ⌛ 1m          🤖⠄⠀ 🔧⠶⠀ 🚦⠀⠀  🔋  .00٪  🪫  .003٪
+   │  ╰⊞ … 2 more                                                                                                    🏃   2   💰0.0                🧩▴2.4k ▾210   🎯88٪  ⌛20s          🤖⠄⠀ 🔧⠶⠀ 🚦⠀⠀  🔋  .00٪  🪫  .004٪
+   ├─ 📐🟡 Thistle  Asking you which layout to build                                                         🧬O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+   ╰⊞ ✅ 3 done                                                                                                      ✅  42m  💰0.4                🧩▴ 61k ▾4.2k  🎯95٪  ⌛ 31m         🤖⠶⠆ 🔧⠶⠄ 🚦⠀⠀  🔋  .07٪  🪫  .081٪  💾 + 88  - 30
 
 Marigold folded
 ⊟ 🎮 📦 claude-code-usage-statusline 🌿 master 🔀 #38                                                                         💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
-├⊟ 🧵🟢 main  Checking the binary for subagentStatusLine, then the changelog for a hook that replaces it     🧬O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-│  ├⊞ 🔍🟢 👶🏻4 Marigold  Running the plugin tests after the wrapper Box fix, then the 29 suites            🧬O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
-│  ├─ 📐🟡 Thistle  Asking you which layout to build                                                         🧬O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
-│  ╰⊞ ✅ 3 done                                                                                                      ✅  42m  💰0.4                🧩▴ 61k ▾4.2k  🎯95٪  ⌛ 31m         🤖⠶⠆ 🔧⠶⠄ 🚦⠀⠀  🔋  .07٪  🪫  .081٪  💾 + 88  - 30
-╰─ 🎤🟢 turn                                                                                                 🧬O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+├─ 🎤🟢 turn                                                                                                 🧬O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+╰⊟ 🧵🟢 main  Checking the binary for subagentStatusLine, then the changelog for a hook that replaces it     🧬O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+   ├⊞ 🔍🟢 👶🏻4 Marigold  Running the plugin tests after the wrapper Box fix, then the 29 suites            🧬O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+   ├─ 📐🟡 Thistle  Asking you which layout to build                                                         🧬O⁵🏃  🚦 4.7m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛  5m         🤖⠄⠀ 🔧⠀⠀ 🚦⠶⠦  🔋  .01٪  🪫  .011٪
+   ╰⊞ ✅ 3 done                                                                                                      ✅  42m  💰0.4                🧩▴ 61k ▾4.2k  🎯95٪  ⌛ 31m         🤖⠶⠆ 🔧⠶⠄ 🚦⠀⠀  🔋  .07٪  🪫  .081٪  💾 + 88  - 30
 ```
 
 ## Steps
@@ -189,9 +189,9 @@ Marigold folded
    renderer and folds are checked against them. The corpus is committed
    data: its inputs are read as they are and its rows drawn again.
 3. **`OP3` The band's tree.** Done: [The band's tree](#the-bands-tree)
-   above the prompt, the 🎮 root with the workspace, 🧵 main moved up
-   from under the footer line, the subagents under the thread that
-   started each, and 🎤 the turn (`mod/src/band_tree.ts`); a
+   above the prompt, the 🎮 root with the workspace, 🎤 the turn, 🧵
+   main moved up from under the footer line, and the subagents under the
+   thread that started each (`mod/src/band_tree.ts`); a
    `rows.subagents` row, live while a turn runs, and `subagent-rows`, the
    cap, in `spec/options.jsonc` and `mod/defaults/config.jsonc`. The mod
    prepares each agent's task from `$.agent.list()` and its agent fold

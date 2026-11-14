@@ -145,21 +145,27 @@ function tree(id: string, over: Partial<TreeInput> = {},
     .trimEnd());
 }
 
-test("the tree draws 🎮 with the workspace, 🧵 main and its agents, " +
-  "then 🎤, each line three columns a level", () => {
+test("the tree draws 🎮 with the workspace, then 🎤, then 🧵 main and " +
+  "its agents, each line three columns a level", () => {
   const lines = tree("03-tree@220");
   const heads = lines.map((l) => l.slice(0, l.search(/[🎮🧵🎤🎩🔍🔩]/u)));
-  assert.deepEqual(heads, ["⊟ ", "├⊟ ", "│  ├⊟ ", "│  │  ├─ ",
-    "│  │  ╰⊟ ", "│  │     ╰⊟ ", "│  │        ╰─ ", "│  ╰─ ", "╰─ "]);
+  assert.deepEqual(heads, ["⊟ ", "├─ ", "╰⊟ ", "   ├⊟ ", "   │  ├─ ",
+    "   │  ╰⊟ ", "   │     ╰⊟ ", "   │        ╰─ ", "   ╰─ "]);
   assert.match(lines[0], /^⊟ 🎮 📦repo 🌿main  🔀#38/u);
-  assert.match(lines[1], /🧵🟢 main  Checking the binary/u);
-  assert.match(lines.at(-1)!, /🎤🟢 turn$/u);
+  assert.match(lines[1], /^├─ 🎤🟢 turn$/u);
+  assert.match(lines[2], /^╰⊟ 🧵🟢 main  Checking the binary/u);
+});
+
+test("without 🧵 main, 🎤 is the root's last child", () => {
+  const lines = tree("03-tree@220", { main: null, agents: null });
+  assert.deepEqual(lines.map((l) => l.slice(0, l.search(/[🎮🎤]/u))),
+    ["⊟ ", "╰─ "]);
 });
 
 test("every figure keeps its column on every row of the tree", () => {
   const lines = tree("03-tree@220");
   const at = (l: string) => visWidth(l.slice(0, l.indexOf("⌛")), ST.widths);
-  const agents = lines.slice(2, -1);
+  const agents = lines.slice(3);
   assert.equal(new Set(agents.map(at)).size, 1);
 });
 
@@ -177,10 +183,10 @@ test("past the cap the later siblings fold into their parent's … N more, " +
   "and every shown row's parents stay", () => {
   const lines = tree("03-tree@220", { cap: 2 });
   assert.equal(lines.length, 7);
-  assert.match(lines[2], /├⊟ 🎩🟢 🤏2 Trunk/u);
-  assert.match(lines[3], /│  │  ├─ 🔍🟢 📨1 Twig/u);
-  assert.match(lines[4], /│  │  ╰⊞ … 3 more/u);
-  assert.match(lines[5], /│  ╰⊞ … 1 more/u);
+  assert.match(lines[3], /^   ├⊟ 🎩🟢 🤏2 Trunk/u);
+  assert.match(lines[4], /^   │  ├─ 🔍🟢 📨1 Twig/u);
+  assert.match(lines[5], /^   │  ╰⊞ … 3 more/u);
+  assert.match(lines[6], /^   ╰⊞ … 1 more/u);
 });
 
 test("a folded agent draws ⊞ and counts every agent hidden under it", () => {
@@ -194,7 +200,7 @@ test("✅ N done sums the agents that ended since the turn opened, under " +
   "🧵 main", () => {
   const lines = tree("01-mixed@220", {}, [], NOW - 3600);
   const done = lines.find((l) => l.includes("done"))!;
-  assert.match(done, /^│  ╰⊞ ✅ 4 done +✅  18m/u);
+  assert.match(done, /^   ╰⊞ ✅ 4 done +✅  18m/u);
   // Only those since the turn opened.
   assert.match(tree("01-mixed@220", {}, [], 1786845500).find((l) =>
     l.includes("done"))!, /✅ 2 done/u);
