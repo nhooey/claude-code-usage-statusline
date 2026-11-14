@@ -183,9 +183,25 @@ binary, then the changelog" --cols 200`):
   the start of each row's label, so every figure keeps its column at
   every depth. The tree's labels start at the left, not flush right.
 - **The fold marks.** A row with children has `⊟` (opened) or `⊞`
-  (folded) in place of its `─`; a folded row draws 👶🏻 and how many agents
-  are hidden under it. The grouped rows below are always folded and every
-  other row opened; no row takes a press.
+  (folded) in place of its `─`, 🎮's before its label; a click on the mark
+  folds or opens its row. A folded agent keeps its own figures and draws
+  👶🏻 and how many agents are hidden under it. The grouped rows below
+  start folded and every other row opened; opened, `… N more` lists the
+  agents past the cap and `✅ N done` the agents that ended.
+- **The fold state.** Each row stays as it was left for the rest of the
+  session, kept in the mod's `$.state` by key: an agent's id, fixed keys
+  for 🎮 and 🧵, and a grouped row's parent's key with `/more` or `/done`.
+  When an agent ends (it leaves Claude Code's agent list, or completes,
+  fails or is killed), its fold and its grouped rows' go, so no later row
+  takes a fold it never had; 🎮's and 🧵's last the session.
+- **The clicks.** A click on an agent's label (its kind, name and progress
+  update) switches the transcript to that agent, as Claude Code's tasks
+  list does, and one on 🧵 main's goes back to the main conversation.
+  🎤, 🎮 and the grouped rows have no label click. On 🎮's label 📦 the
+  project, 🌿 the branch and 🔀 the pull request link to them on GitHub,
+  when the `origin` remote is on GitHub; otherwise they are plain text.
+  The clickable parts are drawn as before, with no hotkeys and no
+  brackets, so no figure moves. The receipt's rows take no click.
 - **The labels.** 🧵 and 🎤 draw their state's circle (🟢 working, 🟡
   waiting, ⚫ between turns) and their name, and an agent its
   [subagent row's](#the-subagent-rows) head and name, with only its own

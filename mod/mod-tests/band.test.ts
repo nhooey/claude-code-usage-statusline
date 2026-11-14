@@ -17,7 +17,7 @@
 // against receiptLines over the same bytes.
 import { expect } from 'claude-code/testing'
 import { BUDGET_MS, test } from './budget.ts'
-import type { On, RenderPropsOf } from 'claude-code'
+import type { AgentInfo, On, RenderPropsOf } from 'claude-code'
 
 import { CALIB, NOW, TRACKER } from './fixtures.gen.ts'
 import { partOf, partOfRun } from '../hooks/engine.ts'
@@ -27,8 +27,8 @@ import {
   CWD, HOME, MODEL, NO_GIT_HERE, SESSION, STATE, USER_FILE, USER_SETTINGS,
   WINDOW, world,
 } from './world.ts'
-import type { World } from './world.ts'
-import { startKey } from '../hooks/register.tsx'
+import type { Ran, Run, World } from './world.ts'
+import { partsOf, startKey } from '../hooks/register.tsx'
 import { drawingNote, ioText } from '../hooks/profile.ts'
 import { LOG_NAME } from '../hooks/log.ts'
 import { CONFIG } from '../hooks/config.ts'
@@ -206,7 +206,8 @@ async function drawnOf(ui: { drawn: () => Promise<unknown> }): Promise<Drawn> {
     const kids = (tree?.type === 'Box' ? tree.children ?? [] : []).filter(
       (c) => typeof c === 'string' || c.type !== 'Box' || c.children?.length)
     const only = kids.length === 1 ? kids[0] : null
-    if (only === null || typeof only === 'string' || only.type !== 'Box') {
+    if (only === null || typeof only === 'string' || only.type !== 'Box' ||
+      only.props?.flexDirection === 'row') {
       return tree
     }
     tree = only
@@ -214,16 +215,30 @@ async function drawnOf(ui: { drawn: () => Promise<unknown> }): Promise<Drawn> {
 }
 
 /** Each row the mod drew, as its text and its spans' colours: the Texts
- * directly in the drawing's column, each of whose children is one span. */
+ * directly in the drawing's column, each of whose children is one span,
+ * and the row Boxes of the band's tree, whose spans are the Texts of
+ * strings in them (pressLine), in order: a span pressed in part is drawn
+ * as the parts its press makes, as `expected` counts it. */
 async function drawnRows(ui: { drawn: () => Promise<unknown> }) {
   const tree = await drawnOf(ui)
   if (tree.type !== 'Box') return []
   return (tree.children ?? []).filter((c): c is Drawn =>
-    typeof c !== 'string' && c?.type === 'Text').map((row) => {
-    const spans = (row.children ?? []) as Drawn[]
-    return { text: spans.map((c) => (c.children ?? []).join('')).join(''),
-      colours: spans.map((c) => c.props?.color ?? null) }
-  })
+    typeof c !== 'string' && (c?.type === 'Text' ||
+      (c?.type === 'Box' && c.props?.flexDirection === 'row')))
+    .map((row) => {
+      const spans = leaves(row)
+      return { text: spans.map((c) => (c.children ?? []).join('')).join(''),
+        colours: spans.map((c) => c.props?.color ?? null) }
+    })
+}
+
+/** The Texts of strings alone under `el`, in document order: a drawn
+ * row's spans. */
+function leaves(el: Drawn): Drawn[] {
+  const kids = (el.children ?? []).filter((c): c is Drawn =>
+    typeof c !== 'string')
+  if (el.type === 'Text' && !kids.length) return [el]
+  return kids.flatMap(leaves)
 }
 
 /** Where a prompt's turn tag was drawn: `beside` it on its row, or under
@@ -244,7 +259,8 @@ function expected(lines: readonly (readonly Span[])[], truecolor = false) {
   const named = truecolor ? spec.TRUE_COLOURS
     : spec as unknown as Record<string, string>
   return lines.map((l) => ({ text: text(l),
-    colours: l.map((s) => s.colour ? named[s.colour] : null) }))
+    colours: l.flatMap(partsOf).map((s) => s.colour ? named[s.colour]
+      : null) }))
 }
 
 /** The status document the band draws: the last one filed. */
@@ -635,8 +651,14 @@ test('above the prompt the rows are plain, and the band logs its widths ' +
     const band = await $.ui.mount({ plugin: 'usage-band',
       surface: 'terminal', component: 'AbovePrompt', viewport,
       props: { ...BAND, isWorking: true } })
-    // No row takes a press, under the footer line either.
-    expect(await band.findAll({ type: 'Button' })).toEqual([])
+    // Above the prompt the tree's fold marks and 🧵's label take a
+    // press, each a plain Button with no hotkey; no row under the footer
+    // line takes one.
+    const buttons = await band.findAll({ type: 'Button' })
+    expect(buttons.map((b) => b.key).sort()).toEqual(['fold:main',
+      'fold:main/done', 'fold:session', 'view:main'])
+    expect(buttons.every((b) => b.props?.plain === true &&
+      b.props?.hotkey === undefined)).toBe(true)
     expect(await (await footer($)).findAll({ type: 'Button' })).toEqual([])
     expect(logOf(w)).toContain('band: {"bodyColumns":' + (COLS - 5) +
       ',"viewportColumns":' + COLS + ',"isFullscreen":false,' +
@@ -1849,4 +1871,169 @@ test('a refresh that throws is logged, and the next one draws',
     w.usage.down = false
     await askAndAnswer($, w)
     await drewAll($, w)
+  })
+
+// ════════════════════════════════════════════════════════════════════════════
+// The tree's presses.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** A world whose `$.agent.list()` answers `listed`, as it stands at each
+ * ask, and whose `$.ui.view` calls are kept in `views`, each answered as
+ * shown. */
+function clicking(on: On, listed: AgentInfo[]) {
+  const w = world(on)
+  const views: Dict[] = []
+  on('agent.list', () => ({ value: listed }))
+  on('ui.view', ($, e) => {
+    views.push({ ...e })
+    return { value: {} }
+  })
+  return { w, views }
+}
+
+/** The band above the prompt while a turn runs, mounted, and the rows it
+ * should draw under `folds` off the last document. */
+async function clickBand($: any, w: World) {
+  const band = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'AbovePrompt', props: { ...BAND, isWorking: true } })
+  const want = (folds: { [key: string]: boolean }) => expected(
+    bandLines(BAND_ST, lastDoc(w), COLS, HIDE, { rate: null,
+      phase: 'running', live: LIVE, places: PLACES, ...AGENTS,
+      place: 'above', indent: INSET, folds }))
+  return { band, want }
+}
+
+const PARENT: AgentInfo = { id: 'p1', type: 'Explore', name: 'Parent',
+  description: 'Look about', status: 'running' }
+const KID: AgentInfo = { id: 'c1', type: 'Explore', name: 'Kid',
+  description: 'Look closer', status: 'running', parentId: 'p1' }
+
+test('a press on a fold mark folds its row and opens it again, and the ' +
+  'grouped rows open', async ($, on) => {
+  const { w } = clicking(on, [PARENT, KID])
+  await start($, w, 'terminal', STATUS)
+  const { band, want } = await clickBand($, w)
+  const opened = await drawnRows(band)
+  expect(opened).toEqual(want({}))
+  expect(opened.some((r) => /⊟ 🔍🟢 Parent/u.test(r.text))).toBe(true)
+  expect(opened.some((r) => r.text.includes('Kid'))).toBe(true)
+  // Folded: 👶🏻 counts the agent hidden under it, and the band is drawn
+  // again at once.
+  await band.press({ key: 'fold:p1' })
+  const folded = await drawnRows(band)
+  expect(folded).toEqual(want({ p1: true }))
+  expect(folded.some((r) => /⊞ 🔍🟢 👶🏻1 Parent/u.test(r.text))).toBe(true)
+  expect(folded.some((r) => r.text.includes('Kid'))).toBe(false)
+  await band.press({ key: 'fold:p1' })
+  expect(await drawnRows(band)).toEqual(want({ p1: false }))
+  // `✅ N done` starts folded; opened, it lists the agent that ended.
+  expect(opened.some((r) => r.text.includes('fork'))).toBe(false)
+  await band.press({ key: 'fold:main/done' })
+  const done = await drawnRows(band)
+  expect(done).toEqual(want({ p1: false, 'main/done': false }))
+  expect(done.length).toBe(opened.length + 1)
+  // 🎮 folds the whole tree under it.
+  await band.press({ key: 'fold:session' })
+  const root = await drawnRows(band)
+  expect(root.length).toBe(1)
+  expect(root[0].text).toMatch(/^ *⊞ 🎮/u)
+})
+
+test('a press on a label switches the transcript to its agent, and 🧵 ' +
+  'main\'s back to the main conversation', async ($, on) => {
+  const { w, views } = clicking(on, [PARENT, KID])
+  await start($, w, 'terminal', STATUS)
+  const { band } = await clickBand($, w)
+  const keys: string[] = (await band.findAll({ type: 'Button' }))
+    .map((b: { key?: string }) => b.key ?? '')
+  // 🎮, 🎤 and the grouped rows have no label to press.
+  expect(keys.filter((k) => k.startsWith('view:')).sort())
+    .toEqual(['view:c1', 'view:main', 'view:p1'])
+  await band.press({ key: 'view:c1' })
+  await band.press({ key: 'view:main' })
+  await band.press({ key: 'view:p1' })
+  expect(views).toEqual([{ agentId: 'c1' }, {}, { agentId: 'p1' }])
+})
+
+test('an agent that ends takes its fold with it, and 🧵\'s grouped row ' +
+  'keeps its own', async ($, on) => {
+  const listed = [PARENT, KID]
+  const { w } = clicking(on, listed)
+  await start($, w, 'terminal', STATUS)
+  const { band, want } = await clickBand($, w)
+  await band.press({ key: 'fold:p1' })
+  await band.press({ key: 'fold:main/done' })
+  expect((await drawnRows(band)).some((r) => r.text.includes('Kid')))
+    .toBe(false)
+  // The parent ends while its kid runs on: it is still drawn, for the
+  // kid under it, and opened, its fold gone with it.
+  listed[0] = { ...PARENT, status: 'completed' }
+  await w.clock.advance(CONFIG.tickMs)
+  await settle()
+  const after = await drawnRows(band)
+  expect(after.length).toBe(want({ 'main/done': false }).length)
+  expect(after.some((r) => /├⊟ 🔍.* Parent/u.test(r.text))).toBe(true)
+  expect(after.some((r) => r.text.includes('Kid'))).toBe(true)
+  expect(after.some((r) => /⊟ ✅ 1 done/u.test(r.text))).toBe(true)
+})
+
+/** `$.process.run` in a git repository at CWD on the branch `feat/x`,
+ * clean, whose `origin` is `remote`, or none for null. */
+function inRepo(remote: string | null) {
+  const out = (stdout: string): Ran => ({ ...NO_GIT_HERE, exitCode: 0,
+    stdout, stderr: '' })
+  return (e: Run): Ran => {
+    const a = e.argv.slice(2).join(' ')
+    if (a.startsWith('rev-parse --show-toplevel')) {
+      return out(CWD + '\n' + CWD + '/.git\nabc1234\n')
+    }
+    if (a === 'symbolic-ref --short HEAD') return out('feat/x\n')
+    if (a === 'diff --quiet HEAD') return out('')
+    if (a === 'remote get-url origin' && remote !== null) {
+      return out(remote + '\n')
+    }
+    return NO_GIT_HERE
+  }
+}
+
+/** The Links the band above the prompt draws while a turn runs, as their
+ * addresses and texts, in the world `w`. */
+async function linksDrawn($: any, w: World) {
+  await start($, w, 'terminal', STATUS)
+  const band = await $.ui.mount({ plugin: 'usage-band', surface: 'terminal',
+    component: 'AbovePrompt', props: { ...BAND, isWorking: true } })
+  // A Link's found text leads with its address, the prop it draws as
+  // text; what follows is its children's.
+  return {
+    links: (await band.findAll({ type: 'Link' })).map((l: any) =>
+      [l.props.href, l.text.slice(String(l.props.href).length)]),
+    rows: await drawnRows(band),
+    want: expected(bandLines(BAND_ST, lastDoc(w), COLS, HIDE, { rate: null,
+      phase: 'running', live: LIVE, places: PLACES, ...AGENTS,
+      place: 'above', indent: INSET })),
+  }
+}
+
+test('🎮\'s 📦 and 🌿 link to the repository on GitHub its origin names, ' +
+  'and its branch there', async ($, on) => {
+  const w = world(on, inRepo('git@github.com:o/r.git'))
+  const { links, rows, want } = await linksDrawn($, w)
+  expect(lastDoc(w).github).toBe('https://github.com/o/r')
+  expect(links).toEqual([['https://github.com/o/r', '📦work'],
+    ['https://github.com/o/r/tree/feat/x', '🌿feat/x']])
+  expect(rows).toEqual(want)
+  // The origin is asked once a load, not on every refresh.
+  await w.clock.advance(CONFIG.tickMs)
+  await settle()
+  expect(w.runs.filter((a) => a.includes('remote')).length).toBe(1)
+})
+
+test('🎮\'s 📦 and 🌿 stay plain for a remote on another host, or none',
+  async ($, on) => {
+    const w = world(on, inRepo('git@gitlab.com:o/r.git'))
+    const { links, rows, want } = await linksDrawn($, w)
+    expect(lastDoc(w).github).toBeUndefined()
+    expect(links).toEqual([])
+    expect(rows).toEqual(want)
+    expect(rows[0].text).toMatch(/📦work 🌿feat\/x/u)
   })

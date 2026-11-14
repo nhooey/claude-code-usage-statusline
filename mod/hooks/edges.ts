@@ -22,8 +22,9 @@ import {
   agentRecordsOf, EMPTY_TRANSCRIPT, pyJoin, readPayload, transcriptFinish,
 } from '../src/claude_records.ts'
 import type {
-  AgentEta, AgentRec, Payload, Transcript, Turn,
+  AgentEta, AgentRec, Git, Payload, Transcript, Turn,
 } from '../src/claude_records.ts'
+import { githubRepo } from '../src/github.ts'
 import { drawnCredits } from '../src/credits.ts'
 import { seedLimitsSnapshot } from '../src/claude_calib.ts'
 import {
@@ -143,6 +144,32 @@ async function gitVia($: $, cwd: string) {
   })
 }
 
+/** Each repository's address on GitHub, by its main root, as its `origin`
+ * remote names it: null for a remote elsewhere or none.  Read once a
+ * load. */
+const githubKept = new Map<string, string | null>()
+
+/** The address on GitHub of the repository `git` was read in, off its
+ * `origin` remote (githubRepo); null outside git, or for a remote on no
+ * GitHub. */
+async function githubVia($: $, cwd: string, git: Git):
+  Promise<string | null> {
+  const root = git.main_root || git.toplevel
+  if (!git.in_git || !root) return null
+  if (!githubKept.has(root)) {
+    let url: string | null = null
+    try {
+      const r = await runVia($, ['git', '--no-optional-locks', 'remote',
+        'get-url', 'origin'], { cwd, timeoutMs: 2_000 })
+      url = r.exitCode === 0 ? githubRepo(r.stdout) : null
+    } catch {
+      url = null
+    }
+    githubKept.set(root, url)
+  }
+  return githubKept.get(root)!
+}
+
 /** The zone the runtime draws its clocks in, as the document records it. */
 export function localZone(): string | null {
   try {
@@ -184,10 +211,12 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
     : tr.own_tok_up + tr.own_tok_down
   const [kept, rate] = sessionRate(samples, tokens, now)
   samples = kept
-  const doc = statusFigures({ payload, transcript: tr, turns,
-    git: await timed($, 'git', () => gitVia($, payload.current_dir)),
+  const git = await timed($, 'git', () => gitVia($, payload.current_dir))
+  const doc = statusFigures({ payload, transcript: tr, turns, git,
     prepared, snap, calib, now,
     tz: localZone(), rate })
+  // The mod's alone too: where on GitHub the tree's 📦 🌿 🔀 link.
+  const github = await githubVia($, payload.current_dir, git)
   // The mod's alone: the subagents and the progress updates the band's
   // tree draws (subagents.ts).
   const agents = path && fold ? await timed($, 'tree', () => agentsDoc($,
@@ -196,7 +225,7 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
   // option.
   const drawn = o === null ? [] : drawnCredits(credits.credits, o.credits,
     now)
-  return { ...doc, ...agents ? { agents } : {},
+  return { ...doc, ...agents ? { agents } : {}, ...github ? { github } : {},
     ...drawn.length ? { credits: { drawn,
       original: o!.credits.original } } : {} }
 }

@@ -43,6 +43,7 @@ import {
 import type { Workspace } from "./cells.ts";
 import { creditCell } from "./credits.ts";
 import { treeRows } from "./band_tree.ts";
+import type { Folds } from "./band_tree.ts";
 import type { TreeTask } from "./subagent_tasks.ts";
 import { draw, hidden, layout } from "./grid.ts";
 import type { Piece, Row } from "./grid.ts";
@@ -80,8 +81,9 @@ export type BandOpts = {
   /** The most subagent rows the tree draws, `subagent-rows`;
    * SUBAGENT_ROWS where absent. */
   readonly cap?: number;
-  /** The agents whose children are folded under them, by id. */
-  readonly folded?: ReadonlySet<string>;
+  /** The band's tree's folds, by key (band_tree.ts); each row's default
+   * where absent. */
+  readonly folds?: Folds;
 };
 
 /** A row of the band as the configuration's `rows` table names it: 🎤
@@ -462,7 +464,9 @@ function sessionRow(st: Settings, fig: Dict, tr: Transcript, now: number,
  * phase draws, whose scope `hide` leaves, and the subagents of the
  * document's `agents` where `opts.agents` draws them.  Between turns
  * the tree draws no `✅ N done`, so only the running and paused agents
- * stay: the turn that ended has its receipt. */
+ * stay: the turn that ended has its receipt.  🎮's 📦 🌿 🔀 link under
+ * the document's `github`, the repository's address on GitHub, where it
+ * has one. */
 export function treeOf(st: Settings, fig: Dict, rows: BandRows,
   opts: BandOpts, hide: readonly string[]): Row[] {
   const tr = decodeTranscript(fig.transcript);
@@ -490,7 +494,8 @@ export function treeOf(st: Settings, fig: Dict, rows: BandRows,
       limits: decodeLimits(fig.limits), now,
       turnStart: running ? tr.turn_s || null : null } : null,
     cap: opts.cap ?? SUBAGENT_ROWS,
-    folded: opts.folded,
+    folds: opts.folds,
+    repo: typeof fig.github === "string" ? fig.github : null,
   }, hide);
 }
 
