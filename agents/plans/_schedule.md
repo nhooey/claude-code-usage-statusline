@@ -18,6 +18,8 @@ files they both change. Written 2026-10-20 from:
   steps 1–5: `AR1` … `AR5`.
 - [The account's dollar credits on the band](credit-balances.md), steps
   1–8: `CB1`, `CB1b`, `CB2` … `CB6`, `CB4b`.
+- [One port: the agent panel drawn by the TypeScript](one-panel-port.md),
+  steps 1–7: `OP1` … `OP7`.
 - Work in flight outside the plans: `CA`, the calibration cache keyed by
   account id (asked 2026-10-20, Blocked.1.A).
 
@@ -82,6 +84,13 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CB4b` | **Built.** The credits drawn: the `credits` option, its condition lists in both configuration readers, the 💳 row, and the Console's credits from `credits.command` | `CB3`, `CB4` | `AR3` | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/src/band.ts` |
 | `CB6` | The spending column on the turn, agent, session and subagent rows | `CB3`, `CB4b` | none | `mod/src/band.ts`, `mod/src/cells.ts`, `coding_agent_usage_line/claude.py` |
 | `CB5` | Docs, and the acceptance check, live | `CB3`, `CB6` | none | `docs/layout.md`, `docs/options.md`, `docs/usage-sources.md` |
+| `OP1` | Which entries reach each Python module: the panel, Codex, the fold worker, the tests | none | none | none (a table in `one-panel-port.md`) |
+| `OP2` | The panel's command in TypeScript, `mod/src/panel.ts` | `OP1` | none | `mod/src/panel.ts` (new), `mod/src/options_spec.ts` |
+| `OP3` | Its goldens: `run-cases.py --suite subagent` against both commands, and its own suite in `tests/all.sh` | `OP2` | none | `tests/run-cases.py`, `tests/all.sh` |
+| `OP4` | Startup time: a bundled `.js` and Node's compile cache, timed against the Python | `OP2` | none | `tools/`, `mod/src/panel.ts` |
+| `OP5` | The switch: the example settings, the README and `docs/` name `panel.ts` | `OP3`, `OP4` | none | `examples/claude/settings.json`, `README.md`, `docs/` |
+| `OP6` | The mod's fold worker in TypeScript | `OP2` | none | `mod/hooks/transcripts.ts`, `mod/scripts/` |
+| `OP7` | The Python's Claude twins removed; the plan's two open decisions taken | `OP5`, `OP6` | none | `coding_agent_usage_line/`, `tests/` |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
@@ -133,6 +142,11 @@ flowchart LR
   AR3 -.-> AR4
   AR3 -.-> CB4b
   RP4 -.-> RP5
+  subgraph one-panel-port
+    OP1 --> OP2 --> OP3 --> OP5 --> OP7
+    OP2 --> OP4 --> OP5
+    OP2 --> OP6 --> OP7
+  end
 ```
 
 Solid arrows are logical edges, dotted ones file edges.
