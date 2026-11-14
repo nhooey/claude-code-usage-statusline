@@ -36,7 +36,8 @@ jobs:
     # job. macOS is the platform this is used on and the one whose python3 is
     # the version floor, so the matrix is by Python and the host is ubuntu —
     # except the floor job below, which wants the real /usr/bin/python3.
-    runs-on: ubuntu-latest
+    # Pinned to 24.04: setup-python has no 3.9 build for later images.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -76,8 +77,9 @@ jobs:
     # The 3.9 claim in README.md, checked against a real 3.9. Separate from
     # the matrix because it is asserting something ABOUT 3.9 rather than
     # merely running under it, and because it points PY39 at the interpreter
-    # explicitly rather than trusting PATH order.
-    runs-on: ubuntu-latest
+    # explicitly rather than trusting PATH order.  Pinned to 24.04, as the
+    # goldens are, for its 3.9 build.
+    runs-on: ubuntu-24.04
     name: python 3.9 floor
     steps:
       - uses: actions/checkout@v4
