@@ -1,7 +1,7 @@
-# One port: the agent panel drawn by the TypeScript
+# One port: Claude's figures drawn by the mod alone
 
-Approved to build. Its steps are `OP1` … `OP7` in [the schedule](_schedule.md);
-its two open decisions are taken at `OP7`.
+Approved to build. Its steps are `OP1` … `OP5` in [the schedule](_schedule.md).
+Its decisions are taken (see [Decided](#decided)).
 
 ## Why
 
@@ -13,20 +13,20 @@ Every change to what a row shows is made in both ports, in
 `spec/layout.jsonc`, and in the fixtures and goldens of each: dropping one
 glyph from the agent panel's rows touched 81 files.
 
-The band, the footer rows and the receipt are already the mod's alone. The
-Python's live job in Claude Code is now the agent panel
-(`subagentStatusLine`), and the TypeScript already has every piece the
-panel draws with (`claude_subagent_render.ts`, `cells.ts`, `grid.ts`) and
-Node readers for the files it reads (`claude_records_node.ts`,
-`sources_node.ts`, `claude_calib_node.ts`). What it lacks is the panel's
-command: reading the payload on stdin, preparing each task, and printing
-one JSON line per task.
+The band, the footer rows and the receipt are already the mod's alone.
+Claude Code 2.1.323 removed `subagentStatusLine`: the agent panel always
+draws its own rows, runs no command, and no `ui.render` component draws
+it. So the Python's Claude modes serve nothing in Claude Code but the mod's
+fold worker, and each subagent's figures need a new place: the band above
+the prompt, one row per running subagent, drawn by the mod with the
+renderer it already has (`claude_subagent_render.ts`, `cells.ts`,
+`grid.ts`).
 
 ## What the Python serves today
 
 | Use                                   | Entry                                                     | Has a TypeScript twin                                 |
 | ------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
-| The agent panel                       | `coding-agent-usage-line.py --agent claude --mode subagent` | the rendering and readers; not the command           |
+| Nothing: the agent panel runs no command | `coding-agent-usage-line.py --agent claude --mode subagent` | the rendering and readers                            |
 | The mod's large transcript folds      | `mod/scripts/agent_lines.py`, spawned by `transcripts.ts`       | yes: the mod folds 8 MiB at a time without it, slower |
 | The status line and the cost receipt  | `--mode status`, `--mode cost`                            | yes: the band and the mod's receipt replace both      |
 | Codex receipts and its status         | `--agent codex`, from a Codex `Stop` hook                 | no                                                    |
@@ -69,7 +69,7 @@ under `tests/` and `tools/` that load the module.
 | `state.py` | 268 | ✅ | ✅ | ✅ | 26 |
 | `state_spec.py` | 91 | ✅ | ✅ | ✅ | 26 |
 
-What it decides for `OP6` and `OP7`:
+What it decides for `OP4` and `OP5`:
 
 - **Codex keeps 14 modules, 7,288 lines:** `cli.py`, `codex.py`,
   `render.py`, `sources.py`, `config.py`, `options.py`, `options_spec.py`,
@@ -77,87 +77,84 @@ What it decides for `OP6` and `OP7`:
   `formatting.py`, `spec.py` and `spans.py`. `formatting.py` and `spec.py`
   are kept whole here but hold the Claude rows' glyphs and cells too, and
   `sources.py` holds the Claude Usage Tracker's adapter; each can shed its
-  Claude parts at `OP7`.
+  Claude parts at `OP5`.
 - **Claude alone uses 7 modules, 6,410 lines:** `claude.py`,
   `claude_render.py`, `claude_subagent_render.py`, `claude_cost_render.py`,
-  `grid.py`, `inbox_fold.py` and `claude_sources.py`. They go at `OP7`.
+  `grid.py`, `inbox_fold.py` and `claude_sources.py`. They go at `OP5`.
 - **The fold worker also uses 3, 4,059 lines:** `claude_records.py`,
-  `main_fold.py` and `agent_fold.py`. They go at `OP7` once `OP6` has
+  `main_fold.py` and `agent_fold.py`. They go at `OP5` once `OP4` has
   moved the worker to Node.
 - **No entry loads `credits.py`,** 69 lines: the 💳 row is the mod's, and
   only `tests/source-cache.py` imports it. It can go with its test now.
 - **The tests:** 32 files load `formatting.py`, so the generators and
-  checks that only test the Claude modules go with them at `OP7`, and the
+  checks that only test the Claude modules go with them at `OP5`, and the
   rest stay as Codex's.
 
 ## Target
 
-- `subagentStatusLine` runs `node mod/src/panel.ts --mode subagent` (Node
-  runs the TypeScript as it is, with its types stripped, as `npm test`
-  already does). It takes the same flags and configuration files, and
-  writes the same agent folds and caches under
-  `~/.local/state/coding-agent-usage-line`.
-- The mod's large folds use the same Node code through `process.run`,
-  so the mod needs no Python either.
-- The Python keeps what has no twin: Codex. Its Claude modules that only
-  the panel, the status line and the cost receipt used are removed, with
-  their tests, once nothing reads them.
-- The TypeScript becomes the reference: the panel's goldens are kept and
-  checked against `panel.ts`; the parity fixtures between the ports go.
+- **No agent panel command.** `--mode subagent`, its `subagent` suite and
+  goldens, `examples/claude/settings.json`'s `subagentStatusLine`, and
+  every doc that names it are gone. The renderer's own cases
+  (`tests/fixtures/panel/`) stay, as the inputs and rows the TypeScript
+  renderer is checked against.
+- **A row per running subagent in the band.** The mod draws them above
+  the prompt from the agent folds it already keeps, with the figures the
+  panel's rows had: model, cost, tokens, cache, context, plan-window
+  shares, 🤖 🔧 🚦 clocks, the inbox and the worktree branch.
+- **The mod's large folds in Node,** through `process.run`, so the mod
+  needs no Python.
+- **The Python keeps Codex alone.** Its Claude modules, their tests and
+  their fixture generators go, with `--mode status` and `--mode cost`
+  for Claude: the mod is the one way to see them in Claude Code. The
+  TypeScript becomes the reference for what stays.
 
 ## Steps
 
 1. **`OP1` Measure what the move would remove.** Done: see
    [Which entries reach each module](#which-entries-reach-each-module).
-   List, per Python module, which entries reach it: the panel, Codex, the
-   mod's fold worker, the tests. That decides what the Python keeps after
-   `OP6`, and whether Codex shares enough with Claude (`sources.py`,
-   `formatting.py`, `config.py`) to keep those modules whole.
-2. **`OP2` The panel's command in TypeScript.** `mod/src/panel.ts`: the
-   port of `main_subagent`, `prepare_subagent_tasks` and
-   `render_subagent`, over the Node readers, with the same options parser
-   (`options_spec.ts`) and the same error rows.
-3. **`OP3` Its goldens.** Run `tests/run-cases.py --suite subagent`
-   against both commands, and add `panel.ts` to `tests/all.sh` as its own
-   suite, so the two are seen to agree on every case before the switch.
-4. **`OP4` Startup time.** The panel redraws every second per agent. Time
-   `node panel.ts` against the Python on the largest fixture and on a live
-   session. A first measurement, Node 26 against the system `python3`, on
-   a loaded machine, 10 runs each: an empty `node -e 0` took 143 ms and
-   importing `claude_subagent_render.ts` 267 ms, against 30 ms for an
-   empty `python3` and 165 ms for the whole Python panel on an empty
-   payload. So Node starts slower, and the type stripping of a dozen
-   modules costs more again. Try a single bundled `.js` file, built by a
-   generator step and committed, and Node's compile cache
-   (`module.enableCompileCache()`), before the switch; the switch waits
-   until `panel.ts` is no slower than the Python.
-5. **`OP5` The switch.** `examples/claude/settings.json`, the README's
-   install section and `docs/` name `panel.ts`; the README states the Node
-   version needed in place of Python 3.9. The user changes
-   `~/.claude/settings.json` themselves.
-6. **`OP6` The mod's fold worker in TypeScript.** `transcripts.ts` spawns
-   `node .../agent_lines.ts` in place of `python3 .../agent_lines.py`.
-7. **`OP7` Remove the Python's Claude twins.** Delete the modules `OP1`
-   found only the panel, the status line and the cost receipt use, their
-   tests and their fixture generators, and move the generators the
-   TypeScript's tests still need to Node or keep them as they are.
+2. **`OP2` Remove the agent panel command.** `main_subagent`,
+   `render_subagent`, `--mode subagent` in `cli.py` and its help, the
+   `subagent` suite in `tests/cases.json`, `tests/run-cases.py` and
+   `tests/all.sh`, `tests/golden/subagent/`, the end-to-end payloads and
+   transcripts under `tests/fixtures/`, `tests/subagent.py`'s command
+   tests, `tools/draw-panel.py`, `tools/time-panel.py` and the
+   `subagentStatusLine` key of `examples/claude/settings.json`, and the
+   README's and `docs/`'s sections on it. `prepare_subagent_tasks` and the
+   render-level corpus in `tests/fixtures/panel/` stay until `OP5`, since
+   the TypeScript renderer is checked against them; the corpus is
+   committed data from then on, no longer captured from the command.
+3. **`OP3` The subagent rows in the band.** A `rows.subagents` row in
+   `spec/options.jsonc` and `mod/defaults/config.jsonc`, placed `above`
+   and live while a turn runs, as the turn and session rows are. The mod
+   prepares each running agent's task from `$.agent.list()` and its agent
+   fold (`transcripts.ts`), with the agent's usage, clocks, inbox and
+   branch worked out as `prepare_subagent_tasks` does, and draws each
+   with `renderTaskRows`. Tests in `mod/mod-tests/` and `mod/test/`, and
+   `docs/layout.md`.
+4. **`OP4` The mod's fold worker in TypeScript.** `transcripts.ts` folds
+   large transcripts in Node in place of `python3 .../agent_lines.py`.
+5. **`OP5` Remove the Python's Claude twins.** Delete the modules `OP1`
+   found only Claude and the fold worker use, `--mode status` and
+   `--mode cost` for Claude, their tests and their fixture generators,
+   and move what the TypeScript's tests still need to Node or keep it as
+   committed data.
 
 ## What to watch
 
-- **Node on the machine.** The Python needs only the standard library;
-  the panel would need Node 23.6 or newer, where type stripping is on by
-  default. Claude Code ships its own runtime, but `subagentStatusLine`
-  runs a shell command, so the user's own Node is the one that runs.
 - **Codex users.** They keep the Python. A Codex-only install must not
   need Node, and a Claude-only one must not need Python.
-- **The shared state files.** The Python and the TypeScript both read and
-  write the agent folds and the `window-costs` cache (`spec/state.jsonc`).
-  During `OP3` to `OP5` both may run; the formats must not move.
+- **The shared state files.** Until `OP5`, the Python's Codex side and
+  the mod both read the `window-costs` cache (`spec/state.jsonc`); its
+  format must not move.
+- **The band's height.** Each running subagent adds a row above the
+  prompt. `rows.subagents` can be placed in the footer or hidden like
+  any other row.
 
-## Open decisions
+## Decided
 
-1. **Whether the Python keeps the Claude status line and cost receipt**
-   (`--mode status` and `--mode cost`) for people who don't install the
-   mod, or whether the mod becomes the only way to see them.
-2. **Whether Codex moves too.** Porting `--agent codex` would retire the
-   Python entirely, at the cost of a port nobody has asked for yet.
+1. **The subagents' figures go in the band above the prompt,** one row
+   per running subagent, not in a pane.
+2. **The Python drops its Claude status line and cost receipt** with its
+   other Claude modules at `OP5`; the mod is the way to see them.
+3. **Codex stays in Python.** Porting `--agent codex` waits until someone
+   asks for it.
