@@ -25,7 +25,7 @@ import type { Span } from "./spans.ts";
 import { pyLen, pyRstrip, pySlice } from "./py.ts";
 import { pyFloat } from "./sources.ts";
 import {
-  W_CACHE_READ, W_CACHE_WRITE, etaFinish,
+  W_CACHE_READ, W_CACHE_WRITE, etaFinish, tsEpoch,
 } from "./claude_records.ts";
 import type { Git, Payload, Transcript, Turn } from "./claude_records.ts";
 import type { Accounting } from "./claude_calib.ts";
@@ -320,8 +320,8 @@ function accountRow(st: Settings, fig: Dict, now: number): Row {
 
 /** 🎤: the turn opened last, `open_turn`, with `accounting.open_turn`
  * (decision 8), so a fresh turn reads zeros.  🧠 is how much the context
- * grew in it, ⌛ how long it has run, ⛳ the main thread's.  With no open
- * turn, the model, 🛫 and ⛳ alone. */
+ * grew in it, ⌛ how long it has run (turnClock), ⛳ the main thread's.
+ * With no open turn, the model, 🛫 and ⛳ alone. */
 function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   sessPct: string, weekPct: string, opts: BandOpts): Row {
   const raw = fig.open_turn as Dict | null;
@@ -343,7 +343,7 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
     ctx: CELLS.growth(st, t.dctx, Math.trunc(fig.context_window as number)),
     tok: CELLS.tok(st, up, down),
     cache: CELLS.cache(st, turnCache(t)),
-    clock: CELLS.clock(st, t.dur_s),
+    clock: CELLS.clock(st, turnClock(t, tr, now, opts.phase)),
   });
   if (acc) {
     Object.assign(cells, {
@@ -354,6 +354,20 @@ function turnRow(st: Settings, fig: Dict, tr: Transcript, now: number,
     });
   }
   return { scope: "turn", label: turnLabel(), cells };
+}
+
+/** 🎤's ⌛.  While the turn runs, from its first record to `now`, so it
+ * counts on through a tool call, which writes no record until it ends,
+ * and to the end of its answer once the thread is idle (etaNow), so the
+ * second 🎤 is held after the receipt reads as the receipt does; never
+ * less than `dur_s`, should the clocks disagree.  Between turns, `dur_s`,
+ * the span of the turn's own records, as the receipt bills it. */
+function turnClock(t: Turn, tr: Transcript, now: number, phase: Phase):
+  number {
+  if (phase !== "running") return t.dur_s;
+  const start = tsEpoch(t.ts) ?? (tr.turn_s || null);
+  return start === null ? t.dur_s
+    : Math.max(t.dur_s, etaNow(tr, now) - start);
 }
 
 /** 🔧 and how long the main thread's tool has run, in 🛫's column, padded
