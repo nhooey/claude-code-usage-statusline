@@ -5,7 +5,8 @@
 //
 //   AbovePrompt   the band, bandLines over the last status document, at the
 //                 body's width plus the five columns the gutter takes, a
-//                 blank row above it;
+//                 blank row above it; its tree's fold marks and labels
+//                 take a press, and 🎮's 📦 🌿 🔀 are links (pressLine);
 //   TurnDuration  the turn's closing line: the turn's receipt, blank until
 //                 it is stamped;
 //   UserMessage   under a prompt typed at the composer, its turn's tag;
@@ -29,7 +30,8 @@ import type { FiguresDoc } from '../types'
 import { settings } from '../src/formatting.ts'
 import type { Env, Settings } from '../src/formatting.ts'
 import { hexOf } from '../src/spans.ts'
-import type { Span } from '../src/spans.ts'
+import type { Press, Span } from '../src/spans.ts'
+import { foldShut, pruneFolds } from '../src/band_tree.ts'
 import type { Turn } from '../src/claude_records.ts'
 import {
   ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler, footerTail,
@@ -72,6 +74,8 @@ const held = atom({ plugin: 'usage-band', key: 'held' } as const, false)
 // options, so every drawing that reads it draws again with them.
 const configured = atom({ plugin: 'usage-band', key: 'configured' } as const,
   0)
+// The band tree's folds the person left, by key (band_tree.ts).
+const folds = atom({ plugin: 'usage-band', key: 'folds' } as const, {})
 
 /** The store's key for a start line: its prompt's text. */
 export const startKey = (text: string) =>
@@ -253,6 +257,19 @@ async function refresh($: $): Promise<void> {
         await update($, rate, () => (doc.rate as number | null) ?? null)
       } catch (err) {
         await log($, 'refresh: the band was not updated', err)
+      }
+      // An agent that has ended takes its folds with it, so no later row
+      // is drawn under a fold it never had.
+      try {
+        const tasks = (doc.agents as Dict | undefined)?.tasks
+        if (Array.isArray(tasks)) {
+          const kept = await read($, folds)
+          if (pruneFolds(kept, tasks as Dict[]) !== kept) {
+            await update($, folds, (f) => pruneFolds(f, tasks as Dict[]))
+          }
+        }
+      } catch (err) {
+        await log($, 'refresh: the folds were not pruned', err)
       }
       try {
         await fileStart($, doc)
@@ -552,29 +569,129 @@ async function stamp($: $, durationMs: number, prompt: string,
  * named in spec and drawn as its hex. */
 function line(Text: any, spans: readonly Span[], key: string,
   dim = false): RenderElement {
-  // Only the props a span sets: a Text's props are plain values, and an
-  // undefined one is not.
-  // The true set where Claude Code draws true colour: given the 256 set
-  // there, chalk would draw it as given, and the softer true colours are
-  // the ones chosen to be seen.  Given the true set at 256, chalk would
-  // round it onto entries nobody chose (see spec/layout.jsonc).
-  const truecolor = st?.truecolor ?? false
-  const style = (s: Span) => {
-    const p: Record<string, string | boolean> = {}
-    if (s.colour) p.color = hexOf(s.colour, truecolor)
-    if (s.bg) p.backgroundColor = hexOf(s.bg, truecolor)
-    if (s.dim) p.dimColor = true
-    if (s.bold) p.bold = true
-    return p
-  }
   const outer: Record<string, string | boolean> = { wrap: 'truncate-end' }
   if (dim) outer.dimColor = true
   return (
     <Text key={key} {...outer}>
       {spans.map((s, i) => (
-        <Text key={key + '.' + i} {...style(s)}>{s.text}</Text>
+        <Text key={key + '.' + i} {...spanStyle(s)}>{s.text}</Text>
       ))}
     </Text>
+  )
+}
+
+/** A span's Text props: only the ones it sets, since a Text's props are
+ * plain values, and an undefined one is not.  The true set where Claude
+ * Code draws true colour: given the 256 set there, chalk would draw it as
+ * given, and the softer true colours are the ones chosen to be seen.
+ * Given the true set at 256, chalk would round it onto entries nobody
+ * chose (see spec/layout.jsonc). */
+function spanStyle(s: Span): Record<string, string | boolean> {
+  const truecolor = st?.truecolor ?? false
+  const p: Record<string, string | boolean> = {}
+  if (s.colour) p.color = hexOf(s.colour, truecolor)
+  if (s.bg) p.backgroundColor = hexOf(s.bg, truecolor)
+  if (s.dim) p.dimColor = true
+  if (s.bold) p.bold = true
+  return p
+}
+
+/** `s` as the parts its press's `at` makes of it, in order, the part that
+ * presses alone keeping the press; a press with no `at`, or none, keeps
+ * the span whole. */
+export function partsOf(s: Span): Span[] {
+  const at = s.press?.at
+  if (!at) return [s]
+  const { press: _, ...bare } = s
+  const cps = Array.from(s.text)
+  const [from, to] = [Math.min(at[0], cps.length), Math.min(at[1], cps.length)]
+  return [
+    { ...bare, text: cps.slice(0, from).join('') },
+    { ...s, text: cps.slice(from, to).join('') },
+    { ...bare, text: cps.slice(to).join('') },
+  ].filter((p) => p.text)
+}
+
+/** Each run of spans of a row that press one thing, in order: the spans of
+ * a run share their press, or all have none. */
+function runsOf(spans: readonly Span[]): { press?: Press; spans: Span[] }[] {
+  const out: { press?: Press; spans: Span[] }[] = []
+  for (const s of spans.flatMap(partsOf)) {
+    const last = out.at(-1)
+    if (last && pressKey(last.press) === pressKey(s.press)) {
+      last.spans.push(s)
+    } else {
+      out.push({ press: s.press, spans: [s] })
+    }
+  }
+  return out
+}
+
+/** A press as one string, so runs pressing the same thing join, and the
+ * key its Button is found by. */
+function pressKey(p: Press | undefined): string {
+  if (!p) return ''
+  if (p.kind === 'fold') return 'fold:' + p.key
+  if (p.kind === 'view') return 'view:' + (p.agent ?? 'main')
+  return 'link:' + p.href
+}
+
+/** What a press on a run does, in a Button's onPress: a fold toggles the
+ * fold kept under its key, against its row's default where none is kept
+ * (the update reads it, so two presses before a redraw both land); a view
+ * switches the transcript, and logs why where it would not. */
+function onPressOf($: $, p: Press): () => Promise<void> {
+  if (p.kind === 'fold') {
+    return async () => {
+      await update($, folds, (f) => ({ ...f,
+        [p.key]: !foldShut(f, p.key, p.shut) }))
+    }
+  }
+  if (p.kind === 'view') {
+    return async () => {
+      const r = await $.ui.view(p.agent === null ? {} : { agentId: p.agent })
+      if (r.deny) {
+        await log($, 'view ' + (p.agent ?? 'main') + ': ' + r.deny)
+      }
+    }
+  }
+  return async () => {}
+}
+
+/** A row of the band's tree as `line` draws it, where any of its spans
+ * presses something: a row Box of its runs, each run of spans as line's
+ * nested Texts, a fold's or a view's in a plain Button keyed by its press,
+ * which draws its children alone, and a link's in a Link inside a Text.
+ * The Box adds no column: each run is as wide as its spans, so every
+ * figure stands where line would draw it.  A row that presses nothing is
+ * line's. */
+function pressLine(ui: any, $: $, spans: readonly Span[], key: string):
+  RenderElement {
+  const runs = runsOf(spans)
+  if (!runs.some((r) => r.press)) return line(ui.Text, spans, key)
+  const { Box, Button, Link, Text } = ui
+  return (
+    <Box key={key} flexDirection="row">
+      {runs.map((r, i) => {
+        const k = key + '.' + i
+        const texts = r.spans.map((s, j) => (
+          <Text key={k + '.' + j} {...spanStyle(s)}>{s.text}</Text>))
+        if (!r.press) {
+          return <Text key={k} wrap="truncate-end">{texts}</Text>
+        }
+        if (r.press.kind === 'link') {
+          return (
+            <Text key={k} wrap="truncate-end">
+              <Link href={r.press.href}>{texts}</Link>
+            </Text>
+          )
+        }
+        return (
+          <Button key={pressKey(r.press)} plain
+            onPress={onPressOf($, r.press)}>{texts}</Button>
+        )
+      })}
+    </Box>
   )
 }
 
@@ -607,7 +724,8 @@ async function bandNow($: $, isWorking: boolean, place: Place):
     ...bandScoped(st, fig, cols, o.hide,
       { rate: await read($, rate), phase: running ? 'running' : 'done',
         live: liveOf(o), place, places: rowPlacesOf(o), inset, indent,
-        agents: o.rows.subagents.live, cap: o.subagentRows })]
+        agents: o.rows.subagents.live, cap: o.subagentRows,
+        folds: place === 'above' ? await read($, folds) : {} })]
 }
 
 /** Whether the band's tree draws its root now, whose label carries 📦 🌿
@@ -803,14 +921,16 @@ export const register: Register = on => {
       const lines = await bandNow($, e.props.isWorking, 'above')
       // Between turns the receipt carries the rows, and the band has none.
       if (!lines.length) return await drawNext(draw, () => next(e))
-      const { Box, Text } = $.ui.resolve(e)
+      const ui = $.ui.resolve(e)
+      const { Box } = ui
       // No margin: Claude Code draws its `[-]` on the band's first row, and
       // on a blank top row it stood alone.  A bottom margin of -1, into the
       // blank row above the prompt's border, hid the band's last row under
-      // the border instead.
+      // the border instead.  The tree's fold marks and labels take a press
+      // (pressLine).
       return (
         <Box flexDirection="column">
-          {lines.map((l, i) => line(Text, l.spans, 'band' + i))}
+          {lines.map((l, i) => pressLine(ui, $, l.spans, 'band' + i))}
         </Box>
       )
     } finally {

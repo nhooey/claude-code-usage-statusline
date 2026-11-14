@@ -30,7 +30,9 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   session at its root with where the session works, 🎤 the turn while
   one runs, then 🧵 the main thread and, under it, the subagents it
   started (between turns, those still running or paused), each with its
-  latest progress update; see
+  latest progress update. A click on a row's `⊟` or `⊞` folds or opens
+  it, one on a thread's label shows that thread's transcript, and 🎮's
+  📦 🌿 🔀 link to GitHub; see
   [The tree](../docs/layout.md#the-tree). Each row of the `rows` table goes where
   its `place` puts it, `"above"` here or `"footer"` under the footer
   line; see

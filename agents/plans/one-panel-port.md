@@ -212,9 +212,15 @@ Marigold folded
 6. **`OP6` 🧬 for the model cell.** `🤖O⁵🏃` becomes `🧬O⁵🏃` on every
    row and the receipt (`E_MOD` in `spec/layout.jsonc`), so 🤖 keeps one
    job. After `OP5` it touches the TypeScript and its cases alone.
-7. **`OP7` The band's clicks.** A label's click switches the transcript
-   to its thread; a row with children folds and opens, its fold kept in
-   `$.state` by agent id; 📦 🌿 🔀 are links. Tests in `mod/mod-tests/`.
+7. **`OP7` The band's clicks.** Done: a label's click switches the
+   transcript to its thread (`$.ui.view`); a row with children folds and
+   opens on its mark, its fold kept in `$.state` by agent id, 🎮 and 🧵
+   under fixed keys and a grouped row under its parent's, dropped when
+   its agent ends; 📦 🌿 🔀 link to GitHub off the `origin` remote. Plain
+   Buttons and Links over the spans the tree already drew
+   (`mod/hooks/register.tsx`, `pressLine`; the presses in
+   `mod/src/band_tree.ts`). Tests in `mod/mod-tests/band.test.ts` and
+   `mod/test/band_tree.test.ts`.
 
 ## What to watch
 

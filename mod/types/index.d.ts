@@ -25,6 +25,12 @@ declare module 'claude-code' {
       /** Bumped by each read of the configuration files that changes the
        * options, so every drawing draws again with them. */
       configured: number;
+      /** The folds of the band's tree the person left, by key: an agent's
+       * id, "session" for 🎮, "main" for 🧵, a grouped row's parent's key
+       * then "/more" or "/done"; true folded, false opened.  A key absent
+       * is its row's default.  An agent's, and its grouped rows', go once
+       * it ends. */
+      folds: { [key: string]: boolean };
     }
   }
 }

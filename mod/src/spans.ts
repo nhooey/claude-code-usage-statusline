@@ -23,18 +23,38 @@ export const UNBOLD = "\x1b[22m";          // 22 (bold off) and not 0 (all
                                            // attributes off), so it cannot
                                            // stomp colour set around it.
 
+/** What a press on a span of the band's tree does, the mod's alone: a
+ * `fold` toggles the fold kept under `key`, folded where none is kept if
+ * `shut`; a `view` switches the transcript to the agent `agent`, or to the
+ * main conversation for null; a `link` opens `href`.  `at`, where given,
+ * is the part of the span's text that presses, as code points from and
+ * to; the rest of it presses nothing.  Absent, all of it presses. */
+export type Press = (
+  | { readonly kind: "fold"; readonly key: string; readonly shut: boolean }
+  | { readonly kind: "view"; readonly agent: string | null }
+  | { readonly kind: "link"; readonly href: string }
+) & { readonly at?: readonly [number, number] };
+
 /** One run of text drawn one way.
  *
  * `colour` and `bg` name an F_* and a B_* constant of spec, or are null for
  * the terminal's own.  A span with none of the four drawn attributes is
- * plain text and writes no escape at all. */
+ * plain text and writes no escape at all.  `press`, where present, is what
+ * a press on it does; it changes nothing drawn, and a cut keeps it on what
+ * is left of the span's text. */
 export type Span = {
   readonly text: string;
   readonly colour: string | null;
   readonly dim: boolean;
   readonly bold: boolean;
   readonly bg: string | null;
+  readonly press?: Press;
 };
+
+/** `s` with `press`, its text and style as they were. */
+export function pressed(s: Span, press: Press): Span {
+  return { ...s, press };
+}
 
 /** Span(text, colour, dim, bold, bg), the NamedTuple's constructor. */
 export function span(text: string, colour: string | null = null,
