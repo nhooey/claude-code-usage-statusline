@@ -13,8 +13,8 @@ sessions at a glance.
 Drawn by the `usage-band` mod in [`mod/`](mod/README.md), one scope a row.
 Above the prompt, the turn while it runs and the session; under Claude
 Code's own footer line, the 💳 account and the main thread, just over the
-agent panel. Here the two places are drawn together, the prompt between
-them left out:
+agent panel, whose rows Claude Code draws itself. Here the two places are
+drawn together, the prompt between them left out:
 
 ```
                          🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
@@ -46,24 +46,6 @@ Each row's place is `rows` in the
 Every row's figures, left to right: 🤖 Model · 🛫 Rate or Doing · 💰 Cost ·
 🧠 Context · 🧩 Tokens · 🎯 Hits · ⌛ Elapsed · ⛳ ETA · 🤖 Thinking · 🔧 Tools ·
 🚦 Waiting · 🔋 5-hour · 🪫 Weekly · 💾 Diff.
-
-## Agent panel
-
-One row per subagent or shell in Claude Code's agent panel, on the same
-columns. Installed as `subagentStatusLine`.
-
-```
-🔍🟢 Marigold  Runnin…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
-🔩🟢 Bluebell           🤖So🐢  🤖 333   💰0.1   🧠 60k  30٪  🧩▴ 13k ▾1.3k  🎯97٪  ⌛6.7m         🤖⠶⠦ 🔧⠄⠀ 🚦⠀⠀  🔋  .01٪  🪫  .016٪
-🔍⚫ Daisy               🤖O⁵🏃  ✅  42m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛8.3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .02٪  🪫  .022٪
-🐚🟢 sleep 300 && make test                                                          ⌛  2m
-```
-
-The label, left to right: Kind · State · 👶🏻 Children ·
-🤏 Compactions · 💻 Shells · 📡 Monitors · 📨 Queue · Name, 🌿 worktree branch
-and activity. The figures are the rows' above, for that one agent, with what
-it is doing in 🛫's column. A shell has no transcript, so its row shows only
-how long it has run.
 
 ## Prompt receipt
 
@@ -100,8 +82,8 @@ claude plugin install usage-band@claude-code-usage-statusline
 ```
 
 Its settings, such as the usage source and what it hides, are in the
-[configuration files](docs/options.md#configuration-files) the panel reads
-too; [`mod/README.md`](mod/README.md) has the rest.
+[configuration files](docs/options.md#configuration-files);
+[`mod/README.md`](mod/README.md) has the rest.
 
 Every setting's default is in one file,
 [`mod/defaults/config.jsonc`](mod/defaults/config.jsonc), which both the
@@ -118,15 +100,6 @@ diff mod/defaults/config.jsonc ~/.config/coding-agent-usage-line/config.jsonc
 A project's settings go in its own `.config/coding-agent-usage-line/`
 instead; see [Configuration files](docs/options.md#configuration-files).
 
-The agent panel is the Python program's. Merge
-[`examples/claude/settings.json`](examples/claude/settings.json) into
-`~/.claude/settings.json`: its `subagentStatusLine` gives no `--right-edge`
-or `--hide`, so the panel takes both from the configuration files the mod
-reads, and its rows end and its columns stack where the mod's do. The path
-assumes the clone above. Keep
-`coding-agent-usage-line.py` and the `coding_agent_usage_line/` directory
-beside it together.
-
 For ⛳ ETAs, link the skill that has agents report them, and tell them to use
 it:
 
@@ -139,12 +112,12 @@ echo 'For any task you expect to take more than about a minute, as the main agen
 
 The legend has one table per topic. Each glyph has a name, and a ✓ marks each
 readout that draws it: the mod's rows, above the prompt and under the
-footer line, the agent panel and the receipt. Where a glyph means something
+footer line, the subagent rows and the receipt. Where a glyph means something
 different on one readout, the table says so.
 
 ### Rows
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 💳 | Account | the plan's own figures for the whole account, on every device, and where the session works; under the footer line | ✓ | | |
 | 🎤 | Turn | the turn; above the prompt while it runs | ✓ | | ✓ |
@@ -153,14 +126,14 @@ different on one readout, the table says so.
 
 ### Chat and project
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 🎨 | Style | output style, when not the default, on 💳 | ✓ | | |
 | 🔀 | PR | pull request number, on 💳 | ✓ | | |
 | 📨 | Queue | messages sent to the agent and not yet delivered, Claude Code's "N queued"; on the 🤖 row, messages waiting for the main thread's next turn | ✓ | ✓ | |
 | 📦 | Project | the project, on 💳; in a worktree, the main repository | ✓ | | |
 | 📁 | Directory | current directory, on 💳, the project's root drawn as 📦 | ✓ | | |
-| 🌿 | Branch | branch, clean tree, on 💳; on the panel, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | |
+| 🌿 | Branch | branch, clean tree, on 💳; on a subagent row, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | |
 | 🍂 ✱ | Dirty | branch, uncommitted changes, on 💳 | ✓ | | |
 | 💾 | Diff | lines added and removed; blank where none were | ✓ | ✓ | ✓ |
 | 📅 | Date | today's date; on the receipt, when it was stamped | ✓ | | ✓ |
@@ -168,7 +141,7 @@ different on one readout, the table says so.
 
 ### Model
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 🤖 `O⁵` | Model | family initial and major version, such as `O⁵` Opus 5, `S⁵` Sonnet 5 or `H⁴` Haiku 4.5; on the rows, the turn's | ✓ | ✓ | |
 | 🐢 | Low | reasoning effort `low` | ✓ | ✓ | |
@@ -179,29 +152,29 @@ different on one readout, the table says so.
 
 ### Cost and tokens
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 💰 | Cost | cost in dollars, at API prices | ✓ | ✓ | ✓ |
 | `~` | Estimate | a figure partly estimated: 💰 with a compaction in it, 🧠 read from one | ✓ | | ✓ |
 | 🧩 | Tokens | tokens in and out | ✓ | ✓ | ✓ |
 | ▴ | Input | billable-equivalent input tokens | ✓ | ✓ | ✓ |
 | ▾ | Output | output tokens | ✓ | ✓ | ✓ |
-| 🛫 | Rate | the main thread's tokens per second, on the 🎤 row; on the panel, a shell's | ✓ | ✓ | |
-| 🔧 🚦 🤖 … | Doing | in 🛫's column, what the thread is doing and for how long: 🔧 a tool, 🚦 waiting on you or an agent, 🤖 the model, which shows the token rate until it has written nothing for a minute (amber from ten). On the panel, with the paused and ended marks too | ✓ | ✓ | |
+| 🛫 | Rate | the main thread's tokens per second, on the 🎤 row; on a subagent row, a shell's | ✓ | ✓ | |
+| 🔧 🚦 🤖 … | Doing | in 🛫's column, what the thread is doing and for how long: 🔧 a tool, 🚦 waiting on you or an agent, 🤖 the model, which shows the token rate until it has written nothing for a minute (amber from ten). On a subagent row, with the paused and ended marks too | ✓ | ✓ | |
 | 🎯 | Hits | prompt-cache hit rate | ✓ | ✓ | ✓ |
 
 ### Context
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 🧠 | Context | context size and share of the window; on the 🎤 row, how much the turn grew it | ✓ | ✓ | ✓ |
 | 🤏 | Compactions | how often the agent's window has been compacted | | ✓ | |
 
 ### Time
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
-| ⌛ | Elapsed | how long the row's scope has run; on the panel, the agent's age | ✓ | ✓ | ✓ |
+| ⌛ | Elapsed | how long the row's scope has run; on a subagent row, the agent's age | ✓ | ✓ | ✓ |
 | ⛳ | ETA | time the answer or agent says it has left; on the receipt, the turn's last report | ✓ | ✓ | ✓ |
 | 🤖 | Thinking | time with the model | ✓ | ✓ | ✓ |
 | 🔧 | Tools | time inside tools | ✓ | ✓ | ✓ |
@@ -210,7 +183,7 @@ different on one readout, the table says so.
 
 * **🤖 🔧 🚦 are gauges** with eight dots between the three, so
   `🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀` means five eighths thinking, two in tools and one waiting.
-  On the main thread's row and the panel's they share out ⌛. The 🎤 and 🎮
+  On the main thread's row and a subagent's they share out ⌛. The 🎤 and 🎮
   rows sum agent-seconds, which can outrun the wall clock, so there they are
   proportions of themselves.
 * **Each row counts its own thread.** A parent waiting on the agents it
@@ -224,7 +197,7 @@ different on one readout, the table says so.
 
 ### Plan windows
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 🔋 | 5-hour | share of the 5-hour window | ✓ | ✓ | ✓ |
 | 🪫 | Weekly | share of the weekly window | ✓ | ✓ | ✓ |
@@ -240,7 +213,7 @@ different on one readout, the table says so.
 
 ### Background tasks
 
-| Glyph | Name | Meaning | Rows | Panel | Receipt |
+| Glyph | Name | Meaning | Rows | Subagent | Receipt |
 |---|---|---|:-:|:-:|:-:|
 | 💻 | Shells | background shells it started and has not heard the end of | | ✓ | |
 | 📡 | Monitors | Monitors it started and has not heard the end of | | ✓ | |
@@ -251,7 +224,7 @@ one it waits on; the count says how many.
 
 ### Agent kind
 
-These glyphs open a panel row. Each is named
+These glyphs open a subagent row. Each is named
 for the agent type it
 stands for; `other` covers every other type, custom agents included.
 
@@ -266,7 +239,7 @@ stands for; `other` covers every other type, custom agents included.
 
 ### Agent state
 
-A panel row's phase follows its kind; what the agent is doing within it fills
+A subagent row's phase follows its kind; what the agent is doing within it fills
 the 🛫 column, with how long it has been doing it.
 
 | Glyph | Name | Meaning |
@@ -294,7 +267,7 @@ Claude Code calls an agent completed both when it has finished and when it has
 ended its turn to wait. The row reads the agent's transcript and its children
 to tell the two apart.
 
-### Agent panel
+### Subagent rows
 
 | Glyph | Name | Meaning |
 |---|---|---|
@@ -320,7 +293,7 @@ to tell the two apart.
   shares and times include every subagent, fork and workflow agent, each
   priced at its own model's rates. The 🤖 row is the main thread alone,
   and its 🧠 tells you when *this* context window needs compacting. Each
-  row of the agent panel counts its own agent alone.
+  subagent row counts its own agent alone.
 
 On a narrow terminal each row's label is shortened first, down to 12
 columns; then whole columns drop from every row at once, least important
@@ -329,18 +302,17 @@ in detail.
 
 ## Customizing
 
-`--hide scope[.group[.metric]]` hides a row, a group of cells or one cell,
-the same path on every readout: `hide` in a
-[configuration file](docs/options.md#configuration-files) for both, or as
-flags to `subagentStatusLine` for the panel. The defaults hide nothing,
-as in the renders above. See [Hiding](docs/layout.md#hiding).
+`hide` in a [configuration file](docs/options.md#configuration-files),
+`scope[.group[.metric]]`, hides a row, a group of cells or one cell, the
+same path on every readout. The defaults hide nothing, as in the renders
+above. See [Hiding](docs/layout.md#hiding).
 
 [Options](docs/options.md) lists every flag.
 
 The 💳 row's figures come from the usage source the mod is configured with
-(`usage-source`, `auto` by default),
-and the panel's from `--usage-source`. Besides the rate limits Claude Code
-reports, either can take them from:
+(`usage-source`, `auto` by default), and the Python program's from
+`--usage-source`. Besides the rate limits Claude Code reports, either can
+take them from:
 
 * the Claude Usage Tracker app
 * an organization API

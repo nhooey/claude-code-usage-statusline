@@ -166,20 +166,6 @@ class PublicPortTests(unittest.TestCase):
         self.assertIn("thread", result.stdout)
         self.assertTrue(self.stop("turn-one"))
 
-    def test_claude_diagnostics_are_separate_from_panel_json(self):
-        payload = {"session_id": "diagnostic-panel", "columns": 120,
-                   "tasks": [{"id": "diagnostic-task", "type": "local_bash",
-                              "description": "fixture", "status": "running"}]}
-        result = subprocess.run(COMMAND + ["--agent", "claude", "--mode", "subagent",
-            "--usage-source", "native", "--diagnose"], input=json.dumps(payload),
-            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=self.env,
-            cwd=str(self.home), timeout=8)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("diagnose", result.stderr)
-        self.assertIn("source=native", result.stderr)
-        self.assertEqual([json.loads(line)["id"] for line in result.stdout.splitlines()],
-                         ["diagnostic-task"])
-
     def test_explicit_transcripts_do_not_wait_for_stdin(self):
         for agent in ("claude", "codex"):
             proc = subprocess.Popen(COMMAND + ["--agent", agent, "--usage-source", "native",
@@ -316,26 +302,6 @@ class PublicPortTests(unittest.TestCase):
         self.assertIn("organization", report.lower())
         self.assertIn("cost-account", report)
         self.assertIn("7.25", report)
-
-    def test_claude_panel_keeps_jsonl_with_selected_source(self):
-        command = self.home / "panel-source.sh"
-        marker = self.home / "panel-context.json"
-        reading = {"schema_version": 1, "as_of": time.time(),
-                   "account": {"scope": "organization", "cost_usd": 7.25}}
-        command.write_text("#!/bin/sh\nIFS= read -r context || :\nprintf '%s' \"$context\" > "
-            + str(marker) + "\nprintf '%s\\n' '" + json.dumps(reading) + "'\n", encoding="utf-8")
-        report = self.run_cli("--agent", "claude", "--mode", "subagent",
-            "--usage-source", "cmd:" + str(command), "--account", "panel-account",
-            payload={"session_id": "panel-review", "columns": 120,
-                     "tasks": [{"id": "shell-fixture", "type": "local_bash", "status": "running",
-                                "description": "fixture command", "name": "Fixture shell"}]})
-        self.assertTrue(marker.is_file(), "Panel did not use selected shared source")
-        context = marker.read_text()
-        self.assertTrue(context, "Panel source received no scoped JSON context")
-        self.assertEqual(json.loads(context)["account"], "panel-account")
-        lines = [json.loads(line) for line in report.splitlines()]
-        self.assertEqual([line["id"] for line in lines], ["shell-fixture"])
-        self.assertTrue(all(isinstance(line["content"], str) for line in lines))
 
     def test_malformed_payload_values_render_instead_of_raising(self):
         # Each of these took the status line down with a traceback: a list

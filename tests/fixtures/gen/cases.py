@@ -38,11 +38,6 @@ COST_TRANSCRIPTS = (
     "05-sidechain", "06-interrupted", "07-empty", "08-woken", "09-agents",
     "10-turn-id", "11-turn-id-late",
 )
-# The agent panel's sessions; see gen/panel.py.  05 is an empty panel, which
-# prints nothing at any width, so it is run at one.
-SUBAGENT_PAYLOADS = ("01-mixed", "02-parked", "03-tree", "04-bare",
-                     "05-empty")
-SUBAGENT_WIDTHS = (220, 160, 120, 92, 60, None)
 
 # Everything a run reads that is not its input.  `source` is null for `auto`,
 # which reads the payload's own rate_limits or the tracker store below, or a
@@ -68,7 +63,6 @@ def env(source=None, calib=CALIB_UNITS, repo="clean", terminal=None):
         "locale": "en_US.UTF-8",
         # Pinned to the unknown profile, not left to whichever terminal
         # runs the suite: TMUX and TERM_PROGRAM are unset.
-        # The agent panel's cases name others; see ENVS.
         "terminal": {} if terminal is None else terminal,
         # The Claude Usage Tracker store `auto` falls back to, in its own
         # CFDate epoch: as_of 200 seconds before PIN_NOW.
@@ -109,26 +103,14 @@ ENVS = {
                               "sess_cost": 5.50, "sess_pct": 1.0,
                               "week_cost": 356.70, "week_pct": 87.0}),
 }
-# The agent panel's other terminals: tmux and iTerm pad their marks, and an
-# unknown terminal corrects no width.  The profile is read at import, so it
-# is an environment and not a flag.
-_APP_41_63 = ENVS["app-41-63"]["source"]
-ENVS.update({
-    "tmux": env(_APP_41_63, terminal={"TMUX": "/tmp/tmux-501/default,1,0"}),
-    "iterm": env(_APP_41_63, terminal={"TERM_PROGRAM": "iTerm.app"}),
-    "unknown-term": env(_APP_41_63, terminal={}),
-})
 # Where Claude Code draws true colour, so the true set is drawn: every
 # other environment is at its 256 level (run-cases.py sets TERM to
-# xterm-256color and clears the other colour variables).  The second under
-# tmux with CLAUDE_CODE_TMUX_TRUECOLOR, the one way tmux draws true colour.
+# xterm-256color and clears the other colour variables).  The second with
+# app-41-63's plan reading.
 _TRUE = {"COLORTERM": "truecolor"}
 ENVS.update({
     "true-colour": env(terminal=_TRUE),
-    "true-colour-panel": env(_APP_41_63, terminal=_TRUE),
-    "tmux-true-colour": env(_APP_41_63, terminal={
-        "TMUX": "/tmp/tmux-501/default,1,0", "COLORTERM": "truecolor",
-        "CLAUDE_CODE_TMUX_TRUECOLOR": "1"}),
+    "true-colour-panel": env(ENVS["app-41-63"]["source"], terminal=_TRUE),
 })
 
 
@@ -260,35 +242,6 @@ def cost_cases():
     return out
 
 
-def subagent_cases():
-    out = []
-
-    # The panel's payload carries no quota envelope either, so every case
-    # reads a planted source, app-41-63's unless its terminal says otherwise.
-    # Its tasks' working directories are ${SCRATCH} paths, the fixture
-    # repositories, so an agent in the dirty one draws its branch.
-    def case(name, payload, c, env="app-41-63", flags=()):
-        out.append({"id": "%s@%s" % (name, width(c)), "suite": "subagent",
-                    "input": "payloads/subagent/%s.json" % payload,
-                    "cols": c or 0, "env": env, "flags": list(flags)})
-
-    for p in SUBAGENT_PAYLOADS:
-        for c in SUBAGENT_WIDTHS if p != "05-empty" else (None,):
-            case(p, p, c)
-    # Each switch and terminal on the two sessions with the most cells, at a
-    # width where every cell draws and one where they crowd.
-    for p in ("01-mixed", "03-tree"):
-        for c in (220, 120):
-            case("tight-" + p, p, c, flags=["--no-mark-spacing"])
-            case("subdec-" + p, p, c, flags=["--subscript-decimals"])
-            for e in ("tmux", "iterm", "unknown-term"):
-                case(e + "-" + p, p, c, env=e)
-    case("true-colour-01-mixed", "01-mixed", 220, env="true-colour-panel")
-    case("tmux-true-colour-01-mixed", "01-mixed", 220,
-         env="tmux-true-colour")
-    return out
-
-
 def write_json(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
@@ -300,4 +253,4 @@ def main(root):
     for name, e in sorted(ENVS.items()):
         write_json(os.path.join(root, "env", name + ".json"), e)
     write_json(os.path.join(root, "cases.json"),
-               {"cases": status_cases() + cost_cases() + subagent_cases()})
+               {"cases": status_cases() + cost_cases()})

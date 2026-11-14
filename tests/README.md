@@ -11,7 +11,7 @@ behaviours are deliberate.
 - [Figures](#figures)
 - [Status cases](#status-cases)
 - [Cost cases](#cost-cases)
-- [Agent panel cases](#agent-panel-cases)
+- [Subagent row cases](#subagent-row-cases)
 - [Assertion suites](#assertion-suites)
 - [Manual checks](#manual-checks)
 - [Behaviours that look like bugs](#behaviours-that-look-like-bugs)
@@ -92,12 +92,12 @@ fixtures/
   payloads/status/       status-line payloads
   transcripts/status/    the transcripts and agent files they point at
   transcripts/cost/      the Stop hook's transcripts
-  payloads/subagent/     the agent panel's payloads, and under
-  transcripts/subagent/  the sessions and agent files they point at
+  transcripts/subagent/  sessions with agents, for the fold and calibration
+                         fixtures; see Subagent row cases below
   figures/<suite>/       each case's figures, written by run-cases.py; see
                          Figures below
-  panel/<group>.json     the agent panel's rows from the renderer's inputs;
-                         see Agent panel cases below
+  panel/<group>.json     the subagent rows from the renderer's inputs;
+                         see Subagent row cases below
   grid/<profiles>.json   the redesigned grid's layouts and rows, written by
                          the TypeScript; see Grid cases below
   rows/<profiles>.json   the band's and the receipt's rows from the figures,
@@ -294,30 +294,20 @@ Each renders at 196, 150, 120, 92 and unknown (55 goldens), then:
 `force-nl-01` is checked at 196 on purpose: the program adds that newline by
 itself when the window is narrow, so a narrow case would pass without the flag.
 
-## Agent panel cases
+## Subagent row cases
 
-`--mode subagent` is checked at two levels, both written by
-`fixtures/gen/panel.py`.
-
-**End to end**, the `subagent` suite in `cases.json`, after the status and
-cost cases. Each case is a `subagentStatusLine` payload on stdin, and the
-golden under `golden/subagent/` is the whole of what the program prints, one
-`{"id", "content"}` line per row. The payloads' working directories are
-`${SCRATCH}` paths, the fixture repositories, so an agent in the dirty one
-draws its 🌿 branch. Every case reads the `app-41-63` source; the three
-terminal environments, `tmux`, `iterm` and `unknown-term`, read the same one.
+`fixtures/gen/panel.py` writes two things: the sessions under
+`transcripts/subagent/`, a main transcript each with its agents' files
+beside it, which the fold fixtures and the calibration scan read; and the
+render cases under `panel/`.
 
 | Session | What it holds |
 |---|---|
-| `01-mixed` | the running modes (🔧 a tool, 🤖 with a 🛫 rate and quiet in amber, 🚦 a question), ✅ ❌ 🛑, 💥 an API error, 🥚 a queued task, a shell with no transcript, a workflow agent one directory down |
+| `01-mixed` | the running modes (🔧 a tool, 🤖 with a 🛫 rate and quiet in amber, 🚦 a question), ✅ ❌ 🛑, 💥 an API error, a workflow agent one directory down |
 | `02-parked` | completed agents only waiting: 💻 a shell, 📡 a Monitor beside one, ⛳ their own ETA, 💤 an agent under them, whose ETA the parent inherits; an ETA gone stale (amber `+`), one signed off at 0s and running over (red `+`) |
-| `03-tree` | the tree four deep, past the two levels the grid keeps the chrome for, 👶🏻 🤏 📨 counts, a worktree's 🌿, a finished ancestor stepped over, a parent not on the panel |
-| `04-bare` | the payload alone: shells, a remote agent, a status never seen, tasks with no id or not an object, a label that repeats the description |
-| `05-empty` | no tasks: nothing printed |
-
-Each of 01 to 04 renders at 220, 160, 120, 92, 60 and unknown, 05 at unknown
-only, and 01 and 03 again at 220 and 120 under `--no-mark-spacing`,
-`--subscript-decimals` and each other terminal: 45 goldens.
+| `03-tree` | the tree four deep, past the two levels the grid keeps the chrome for, 🤏 compactions, 📨 messages queued, a finished ancestor, a parent with no file |
+| `04-bare` | no agent files: its tasks were shells and a remote agent |
+| `05-empty` | no agent files and no tasks |
 
 **Render**, `fixtures/panel/<group>.json`: `render_task_rows`' inputs and the
 rows it draws, each as the joined string and as its spans. The inputs are
@@ -325,9 +315,14 @@ the prepared `(task, usage, meta, shares)` records, the `Limits`, `cols` (the
 terminal's width), `now` and, where there are any, the `--hide` paths
 `hide`; a group is one terminal profile and one setting of the two switches,
 since the program fixes those per process. The shapes are in the generator's
-docstring. `corpus*.json` are the end-to-end cases' own inputs, captured on
-their way into the renderer, so their rows are the goldens' rows and the
-generator refuses to write them otherwise. The rest are made by hand for
+docstring. `corpus*.json` are committed data: the inputs prepared from
+these sessions' task lists, with 🥚 a queued task, shells, a remote agent,
+a status never seen, tasks with no id or not an object, a worktree's 🌿
+and a label that repeats the description, at 220, 160, 120, 92, 60 and
+unknown, and 01 and 03 again at 220 and 120 under `--no-mark-spacing`,
+`--subscript-decimals` and the `tmux`, `iterm`, unknown and true-colour
+terminals. The generator reads their inputs from the files and draws their
+rows again. The rest are made by hand for
 what the corpus does not reach: `states`, `eta`, `counts`, `tree`,
 `gauges`, `figures`, `who` (the name, branch and activity), `widths` (one
 mixed panel from 400 columns down to 20), `hide` (the mixed panel under `--hide` paths), `missing` (no usage, a partial
@@ -336,9 +331,7 @@ under each switch and terminal (`tight`, `subdec`, `tmux`, `iterm`,
 `unknown`).
 
 `run-cases.py` runs the render cases as its `panel` suite: the generator run
-again in memory, under `--python`, and compared with what is committed. It
-is the panel's counterpart of the figures and render stages, which the
-subagent suite skips, having no figures document.
+again in memory, under `--python`, and compared with what is committed.
 
 ## Grid cases
 
@@ -346,8 +339,7 @@ subagent suite skips, having no figures document.
 ([the plan](../agents/plans/_implemented/redesign.md)), `mod/src/grid.ts`. Unlike the rest
 of `fixtures/`, these are written by the TypeScript, with
 `node mod/tools/gen-grid-cases.ts`: the grid is built there first, and the
-Python cells the agent panel keeps will be checked against them when they are
-brought to it. `all.py` does not touch them.
+Python's `grid.py` is checked against them by `tests/grid.py`. `all.py` does not touch them.
 
 The inputs are plain data: the mockup's sample rows by id, each its scope, its
 panel depth, its label's pieces (path, spans, drop rank) and its cells as
@@ -431,12 +423,13 @@ These pin values rather than rows, so they assert instead of comparing files.
   and read on, saved a part at a time, and read past a torn head.
   `mod/test/main_fold.test.ts` runs the same cases through the TypeScript,
   and hands state between the ports both ways.
-- **`subagent.py`** — `--mode subagent`: finding an agent's file (directly
+- **`subagent.py`** — the subagent rows, `prepare_subagent_tasks` and the
+  renderer together: finding an agent's file (directly
   under `subagents/`, or under `subagents/workflows/*/`), deduplicating
   requests, lines written, the agent's own ⌛ 🤖 🔧 🚦 split (a coordinator
   parked on its agents keeps its ⌛ running and reads the wait as 🚦), 5-hour
   and weekly shares, and the row's shape as stripped text. It checks that a nested row
-  pays two columns per level for the `├ ` the panel draws, so every depth ends
+  pays two columns per level for the tree's chrome, so every depth ends
   on the same column.
 - **`rate.py`** — the 🛫 sampler against a stepped clock (tick, history
   depth, a damaged history file) and its cell; column 3's 📖 📝 shares and
@@ -518,20 +511,6 @@ once inside a line, and check each reads on as the whole fold; at each
 break the fold is also saved as text, read back and read on. One line a
 file, with its saved state's size, and a total. Over 4,495 files and 10.1 GB on 2026-10-20 the Python
 took 173s and the TypeScript 109s; `--largest 3` takes seconds.
-
-### Timing the agent panel's read
-
-```sh
-time-panel [--runs N] [TRANSCRIPT]   # in the dev shell
-python3 tools/time-panel.py [...]
-```
-
-Builds the payload the agent panel would get for TRANSCRIPT, by default the
-session under `~/.claude/projects/` with the most agent files, one task per
-agent, and times `prepare_subagent_tasks`: once against an empty scratch
-state directory, then N times off the folds the first saved there. Each line
-gives the part the inbox counts took (`inbox_fold.counts`). The real state
-directory is never read or written.
 
 ### `--selftest`
 

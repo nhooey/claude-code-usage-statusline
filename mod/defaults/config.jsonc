@@ -26,7 +26,7 @@
   "account": "default",
   // The UTC period of the organization reports: day, week or month.
   "account-period": "day",
-  // Columns each agent-panel row leaves blank at the right edge.  null
+  // Columns each grid row leaves blank at the right edge.  null
   // follows rows.*.place: 5 when any row drawn live is "above", where
   // Claude Code's [-] stands, else 2.
   "right-edge": null,

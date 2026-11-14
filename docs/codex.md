@@ -10,9 +10,8 @@ program less to work with:
 
 - **No live footer.** Codex has no status-line command hook. Use Codex's own
   `/statusline` to configure its footer.
-- **No agent panel.** Codex has no equivalent of Claude Code's
-  `subagentStatusLine`; `--mode subagent` exits 2. Child agents appear in the
-  Stop report and in `--mode cost --all`.
+- **No subagent rows.** Child agents appear in the Stop report and in
+  `--mode cost --all`.
 - **No dollars.** Subscription usage isn't billed per token, so tokens are
   never priced as if they were API calls.
 - **No per-agent quota share.** Codex reports quota for the account, not for

@@ -17,7 +17,7 @@ coding-agent-usage-line.py        launcher
    │  ├─ claude_sources.py        a usage-source reading, projected for the Claude rows
    │  ├─ claude_render.py         status-line cells and grid           (pure)
    │  ├─ claude_cost_render.py    Stop-hook cost rows                  (pure)
-   │  └─ claude_subagent_render.py  agent-panel rows                   (pure)
+   │  └─ claude_subagent_render.py  subagent rows                      (pure)
    ├─ codex.py                    Codex rollout parsing and accounting
    ├─ render.py                   Codex status, history and Stop text  (pure)
    ├─ sources.py                  usage-source selection and collectors
@@ -36,12 +36,12 @@ Every module above lives in `coding_agent_usage_line/`.
 | module | owns |
 |---|---|
 | `cli.py` | The public flag set and usage text. Validates everything before reading stdin, then runs the Codex path itself or hands Claude to `claude.main`. |
-| `claude.py` | Claude's three modes (`status`, `cost`, `subagent`) and `--selftest`: reads the hook payload and transcripts, takes one usage-source snapshot, derives calibration and window shares, keeps the per-session context and rate files, and prints. |
+| `claude.py` | Claude's two modes (`status`, `cost`), the subagent rows' preparation and `--selftest`: reads the hook payload and transcripts, takes one usage-source snapshot, derives calibration and window shares, keeps the per-session context and rate files, and prints. |
 | `claude_records.py` | Claude JSONL interpretation: payload fields, request deduplication, per-model prices, turns, tool spans, agent files. No terminal output. |
 | `claude_sources.py` | Turns a normalised usage-source reading into the `Limits` pair (5-hour and weekly) the Claude rows draw. |
 | `claude_render.py` | Every status-line cell and the three-row grid, with its fourth line on a narrow terminal. Each cell returns spans; `render_status` joins them into escape codes, line by line. |
 | `claude_cost_render.py` | Placement and stacking of the cost rows. Its labels, tags and the metric groups `claude.py` builds are all spans, joined into escape codes once the rows are laid out. |
-| `claude_subagent_render.py` | One agent-panel row per task. Each cell returns spans; `render_task_rows` joins each row. |
+| `claude_subagent_render.py` | One subagent row per task. Each cell returns spans; `render_task_rows` joins each row. |
 | `codex.py` | Codex rollout records: thread identity, child discovery, request deduplication, turn attribution. Read-only. |
 | `render.py` | Codex status, history and Stop reports, and account-period rows. |
 | `sources.py` | `--usage-source` selection, the version-1 custom-command contract, the HTTP and app-server collectors, refresh policy. See [Usage sources](usage-sources.md). |
@@ -102,7 +102,7 @@ without consuming claims. See [Codex](codex.md).
 | A cell on the mod's rows or its receipt | `mod/src/cells.ts`, and the row builders in `mod/src/band.ts` and `mod/src/receipt.ts` | Regenerate the row cases (`node mod/tools/gen-row-cases.ts`) and read the diff; `node mod/tools/draw-figures.ts` draws a figures document to look at; update [Layout](layout.md). |
 | A status-line cell (the retired `--mode status`) | `claude_render.py`; its width in `RIGHT_GRID` in `formatting.py`, or `LINE3_RESERVED` / `RULE_MIN` in `spec/layout.jsonc` | Regenerate the status goldens and read the diff. |
 | A cost-line cell (the retired `--mode cost`) | `claude_cost_render.py`, and the group builders in `claude.py` | Regenerate the cost goldens. |
-| An agent-panel cell | `claude_subagent_render.py` | Update the row shape asserted in `tests/subagent.py`. `python3 tools/draw-panel.py 01-mixed.json 120` draws the panel at any width to look at. |
+| A subagent-row cell | `claude_subagent_render.py` and `mod/src/claude_subagent_render.ts` | Update the row shape asserted in `tests/subagent.py`, run `python3 tests/fixtures/gen/all.py` and read `git diff tests/fixtures/panel/`. |
 | A glyph, colour, width or cut | Its constant in `spec/layout.jsonc` | Run `python3 tools/gen-spec.py`. For a glyph, follow [Glyphs and terminals](glyphs-and-terminals.md) and run `tests/probe-advance.sh` in a real terminal. For a colour, pick a palette entry; see [Under tmux](layout.md#under-tmux). |
 | A flag | `_CLAUDE_FLAGS` / `_COMMON_FLAGS` and `USAGE` in `cli.py`; read it in `claude.main` or `codex_main` | Update [Options](options.md); add a case to `tests/port-cli.py`, the public-CLI suite. |
 | Claude accounting (prices, turns, agents) | `claude_records.py`; window shares and calibration in `claude.py` | `tests/agents.py`, the cost goldens; update [Accounting](accounting.md). |
@@ -117,7 +117,7 @@ without consuming claims. See [Codex](codex.md).
 bash tests/golden.sh           # status line, byte for byte
 bash tests/golden-cost.sh      # Stop-hook cost line
 python3 tests/agents.py        # agent spend and tool time
-python3 tests/subagent.py      # agent-panel rows
+python3 tests/subagent.py      # subagent rows
 python3 tests/rate.py          # 🛫 and the brightness cuts
 ```
 
@@ -150,10 +150,10 @@ them. `--selftest` and `tests/probe-advance.sh` need a real terminal tab.
 `tests/probe-advance.sh` in Ghostty and in iTerm2, with the result recorded
 in [Glyphs and terminals](glyphs-and-terminals.md).
 
-- The agent-panel type marks in `KIND_MARK` (`claude_subagent_render.py`):
+- The subagent-row type marks in `KIND_MARK` (`claude_subagent_render.py`):
   🎩 🔍 📐 📚 📟 🍴 🐚 🔗 🌐 🎎. Unlike 🔧 and 👥, which are also `E_*`
   constants, they are literals in that table, so the probe does not see them
-  until it is taught to read it. A wrong width here shifts one panel row.
+  until it is taught to read it. A wrong width here shifts one subagent row.
 - The agent-row state marks and 👶🏻, `E_PHASE_*`, `E_MODE_*` and `E_KIDS`:
   🟢 🟡 ⚫, 💤 💻 📡 🥚 ✅ ❌ 🛑 and 👶🏻. They are `E_*` constants, so the next
   probe run covers them. 🟢 and 🟡 are Unicode 12, newer than any other glyph

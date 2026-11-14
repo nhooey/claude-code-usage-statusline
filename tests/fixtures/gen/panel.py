@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Write the agent panel's shared cases: its end-to-end inputs, and its rows
-drawn from the renderer's own inputs.
+"""Write the subagent rows' shared cases: the sessions their agents' files
+come from, and the rows drawn from the renderer's own inputs.
 
     python3 tests/fixtures/gen/all.py       # this and the rest, together
     python3 tests/fixtures/gen/panel.py --check   # rerun, compare, write nothing
 
-Two levels, so the TypeScript port can be checked at either:
-
-  END TO END.  The subagentStatusLine payloads under payloads/subagent/ and
-  the session transcripts they point at, under transcripts/subagent/.  The
-  `subagent` suite in cases.json runs them through `--mode subagent` in a
-  pinned environment, and tests/run-cases.py compares the JSON lines the
-  program prints with tests/golden/subagent/.
+  SESSIONS.  transcripts/subagent/<name>.jsonl, each with its agents' files
+  under <name>/subagents/, laid out as Claude Code lays them.  The fold
+  fixtures (gen/state.py) and the calibration scan (gen/calib.py) read them.
 
   RENDER.  panel/<group>.json: render_task_rows' inputs — the prepared
   `(task, usage, meta, shares)` records, the plan Limits, the width and the
@@ -19,10 +15,10 @@ Two levels, so the TypeScript port can be checked at either:
   escape codes and as the spans it was joined from.  A group is one set of
   process settings, since the terminal profile is read at import and the
   two switches are set once per process: the profile's environment, mark
-  spacing and subscript decimals.  `corpus*.json` are the inputs the
-  end-to-end cases prepared, captured on their way into render_task_rows,
-  so their rows are the goldens' rows; the rest are made here by hand, for
-  the states that corpus does not reach, and say what each is for.
+  spacing and subscript decimals.  `corpus*.json` are committed data: their
+  inputs are read from the files as they are, and only their rows are drawn
+  again.  The rest are made here by hand, for the states the corpus does not
+  reach, and say what each is for.
 
 THE INPUT SHAPES.  A task, meta and shares are the dicts the renderer gets.
 A usage is AgentUsage's fields by name, or null; a field missing from it
@@ -39,12 +35,9 @@ none with an id draws no rows.
 ONLY THIS SIDE WRITES THEM.  Each group renders in a child process of its
 own, `panel.py --render`, under /usr/bin/python3 by default; `--check` does
 the same and compares, which is what tests/run-cases.py runs as its `panel`
-stage.  The capture runs the program the way run-cases.py does, through its
-Suite, so a corpus case and its golden are one run.
+stage.
 """
 import copy
-import importlib.util
-import io
 import json
 import math
 import os
@@ -60,7 +53,7 @@ OUT = os.path.join(FIXTURES, "panel")
 PYTHON = "/usr/bin/python3"
 
 sys.path.insert(0, HERE)
-from cases import PIN_NOW, SUBAGENT_PAYLOADS  # noqa: E402
+from cases import PIN_NOW  # noqa: E402
 sys.path.insert(0, REPO)
 from coding_agent_usage_line.spans import COLOUR_VARS  # noqa: E402
 
@@ -115,13 +108,13 @@ def dump(data):
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# End to end: the sessions and the payloads.
+# The sessions.
 # ════════════════════════════════════════════════════════════════════════════
 #
 # Each session is a main transcript with its agents' files beside it, laid
-# out as Claude Code lays them, and a payload naming its tasks.  The records
-# are the minimum shapes the readers recognise (see status.py), stamped
-# seconds before PIN_NOW so every clock on the rows is a chosen figure.
+# out as Claude Code lays them.  The records are the minimum shapes the
+# readers recognise (see status.py), stamped seconds before PIN_NOW so every
+# clock read off them is a chosen figure.
 
 ETA = "⛳ skills/coding-agent-usage-line-report-eta: ETA "
 
@@ -182,19 +175,6 @@ def send(before, target):
                               "next tool round." % target}}
 
 
-def task(tid, name, status="running", before=900, kind="local_agent",
-         samples=(), **kw):
-    """A payload task as the panel hands it: `before` its start."""
-    t = {"id": tid, "name": name, "type": kind, "status": status,
-         "description": "Review the %s plan" % name.lower(),
-         "label": "", "startTime": int((PIN_NOW - before) * 1000),
-         "model": "claude-opus-5", "effort": "high",
-         "contextWindowSize": 200000, "tokenCount": 0,
-         "tokenSamples": list(samples), "cwd": "${SCRATCH}/repo"}
-    t.update(kw)
-    return t
-
-
 def meta(agent_type, parent=None, depth=1):
     m = {"agentType": agent_type, "spawnDepth": depth}
     if parent:
@@ -203,13 +183,13 @@ def meta(agent_type, parent=None, depth=1):
 
 
 # name: (main transcript records, {agent id: (records, meta or None, path
-# under subagents/ or None)}, payload tasks)
+# under subagents/ or None)})
 def sessions():
     out = {}
 
-    # Every state a row can be in once: the three running modes, a quiet one,
-    # each way to end, an API error, a queued task, a shell with no
-    # transcript and a workflow agent one directory further down.
+    # Every state an agent's file can leave it in once: the three running
+    # modes, a quiet one, each way to end, an API error, and a workflow
+    # agent one directory further down.
     out["01-mixed"] = ([], {
         "r1": ([a_prompt(700), a_answer(650, "r1a", text=ETA + "10m"),
                 a_edit(645, "e1", 9, 4),
@@ -241,22 +221,7 @@ def sessions():
                                         text="step", model="claude-haiku-4-5",
                                         effort="")],
                meta("workflow-subagent"), "workflows/wf_x"),
-    }, [
-        task("r1", "Marigold", before=700, label="Running the suite"),
-        task("r2", "Bluebell", before=400, model="sonnet", effort="low",
-             samples=(1000, 2500, 4000, 6000)),
-        task("r3", "Thistle", before=300),
-        task("r4", "Clover", before=900),
-        task("d1", "Daisy", "completed", before=3000),
-        task("f1", "Fern", "failed", before=2000),
-        task("k1", "Kale", "killed", before=1500),
-        task("e1", "Elm", "completed", before=1200),
-        task("q1", "Quince", "pending", before=30),
-        task("b1", "", before=120, kind="local_bash",
-             description="sleep 300 && make test", model=None, effort=None,
-             contextWindowSize=None),
-        task("w1", "Willow", before=600, model=None, effort=None),
-    ])
+    })
 
     # Completed agents that are only waiting: on a shell, a Monitor, their own
     # ETA and an agent under them; and the ETA cell's other readings, late
@@ -292,20 +257,10 @@ def sessions():
         "x1": ([a_prompt(900), a_answer(800, "x1a", text="all done",
                                         end=True)],
                meta("Explore"), None),
-    }, [
-        task("p1", "Pine", "completed", before=1000),
-        task("p2", "Poppy", "completed", before=1000),
-        task("p3", "Peony", "completed", before=600),
-        task("p4", "Parsley", "completed", before=1200),
-        task("c4", "Chive", before=1180),
-        task("s1", "Sage", before=900),
-        task("s2", "Sorrel", before=900),
-        task("x1", "Yarrow", "completed", before=900),
-    ])
+    })
 
-    # The tree four deep, with siblings and a bar down an open column; an
-    # ancestor that finished, stepped over; a parent not on the panel; the
-    # counts (👶🏻 🤏 📨) and a worktree's 🌿.
+    # The tree four deep, with siblings; an ancestor that finished; a parent
+    # with no file; compactions and messages queued for two agents.
     out["03-tree"] = ([a_prompt(5000, "go"), send(100, "t2"),
                        send(90, "t3"), send(80, "t3")], {
         "t1": ([a_prompt(2000), compact(1900), compact(1500),
@@ -327,45 +282,19 @@ def sessions():
                meta("Explore", "g1", 2), None),
         "m1": ([a_prompt(500), a_answer(400, "m1a", tool=("u6", "Bash"))],
                meta("Explore", "gone", 2), None),
-    }, [
-        task("t1", "Trunk", before=2000),
-        task("t2", "Twig", before=1400),
-        task("t3", "Thorn", before=1390),
-        task("t4", "Tendril", before=1300, cwd="${SCRATCH}/repo-dirty"),
-        task("t5", "Tip", before=1200),
-        task("g1", "Gourd", "completed", before=4000),
-        task("g2", "Garlic", "completed", before=3950),
-        task("m1", "Moss", before=500),
-    ])
+    })
 
-    # Nothing but what the payload says: shells, a remote agent, a status
-    # never seen, a task with no id and one that is not an object, which are
-    # skipped, a name the description stands in for, a label that repeats
-    # the description and is dropped.
-    out["04-bare"] = ([], {}, [
-        task("b1", "", before=60, kind="local_bash",
-             description="npm test", samples=(0, 100)),
-        task("b2", "", "completed", before=600, kind="local_bash",
-             description="sleep 5"),
-        task("ra", "Remote", "pending", before=5, kind="remote_agent"),
-        task("xx", "Oddity", "paused", before=5),
-        task("nn", "", before=5, description="A description for a name",
-             label="A description for a name"),
-        {"name": "no id", "status": "running"},
-        "not a task",
-    ])
-
-    # An empty panel: no rows printed.
-    out["05-empty"] = ([], {}, [])
+    # Sessions with no agent files: only shells and remote agents ran in
+    # one, nothing in the other.
+    out["04-bare"] = ([], {})
+    out["05-empty"] = ([], {})
     return out
 
 
-def write_e2e(root):
-    """Under ROOT/transcripts/subagent/ and ROOT/payloads/subagent/."""
-    made = sessions()
-    assert tuple(sorted(made)) == SUBAGENT_PAYLOADS, sorted(made)
+def write_sessions(root):
+    """Under ROOT/transcripts/subagent/."""
     tdir = os.path.join(root, "transcripts", "subagent")
-    for name, (main, agents, tasks) in sorted(made.items()):
+    for name, (main, agents) in sorted(sessions().items()):
         tr = os.path.join(tdir, name + ".jsonl")
         write_jsonl(tr, [{"type": "user", "userType": "external",
                           "promptSource": "typed", "timestamp": iso(6000),
@@ -379,15 +308,6 @@ def write_e2e(root):
                           encoding="utf-8") as fh:
                     json.dump(m, fh, sort_keys=True)
                     fh.write("\n")
-        pay = {"session_id": "subagent-" + name,
-               "transcript_path": "${FIXTURES}/transcripts/subagent/%s.jsonl"
-                                  % name,
-               "cwd": "${SCRATCH}/repo", "columns": 160, "tasks": tasks}
-        path = os.path.join(root, "payloads", "subagent", name + ".json")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as fh:
-            json.dump(pay, fh, indent=2, sort_keys=True, ensure_ascii=False)
-            fh.write("\n")
 
 
 def write_jsonl(path, records):
@@ -676,7 +596,7 @@ def g_tree():
         row(ptask("g1", "Grandkid", before=700), usage(), kid("c1", 3)),
         row(ptask("c2", "Younger", before=600), usage(), kid("p1", 2))],
            cols=200)
-    # Ties in startTime go by the payload's order.
+    # Ties in startTime go by the task list's order.
     g.case("siblings-tied", [
         row(ptask("p1", "Root", before=900), usage()),
         row(ptask("c2", "Second", before=600), usage(), kid("p1", 2)),
@@ -690,7 +610,7 @@ def g_tree():
             usage(open_at=None), kid("p1", 2)),
         row(ptask("c1", "Orphan", status="completed", before=700),
             usage(open_at=None), kid("m1", 3))], cols=200)
-    # A parent the payload does not list ends the walk: top level.
+    # A parent the task list does not hold ends the walk: top level.
     g.case("parent-missing", [
         row(ptask("c1", "Stray", before=700), usage(), kid("gone", 3))],
            cols=200)
@@ -990,98 +910,26 @@ def child_render():
         "settings": dict(s, profile=fmt.PROFILE), "cases": enc(out)}))
 
 
-def child_capture():
-    """--capture ARGV...: run the program on stdin as the CLI does, and print
-    what it printed and the inputs render_task_rows was handed."""
-    argv = sys.argv[2:]
-    raw = sys.stdin.read()
-    sys.path.insert(0, REPO)
-    from coding_agent_usage_line import cli
-    from coding_agent_usage_line import claude_subagent_render as sr
-    caught, render = [], sr.render_task_rows
-    def catching(prepared, limits, cols=None, now=None, hide=()):
-        inp = {"tasks": [
-            {"task": t, "usage": u, "meta": m, "shares": sh}
-            for t, u, m, sh in prepared],
-            "limits": limits, "cols": cols, "now": now}
-        if hide:
-            inp["hide"] = list(hide)
-        caught.append(inp)
-        return render(prepared, limits, cols, now, hide)
-    sr.render_task_rows = catching
-    real = sys.stdout
-    sys.stdin, sys.stdout = io.StringIO(raw), io.StringIO()
-    try:
-        cli.main(argv)
-        printed = sys.stdout.getvalue()
-    finally:
-        sys.stdout = real
-    real.write(json.dumps({"stdout": printed, "inputs": enc(caught)}))
-
-
 # ════════════════════════════════════════════════════════════════════════════
-# The corpus: the end-to-end cases' own inputs.
+# The corpus: committed inputs, drawn again.
 # ════════════════════════════════════════════════════════════════════════════
 
-def run_cases_module():
-    spec = importlib.util.spec_from_file_location(
-        "run_cases", os.path.join(TESTS, "run-cases.py"))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def corpus(python=PYTHON):
-    """Each subagent case run as run-cases.py runs it, and what reached the
-    renderer captured: one group per environment's terminal and flags."""
-    import shutil
-    import tempfile
-    rc = run_cases_module()
-    with open(os.path.join(FIXTURES, "cases.json"), encoding="utf-8") as fh:
-        cases = [c for c in json.load(fh)["cases"] if c["suite"] == "subagent"]
-    groups = {}
-    scratch = tempfile.mkdtemp(prefix="panel-corpus.")
-    try:
-        suite = rc.Suite(scratch)
-        for case in cases:
-            env, cwd = suite.environ(case["env"])
-            with open(os.path.join(FIXTURES, case["input"]),
-                      encoding="utf-8") as fh:
-                stdin = rc.fill(fh.read(), scratch)
-            argv = ["--agent", "claude", "--mode", "subagent",
-                    "--cols", str(case["cols"])] + case["flags"]
-            got = subprocess.run(
-                [python, os.path.abspath(__file__), "--capture"] + argv,
-                input=stdin.encode("utf-8"), cwd=cwd, env=env,
-                capture_output=True)
-            if got.returncode:
-                raise RuntimeError(got.stderr.decode("utf-8", "replace"))
-            res = json.loads(rc.unfill(got.stdout.decode("utf-8"), scratch))
-            # The profile's variables, and the colour level's where the
-            # case's environment names its own.
-            named = suite.envs[case["env"]]["terminal"]
-            terminal = {k: env[k] for k in ("TMUX", "TERM_PROGRAM")
-                        if k in env}
-            terminal.update({k: named[k] for k in COLOUR_VARS if k in named})
-            sets = settings(
-                terminal=terminal,
-                mark_spacing="--no-mark-spacing" not in case["flags"],
-                subscript_decimals="--subscript-decimals" in case["flags"])
-            key = json.dumps(sets, sort_keys=True)
-            if key not in groups:
-                suffix = "-".join(
-                    ([case["env"]] if case["env"] != "app-41-63" else [])
-                    + [f.lstrip("-") for f in case["flags"]])
-                groups[key] = Group("corpus" + ("-" + suffix if suffix
-                                                else ""), sets)
-            g = groups[key]
-            # Nothing reaches the renderer for an empty or unread payload.
-            for inp in res["inputs"]:
-                g.cases.append({"id": case["id"], "input": inp,
-                                "stdout": res["stdout"]})
-    finally:
-        shutil.rmtree(scratch, ignore_errors=True)
-    return list(groups.values())
+def corpus():
+    """The committed panel/corpus*.json groups, each case's input as it is
+    there and its rows left to be drawn again."""
+    groups = []
+    for name in sorted(os.listdir(OUT)):
+        if not (name.startswith("corpus") and name.endswith(".json")):
+            continue
+        with open(os.path.join(OUT, name), encoding="utf-8") as fh:
+            kept = json.load(fh)
+        # The profile is what the child read off the terminal, not a setting.
+        sets = {k: v for k, v in kept["settings"].items() if k != "profile"}
+        g = Group(name[:-len(".json")], sets)
+        g.cases = [{"id": c["id"], "input": c["input"]}
+                   for c in kept["cases"]]
+        groups.append(g)
+    return groups
 
 
 def rendered(groups, python=PYTHON):
@@ -1090,32 +938,17 @@ def rendered(groups, python=PYTHON):
     # Each group is a process of its own, so they render side by side.
     with ThreadPoolExecutor(os.cpu_count() or 4) as pool:
         gots = list(pool.map(lambda g: render_group(g, python), groups))
-    files = {}
-    for g, got in zip(groups, gots):
-        for case in got["cases"]:
-            # A corpus case's rows are its golden's: the capture and the
-            # render must agree before either is written.
-            stdout = case.pop("stdout", None)
-            if stdout is not None:
-                lines = "".join(json.dumps({"id": r["id"], "content": r["row"]},
-                                           ensure_ascii=False) + "\n"
-                                for r in case["rows"])
-                if lines != stdout:
-                    raise RuntimeError("%s/%s: the rows drawn from the "
-                                       "captured inputs are not the run's"
-                                       % (g.name, case["id"]))
-        files[g.name + ".json"] = dump(got)
-    return files
+    return {g.name + ".json": dump(got) for g, got in zip(groups, gots)}
 
 
-def all_groups(python=PYTHON):
-    return handmade() + corpus(python)
+def all_groups():
+    return handmade() + corpus()
 
 
 def check(python=PYTHON):
     """The fixtures written again in memory and compared with the committed
     ones: (passed, [failure lines])."""
-    files = rendered(all_groups(python), python)
+    files = rendered(all_groups(), python)
     fails, n = [], 0
     have = sorted(f for f in os.listdir(OUT) if f.endswith(".json"))
     for name in sorted(set(have) | set(files)):
@@ -1138,15 +971,16 @@ def check(python=PYTHON):
     return n, fails
 
 
-def main(root=FIXTURES, python=PYTHON):
-    """The end-to-end inputs, under ROOT; then, once cases.json lists them,
-    the render cases under panel/."""
-    write_e2e(root)
+def main(root=FIXTURES):
+    """The sessions, under ROOT/transcripts/subagent/."""
+    write_sessions(root)
 
 
 def main_panel(python=PYTHON):
+    """The render cases under panel/: the corpus read before any is
+    rewritten, then every group drawn again."""
     import shutil
-    files = rendered(all_groups(python), python)
+    files = rendered(all_groups(), python)
     shutil.rmtree(OUT, ignore_errors=True)
     os.makedirs(OUT)
     total = 0
@@ -1162,8 +996,6 @@ def main_panel(python=PYTHON):
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--render"]:
         child_render()
-    elif sys.argv[1:2] == ["--capture"]:
-        child_capture()
     elif sys.argv[1:2] == ["--check"]:
         n, fails = check()
         for f in fails:

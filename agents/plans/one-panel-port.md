@@ -26,7 +26,6 @@ renderer it already has (`claude_subagent_render.ts`, `cells.ts`,
 
 | Use                                   | Entry                                                     | Has a TypeScript twin                                 |
 | ------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
-| Nothing: the agent panel runs no command | `coding-agent-usage-line.py --agent claude --mode subagent` | the rendering and readers                            |
 | The mod's large transcript folds      | `mod/scripts/agent_lines.py`, spawned by `transcripts.ts`       | yes: the mod folds 8 MiB at a time without it, slower |
 | The status line and the cost receipt  | `--mode status`, `--mode cost`                            | yes: the band and the mod's receipt replace both      |
 | Codex receipts and its status         | `--agent codex`, from a Codex `Stop` hook                 | no                                                    |
@@ -112,17 +111,15 @@ What it decides for `OP4` and `OP5`:
 
 1. **`OP1` Measure what the move would remove.** Done: see
    [Which entries reach each module](#which-entries-reach-each-module).
-2. **`OP2` Remove the agent panel command.** `main_subagent`,
-   `render_subagent`, `--mode subagent` in `cli.py` and its help, the
-   `subagent` suite in `tests/cases.json`, `tests/run-cases.py` and
-   `tests/all.sh`, `tests/golden/subagent/`, the end-to-end payloads and
-   transcripts under `tests/fixtures/`, `tests/subagent.py`'s command
-   tests, `tools/draw-panel.py`, `tools/time-panel.py` and the
-   `subagentStatusLine` key of `examples/claude/settings.json`, and the
-   README's and `docs/`'s sections on it. `prepare_subagent_tasks` and the
-   render-level corpus in `tests/fixtures/panel/` stay until `OP5`, since
-   the TypeScript renderer is checked against them; the corpus is
-   committed data from then on, no longer captured from the command.
+2. **`OP2` Remove the agent panel command.** Done: the Python has no
+   `--mode subagent`, no `subagent` suite or goldens, no end-to-end
+   payloads, no tools that drew or timed the command, no example
+   `settings.json`, and no docs that name it. `prepare_subagent_tasks`,
+   the sessions under `tests/fixtures/transcripts/subagent/` (the fold
+   and calibration fixtures read them) and the render-level corpus in
+   `tests/fixtures/panel/` stay until `OP5`, since the TypeScript
+   renderer and folds are checked against them. The corpus is committed
+   data: its inputs are read as they are and its rows drawn again.
 3. **`OP3` The subagent rows in the band.** A `rows.subagents` row in
    `spec/options.jsonc` and `mod/defaults/config.jsonc`, placed `above`
    and live while a turn runs, as the turn and session rows are. The mod

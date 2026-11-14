@@ -95,7 +95,7 @@ def usage():
     changes the default: from the defaults file, so it raises
     config.DefaultsError while that file is wrong."""
     defaults = config.load_defaults()
-    return ("""usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|subagent|usage] [options]
+    return ("""usage: coding-agent-usage-line.py --agent {claude|codex} [--mode status|cost|usage] [options]
 
 One-shot coding-agent usage status and Stop-hook reports. --agent is required
 except for --help and --selftest.
@@ -103,7 +103,6 @@ except for --help and --selftest.
 Modes:
   status                 Print a human-readable status (default).
   cost                   Print Stop-hook JSON; --all prints plain history.
-  subagent               Claude panel output; Codex suggests --mode cost --all.
   usage                  Plan windows as JSON, without stdin; exit 1 if none.
 
 """ + _usage_section("Shared options", "shared", defaults)
@@ -165,9 +164,6 @@ def _reading(agent, options, payload, native=None):
 
 def codex_main(options, raw):
     mode = options["mode"]
-    if mode == "subagent":
-        sys.stderr.write("Codex has no subagent-panel hook; use --mode cost --all for child reports.\n")
-        return 2
     explicit = options.given("transcript")
     payload = {} if explicit else _safe_payload(raw)
     transcript = options["transcript"] or payload.get("transcript_path") or payload.get("rollout_path")
@@ -343,19 +339,11 @@ def _show_config(found, options):
     return "\n".join(out) + "\n"
 
 
-def _tasks(raw):
-    """The ids of the agent panel payload's tasks."""
-    tasks = _safe_payload(raw).get("tasks")
-    return [str(t["id"]) for t in tasks if isinstance(t, dict) and "id" in t] \
-        if isinstance(tasks, list) else []
-
-
 def _defaults_failed(error, agent, mode, written):
     """The defaults file is wrong, so nothing is drawn from it: the error
     goes to stderr, and where a hook's output is shown, in its place: the
-    status line's line, the Stop hook's message, each agent-panel row.
-    Those exit 0, since a host may hide a failed hook's output; a run by
-    hand exits 2."""
+    status line's line or the Stop hook's message.  Those exit 0, since a
+    host may hide a failed hook's output; a run by hand exits 2."""
     text = "coding-agent-usage-line: the defaults file is wrong: %s" % error
     sys.stderr.write(text + "\n")
     shown = "⚠ " + text
@@ -365,13 +353,6 @@ def _defaults_failed(error, agent, mode, written):
         print(shown); return 0
     if mode == "cost" and "--all" not in written:
         print(json.dumps({"systemMessage": shown}, ensure_ascii=False))
-        return 0
-    if mode == "subagent" and agent == "claude":
-        try: raw = sys.stdin.read()
-        except Exception: raw = ""
-        for task in _tasks(raw):
-            print(json.dumps({"id": task, "content": shown},
-                             ensure_ascii=False))
         return 0
     return 2
 
@@ -425,17 +406,14 @@ def main(argv=None):
         period_bounds(flagged["account-period"])
     except ValueError as exc:
         sys.stderr.write(str(exc) + "\n"); return 2
-    if agent == "codex" and mode == "subagent":
-        sys.stderr.write("Codex has no subagent-panel hook; use --mode cost --all for child reports.\n")
-        return 2
     # Stdin before the files: the payload says where the project is.  A
     # named transcript or figures document is a complete offline input, so
-    # it never waits on a still-open pipe; the panel always has a payload.
+    # it never waits on a still-open pipe.
     transcript = written.get("--transcript")
     if mode == "usage" or (agent == "claude" and "--from-figures" in written):
         offline = True
     else:
-        offline = mode != "subagent" and bool(transcript)
+        offline = bool(transcript)
     raw = ""
     if not offline:
         try: raw = sys.stdin.read()

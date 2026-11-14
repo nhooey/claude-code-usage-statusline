@@ -1,7 +1,7 @@
 # Options
 
 ```
-coding-agent-usage-line.py --agent claude|codex [--mode status|cost|subagent|usage] [options]
+coding-agent-usage-line.py --agent claude|codex [--mode status|cost|usage] [options]
 coding-agent-usage-line.py --selftest
 coding-agent-usage-line.py --show-config
 ```
@@ -31,17 +31,11 @@ display switch either removes something or changes spacing, so apart from
 |---|---|---|---|
 | `status` (default) | the status-line JSON payload | three rows, or four on a narrow terminal (Claude); a summary and quota lines (Codex) | both |
 | `cost` | the Stop-hook JSON payload | `{"systemMessage": "..."}`, or `{}` when there is nothing to report | both |
-| `subagent` | the agent panel's task list | one `{"id": ..., "content": ...}` line per task | Claude only |
 | `usage` | nothing | the plan windows as one JSON object; see [below](#plan-windows-as-json---mode-usage) | both |
 | `--selftest` | nothing | specimen rows drawn on the terminal, and a report of where the cursor landed | — |
 
 Hooks never break a session: a missing transcript or an internal error in
-`cost` mode prints `{}` and exits 0. In `subagent` mode unreadable input
-prints nothing, which leaves the panel's own rows in place.
-
-`--agent codex --mode subagent` exits 2, because Codex has no agent-panel
-hook. Use `--mode cost --all` for its child-agent reports. See
-[Codex](codex.md).
+`cost` mode prints `{}` and exits 0.
 
 `--selftest` needs a real terminal tab: it draws rows on `/dev/tty` and asks
 the terminal where the cursor ended up. See
@@ -58,7 +52,7 @@ $ coding-agent-usage-line.py --agent claude --mode usage
 {"schema_version":1,"agent":"claude","source":"native","as_of":1793650981.43,"age_seconds":4.2,"stale":false,"windows":[{"id":"five_hour","bucket":"default","label":"default","used_percent":31.0,"left_percent":69.0,"resets_at":1793680000.0,"duration_seconds":18000.0,"expired":false},{"id":"seven_day","bucket":"default","label":"default","used_percent":12.5,"left_percent":87.5,"resets_at":1793900000.0,"duration_seconds":604800.0,"expired":false}]}
 ```
 
-The reading comes the way the agent panel and the Stop hook get theirs:
+The reading comes the way the status line and the Stop hook get theirs:
 through the [usage source](usage-sources.md), `auto` by default, so a
 reading the status line cached in the last minute, else the fallback, such
 as the Claude Usage Tracker. `--usage-source`, `--account`,
@@ -114,8 +108,8 @@ These work for both agents.
 | `--from-figures PATH` | none | Claude: draw a saved figures document instead of reading any input. The test suite saves one per case; useful for redrawing a captured layout. See [the tests' README](../tests/README.md#figures). |
 | `--diagnose` | off | Write one redacted line to stderr: which source was used, whether a reading was available, whether it is stale, and when a failed source will be retried. Claude's status line adds the session's cost and lines two ways, as a check on each other: `cost_usd` and `lines`, this program's own over the transcript and the agent files, as the cost line totals them, and `claude_cost_usd` and `claude_lines`, the totals Claude Code's payload gave; each is blank where its side has none. Codex adds child-rollout coverage. Never prints credentials, command paths or raw responses. |
 | `--cols N` | detected | Terminal width. `0` means "unknown", which forces the fallback layout. Claude only; Codex accepts and ignores it. |
-| `--right-edge N` | `5` with any of the mod's rows above the prompt (`rows.*.place`), else `2` | The columns every agent-panel row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `rows.*.place` from the files: `5` when any row the mod draws live is placed `above`, else `2`, so the panel and the band end in one column; a panel run without the mod sets it where it wants another. Claude only. |
-| `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). Only the agent panel draws on the grid so far; the other modes, and Codex, accept it and ignore it. |
+| `--right-edge N` | `5` with any of the mod's rows above the prompt (`rows.*.place`), else `2` | The columns every grid row leaves blank at the terminal's right edge. `2` matches the mod with its rows under the footer line, whose container stops two columns short of the edge; `5` is the room Claude Code keeps for the mod's band `[-]` above the prompt. Unset, it follows the mod's `rows.*.place` from the files: `5` when any row the mod draws live is placed `above`, else `2`, so every row ends in one column. Claude only; the Python's modes accept it and draw no grid row. |
+| `--hide PATH` | none | Repeatable. Leave a column or a part of a row's label out of the redesigned grid; see [Hiding](#hiding). The mod's rows draw on the grid; the Python's modes, and Codex, accept it and ignore it. |
 <!-- options:end shared -->
 
 ### Terminal width
@@ -126,11 +120,7 @@ process with a terminal and asks that device, on every render, so a resize is
 picked up on the next frame. There is no terminal under `claude -p` or in
 cloud sessions; the readout then uses a fallback layout that doesn't depend on
 the width. `--cols` overrides the walk. The tests use it for reproducible
-output.
-
-In `subagent` mode the panel supplies `columns` in its payload, the
-terminal's width less 6, and the terminal's width worked out from it is used
-unless `--cols` is given. `--cols` is the terminal's width in every mode.
+output. `--cols` is the terminal's width in every mode.
 
 ## Claude display options
 
@@ -185,8 +175,7 @@ tight     🧩▴9.6k ▾3.4k  🎯98٪  🧠+ 8.0٪ + 16k  💰+  0.1   🔋+ 0
 
 The column after 🧠, 💰, 🔋, 🪫, ⌛🤖 and 🔧 holds a `+` on the prompt row and a
 blank on the totals row beneath it. That column is what keeps the two rows
-stacked digit under digit, so it stays. The agent panel's rows have no mark
-spacing to close and don't change.
+stacked digit under digit, so it stays.
 
 It also keeps the column rules off, even under `--column-rules`. See
 [below](#--column-rules).
@@ -219,54 +208,7 @@ moves. The option changes how figures look, not how much room they take.
 Ghostty draws the subscript digits one column wide, which is
 what the program assumes.
 
-## Agent panel rows (`--mode subagent`)
-
-This mode is the `subagentStatusLine` setting. While the session has tasks in
-its agent panel — Agent tool calls, forks, background shells, workflows —
-Claude Code runs the command every few seconds with the task list on stdin and
-replaces each panel row with the `content` printed for its `id`. A task left
-out keeps the panel's own row. What each cell means is covered in
-[Layout](layout.md).
-
-The payload carries each task's name, type, status, start time, model, effort
-and a running token count. Everything else — tokens, cache rate, context,
-cost, time inside tools, lines written, the plan-window shares and the ETA
-the agent reported — comes from the agent's own transcript,
-`<session>/subagents/agent-<id>.jsonl`, with workflow agents one directory
-further down. A task with no transcript (a shell, a remote agent) shows only
-what the payload gives.
-
-Each row is laid out on the redesigned grid
-([the plan](../agents/plans/_implemented/redesign.md)), the columns the mod's band and
-receipt draw: model, 🛫, 💰, 🧠, 🧩, 🎯, ⌛ ⛳ 🤖 🔧 🚦, 🔋, 🪫, 💾. On an agent
-row the 🛫 column says what the agent is doing and for how long, or its token
-rate. The label before them is the kind and its phase, the 👶🏻 🤏 💻 📡 📨
-counts some rows carry, the name, a worktree's 🌿 branch and the activity.
-
-The rows are laid out for the terminal's width, the payload's `columns` plus
-6, so the figures fall on the same screen columns as the band's. Claude Code
-draws the panel's chrome before each row, `  ◯ ` at the top level and two
-more blanks for each level an agent started by another agent sits below it
-(the depth is `spawnDepth` in the agent's `.meta.json` sidecar, or the
-panel's own tree); the row counts it toward the width and does not print it.
-Every row ends where the mod's rows end: five columns short of the
-terminal's edge when any row the mod draws live is placed above the prompt
-(`rows.*.place`, as the defaults place 🎤 and 🎮), clear of the band's
-`[-]`, and two short, at Claude Code's footer container, when every row is
-under the footer line. `--right-edge` (or `right-edge` in a file) sets
-another.
-The columns follow from the width and `--hide` alone, kept for two levels of
-nesting whether any agent runs or not, so no column moves when an agent
-starts; a deeper row cuts its own label instead. On a narrow terminal whole
-columns drop from every row at once, 🛫 first and 💰 last. At an unknown
-width (`--cols 0` and no payload width) every column is drawn and the label
-keeps 12 columns.
-
-`--cols`, `--hide`, `--right-edge`, `--usage-source`, `--account`,
-`--account-period`, `--diagnose` and `--subscript-decimals` apply in this
-mode.
-
-### Hiding
+## Hiding
 
 `--hide scope[.group[.metric]]`, repeatable, with `*` for any one part,
 leaves out a column or a label part. A path names what it hides on rows of
@@ -288,7 +230,7 @@ On an agent row:
 | `agent.name.kind` | the kind's mark and the phase circle |
 | `agent.name.label` | the agent's name |
 | `agent.workspace.branch` | 🌿 and a worktree's branch |
-| `agent.chat.doing` | what it is doing, the panel's activity text |
+| `agent.chat.doing` | what it is doing, the activity text |
 | `agent.state.kids`, `.compact`, `.shells`, `.monitors`, `.inbox` | 👶🏻, 🤏, 💻, 📡, 📨 |
 | `agent.state.model`, `.rate`, `agent.cost`, `agent.context`, `agent.tokens.io`, `.cache`, `agent.time.elapsed`, `.eta`, `.split`, `agent.plan.five_hour`, `.week`, `agent.work` | the columns |
 | `agent.context.share` | 🧠's ٪ of the window, its size set flush right; hidden on every scope (`*.context.share`), 🧠's column narrows by the ٪'s room |
@@ -307,8 +249,7 @@ Every option a file may set is in
 [`mod/defaults/config.jsonc`](../mod/defaults/config.jsonc), with its
 default and a line on what it does, by its long flag's name without the
 `--`: `usage-source`, `hide`, `mark-spacing`, and `totals` for
-`--no-totals`. The mod reads the same files, so one `hide` list serves the
-band and the panel.
+`--no-totals`. The Python program and the mod read the same files.
 
 ### Starting from the defaults
 
@@ -338,8 +279,8 @@ defaults file, which means "follow `rows.*.place`" and "follow
 The defaults file is read strictly. A key missing from it, a key that is no
 option, or a value of the wrong type is an error naming the file and the
 key, never a value made up in its place: the status line prints it as its
-line, the Stop hook as its message and the agent panel as each row (each
-exiting 0, so Claude Code shows it), `--show-config` and `--help` print it
+line and the Stop hook as its message (each exiting 0, so Claude Code
+shows it), `--show-config` and `--help` print it
 on stderr and exit 2, and the mod draws it in red under the footer line in
 place of its rows, with one line in the transcript. The mod reads the
 defaults file once each time it is loaded, once it reads whole: a change
@@ -407,14 +348,12 @@ change to the file.
 Under the files the mod has one layer of its own, `mod`: `SETTINGS` in
 `mod/hooks/config.ts`, for a setting it draws with that is not the
 default and that no file gives. It is empty: a person's own settings go in
-their user file, which the band and the panel both read, and the panel's
-command keeps only `--agent claude --mode subagent`. `--show-config` does
-not know this layer; the mod's log names it.
+their user file. `--show-config` does not know this layer; the mod's log
+names it.
 
 `right-edge` follows the places in `rows` when no layer sets it, as `label`
 follows `usage-text`: 5 when any row whose `live` is not `"never"` has
-`place` `"above"`, as under the defaults, else 2, in the panel too, so the
-rows' places move the band and the panel together.
+`place` `"above"`, as under the defaults, else 2.
 
 `--show-config` prints the merged options, each with the layer it came from
 and the layers' files, and the warnings, and exits. It reads no stdin, so

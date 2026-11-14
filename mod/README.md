@@ -65,7 +65,7 @@ files keep their reads in `src/*_node.ts`, which only Node imports, and
 
 ### Configuration
 
-The mod draws from the options the agent panel reads too, merged from the
+The mod draws from the options the Python program reads too, merged from the
 [configuration files](../docs/options.md#configuration-files): the
 project's local file, the project's, the user's, then the defaults file,
 `defaults/config.jsonc` here, which the plugin carries and the Python
@@ -116,9 +116,7 @@ the bytes it was folded from, or its format is not the spec's.
 
 Each agent's file is kept as its fold the same way, in
 `claude-agent-fold-<digest>/`, the `agent-fold` row's directory, one file
-per agent written to two slots in turn. The agent panel's Python reads on
-from the same files, so whichever reads an agent's new lines first saves
-them for the other.
+per agent written to two slots in turn.
 
 A megabyte or more to fold, as on the first read of a long session, is
 folded by `scripts/agent_lines.py` in Python, with the repository's
@@ -193,8 +191,7 @@ with nothing to update. Installed from GitHub, it is a copy, and
 `claude plugin update` brings it up to date.
 
 The mod replaces the status line and the Stop hook's receipt: leave
-`statusLine` and the `--mode cost` Stop hook out of `settings.json`. The
-agent panel, `subagentStatusLine` with `--mode subagent`, stays.
+`statusLine` and the `--mode cost` Stop hook out of `settings.json`.
 
 For one session, with nothing installed and no settings changed:
 
