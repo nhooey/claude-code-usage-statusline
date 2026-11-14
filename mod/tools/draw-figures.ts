@@ -219,7 +219,7 @@ if (part === "band") {
     rooted);
   lines = [[span("  " + hint + (tail ? FOOTER_JOIN + tail : ""))]];
 } else if (part === "start") {
-  lines = [startLine(fig, hide)];
+  lines = [startLine(st, fig, hide)];
 } else if (part === "receipt") {
   const status = statusFile ? read(statusFile) : null;
   const main = status

@@ -34,7 +34,7 @@ type Same = { same: string[] };
 type File = { settings: { profiles: { [name: string]: Env } };
   band: (BandCase & Same & { rows: unknown[][][]; lines: string[] })[];
   receipt: (ReceiptCase & Same & { rows: unknown[][][]; lines: string[] })[];
-  start: { doc: string; same: string[]; spans: unknown[][];
+  start: { doc: string; same: string[]; hide: string[]; spans: unknown[][];
     line: string }[];
   account: (AccountCase & Same & { row: unknown[][]; line: string })[] };
 
@@ -84,7 +84,8 @@ for (const f of files) {
     });
     test(`${f} under ${profile}: start`, () => {
       for (const c of data.start) {
-        same(drawStart(document(c.doc)), c.spans, c.line, c.doc);
+        same(drawStart(st, document(c.doc), c.hide), c.spans, c.line,
+          JSON.stringify([c.doc, c.hide]));
       }
     });
     test(`${f} under ${profile}: account`, () => {
@@ -222,12 +223,60 @@ test("name.tag hides both tag lines and the receipt's blank row", () => {
   const st = settings({});
   const status = document("status/01-baseline@196");
   const cost = document("cost/09-agents@196");
-  assert.ok(startLine(status).length > 0);
-  assert.deepEqual(startLine(status, ["name.tag"]), []);
+  assert.ok(startLine(st, status).length > 0);
+  assert.deepEqual(startLine(st, status, ["name.tag"]), []);
   const all = inZone(cost, () => receiptLines(st, cost, 196, []));
   const less = inZone(cost, () => receiptLines(st, cost, 196, ["name.tag"]));
   // The blank row and the 🔺🔖 line go; the rows stay.
   assert.deepEqual(less, all.slice(0, -2));
+});
+
+test("the tag lines carry the account's limits as the 💳 row draws them",
+  () => {
+    const st = settings({});
+    const status = document("status/18-agents@196");
+    const cost = document("cost/10-turn-id@196");
+    const start = (hide: string[] = []) =>
+      stripAnsi(join(inZone(status, () => startLine(st, status, hide))));
+    const end = (hide: string[] = []) => stripAnsi(join(inZone(cost, () =>
+      receiptLines(st, cost, 196, hide)).at(-1)!));
+    // The start line from the status document's `limits`, the receipt's
+    // from the cost document's `usage.plan`, each between the turn's id
+    // and 📅, without the resets.
+    assert.equal(start(),
+      "🔻🔖 p-fork  💳 🔋  15٪  🪫  87٪  📅 2026-08-16  🕐 01:23:20");
+    assert.equal(end(),
+      "🔺🔖 8f37748e #12  💳 🔋  41٪  🪫  63٪  📅 2026-08-16  🕐 02:23:20");
+    // `*.plan.five_hour` and `tag.plan.five_hour` hide 🔋 on both, and
+    // the 💳 row's own path does not.
+    for (const hide of [["*.plan.five_hour"], ["tag.plan.five_hour"]]) {
+      assert.equal(start(hide),
+        "🔻🔖 p-fork  💳 🪫  87٪  📅 2026-08-16  🕐 01:23:20");
+      assert.equal(end(hide),
+        "🔺🔖 8f37748e #12  💳 🪫  63٪  📅 2026-08-16  🕐 02:23:20");
+    }
+    assert.equal(start(["account.plan.five_hour"]), start());
+    assert.equal(end(["tag.plan.week"]),
+      "🔺🔖 8f37748e #12  💳 🔋  41٪  📅 2026-08-16  🕐 02:23:20");
+    // Both windows hidden, 💳 goes with them.
+    assert.equal(start(["tag.plan"]),
+      "🔻🔖 p-fork  📅 2026-08-16  🕐 01:23:20");
+  });
+
+test("a tag line with no limits known leaves 💳 out", () => {
+  const st = settings({});
+  const status = document("status/18-agents@196");
+  const cost = document("cost/10-turn-id@196");
+  const bare = { ...status, limits: { ...(status.limits as Dict),
+    session_pct: null, weekly_pct: null } };
+  const usage = cost.usage as Dict;
+  const unplanned = { ...cost, usage: { ...usage, plan: {
+    ...(usage.plan as Dict), session_pct: null, weekly_pct: null } } };
+  assert.equal(stripAnsi(join(inZone(bare, () => startLine(st, bare)))),
+    "🔻🔖 p-fork  📅 2026-08-16  🕐 01:23:20");
+  assert.equal(stripAnsi(join(inZone(unplanned, () =>
+    receiptLines(st, unplanned, 196, [])).at(-1)!)),
+  "🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20");
 });
 
 test("the receipt bills the cost line's turn", () => {

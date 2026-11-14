@@ -27,8 +27,8 @@
 //             same joined with their escape codes
 //   receipt   one case a line: a cost document drawn at `cols` under
 //             `hide`; its lines as spans, `rows`, and joined, `lines`
-//   start     one case a line: a status document's start line, as `spans`
-//             and as `line`
+//   start     one case a line: a status document's start line under
+//             `hide`, as `spans` and as `line`
 //   account   one case a line: a status document's 💳 row drawn at `cols`
 //             under `hide`, `indent` blanks in, as `row` and as `line`;
 //             the last ones one document at widths that shed its pieces
@@ -64,6 +64,8 @@ const HIDES: readonly (readonly string[])[] = [
   ["turn", "main.name", "*.plan"],
 ];
 const HIDE_COLS = 155;
+// The start line's: none, and 🔋 hidden on the tag lines alone.
+const START_HIDES: readonly string[][] = [[], ["tag.plan.five_hour"]];
 // A document with every piece of the 💳 row, 🔀 and 🎨 among them, drawn at
 // widths that shed them one by one.
 const SHED_DOC = "status/04-pr-and-style@196";
@@ -190,9 +192,10 @@ export function drawReceipt(st: Settings, fig: Dict, c: ReceiptCase):
   return inZone(fig, () => receiptLines(st, fig, c.cols, c.hide));
 }
 
-/** The start line. */
-export function drawStart(fig: Dict): Span[] {
-  return inZone(fig, () => startLine(fig));
+/** The start line under `hide`. */
+export function drawStart(st: Settings, fig: Dict,
+  hide: readonly string[] = []): Span[] {
+  return inZone(fig, () => startLine(st, fig, hide));
 }
 
 /** Every band case of one document. */
@@ -263,9 +266,11 @@ function cases(st: Settings): string {
         lines: rows.map((r) => join(r)) }));
     }
     for (const c of accountCases(id)) account.push(accountCase(c, fig, same));
-    const s = drawStart(fig);
-    start.push(JSON.stringify({ doc: id, same, spans: s.map(spanJson),
-      line: join(s) }));
+    for (const hide of START_HIDES) {
+      const s = drawStart(st, fig, hide);
+      start.push(JSON.stringify({ doc: id, same, hide, spans: s.map(spanJson),
+        line: join(s) }));
+    }
   }
   for (const c of shedCases()) {
     account.push(accountCase(c, document(c.doc), []));

@@ -53,11 +53,12 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   waiting time is in 🛫's column.
 - **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
   ends, the rows the `rows` table stamps (🎤 alone as the mod ships)
-  stamped there, frozen, and under them the turn's 🔺🔖 tag and when it
-  was stamped, so every turn's receipt stays in the transcript to scroll
+  stamped there, frozen, and under them the turn's 🔺🔖 tag, the
+  account's 💳 🔋 and 🪫 then and when it was stamped, so every turn's receipt stays in the transcript to scroll
   back to.
 - **The start tag,** under a prompt typed at the composer, at no indent:
-  🔻🔖, the turn's tag and when it started, dim.
+  🔻🔖, the turn's tag, the account's 💳 🔋 and 🪫 then and when it
+  started, dim.
 
 The hooks import the ports from `src/`. The mod's runtime has no Node and
 loads nothing from outside the plugin's folder, so the ports that read
@@ -141,7 +142,7 @@ receipt --inset 2 --right-edge 5 --plain`, run from `mod/`):
 ```
                          🎤                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
 
-🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
+🔺🔖 8f37748e #12  💳 🔋  41٪  🪫  63٪  📅 2026-08-16  🕐 02:23:20
 ```
 
 A blank row, then the stamped rows laid out at the width the band last

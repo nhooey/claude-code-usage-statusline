@@ -37,7 +37,7 @@ import {
 } from '../src/band.ts'
 import type { Place, RowsLive, RowsPlace } from '../src/band.ts'
 import {
-  billedNothing, newestBilled, receiptScoped, startLine, tagsHidden, turnKey,
+  billedNothing, newestBilled, receiptScoped, startTag, tagsHidden, turnKey,
   withEngineDuration,
 } from '../src/receipt.ts'
 import type { TurnEnd } from '../src/receipt.ts'
@@ -293,7 +293,12 @@ async function fileStart($: $, doc: Dict): Promise<void> {
   opened = tr.prompt_id
   // Filed whether or not the tag lines are drawn: the UserMessage that
   // draws it asks the options (tagsShown), so a change shows or hides it.
-  const spans = startLine(doc)
+  // The account's windows are this document's, read as the turn starts,
+  // and drawn under the hide paths as they stand now, as the receipt's are
+  // as it is stamped.  refresh reads a document only under options.
+  const o = options()
+  const spans = o === null ? [] : startTag(await settingsOf($, o), doc,
+    o.hide)
   const text = pending.text
   if (tr.turn_index === null || tr.turn_index === undefined) {
     pending = { ...pending, filed: tr.prompt_id }
