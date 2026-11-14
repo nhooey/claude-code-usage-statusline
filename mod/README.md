@@ -29,7 +29,8 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   collapse with its `[-]`: the session's threads as a tree, 🎮 the
   session at its root with where the session works, 🎤 the turn while
   one runs, then 🧵 the main thread and, under it, the subagents it
-  started while a turn runs, each with its latest progress update; see
+  started (between turns, those still running or paused), each with its
+  latest progress update; see
   [The tree](../docs/layout.md#the-tree). Each row of the `rows` table goes where
   its `place` puts it, `"above"` here or `"footer"` under the footer
   line; see

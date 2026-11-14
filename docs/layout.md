@@ -99,7 +99,7 @@ as the mod ships:
 | 💳 | the account: the plan's two windows, and where the session works but for what 🎮's label has, all on the label | under the footer line | always |
 | 🎮 `session` | the session: the main thread and every agent, summed; on its label, where the session works | above the prompt, the tree's root | always |
 | 🧵 `agent` | the main thread alone, before any agent's figures are added | above the prompt, under 🎮 | always |
-| `subagents` | each subagent alone | above the prompt, under the thread that started it | while a turn runs |
+| `subagents` | each subagent alone | above the prompt, under the thread that started it | always; between turns, those running or paused |
 | 🎤 `turn` | the turn: what it has cost so far | above the prompt, under 🎮, first | while a turn runs |
 
 Above the prompt the rows are [a tree](#the-tree): 🎮, then 🎤, then 🧵
@@ -195,8 +195,8 @@ binary, then the changelog" --cols 200`):
   where the label ends: the first line of the last text the thread wrote
   between its tool calls, an ETA report left out. The hide path
   `chat.progress` hides it.
-- **The grouped rows.** `✅ N done`, last under 🧵, sums the subagents
-  that ended since the turn opened; its 🛫 column is ✅ and how long ago
+- **The grouped rows.** `✅ N done`, last under 🧵 while a turn runs,
+  sums the subagents that ended since the turn opened; its 🛫 column is ✅ and how long ago
   the last one ended. Past `subagent-rows` running subagent rows (6 as
   the mod ships), the later siblings fold into their parent's `… N more`,
   which sums them and their subagents, 🏃 and how many of them run in its
@@ -204,7 +204,11 @@ binary, then the changelog" --cols 200`):
   weighted by each agent's ▴, its ⌛ is the agents' ⌛ summed.
 
 The subagents' `live` in `rows` picks when they are drawn: `"running"`
-while a turn runs, `"always"` between turns too, `"never"` not at all. Their `place` is always `"above"`. With 🎮 placed under the footer
+while a turn runs, `"always"` between turns too, `"never"` not at all;
+the mod ships `"always"`. Between turns only the running and paused
+subagents are drawn, with no `✅ N done`: the turn's receipt holds the
+ones that ended ([Between turns](#between-turns)). Their `place` is
+always `"above"`. With 🎮 placed under the footer
 line the tree has no root, and its top rows are 🎤 and 🧵; with 🧵 placed
 there, the subagents hang from 🎮.
 
@@ -380,10 +384,10 @@ cut first on a narrow terminal.
 ### Between turns
 
 Once a turn ends and its receipt is stamped, 🎤 leaves the band, and its
-frozen copy is the receipt just above; the band is 🎮 and 🧵, with Claude
-Code's `[-]` on 🎮's row, 🧵 ⚫ with the model its next turn runs on and
-no 🛫, and 💳 stays under the footer line (`--phase done`, above the
-prompt and under the footer line):
+frozen copy is the receipt just above; with no subagent running, the band
+is 🎮 and 🧵, with Claude Code's `[-]` on 🎮's row, 🧵 ⚫ with the model
+its next turn runs on and no 🛫, and 💳 stays under the footer line
+(`--phase done`, above the prompt and under the footer line):
 
 ```
   ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
@@ -392,13 +396,31 @@ prompt and under the footer line):
   📁~/src/statusline-fixture/deep/tree                                                    💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
 
+Background subagents keep running, and spending, after the turn that
+started them ends, so they stay in the tree under 🧵, each with its 🟢 or
+🟡, past the cap folded into `… N more` as while a turn runs. The ones
+that ended are left to the turn's receipt: between turns the tree draws
+no `✅ N done`. With subagents running between turns (`--phase done
+--agents 01-mixed@220 --cap 3`, above the prompt):
+
+```
+  ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ╰⊟ 🧵⚫ main               🤖O⁵🏃           💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+     ├─ 🎩🟢 Clover          🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+     ├─ 🔍🟢 Marigold  Run…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+     ├─ 👥🟢 Willow          🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
+     ╰⊞ … 4 more                     🏃   3   💰0.1                🧩▴ 20k ▾1.7k  🎯95٪  ⌛ 14m         🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋  .02٪  🪫  .027٪
+```
+
 🎤 stays a second after the stamp lands (`CONFIG.receiptHoldMs`), so the
 turn's figures are never off screen. The option `rows` sets, for each row,
 whether it is drawn while a turn runs (`live` `"running"`), always
 (`"always"`) or never (`"never"`), and whether the receipt stamps it
 (`transcript`), apart; as the mod ships, 🎤 is drawn while a turn runs and
 stamped, 🧵, 🎮 and 💳 are always drawn and not stamped, and the
-subagents are drawn while a turn runs.
+subagents are always drawn, between turns only those running or paused.
+`"rows": {"subagents": {"live": "running"}}` draws no subagent between
+turns.
 `"rows": {"session": {"live": "running"}}` leaves the band empty between
 turns.
 

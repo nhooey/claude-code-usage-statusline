@@ -46,8 +46,8 @@ import type { Piece, Row } from "./grid.ts";
 
 /** The subagents the tree draws: the document's prepared tasks, the plan
  * reading their shares are drawn under, the clock, and when the turn
- * opened, which `✅ N done` counts finishes from (null: no turn, and no
- * `✅ N done`). */
+ * opened, which `✅ N done` counts finishes from (null: no turn running,
+ * and no `✅ N done`). */
 export type TreeAgents = {
   readonly tasks: readonly TreeTask[];
   readonly limits: Limits;

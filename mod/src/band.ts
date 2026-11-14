@@ -460,7 +460,9 @@ function sessionRow(st: Settings, fig: Dict, tr: Transcript, now: number,
 /** The band's rows above the prompt, as the tree draws them
  * (band_tree.ts): of 🎮, 🎤 and 🧵, those `places` puts above and the
  * phase draws, whose scope `hide` leaves, and the subagents of the
- * document's `agents` where `opts.agents` draws them. */
+ * document's `agents` where `opts.agents` draws them.  Between turns
+ * the tree draws no `✅ N done`, so only the running and paused agents
+ * stay: the turn that ended has its receipt. */
 export function treeOf(st: Settings, fig: Dict, rows: BandRows,
   opts: BandOpts, hide: readonly string[]): Row[] {
   const tr = decodeTranscript(fig.transcript);
@@ -486,7 +488,7 @@ export function treeOf(st: Settings, fig: Dict, rows: BandRows,
     turnPhase: running ? E_PHASE_RUN : E_PHASE_END,
     agents: shown ? { tasks: (doc.tasks ?? []) as TreeTask[],
       limits: decodeLimits(fig.limits), now,
-      turnStart: tr.turn_s || null } : null,
+      turnStart: running ? tr.turn_s || null : null } : null,
     cap: opts.cap ?? SUBAGENT_ROWS,
     folded: opts.folded,
   }, hide);

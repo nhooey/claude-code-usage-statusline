@@ -366,6 +366,12 @@ names it.
 follows `usage-text`: 5 when any row whose `live` is not `"never"` has
 `place` `"above"`, as under the defaults, else 2.
 
+`rows.subagents.live` is `"always"` in the defaults: background subagents
+keep running between turns, so the band's tree keeps the running and
+paused ones under 🧵 then, and leaves the ones that ended to the turn's
+receipt ([Between turns](layout.md#between-turns)). `"running"` draws
+them only while a turn runs.
+
 `--show-config` prints the merged options, each with the layer it came from
 and the layers' files, and the warnings, and exits. It reads no stdin, so
 its walk starts in the directory it runs in:

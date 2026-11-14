@@ -81,8 +81,9 @@
     // The 💳 account; its transcript is always false.
     "account": {"place": "footer", "live": "always",  "transcript": false},
     // The subagents, in the band's tree under the thread that started
-    // each; their place is always "above" and their transcript false.
-    "subagents": {"place": "above", "live": "running", "transcript": false}
+    // each, kept while they run; their place is always "above" and their
+    // transcript false.
+    "subagents": {"place": "above", "live": "always", "transcript": false}
   },
   // How many subagent rows the band's tree draws at most; the later
   // siblings past it are summed on their parent's "… N more" row.
