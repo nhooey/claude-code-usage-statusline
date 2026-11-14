@@ -17,9 +17,9 @@
 // `now` in the process's TZ, which the edge sets from the document's
 // `clock.tz`, as claude_cost.ts's do.
 import {
-  E_ACCT, E_BOT, E_COST, E_DATE, E_DIR, E_DIRTY, E_GIT_BAD,
+  E_ACCT, E_COST, E_DATE, E_DIR, E_DIRTY, E_GIT_BAD,
   E_GIT_OK, E_IDLE, E_PCT, E_PR, E_PROJ, E_RESET, E_SESS, E_SESSION, E_STALE,
-  E_STY,
+  E_STY, E_THREAD,
   E_TIME, E_TURN, E_TURN_ID, E_WEEK, K, MAG_COST, MAG_DUR_S, TURN_ID_HEX,
 } from "./spec.ts";
 import {
@@ -269,15 +269,16 @@ export function turnLabel(): Piece[] {
   return [piece("name.label", E_TURN)];
 }
 
-/** 🤖, and before it 📨 and `inbox`, the messages waiting for the main
+/** 🧵, and before it 📨 and `inbox`, the messages waiting for the main
  * thread's next turn, as an agent row's 📨 counts its own (agentLabel).
- * The label is drawn flush right, so 📨 goes on its left: 🤖 stays in
- * the column 🎤 and 🎮 stand in. */
+ * The label is drawn flush right, so 📨 goes on its left: 🧵 stays in
+ * the column 🎤 and 🎮 stand in.  The band's tree draws its own label
+ * (band_tree.ts). */
 export function mainLabel(inbox = 0): Piece[] {
   return [
     ...(inbox ? [{ path: "state.inbox",
       spans: [...renderInbox(inbox), span(" ")], drop: 0 }] : []),
-    piece("name.label", E_BOT)];
+    piece("name.label", E_THREAD)];
 }
 
 /** Where the session works.  Each part is "" where there is none. */

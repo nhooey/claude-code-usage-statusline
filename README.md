@@ -11,17 +11,22 @@ sessions at a glance.
 ## Above the prompt and under the footer line
 
 Drawn by the `usage-band` mod in [`mod/`](mod/README.md), one scope a row.
-Above the prompt, the turn while it runs and the session; under Claude
-Code's own footer line, the 💳 account and the main thread, just over the
-agent panel, whose rows Claude Code draws itself. Here the two places are
-drawn together, the prompt between them left out:
+Above the prompt, the session's threads as a tree: 🎮 the session at its
+root, 🧵 the main thread with the subagents it started under it, and 🎤
+the turn while it runs; under Claude Code's own footer line, the 💳
+account, just over the agent panel, whose rows Claude Code draws itself.
+Here the two places are drawn together, the prompt between them left out:
 
 ```
-                         🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-                         🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ├⊟ 🧵🟢 main  Checking     🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  │  ├─ 🎩🟢 Clover          🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+  │  ├─ 🔍🟢 Marigold  Run…  🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+  │  ├─ 👥🟢 Willow          🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
+  │  ╰⊞ … 4 more                     🏃   3   💰0.1                🧩▴ 20k ▾1.7k  🎯95٪  ⌛ 14m         🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋  .02٪  🪫  .027٪
+  ╰─ 🎤🟢 turn               🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-                         🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  📁~/src/statusline-fixture/deep/tree                                                    💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
 
 Read these three first:
@@ -29,15 +34,16 @@ Read these three first:
 * **🎮 💰 35**: the session has cost $35 at API prices.
 * **💳 🔋 15٪ 🔜 6.7m**: the account has used 15٪ of its 5-hour window, which
   resets in 6.7 minutes. 🪫 is the same for the weekly window.
-* **🤖 🧠115k 11٪**: the main thread's context holds 115k tokens, 11٪ of the
+* **🧵 🧠115k 11٪**: the main thread's context holds 115k tokens, 11٪ of the
   window.
 
 | Row | Label | Scope | Place |
 |---|---|---|---|
-| 🎤 | the mark alone | the turn | above the prompt, while a turn runs |
-| 🎮 | the mark alone | the main thread and every agent | above the prompt |
-| 💳 | 📦 Project · 🌿 Branch · 📁 Directory · 🔀 PR · 🎨 Style · 💳 Account · 🔋 🪫 Windows · 🔜 Resets · 📅 Date · 🕐 Clock | the account and where the session works | under the footer line |
-| 🤖 | the mark, and 📨 with the messages waiting for its next turn | the main thread alone | under the footer line |
+| 🎮 | the mark, then 📦 🌿 🔀 | the main thread and every agent | above the prompt, the tree's root |
+| 🧵 | the mark, its state, 📨 with the messages waiting for its next turn, `main` and its latest progress update | the main thread alone | above the prompt, under 🎮 |
+| subagents | each one's head, name and latest progress update | each subagent alone | above the prompt, under the thread that started it, while a turn runs |
+| 🎤 | the mark and its state | the turn | above the prompt, last, while a turn runs |
+| 💳 | 📁 Directory · 🎨 Style · 💳 Account · 🔋 🪫 Windows · 🔜 Resets · 📅 Date · 🕐 Clock | the account and where the session works | under the footer line |
 
 Each row's place is `rows` in the
 [configuration files](docs/options.md#configuration-files); see
@@ -51,7 +57,7 @@ Every row's figures, left to right: 🤖 Model · 🛫 Rate or Doing · 💰 Cos
 
 Stamped by the mod as each turn ends, in place of Claude Code's `✻ Worked for
 …` line, and kept in the transcript: the 🎤 row as it stood when the turn
-ended, dim, then the turn's tag. 🤖 and 🎮 stay live on screen, and
+ended, dim, then the turn's tag. 🧵 and 🎮 stay live on screen, and
 `rows` can stamp them too.
 
 ```
@@ -121,8 +127,9 @@ different on one readout, the table says so.
 |---|---|---|:-:|:-:|:-:|
 | 💳 | Account | the plan's own figures for the whole account, on every device, and where the session works; under the footer line | ✓ | | |
 | 🎤 | Turn | the turn; above the prompt while it runs | ✓ | | ✓ |
-| 🤖 | Main thread | the main thread alone; under the footer line; on the receipt when `rows` stamps it | ✓ | | ✓ |
-| 🎮 | Session | the main thread and every agent; above the prompt; on the receipt when `rows` stamps it | ✓ | | ✓ |
+| 🧵 | Main thread | the main thread alone; in the band's tree under 🎮; on the receipt when `rows` stamps it | ✓ | | ✓ |
+| 🎮 | Session | the main thread and every agent; the root of the band's tree above the prompt; on the receipt when `rows` stamps it | ✓ | | ✓ |
+| ⊟ ⊞ | Fold | in the band's tree, a row with children, opened or folded; `✅ N done` and `… N more` are folded | ✓ | | |
 
 ### Chat and project
 
@@ -130,7 +137,7 @@ different on one readout, the table says so.
 |---|---|---|:-:|:-:|:-:|
 | 🎨 | Style | output style, when not the default, on 💳 | ✓ | | |
 | 🔀 | PR | pull request number, on 💳 | ✓ | | |
-| 📨 | Queue | messages sent to the agent and not yet delivered, Claude Code's "N queued"; on the 🤖 row, messages waiting for the main thread's next turn | ✓ | ✓ | |
+| 📨 | Queue | messages sent to the agent and not yet delivered, Claude Code's "N queued"; on the 🧵 row, messages waiting for the main thread's next turn | ✓ | ✓ | |
 | 📦 | Project | the project, on 💳; in a worktree, the main repository | ✓ | | |
 | 📁 | Directory | current directory, on 💳, the project's root drawn as 📦 | ✓ | | |
 | 🌿 | Branch | branch, clean tree, on 💳; on a subagent row, the branch of a worktree the agent works in apart from the session's | ✓ | ✓ | |
@@ -291,7 +298,7 @@ to tell the two apart.
   Percentages already have a ceiling, so they follow separate rules.
 * **Agents are counted.** On the 🎤 and 🎮 rows, the tokens, costs, plan
   shares and times include every subagent, fork and workflow agent, each
-  priced at its own model's rates. The 🤖 row is the main thread alone,
+  priced at its own model's rates. The 🧵 row is the main thread alone,
   and its 🧠 tells you when *this* context window needs compacting. Each
   subagent row counts its own agent alone.
 

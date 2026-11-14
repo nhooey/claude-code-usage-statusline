@@ -164,11 +164,13 @@ test('with no configuration file the options are the defaults', () => {
     subscriptDecimals: false,
     rows: {
       turn: { place: 'above', live: 'running', transcript: true },
-      agent: { place: 'footer', live: 'always', transcript: false },
+      agent: { place: 'above', live: 'always', transcript: false },
       session: { place: 'above', live: 'always', transcript: false },
       tag: { place: 'footer', live: 'never', transcript: true },
       account: { place: 'footer', live: 'always', transcript: false },
+      subagents: { place: 'above', live: 'running', transcript: false },
     },
+    subagentRows: 6,
     accountPlace: 'row',
     credits: {
       place: 'account',
@@ -222,7 +224,7 @@ test('a non-empty mod layer merges under the files and is named in the log',
     const o = optionsOf(m)
     expect(o.usageSource).toBe('claude-usage-tracker')
     expect(o.hide).toEqual([])
-    expect(o.rows.agent).toEqual({ place: 'footer', live: 'never',
+    expect(o.rows.agent).toEqual({ place: 'above', live: 'never',
       transcript: true })
     expect(optionsTable(m)).toBe(
       'usage-source "claude-usage-tracker" (mod); right-edge 5 (derived); ' +

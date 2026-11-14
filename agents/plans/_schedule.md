@@ -86,7 +86,7 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CB5` | Docs, and the acceptance check, live | `CB3`, `CB6` | none | `docs/layout.md`, `docs/options.md`, `docs/usage-sources.md` |
 | `OP1` | **Done.** Which entries reach each Python module: the panel, Codex, the fold worker, the tests | none | none | `tools/python-module-reach.py`, `one-panel-port.md` |
 | `OP2` | **Done.** Remove the agent panel command: `--mode subagent`, its suite, goldens, tools and docs | `OP1` | none | `cli.py`, `claude.py`, `tests/`, `tools/`, `examples/claude/settings.json`, `README.md`, `docs/` |
-| `OP3` | The band's tree: 🎮 the root, 🧵 main, 🎤 the turn and the subagents under them, with `✅ N done`, the cap and progress updates | `OP1` | `OP2` (`docs/layout.md`) | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/hooks/`, `mod/src/`, `docs/layout.md` |
+| `OP3` | **Done.** The band's tree: 🎮 the root, 🧵 main, 🎤 the turn and the subagents under them, with `✅ N done`, the cap and progress updates | `OP1` | `OP2` (`docs/layout.md`) | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/hooks/`, `mod/src/`, `docs/layout.md` |
 | `OP4` | The mod's fold worker in TypeScript | `OP1` | none | `mod/hooks/transcripts.ts`, `mod/scripts/` |
 | `OP5` | The Python's Claude twins removed, `--mode status` and `--mode cost` for Claude among them | `OP2`, `OP3`, `OP4` | none | `coding_agent_usage_line/`, `tests/` |
 | `OP6` | 🧬 for the model cell, so 🤖 keeps one job | `OP5` | none | `spec/layout.jsonc`, `mod/src/` |

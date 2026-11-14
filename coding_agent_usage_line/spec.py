@@ -991,6 +991,15 @@ E_TREE_OPEN = "⏺"        # ⏺  an agent whose children are showing: the
 E_TREE_MID = "├"         # ├  a child with a sibling after it
 E_TREE_END = "└"         # └  the last child
 E_TREE_BAR = "│"         # │  an ancestor whose siblings go on below
+# The band's tree of threads above the prompt, which the mod draws in each
+# row's label (band_tree.ts).  Ambiguous too, and drawn one column wide.
+E_TREE_LAST = "╰"        # ╰  the band's last child
+E_TREE_DASH = "─"        # ─  a branch to a row with no children
+E_FOLD_OPEN = "⊟"        # ⊟  a row whose children are showing
+E_FOLD_SHUT = "⊞"        # ⊞  a row whose children are folded under it
+E_THREAD = "🧵"          # 🧵  the main thread, in the kind slot an agent's
+                         #    🔍 🔩 📐 fill
+E_MORE = "…"             # …  the later siblings past the cap, summed
 # An agent row's state, in two marks: a circle for its phase and a mark for
 # what it is doing in it.  Claude Code's own status says completed for an
 # agent that has finished and for one that ended its turn to wait on
@@ -1316,7 +1325,10 @@ HIDE_GROUPS = {
     ),                                                    # model, 🛫, and an
                                                           #  agent's 👶🏻 🤏 💻
                                                           #  📡 📨
-    "chat": ("doing",),                                   # what an agent does
+    "chat": ("doing", "progress"),                        # what an agent does,
+                                                          #  and a thread's
+                                                          #  latest progress
+                                                          #  update
     "workspace": ("project", "branch", "dir", "pr", "style"),  # 📦 🌿 📁 🔀 🎨
     "clock": ("date", "time"),                            # 📅 🕐
     "name": ("label", "kind", "receipt", "tag"),          # the row's name, an

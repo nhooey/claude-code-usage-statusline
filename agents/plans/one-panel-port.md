@@ -188,16 +188,20 @@ Marigold folded
    `tests/fixtures/panel/` stay until `OP5`, since the TypeScript
    renderer and folds are checked against them. The corpus is committed
    data: its inputs are read as they are and its rows drawn again.
-3. **`OP3` The band's tree.** [The band's tree](#the-bands-tree) above
-   the prompt: the 🎮 root with the workspace, 🧵 main moved up from under
-   the footer line, 🎤 the turn, and a `rows.subagents` row in
-   `spec/options.jsonc` and `mod/defaults/config.jsonc` for the agents,
-   live while a turn runs. The mod prepares each agent's task from
-   `$.agent.list()` and its agent fold (`transcripts.ts`), its usage,
-   clocks, inbox and branch worked out as `prepare_subagent_tasks` does,
-   and draws each with `renderTaskRows`; `✅ N done`, the cap and its
-   `… N more`, and the progress updates. Tests in `mod/mod-tests/` and
-   `mod/test/`, and `docs/layout.md`.
+3. **`OP3` The band's tree.** Done: [The band's tree](#the-bands-tree)
+   above the prompt, the 🎮 root with the workspace, 🧵 main moved up
+   from under the footer line, the subagents under the thread that
+   started each, and 🎤 the turn (`mod/src/band_tree.ts`); a
+   `rows.subagents` row, live while a turn runs, and `subagent-rows`, the
+   cap, in `spec/options.jsonc` and `mod/defaults/config.jsonc`. The mod
+   prepares each agent's task from `$.agent.list()` and its agent fold
+   as `prepare_subagent_tasks` does (`mod/src/subagent_tasks.ts`,
+   `mod/hooks/subagents.ts`), its usage checked against `agent_usage_of`,
+   and draws its cells with the renderer's. Each thread's progress update
+   is the first line of the last text block in its transcript's tail.
+   The agents' 📨 counts are 0 in the mod: the inbox fold reads with
+   Node alone. Tests in `mod/test/band_tree.test.ts`, the rows' cases and
+   `docs/layout.md`.
 4. **`OP4` The mod's fold worker in TypeScript.** `transcripts.ts` folds
    large transcripts in Node in place of `python3 .../agent_lines.py`.
 5. **`OP5` Remove the Python's Claude twins.** Delete the modules `OP1`

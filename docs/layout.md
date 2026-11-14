@@ -8,24 +8,30 @@ with a real render, then says what every cell is. The
 [legend](../README.md#legend) in the README names every glyph.
 
 The mod, `usage-band` in [`mod/`](../mod/README.md), draws inside Claude
-Code's own screen: the rows above the prompt and under the footer line, the
-receipt and the turn's tags. The subagent rows, one per subagent or shell,
-are drawn by `claude_subagent_render` in both ports. Every row of all of
-them has the same columns in the same order, so a figure stands on the same
-screen column wherever it is drawn. Claude Code's own agent panel draws its
-rows itself. Why it is laid out this way is in
-[the plan it was built from](../agents/plans/_implemented/redesign.md).
+Code's own screen: the band's tree of threads above the prompt, the 💳 row
+under the footer line, the receipt and the turn's tags. The subagent rows,
+one per subagent, hang in the band's tree, drawn by
+`claude_subagent_render`. Every row of all of them has the same columns in
+the same order, so a figure stands on the same screen column wherever it
+is drawn. Claude Code's own agent panel draws its rows itself. Why it is
+laid out this way is in
+[the plan it was built from](../agents/plans/_implemented/redesign.md),
+and the tree in
+[The band's tree](../agents/plans/one-panel-port.md#the-bands-tree).
 
 All examples below are the programs' own output against the test fixtures
 (clock pinned to 2026-08-16 02:23:20 UTC, the `unknown` terminal profile),
 with colour stripped: `node mod/tools/draw-figures.ts` for the mod's rows,
-from `tests/fixtures/figures/`, and the renderer's cases in
-`tests/fixtures/panel/` for the subagent rows.
+from `tests/fixtures/figures/`, with the subagents of a case of
+`tests/fixtures/panel/corpus.json` where the tree has some (`--agents`),
+and the renderer's cases in `tests/fixtures/panel/` for the subagent rows
+alone.
 Colour and brightness carry meaning of their own — see
 [Colour and brightness](#colour-and-brightness).
 
 - [Above the prompt and under the footer line](#above-the-prompt-and-under-the-footer-line)
   - [The rows](#the-rows)
+  - [The tree](#the-tree)
   - [The grid](#the-grid)
   - [Column by column](#column-by-column)
   - [Labels](#labels)
@@ -61,8 +67,9 @@ tests/fixtures/figures/status/01-baseline@196.json --cols 160 --part above
 --inset 2 --right-edge 5 --rate 200 --plain`):
 
 ```
-                         🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-                         🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ├─ 🧵🟢 main               🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  ╰─ 🎤🟢 turn               🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
 ```
 
 and, past the prompt, under the footer line (the same with `--part
@@ -70,15 +77,14 @@ footer`):
 
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-                         🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  📁~/src/statusline-fixture/deep/tree                                                    💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
 
 The footer's first line is Claude Code's, drawn by Claude Code, so its
 pills stay live; the mod draws the rest under it. Claude Code draws its
-`[-]` in the five rightmost columns of the band's first row, beside 🎤.
+`[-]` in the five rightmost columns of the band's first row, beside 🎮.
 The fixture's transcript writes no lines and reports no ETA, so 💾 and ⛳
-are blank here; the [subagent rows' render](#the-subagent-rows) has both.
+are blank here; [the tree's render](#the-tree) has both.
 
 ### The rows
 
@@ -90,20 +96,23 @@ as the mod ships:
 
 | Row | Scope | Place | Drawn |
 |---|---|---|---|
-| 💳 | the account: the plan's two windows and where the session works, all on the label | under the footer line | always |
-| 🎤 | the turn: what it has cost so far | above the prompt | while a turn runs |
-| 🤖 | the main thread alone, before any agent's figures are added | under the footer line | always |
-| 🎮 | the session: the main thread and every agent, summed | above the prompt | always |
+| 💳 | the account: the plan's two windows, and where the session works but for what 🎮's label has, all on the label | under the footer line | always |
+| 🎮 `session` | the session: the main thread and every agent, summed; on its label, where the session works | above the prompt, the tree's root | always |
+| 🧵 `agent` | the main thread alone, before any agent's figures are added | above the prompt, under 🎮 | always |
+| `subagents` | each subagent alone | above the prompt, under the thread that started it | while a turn runs |
+| 🎤 `turn` | the turn: what it has cost so far | above the prompt, under 🎮, last | while a turn runs |
 
-In each place the rows stand in one order, whatever the places: 💳, 🎤,
-🤖, 🎮. Above the prompt that is 🎤 then 🎮; under the footer line 💳 then
-🤖, the lowest row the mod draws, just over Claude Code's agent panel.
-When the turn ends, 🎤 becomes [the receipt](#the-receipt), frozen, in the
-transcript just above the band.
+Above the prompt the rows are [a tree](#the-tree): 🎮, then 🧵 and the
+subagents under it, then 🎤. Under the footer line they stand in one
+order, whatever the places: 💳, 🎤, 🧵, 🎮, the lowest just over Claude
+Code's agent panel. The subagents are drawn in the tree alone, and their
+place is always above the prompt. When the turn ends, 🎤 becomes
+[the receipt](#the-receipt), frozen, in the transcript just above the
+band.
 
 Every row, above the prompt and under the footer line, and the receipt,
 starts at one column and ends at one column, so a figure on 🎮 stands over
-the same figure on 🤖 and on the subagent rows:
+the same figure on 🧵 and on the subagent rows:
 
 - **The left edge.** Claude Code draws the footer's container `hint-inset`
   (2) columns in from each edge, and the mod draws its rows there that much
@@ -111,8 +120,8 @@ the same figure on 🤖 and on the subagent rows:
   so its rows, and the receipt, are indented `hint-inset` columns instead.
 - **The right edge.** Every row ends `right-edge` columns short of the
   terminal's edge: 5 when any row drawn live is above the prompt, clear of
-  the `[-]`, else 2 (`right-edge` follows `rows.*.place`, and the subagent
-  rows end there too).
+  the `[-]`, else 2 (`right-edge` follows `rows.*.place`; the subagents
+  count unless their `live` is `never`).
 
 Under the rows Claude Code's blank row stays, between the footer and the
 panel's `⏺ main`; `hint-tuck` draws them with a bottom margin of -1
@@ -120,7 +129,8 @@ instead, taking it up.
 
 **The 💳 row** is all label, starting where the other rows start. On the
 left, what is the project's: 📦 project, 🌿 branch, 📁 directory, 🔀 PR and
-🎨 output style. Then, flush right where the other rows end, what is
+🎨 output style, less 📦 🌿 🔀 while the tree's root draws them on its
+label. Then, flush right where the other rows end, what is
 global: 💳 and each window's share, 🔋 the 5-hour and 🪫 the weekly, each
 with 🔜 and the time until it resets, then four blank columns and 📅 and 🕐,
 the date and time now. A reading 10 minutes old or more has each share
@@ -137,7 +147,7 @@ No row takes a press: each is plain text, above the prompt, under the
 footer line and in the receipt.
 
 While a survey (a question picker) holds the band, the mod draws nothing
-above the prompt, and Claude Code draws the picker there: 🎤 and 🎮 are
+above the prompt, and Claude Code draws the picker there: the tree is
 gone until it is answered, and the receipt, stamped at the turn's end, is
 not touched. The rows under the footer line are drawn wherever Claude Code
 draws its footer line. Each change of the band's widths or of a survey
@@ -145,6 +155,56 @@ goes to the mod's log,
 `band: {"bodyColumns":…,"viewportColumns":…,"isFullscreen":…,"hasSurvey":…}`,
 and the footer's own log line ends with the same `isFullscreen` and
 whether a survey held the band when it was drawn.
+
+### The tree
+
+Above the prompt the rows are a tree of the session's threads: 🎮 the
+root, with where the session works (📦 🌿 🔀) on its label; under it 🧵
+main, the main thread; under 🧵 the subagents it started, each under the
+thread that started it, in the order they started; and 🎤 the turn last.
+With three subagents running and four more folded past a cap of 3 (the
+render above with `--agents 01-mixed@220 --cap 3 --progress "Checking the
+binary, then the changelog" --cols 200`):
+
+```
+  ⊟ 🎮 📦repo 🌿golden-clean                                                          💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ├⊟ 🧵🟢 main  Checking the binary, then the changelog              🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  │  ├─ 🎩🟢 Clover                                                  🤖O⁵🏃  🤖  13m  💰0.0   🧠 32k  16٪  🧩▴7.1k ▾400   🎯93٪  ⌛ 15m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .01٪  🪫  .011٪
+  │  ├─ 🔍🟢 Marigold  Running the suite                             🤖O⁵🏃  🔧  11m  💰0.1   🧠 32k  16٪  🧩▴ 14k ▾800   🎯93٪  ⌛ 12m ⛳ +50s 🤖⠄⠀ 🔧⠶⠦ 🚦⠀⠀  🔋  .02٪  🪫  .022٪  💾 +  9  -  4
+  │  ├─ 👥🟢 Willow                                                  🤖H⁴    🤖 8.3m  💰0.0   🧠 10    0٪  🧩▴ 10  ▾ 10   🎯 0٪  ⌛ 10m         🤖⠶⠶ 🔧⠀⠀ 🚦⠀⠀  🔋  .00٪  🪫  .000٪
+  │  ╰⊞ … 4 more                                                             🏃   3   💰0.1                🧩▴ 20k ▾1.7k  🎯95٪  ⌛ 14m         🤖⠦⠀ 🔧⠄⠀ 🚦⠶⠀  🔋  .02٪  🪫  .027٪
+  ╰─ 🎤🟢 turn                                                       🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
+```
+
+- **The lines.** `├─` and `╰─` join a row to its parent, `│` carries a
+  parent's line past its children, three columns a level. The lines are
+  the start of each row's label, so every figure keeps its column at
+  every depth. The tree's labels start at the left, not flush right.
+- **The fold marks.** A row with children has `⊟` (opened) or `⊞`
+  (folded) in place of its `─`; a folded row draws 👶🏻 and how many agents
+  are hidden under it. The grouped rows below are always folded and every
+  other row opened; no row takes a press.
+- **The labels.** 🧵 and 🎤 draw their state's circle (🟢 working, 🟡
+  waiting, ⚫ between turns) and their name, and an agent its
+  [subagent row's](#the-subagent-rows) head and name, with only its own
+  counts before the name and no blank slots, since depth already moves
+  each name. A working or waiting
+  thread's latest progress update follows its name, dim, cut with `…`
+  where the label ends: the first line of the last text the thread wrote
+  between its tool calls, an ETA report left out. The hide path
+  `chat.progress` hides it.
+- **The grouped rows.** `✅ N done`, last under 🧵, sums the subagents
+  that ended since the turn opened; its 🛫 column is ✅ and how long ago
+  the last one ended. Past `subagent-rows` running subagent rows (6 as
+  the mod ships), the later siblings fold into their parent's `… N more`,
+  which sums them and their subagents, 🏃 and how many of them run in its
+  🛫 column; every row drawn keeps its parents. A grouped row's 🎯 is
+  weighted by each agent's ▴, its ⌛ is the agents' ⌛ summed.
+
+The subagents' `live` in `rows` picks when they are drawn: `"running"`
+while a turn runs, `"always"` between turns too, `"never"` not at all. Their `place` is always `"above"`. With 🎮 placed under the footer
+line the tree has no root, and its top rows are 🧵 and 🎤; with 🧵 placed
+there, the subagents hang from 🎮.
 
 ### The grid
 
@@ -166,7 +226,7 @@ moves when the turn ends, a figure goes missing or an agent starts.
 ### Column by column
 
 Not every scope fills every column: the model and 🛫 are a thread's state,
-so only the 🎤 and 🤖 rows and the agent rows draw them, and the session
+so only the 🎤 and 🧵 rows and the agent rows draw them, and the session
 has no context and no ⛳ of its own.
 
 - **model**, `🤖O⁵🏃`: the model as its family initial and superscript major
@@ -177,16 +237,16 @@ has no context and no ⛳ of its own.
   climbing, worked out by the mod from one reading to the next. It jumps by
   a request's whole prompt at each request, so it measures pace, not
   generation speed. While a tool runs the column says that instead, `🔧
-  42s`, since the oldest call still running. On the 🤖 row, while the turn
+  42s`, since the oldest call still running. On the 🧵 row, while the turn
   runs, it says what the main thread is doing and for how long, the same
   states as an [agent row's](#state): 🤖 the model has the floor, amber once
   it has written nothing for ten minutes; 🚦 waiting on a question to you or
   a foreground agent. The unit of a time sits where a rate's blank does, so
   the figures stack.
 - **💰**, `💰 35`: dollars at API prices, each request priced at its own
-  model's rates. The 🤖 row's includes its compactions, priced from an
+  model's rates. The 🧵 row's includes its compactions, priced from an
   estimate of each summary, and is marked `~` when it has any.
-- **🧠**: on the 🤖 row, `🧠115k  11٪`, the main thread's context size and
+- **🧠**: on the 🧵 row, `🧠115k  11٪`, the main thread's context size and
   its share of the model's window; agents are left out, since this is the
   number that decides when *this* window needs compacting. On the 🎤 row,
   `🧠-42k  -4٪`, how much the context grew in the turn, in tokens and in
@@ -201,7 +261,7 @@ has no context and no ⛳ of its own.
   thread's, from its first record; the session's, from its earliest turn, so
   the receipt's 🎮 reads the same start.
 - **⛳**: the time the thread says it has left (see [ETA](#eta)). On the 🎤
-  row, the turn's own last report; on the 🤖 row, the main thread's, pushed
+  row, the turn's own last report; on the 🧵 row, the main thread's, pushed
   out to the latest finish of any agent still answering.
 - **🤖 🔧 🚦**, `🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄`: how the time split, as gauges with eight dots
   between the three: 🤖 with the model, 🔧 inside tools, 🚦 waiting, on a
@@ -227,19 +287,24 @@ has no context and no ⛳ of its own.
 
 ### Labels
 
-🎤, 🤖 and 🎮 draw their label flush right, ending where the first column
+In [the tree](#the-tree) every label is drawn from the left, after the
+tree's lines. Elsewhere (under the footer line and on the receipt), 🎤, 🧵
+and 🎮 draw their label flush right, ending where the first column
 starts, so each mark sits beside the model it names, at one column on
-every row, and 🤖's 📨 stands to its left. An agent row's label is drawn
+every row, and 🧵's 📨 stands to its left. An agent row's label is drawn
 flush left.
 
-- **🎤**, the turn, its mark alone. The turn tags tie it to the prompt
-  (🔻🔖) and the receipt (🔺🔖).
-- **🤖**, the main thread. While messages wait for its next turn (typed
+- **🎤**, the turn, its mark alone, and in the tree its circle and
+  `turn`. The turn tags tie it to the prompt (🔻🔖) and the receipt
+  (🔺🔖).
+- **🧵**, the main thread, and in the tree its circle, `main` and its
+  progress update. While messages wait for its next turn (typed
   while it works, an agent's SendMessage, a task notification), 📨 and
-  how many before the mark, `📨3 🤖`, as an agent row's [📨](#inbox)
-  counts its own. The receipt's 🤖 row
+  how many before the mark, `📨3 🧵`, and in the tree after its circle,
+  as an agent row's [📨](#inbox) counts its own. The receipt's 🧵 row
   leaves the 📨 out.
-- **🎮**, the session, its mark alone.
+- **🎮**, the session, its mark alone, and in the tree 📦 🌿 🔀 after
+  it.
 - **💳** carries where the session works: 📦 the project (in a linked git
   worktree, the main repository, since 🌿 already names the worktree's
   branch), 🌿 the branch, 📁 the current directory, 🔀 the branch's pull
@@ -289,39 +354,40 @@ rows under it, with the prompt between them left out (`--part above`, then
 `--part footer`, each with `--cols 100 --inset 2 --right-edge 5`):
 
 ```
-                    🎤  💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
-                    🎮  💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+  ⊟ 🎮 📦repo 🌿golde…  💰 35                🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+  ├─ 🧵🟢 main          💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+  ╰─ 🎤🟢 turn          💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  ⌛  5m          🔋 1.2٪   🪫 1.56٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean       💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-                    🤖  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  ⌛9.3h          🔋 3.8٪   🪫 8.45٪
+                              💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
 
 At 80:
 
 ```
-                       🎤  💰6.4   🧠-42k  -4٪  ⌛  5m  🔋 1.2٪   🪫 1.56٪
-                       🎮  💰 35                ⌛9.3h  🔋 3.8٪   🪫 8.45٪
+  ⊟ 🎮 📦repo 🌿golden-c…  💰 35                ⌛9.3h  🔋 3.8٪   🪫 8.45٪
+  ├─ 🧵🟢 main             💰 35   🧠115k  11٪  ⌛9.3h  🔋 3.8٪   🪫 8.45٪
+  ╰─ 🎤🟢 turn             💰6.4   🧠-42k  -4٪  ⌛  5m  🔋 1.2٪   🪫 1.56٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    🕐 02:23:20
-                       🤖  💰 35   🧠115k  11٪  ⌛9.3h  🔋 3.8٪   🪫 8.45٪
+          💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
 
 The 💳 row sheds its pieces to fit, as [The rows](#the-rows) says: 📁 at
-100 columns, then 📅 too at 80.
+100 columns. The tree's lines are part of a label, so a deep row's name is
+cut first on a narrow terminal.
 
 ### Between turns
 
 Once a turn ends and its receipt is stamped, 🎤 leaves the band, and its
-frozen copy is the receipt just above; the band is 🎮 alone, with Claude
-Code's `[-]` on its row, and 💳 and 🤖 stay under the footer line, 🤖 with
-the model its next turn runs on and no 🛫 (`--phase done`, above the
+frozen copy is the receipt just above; the band is 🎮 and 🧵, with Claude
+Code's `[-]` on 🎮's row, 🧵 ⚫ with the model its next turn runs on and
+no 🛫, and 💳 stays under the footer line (`--phase done`, above the
 prompt and under the footer line):
 
 ```
-                         🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ╰─ 🧵⚫ main               🤖O⁵🏃           💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-                         🤖  🤖O⁵🏃           💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  📁~/src/statusline-fixture/deep/tree                                                    💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
 
 🎤 stays a second after the stamp lands (`CONFIG.receiptHoldMs`), so the
@@ -329,7 +395,8 @@ turn's figures are never off screen. The option `rows` sets, for each row,
 whether it is drawn while a turn runs (`live` `"running"`), always
 (`"always"`) or never (`"never"`), and whether the receipt stamps it
 (`transcript`), apart; as the mod ships, 🎤 is drawn while a turn runs and
-stamped, and 🤖, 🎮 and 💳 are always drawn and not stamped.
+stamped, 🧵, 🎮 and 💳 are always drawn and not stamped, and the
+subagents are drawn while a turn runs.
 `"rows": {"session": {"live": "running"}}` leaves the band empty between
 turns.
 
@@ -346,8 +413,8 @@ which take the paths in the option `hide`, from the
 
 | Part | Values |
 |---|---|
-| scope | `account`, `turn`, `main` (the 🤖 row), `session`, `agent` |
-| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫; on agent rows also `kids`, `compact`, `shells`, `monitors`, `inbox`: 👶🏻 🤏 💻 📡 📨; on the 🤖 row `inbox`), `chat` (`doing`, on agent rows), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `tag`: the row's name, an agent's kind, the turn's tag lines) |
+| scope | `account`, `turn`, `main` (the 🧵 row), `session`, `agent` |
+| group | `plan` (🔋 🪫 🔜), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫; on agent rows also `kids`, `compact`, `shells`, `monitors`, `inbox`: 👶🏻 🤏 💻 📡 📨; on the 🧵 row `inbox`), `chat` (`doing`, on agent rows; `progress`, the latest progress update in the tree, on 🧵 and agent rows), `workspace` (📦 🌿 📁 🔀 🎨), `clock` (📅 🕐), `name` (`label`, `kind`, `tag`: the row's name, an agent's kind, the turn's tag lines) |
 
 ```
 --hide account              the 💳 row
@@ -355,6 +422,7 @@ which take the paths in the option `hide`, from the
 --hide turn.time.eta        ⛳ on the 🎤 row only
 --hide account.workspace    📦 🌿 📁 🔀 🎨 on the 💳 row
 --hide '*.state.rate'       🛫 everywhere
+--hide '*.chat.progress'    every thread's progress update in the tree
 ```
 
 A column hidden on every row it could show on is removed, and the others
@@ -365,11 +433,11 @@ Hiding 🔋 (`*.plan.five_hour`), 🧠's share of the window
 the footer line:
 
 ```
-                                              🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
-                                              🎮                   💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
+  ⊟ 🎮 📦repo 🌿golden-clean                                       💰 35            🧩▴2.7M ▾841k  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🪫 8.45٪
+  ├─ 🧵🟢 main                                    🤖O⁵🏃  🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
+  ╰─ 🎤🟢 turn                                    🤖O⁵🏃  🛫 200   💰6.4   🧠- 42k  🧩▴525k ▾151k  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🪫 1.56٪
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                                              💳 🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-                                              🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠 115k  🧩▴2.7M ▾841k  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🪫 8.45٪
+  📁~/src/statusline-fixture/deep/tree                                                                     💳 🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
 ```
 
 ## The receipt
@@ -378,7 +446,7 @@ As a turn ends, the mod stamps its receipt as the turn's closing line, in
 place of Claude Code's `✻ <word> for <duration>`: the rows whose
 `transcript` is set in `rows`, as they stood when it ended, frozen and dim,
 in their colours, then the turn's tag. As the mod ships that is 🎤 alone,
-since 🤖 and 🎮 stay live on screen. At 160 columns, from a cost document
+since 🧵 and 🎮 stay live on screen. At 160 columns, from a cost document
 (`node mod/tools/draw-figures.ts
 tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part receipt
 --inset 2 --right-edge 5 --plain`):
@@ -390,20 +458,20 @@ tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part receipt
 ```
 
 With `"rows": {"agent": {"transcript": true}, "session": {"transcript":
-true}}` it stamps 🤖 and 🎮 too, under 🎤, 🤖 from a status document
+true}}` it stamps 🧵 and 🎮 too, under 🎤, 🧵 from a status document
 (the same with `--rows` set so and `--status
 tests/fixtures/figures/status/18-agents@196.json`):
 
 ```
                          🎤                   💰0.2   🧠+21k +10٪  🧩▴ 18k ▾3.5k  🎯97٪  ⌛  3m         🤖⠶⠄ 🔧⠦⠀ 🚦⠀⠀  🔋  .03٪  🪫  .043٪
-                         🤖  🤖O⁵🏃           💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
+                         🧵  🤖O⁵🏃           💰0.0   🧠 41k   4٪  🧩▴  6k ▾700   🎯97٪  ⌛  1h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋  .01٪  🪫  .012٪
                          🎮                   💰0.2                🧩▴ 27k ▾4.4k  🎯96٪  ⌛1.2h         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋  .04٪  🪫  .059٪
 
 🔺🔖 8f37748e #12  📅 2026-08-16  🕐 02:23:20
 ```
 
 No fixture pairs a cost document with a status document of the same
-session, so here the 🤖 row comes from another one's.
+session, so here the 🧵 row comes from another one's.
 
 The rows are laid out at the width the mod's rows last drew at,
 `hint-inset` columns in and `right-edge` short of the edge, so each column
@@ -416,7 +484,7 @@ line and one after it.
   (kept after the turn ends, to compare with when it did end) and its share
   of each window. The model and 🛫 are not drawn: they were the turn's
   state.
-- **🤖** is the main thread as the mod's 🤖 row last drew it.
+- **🧵** is the main thread as the mod's 🧵 row last drew it.
 - **🎮** is the session as it stood when the turn ended; it includes every
   row above it.
 
@@ -670,7 +738,7 @@ subagents it plans to start later, which only it knows about. It doesn't add
 up its children's reports; the maximum here keeps its row from finishing
 before any of them.
 
-The 🤖 row under the footer line carries the same cell for the main thread,
+The 🧵 row in the tree carries the same cell for the main thread,
 as the root of that tree: its last report in the answer to the current
 prompt, counted from that prompt, pushed out to the latest finish of any
 agent still answering. An agent that has written nothing for half an hour is
@@ -834,33 +902,35 @@ nearest dark blue that draws the same either way.
 
 Each row's `place` in `rows` is `"above"` or `"footer"`, and a file may set
 one row's alone, since tables merge per field. Giving every row the same
-place draws them all there, in the one order, 💳, 🎤, 🤖, 🎮. The 🔖 tag
-lines have no live row, and their place stays `"footer"`.
+place draws them all there. Above the prompt they are the tree; under
+the footer line they stand in the one order, 💳, 🎤, 🧵, 🎮, flat, with
+no tree lines and the labels flush right, and 💳 keeps 📦 🌿 🔀. The
+subagents are drawn in the tree alone. The 🔖 tag lines have no live row,
+and their place stays `"footer"`.
 
-Every row under the footer line, with
-`"rows": {"turn": {"place": "footer"}, "session": {"place": "footer"}}`:
-no row drawn live is above the prompt, so `right-edge` follows to 2, the
-edge of Claude Code's footer container (`--part footer --rows` set so,
-`--right-edge 2`):
+Every row under the footer line, with `"rows": {"turn": {"place":
+"footer"}, "agent": {"place": "footer"}, "session": {"place": "footer"},
+"subagents": {"live": "never"}}`: no row drawn live is above the prompt,
+so `right-edge` follows to 2, the edge of Claude Code's footer container
+(`--part footer --rows` set so, `--right-edge 2`):
 
 ```
   -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)
   📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                                💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
                             🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-                            🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+                            🧵  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
                             🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
 ```
 
-Every row above the prompt, with
-`"rows": {"agent": {"place": "above"}, "account": {"place": "above"}}`,
-`right-edge` 5, and under the footer line only Claude Code's own line
-(`--part above --rows` set so, `--right-edge 5`):
+Every row above the prompt, with `"rows": {"account": {"place":
+"above"}}`, `right-edge` 5, and under the footer line only Claude Code's
+own line (`--part above --rows` set so, `--right-edge 5`):
 
 ```
-  📦repo 🌿golden-clean  📁~/src/statusline-fixture/deep/tree                             💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
-                         🎤  🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
-                         🤖  🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
-                         🎮                   💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  📁~/src/statusline-fixture/deep/tree                                                    💳 🔋  15٪ 🔜 6.7m  🪫  87٪ 🔜 1.9d    📅 2026-08-16  🕐 02:23:20
+  ⊟ 🎮 📦repo 🌿golden-clean                  💰 35                🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠶⠄ 🔧⠆⠀ 🚦⠄⠀  🔋 3.8٪   🪫 8.45٪
+  ├─ 🧵🟢 main               🤖O⁵🏃  🤖   3m  💰 35   🧠115k  11٪  🧩▴2.7M ▾841k  🎯98٪  ⌛9.3h         🤖⠆⠀ 🔧⠄⠀ 🚦⠶⠄  🔋 3.8٪   🪫 8.45٪
+  ╰─ 🎤🟢 turn               🤖O⁵🏃  🛫 200   💰6.4   🧠-42k  -4٪  🧩▴525k ▾151k  🎯98٪  ⌛  5m         🤖⠶⠆ 🔧⠆⠀ 🚦⠀⠀  🔋 1.2٪   🪫 1.56٪
 ```
 
 ### The footer's tail
@@ -871,7 +941,7 @@ line, plain and dim, after Claude Code's ` · `, whatever
 `rows.account.place` says (`--part tail`):
 
 ```
-  -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle) · 📦repo 🌿golden-clean ⠀📁~/src/statusline-fixture/deep/tree 💳 🔋  15٪ 🔜 6.7m ⠀🪫  87٪ 🔜 1.9d 📅 2026-08-16 ⠀🕐 02:23:20
+  -- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle) · ⠀📁~/src/statusline-fixture/deep/tree 💳 🔋 ⠀15٪ 🔜 6.7m ⠀🪫 ⠀87٪ 🔜 1.9d 📅 2026-08-16 ⠀🕐 02:23:20
 ```
 
 Claude Code trims the tail's leading spaces and draws a run of spaces as

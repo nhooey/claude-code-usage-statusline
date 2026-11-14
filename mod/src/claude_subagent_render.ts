@@ -741,10 +741,12 @@ export function agentCells(st: Settings, task: Dict, usage: unknown,
 
 /** The row's label as grid pieces under the agent scope: the kind, the
  * counts (unranked: their columns leave every row at once, panelCounts),
- * the name, the branch and the activity; see the Python's agent_label. */
+ * the name, the branch and the activity; see the Python's agent_label.
+ * `packed` draws only the row's own counts, each at its own width, as the
+ * band's tree does, where depth already moves each name. */
 export function agentLabel(st: Settings, task: Dict, usage: unknown,
   meta: unknown, waitingOn = false, kids = 0, kidsW = 0,
-  widths0: PanelWidths | null = null): Piece[] {
+  widths0: PanelWidths | null = null, packed = false): Piece[] {
   const widths: Partial<PanelWidths> = widths0 ?? {};
   const status = strOr(task.status), kind = strOr(task.type);
   const head = spans([renderKind(strOr(pyGet(meta, "agentType")), kind),
@@ -762,7 +764,11 @@ export function agentLabel(st: Settings, task: Dict, usage: unknown,
       renderInbox(ua(usage, "inbox", 0) as number)],
   ];
   for (const [path, w, cell] of counts) {
-    if (w) out.push({ path, spans: [...seg(st, w, cell), span(" ")], drop: 0 });
+    if (packed) {
+      if (cell.length) out.push({ path, spans: [...cell, span(" ")], drop: 0 });
+    } else if (w) {
+      out.push({ path, spans: [...seg(st, w, cell), span(" ")], drop: 0 });
+    }
   }
   const desc = squash(strOr(task.description));
   const name = strOr(task.name) || desc;

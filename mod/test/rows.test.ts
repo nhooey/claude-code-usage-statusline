@@ -123,7 +123,7 @@ test("the band's columns do not move with the phase or the figures", () => {
   }
 });
 
-test("🤖's 📨 stands left of its mark, so the marks keep one column", () => {
+test("🧵's 📨 stands left of its mark, so the marks keep one column", () => {
   const st = settings({});
   const base = document("status/01-baseline@196");
   const queued = { ...base,
@@ -137,12 +137,12 @@ test("🤖's 📨 stands left of its mark, so the marks keep one column", () => 
     return visWidth(row!.slice(0, row!.indexOf(mark + "  ")), st.widths);
   };
   const turn = markAt(base, "🎤");
-  assert.equal(markAt(base, "🤖"), turn);
-  assert.equal(markAt(queued, "🤖"), turn);
+  assert.equal(markAt(base, "🧵"), turn);
+  assert.equal(markAt(queued, "🧵"), turn);
   const lines = inZone(queued, () => bandLines(st, queued, 160, [],
     { rate: null, phase: "running" }));
   assert.ok(lines.map((l) => stripAnsi(join(l))).some((t) =>
-    t.includes("📨3 🤖  ")));
+    t.includes("📨3 🧵  ")));
 });
 
 test("each row's live and transcript pick the band's rows and the receipt's",
@@ -158,22 +158,22 @@ test("each row's live and transcript pick the band's rows and the receipt's",
     // live by row, the rows stamped, then what the receipt, the band
     // while a turn runs and the band once it ends draw.
     for (const [live, stamped, stamp, running, done] of [
-      [{}, ["turn", "agent", "session"], ["🎤", "🤖", "🎮"],
-        ["🎤", "🤖", "🎮"], []],
+      [{}, ["turn", "agent", "session"], ["🎤", "🧵", "🎮"],
+        ["🎤", "🧵", "🎮"], []],
       // The options' defaults.
       [{ agent: "always", session: "always" }, ["turn"], ["🎤"],
-        ["🎤", "🤖", "🎮"], ["🤖", "🎮"]],
+        ["🎤", "🧵", "🎮"], ["🧵", "🎮"]],
       // Kept live and stamped too.
       [{ turn: "always", agent: "always", session: "always" },
-        ["turn", "agent", "session"], ["🎤", "🤖", "🎮"],
-        ["🎤", "🤖", "🎮"], ["🎤", "🤖", "🎮"]],
+        ["turn", "agent", "session"], ["🎤", "🧵", "🎮"],
+        ["🎤", "🧵", "🎮"], ["🎤", "🧵", "🎮"]],
       // Live while running only, and stamped nowhere.
-      [{ session: "running" }, ["turn"], ["🎤"], ["🎤", "🤖", "🎮"], []],
+      [{ session: "running" }, ["turn"], ["🎤"], ["🎤", "🧵", "🎮"], []],
       // In the transcript only.
-      [{ turn: "never", agent: "never" }, ["turn", "agent"], ["🎤", "🤖"],
+      [{ turn: "never", agent: "never" }, ["turn", "agent"], ["🎤", "🧵"],
         ["🎮"], []],
-      [{ turn: "always", session: "always" }, ["agent"], ["🤖"],
-        ["🎤", "🤖", "🎮"], ["🎤", "🎮"]],
+      [{ turn: "always", session: "always" }, ["agent"], ["🧵"],
+        ["🎤", "🧵", "🎮"], ["🎤", "🎮"]],
     ] as const) {
       const name = JSON.stringify([live, stamped]);
       const receipt = inZone(cost, () => receiptLines(st, cost, 196, [],

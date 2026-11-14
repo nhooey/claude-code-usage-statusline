@@ -39,6 +39,7 @@ import type { Places } from './engine.ts'
 import { agentReadings, foldOf, turnsVia } from './transcripts.ts'
 import { creditsVia, preparedVia } from './usage.ts'
 import { calibrationVia } from './calibration.ts'
+import { agentsDoc } from './subagents.ts'
 import { options } from './configuration.ts'
 
 type $ = EngineInterface
@@ -187,12 +188,17 @@ export async function statusDoc($: $, places: Places): Promise<Dict> {
     git: await timed($, 'git', () => gitVia($, payload.current_dir)),
     prepared, snap, calib, now,
     tz: localZone(), rate })
-  // The mod's alone, and only when there are some: the credits the 💳
-  // row draws, by the option.
+  // The mod's alone: the subagents and the progress updates the band's
+  // tree draws (subagents.ts).
+  const agents = path && fold ? await timed($, 'tree', () => agentsDoc($,
+    path, tr, payload.current_dir, now, calib, snap)) : null
+  // And only when there are some: the credits the 💳 row draws, by the
+  // option.
   const drawn = o === null ? [] : drawnCredits(credits.credits, o.credits,
     now)
-  return drawn.length ? { ...doc, credits: { drawn,
-    original: o!.credits.original } } : doc
+  return { ...doc, ...agents ? { agents } : {},
+    ...drawn.length ? { credits: { drawn,
+      original: o!.credits.original } } : {} }
 }
 
 /** The session's turns as read_turns makes them from the transcript as it

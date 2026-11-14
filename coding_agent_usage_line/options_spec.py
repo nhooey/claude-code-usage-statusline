@@ -345,11 +345,12 @@ OPTIONS = {
             #              can collapse with its [-]
             #   "footer" — under Claude Code's footer line
             #              (`-- INSERT -- ⏵⏵ auto mode on …`)
-            # The tag lines have no live row: theirs is always "footer".
+            # The tag lines have no live row: theirs is always "footer"; the
+            # subagents hang in the band's tree: theirs is always "above".
             "place": {
                 "type": "enum",
                 "items": ("above", "footer"),
-                "fixed": ("tag",),
+                "fixed": ("tag", "subagents"),
             },
             #   "never"   — the mod never draws it
             #   "running" — drawn while a turn runs, gone at its end
@@ -358,16 +359,26 @@ OPTIONS = {
             # Stamped into the transcript when the turn ends.
             # `fixed`: the rows whose value is the default's, whatever a
             # file says; a file that sets another is warned about (Decided 16).
-            "transcript": {"type": "bool", "fixed": ("account",)},
+            "transcript": {"type": "bool", "fixed": ("account", "subagents")},
         },
-        # 🎤 turn, 🤖 agent, 🎮 session, the 🔻🔖 line under the prompt and
-        # the receipt's 🔺🔖 line, and the 💳 account row.
-        "rows": ("turn", "agent", "session", "tag", "account"),
+        # 🎤 turn, 🧵 agent, 🎮 session, the 🔻🔖 line under the prompt and
+        # the receipt's 🔺🔖 line, the 💳 account row and the subagents'
+        # rows in the band's tree.
+        "rows": ("turn", "agent", "session", "tag", "account", "subagents"),
         "ports": ("mod",),
         "file": True,
         "flag": None,
         "doc-table": None,
-        "doc": "Each row the mod draws, 🎤 `turn`, 🤖 `agent`, 🎮 `session`, the 🔖 `tag` lines and the 💳 `account` row: `place`, whether it is drawn `above` the prompt or under Claude Code's `footer` line; `live`, whether it is drawn `never`, while a turn is `running` or `always`; and `transcript`, whether a turn's end stamps it into the transcript. In each place the rows go in one order: 💳, 🎤, 🤖, 🎮.",
+        "doc": "Each row the mod draws, 🎤 `turn`, 🧵 `agent`, 🎮 `session`, the 🔖 `tag` lines, the 💳 `account` row and the `subagents`' rows: `place`, whether it is drawn `above` the prompt or under Claude Code's `footer` line; `live`, whether it is drawn `never`, while a turn is `running` or `always`; and `transcript`, whether a turn's end stamps it into the transcript. Above the prompt the rows are a tree, 🎮 the root, 🧵 and the subagents under it, then 🎤; under the footer line they go in one order: 💳, 🎤, 🧵, 🎮. The subagents are always above the prompt and never stamped.",
+    },
+    "subagent-rows": {
+        "type": "int",
+        "minimum": 0,
+        "ports": ("mod",),
+        "file": True,
+        "flag": None,
+        "doc-table": None,
+        "doc": "How many subagent rows the band's tree draws at most. Past it, the later siblings under one parent are summed on that parent's `… N more` row; every shown row's parents stay.",
     },
     "account-place": {
         "type": "enum",
