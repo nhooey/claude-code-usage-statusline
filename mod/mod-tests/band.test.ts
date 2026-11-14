@@ -121,8 +121,8 @@ async function mountBand($: any, surface: 'terminal' | 'desktop',
   const skip = OPTIONS.accountPlace === 'row' &&
     OPTIONS.rows.account.place === 'footer' ? 3 : 1
   return { above, hint, drawn: async () => ({ type: 'Box',
-    children: [...rowsOf(await above.drawn() as Drawn, 0),
-      ...rowsOf(await hint.drawn() as Drawn, skip)] }) }
+    children: [...rowsOf(await drawnOf(above), 0),
+      ...rowsOf(await drawnOf(hint), skip)] }) }
 }
 
 const BAND: RenderPropsOf['AbovePrompt'] = {
@@ -193,10 +193,25 @@ const text = (spans: readonly Span[]) => spans.map((s) => s.text).join('')
 type Drawn = { type: string; props?: Record<string, unknown>;
   children?: (Drawn | string)[] }
 
+/** What the mod drew in `ui`: Claude Code may hold the mod's drawing in a
+ * Box of its own, beside empty Boxes, which is stepped through. */
+async function drawnOf(ui: { drawn: () => Promise<unknown> }): Promise<Drawn> {
+  let tree = await ui.drawn() as Drawn
+  for (;;) {
+    const kids = (tree?.type === 'Box' ? tree.children ?? [] : []).filter(
+      (c) => typeof c === 'string' || c.type !== 'Box' || c.children?.length)
+    const only = kids.length === 1 ? kids[0] : null
+    if (only === null || typeof only === 'string' || only.type !== 'Box') {
+      return tree
+    }
+    tree = only
+  }
+}
+
 /** Each row the mod drew, as its text and its spans' colours: the Texts
  * directly in the drawing's column, each of whose children is one span. */
 async function drawnRows(ui: { drawn: () => Promise<unknown> }) {
-  const tree = await ui.drawn() as Drawn
+  const tree = await drawnOf(ui)
   if (tree.type !== 'Box') return []
   return (tree.children ?? []).filter((c): c is Drawn =>
     typeof c !== 'string' && c?.type === 'Text').map((row) => {
@@ -209,7 +224,7 @@ async function drawnRows(ui: { drawn: () => Promise<unknown> }) {
 /** Where a prompt's turn tag was drawn: `beside` it on its row, or under
  * it on a line of its own, and the tag's text with its leading blanks. */
 async function tagDrawn(ui: { drawn: () => Promise<unknown> }) {
-  const tree = await ui.drawn() as Drawn
+  const tree = await drawnOf(ui)
   const spans = (row: Drawn) => ((row.children ?? []) as Drawn[])
     .map((c) => (c.children ?? []).join('')).join('')
   if (tree.props?.flexDirection === 'row') {
@@ -433,7 +448,7 @@ test('a turn running draws the running phase', async ($, on) => {
     rate: null, phase: 'running', live: LIVE })
   expect(await drawnRows(ui)).toEqual(expected(lines))
   // No blank top row, where Claude Code's `[-]` would stand alone.
-  expect(((await ui.above.drawn()) as Drawn).props?.marginTop).toBeUndefined()
+  expect((await drawnOf(ui.above)).props?.marginTop).toBeUndefined()
 })
 
 test('each row is drawn in its place: 🎤 and 🎮 above the prompt, 🤖 ' +
