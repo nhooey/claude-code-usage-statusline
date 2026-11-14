@@ -22,7 +22,8 @@ import { treeRows } from "../src/band_tree.ts";
 import type { TreeInput } from "../src/band_tree.ts";
 import { draw } from "../src/grid.ts";
 import type { Row } from "../src/grid.ts";
-import { fixedKeys } from "../src/band.ts";
+import { bandRows, fixedKeys, treeOf } from "../src/band.ts";
+import type { BandOpts, Live, Phase } from "../src/band.ts";
 import { corpusAgents } from "../tools/gen-row-cases.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
@@ -216,4 +217,42 @@ test("the progress update is drawn for a working or waiting thread " +
     l.includes("Running the suite") || l.includes("Checking the binary")));
   assert.ok(!tree("01-mixed@220", { mainPhase: "⚫" }).some((l) =>
     l.includes("Checking the binary")));
+});
+
+/** The band's tree over the baseline status document, its turn opened an
+ * hour before the clock, with 01-mixed@220's agents, in `phase` and with
+ * `rows.subagents.live` at `agents`, as plain lines at 200 columns. */
+function bandTree(phase: Phase, agents: Live): string[] {
+  const file = path.join(REPO, "tests/fixtures/figures/status/" +
+    "01-baseline@196.json");
+  const base = JSON.parse(fs.readFileSync(file, "utf8")) as Dict;
+  const fig: Dict = { ...base,
+    transcript: { ...base.transcript as Dict, turn_s: NOW - 3600 },
+    agents: corpusAgents("01-mixed@220", "") };
+  const opts: BandOpts = { rate: null, phase, agents,
+    live: { turn: "running", agent: "always", session: "always" },
+    places: { turn: "above", agent: "above", session: "above" } };
+  const rows = treeOf(ST, fig, bandRows(ST, fig, opts), opts, []);
+  const keys = fixedKeys(ST, 200, []);
+  return rows.map((r) => stripAnsi(join(draw(ST, r, keys, 200, [])))
+    .trimEnd());
+}
+
+test("between turns live \"always\" keeps the running agents under 🧵 " +
+  "and draws no ✅ N done, which the running turn draws", () => {
+  const running = bandTree("running", "always");
+  assert.ok(running.some((l) => /✅ 4 done/u.test(l)));
+  const done = bandTree("done", "always");
+  assert.match(done[1], /^╰⊟ 🧵⚫ main/u);
+  assert.ok(done.some((l) => /🔍🟢 Marigold/u.test(l)));
+  assert.ok(!done.some((l) => l.includes("done")));
+  assert.ok(!done.some((l) => l.includes("Daisy")));
+});
+
+test("between turns live \"running\" draws no agents", () => {
+  assert.ok(bandTree("running", "running").some((l) =>
+    l.includes("Marigold")));
+  const done = bandTree("done", "running");
+  assert.equal(done.length, 2);
+  assert.match(done[1], /^╰─ 🧵⚫ main/u);
 });

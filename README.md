@@ -41,7 +41,7 @@ Read these three first:
 |---|---|---|---|
 | 🎮 | the mark, then 📦 🌿 🔀 | the main thread and every agent | above the prompt, the tree's root |
 | 🧵 | the mark, its state, 📨 with the messages waiting for its next turn, `main` and its latest progress update | the main thread alone | above the prompt, under 🎮 |
-| subagents | each one's head, name and latest progress update | each subagent alone | above the prompt, under the thread that started it, while a turn runs |
+| subagents | each one's head, name and latest progress update | each subagent alone | above the prompt, under the thread that started it; between turns, those running or paused |
 | 🎤 | the mark and its state | the turn | above the prompt, last, while a turn runs |
 | 💳 | 📁 Directory · 🎨 Style · 💳 Account · 🔋 🪫 Windows · 🔜 Resets · 📅 Date · 🕐 Clock | the account and where the session works | under the footer line |
 

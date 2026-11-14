@@ -168,7 +168,7 @@ test('with no configuration file the options are the defaults', () => {
       session: { place: 'above', live: 'always', transcript: false },
       tag: { place: 'footer', live: 'never', transcript: true },
       account: { place: 'footer', live: 'always', transcript: false },
-      subagents: { place: 'above', live: 'running', transcript: false },
+      subagents: { place: 'above', live: 'always', transcript: false },
     },
     subagentRows: 6,
     accountPlace: 'row',
