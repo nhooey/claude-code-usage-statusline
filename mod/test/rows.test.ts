@@ -576,6 +576,37 @@ test("🎤 carries the model and 🛫, and a running tool's time in 🛫's colum
   assert.ok(!t.main.label.some((p) => p.path === "chat.doing"));
 });
 
+test("🎤's ⌛ counts to now while the turn runs, and is dur_s between turns",
+  () => {
+    const st = settings({});
+    const fig = document("status/01-baseline@196");
+    const now = ((fig.clock as Dict).now as number);
+    const text = (spans: readonly Span[] | undefined) =>
+      (spans ?? []).map((s) => s.text).join("");
+    // Opened 10 minutes ago, its last record 5 minutes old: a tool has
+    // run since then without writing one.
+    const ts = new Date((now - 600) * 1000).toISOString()
+      .replace(/\.\d+Z$/, "Z");
+    const f = { ...fig, open_turn: { ...(fig.open_turn as Dict), ts,
+      dur_s: 300 } };
+    const clock = (phase: "running" | "done") => text(inZone(f,
+      () => bandRows(st, f, { rate: null, phase })).turn.cells.clock);
+    assert.match(clock("running"), /^⌛ +10m$/);
+    assert.match(clock("done"), /^⌛ +5m$/);
+    // Its answer ended, as in the second 🎤 is held after the receipt:
+    // to the end of the answer, as the receipt reads.
+    const idle = { ...f, transcript: { ...(fig.transcript as Dict),
+      idle_at: now - 300 } };
+    assert.match(text(inZone(idle, () => bandRows(st, idle,
+      { rate: null, phase: "running" })).turn.cells.clock), /^⌛ +5m$/);
+    // A clock that puts the start after the last record keeps dur_s.
+    const ahead = { ...f, open_turn: { ...(f.open_turn as Dict),
+      ts: new Date((now - 60) * 1000).toISOString()
+        .replace(/\.\d+Z$/, "Z") } };
+    assert.match(text(inZone(ahead, () => bandRows(st, ahead,
+      { rate: null, phase: "running" })).turn.cells.clock), /^⌛ +5m$/);
+  });
+
 test("a plan reading STALE_MARK_S old marks each 💳 figure with 🧊 and " +
   "its age, in the text", () => {
   const st = settings({});

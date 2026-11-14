@@ -475,6 +475,24 @@ test('a turn running draws the running phase', async ($, on) => {
   expect((await drawnOf(ui.above)).props?.marginTop).toBeUndefined()
 })
 
+test('a running turn\'s ⌛ counts on while no record is written',
+  async ($, on) => {
+    const w = world(on)
+    await start($, w, 'terminal', STATUS)
+    const turnClock = async () => {
+      const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
+      const row = (await drawnRows(ui)).find((r) => r.text.includes('🎤'))
+      return row?.text.match(/⌛ *(\S+)/)?.[1]
+    }
+    const before = await turnClock()
+    await w.clock.advance(300_000)
+    await settle()
+    const after = await turnClock()
+    expect(before).toBeDefined()
+    expect(after).toBeDefined()
+    expect(after).not.toBe(before)
+  })
+
 test('each row is drawn in its place: the tree of 🎮, 🎤 and 🧵 above ' +
   'the prompt, 💳 alone under the footer line', async ($, on) => {
   const w = world(on)
