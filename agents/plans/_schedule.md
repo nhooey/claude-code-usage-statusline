@@ -19,7 +19,7 @@ files they both change. Written 2026-10-20 from:
 - [The account's dollar credits on the band](credit-balances.md), steps
   1–8: `CB1`, `CB1b`, `CB2` … `CB6`, `CB4b`.
 - [One port: Claude's figures drawn by the mod alone](one-panel-port.md),
-  steps 1–5: `OP1` … `OP5`.
+  steps 1–7: `OP1` … `OP7`.
 - Work in flight outside the plans: `CA`, the calibration cache keyed by
   account id (asked 2026-10-20, Blocked.1.A).
 
@@ -86,9 +86,11 @@ done, and move a plan to [_implemented](_implemented/) when its last node is.
 | `CB5` | Docs, and the acceptance check, live | `CB3`, `CB6` | none | `docs/layout.md`, `docs/options.md`, `docs/usage-sources.md` |
 | `OP1` | **Done.** Which entries reach each Python module: the panel, Codex, the fold worker, the tests | none | none | `tools/python-module-reach.py`, `one-panel-port.md` |
 | `OP2` | **Done.** Remove the agent panel command: `--mode subagent`, its suite, goldens, tools and docs | `OP1` | none | `cli.py`, `claude.py`, `tests/`, `tools/`, `examples/claude/settings.json`, `README.md`, `docs/` |
-| `OP3` | The subagent rows in the band: `rows.subagents`, prepared from the agent folds, drawn by `renderTaskRows` | `OP1` | `OP2` (`docs/layout.md`) | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/hooks/`, `mod/src/`, `docs/layout.md` |
+| `OP3` | The band's tree: 🎮 the root, 🧵 main, 🎤 the turn and the subagents under them, with `✅ N done`, the cap and progress updates | `OP1` | `OP2` (`docs/layout.md`) | `spec/options.jsonc`, `mod/defaults/config.jsonc`, `mod/hooks/`, `mod/src/`, `docs/layout.md` |
 | `OP4` | The mod's fold worker in TypeScript | `OP1` | none | `mod/hooks/transcripts.ts`, `mod/scripts/` |
 | `OP5` | The Python's Claude twins removed, `--mode status` and `--mode cost` for Claude among them | `OP2`, `OP3`, `OP4` | none | `coding_agent_usage_line/`, `tests/` |
+| `OP6` | 🧬 for the model cell, so 🤖 keeps one job | `OP5` | none | `spec/layout.jsonc`, `mod/src/` |
+| `OP7` | The band's clicks: a label switches to its thread, a row with children folds, 📦 🌿 🔀 link | `OP3` | none | `mod/hooks/`, `mod/mod-tests/` |
 
 `RT8`'s and `RT6`/`RT7`'s edges in the plan: steps 4 to 7 land in order,
 step 8 needs steps 1 and 4 (done), step 9 needs step 1 (done).
@@ -144,6 +146,8 @@ flowchart LR
     OP1 --> OP2 --> OP5
     OP1 --> OP3 --> OP5
     OP1 --> OP4 --> OP5
+    OP5 --> OP6
+    OP3 --> OP7
     OP2 -.-> OP3
   end
 ```
