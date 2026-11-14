@@ -39,6 +39,13 @@
 // it; 🤖 on the receipt comes from --status, a status document standing
 // for the band's last one, as the mod keeps it.
 //
+// --agents CASE draws the subagents of the case of
+// tests/fixtures/panel/corpus.json whose id is CASE, such as
+// "03-tree@220", in the band's tree above the prompt, each task's `label`
+// standing for its latest progress update; --progress is the main
+// thread's.  The corpus's clock is the figures documents'.  --cap is
+// subagent-rows.
+//
 // The clock is drawn in the document's `clock.tz`, as the edge would set
 // it, and the terminal's profile is read from the environment.
 import { readFileSync } from "node:fs";
@@ -51,6 +58,7 @@ import { pyRstrip } from "../src/py.ts";
 import type { Dict } from "../src/py.ts";
 import {
   FOOTER_JOIN, ROW_NAMES, accountLine, bandLines, bandRows, footerTail,
+  rootDrawn,
 } from "../src/band.ts";
 import type { Live, Phase, Place } from "../src/band.ts";
 import { receiptLines, startLine } from "../src/receipt.ts";
@@ -58,13 +66,14 @@ import { RIGHT_EDGE } from "../src/spec.ts";
 import { DEFAULTS_REL, parseDefaults } from "../src/config.ts";
 import type { Rows } from "../src/config.ts";
 import { OPTIONS } from "../src/options_spec.ts";
+import { corpusAgents } from "./gen-row-cases.ts";
 
 const USAGE = "usage: draw-figures.ts FILE [--cols N] " +
   "[--part {band,account,above,footer,tail,receipt,start}] " +
   "[--phase {running,done}] " +
   "[--hide PATH] [--rate N] [--home DIR] [--status STATUS_FILE] " +
   "[--rows JSON] [--right-edge N] [--inset N] " +
-  "[--hint TEXT] [--plain]";
+  "[--hint TEXT] [--agents CASE] [--progress TEXT] [--cap N] [--plain]";
 
 function fail(msg: string): never {
   process.stderr.write(USAGE + "\ndraw-figures.ts: error: " + msg + "\n");
@@ -78,7 +87,8 @@ function read(path: string): Dict {
 const argv = process.argv.slice(2);
 let file = "", cols = 160, part = "", phase: Phase = "running";
 let rate: number | null = null, home = "${HOME}", statusFile = "", plain = false;
-let rowsArg = "";
+let rowsArg = "", agentsCase = "", progress = "";
+let cap: number | undefined;
 let rightEdge = RIGHT_EDGE, inset = 0;
 let hint = "-- INSERT -- ⏵⏵ auto mode on (shift+tab to cycle)";
 const hide: string[] = [];
@@ -101,6 +111,9 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === "--right-edge") rightEdge = Number(next());
   else if (a === "--inset") inset = Number(next());
   else if (a === "--hint") hint = next();
+  else if (a === "--agents") agentsCase = next();
+  else if (a === "--progress") progress = next();
+  else if (a === "--cap") cap = Number(next());
   else if (a.startsWith("--")) fail("unrecognized arguments: " + a);
   else file = a;
 }
@@ -146,6 +159,13 @@ function rowsOf(arg: string): Rows {
 const rows = rowsOf(rowsArg);
 
 const fig = read(file);
+if (agentsCase || progress) {
+  try {
+    fig.agents = corpusAgents(agentsCase, progress);
+  } catch {
+    fail("--agents: no case " + JSON.stringify(agentsCase));
+  }
+}
 const mode = fig.mode as string;
 part ||= mode === "cost" ? "receipt" : "band";
 if ((part === "receipt") !== (mode === "cost")) {
@@ -163,14 +183,17 @@ const places = Object.fromEntries(ROW_NAMES.map((r) =>
 const stamped = ROW_NAMES.filter((r) => rows[r].transcript);
 // Above the prompt the band starts at the terminal's left edge, so its
 // rows are indented --inset columns rather than drawn narrower.
+const agents = rows.subagents.live as Live;
 const band = (place?: Place): Span[][] =>
   bandLines(st, fig, cols, hide, place === "above"
-    ? { rate, phase, live, place, places, indent: inset }
-    : { rate, phase, live, place, places, inset });
+    ? { rate, phase, live, place, places, indent: inset, agents, cap }
+    : { rate, phase, live, place, places, inset, agents, cap });
+// The tree's root draws 📦 🌿 🔀, and the 💳 row leaves them out.
+const rooted = rootDrawn(rows.session.place, rows.session.live, phase, hide);
 const account = (place?: Place): Span[][] => {
   const row = place === "above"
-    ? accountLine(st, fig, hide, cols, home, inset)
-    : accountLine(st, fig, hide, cols - inset, home);
+    ? accountLine(st, fig, hide, cols, home, inset, rooted)
+    : accountLine(st, fig, hide, cols - inset, home, 0, rooted);
   return row.length ? [row] : [];
 };
 // The account row where `place` is its place and the phase draws it.
@@ -192,7 +215,8 @@ if (part === "band") {
 } else if (part === "tail") {
   // Claude Code's line two blanks in, as footerTail reckons it; --hint
   // holds the mode's pill whole, so none is counted apart.
-  const tail = footerTail(st, fig, hide, hint, cols, undefined, home);
+  const tail = footerTail(st, fig, hide, hint, cols, undefined, home,
+    rooted);
   lines = [[span("  " + hint + (tail ? FOOTER_JOIN + tail : ""))]];
 } else if (part === "start") {
   lines = [startLine(fig, hide)];

@@ -71,16 +71,22 @@
     // 🎤 drawn above the prompt while a turn runs, then left to the
     // receipt stamped in the transcript just above it.
     "turn":    {"place": "above",  "live": "running", "transcript": true},
-    // 🤖 under the footer line, just over the agent panel, kept.
-    "agent":   {"place": "footer", "live": "always",  "transcript": false},
-    // 🎮 above the prompt, under 🎤, kept.
+    // 🧵 the main thread in the band's tree above the prompt, kept.
+    "agent":   {"place": "above",  "live": "always",  "transcript": false},
+    // 🎮 the root of the band's tree above the prompt, kept.
     "session": {"place": "above",  "live": "always",  "transcript": false},
     // The 🔻🔖 line under the prompt and the receipt's 🔺🔖 line; its
     // place is always "footer" (it has no live row).
     "tag":     {"place": "footer", "live": "never",   "transcript": true},
     // The 💳 account; its transcript is always false.
-    "account": {"place": "footer", "live": "always",  "transcript": false}
+    "account": {"place": "footer", "live": "always",  "transcript": false},
+    // The subagents, in the band's tree under the thread that started
+    // each; their place is always "above" and their transcript false.
+    "subagents": {"place": "above", "live": "running", "transcript": false}
   },
+  // How many subagent rows the band's tree draws at most; the later
+  // siblings past it are summed on their parent's "… N more" row.
+  "subagent-rows": 6,
   // Where the 💳 account is drawn: "row", a row of its own where
   // rows.account.place puts it, in its colours, or "tail", at the footer
   // line's right end, plain and dim, whatever rows.account.place says.

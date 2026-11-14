@@ -33,7 +33,7 @@ import type { Span } from '../src/spans.ts'
 import type { Turn } from '../src/claude_records.ts'
 import {
   ROW_NAMES, accountLine, bandRows, bandScoped, footerRuler, footerTail,
-  modeOfHint,
+  modeOfHint, rootDrawn,
 } from '../src/band.ts'
 import type { Place, RowsLive, RowsPlace } from '../src/band.ts'
 import {
@@ -596,11 +596,20 @@ async function bandNow($: $, isWorking: boolean, place: Place):
   const running = isWorking || await read($, held)
   const account = o.accountPlace === 'row' &&
     o.rows.account.place === place && accountedIn(o, running)
-    ? accountLine(st, fig, o.hide, cols - inset, await home($), indent) : []
+    ? accountLine(st, fig, o.hide, cols - inset, await home($), indent,
+      rootedIn(o, running)) : []
   return [...account.length ? [{ scope: 'account', spans: account }] : [],
     ...bandScoped(st, fig, cols, o.hide,
       { rate: await read($, rate), phase: running ? 'running' : 'done',
-        live: liveOf(o), place, places: rowPlacesOf(o), inset, indent })]
+        live: liveOf(o), place, places: rowPlacesOf(o), inset, indent,
+        agents: o.rows.subagents.live, cap: o.subagentRows })]
+}
+
+/** Whether the band's tree draws its root now, whose label carries 📦 🌿
+ * 🔀, which the 💳 account then leaves out (rootDrawn). */
+function rootedIn(o: Options, running: boolean): boolean {
+  return rootDrawn(o.rows.session.place, o.rows.session.live,
+    running ? 'running' : 'done', o.hide)
 }
 
 /** Whether the 💳 account is drawn now, by rows.account.live: "running"
@@ -880,9 +889,11 @@ export const register: Register = on => {
       const cols = bandCols || (e.viewport?.columns ?? 80)
       const fig = at(doc as Dict, await read($, clockNow))
       // The 💳 account, where rows.account.live draws it now.
-      const accounted = accountedIn(o, e.props.isWorking || await read($, held))
+      const running = e.props.isWorking || await read($, held)
+      const accounted = accountedIn(o, running)
       const text = accounted && o.accountPlace === 'tail' ? footerTail(st, fig,
-        o.hide, e.props.hint, cols, mode, await home($)) : ''
+        o.hide, e.props.hint, cols, mode, await home($),
+        rootedIn(o, running)) : ''
       const tail = o.footerRuler && text ? footerRuler(st, text, cols)
         : text
       // What the padding was worked out from, each time it changes, so a

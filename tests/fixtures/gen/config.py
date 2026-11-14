@@ -234,21 +234,27 @@ CASES = [
          " file, the defaults' rows above the prompt give 5",
          {"home/p/.git/": None}),
     case("right-edge-derived-footer", "right-edge follows rows.*.place:"
-         " every row under the footer line gives 2",
+         " every row under the footer line, and no subagents, gives 2",
          {PROJECT: '{"rows": {"turn": {"place": "footer"},'
-                   ' "session": {"place": "footer"}}}',
+                   ' "agent": {"place": "footer"},'
+                   ' "session": {"place": "footer"},'
+                   ' "subagents": {"live": "never"}}}',
           "home/p/.git/": None}),
     case("right-edge-derived-above", "right-edge follows rows.*.place"
          " merged across the layers: one row above, from another file than"
          " the rest, gives 5",
          {USER: '{"rows": {"turn": {"place": "footer"},'
-                ' "session": {"place": "footer"}}}',
+                ' "agent": {"place": "footer"},'
+                ' "session": {"place": "footer"},'
+                ' "subagents": {"live": "never"}}}',
           PROJECT: '{"rows": {"agent": {"place": "above"}}}',
           "home/p/.git/": None}),
     case("right-edge-derived-never", "right-edge follows rows.*.place:"
          " a row above that is never drawn does not count, so 2",
          {PROJECT: '{"rows": {"turn": {"place": "footer"},'
-                   ' "session": {"place": "above", "live": "never"}}}',
+                   ' "agent": {"place": "footer"},'
+                   ' "session": {"place": "above", "live": "never"},'
+                   ' "subagents": {"live": "never"}}}',
           "home/p/.git/": None}),
     case("right-edge-set", "a right-edge a layer sets is not derived",
          {USER: '{"right-edge": 0}',
@@ -258,7 +264,9 @@ CASES = [
          " is not set: no warning, and the value derived",
          {USER: '{"right-edge": null, "label": null}',
           PROJECT: '{"rows": {"turn": {"place": "footer"},'
-                   ' "session": {"place": "footer"}}}',
+                   ' "agent": {"place": "footer"},'
+                   ' "session": {"place": "footer"},'
+                   ' "subagents": {"live": "never"}}}',
           "home/p/.git/": None}),
 
     # ── A record: credits ───────────────────────────────────────────────
@@ -344,8 +352,8 @@ DEFAULTS_CASES = [
     ("table-missing-row", "a table's row left out",
      _without(SHIPPED, '"tag":     {"place"')),
     ("table-missing-field", "a row's field left out",
-     _swap(SHIPPED, '"agent":   {"place": "footer", "live": "always", ',
-           '"agent":   {"place": "footer", ')),
+     _swap(SHIPPED, '"agent":   {"place": "above",  "live": "always", ',
+           '"agent":   {"place": "above", ')),
     ("table-missing-place", "a row without its place",
      _swap(SHIPPED, '"turn":    {"place": "above",  "live"', '"turn": {"live"')),
     ("table-bad-field", "a row's field of another type, and one unknown",

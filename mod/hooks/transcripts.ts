@@ -28,6 +28,7 @@ import {
 } from '../src/agent_message.ts'
 import type { AgentLike } from '../src/agent_message.ts'
 import { sha256Hex } from '../src/sha256.ts'
+import type { Dict } from '../src/py.ts'
 import { CONFIG } from './config.ts'
 import { log } from './log.ts'
 import {
@@ -603,6 +604,42 @@ async function saveFold($: $, dir: string, path: string, fold: AgentFold,
     void log($, 'agent fold not saved', err)
     return seq
   }
+}
+
+/** Each agent file's fold as the last agentReadings left it, by the
+ * file's path: the band's tree reads each agent's figures off it
+ * (hooks/subagents.ts).  The folds are this module's; a reader must not
+ * change them. */
+export function agentFolds(paths: readonly string[]): Map<string, AgentFold> {
+  const out = new Map<string, AgentFold>()
+  for (const p of paths) {
+    const got = agentKept.get(p)
+    if (got) out.set(p, got.fold)
+  }
+  return out
+}
+
+// Each sidecar's JSON, by its path, once read: Claude Code writes it at
+// the agent's start and keeps it.  null for one that would not read.
+const sidecars = new Map<string, Dict | null>()
+
+/** The `.meta.json` sidecar beside agent file `path`, as JSON, read once
+ * per load; null where there is none or it will not parse.  One not there
+ * yet is asked for again next time. */
+export async function sidecarOf($: $, path: string): Promise<Dict | null> {
+  const meta = path.slice(0, -'.jsonl'.length) + '.meta.json'
+  if (sidecars.has(meta)) return sidecars.get(meta)!
+  const text = await readText($, meta)
+  if (text === null) return null
+  let got: Dict | null = null
+  try {
+    const d: unknown = JSON.parse(text)
+    got = d && typeof d === 'object' && !Array.isArray(d) ? d as Dict : null
+  } catch {
+    got = null
+  }
+  sidecars.set(meta, got)
+  return got
 }
 
 /** agent_label's reading of a file's sidecar, as agentReadings read it. */

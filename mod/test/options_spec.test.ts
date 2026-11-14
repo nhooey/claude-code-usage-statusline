@@ -13,7 +13,7 @@ test("the records keep their literal values", () => {
   assert.deepEqual(OPTIONS.rows.fields.place.items, ["above", "footer"]);
   assert.equal(OPTIONS["usage-source"].flag, "--usage-source");
   assert.deepEqual(OPTIONS.rows.rows,
-    ["turn", "agent", "session", "tag", "account"]);
+    ["turn", "agent", "session", "tag", "account", "subagents"]);
   assert.equal(OPTIONS.mode.default, "status");
 });
 

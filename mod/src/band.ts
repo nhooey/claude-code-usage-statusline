@@ -15,8 +15,8 @@
 // in the process's TZ, which the edge sets from `clock.tz` before drawing,
 // as for claude_cost.ts.
 import {
-  CHROME_DEPTH, E_ACCT, E_DATE, E_PROJ, E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S,
-  STALE_MARK_S,
+  CHROME_DEPTH, E_ACCT, E_DATE, E_PHASE_END, E_PHASE_PAUSE, E_PHASE_RUN, E_PROJ,
+  E_TOOL, E_WORK, GRID_CELLS, MAG_DUR_S, QUIET_WARN_S, STALE_MARK_S,
 } from "./spec.ts";
 import { durFmt, magDim, padVal, visWidth } from "./formatting.ts";
 import type { Settings } from "./formatting.ts";
@@ -42,6 +42,8 @@ import {
 } from "./cells.ts";
 import type { Workspace } from "./cells.ts";
 import { creditCell } from "./credits.ts";
+import { treeRows } from "./band_tree.ts";
+import type { TreeTask } from "./subagent_tasks.ts";
 import { draw, hidden, layout } from "./grid.ts";
 import type { Piece, Row } from "./grid.ts";
 import type { Dict } from "./py.ts";
@@ -72,6 +74,14 @@ export type BandOpts = {
   /** Where each row is drawn, by its name (RowsPlace); "footer" for a row
    * absent. */
   readonly places?: RowsPlace;
+  /** When the band's tree draws the subagents, `rows.subagents.live`;
+   * "running" where absent. */
+  readonly agents?: Live;
+  /** The most subagent rows the tree draws, `subagent-rows`;
+   * SUBAGENT_ROWS where absent. */
+  readonly cap?: number;
+  /** The agents whose children are folded under them, by id. */
+  readonly folded?: ReadonlySet<string>;
 };
 
 /** A row of the band as the configuration's `rows` table names it: 🎤
@@ -447,6 +457,58 @@ function sessionRow(st: Settings, fig: Dict, tr: Transcript, now: number,
   return { scope: "session", label: sessionLabel(), cells };
 }
 
+/** The band's rows above the prompt, as the tree draws them
+ * (band_tree.ts): of 🎮, 🧵 and 🎤, those `places` puts above and the
+ * phase draws, whose scope `hide` leaves, and the subagents of the
+ * document's `agents` where `opts.agents` draws them. */
+export function treeOf(st: Settings, fig: Dict, rows: BandRows,
+  opts: BandOpts, hide: readonly string[]): Row[] {
+  const tr = decodeTranscript(fig.transcript);
+  const running = opts.phase === "running";
+  const above = phaseRows(rows, opts.phase, opts.live, "above", opts.places);
+  const drawn = (name: RowName, row: Row): Row | null =>
+    above.includes(row) && !hidden(hide, scopeOf(name)) ? row : null;
+  const doc = fig.agents as Dict | undefined;
+  const when = opts.agents ?? "running";
+  const shown = doc !== undefined &&
+    (running ? when !== "never" : when === "always");
+  const now = (fig.clock as Dict).now as number;
+  return treeRows(st, {
+    session: drawn("session", rows.session),
+    main: drawn("agent", rows.main),
+    turn: drawn("turn", rows.turn),
+    workspace: workspaceOf(fig, ""),
+    mainPhase: !running ? E_PHASE_END : tr.wait_at ? E_PHASE_PAUSE
+      : E_PHASE_RUN,
+    mainInbox: running ? tr.queued : 0,
+    mainProgress: typeof doc?.main_progress === "string"
+      ? doc.main_progress : "",
+    turnPhase: running ? E_PHASE_RUN : E_PHASE_END,
+    agents: shown ? { tasks: (doc.tasks ?? []) as TreeTask[],
+      limits: decodeLimits(fig.limits), now,
+      turnStart: tr.turn_s || null } : null,
+    cap: opts.cap ?? SUBAGENT_ROWS,
+    folded: opts.folded,
+  }, hide);
+}
+
+/** Whether the band's tree draws its root, 🎮, now: `rows.session`'s
+ * `place` puts it above the prompt and its `live` draws it in `phase`, and
+ * `hide` leaves it.  The 💳 row then leaves ROOT_WORKSPACE to it. */
+export function rootDrawn(place: unknown, live: unknown, phase: Phase,
+  hide: readonly string[]): boolean {
+  return place === "above" && !hidden(hide, "session") &&
+    (phase === "running" ? live !== "never" : live === "always");
+}
+
+/** The most subagent rows the tree draws where no option says. */
+export const SUBAGENT_ROWS = 6;
+
+/** The workspace parts the tree's root draws on its label (treeOf), which
+ * the 💳 row then leaves out: 📦 the project, 🌿 the branch, 🔀 the PR. */
+export const ROOT_WORKSPACE: readonly string[] = ["workspace.project",
+  "workspace.branch", "workspace.pr"];
+
 /** The band's four rows from a status figures document. */
 export function bandRows(st: Settings, fig: Dict, opts: BandOpts):
   BandRows {
@@ -491,21 +553,23 @@ export function phaseRows(rows: BandRows, phase: Phase,
  * under the hide path `account`.  The footer it is drawn on takes a string,
  * so it keeps none of the row's colours. */
 export function accountText(st: Settings, fig: Dict,
-  hide: readonly string[], home = ""): string {
-  return accountPieces(st, fig, hide, home)
+  hide: readonly string[], home = "", rooted = false): string {
+  return accountPieces(st, fig, hide, home, rooted)
     .flatMap((p) => p.spans.map((s) => s.text)).join("").trim();
 }
 
 /** accountText's pieces, in their colours; none under the hide path
- * `account`. */
+ * `account`.  `rooted`: the band's tree draws ROOT_WORKSPACE on its root,
+ * and the 💳 row leaves them out. */
 function accountPieces(st: Settings, fig: Dict, hide: readonly string[],
-  home: string): Piece[] {
+  home: string, rooted = false): Piece[] {
   if (hidden(hide, "account")) return [];
   const now = (fig.clock as Dict).now as number;
   // The workspace first, 📦 the project, 🌿 the branch, 📁 the directory,
   // 🔀 the PR and 🎨 the output style, each hidden by its own path.
   const shown: Piece[] = workspacePieces(workspaceOf(fig, home)).filter((p) =>
-    !hidden(hide, "account." + p.path));
+    !hidden(hide, "account." + p.path) &&
+    !(rooted && ROOT_WORKSPACE.includes(p.path)));
   let dropped = false;
   for (const p of accountRow(st, fig, now).label) {
     // A window's 🔜 goes with its window.
@@ -530,8 +594,8 @@ export const ACCOUNT_SHED: readonly string[] = ["workspace.style",
  * where the band's rows end at `cols`.  Too wide, it sheds ACCOUNT_SHED's
  * paths, then is cut with `…`.  None under the hide path `account`. */
 export function accountLine(st: Settings, fig: Dict, hide: readonly string[],
-  cols: number, home = "", indent = 0): Span[] {
-  let pieces = accountPieces(st, fig, hide, home);
+  cols: number, home = "", indent = 0, rooted = false): Span[] {
+  let pieces = accountPieces(st, fig, hide, home, rooted);
   if (!pieces.length) return [];
   const room = Math.max(0, cols - st.rightEdge - indent);
   const lead = indent ? [span(" ".repeat(indent))] : [];
@@ -584,8 +648,9 @@ function trimSpans(spans: readonly Span[]): Span[] {
  * on · " (as in "-- INSERT -- 2 shells"), so the pill of
  * `mode`, the session's permission mode, is counted apart. */
 export function footerTail(st: Settings, fig: Dict, hide: readonly string[],
-  hint: string, cols: number, mode?: string, home = ""): string {
-  const plain = accountText(st, fig, hide, home);
+  hint: string, cols: number, mode?: string, home = "",
+  rooted = false): string {
+  const plain = accountText(st, fig, hide, home, rooted);
   if (!plain) return "";
   const pillW = pillWidth(st, hint, MODE_PILLS[mode ?? ""] ?? "");
   // TAIL_CUT more than a row: Claude Code cuts the tail a column short of
@@ -706,17 +771,19 @@ export function bandLines(st: Settings, fig: Dict, cols: number,
   return bandScoped(st, fig, cols, hide, opts).map((r) => r.spans);
 }
 
-/** bandLines, each row with its scope (`turn` for 🎤, `main` for 🤖,
- * `session` for 🎮), so a caller can tell the rows apart: the rows of
- * `opts.place` alone where it is given. */
+/** bandLines, each row with its scope (`turn` for 🎤, `main` for 🧵,
+ * `session` for 🎮, `agent` for a subagent's), so a caller can tell the
+ * rows apart: the rows of `opts.place` alone where it is given, above the
+ * prompt as the band's tree (treeOf). */
 export function bandScoped(st: Settings, fig: Dict, cols: number,
   hide: readonly string[], opts: BandOpts):
   { scope: string; spans: Span[] }[] {
   const keys = fixedKeys(st, cols, hide);
   const drawn = cols - (opts.inset ?? 0);
-  return phaseRows(bandRows(st, fig, opts), opts.phase, opts.live,
-    opts.place, opts.places)
-    .filter((r) => !hidden(hide, r.scope))
+  const rows = bandRows(st, fig, opts);
+  return (opts.place === "above" ? treeOf(st, fig, rows, opts, hide)
+    : phaseRows(rows, opts.phase, opts.live, opts.place, opts.places)
+      .filter((r) => !hidden(hide, r.scope)))
     .map((r) => ({ scope: r.scope,
       spans: draw(st, indented(r, opts.indent ?? 0), keys, drawn, hide) }));
 }

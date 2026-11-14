@@ -60,7 +60,9 @@ import {
 } from '../src/claude.ts'
 import { NO_GIT } from '../src/claude_records.ts'
 import { settings, visWidth } from '../src/formatting.ts'
-import { ROW_NAMES, accountLine, bandLines, bandRows } from '../src/band.ts'
+import {
+  ROW_NAMES, accountLine, bandLines, bandRows, rootDrawn,
+} from '../src/band.ts'
 import {
   receiptLines, startLine, withEngineDuration,
 } from '../src/receipt.ts'
@@ -80,6 +82,9 @@ const STAMPED = ROW_NAMES.filter((r) => OPTIONS.rows[r].transcript)
 // Where the band draws each row.
 const PLACES = { turn: OPTIONS.rows.turn.place,
   agent: OPTIONS.rows.agent.place, session: OPTIONS.rows.session.place }
+// When the band's tree draws the subagents, and how many at most.
+const AGENTS = { agents: OPTIONS.rows.subagents.live,
+  cap: OPTIONS.subagentRows }
 // How far in every row starts, above the prompt, under the footer line and
 // in the receipt.
 const INSET = OPTIONS.hintInset
@@ -96,9 +101,9 @@ function bandWant(st: ReturnType<typeof settings>, fig: Dict,
   opts: { rate: number | null; phase: 'running' | 'done';
     live: typeof LIVE }): Span[][] {
   return [
-    ...bandLines(st, fig, COLS, HIDE, { ...opts, place: 'above',
+    ...bandLines(st, fig, COLS, HIDE, { ...opts, ...AGENTS, place: 'above',
       places: PLACES, indent: INSET }),
-    ...bandLines(st, fig, COLS, HIDE, { ...opts, place: 'footer',
+    ...bandLines(st, fig, COLS, HIDE, { ...opts, ...AGENTS, place: 'footer',
       places: PLACES, inset: INSET }),
   ]
 }
@@ -303,10 +308,13 @@ for (const surface of ['terminal', 'desktop'] as const) {
       const path = await start($, w, surface, STATUS)
       const doc = lastDoc(w)
       // The edges read the fixture as its bytes are: the document is the
-      // one made straight from them.
+      // one made straight from them, and the mod's own `agents` beside it,
+      // the subagents the band's tree draws.
       const want = await statusOf(w, path, doc.rate as number | null)
-      expect(JSON.parse(JSON.stringify(doc)))
+      const { agents, ...figures } = doc
+      expect(JSON.parse(JSON.stringify(figures)))
         .toEqual(JSON.parse(JSON.stringify(want)))
+      expect(Array.isArray((agents as Dict).tasks)).toBe(true)
       const ui = await mountBand($, surface, BAND)
       // Between turns the band draws nothing: the receipt has the rows.
       const lines = bandWant(BAND_ST, doc, {
@@ -451,34 +459,40 @@ test('a turn running draws the running phase', async ($, on) => {
   expect((await drawnOf(ui.above)).props?.marginTop).toBeUndefined()
 })
 
-test('each row is drawn in its place: 🎤 and 🎮 above the prompt, 🤖 ' +
-  'under the footer line', async ($, on) => {
+test('each row is drawn in its place: the tree of 🎮, 🧵 and 🎤 above ' +
+  'the prompt, 💳 alone under the footer line', async ($, on) => {
   const w = world(on)
   await start($, w, 'terminal', STATUS)
   const doc = lastDoc(w)
   const ui = await mountBand($, 'terminal', { ...BAND, isWorking: true })
   const opts = { rate: null, phase: 'running' as const, live: LIVE,
-    places: PLACES }
+    places: PLACES, ...AGENTS }
   const above = bandLines(BAND_ST, doc, COLS, HIDE,
     { ...opts, place: 'above', indent: INSET })
   const below = bandLines(BAND_ST, doc, COLS, HIDE,
     { ...opts, place: 'footer', inset: INSET })
-  expect([above.length, below.length]).toEqual([2, 1])
-  expect(text(above[0])).toContain('🎤')
-  expect(text(above[1])).toContain('🎮')
-  expect(text(below[0])).toContain('🤖')
+  // 🎮, 🧵 with the fixture's fork, ended this turn, under it, then 🎤.
+  expect([above.length, below.length]).toEqual([4, 0])
+  expect(text(above[0])).toMatch(/^ *⊟ 🎮 📦/u)
+  expect(text(above[1])).toMatch(/^ *├⊟ 🧵/u)
+  expect(text(above[2])).toMatch(/^ *│  ╰⊞ ✅ 1 done/u)
+  expect(text(above[3])).toMatch(/^ *╰─ 🎤/u)
   expect(await drawnRows(ui.above)).toEqual(expected(above))
-  expect((await drawnRows(ui)).slice(2)).toEqual(expected(below))
-  // The 💳 row first under the footer line, a row of its own by default,
-  // then 🤖.
-  const account = accountLine(BAND_ST, doc, HIDE, COLS - INSET, HOME)
+  // The 💳 row alone under the footer line, a row of its own by default,
+  // without the 📦 🌿 🔀 the tree's root draws.
+  const rooted = rootDrawn(OPTIONS.rows.session.place,
+    OPTIONS.rows.session.live, 'running', HIDE)
+  expect(rooted).toBe(true)
+  const account = accountLine(BAND_ST, doc, HIDE, COLS - INSET, HOME, 0,
+    rooted)
   expect(text(account)).toContain('💳')
-  expect(await drawnRows(ui.hint)).toEqual(expected([account, ...below]))
+  expect(await drawnRows(ui.hint)).toEqual(expected([account]))
   // All of them under the footer line, with every place "footer": the
   // band above the prompt is the engine's.
   w.files.set(CWD + '/.config/coding-agent-usage-line/config.local.jsonc',
     encoder.encode('{"rows": {"turn": {"place": "footer"}, ' +
-      '"session": {"place": "footer"}}}'))
+      '"agent": {"place": "footer"}, "session": {"place": "footer"}, ' +
+      '"subagents": {"live": "never"}}}'))
   await w.clock.advance(CONFIG.tickMs)
   await settle()
   const footed = await mountBand($, 'terminal', { ...BAND, isWorking: true })
@@ -506,31 +520,28 @@ function markColumns(row: string, from: number): Map<string, number> {
 }
 
 for (const cols of [80, 120, 160]) {
-  test(`🎮 above the prompt and 🤖 under the footer line put each cell on ` +
-    `one column (${cols} columns)`, async ($, on) => {
+  test(`🎮 and 🧵 in the tree above the prompt put each cell on one ` +
+    `column (${cols} columns)`, async ($, on) => {
     const w = world(on)
     await start($, w, 'terminal', STATUS)
     const ui = await mountBand($, 'terminal',
       { ...BAND, isWorking: true, bodyColumns: cols - 5 })
     const above = await drawnRows(ui.above)
-    const rows = await drawnRows(ui)
-    const below = rows.slice(above.length)
     const session = above.find((r) => r.text.includes('🎮'))
-    const main = below.find((r) => r.text.includes('🤖'))
+    const main = above.find((r) => r.text.includes('🧵'))
     expect(session).toBeDefined()
     expect(main).toBeDefined()
-    // The rows above the prompt start at the terminal's left edge, the
-    // ones under the footer line in Claude Code's container, hint-inset
-    // columns in.
+    // The tree's lines are in the labels, so every cell keeps its column
+    // at every depth.
     const up = markColumns(session!.text, 0)
-    const down = markColumns(main!.text, INSET)
+    const down = markColumns(main!.text, 0)
     const shared = [...up.keys()].filter((m) => down.has(m) &&
-      !['🎮', '🤖', '📨'].includes(m))
+      !['🎮', '🧵', '📨', '📦', '🌿', '🟢'].includes(m))
     expect(shared.length).toBeGreaterThan(1)
     for (const m of shared) expect([m, up.get(m)]).toEqual([m, down.get(m)])
     // Both rows end on one column, the grid's right end.
     expect(visWidth(session!.text.trimEnd(), BAND_ST.widths))
-      .toBe(INSET + visWidth(main!.text.trimEnd(), BAND_ST.widths))
+      .toBe(visWidth(main!.text.trimEnd(), BAND_ST.widths))
   })
 }
 
@@ -706,7 +717,7 @@ test('a transcript over 4 MiB is read in pieces through the shell',
     w.files.set(MAIN, big)
     const path = await start($, w, 'terminal', MAIN)
     expect(ranged.length).toBeGreaterThan(1)
-    const doc = lastDoc(w)
+    const { agents: _, ...doc } = lastDoc(w)
     const want = await statusOf(w, path, doc.rate as number | null)
     expect(JSON.parse(JSON.stringify(doc)))
       .toEqual(JSON.parse(JSON.stringify(want)))
@@ -917,6 +928,13 @@ function plant(w: World, dir: string, fold: MainFold, meta: FoldMeta) {
   w.files.set(dir + '/' + save.slot, encoder.encode(save.head))
 }
 
+/** A status document's figures, as JSON, without the mod's own `agents`,
+ * which statusOf does not make. */
+function figuresOf(doc: Dict): Dict {
+  const { agents: _, ...figures } = doc
+  return JSON.parse(JSON.stringify(figures)) as Dict
+}
+
 /** The status document over `bytes` in place of `path`'s own. */
 async function statusOver(w: World, path: string, bytes: Uint8Array,
   rate: number | null) {
@@ -937,7 +955,7 @@ test('a reload reads on from the saved fold, not the whole transcript',
     const { w, bytes, half, dir } = savedWorld(on, path)
     plant(w, dir, newMainFold(), foldMeta(bytes, half))
     await start($, w, 'terminal', path)
-    const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+    const doc = figuresOf(lastDoc(w))
     const rate = doc.rate as number | null
     expect(doc).toEqual(await statusOver(w, path, bytes.subarray(half), rate))
     expect(doc).not.toEqual(await statusOver(w, path, bytes, rate))
@@ -953,7 +971,7 @@ test('a saved fold of other bytes is not read, and is saved over',
     other[0] = 0x20
     plant(w, dir, newMainFold(), foldMeta(other, half))
     await start($, w, 'terminal', path)
-    const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+    const doc = figuresOf(lastDoc(w))
     expect(doc).toEqual(await statusOver(w, path, bytes,
       doc.rate as number | null))
     const whole = newMainFold()
@@ -1000,7 +1018,7 @@ test('a reload reads on from the state the worker saved', async ($, on) => {
   plant(w, dir, newMainFold(), foldMeta(bytes, half))
   await start($, w, 'terminal', path)
   expect(ran).toEqual(['fold'])
-  const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+  const doc = figuresOf(lastDoc(w))
   const rate = doc.rate as number | null
   expect(doc).toEqual(await statusOver(w, path, bytes, rate))
   expect(doc).not.toEqual(await statusOver(w, path, bytes.subarray(half),
@@ -1054,7 +1072,7 @@ test('with no package for the worker, the mod folds the bytes in pieces',
     const starts = froms.filter((at) => at % (2 * 1024 * 1024) !== 0 &&
       bytes[at - 1] === 10)
     expect(starts.length).toBeGreaterThanOrEqual(2)
-    const doc = JSON.parse(JSON.stringify(lastDoc(w)))
+    const doc = figuresOf(lastDoc(w))
     expect(doc).toEqual(await statusOver(w, path, bytes,
       doc.rate as number | null))
     const whole = newMainFold()
@@ -1313,11 +1331,11 @@ test('a turn whose records land after turn.complete gets its receipt drawn as it
     await askLive($, w, true)
     await until(w, 5_000)
     const want = await receiptOf(w, w.clock.now() / 1000)
-    // 🎤, 🤖 and 🎮 at no indent, a blank row, then the 🔺🔖 tag line,
+    // 🎤, 🧵 and 🎮 at no indent, a blank row, then the 🔺🔖 tag line,
     // drawn as the start line is.
     expect(want.length).toBe(5)
     expect(text(want[0]).trimStart().startsWith(spec.E_TURN)).toBe(true)
-    expect(text(want[1]).trimStart().startsWith(spec.E_BOT)).toBe(true)
+    expect(text(want[1]).trimStart().startsWith(spec.E_THREAD)).toBe(true)
     expect(text(want[2]).trimStart().startsWith(spec.E_SESSION)).toBe(true)
     expect(text(want[3])).toBe(' ')
     expect(text(want[4])).toContain('p-resume'.slice(0, 8))
@@ -1637,7 +1655,7 @@ async function drewAll($: any, w: World) {
   await until(w, 5_000)
   expect(stamped(w)).toBe(true)
   await w.clock.advance(1_000)
-  // Then nothing: the receipt has stamped 🤖 with 🎤 and 🎮.
+  // Then nothing: the receipt has stamped 🧵 with 🎤 and 🎮.
   expect(shown('done')).toEqual([])
   expect(await drawnRows(await mount())).toEqual([])
 

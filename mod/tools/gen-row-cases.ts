@@ -19,9 +19,12 @@
 //   band      one case a line: a status document (`doc`, and `same`) drawn
 //             at `cols` under `hide` in `phase` with the mod's 🛫, `rate`,
 //             and, where the case has them, only the rows `places` (the
-//             defaults file's rows.*.place) puts in `place`; `rows`, each
-//             row's spans top to bottom, and `lines`, the same joined
-//             with their escape codes
+//             defaults file's rows.*.place) puts in `place`; above the
+//             prompt, where the case has them, the band's tree with the
+//             subagents of the panel corpus's case `agents`, the main
+//             thread's progress update `progress` and the cap `cap`;
+//             `rows`, each row's spans top to bottom, and `lines`, the
+//             same joined with their escape codes
 //   receipt   one case a line: a cost document drawn at `cols` under
 //             `hide`; its lines as spans, `rows`, and joined, `lines`
 //   start     one case a line: a status document's start line, as `spans`
@@ -109,7 +112,28 @@ export function inZone<T>(fig: Dict, f: () => T): T {
 }
 
 export type BandCase = { doc: string; cols: number; hide: string[];
-  phase: Phase; rate: number | null; place?: Place; places?: RowsPlace };
+  phase: Phase; rate: number | null; place?: Place; places?: RowsPlace;
+  agents?: string; progress?: string; cap?: number };
+
+/** The panel's corpus, tests/fixtures/panel/corpus.json: its cases' tasks
+ * are the band's tree's subagents (corpusAgents). */
+const CORPUS = pathJoin(HERE, "..", "..", "tests", "fixtures", "panel",
+  "corpus.json");
+
+/** A status document's `agents` with the subagents of the corpus case
+ * `id` ("" for none), each task's `label` standing for its latest progress
+ * update and none for its activity, and `main` the main thread's.  The
+ * corpus's clock is the figures documents'. */
+export function corpusAgents(id: string, main: string): Dict {
+  if (!id) return { tasks: [], main_progress: main };
+  const corpus = JSON.parse(readFileSync(CORPUS, "utf8")) as Dict;
+  const got = (corpus.cases as Dict[]).find((c) => c.id === id);
+  if (!got) throw new Error("no corpus case " + JSON.stringify(id));
+  return { main_progress: main, tasks: ((got.input as Dict).tasks as Dict[])
+    .map((t) => ({ task: { ...t.task as Dict, label: "" }, usage: t.usage,
+      meta: t.meta, shares: t.shares,
+      progress: String((t.task as Dict).label ?? "") })) };
+}
 export type ReceiptCase = { doc: string; cols: number; hide: string[] };
 export type AccountCase = { doc: string; cols: number; hide: string[];
   indent: number };
@@ -122,11 +146,43 @@ export function drawAccount(st: Settings, fig: Dict, c: AccountCase):
     c.indent));
 }
 
-/** The band case's rows. */
-export function drawBand(st: Settings, fig: Dict, c: BandCase): Span[][] {
+/** The band case's rows: with `agents` or `progress`, the document's
+ * `agents` from the corpus (corpusAgents), drawn in the tree under `cap`. */
+export function drawBand(st: Settings, fig0: Dict, c: BandCase): Span[][] {
+  const fig = c.agents !== undefined || c.progress !== undefined
+    ? { ...fig0, agents: corpusAgents(c.agents ?? "", c.progress ?? "") }
+    : fig0;
   return inZone(fig, () => bandLines(st, fig, c.cols, c.hide,
-    { rate: c.rate, phase: c.phase, place: c.place, places: c.places }));
+    { rate: c.rate, phase: c.phase, place: c.place, places: c.places,
+      cap: c.cap }));
 }
+
+/** The band's tree with subagents, on TREE_DOC: each case of the corpus
+ * that has some, at each width, with the main thread's progress update;
+ * one under a cap that folds siblings into `… N more`; one that hides the
+ * progress updates; and once between turns. */
+function treeCases(): BandCase[] {
+  const base = { doc: TREE_DOC, hide: [] as string[], phase: "running" as
+    Phase, rate: RATE, place: "above" as Place, places: PLACES,
+    progress: TREE_PROGRESS };
+  const out: BandCase[] = [];
+  for (const agents of TREE_AGENTS) {
+    for (const cols of [236, ...COLS]) out.push({ ...base, cols, agents });
+  }
+  out.push({ ...base, cols: 200, agents: TREE_AGENTS[0], cap: 3 });
+  out.push({ ...base, cols: 200, agents: TREE_AGENTS[0], cap: 0 });
+  out.push({ ...base, cols: 200, agents: TREE_AGENTS[1],
+    hide: ["*.chat.progress"] });
+  out.push({ ...base, cols: 200, agents: TREE_AGENTS[1], phase: "done" });
+  return out;
+}
+
+// The tree's cases: a document, the corpus cases whose tasks are its
+// subagents, and the main thread's progress update.
+const TREE_DOC = "status/01-baseline@196";
+const TREE_AGENTS = ["01-mixed@220", "03-tree@220", "02-parked@220"];
+const TREE_PROGRESS = "Checking the binary for subagentStatusLine, then " +
+  "the changelog for a hook that replaces it";
 
 /** The receipt case's lines. */
 export function drawReceipt(st: Settings, fig: Dict, c: ReceiptCase):
@@ -213,6 +269,11 @@ function cases(st: Settings): string {
   }
   for (const c of shedCases()) {
     account.push(accountCase(c, document(c.doc), []));
+  }
+  for (const c of treeCases()) {
+    const rows = drawBand(st, document(c.doc), c);
+    band.push(JSON.stringify({ ...c, same: [], rows: rowsJson(rows),
+      lines: rows.map((r) => join(r)) }));
   }
   for (const [id, same, fig] of documents("cost")) {
     for (const c of receiptCases(id)) {

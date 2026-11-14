@@ -26,8 +26,11 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
 `$.state` contract. It draws four places, and writes one:
 
 - **The band** above the prompt (`AbovePrompt`), which Claude Code can
-  collapse with its `[-]`: 🎤, the turn, while one runs, and 🎮, the
-  session, kept between turns. Each row of the `rows` table goes where
+  collapse with its `[-]`: the session's threads as a tree, 🎮 the
+  session at its root with where the session works, 🧵 the main thread
+  and, under it, the subagents it started while a turn runs, each with
+  its latest progress update, then 🎤, the turn, while one runs; see
+  [The tree](../docs/layout.md#the-tree). Each row of the `rows` table goes where
   its `place` puts it, `"above"` here or `"footer"` under the footer
   line; see
   [docs/layout.md](../docs/layout.md#above-the-prompt-and-under-the-footer-line).
@@ -41,13 +44,13 @@ This folder is the mod. `.claude-plugin/plugin.json` names it `usage-band`,
   draws nothing there.
 - **The footer** under the prompt, `-- INSERT -- ⏵⏵ auto mode on …`:
   Claude Code's own line, whose pills stay live, then the rows placed
-  under it, in colour: 💳, the account and where the session works, on a
-  row of its own (`account-place` `"row"`; `"tail"` puts it dim at the
-  line's right end), and 🤖, the main thread, kept between turns, just
-  over the agent panel. 📁 on 💳 draws the project's root as 📦 under its
-  parent, so `📁~/git/📦/mod` is the project's `mod/` folder. 🤖 draws
-  the model and effort its next turn runs on, between turns too, and
-  while a turn runs, its answering or waiting time is in 🛫's column.
+  under it, in colour: 💳, the account and where the session works but
+  for what the tree's root draws, on a row of its own (`account-place`
+  `"row"`; `"tail"` puts it dim at the line's right end). 📁 on 💳 draws
+  the project's root as 📦 under its parent, so `📁~/git/📦/mod` is the
+  project's `mod/` folder. 🧵 draws the model and effort its next turn
+  runs on, between turns too, and while a turn runs, its answering or
+  waiting time is in 🛫's column.
 - **The closing line,** `✻ Worked for 1m 5s`, as the receipt: as a turn
   ends, the rows the `rows` table stamps (🎤 alone as the mod ships)
   stamped there, frozen, and under them the turn's 🔺🔖 tag and when it
@@ -79,10 +82,10 @@ footer line in place of its rows (see
 Every option the mod reads is listed in `spec/options.jsonc`, `"mod"`
 among its ports: the
 usage source, the account and period, the `hide` paths, `mark-spacing`
-and `subscript-decimals`, the `rows` table (for each of 🎤, 🤖, 🎮, the
+and `subscript-decimals`, the `rows` table (for each of 🎤, 🧵, 🎮, the subagents, the
 🔖 tag lines and 💳, where it is drawn, above the prompt or under the
 footer line, when, and whether a turn's end stamps it into the
-transcript), `account-place`, `right-edge` (following the rows' places),
+transcript), `subagent-rows`, `account-place`, `right-edge` (following the rows' places),
 and the footer's layout (`hint-inset`, `hint-tuck`, `footer-ruler`). `hooks/configuration.ts` reads the
 files at each load, on `session.start`, and every 30 seconds on the tick,
 a stat of each file, reading again only one that has changed, or the
@@ -130,7 +133,7 @@ saved.
 As a turn ends the mod stamps its receipt as the turn's closing line, in
 place of Claude Code's `✻ <word> for <duration>`: the rows whose
 `transcript` is set in `rows`, frozen and dim, in their colours. As the
-mod ships that is 🎤 alone, since 🤖 and 🎮 stay live on screen
+mod ships that is 🎤 alone, since 🧵 and 🎮 stay live on screen
 (`node tools/draw-figures.ts
 ../tests/fixtures/figures/cost/10-turn-id@196.json --cols 160 --part
 receipt --inset 2 --right-edge 5 --plain`, run from `mod/`):
@@ -152,7 +155,7 @@ is drawn (`place`), whether it is drawn while a turn runs, always or
 never (`live`), and whether the receipt stamps it (`transcript`), apart;
 `--rows` to `tools/draw-figures.ts` takes the same table.
 `"rows": {"agent": {"transcript": true}, "session": {"transcript": true}}`
-stamps 🤖 and 🎮 under 🎤. The receipt is Text in the transcript rather
+stamps 🧵 and 🎮 under 🎤. The receipt is Text in the transcript rather
 than a `$.ui.log` line, which Claude Code draws as its own notice,
 `⏺ usage-band:` before it and a blank row after, in plain dim text.
 

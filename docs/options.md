@@ -221,7 +221,7 @@ removes it.
 | Part | Values |
 |---|---|
 | scope | `account`, `turn`, `main`, `session`, `agent` |
-| group | `plan` (🔋 🪫), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫, and on agent rows the 👶🏻 🤏 💻 📡 📨 counts), `chat` (the activity), `workspace` (🌿), `name` (the name and the kind) |
+| group | `plan` (🔋 🪫), `cost` (💰), `tokens` (🧩 🎯), `context` (🧠), `time` (⌛ ⛳ 🤖 🔧 🚦), `work` (💾), `state` (model, 🛫, and on agent rows the 👶🏻 🤏 💻 📡 📨 counts), `chat` (the activity, and the progress update in the band's tree), `workspace` (🌿), `name` (the name and the kind) |
 
 On an agent row:
 
@@ -231,6 +231,7 @@ On an agent row:
 | `agent.name.label` | the agent's name |
 | `agent.workspace.branch` | 🌿 and a worktree's branch |
 | `agent.chat.doing` | what it is doing, the activity text |
+| `agent.chat.progress`, `main.chat.progress` | the latest progress update after the name, in the band's tree |
 | `agent.state.kids`, `.compact`, `.shells`, `.monitors`, `.inbox` | 👶🏻, 🤏, 💻, 📡, 📨 |
 | `agent.state.model`, `.rate`, `agent.cost`, `agent.context`, `agent.tokens.io`, `.cache`, `agent.time.elapsed`, `.eta`, `.split`, `agent.plan.five_hour`, `.week`, `agent.work` | the columns |
 | `agent.context.share` | 🧠's ٪ of the window, its size set flush right; hidden on every scope (`*.context.share`), 🧠's column narrows by the ٪'s room |

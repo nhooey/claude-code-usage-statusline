@@ -20,7 +20,7 @@ export const MODEL = 'claude-opus-5[1m]'
 export const WINDOW = 1_000_000
 
 // The world's user file (world): the look these tests draw, the
-// tracker's store, five figures hidden, and 🎤, 🤖 and 🎮 drawn while a
+// tracker's store, five figures hidden, and 🎤, 🧵 and 🎮 drawn while a
 // turn runs and stamped into the transcript.
 export const USER_FILE = HOME + '/.config/coding-agent-usage-line/config.jsonc'
 export const USER_SETTINGS = {
