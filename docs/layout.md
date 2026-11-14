@@ -228,14 +228,16 @@ has no context and no ⛳ of its own.
 ### Labels
 
 🎤, 🤖 and 🎮 draw their label flush right, ending where the first column
-starts, so each mark and its 📨 sit beside the model they name, at one
-column on every row. An agent row's label is drawn flush left.
+starts, so each mark sits beside the model it names, at one column on
+every row, and 🤖's 📨 stands to its left. An agent row's label is drawn
+flush left.
 
 - **🎤**, the turn, its mark alone. The turn tags tie it to the prompt
   (🔻🔖) and the receipt (🔺🔖).
 - **🤖**, the main thread. While messages wait for its next turn (typed
   while it works, an agent's SendMessage, a task notification), 📨 and
-  how many, as an agent row's [📨](#inbox) does. The receipt's 🤖 row
+  how many before the mark, `📨3 🤖`, as an agent row's [📨](#inbox)
+  counts its own. The receipt's 🤖 row
   leaves the 📨 out.
 - **🎮**, the session, its mark alone.
 - **💳** carries where the session works: 📦 the project (in a linked git

@@ -123,6 +123,28 @@ test("the band's columns do not move with the phase or the figures", () => {
   }
 });
 
+test("🤖's 📨 stands left of its mark, so the marks keep one column", () => {
+  const st = settings({});
+  const base = document("status/01-baseline@196");
+  const queued = { ...base,
+    transcript: { ...(base.transcript as Dict), queued: 3 } };
+  const markAt = (fig: Dict, mark: string) => {
+    const lines = inZone(fig, () => bandLines(st, fig, 160, [],
+      { rate: null, phase: "running" }));
+    const row = lines.map((l) => stripAnsi(join(l))).find((t) =>
+      t.includes(mark + "  "));
+    assert.ok(row, mark);
+    return visWidth(row!.slice(0, row!.indexOf(mark + "  ")), st.widths);
+  };
+  const turn = markAt(base, "🎤");
+  assert.equal(markAt(base, "🤖"), turn);
+  assert.equal(markAt(queued, "🤖"), turn);
+  const lines = inZone(queued, () => bandLines(st, queued, 160, [],
+    { rate: null, phase: "running" }));
+  assert.ok(lines.map((l) => stripAnsi(join(l))).some((t) =>
+    t.includes("📨3 🤖  ")));
+});
+
 test("each row's live and transcript pick the band's rows and the receipt's",
   () => {
     const st = settings({});

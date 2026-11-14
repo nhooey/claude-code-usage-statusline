@@ -269,12 +269,15 @@ export function turnLabel(): Piece[] {
   return [piece("name.label", E_TURN)];
 }
 
-/** 🤖, and after it 📨 and `inbox`, the messages waiting for the main
- * thread's next turn, as an agent row's 📨 counts its own (agentLabel). */
+/** 🤖, and before it 📨 and `inbox`, the messages waiting for the main
+ * thread's next turn, as an agent row's 📨 counts its own (agentLabel).
+ * The label is drawn flush right, so 📨 goes on its left: 🤖 stays in
+ * the column 🎤 and 🎮 stand in. */
 export function mainLabel(inbox = 0): Piece[] {
-  return [piece("name.label", E_BOT),
+  return [
     ...(inbox ? [{ path: "state.inbox",
-      spans: [span(" "), ...renderInbox(inbox)], drop: 0 }] : [])];
+      spans: [...renderInbox(inbox), span(" ")], drop: 0 }] : []),
+    piece("name.label", E_BOT)];
 }
 
 /** Where the session works.  Each part is "" where there is none. */
